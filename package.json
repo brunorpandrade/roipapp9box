@@ -11,7 +11,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "validate": "bash scripts/validate.sh"
   },
   "dependencies": {
     "@tanstack/react-query": "5.101.2",
