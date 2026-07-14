@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ROIP APP 9BOX — check-no-dead-exports (ME-003).
+# ROIP APP 9BOX — check-no-dead-exports (ME-003, estendido em ME-010).
 # Falha (RC != 0) se qualquer identificador exportado por arquivos em
 # src/server/services/*.ts nao for referenciado por nenhum arquivo fora de
 # src/server/services/. Reforca RV-13: motor sem chamador eh codigo morto,
@@ -20,9 +20,13 @@
 # `export default` eh proibido por convencao (chamador precisa nomear).
 # Se essa convencao mudar, o parser evolui na ME correspondente.
 #
+# Roots de busca de chamador (ME-010): `src/` e `tests/`. No Bloco B1 o
+# teste de integracao conta como chamador (invoca ao menos um export do
+# service correspondente), consistente com a promessa canonica "motor +
+# chamador + teste na mesma ME" da §5.
+#
 # Comportamento nos casos limite:
 #   - services/ vazio (nenhum .ts alem de .gitkeep): 0 exports, 0 orfaos, RC=0.
-#     Esse eh o estado no fechamento da ME-003.
 #   - services/ com exports mas sem importadores fora de services/: RC=1.
 #   - services/ com exports e todos com importadores fora: RC=0.
 #
@@ -58,10 +62,13 @@ if [ -z "$exported_names" ]; then
   exit 0
 fi
 
+# Roots de busca de chamador: `src/` (routers/componentes) e `tests/` (integracao).
+SEARCH_ROOTS="src/ tests/"
+
 orphans=""
 while IFS= read -r name; do
   [ -z "$name" ] && continue
-  # Procura referencia FORA de services/, em src/ (excluindo node_modules etc).
+  # Procura referencia FORA de services/, em src/ e tests/.
   # -w para boundary de palavra: evita match parcial (ex.: `foo` vs `foobar`).
   refs=$(grep -rnwE \
     --include='*.ts' \
@@ -70,7 +77,7 @@ while IFS= read -r name; do
     --exclude-dir=.next \
     --exclude-dir=dist \
     --exclude-dir=.git \
-    "$name" src/ 2>/dev/null \
+    "$name" $SEARCH_ROOTS 2>/dev/null \
     | grep -vE "^$SERVICES_DIR/" \
     || true)
   if [ -z "$refs" ]; then

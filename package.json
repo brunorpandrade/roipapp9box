@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format:check": "prettier --check .",
+    "test": "vitest run",
     "validate": "bash scripts/validate.sh"
   },
   "dependencies": {
