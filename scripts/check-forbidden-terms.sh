@@ -16,21 +16,33 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SEARCH_DIRS=(src scripts drizzle)
 
 # Termos abandonados (§19) — estruturas
+# Bloco DOC 02 §14 acrescentado na ME-020: colunas desnormalizadas e
+# tabela superadas por `accessTokens` + `passwordSet` (S429/S430).
 STRUCT_TERMS=(
   "nr1PGRDocuments"
   "emailSettings"
   "leadershipQualityIndex"
   "cadenciaCOPSOQ"
   "performanceId"
+  "firstAccessCompleted"
+  "resetPasswordTokenHash"
+  "resetPasswordExpiresAt"
+  "resetPasswordUsedAt"
+  "emailChangeRequests"
 )
 
 # Termos globais proibidos por nomenclatura canonica
+# `/gestao-ciclos` (DOC 02 §14, ME-020): rota superada por
+# `/cycle-management` (S431). O termo `/desbloqueios` (rota isolada,
+# S432) NAO entra como fixed-string: colidiria com a rota canonica
+# `/super-admin/desbloqueios`; tratamento na ME que criar as rotas.
 NAMING_TERMS=(
   "assessment de 97 itens"
   "PGR"
   "Programa de Gerenciamento de Riscos Psicossociais"
   "Pesquisa NR-1"
   "Painel principal"
+  "/gestao-ciclos"
 )
 
 ALL_HITS=""
