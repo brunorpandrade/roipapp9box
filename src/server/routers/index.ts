@@ -15,6 +15,7 @@
 // mantem o bootstrap vivo e testavel sem antecipar dominio do Bloco B3.
 
 import { protectedProcedure, publicProcedure, roleProcedure, router } from '../trpc';
+import { authRouter } from './auth';
 
 /** Sub-router de saude: liveness sem sessao. */
 const healthRouter = router({
@@ -47,6 +48,7 @@ export const appRouter = router({
   health: healthRouter,
   session: sessionRouter,
   admin: adminRouter,
+  auth: authRouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */

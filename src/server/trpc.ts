@@ -120,6 +120,15 @@ export interface Context {
   rateLimiter: RateLimiter;
   /** Bearer token cru do header `Authorization`, ou null se ausente. */
   bearerToken: string | null;
+  /**
+   * IP do cliente para chave de rate limit `{ip}:{op}:{id}` (DOC 02 §5.8).
+   * Extraido do `x-forwarded-for` pelo adapter; null quando o header
+   * estiver ausente (uso local, teste sem IP explicito). Fluxos que
+   * requerem rate limit (Bloco B2, ME-022+) usam o sentinel canonico
+   * `RATE_LIMIT_IP_UNKNOWN` quando null — a chave permanece agrupada, o
+   * limite continua eficaz por processo.
+   */
+  ip: string | null;
   /** Preenchido pelo `authed` quando ha reemissao de sessao (§5.2). */
   reissuedToken: { value: string | null };
 }
@@ -128,17 +137,21 @@ export interface Context {
  * Monta o contexto a partir de partes explicitas. Usado tanto pelo adapter
  * (que passa o `db` singleton) quanto pelos testes (que passam o `db` da
  * base efemera). Manter esta funcao pura e sem I/O de rede permite testar
- * os guards sem subir um servidor HTTP.
+ * os guards sem subir um servidor HTTP. `ip` e opcional para preservar
+ * chamadas pre-existentes (testes da ME-021 nao exercem rate limit); as
+ * procedures do Bloco B2 (ME-022+) o exigem via chave canonica.
  */
 export function createContextInner(parts: {
   db: RoipDatabase;
   rateLimiter: RateLimiter;
   bearerToken: string | null;
+  ip?: string | null;
 }): Context {
   return {
     db: parts.db,
     rateLimiter: parts.rateLimiter,
     bearerToken: parts.bearerToken,
+    ip: parts.ip ?? null,
     reissuedToken: { value: null },
   };
 }
@@ -158,14 +171,40 @@ function extractBearerToken(headers: Headers): string | null {
 }
 
 /**
+ * Extrai o IP do cliente. `x-forwarded-for` e a fonte canonica atras de
+ * proxy/CDN — pega o primeiro item (o originador), ignorando saltos
+ * intermediarios. Sem o header, cai para `x-real-ip`; ambos ausentes,
+ * devolve null (o handler substitui pelo sentinel `RATE_LIMIT_IP_UNKNOWN`).
+ */
+function extractClientIp(headers: Headers): string | null {
+  const forwarded = headers.get('x-forwarded-for');
+  if (forwarded !== null) {
+    const first = forwarded.split(',')[0]?.trim();
+    if (first !== undefined && first.length > 0) {
+      return first;
+    }
+  }
+  const realIp = headers.get('x-real-ip');
+  if (realIp !== null) {
+    const trimmed = realIp.trim();
+    if (trimmed.length > 0) {
+      return trimmed;
+    }
+  }
+  return null;
+}
+
+/**
  * Factory de contexto para o adapter fetch do Next 15 (§ route.ts). Extrai
- * o bearer token do request e injeta o `db` e o `rateLimiter` singletons.
+ * o bearer token e o IP do cliente e injeta o `db` e o `rateLimiter`
+ * singletons.
  */
 export function createContext(opts: FetchCreateContextFnOptions): Context {
   return createContextInner({
     db: getAppDb(),
     rateLimiter,
     bearerToken: extractBearerToken(opts.req.headers),
+    ip: extractClientIp(opts.req.headers),
   });
 }
 
