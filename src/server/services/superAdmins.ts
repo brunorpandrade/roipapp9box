@@ -77,3 +77,32 @@ export async function updateSuperAdminPassword(
   const [result] = await db.update(superAdmins).set({ passwordHash }).where(eq(superAdmins.id, id));
   return result.affectedRows;
 }
+
+/**
+ * Atualiza o `email` de um Super Admin. Consumidor canonico exclusivo:
+ * `auth.confirmEmailChange` (ME-022c), fluxo §4.9d — o Bloco B do
+ * `/alterar-email` (H3) confirma a alteracao clicando no link enviado ao
+ * novo endereco. O helper NAO valida formato de e-mail nem verifica
+ * disponibilidade — cabe ao caller (o zod da procedure e o passo canonico
+ * §4.8 5f garantem novoEmail diferente do atual; a coluna `email` e UNIQUE
+ * global no DOC 01 §4.1, entao colisao concorrente sobe como excecao do
+ * mysql2 e o caller a mapeia para status canonico `{ status: 'invalido' }`
+ * — S030 anti-enumeracao).
+ *
+ * Efeitos colaterais canonicos (§5.7 via S011): o `pwv` do Super Admin e
+ * derivado de `passwordHash + email` (`jwt.ts:currentCredentialVersion`),
+ * logo a troca de e-mail muda a derivacao e TODOS os JWTs de sessao em
+ * circulacao caem no middleware `authed` — inclusive a sessao que
+ * originou a operacao (§5.7 "inclusive a atual"). Nenhum codigo adicional
+ * de blacklist e necessario.
+ *
+ * Retorna o numero de linhas afetadas.
+ */
+export async function updateSuperAdminEmail(
+  db: RoipDatabase,
+  id: number,
+  email: string,
+): Promise<number> {
+  const [result] = await db.update(superAdmins).set({ email }).where(eq(superAdmins.id, id));
+  return result.affectedRows;
+}

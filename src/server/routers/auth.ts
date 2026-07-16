@@ -73,6 +73,7 @@ import {
   createAccessToken,
   getAccessTokenByToken,
   invalidateActiveTokensByUserAndType,
+  listActiveTokensByUser,
   markTokenAsUsed,
 } from '../services/accessTokens';
 import { findPlatformUserByCpf, type PlatformUserCandidate } from '../services/authLookup';
@@ -82,9 +83,10 @@ import { getEmployeeById, updateEmployeeCredential } from '../services/employees
 import {
   getSuperAdminByEmail,
   getSuperAdminById,
+  updateSuperAdminEmail,
   updateSuperAdminPassword,
 } from '../services/superAdmins';
-import { publicProcedure, router } from '../trpc';
+import { protectedProcedure, publicProcedure, roleProcedure, router } from '../trpc';
 
 // ---- Constantes canonicas do §13 ---------------------------------------
 
@@ -133,8 +135,68 @@ export const MSG_PASSWORD_POLICY =
 export const MSG_PASSWORD_CHANGED_SUCCESS =
   'Senha alterada com sucesso. Faca login com a nova senha.';
 
+/**
+ * Mensagem canonica exata de senha atual incorreta (§13.3, primeira linha).
+ * Usada por `changePassword` e por `requestEmailChange` — ambos exigem
+ * `bcrypt.compare(senhaAtual)` como passo canonico e devolvem esta msg com
+ * `field: 'senhaAtual'` em 401.
+ */
+export const MSG_PASSWORD_ACTUAL_INCORRECT = 'Senha atual incorreta.';
+
+/**
+ * Mensagem canonica exata de nova senha identica a atual (§13.3, 3a linha).
+ * Distincao canonica em relacao ao `/reset-password` (§4.5): reset PERMITE
+ * senha identica (backend nao conhece plaintext); `/alterar-senha` (§4.7)
+ * PROIBE via `bcrypt.compare(novaSenha, passwordHash)` no passo canonico
+ * §4.7 3f.
+ */
+export const MSG_NEW_PASSWORD_MUST_DIFFER = 'A nova senha deve ser diferente da atual.';
+
+/**
+ * Mensagem canonica exata de sucesso de alteracao de senha via
+ * `/alterar-senha` (§4.7 3i, §13.3 5a linha). DIFERENTE de
+ * `MSG_PASSWORD_CHANGED_SUCCESS` — o reset devolve "... Faca login com a
+ * nova senha." (redirect ao login), o /alterar-senha nao redireciona ao
+ * login (sessao atual preservada §5.7). Constantes separadas para preservar
+ * o literal canonico.
+ */
+export const MSG_PASSWORD_CHANGE_SUCCESS = 'Senha alterada com sucesso.';
+
+/**
+ * Mensagem canonica exata de solicitacao pendente de alteracao de e-mail
+ * (§4.8 fluxo passo 5c). Retornada em 409 quando o Super Admin ja tem uma
+ * solicitacao `tipo=email_change` ativa (usedAt IS NULL AND expiresAt >
+ * NOW()) e tenta iniciar outra. O front renderiza Bloco B canonico.
+ */
+export const MSG_EMAIL_CHANGE_PENDING =
+  'Existe uma solicitacao pendente. Cancele-a antes de iniciar uma nova.';
+
+/**
+ * Mensagem canonica exata de novo e-mail identico ao atual (§4.8 fluxo
+ * passo 5f). Retornada em 400 com `field: 'novoEmail'`.
+ */
+export const MSG_NEW_EMAIL_MUST_DIFFER = 'O novo e-mail deve ser diferente do atual.';
+
+/**
+ * Mensagem canonica exata do titulo da tela de confirmacao de e-mail
+ * (§13.2 2a linha) para status `expirado` ou `invalido`. O front renderiza
+ * como titulo; corpo canonico "Solicite uma nova alteracao de e-mail."
+ * fica no front (§13.2). O backend so devolve o `status` no `cause`; a
+ * `message` do TRPCError usa este literal para preservar a fonte canonica
+ * unica em um so lugar.
+ */
+export const MSG_EMAIL_CHANGE_LINK_INVALID = 'Este link expirou.';
+
 /** Sentinel canonico para `ctx.ip === null` (S022). */
 const RATE_LIMIT_IP_UNKNOWN = 'unknown';
+
+/**
+ * TTL canonico do token de alteracao de e-mail (DOC 02 §5.4 tabela linha
+ * "password_reset para superAdmins com metadado tipo: 'email_change'"):
+ * `createdAt + INTERVAL 24 HOUR`. UNICO caso canonico com TTL de 24h —
+ * todos os demais password_reset e first_access usam 7 dias.
+ */
+const EMAIL_CHANGE_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
 /**
  * TTL canonico do token de credencial em `accessTokens.expiresAt`
@@ -210,6 +272,50 @@ const firstAccessInput = z.object({
   novaSenha: z.string().min(1).max(255),
 });
 
+/**
+ * Input canonico de `auth.changePassword` (§4.7 passo 2). O canonico envia
+ * apenas `{ senhaAtual, novaSenha }` — o campo `confirmarNovaSenha` do form
+ * H2 (§4.7 campo 3) e validado exclusivamente client-side (§4.7 passo 1
+ * "Frontend valida em tempo real"). O max de 255 acomoda qualquer senha
+ * plausivel dentro do custo bcrypt canonico S010.
+ */
+const changePasswordInput = z.object({
+  senhaAtual: z.string().min(1).max(255),
+  novaSenha: z.string().min(1).max(255),
+});
+
+/**
+ * Input canonico de `auth.requestEmailChange` (§4.8 Bloco A passo 4). O
+ * canonico envia `{ senhaAtual, novoEmail, confirmarEmail }`. O
+ * `confirmarEmail` e validado server-side no `.refine`; a mensagem canonica
+ * de divergencia (§4.8 nao especifica literal — validacao pertence ao
+ * client-side por padrao) sobe como BAD_REQUEST generico do zod.
+ */
+const requestEmailChangeInput = z
+  .object({
+    senhaAtual: z.string().min(1).max(255),
+    novoEmail: z.string().email().max(255),
+    confirmarEmail: z.string().email().max(255),
+  })
+  .refine((v) => v.novoEmail === v.confirmarEmail, {
+    message: 'confirmarEmail deve ser igual a novoEmail',
+    path: ['confirmarEmail'],
+  });
+
+/**
+ * Input canonico de `auth.cancelEmailChange` (§4.8 Bloco B botao
+ * `[Cancelar solicitacao]`). Sem body — a identidade do titular vem do
+ * JWT via `roleProcedure(['super_admin'])`. Objeto vazio explicito para
+ * que o zod rejeite payload com campos extras (canonico tRPC — inputs
+ * fechados).
+ */
+const cancelEmailChangeInput = z.object({});
+
+/** Input canonico de `auth.confirmEmailChange` (§4.9 passo 1). */
+const confirmEmailChangeInput = z.object({
+  token: z.string().min(1).max(1024),
+});
+
 // ---- Contratos de resposta canonicos (S021) ----------------------------
 
 interface LoginPlatformSuccess {
@@ -247,6 +353,44 @@ interface ValidateTokenResult {
 /** Resposta canonica de `resetPassword` e `firstAccess` (§4.5 10f, §13.3). */
 interface PasswordChangeResult {
   msg: string;
+}
+
+/**
+ * Resposta canonica de `changePassword` (§4.7 3i, §13.3). Apenas `msg` no
+ * body — a reemissao de sessao "exceto a atual" (§5.7, S011) viaja via
+ * header `x-roip-session` (S013 estendido, S029). Nao ha `token` no body.
+ */
+interface ChangePasswordResult {
+  msg: string;
+}
+
+/**
+ * Resposta canonica de `requestEmailChange` (§4.8 fluxo passo 5i). Body
+ * literal do canonico: `{ status: 'solicitado', novoEmail }`.
+ */
+interface RequestEmailChangeResult {
+  status: 'solicitado';
+  novoEmail: string;
+}
+
+/**
+ * Resposta canonica de `cancelEmailChange`. O canonico §4.8 e silente
+ * sobre o body do 200 — o front simplesmente re-renderiza Bloco A. Decisao
+ * de autor: `{ status: 'cancelado' }` simetrico aos demais status do
+ * fluxo H3 (`solicitado`, `sucesso`, `invalido`, `expirado`).
+ */
+interface CancelEmailChangeResult {
+  status: 'cancelado';
+}
+
+/**
+ * Resposta canonica de `confirmEmailChange` no sucesso (§4.9 passo 3d).
+ * Body literal do canonico: `{ status: 'sucesso' }`. Falhas sobem como
+ * TRPCError com `cause: { status: 'expirado' | 'invalido' }` (§4.9
+ * passos 3a-c).
+ */
+interface ConfirmEmailChangeResult {
+  status: 'sucesso';
 }
 
 // ---- Helpers privados --------------------------------------------------
@@ -474,6 +618,97 @@ function resolveTargetAndRole(
     return { kind: 'collaborator_only', user: employee };
   }
   return undefined;
+}
+
+/**
+ * Localiza um token ativo (usedAt IS NULL AND expiresAt > NOW) do Super
+ * Admin cujo payload JWT carrega `tipo === 'email_change'` (S031). Usa
+ * `listActiveTokensByUser` + decodificacao do payload de cada registro
+ * candidato (`type = 'password_reset'`). Retorna o PRIMEIRO ativo
+ * encontrado (§5.4 concorrencia garante no maximo 1 na pratica) ou null.
+ *
+ * Este helper existe porque o canonico §4.8g proibe extensao do enum
+ * `accessTokens.type` do DOC 01 (S027 estende so o discriminador do
+ * payload). Sem coluna `metadata` na tabela, a unica forma de
+ * discriminar `tipo=email_change` de `tipo=reset` para o mesmo
+ * `type=password_reset` de super_admin e decodificar o JWT.
+ */
+async function findActiveEmailChangeToken(
+  db: import('../../db/client').RoipDatabase,
+  superAdminId: number,
+): Promise<{
+  id: number;
+  token: string;
+  expiresAt: Date;
+  type: 'password_reset' | 'first_access';
+} | null> {
+  const active = await listActiveTokensByUser(db, 'super_admin', superAdminId);
+  for (const record of active) {
+    if (record.type !== 'password_reset') {
+      continue;
+    }
+    const verified = await verifyCredentialToken(record.token);
+    if (!verified.valid) {
+      continue;
+    }
+    if (verified.claims.tipo !== 'email_change') {
+      continue;
+    }
+    return record;
+  }
+  return null;
+}
+
+/**
+ * Lanca TRPCError canonico de `confirmEmailChange` com status `invalido`
+ * no `cause` (§4.9 3a, 3b). Mensagem canonica literal §13.2 "Este link
+ * expirou." — o front distingue `invalido` de `expirado` pelo `cause` e
+ * escolhe o corpo canonico apropriado (ambos usam o mesmo titulo).
+ */
+function throwEmailChangeInvalido(): never {
+  throw new TRPCError({
+    code: 'BAD_REQUEST',
+    message: MSG_EMAIL_CHANGE_LINK_INVALID,
+    cause: { status: 'invalido' },
+  });
+}
+
+/**
+ * Lanca TRPCError canonico de `confirmEmailChange` com status `expirado`
+ * no `cause` (§4.9 3c). Mesma mensagem canonica de `throwEmailChangeInvalido`.
+ * O status no `cause` distingue os dois caminhos para observabilidade,
+ * mas do ponto de vista do usuario a UI e identica (S030 anti-enum).
+ */
+function throwEmailChangeExpirado(): never {
+  throw new TRPCError({
+    code: 'BAD_REQUEST',
+    message: MSG_EMAIL_CHANGE_LINK_INVALID,
+    cause: { status: 'expirado' },
+  });
+}
+
+/**
+ * Detecta erro de UNIQUE constraint do driver mysql2 (ER_DUP_ENTRY, codigo
+ * 1062). Usado por `confirmEmailChange` para mapear colisao concorrente do
+ * `novoEmail` com outro Super Admin em `{ status: 'invalido' }` (S030
+ * anti-enum). Assinatura do erro do mysql2: objeto com `code:
+ * 'ER_DUP_ENTRY'` OU `errno: 1062`. O `drizzle-orm` envelopa o erro em
+ * um `Error` proprio e coloca o original em `.cause` — o verificador
+ * varre a raiz e a cadeia de causas.
+ */
+function isDuplicateEntryError(err: unknown): boolean {
+  let cur: unknown = err;
+  for (let depth = 0; depth < 5 && cur !== null && typeof cur === 'object'; depth += 1) {
+    const shape = cur as { code?: unknown; errno?: unknown; cause?: unknown };
+    if (shape.code === 'ER_DUP_ENTRY') {
+      return true;
+    }
+    if (shape.errno === 1062) {
+      return true;
+    }
+    cur = shape.cause;
+  }
+  return false;
 }
 
 // ---- authRouter --------------------------------------------------------
@@ -878,5 +1113,416 @@ export const authRouter = router({
 
       // 7 — Sucesso.
       return { msg: MSG_PASSWORD_CHANGED_SUCCESS };
+    }),
+
+  /**
+   * `/alterar-senha` — DOC 02 §4.7 (tela H2). Alteracao autenticada de
+   * senha para todos os 5 perfis com sessao (colaborador puro nao possui
+   * JWT de plataforma §2.2, entao nao alcanca esta procedure — o guard
+   * canonico H2 do §4.7 "Colaborador puro: redirect para /colaborador" se
+   * materializa na ausencia estrutural). Ordem canonica a-i, comentada
+   * passo a passo.
+   *
+   * Contrato de resposta canonico literal (§4.7 3i): `{ msg }` — SEM
+   * token no body. A reemissao "exceto a sessao atual" (§5.7 primeira
+   * linha) usa a mecanica S011 + S013 estendida por S029: o resolver
+   * assina novo JWT com pwv derivado do NOVO passwordHash e sobrepoe em
+   * `ctx.reissuedToken.value`; o adapter fetch publica no header
+   * `x-roip-session`. Sem essa sobreposicao, o proximo request cairia no
+   * middleware `authed` com pwv divergente (pois a mecanica S011 muda o
+   * pwv esperado com a troca do passwordHash).
+   *
+   * §4.5 vs §4.7 — DIFERENCA CANONICA: `resetPassword` PERMITE nova senha
+   * identica (backend nao conhece plaintext); `changePassword` PROIBE via
+   * `bcrypt.compare(novaSenha, passwordHash)` no passo canonico (f). Duas
+   * comparacoes bcrypt seguidas — custo aceitavel (custo 12, uso
+   * autenticado nao-hot).
+   */
+  changePassword: protectedProcedure
+    .input(changePasswordInput)
+    .mutation(async ({ ctx, input }): Promise<ChangePasswordResult> => {
+      const ip = ctx.ip ?? RATE_LIMIT_IP_UNKNOWN;
+      const rule = RATE_LIMITS.changePassword;
+      const userIdForKey =
+        ctx.user.role === 'super_admin' ? ctx.user.superAdminId : ctx.user.userId;
+      const key = buildRateLimitKey(ip, rule.op, String(userIdForKey));
+
+      // (a) — Autoriza via JWT: `protectedProcedure` ja executou (middleware
+      //       `authed` do trpc.ts).
+      // (b) — Rate limit `{ip}:change-password:{userId}` = 5/15min.
+      const status = ctx.rateLimiter.check(key, rule);
+      if (status.blocked) {
+        throwRateLimited(status.retryAfterSeconds);
+      }
+
+      // (c) — Busca `passwordHash` do titular. Cinco branches por role,
+      //       cada uma resolvendo o registro canonico corresp. Nos casos
+      //       administrativos (RH/RH-Lider/Lider) o titular vive em
+      //       `employees`; C-level em `cLevelMembers`; Super Admin em
+      //       `superAdmins`. S014 defensiva: titular sumido/sem hash sobe
+      //       como UNAUTHORIZED (sessao expirada, §8.3) — nao deveria
+      //       acontecer com sessao valida, mas cobre estado corrompido.
+      let currentHash: string;
+      let userEmail: string | null = null;
+      if (ctx.user.role === 'super_admin') {
+        const admin = await getSuperAdminById(ctx.db, ctx.user.superAdminId);
+        if (admin === undefined) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessao expirada.' });
+        }
+        currentHash = admin.passwordHash;
+        userEmail = admin.email;
+      } else if (ctx.user.role === 'clevel') {
+        const member = await getCLevelMemberById(ctx.db, ctx.user.userId);
+        if (member === undefined || member.passwordHash === null) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessao expirada.' });
+        }
+        currentHash = member.passwordHash;
+      } else {
+        const employee = await getEmployeeById(ctx.db, ctx.user.userId);
+        if (employee === undefined || employee.passwordHash === null) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessao expirada.' });
+        }
+        currentHash = employee.passwordHash;
+      }
+
+      // (d) — `bcrypt.compare(senhaAtual, passwordHash)`. Falha: incrementa
+      //       rate limit + 401 canonica literal §13.3.
+      const senhaAtualOk = await verifyPassword(input.senhaAtual, currentHash);
+      if (!senhaAtualOk) {
+        ctx.rateLimiter.registerFailure(key, rule);
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: MSG_PASSWORD_ACTUAL_INCORRECT,
+          cause: { field: 'senhaAtual' },
+        });
+      }
+
+      // (e) — Politica de senha server-side, redundante ao client-side
+      //       (§4.7 passo 1). Mensagem canonica literal §13.3.
+      if (!isPasswordPolicyValid(input.novaSenha)) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: MSG_PASSWORD_POLICY,
+          cause: { field: 'novaSenha' },
+        });
+      }
+
+      // (f) — `bcrypt.compare(novaSenha, passwordHash)`. Se TRUE (nova ===
+      //       atual): 400 canonica literal §13.3. Distincao ao reset
+      //       (§4.5) que PERMITE nova identica.
+      const novaIgualAtual = await verifyPassword(input.novaSenha, currentHash);
+      if (novaIgualAtual) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: MSG_NEW_PASSWORD_MUST_DIFFER,
+          cause: { field: 'novaSenha' },
+        });
+      }
+
+      // (g) — Hash canonico bcrypt custo 12 (S010) e UPDATE por role. RV-12:
+      //       via Drizzle tipado nos services. Reset NAO altera passwordSet
+      //       (assume-se ja true — o titular esta autenticado).
+      const newHash = await hashPassword(input.novaSenha);
+      if (ctx.user.role === 'super_admin') {
+        await updateSuperAdminPassword(ctx.db, ctx.user.superAdminId, newHash);
+      } else if (ctx.user.role === 'clevel') {
+        await updateCLevelMemberCredential(ctx.db, ctx.user.userId, { passwordHash: newHash });
+      } else {
+        await updateEmployeeCredential(ctx.db, ctx.user.userId, { passwordHash: newHash });
+      }
+
+      // (h) — §5.7 "exceto a sessao atual" (S029): reemite JWT com pwv
+      //       derivado do NOVO material e sobrepoe `ctx.reissuedToken.value`.
+      //       O middleware `authed` ja havia gravado o bearer velho para
+      //       reemissao sliding (perfis administrativos); esta atribuicao
+      //       substitui pelo token novo, alinhado ao pwv atualizado. Para
+      //       Super Admin, o middleware nao reemite (§5.1 sem exp), mas
+      //       aqui a reemissao e obrigatoria para preservar a sessao — sem
+      //       ela, o proximo request cai por pwv divergente.
+      if (ctx.user.role === 'super_admin' && userEmail !== null) {
+        const newPwv = deriveCredentialVersion(newHash + userEmail);
+        ctx.reissuedToken.value = await signSuperAdminToken({
+          superAdminId: ctx.user.superAdminId,
+          credentialVersion: newPwv,
+        });
+      } else if (ctx.user.role !== 'super_admin') {
+        const newPwv = deriveCredentialVersion(newHash);
+        ctx.reissuedToken.value = await signPlatformToken({
+          userId: ctx.user.userId,
+          role: ctx.user.role,
+          companyId: ctx.user.companyId,
+          credentialVersion: newPwv,
+        });
+      }
+
+      // Reset do rate limit no sucesso (padrao canonico dos logins).
+      ctx.rateLimiter.reset(key);
+
+      // (i) — 200 canonica literal §4.7 3i, §13.3.
+      return { msg: MSG_PASSWORD_CHANGE_SUCCESS };
+    }),
+
+  /**
+   * `/alterar-email` — Bloco A do fluxo H3 (DOC 02 §4.8). EXCLUSIVO do
+   * Super Admin (`roleProcedure(['super_admin'])`). Ordem canonica a-i
+   * do §4.8 passo 5, comentada passo a passo. Emite JWT de credencial
+   * com metadado `tipo: 'email_change'` (S027) + `novoEmail` (S028); o
+   * registro em `accessTokens` usa o mesmo enum `type = 'password_reset'`
+   * (§4.8g e §6.5: canonico proibe extensao do enum DOC 01) com TTL
+   * canonico de 24 HOUR (§5.4).
+   *
+   * Anti-enumeracao (S030): NAO verifica pre-existencia de `novoEmail`
+   * em outro super_admin. Uma eventual colisao aparece na confirmacao
+   * (§4.9) como `{ status: 'invalido' }` generico — mesma msg de link
+   * expirado, mesma msg de forjado. Bruno nao descobre existencia de
+   * outros super_admins via mensagem de erro.
+   */
+  requestEmailChange: roleProcedure(['super_admin'])
+    .input(requestEmailChangeInput)
+    .mutation(async ({ ctx, input }): Promise<RequestEmailChangeResult> => {
+      // roleProcedure garante ctx.user.role === 'super_admin' — narrowing.
+      if (ctx.user.role !== 'super_admin') {
+        // Inalcancavel: roleProcedure ja filtrou. Narrowing defensivo.
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Perfil sem permissao.' });
+      }
+      const superAdminId = ctx.user.superAdminId;
+
+      const ip = ctx.ip ?? RATE_LIMIT_IP_UNKNOWN;
+      const rule = RATE_LIMITS.requestEmailChange;
+      const key = buildRateLimitKey(ip, rule.op, String(superAdminId));
+
+      // (a) — Autoriza via JWT + role: roleProcedure ja executou.
+      // (b) — Rate limit `{ip}:request-email-change:{superAdminId}` 5/15min.
+      const status = ctx.rateLimiter.check(key, rule);
+      if (status.blocked) {
+        throwRateLimited(status.retryAfterSeconds);
+      }
+
+      // (c) — Verifica solicitacao pendente ATIVA de email_change. §4.8 5c
+      //       exige distinguir `tipo=email_change` de `tipo=reset` no
+      //       mesmo enum `password_reset` — S031 varre os ativos e decodifica
+      //       o payload de cada um.
+      const pending = await findActiveEmailChangeToken(ctx.db, superAdminId);
+      if (pending !== null) {
+        throw new TRPCError({ code: 'CONFLICT', message: MSG_EMAIL_CHANGE_PENDING });
+      }
+
+      // (d) — bcrypt.compare(senhaAtual) com passwordHash canonico. Falha:
+      //       registerFailure + 401 literal §13.3.
+      const admin = await getSuperAdminById(ctx.db, superAdminId);
+      if (admin === undefined) {
+        // S014 defensiva — sessao valida com superAdmin sumido e estado
+        // corrompido. UNAUTHORIZED coerente com §8.3.
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessao expirada.' });
+      }
+      const senhaAtualOk = await verifyPassword(input.senhaAtual, admin.passwordHash);
+      if (!senhaAtualOk) {
+        ctx.rateLimiter.registerFailure(key, rule);
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: MSG_PASSWORD_ACTUAL_INCORRECT,
+          cause: { field: 'senhaAtual' },
+        });
+      }
+
+      // (e) — Formato do novoEmail: zod ja validou (email + max 255) e a
+      //       igualdade novoEmail === confirmarEmail via .refine. Nada
+      //       adicional aqui.
+
+      // (f) — novoEmail === admin.email atual: 400 literal §4.8 5f.
+      if (input.novoEmail === admin.email) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: MSG_NEW_EMAIL_MUST_DIFFER,
+          cause: { field: 'novoEmail' },
+        });
+      }
+
+      // (g) — Emissao do JWT + INSERT em accessTokens. Concorrencia canonica
+      //       (§5.4): invalida ativos anteriores do mesmo (userType, userId,
+      //       type='password_reset') ANTES da emissao. TTL canonico 24 HOUR
+      //       (§5.4 tabela, UNICO caso de 24h no repo).
+      const now = new Date();
+      await invalidateActiveTokensByUserAndType(
+        ctx.db,
+        'super_admin',
+        superAdminId,
+        'password_reset',
+        now,
+      );
+      const jwt = await signCredentialToken({
+        userId: superAdminId,
+        tipo: 'email_change',
+        userType: 'super_admin',
+        novoEmail: input.novoEmail,
+      });
+      const expiresAt = new Date(now.getTime() + EMAIL_CHANGE_TOKEN_TTL_MS);
+      await createAccessToken(ctx.db, {
+        userType: 'super_admin',
+        userId: superAdminId,
+        token: jwt,
+        type: 'password_reset',
+        expiresAt,
+      });
+
+      // (h) — Template 3 de e-mail (envio real fica no worker de email —
+      //       Fase de motores). Fora do escopo desta ME.
+
+      // Reset do rate limit no sucesso.
+      ctx.rateLimiter.reset(key);
+
+      // (i) — 200 canonica literal §4.8 5i.
+      return { status: 'solicitado', novoEmail: input.novoEmail };
+    }),
+
+  /**
+   * Botao `[Cancelar solicitacao]` do Bloco B do fluxo H3 (§4.8 ultimo
+   * paragrafo). EXCLUSIVO do Super Admin. Invalida qualquer token de
+   * alteracao de e-mail ativo do titular, marcando `usedAt = NOW()`. NAO
+   * afeta tokens de reset comum (`tipo=reset`) — a filtragem por metadado
+   * `tipo=email_change` preserva a distincao canonica.
+   *
+   * Idempotente: sem token ativo, devolve `{ status: 'cancelado' }` sem
+   * erro. O frontend nao precisa saber quantos tokens foram invalidados;
+   * o comportamento canonico e "re-renderiza Bloco A do zero" (§4.8 fim).
+   */
+  cancelEmailChange: roleProcedure(['super_admin'])
+    .input(cancelEmailChangeInput)
+    .mutation(async ({ ctx }): Promise<CancelEmailChangeResult> => {
+      if (ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Perfil sem permissao.' });
+      }
+      const superAdminId = ctx.user.superAdminId;
+
+      // Encontra todos os tokens ATIVOS do titular filtrando por metadado
+      // `tipo=email_change` no payload do JWT. §5.4 concorrencia garante
+      // que na pratica ha no maximo 1 ativo — mas o loop cobre estados
+      // corrompidos ou execucao concorrente.
+      const active = await listActiveTokensByUser(ctx.db, 'super_admin', superAdminId);
+      const now = new Date();
+      for (const record of active) {
+        if (record.type !== 'password_reset') {
+          continue;
+        }
+        const verified = await verifyCredentialToken(record.token);
+        if (!verified.valid) {
+          continue;
+        }
+        if (verified.claims.tipo !== 'email_change') {
+          continue;
+        }
+        await markTokenAsUsed(ctx.db, record.id, now);
+      }
+
+      return { status: 'cancelado' };
+    }),
+
+  /**
+   * `/confirmar-alteracao-email?token=JWT` (§4.9). Consumido pelo link no
+   * novo e-mail — `publicProcedure` (o novo endereco nao tem sessao ainda,
+   * e a sessao no e-mail antigo esta ativa mas nao e requisito). S024
+   * estendida a este consumo: sem rate limit — o bearer e um JWT longo
+   * nao-adivinhavel, e a defesa contra abuso de emissao vive em
+   * `requestEmailChange`.
+   *
+   * Ordem canonica (§4.9 passo 3):
+   *   (a) Decodificar JWT + tipo === 'email_change' + userType ===
+   *       'super_admin' + novoEmail presente → falha: 400 `invalido`.
+   *   (b) Busca accessTokens por token=? + userType='super_admin' +
+   *       type='password_reset' + usedAt IS NULL + expiresAt > NOW → falha:
+   *       400 `expirado`.
+   *   (c) Cruza sub do payload com userId do registro → divergencia: 400
+   *       `invalido`.
+   *   (d) Busca superAdmin por id → sumido: 400 `expirado` (defensivo).
+   *   (e) UPDATE superAdmins.email + markTokenAsUsed. UNIQUE constraint
+   *       captura colisao concorrente: mapeia para 400 `invalido` (S030
+   *       anti-enum).
+   *   (f) 200 `{ status: 'sucesso' }`. Invalidacao "inclusive a atual"
+   *       (§5.7 segunda linha) automatica via S011 email-based: pwv do
+   *       Super Admin muda com a troca do e-mail, todos os JWTs em
+   *       circulacao caem no `authed`.
+   *
+   * As duas UPDATEs (superAdmins.email + accessTokens.usedAt) NAO estao
+   * em transacao SQL formal: o driver mysql2 padrao nao promove a
+   * atomicidade. Aceitavel canonicamente — sequencia (email primeiro,
+   * token usedAt depois) garante que uma falha no meio nao permite reuso
+   * do token: se o UPDATE do email quebra (UNIQUE), o token permanece
+   * ativo e o Super Admin pode tentar novamente ou cancelar. Se o
+   * markTokenAsUsed quebra apos o UPDATE do email, o token expira em 24h
+   * (§5.4). Sem janela de reuso pratica.
+   */
+  confirmEmailChange: publicProcedure
+    .input(confirmEmailChangeInput)
+    .mutation(async ({ ctx, input }): Promise<ConfirmEmailChangeResult> => {
+      // (a) — Decodifica JWT. Assinatura invalida OU tipo diferente de
+      //       'email_change' OU userType diferente de 'super_admin' OU
+      //       novoEmail ausente → 'invalido' (S030 anti-enum: mesma msg do
+      //       expirado, so o status difere no cause para o front).
+      const verified = await verifyCredentialToken(input.token);
+      if (!verified.valid) {
+        throwEmailChangeInvalido();
+      }
+      if (verified.claims.tipo !== 'email_change') {
+        throwEmailChangeInvalido();
+      }
+      if (verified.claims.userType !== 'super_admin') {
+        throwEmailChangeInvalido();
+      }
+      if (verified.claims.novoEmail === undefined) {
+        // Estruturalmente inalcancavel apos S028 (verifyCredentialToken
+        // rejeita tipo=email_change sem novoEmail), mas o narrowing do TS
+        // exige o guard explicito.
+        throwEmailChangeInvalido();
+      }
+      const superAdminId = verified.claims.userId;
+      const novoEmail = verified.claims.novoEmail;
+
+      // (b) — Busca accessTokens pelo token bruto (UNIQUE §4.8). Falhas
+      //       de estado (nao encontrado / usedAt / expiresAt / type) todas
+      //       viram 'expirado'.
+      const record = await getAccessTokenByToken(ctx.db, input.token);
+      if (record === undefined) {
+        throwEmailChangeExpirado();
+      }
+      if (record.usedAt !== null) {
+        throwEmailChangeExpirado();
+      }
+      const now = new Date();
+      if (record.expiresAt.getTime() <= now.getTime()) {
+        throwEmailChangeExpirado();
+      }
+      if (record.type !== 'password_reset') {
+        throwEmailChangeExpirado();
+      }
+
+      // (c) — Cruza userType + userId com o payload verificado. Divergencia
+      //       aqui e token forjado ou bug — 'invalido'.
+      if (record.userType !== 'super_admin' || record.userId !== superAdminId) {
+        throwEmailChangeInvalido();
+      }
+
+      // (d) — Titular deve existir. Sumido: defensivo — 'expirado' (nao
+      //       vaza informacao sobre estado interno).
+      const admin = await getSuperAdminById(ctx.db, superAdminId);
+      if (admin === undefined) {
+        throwEmailChangeExpirado();
+      }
+
+      // (e) — UPDATE do e-mail. UNIQUE violation (novoEmail tomado por
+      //       outro super_admin nesse meio-tempo) mapeia para 'invalido'
+      //       (S030). Erros de rede do banco sobem naturalmente.
+      try {
+        await updateSuperAdminEmail(ctx.db, superAdminId, novoEmail);
+      } catch (err) {
+        if (isDuplicateEntryError(err)) {
+          throwEmailChangeInvalido();
+        }
+        throw err;
+      }
+      await markTokenAsUsed(ctx.db, record.id, now);
+
+      // (f) — 200 canonica literal §4.9 3d. Invalidacao "inclusive a atual"
+      //       automatica via S011 (email participa da derivacao do pwv).
+      return { status: 'sucesso' };
     }),
 });
