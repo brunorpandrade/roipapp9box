@@ -16,6 +16,7 @@
 
 import { protectedProcedure, publicProcedure, roleProcedure, router } from '../trpc';
 import { authRouter } from './auth';
+import { createCycleUnlockRequestsRouter } from './cycleUnlockRequests';
 
 /** Sub-router de saude: liveness sem sessao. */
 const healthRouter = router({
@@ -43,12 +44,22 @@ const adminRouter = router({
   }),
 });
 
+/**
+ * Sub-router `cycleUnlockRequests` (ME-032, Bloco B3). Factory instanciada
+ * com defaults no-op — motor de alertas administrativos ainda nao existe
+ * (DOC 06 §8, Bloco B6). Quando nascer, o `appRouter` sera atualizado com
+ * `createCycleUnlockRequestsRouter({ evaluateAdminAlerts: motorReal })`
+ * sem editar o sub-router. Padrao S049 (S043/S046 estendido).
+ */
+const cycleUnlockRequestsRouter = createCycleUnlockRequestsRouter();
+
 /** Router raiz da plataforma. */
 export const appRouter = router({
   health: healthRouter,
   session: sessionRouter,
   admin: adminRouter,
   auth: authRouter,
+  cycleUnlockRequests: cycleUnlockRequestsRouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */
