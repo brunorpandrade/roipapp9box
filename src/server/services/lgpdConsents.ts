@@ -138,3 +138,61 @@ export async function deleteLgpdConsentsByCompany(
   const [result] = await db.delete(lgpdConsents).where(eq(lgpdConsents.companyId, companyId));
   return result.affectedRows;
 }
+
+// ME-023 — high-level orquestrador do gate LGPD ---------------------------
+//
+// Consumido pelos Route Handlers do portal (`POST /api/portal/login` e
+// `POST /api/portal/consent-lgpd`). Compoe as primitivas ja existentes;
+// nao introduz SQL novo. Titular polimorfico A: `type` distingue
+// employee vs C-level.
+//
+// Fonte da versao vigente: env var `LGPD_TERM_VERSION` (§7.3), lida em
+// `src/lib/env.ts`. Este service e agnostico do valor — recebe como
+// parametro para manter as consultas puras (facil testar).
+
+/** Tipo canonico do titular do consentimento (polimorfico A). */
+type LgpdTitularType = 'employee' | 'clevel';
+
+/**
+ * Verifica se o titular tem consentimento vigente para a versao
+ * canonica do termo. Consulta a UNIQUE `uq_lgpd_employee` ou
+ * `uq_lgpd_clevel` (registro unico por versao). Retorna false quando
+ * nao ha registro para a versao (gate pendente §7.2 caso d).
+ */
+export async function hasValidLGPDConsent(
+  db: RoipDatabase,
+  titularType: LgpdTitularType,
+  titularId: number,
+  versaoVigente: string,
+): Promise<boolean> {
+  const consent =
+    titularType === 'employee'
+      ? await getLgpdConsentByEmployeeVersao(db, titularId, versaoVigente)
+      : await getLgpdConsentByClevelVersao(db, titularId, versaoVigente);
+  return consent !== undefined;
+}
+
+/**
+ * Grava o consentimento vigente do titular. Idempotencia — se ja existe
+ * registro para (titular, versao) (UNIQUE canonica), reaproveita o id
+ * existente sem lancar (§7.3: "consentimento unico por versao").
+ * Retorna o id do consentimento (novo ou pre-existente).
+ */
+export async function recordLGPDConsent(
+  db: RoipDatabase,
+  companyId: number,
+  titularType: LgpdTitularType,
+  titularId: number,
+  versaoVigente: string,
+): Promise<number> {
+  const existing =
+    titularType === 'employee'
+      ? await getLgpdConsentByEmployeeVersao(db, titularId, versaoVigente)
+      : await getLgpdConsentByClevelVersao(db, titularId, versaoVigente);
+  if (existing !== undefined) {
+    return existing.id;
+  }
+  return titularType === 'employee'
+    ? await insertLgpdConsentForEmployee(db, companyId, titularId, versaoVigente)
+    : await insertLgpdConsentForClevel(db, companyId, titularId, versaoVigente);
+}
