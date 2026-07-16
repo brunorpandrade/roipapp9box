@@ -17,6 +17,7 @@
 import { protectedProcedure, publicProcedure, roleProcedure, router } from '../trpc';
 import { authRouter } from './auth';
 import { createCycleUnlockRequestsRouter } from './cycleUnlockRequests';
+import { createQuarterlyCalculationRouter } from './quarterlyCalculation';
 
 /** Sub-router de saude: liveness sem sessao. */
 const healthRouter = router({
@@ -53,6 +54,18 @@ const adminRouter = router({
  */
 const cycleUnlockRequestsRouter = createCycleUnlockRequestsRouter();
 
+/**
+ * Sub-router `quarterlyCalculation` (ME-034, Bloco B3). Factory instanciada
+ * com defaults reais — o motor `roiCalculationEngine` (ME-033) ja existe
+ * e a DI canonica S060 aponta para ele por default. Cobre 3 procs publicas
+ * do §3.11 (`triggerRetroactiveRecalculation`, `getQuarterlyResults`,
+ * `getCompanyQuarterlyStatus`). Procs internas do §3.11
+ * (`triggerQuarterlyCalculation`, `recalculateAfterUnlock`) sao hooks do
+ * motor consumidos por orchestrator/cron via DI — precedente canonico
+ * ME-030 §19.13.
+ */
+const quarterlyCalculationRouter = createQuarterlyCalculationRouter();
+
 /** Router raiz da plataforma. */
 export const appRouter = router({
   health: healthRouter,
@@ -60,6 +73,7 @@ export const appRouter = router({
   admin: adminRouter,
   auth: authRouter,
   cycleUnlockRequests: cycleUnlockRequestsRouter,
+  quarterlyCalculation: quarterlyCalculationRouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */
