@@ -108,3 +108,43 @@ export async function markTokenAsUsed(
 export async function deleteAccessTokenById(db: RoipDatabase, id: number): Promise<void> {
   await db.delete(accessTokens).where(eq(accessTokens.id, id));
 }
+
+/**
+ * Invalida (marca `usedAt = now`) todos os tokens ATIVOS do mesmo par
+ * (`userType`, `userId`, `type`). Ativo = `usedAt IS NULL` E `expiresAt > now`.
+ * Retorna o numero de linhas afetadas para observabilidade.
+ *
+ * Regra canonica (DOC 02 §5.4 — Concorrencia): "ao gerar novo `first_access`
+ * ou `password_reset` para o mesmo usuario, tokens anteriores do mesmo `type`
+ * do mesmo usuario sao invalidados por marcacao ... Apenas 1 token ativo por
+ * (`userType`, `userId`, `type`) por vez." Chamador canonico:
+ * `auth.forgotPassword` (ME-022b) e o botao de envio de link na ficha do
+ * colaborador/C-level (§5.5, ME-022c). Este service nao decide QUANDO
+ * invalidar — apenas exp0e a operacao atomica.
+ */
+export async function invalidateActiveTokensByUserAndType(
+  db: RoipDatabase,
+  userType: NewAccessToken['userType'],
+  userId: number,
+  type: NewAccessToken['type'],
+  now: Date = new Date(),
+): Promise<number> {
+  const result = await db
+    .update(accessTokens)
+    .set({ usedAt: now })
+    .where(
+      and(
+        eq(accessTokens.userType, userType),
+        eq(accessTokens.userId, userId),
+        eq(accessTokens.type, type),
+        isNull(accessTokens.usedAt),
+        gt(accessTokens.expiresAt, now),
+      ),
+    );
+  // driver mysql2 devolve `{ affectedRows: number }` no resultado; a API
+  // do drizzle expoe isso como `result[0].affectedRows`. Como o tipo do
+  // retorno e generico entre dialects, cast defensivo — a coluna e
+  // garantida pelo driver mysql2, unico dialect deste repositorio.
+  const rowsMeta = (result as unknown as [{ affectedRows?: number }])[0];
+  return rowsMeta?.affectedRows ?? 0;
+}

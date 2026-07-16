@@ -49,3 +49,31 @@ export async function getSuperAdminByEmail(db: RoipDatabase, email: string) {
 export async function listSuperAdmins(db: RoipDatabase) {
   return await db.select().from(superAdmins).orderBy(asc(superAdmins.id));
 }
+
+/**
+ * Atualiza o `passwordHash` de um Super Admin. Consumidores canonicos
+ * (DOC 02 §4.5, §4.7):
+ *
+ *   - `auth.resetPassword` (ME-022b): via link `[Esqueci minha senha]` de
+ *     `/login-super-admin` (§4.4).
+ *   - `auth.changePassword` (ME-022c): via `/alterar-senha` (§4.7).
+ *
+ * Nao existe `first_access` para Super Admin (S429 canonizada + DOC 02
+ * §5.4 lista apenas `password_reset` para superAdmins): Bruno nasce com
+ * senha semeada §18.1 DOC 01. A tabela nao tem `passwordSet` — o valor e
+ * implicito verdadeiro apos o seed.
+ *
+ * A troca de `passwordHash` invalida naturalmente todas as sessoes JWT
+ * anteriores (§5.7 via S011: o `pwv` do Super Admin e derivado de
+ * `passwordHash + email`, logo muda com a troca de senha).
+ *
+ * Retorna o numero de linhas afetadas.
+ */
+export async function updateSuperAdminPassword(
+  db: RoipDatabase,
+  id: number,
+  passwordHash: string,
+): Promise<number> {
+  const [result] = await db.update(superAdmins).set({ passwordHash }).where(eq(superAdmins.id, id));
+  return result.affectedRows;
+}

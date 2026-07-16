@@ -121,3 +121,34 @@ export async function deleteEmployeeById(db: RoipDatabase, id: number): Promise<
   const [result] = await db.delete(employees).where(eq(employees.id, id));
   return result.affectedRows;
 }
+
+/**
+ * Atualiza a credencial (`passwordHash` e opcionalmente `passwordSet`) de
+ * um colaborador. Consumidores canonicos (DOC 02 §4.5, §4.7):
+ *
+ *   - `auth.resetPassword` (ME-022b): passa `passwordSet` omitido (nao
+ *     altera o marcador; um reset assume `passwordSet=true` ja verdadeiro).
+ *   - `auth.firstAccess` (ME-022b): passa `passwordSet: true` (primeira
+ *     definicao de senha — libera o login §5.5).
+ *   - `auth.changePassword` (ME-022c): passa `passwordSet` omitido.
+ *
+ * A troca de `passwordHash` invalida naturalmente todas as sessoes JWT
+ * anteriores (§5.7 via S011: o `pwv` derivado do hash muda; tokens em
+ * circulacao caem no middleware `authed`).
+ *
+ * Retorna o numero de linhas afetadas.
+ */
+export async function updateEmployeeCredential(
+  db: RoipDatabase,
+  id: number,
+  data: { passwordHash: string; passwordSet?: boolean },
+): Promise<number> {
+  const patch: { passwordHash: string; passwordSet?: boolean } = {
+    passwordHash: data.passwordHash,
+  };
+  if (data.passwordSet !== undefined) {
+    patch.passwordSet = data.passwordSet;
+  }
+  const [result] = await db.update(employees).set(patch).where(eq(employees.id, id));
+  return result.affectedRows;
+}
