@@ -19,6 +19,7 @@ import { authRouter } from './auth';
 import { createCycleUnlockRequestsRouter } from './cycleUnlockRequests';
 import { createDashboardRouter } from './dashboard';
 import { createEconomicDiagnosisRouter } from './economicDiagnosis';
+import { createMonthlyClosureRouter } from './monthlyClosure';
 import { createMonthlyDataRouter } from './monthlyData';
 import { createQuarterlyCalculationRouter } from './quarterlyCalculation';
 
@@ -98,6 +99,19 @@ const dashboardRouter = createDashboardRouter();
  */
 const monthlyDataRouter = createMonthlyDataRouter();
 
+/**
+ * Sub-router `monthlyClosure` (ME-037, Bloco B3). Superficie tRPC de
+ * transicao de estado do mes — 4 procs canonicas do §3.11:
+ * `getClosureStatus`, `unlockMonth`, `closeMonthScheduled`,
+ * `triggerMonthlyProcessing`. Factory com DI (S084): os hooks
+ * `processClosedMonth`/`runDailyClosureJob` apontam por default REAL ao
+ * motor `monthlyClosureOrchestrator` (ME-031) — que ganha aqui seu
+ * primeiro chamador de router (antes so exercitado por teste). Fecha o
+ * loop operacional do Eixo X: monthlyData escreve -> monthlyClosure
+ * transiciona -> motor ME-031/ME-033 calcula -> ME-034/ME-035 leem.
+ */
+const monthlyClosureRouter = createMonthlyClosureRouter();
+
 /** Router raiz da plataforma. */
 export const appRouter = router({
   health: healthRouter,
@@ -109,6 +123,7 @@ export const appRouter = router({
   economicDiagnosis: economicDiagnosisRouter,
   dashboard: dashboardRouter,
   monthlyData: monthlyDataRouter,
+  monthlyClosure: monthlyClosureRouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */
