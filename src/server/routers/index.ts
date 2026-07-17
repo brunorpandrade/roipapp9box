@@ -19,6 +19,7 @@ import { authRouter } from './auth';
 import { createCycleUnlockRequestsRouter } from './cycleUnlockRequests';
 import { createDashboardRouter } from './dashboard';
 import { createEconomicDiagnosisRouter } from './economicDiagnosis';
+import { createInstrumentCRouter } from './instrumentC';
 import { createMonthlyClosureRouter } from './monthlyClosure';
 import { createMonthlyDataRouter } from './monthlyData';
 import { createQuarterlyCalculationRouter } from './quarterlyCalculation';
@@ -112,6 +113,20 @@ const monthlyDataRouter = createMonthlyDataRouter();
  */
 const monthlyClosureRouter = createMonthlyClosureRouter();
 
+/**
+ * Sub-router `instrumentC` (ME-038, Bloco B3). Primeira superficie tRPC
+ * de escrita do Eixo Y — 3 procs canonicas do §6.8 sob a estreitura de
+ * escopo S089: `saveInstrumentCAssessment`, `getAssessment`,
+ * `reopenAssessment`. Factory com DI limitada ao relogio (S084
+ * estendido; S088: sem hook de motor de plenitude — motor futuro fara
+ * [EDIT] neste router para injetar `onAssessmentSaved` real). Consome
+ * services ja existentes (`instrumentC_assessments`,
+ * `instrumentUnlockLog`, `employeeLeaderHistory`) com chamador real —
+ * RV-13 estrito. Abre a pre-condicao canonica que o motor de plenitude
+ * (§6.4) e o 9-Box (§7.1) exigem.
+ */
+const instrumentCRouter = createInstrumentCRouter();
+
 /** Router raiz da plataforma. */
 export const appRouter = router({
   health: healthRouter,
@@ -124,6 +139,7 @@ export const appRouter = router({
   dashboard: dashboardRouter,
   monthlyData: monthlyDataRouter,
   monthlyClosure: monthlyClosureRouter,
+  instrumentC: instrumentCRouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */
