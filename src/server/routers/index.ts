@@ -17,6 +17,8 @@
 import { protectedProcedure, publicProcedure, roleProcedure, router } from '../trpc';
 import { authRouter } from './auth';
 import { createCycleUnlockRequestsRouter } from './cycleUnlockRequests';
+import { createDashboardRouter } from './dashboard';
+import { createEconomicDiagnosisRouter } from './economicDiagnosis';
 import { createQuarterlyCalculationRouter } from './quarterlyCalculation';
 
 /** Sub-router de saude: liveness sem sessao. */
@@ -66,6 +68,23 @@ const cycleUnlockRequestsRouter = createCycleUnlockRequestsRouter();
  */
 const quarterlyCalculationRouter = createQuarterlyCalculationRouter();
 
+/**
+ * Sub-router `economicDiagnosis` (ME-035, Bloco B3). Leitura pura de
+ * `companyEconomicDiagnosis` — 2 procs canonicas do §3.11
+ * (`getCompanyDiagnosis`, `getDiagnosisHistory`). Factory sem parametros
+ * (nao consome motor, apenas a tabela canonica).
+ */
+const economicDiagnosisRouter = createEconomicDiagnosisRouter();
+
+/**
+ * Sub-router `dashboard` (ME-035, Bloco B3). Leitura pura das superficies
+ * de dashboard canonicas — 2 procs do §3.11
+ * (`getEmployeeDashboard`, `getCompanyEconomicDashboard`). Aplica os
+ * guards canonicos: D035 (§15.4), inativo (§3.13), cadeia direta de
+ * lider (S066) e mascaramento canonico da matriz DOC 02 §3.3 (S067).
+ */
+const dashboardRouter = createDashboardRouter();
+
 /** Router raiz da plataforma. */
 export const appRouter = router({
   health: healthRouter,
@@ -74,6 +93,8 @@ export const appRouter = router({
   auth: authRouter,
   cycleUnlockRequests: cycleUnlockRequestsRouter,
   quarterlyCalculation: quarterlyCalculationRouter,
+  economicDiagnosis: economicDiagnosisRouter,
+  dashboard: dashboardRouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */
