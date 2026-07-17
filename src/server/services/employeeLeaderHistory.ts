@@ -7,7 +7,7 @@
 // caller — nao imposta aqui como CHECK (o schema segue o §4.6 sem
 // constraint SQL).
 
-import { and, asc, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNull, lte, or } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../db/client';
 import { employeeLeaderHistory } from '../../db/schema';
@@ -91,4 +91,44 @@ export async function listLeaderHistoryByBatch(db: RoipDatabase, transferBatchId
     .from(employeeLeaderHistory)
     .where(eq(employeeLeaderHistory.transferBatchId, transferBatchId))
     .orderBy(asc(employeeLeaderHistory.id));
+}
+
+/**
+ * Retorna o vinculo do colaborador ATIVO EM UM MES ESPECIFICO (semantica
+ * de "vinculo-no-mes" do DOC 03 §3.11 — `monthlyData.saveMonthlyLeaderData`,
+ * `getMonthlyInputForm(aba='lider')` e `getPendentLeaders(escopo=
+ * 'minha_cadeia')`). Distinta da vigencia canonica do S066
+ * (`getActiveLeaderHistoryByEmployee`): abrange meses passados nos quais o
+ * lider ja pode ter sido substituido — o vinculo correto para preenchimento
+ * do mes de referencia e o que cobria a data em questao, nao o vigente.
+ *
+ * Criterio canonico: `dataInicio <= ultimo_dia_do_mes` E
+ * (`dataFim IS NULL` OU `dataFim >= primeiro_dia_do_mes`). Cobre transicoes
+ * intra-mes (rare) — nesse caso o helper retorna o mais recente por
+ * `dataInicio` decrescente, alinhado com "quem estava vigente ao fim do
+ * mes de referencia".
+ *
+ * `mes` no formato `YYYY-MM` (varchar canonico das tabelas mensais).
+ * Retorna `undefined` se nao houver vinculo cobrindo o mes.
+ */
+export async function resolveLeaderLinkAtMonth(db: RoipDatabase, employeeId: number, mes: string) {
+  const [anoStr, mesStr] = mes.split('-');
+  const ano = Number(anoStr);
+  const mesNum = Number(mesStr);
+  const firstDay = new Date(Date.UTC(ano, mesNum - 1, 1));
+  const lastDay = new Date(Date.UTC(ano, mesNum, 0));
+
+  const rows = await db
+    .select()
+    .from(employeeLeaderHistory)
+    .where(
+      and(
+        eq(employeeLeaderHistory.employeeId, employeeId),
+        lte(employeeLeaderHistory.dataInicio, lastDay),
+        or(isNull(employeeLeaderHistory.dataFim), gte(employeeLeaderHistory.dataFim, firstDay)),
+      ),
+    )
+    .orderBy(desc(employeeLeaderHistory.dataInicio), desc(employeeLeaderHistory.id))
+    .limit(1);
+  return rows[0];
 }

@@ -118,6 +118,37 @@ export async function updatePerformanceVariableCalculo(
 }
 
 /**
+ * Atualiza APENAS os campos de entrada do lider: `demanda` e `executado`.
+ * Nao toca em `desempenho`/`peso` (campos do motor mensal, ver
+ * `updatePerformanceVariableCalculo`). Identificacao pelo par UNIQUE
+ * (performanceDataId, variableIndex). Retorna o numero de linhas
+ * afetadas.
+ *
+ * Escrito pelo sub-router `monthlyData.saveMonthlyLeaderData` (Bloco B3,
+ * ME-036). Aplicado na semantica UPSERT canonica do router: o caller
+ * consulta pela chave UNIQUE; se existe, chama este setter; se nao,
+ * chama `insertPerformanceVariableData`. Autoria segregada por dono do
+ * dado ("input lider" vs "input motor") — mesma logica do §4.3.
+ */
+export async function updatePerformanceVariableInputLeader(
+  db: RoipDatabase,
+  performanceDataId: number,
+  variableIndex: number,
+  patch: { demanda: string; executado: string },
+): Promise<number> {
+  const [result] = await db
+    .update(performanceVariableData)
+    .set({ demanda: patch.demanda, executado: patch.executado })
+    .where(
+      and(
+        eq(performanceVariableData.performanceDataId, performanceDataId),
+        eq(performanceVariableData.variableIndex, variableIndex),
+      ),
+    );
+  return result.affectedRows;
+}
+
+/**
  * Remove todas as linhas de variaveis associadas a uma linha de
  * `performanceData`. Em producao esta limpeza ocorre por CASCADE
  * automatica ao deletar a linha pai; este setter existe para teardown

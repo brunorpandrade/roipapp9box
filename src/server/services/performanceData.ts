@@ -121,6 +121,41 @@ export async function updatePerformanceDataCalculo(
 }
 
 /**
+ * Atualiza APENAS os campos de entrada do RH: `custoTotalMes` e `faltas`.
+ * Nao toca em `diasUteis` (fonte canonica em `companyMonthlyData` — §4.3;
+ * o campo homonimo desta tabela nao e gravado nem lido pelo motor) nem em
+ * `assiduidade`/`indiceDesempenho`/`calculadoEm` (campos do motor mensal,
+ * ver `updatePerformanceDataCalculo`). Identificacao pelo trio UNIQUE
+ * (companyId, employeeId, mes). Retorna o numero de linhas afetadas.
+ *
+ * Escrito pelo sub-router `monthlyData.saveMonthlyRHData` (Bloco B3,
+ * ME-036). Aplicado na semantica UPSERT canonica do router: o caller
+ * consulta pela chave UNIQUE; se existe, chama este setter; se nao,
+ * chama `insertPerformanceData`. Isolar o UPSERT no router preserva a
+ * autoria por dono do dado ("input RH" vs "input motor" — mesma logica
+ * de `companyMonthlyData` do §4.3).
+ */
+export async function updatePerformanceDataInputRH(
+  db: RoipDatabase,
+  companyId: number,
+  employeeId: number,
+  mes: string,
+  patch: { custoTotalMes: string; faltas: number },
+): Promise<number> {
+  const [result] = await db
+    .update(performanceData)
+    .set({ custoTotalMes: patch.custoTotalMes, faltas: patch.faltas })
+    .where(
+      and(
+        eq(performanceData.companyId, companyId),
+        eq(performanceData.employeeId, employeeId),
+        eq(performanceData.mes, mes),
+      ),
+    );
+  return result.affectedRows;
+}
+
+/**
  * Remove uma linha pelo `id`. Somente para teardown de testes — em
  * producao a tabela e retentiva (o ON DELETE RESTRICT sobre `employees`
  * bloqueia). Retorna o numero de linhas afetadas.

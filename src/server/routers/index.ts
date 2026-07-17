@@ -19,6 +19,7 @@ import { authRouter } from './auth';
 import { createCycleUnlockRequestsRouter } from './cycleUnlockRequests';
 import { createDashboardRouter } from './dashboard';
 import { createEconomicDiagnosisRouter } from './economicDiagnosis';
+import { createMonthlyDataRouter } from './monthlyData';
 import { createQuarterlyCalculationRouter } from './quarterlyCalculation';
 
 /** Sub-router de saude: liveness sem sessao. */
@@ -85,6 +86,18 @@ const economicDiagnosisRouter = createEconomicDiagnosisRouter();
  */
 const dashboardRouter = createDashboardRouter();
 
+/**
+ * Sub-router `monthlyData` (ME-036, Bloco B3). Superficie principal de
+ * escrita mensal do Eixo X — 5 procs canonicas do §3.11:
+ * `getMonthlyInputForm`, `saveMonthlyRHData`, `saveMonthlyLeaderData`,
+ * `getLeadersStatus`, `getPendentLeaders`. Factory sem parametros —
+ * router de escrita direta sem DI de motor (motores sao acionados por
+ * `monthlyClosure.*`, escopo de ME futura). Fecha o circuito Eixo X:
+ * RH escreve mensal -> motor ME-031 fecha mes -> motor ME-033 calcula
+ * ROI trimestral -> routers ME-034/ME-035 leem tudo.
+ */
+const monthlyDataRouter = createMonthlyDataRouter();
+
 /** Router raiz da plataforma. */
 export const appRouter = router({
   health: healthRouter,
@@ -95,6 +108,7 @@ export const appRouter = router({
   quarterlyCalculation: quarterlyCalculationRouter,
   economicDiagnosis: economicDiagnosisRouter,
   dashboard: dashboardRouter,
+  monthlyData: monthlyDataRouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */
