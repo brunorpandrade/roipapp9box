@@ -19,6 +19,7 @@ import { authRouter } from './auth';
 import { createCycleUnlockRequestsRouter } from './cycleUnlockRequests';
 import { createDashboardRouter } from './dashboard';
 import { createEconomicDiagnosisRouter } from './economicDiagnosis';
+import { createInstrumentARouter } from './instrumentA';
 import { createInstrumentCRouter } from './instrumentC';
 import { createMonthlyClosureRouter } from './monthlyClosure';
 import { createMonthlyDataRouter } from './monthlyData';
@@ -127,6 +128,23 @@ const monthlyClosureRouter = createMonthlyClosureRouter();
  */
 const instrumentCRouter = createInstrumentCRouter();
 
+/**
+ * Sub-router `instrumentA` (ME-039, Bloco B3). Fecha a SEGUNDA e ULTIMA
+ * perna canonica de escrita do Eixo Y — par simetrico ao `instrumentC`
+ * entregue na ME-038. Escopo canonico enxuto (S089/S093 estreitados):
+ * apenas `reopenResponse` (§6.8 sexta linha — desbloqueio manual por
+ * Bruno). A ponta de escrita "normal" do A vive no Route Handler
+ * canonico `POST /api/portal/save-instrument-a` (§6.8 primeira linha —
+ * portal autenticado por CPF via `portalToken`, NAO via tRPC). Factory
+ * com DI limitada ao relogio (S100, S084 estendido; S094: sem hook de
+ * motor de plenitude — motor futuro fara [EDIT] tanto neste router
+ * quanto no Route Handler para injetar `onResponseSaved` real). Com A
+ * escrito, o motor de plenitude (§6.4) pode nascer na ME seguinte ja
+ * com AMBAS as fontes (A e C) disponiveis — RV-13 satisfeito
+ * naturalmente sem hook no-op.
+ */
+const instrumentARouter = createInstrumentARouter();
+
 /** Router raiz da plataforma. */
 export const appRouter = router({
   health: healthRouter,
@@ -140,6 +158,7 @@ export const appRouter = router({
   monthlyData: monthlyDataRouter,
   monthlyClosure: monthlyClosureRouter,
   instrumentC: instrumentCRouter,
+  instrumentA: instrumentARouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */
