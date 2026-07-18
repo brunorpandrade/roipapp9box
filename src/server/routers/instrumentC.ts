@@ -1,25 +1,36 @@
-// ROIP APP 9BOX — sub-router `instrumentC` (ME-038, editado em ME-040).
+// ROIP APP 9BOX — sub-router `instrumentC` (ME-038, editado em ME-040
+// e ME-042).
 //
 // Nona ME do Bloco B3 (ME-038) — abriu a ponta de escrita do Eixo Y.
-// Decima primeira ME do Bloco B3 (ME-040) — pluga o hook canonico do
-// motor de plenitude (§6.4). Com o motor entregue na ME-040, S088 e
-// satisfeito naturalmente: o hook `plenitudeEngine.recalculatePlenitude`
-// e chamado apos as transacoes atomicas de INSERT e OVERWRITE do C
-// (padrao S060 herdado do `quarterlyCalculation` × `roiCalculationEngine`).
+// Decima primeira ME do Bloco B3 (ME-040) — plugou o hook canonico do
+// motor de plenitude (§6.4). Decima-terceira ME do Bloco B3 (ME-042) —
+// adiciona a leitura publica `getPendencies` do §6.8 quarta linha,
+// alinhando a superficie de acompanhamento de coleta do Instrumento
+// C com o §19.4 (leitura publica do Eixo Y).
 //
-// Procedures canonicas (DOC 03 §6.8 — a leitura literal do §6.8 lista 3
-// procs sob o namespace `instrumentC`; S089 estreita o escopo desta ME
-// para `save`+`getAssessment`+`reopenAssessment`, mantendo o par escrita/
-// desbloqueio no mesmo router — precedente forte da ME-037):
-//   - `instrumentC.saveInstrumentCAssessment` — DOC 03 §6.3 + §6.8
-//   - `instrumentC.getAssessment`             — leitura da avaliacao (§6.3)
-//   - `instrumentC.reopenAssessment`          — desbloqueio manual (§6.7)
+// Com o motor entregue na ME-040, S088 e satisfeito naturalmente: o
+// hook `plenitudeEngine.recalculatePlenitude` e chamado apos as
+// transacoes atomicas de INSERT e OVERWRITE do C (padrao S060 herdado
+// do `quarterlyCalculation` × `roiCalculationEngine`). Na ME-041 o
+// motor 9-Box passou a ser acionado in-band pelo motor de plenitude
+// via facade S113 (dispensa hook direto neste router).
 //
-// NAO pertence ao escopo desta ME (correcao RV-09 sobre a parafrase de
-// abertura): `getPendencies` (agregacao transversal com JOIN em employees
-// e employeeLeaderHistory + escopo hierarquico) — merece ME propria,
-// analogo a `getLeadersStatus` que veio separado do `saveMonthlyRHData`
-// na ME-036. Incluir aqui inflaria a ME sem novo chamador de servico.
+// Procedures canonicas (DOC 03 §6.8 — a leitura literal do §6.8 lista
+// 4 procs sob o namespace `instrumentC` no escopo desta camada; ME-038
+// entregou 3 delas via S089, esta ME-042 fecha o §6.8 quarta linha):
+//   - `instrumentC.saveInstrumentCAssessment` — DOC 03 §6.3 + §6.8 (ME-038)
+//   - `instrumentC.getAssessment`             — leitura da avaliacao (ME-038)
+//   - `instrumentC.reopenAssessment`          — desbloqueio manual (ME-038)
+//   - `instrumentC.getPendencies` (ME-042 — §6.8 quarta linha + §19.4
+//     oitava linha) — retorna lista de pendencias de C do lider logado
+//     com escopo de cadeia. Autorizacao por perfil (§6.8): RH+Bruno
+//     escopo empresa; Lider+C-level escopo cadeia direta descendente.
+//     Cada pendencia representa um vinculo ATIVO (`employeeLeaderHistory`
+//     com `dataFim IS NULL`) em que o lider ou C-level do vinculo NAO
+//     preencheu a avaliacao do trimestre para o liderado. S121:
+//     `status = 'atrasado'` quando `now > dataCorte` canonica (§6.3
+//     dia 10 do mes subsequente); caso contrario, 'pendente'.
+//     Colaboradores ATIVOS apenas (§7.6 replicado).
 //
 // Convencoes canonicas herdadas de S049/S060/S084 (ME-032/ME-034/ME-037):
 //   - `saveInstrumentCAssessment` (S089+S090): transacao atomica dos 20
@@ -74,13 +85,14 @@
 // Testes: `tests/integration/instrumentC-router.test.ts`.
 
 import { TRPCError } from '@trpc/server';
-import { and, desc, eq, gt } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { RoipDatabase } from '../../db/client';
 import {
   cLevelMembers,
   companies,
+  employeeLeaderHistory,
   employees,
   instrumentC_assessments,
   instrumentUnlockLog,
@@ -262,6 +274,77 @@ export interface ReopenAssessmentResult {
   expiraEm: Date;
 }
 
+/**
+ * §6.8 quarta linha + S121 (ME-042) — status de coleta canonico de
+ * uma pendencia do Instrumento C. `'atrasado'` quando `now`
+ * ultrapassou a `dataCorte` canonica (§6.3 dia 10 do mes subsequente);
+ * caso contrario, `'pendente'`. Semanticamente identico a
+ * `StatusPendenciaInstrumentA` — replicado localmente para preservar
+ * independencia entre routers de dominios distintos (padrao S092/S096
+ * de nao cruzar imports entre routers de instrumentos).
+ */
+export const STATUS_PENDENCIA_INSTRUMENT_C_VALUES = ['pendente', 'atrasado'] as const;
+
+/** Status canonico de uma pendencia no §6.8 quarta linha. */
+export type StatusPendenciaInstrumentC = (typeof STATUS_PENDENCIA_INSTRUMENT_C_VALUES)[number];
+
+/**
+ * §6.8 quarta linha (ME-042) — item canonico da lista `pendencias`
+ * do `getPendencies`. Representa um vinculo ATIVO em que o avaliador
+ * (lider ou C-level) NAO preencheu a avaliacao do trimestre para o
+ * liderado. Contem atributos canonicos do colaborador liderado
+ * (`employeeId`, `nome`, `departamento`, `cargo`) e a identificacao
+ * XOR do avaliador (`liderId` OU `clevelId`, mutuamente exclusivos —
+ * padrao XOR canonico da tabela `employeeLeaderHistory`). `cargo`
+ * mapeia a `employees.descricaoCBO` — mesmo criterio de
+ * `getInstrumentAStatus` do router A (canonico do cargo do
+ * colaborador comum; o campo `cargo` do schema pertence a
+ * `cLevelMembers`, tabela separada). Colaboradores liderados por
+ * C-level nao tem `liderId` no vinculo ativo; a estrutura XOR
+ * expressa a fonte canonica do avaliador esperado.
+ */
+export interface InstrumentCPendencia {
+  employeeId: number;
+  nome: string;
+  departamento: string;
+  cargo: string;
+  liderId: number | null;
+  clevelId: number | null;
+  status: StatusPendenciaInstrumentC;
+}
+
+/**
+ * §6.8 quarta linha + §19.4 oitava linha — resultado canonico da
+ * leitura de pendencias do C para (companyId, trimestre) no escopo
+ * do titular. Escopo canonico por perfil (§6.8):
+ *   - Bruno + RH + RH-Lider: todas as pendencias da empresa.
+ *   - Lider: pendencias em que o lider e proprio titular
+ *     (`employeeLeaderHistory.liderId = ctx.user.userId`).
+ *   - C-level: pendencias em que o C-level e proprio titular
+ *     (`employeeLeaderHistory.clevelId = ctx.user.userId`).
+ * `total` = numero de vinculos ativos no escopo (bases do
+ * denominador). `pendencias` sao os subset sem avaliacao registrada.
+ * `respondidos = total - pendencias.length` (semantica: "pelo menos
+ * uma avaliacao registrada no trimestre").
+ */
+export interface GetPendenciesResult {
+  companyId: number;
+  trimestre: string;
+  total: number;
+  respondidos: number;
+  pendencias: InstrumentCPendencia[];
+}
+
+/**
+ * §6.1 — schema local do trimestre para o `getPendencies`.
+ * Redeclarado como constante local por precedente do repo (cada
+ * router redeclara o proprio schema para evitar dependencia cruzada
+ * entre routers). Reusa a mesma regex canonica `YYYY-QN`.
+ */
+export const TRIMESTRE_INPUT_SCHEMA_PENDENCIES = z.string().regex(/^\d{4}-Q[1-4]$/, {
+  message: 'Trimestre canônico deve seguir o formato YYYY-QN.',
+});
+
 // ============================================================
 // Dependencias injetaveis (S084 + S105 estendido — hook real ME-040)
 // ============================================================
@@ -386,6 +469,81 @@ async function findVigenteInstrumentUnlockC(
     .orderBy(desc(instrumentUnlockLog.desbloqueadoEm), desc(instrumentUnlockLog.id))
     .limit(1);
   return rows[0];
+}
+
+/**
+ * §6.8 quarta linha + S121 — classifica status pendente segundo o
+ * corte canonico do trimestre para o Instrumento C. Semanticamente
+ * identico ao helper analogo do router A (`classifyStatusPendenciaA`),
+ * mas replicado localmente para preservar independencia entre routers
+ * de dominios distintos (padrao S092/S096). Retorna `'atrasado'`
+ * quando `now` ultrapassou a `dataCorte` canonica (§6.3 dia 10 do
+ * mes subsequente); caso contrario, `'pendente'`.
+ */
+export function classifyStatusPendenciaC(
+  trimestre: string,
+  timeZone: string,
+  now: Date,
+): StatusPendenciaInstrumentC {
+  const parsed = parseTrimestreCicloReferencia(trimestre);
+  if (!parsed) {
+    return 'pendente';
+  }
+  const dataCorte = getInstrumentoABDataCorte(parsed.ano, parsed.trimestre, timeZone);
+  return now.getTime() > dataCorte.getTime() ? 'atrasado' : 'pendente';
+}
+
+/**
+ * §6.8 quarta linha + S066 (ME-042) — lista os vinculos ATIVOS
+ * (`employeeLeaderHistory.dataFim IS NULL`) no escopo canonico do
+ * titular:
+ *   - Escopo empresa (Bruno, RH, RH-Lider): todos os vinculos ativos
+ *     de colaboradores ATIVOS da empresa.
+ *   - Escopo cadeia direta (Lider, C-level): apenas vinculos cujo
+ *     `liderId` OU `clevelId` bate com o `ctx.user.userId` do
+ *     titular.
+ * Retorna cada linha com os atributos do liderado (`employeeId`,
+ * `nome`, `departamento`, `descricaoCBO`) e a identificacao XOR do
+ * avaliador esperado (`liderId`, `clevelId`).
+ */
+async function listActiveLeaderLinksScoped(
+  db: RoipDatabase,
+  companyId: number,
+  scope:
+    { role: 'empresa' } | { role: 'lider'; userId: number } | { role: 'clevel'; userId: number },
+): Promise<
+  {
+    employeeId: number;
+    nome: string;
+    departamento: string;
+    descricaoCBO: string;
+    liderId: number | null;
+    clevelId: number | null;
+  }[]
+> {
+  const conditions = [
+    eq(employees.companyId, companyId),
+    eq(employees.status, 'ativo'),
+    isNull(employeeLeaderHistory.dataFim),
+  ];
+  if (scope.role === 'lider') {
+    conditions.push(eq(employeeLeaderHistory.liderId, scope.userId));
+  } else if (scope.role === 'clevel') {
+    conditions.push(eq(employeeLeaderHistory.clevelId, scope.userId));
+  }
+  return await db
+    .select({
+      employeeId: employees.id,
+      nome: employees.name,
+      departamento: employees.departamento,
+      descricaoCBO: employees.descricaoCBO,
+      liderId: employeeLeaderHistory.liderId,
+      clevelId: employeeLeaderHistory.clevelId,
+    })
+    .from(employeeLeaderHistory)
+    .innerJoin(employees, eq(employees.id, employeeLeaderHistory.employeeId))
+    .where(and(...conditions))
+    .orderBy(employees.id);
 }
 
 /**
@@ -758,6 +916,127 @@ export function createInstrumentCRouter(deps: InstrumentCRouterDeps = {}) {
             : null,
           dataAbertura,
           dataCorte,
+        };
+      }),
+
+    /**
+     * §6.8 quarta linha + §19.4 oitava linha (ME-042) — leitura publica
+     * de pendencias do Instrumento C por (companyId, trimestre) no
+     * escopo canonico do titular. Retorna `{ total, respondidos,
+     * pendencias: [...] }`. Escopo por perfil:
+     *   - Bruno (super_admin): atravessa companyId; escopo empresa.
+     *   - RH e RH-Lider: escopo empresa (companyId do JWT).
+     *   - Lider: vinculos ativos em que `liderId` = titular.
+     *   - C-level: vinculos ativos em que `clevelId` = titular.
+     * `total` conta vinculos ativos elegiveis no escopo do titular
+     * (denominador). `pendencias` sao os vinculos em que o avaliador
+     * esperado ainda nao registrou nenhuma linha de
+     * `instrumentC_assessments` no trimestre. `pendencia.status`
+     * classificado por `classifyStatusPendenciaC` contra a
+     * `dataCorte` canonica no fuso da empresa (S121).
+     * `respondidos = total - pendencias.length` — semantica:
+     * "pelo menos uma linha de avaliacao registrada no trimestre".
+     */
+    getPendencies: roleProcedure(['super_admin', 'rh', 'rh_lider', 'clevel', 'lider'])
+      .input(
+        z.object({
+          companyId: z.number().int().positive(),
+          trimestre: TRIMESTRE_INPUT_SCHEMA_PENDENCIES,
+        }),
+      )
+      .query(async ({ ctx, input }): Promise<GetPendenciesResult> => {
+        // §2.4 — guard cruzado companyId (super_admin atravessa).
+        assertCompanyScope(ctx.user, input.companyId);
+
+        // Resolve o fuso canonico da empresa para o corte de status.
+        const [company] = await ctx.db
+          .select({
+            id: companies.id,
+            timezone: companies.timezone,
+          })
+          .from(companies)
+          .where(eq(companies.id, input.companyId))
+          .limit(1);
+        if (!company) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Empresa não encontrada.',
+          });
+        }
+        const timeZone = company.timezone ?? 'America/Sao_Paulo';
+
+        // Resolve escopo de vinculos ativos segundo o perfil.
+        let scope:
+          | { role: 'empresa' }
+          | { role: 'lider'; userId: number }
+          | { role: 'clevel'; userId: number };
+        if (
+          ctx.user.role === 'super_admin' ||
+          ctx.user.role === 'rh' ||
+          ctx.user.role === 'rh_lider'
+        ) {
+          scope = { role: 'empresa' };
+        } else if (ctx.user.role === 'lider') {
+          scope = { role: 'lider', userId: ctx.user.userId };
+        } else {
+          scope = { role: 'clevel', userId: ctx.user.userId };
+        }
+
+        const links = await listActiveLeaderLinksScoped(ctx.db, input.companyId, scope);
+        if (links.length === 0) {
+          return {
+            companyId: input.companyId,
+            trimestre: input.trimestre,
+            total: 0,
+            respondidos: 0,
+            pendencias: [],
+          };
+        }
+
+        const employeeIds = links.map((link) => link.employeeId);
+
+        // Distinct employeeId com PELO MENOS UMA linha de avaliacao
+        // registrada no trimestre (semantica: uma linha por
+        // (employeeId, trimestre, dimensao, itemIndex); 20 por
+        // avaliacao completa). Distinct por employeeId basta para
+        // `respondidos: pelo menos uma linha registrada`.
+        const respondedRows = await ctx.db
+          .selectDistinct({ employeeId: instrumentC_assessments.employeeId })
+          .from(instrumentC_assessments)
+          .where(
+            and(
+              eq(instrumentC_assessments.companyId, input.companyId),
+              eq(instrumentC_assessments.trimestre, input.trimestre),
+              inArray(instrumentC_assessments.employeeId, employeeIds),
+            ),
+          );
+        const respondedSet = new Set<number>(respondedRows.map((row) => row.employeeId));
+
+        const now = resolved.now();
+        const statusCanonico = classifyStatusPendenciaC(input.trimestre, timeZone, now);
+
+        const pendencias: InstrumentCPendencia[] = [];
+        for (const link of links) {
+          if (respondedSet.has(link.employeeId)) {
+            continue;
+          }
+          pendencias.push({
+            employeeId: link.employeeId,
+            nome: link.nome,
+            departamento: link.departamento,
+            cargo: link.descricaoCBO,
+            liderId: link.liderId,
+            clevelId: link.clevelId,
+            status: statusCanonico,
+          });
+        }
+
+        return {
+          companyId: input.companyId,
+          trimestre: input.trimestre,
+          total: links.length,
+          respondidos: links.length - pendencias.length,
+          pendencias,
         };
       }),
 

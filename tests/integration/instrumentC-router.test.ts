@@ -1,7 +1,14 @@
-// ROIP APP 9BOX — teste de integracao do sub-router `instrumentC` (ME-038).
+// ROIP APP 9BOX — teste de integracao do sub-router `instrumentC` (ME-038,
+// editado em ME-040 e ME-042).
 //
-// Exercita as 3 procedures canonicas do escopo S089 (DOC 03 §6.3, §6.7,
-// §6.8) contra MySQL real via `createCallerFactory`. Cobre:
+// Exercita as 4 procedures canonicas (DOC 03 §6.3, §6.7, §6.8) contra
+// MySQL real via `createCallerFactory`:
+//   - ME-038 entregou 3 procs (`saveInstrumentCAssessment`,
+//     `getAssessment`, `reopenAssessment`).
+//   - ME-042 entrega a 4a proc `getPendencies` (§6.8 quarta linha +
+//     §19.4 oitava linha).
+//
+// Cobre:
 //   - Contratos publicos exportados (RV-13): mensagens literais,
 //     schemas Zod, constantes, tipos, factory.
 //   - Matriz canonica de autorizacao (roleProcedure + guard cruzado
@@ -20,12 +27,19 @@
 //     pre-condicao de avaliacao previa, rejeita janela empilhada,
 //     justificativa 100-500, insere linha canonica com
 //     `instrumento='C'` e `expiraEm=now+24h`.
+//   - `getPendencies` (ME-042) — total/respondidos/pendencias com
+//     `status ∈ {'pendente','atrasado'}` conforme corte canonico
+//     dataCorte (S121); escopo por perfil (S066); XOR liderId/clevelId
+//     no item de pendencia; C-levels excluidos por construcao;
+//     inativos excluidos (§7.6); helper canonico
+//     `classifyStatusPendenciaC` (RV-13).
 //
-// Padrao S009 estendido (S076): uma company local por describe, CNPJ
-// unico da faixa 10000000000720..732 (ME-038) + 770 (ME-040 EDIT: hook
-// do motor de plenitude). L32 cleanup em afterAll (todas as tabelas
-// com FK compartilhada + `plenitudeData` adicionada em ME-040 + fixture
-// global superAdmins id=1 preservada). JWT_SECRET fixo no arquivo.
+// Padrao S009 estendido (S076): CNPJs unicos da faixa
+// 10000000000720..732 (ME-038) + 770 (ME-040 EDIT) + 760..769
+// (ME-042 EDIT: pendencies). L32 cleanup em afterAll (todas as
+// tabelas com FK compartilhada + `plenitudeData` adicionada em ME-040
+// + fixture global superAdmins id=1 preservada). JWT_SECRET fixo no
+// arquivo.
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, eq, inArray } from 'drizzle-orm';
@@ -50,9 +64,11 @@ import {
 } from '../../src/server/auth/jwt';
 import { createRateLimiter } from '../../src/server/auth/rateLimit';
 import {
+  classifyStatusPendenciaC,
   createInstrumentCRouter,
   DIMENSAO_SCHEMA_INSTRUMENT_C,
   type GetAssessmentResult,
+  type GetPendenciesResult,
   type InstrumentCRouterDeps,
   ITEM_INDEX_SCHEMA_INSTRUMENT_C,
   ITEM_SCHEMA_INSTRUMENT_C,
@@ -71,6 +87,8 @@ import {
   type ReopenAssessmentResult,
   type SaveInstrumentCAssessmentResult,
   STATUS_JANELA_INSTRUMENT_C_VALUES,
+  STATUS_PENDENCIA_INSTRUMENT_C_VALUES,
+  TRIMESTRE_INPUT_SCHEMA_PENDENCIES,
   TRIMESTRE_SCHEMA_INSTRUMENT_C,
   UNLOCK_WINDOW_HOURS,
   VALOR_MAX,
@@ -102,6 +120,12 @@ const CNPJ_SAVE_VINCULO = '10000000000726';
 const CNPJ_SAVE_OVERWRITE = '10000000000727';
 const CNPJ_GET = '10000000000728';
 const CNPJ_REOPEN = '10000000000729';
+// ME-042 (Bloco B3) — faixa 760..769 disjunta das ME-038/ME-040.
+const CNPJ_PEND_EMPRESA = '10000000000760';
+const CNPJ_PEND_LIDER = '10000000000761';
+const CNPJ_PEND_CLEVEL = '10000000000762';
+const CNPJ_PEND_CROSS = '10000000000763';
+const CNPJ_PEND_SEM_LINK = '10000000000764';
 
 let client: RoipDbClient;
 const createdCompanyIds: number[] = [];
@@ -199,7 +223,7 @@ function nextCpf(): string {
 
 async function createEmployee(
   companyId: number,
-  opts: { isLider?: boolean; isRH?: boolean } = {},
+  opts: { isLider?: boolean; isRH?: boolean; status?: 'ativo' | 'inativo' } = {},
 ): Promise<number> {
   const [row] = await client.db
     .insert(employees)
@@ -216,7 +240,7 @@ async function createEmployee(
       senioridade: 'pleno',
       nivelHierarquico: 'operacional',
       departamento: 'Comercial',
-      status: 'ativo',
+      status: opts.status ?? 'ativo',
       isLider: opts.isLider ?? false,
       isRH: opts.isRH ?? false,
       passwordHash: HASH_A,
@@ -1581,5 +1605,337 @@ describe('instrumentC — hook canonico do motor de plenitude ME-040', () => {
     });
     expect(nowRecebido).not.toBeNull();
     expect((nowRecebido as unknown as Date).getTime()).toBe(nowFixo.getTime());
+  });
+});
+
+// ============================================================
+// ME-042 — getPendencies (§6.8 quarta linha + §19.4 8a linha)
+// ============================================================
+
+/**
+ * Helper canonico ME-042 — seed minima de 1 linha em
+ * `instrumentC_assessments` para satisfazer "pelo menos uma linha
+ * registrada no trimestre". Adiciona uma unica linha (dimensao=1,
+ * itemIndex=1, valor=3) por (companyId, employeeId, trimestre,
+ * liderId|clevelId).
+ */
+async function seedAvaliacaoMinima(
+  companyId: number,
+  employeeId: number,
+  trimestre: string,
+  avaliador: { liderId?: number; clevelId?: number },
+  respondidoEm = new Date('2025-04-05T12:00:00Z'),
+): Promise<void> {
+  await client.db.insert(instrumentC_assessments).values({
+    companyId,
+    employeeId,
+    trimestre,
+    liderId: avaliador.liderId ?? null,
+    clevelId: avaliador.clevelId ?? null,
+    dimensao: 1,
+    itemIndex: 1,
+    valor: 3,
+    respondidoEm,
+    createdAt: respondidoEm,
+  });
+}
+
+describe('instrumentC — getPendencies contratos e constantes (ME-042)', () => {
+  it('STATUS_PENDENCIA_INSTRUMENT_C_VALUES = ["pendente","atrasado"]', () => {
+    expect(STATUS_PENDENCIA_INSTRUMENT_C_VALUES).toEqual(['pendente', 'atrasado']);
+  });
+
+  it('TRIMESTRE_INPUT_SCHEMA_PENDENCIES aceita `YYYY-QN`', () => {
+    expect(TRIMESTRE_INPUT_SCHEMA_PENDENCIES.safeParse('2025-Q1').success).toBe(true);
+    expect(TRIMESTRE_INPUT_SCHEMA_PENDENCIES.safeParse('2025-Q4').success).toBe(true);
+    expect(TRIMESTRE_INPUT_SCHEMA_PENDENCIES.safeParse('bad').success).toBe(false);
+  });
+
+  it('classifyStatusPendenciaC — atrasado quando now > dataCorte', () => {
+    const now = new Date('2024-04-20T12:00:00Z');
+    const status = classifyStatusPendenciaC('2024-Q1', 'America/Sao_Paulo', now);
+    expect(status).toBe('atrasado');
+  });
+
+  it('classifyStatusPendenciaC — pendente quando now <= dataCorte', () => {
+    const now = new Date('2024-03-25T12:00:00Z');
+    const status = classifyStatusPendenciaC('2024-Q1', 'America/Sao_Paulo', now);
+    expect(status).toBe('pendente');
+  });
+
+  it('classifyStatusPendenciaC — trimestre invalido cai em `pendente` (conservador)', () => {
+    const now = new Date('2024-04-20T12:00:00Z');
+    const status = classifyStatusPendenciaC('LIXO', 'America/Sao_Paulo', now);
+    expect(status).toBe('pendente');
+  });
+});
+
+describe('instrumentC — getPendencies (escopo empresa, ME-042)', () => {
+  const NOW_ANTES_CORTE = new Date('2025-04-05T12:00:00Z');
+  const NOW_DEPOIS_CORTE = new Date('2025-04-20T12:00:00Z');
+
+  let companyId: number;
+  let empRH: number;
+  let liderA: number;
+  let liderB: number;
+  let clevelId: number;
+  let liderado1: number; // liderado por liderA — avaliado
+  let liderado2: number; // liderado por liderA — pendente
+  let liderado3: number; // liderado por liderB — pendente
+  let liderado4: number; // liderado por clevelId — pendente
+  let inativoLiderado: number; // inativo — nao aparece
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_PEND_EMPRESA);
+    empRH = await createEmployee(companyId, { isRH: true });
+    liderA = await createEmployee(companyId, { isLider: true });
+    liderB = await createEmployee(companyId, { isLider: true });
+    clevelId = await createClevel(companyId);
+    liderado1 = await createEmployee(companyId);
+    liderado2 = await createEmployee(companyId);
+    liderado3 = await createEmployee(companyId);
+    liderado4 = await createEmployee(companyId);
+    inativoLiderado = await createEmployee(companyId, { status: 'inativo' });
+    await bindVinculoLider(liderado1, liderA);
+    await bindVinculoLider(liderado2, liderA);
+    await bindVinculoLider(liderado3, liderB);
+    await bindVinculoClevel(liderado4, clevelId);
+    await bindVinculoLider(inativoLiderado, liderA);
+    // liderado1 recebeu avaliacao — nao aparece na pendencia.
+    await seedAvaliacaoMinima(companyId, liderado1, '2025-Q1', { liderId: liderA });
+  });
+
+  it('Bruno escopo empresa -> total = 4 (ativos), respondidos = 1, pendencias = 3', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenSuperAdmin();
+    const caller = factory(ctx(token));
+    const result: GetPendenciesResult = await caller.getPendencies({
+      companyId,
+      trimestre: '2025-Q1',
+    });
+    expect(result.total).toBe(4);
+    expect(result.respondidos).toBe(1);
+    expect(result.pendencias).toHaveLength(3);
+    const ids = result.pendencias.map((p) => p.employeeId);
+    expect(ids).not.toContain(liderado1); // ja avaliou
+    expect(ids).not.toContain(inativoLiderado); // inativo excluido
+    expect(ids).toContain(liderado2);
+    expect(ids).toContain(liderado3);
+    expect(ids).toContain(liderado4);
+    for (const p of result.pendencias) {
+      expect(p.status).toBe('pendente');
+    }
+  });
+
+  it('pendencia carrega avaliador XOR (liderId ou clevelId)', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenSuperAdmin();
+    const caller = factory(ctx(token));
+    const result = await caller.getPendencies({ companyId, trimestre: '2025-Q1' });
+    const pend2 = result.pendencias.find((p) => p.employeeId === liderado2)!;
+    expect(pend2.liderId).toBe(liderA);
+    expect(pend2.clevelId).toBeNull();
+
+    const pend4 = result.pendencias.find((p) => p.employeeId === liderado4)!;
+    expect(pend4.liderId).toBeNull();
+    expect(pend4.clevelId).toBe(clevelId);
+  });
+
+  it('depois do corte -> status = atrasado (S121)', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_DEPOIS_CORTE });
+    const token = await tokenSuperAdmin();
+    const caller = factory(ctx(token));
+    const result = await caller.getPendencies({
+      companyId,
+      trimestre: '2025-Q1',
+    });
+    for (const p of result.pendencias) {
+      expect(p.status).toBe('atrasado');
+    }
+  });
+
+  it('RH escopo empresa -> mesmo resultado do Bruno', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenPlatform('rh', empRH, companyId);
+    const caller = factory(ctx(token));
+    const result = await caller.getPendencies({
+      companyId,
+      trimestre: '2025-Q1',
+    });
+    expect(result.total).toBe(4);
+    expect(result.respondidos).toBe(1);
+  });
+
+  it('pendencia carrega nome, departamento, cargo canonicos', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenSuperAdmin();
+    const caller = factory(ctx(token));
+    const result = await caller.getPendencies({ companyId, trimestre: '2025-Q1' });
+    const pend2 = result.pendencias.find((p) => p.employeeId === liderado2)!;
+    expect(pend2.departamento).toBe('Comercial');
+    expect(pend2.cargo).toBe('Analista');
+  });
+});
+
+describe('instrumentC — getPendencies (escopo cadeia — lider, ME-042)', () => {
+  const NOW_ANTES_CORTE = new Date('2025-04-05T12:00:00Z');
+
+  let companyId: number;
+  let liderA: number;
+  let liderB: number;
+  let liderado1: number;
+  let liderado2: number;
+  let alheio: number;
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_PEND_LIDER);
+    liderA = await createEmployee(companyId, { isLider: true });
+    liderB = await createEmployee(companyId, { isLider: true });
+    liderado1 = await createEmployee(companyId);
+    liderado2 = await createEmployee(companyId);
+    alheio = await createEmployee(companyId);
+    await bindVinculoLider(liderado1, liderA);
+    await bindVinculoLider(liderado2, liderA);
+    await bindVinculoLider(alheio, liderB);
+    // liderado1 avaliado, liderado2 pendente
+    await seedAvaliacaoMinima(companyId, liderado1, '2025-Q1', { liderId: liderA });
+  });
+
+  it('Lider A ve apenas os proprios liderados (2), respondidos = 1', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenPlatform('lider', liderA, companyId);
+    const caller = factory(ctx(token));
+    const result = await caller.getPendencies({
+      companyId,
+      trimestre: '2025-Q1',
+    });
+    expect(result.total).toBe(2);
+    expect(result.respondidos).toBe(1);
+    expect(result.pendencias).toHaveLength(1);
+    expect(result.pendencias[0]!.employeeId).toBe(liderado2);
+    expect(result.pendencias[0]!.liderId).toBe(liderA);
+  });
+
+  it('Lider B ve apenas os proprios liderados (1)', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenPlatform('lider', liderB, companyId);
+    const caller = factory(ctx(token));
+    const result = await caller.getPendencies({
+      companyId,
+      trimestre: '2025-Q1',
+    });
+    expect(result.total).toBe(1);
+    expect(result.pendencias[0]!.employeeId).toBe(alheio);
+  });
+
+  it('Lider sem liderados diretos -> total = 0', async () => {
+    const outraCompany = await createCompany(CNPJ_PEND_SEM_LINK);
+    const liderSemLiderados = await createEmployee(outraCompany, { isLider: true });
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenPlatform('lider', liderSemLiderados, outraCompany);
+    const caller = factory(ctx(token));
+    const result = await caller.getPendencies({
+      companyId: outraCompany,
+      trimestre: '2025-Q1',
+    });
+    expect(result.total).toBe(0);
+    expect(result.pendencias).toHaveLength(0);
+  });
+});
+
+describe('instrumentC — getPendencies (escopo cadeia — clevel, ME-042)', () => {
+  const NOW_ANTES_CORTE = new Date('2025-04-05T12:00:00Z');
+
+  let companyId: number;
+  let clevelId: number;
+  let outroClevel: number;
+  let liderado1: number;
+  let liderado2: number;
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_PEND_CLEVEL);
+    clevelId = await createClevel(companyId);
+    outroClevel = await createClevel(companyId);
+    liderado1 = await createEmployee(companyId);
+    liderado2 = await createEmployee(companyId);
+    await bindVinculoClevel(liderado1, clevelId);
+    await bindVinculoClevel(liderado2, outroClevel);
+    await seedAvaliacaoMinima(companyId, liderado1, '2025-Q1', { clevelId });
+  });
+
+  it('C-level ve apenas os proprios liderados, respondidos = 1', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenPlatform('clevel', clevelId, companyId);
+    const caller = factory(ctx(token));
+    const result = await caller.getPendencies({
+      companyId,
+      trimestre: '2025-Q1',
+    });
+    expect(result.total).toBe(1);
+    expect(result.respondidos).toBe(1);
+    expect(result.pendencias).toHaveLength(0);
+  });
+
+  it('outro C-level ve apenas os proprios liderados', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenPlatform('clevel', outroClevel, companyId);
+    const caller = factory(ctx(token));
+    const result = await caller.getPendencies({
+      companyId,
+      trimestre: '2025-Q1',
+    });
+    expect(result.total).toBe(1);
+    expect(result.pendencias).toHaveLength(1);
+    expect(result.pendencias[0]!.employeeId).toBe(liderado2);
+    expect(result.pendencias[0]!.clevelId).toBe(outroClevel);
+  });
+});
+
+describe('instrumentC — getPendencies (cross-company e schema, ME-042)', () => {
+  const NOW_ANTES_CORTE = new Date('2025-04-05T12:00:00Z');
+
+  let companyA: number;
+  let companyB: number;
+  let empRhA: number;
+
+  beforeAll(async () => {
+    companyA = await createCompany(CNPJ_PEND_CROSS);
+    companyB = await createCompany('10000000000765');
+    empRhA = await createEmployee(companyA, { isRH: true });
+  });
+
+  it('RH de companyA passando companyB -> FORBIDDEN (§2.4)', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenPlatform('rh', empRhA, companyA);
+    const caller = factory(ctx(token));
+    await expect(
+      caller.getPendencies({ companyId: companyB, trimestre: '2025-Q1' }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
+
+  it('super_admin com companyId inexistente -> NOT_FOUND', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenSuperAdmin();
+    const caller = factory(ctx(token));
+    await expect(
+      caller.getPendencies({ companyId: 999999999, trimestre: '2025-Q1' }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  it('trimestre invalido -> BAD_REQUEST', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenSuperAdmin();
+    const caller = factory(ctx(token));
+    await expect(
+      caller.getPendencies({ companyId: companyA, trimestre: '2025Q1' }),
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+  });
+
+  it('sem sessao -> UNAUTHORIZED', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const caller = factory(ctx(null));
+    await expect(
+      caller.getPendencies({ companyId: companyA, trimestre: '2025-Q1' }),
+    ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
   });
 });

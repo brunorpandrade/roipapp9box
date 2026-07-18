@@ -1,29 +1,38 @@
-// ROIP APP 9BOX — teste de integracao do sub-router `instrumentA` (ME-039).
+// ROIP APP 9BOX — teste de integracao do sub-router `instrumentA` (ME-039,
+// editado em ME-042).
 //
-// Exercita a procedure canonica `reopenResponse` (DOC 03 §6.8 sexta
-// linha) contra MySQL real via `createCallerFactory`, mais os contratos
-// publicos exportados (RV-13: mensagens literais, schemas Zod,
-// constantes, tipos, factory). O escopo tRPC desta ME e enxuto — a
-// ponta de escrita "normal" do Instrumento A vive no Route Handler
+// Exercita as procedures canonicas `reopenResponse` (DOC 03 §6.8 sexta
+// linha — ME-039) e `getInstrumentAStatus` (DOC 03 §6.8 segunda linha
+// + §19.4 quinta linha — ME-042) contra MySQL real via
+// `createCallerFactory`, mais os contratos publicos exportados
+// (RV-13: mensagens literais, schemas Zod, constantes, tipos, factory).
+// A ponta de escrita "normal" do Instrumento A vive no Route Handler
 // canonico do portal, coberto pelo teste-irmao
 // `tests/integration/portal-save-instrument-a.test.ts`. Aqui cobrimos:
 //   - Contratos publicos exportados (mensagens, schemas, constantes,
 //     enum de status, factory) — RV-13 exercitado.
 //   - Matriz canonica de autorizacao (`reopenResponse` exclusivo
-//     super_admin; guard cruzado companyId §2.4).
+//     super_admin; `getInstrumentAStatus` — Bruno/RH empresa; Lider/
+//     C-level cadeia direta; guard cruzado companyId §2.4).
 //   - `reopenResponse` — sucesso canonico (INSERT em
 //     `instrumentUnlockLog` com `instrumento='A'`, `expiraEm=now+24h`,
 //     `houveAlteracao=false`, `ajusteRetroativo=false`); pre-condicao
 //     de resposta previa existente (`MSG_REOPEN_SEM_RESPOSTA`);
 //     rejeicao de janela empilhada (`MSG_REOPEN_JA_VIGENTE_A`);
 //     companyId cruzado; justificativa 100-500 (§2).
+//   - `getInstrumentAStatus` (ME-042) — total/respondidos/pendentes
+//     canonicos; C-levels excluidos por construcao (§6.2); inativos
+//     excluidos (§7.6 replicado); status 'pendente' vs 'atrasado'
+//     conforme corte canonico dataCorte (§6.3 dia 10 do mes
+//     subsequente); escopo por perfil (S066); helper canonico
+//     `classifyStatusPendenciaA` (RV-13).
 //
 // Padrao S009 estendido (S076): uma company local por describe, CNPJ
 // unico da faixa 10000000000740..7XX (ME-039 — faixa nova, disjunta
-// das ME-038 720..729 e anteriores). L32 cleanup em afterAll (todas
-// as tabelas com FK compartilhada + fixture global superAdmins id=1
-// preservada). JWT_SECRET fixo no arquivo. Padrao herdado literal do
-// `instrumentC-router.test.ts` (ME-038) para consistencia auditavel.
+// das ME-038 720..729 e anteriores). ME-042 adiciona a faixa 750..759
+// (cnpj distintos do plenitude/nineBox — 790..799). L32 cleanup em
+// afterAll (todas as tabelas com FK compartilhada + fixture global
+// superAdmins id=1 preservada). JWT_SECRET fixo no arquivo.
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, eq, inArray } from 'drizzle-orm';
@@ -32,6 +41,7 @@ import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/c
 import {
   cLevelMembers,
   companies,
+  employeeLeaderHistory,
   employees,
   instrumentA_responses,
   instrumentUnlockLog,
@@ -44,9 +54,11 @@ import {
 } from '../../src/server/auth/jwt';
 import { createRateLimiter } from '../../src/server/auth/rateLimit';
 import {
+  classifyStatusPendenciaA,
   createInstrumentARouter,
   DIMENSAO_SCHEMA_INSTRUMENT_A,
   findVigenteInstrumentUnlockA,
+  type GetInstrumentAStatusResult,
   type InstrumentARouterDeps,
   ITEM_INDEX_SCHEMA_INSTRUMENT_A,
   ITEM_SCHEMA_INSTRUMENT_A,
@@ -56,15 +68,20 @@ import {
   MSG_CLEVEL_NAO_RESPONDE_A,
   MSG_COMPANY_MISMATCH_A,
   MSG_EMPLOYEE_INATIVO_A,
+  MSG_EMPRESA_NAO_ENCONTRADA_STATUS_A,
   MSG_ITENS_INCOMPLETOS_A,
   MSG_REOPEN_JA_VIGENTE_A,
   MSG_REOPEN_SEM_RESPOSTA,
+  MSG_TRIMESTRE_INVALIDO_STATUS_A,
   MSG_TRIMESTRE_NAO_ABERTO_A,
   NUM_DIMENSOES_A,
   NUM_ITENS_POR_DIMENSAO_A,
   NUM_ITENS_TOTAL_A,
   type ReopenResponseResult,
+  scopedEmployeeIdsByLeaderA,
   STATUS_JANELA_INSTRUMENT_A_VALUES,
+  STATUS_PENDENCIA_INSTRUMENT_A_VALUES,
+  TRIMESTRE_INPUT_SCHEMA_STATUS_A,
   TRIMESTRE_SCHEMA_INSTRUMENT_A,
   UNLOCK_WINDOW_HOURS_A,
   VALOR_MAX_A,
@@ -81,13 +98,18 @@ process.env.JWT_SECRET = 'test-secret-roip-me039-instrumentA';
 const FIXTURE_SUPER_ADMIN_ID = 1;
 const HASH_A = 'hash-fixo-me039-instrumentA';
 
-// CNPJs canonicos por describe (S076 — faixa 740.. reservada para ME-039).
+// CNPJs canonicos por describe (S076 — faixa 740.. reservada para ME-039;
+// faixa 750.. reservada para ME-042 status/pendencies do A).
 const CNPJ_GUARDS = '10000000000740';
 const CNPJ_GUARDS_OTHER = '10000000000741';
 const CNPJ_REOPEN_OK = '10000000000742';
 const CNPJ_REOPEN_SEM = '10000000000743';
 const CNPJ_REOPEN_EMPILHA = '10000000000744';
 const CNPJ_REOPEN_CROSS = '10000000000745';
+const CNPJ_STATUS_EMPRESA = '10000000000750';
+const CNPJ_STATUS_LIDER = '10000000000751';
+const CNPJ_STATUS_CLEVEL = '10000000000752';
+const CNPJ_STATUS_CROSS = '10000000000754';
 
 let client: RoipDbClient;
 const createdCompanyIds: number[] = [];
@@ -100,15 +122,25 @@ afterAll(async () => {
   if (!client) return;
   if (createdCompanyIds.length > 0) {
     // L32 — cleanup em ordem topologica FK (unlock -> responses ->
-    // employees -> clevel -> companies) para nao contaminar arquivos
-    // seguintes. Cobre tambem tabelas nao criadas por este arquivo mas
-    // limpas por defesa.
+    // employeeLeaderHistory -> employees -> clevel -> companies) para
+    // nao contaminar arquivos seguintes. Cobre tambem tabelas nao
+    // criadas por este arquivo mas limpas por defesa.
     await client.db
       .delete(instrumentUnlockLog)
       .where(inArray(instrumentUnlockLog.companyId, createdCompanyIds));
     await client.db
       .delete(instrumentA_responses)
       .where(inArray(instrumentA_responses.companyId, createdCompanyIds));
+    const empRows = await client.db
+      .select({ id: employees.id })
+      .from(employees)
+      .where(inArray(employees.companyId, createdCompanyIds));
+    const empIds = empRows.map((r) => r.id);
+    if (empIds.length > 0) {
+      await client.db
+        .delete(employeeLeaderHistory)
+        .where(inArray(employeeLeaderHistory.employeeId, empIds));
+    }
     await client.db.delete(employees).where(inArray(employees.companyId, createdCompanyIds));
     await client.db
       .delete(cLevelMembers)
@@ -163,7 +195,13 @@ function nextCpf(): string {
 
 async function createEmployee(
   companyId: number,
-  opts: { isRH?: boolean; isLider?: boolean } = {},
+  opts: {
+    isRH?: boolean;
+    isLider?: boolean;
+    status?: 'ativo' | 'inativo';
+    departamento?: 'Comercial' | 'Financeiro' | 'Diretoria';
+    descricaoCBO?: string;
+  } = {},
 ): Promise<number> {
   const [row] = await client.db
     .insert(employees)
@@ -175,12 +213,12 @@ async function createEmployee(
       dataNascimento: new Date('1990-01-01'),
       dataAdmissao: new Date('2020-01-01'),
       cbo: '999999',
-      descricaoCBO: 'Analista',
+      descricaoCBO: opts.descricaoCBO ?? 'Analista',
       jobFamily: 'vendas_comercial',
       senioridade: 'pleno',
       nivelHierarquico: 'operacional',
-      departamento: 'Comercial',
-      status: 'ativo',
+      departamento: opts.departamento ?? 'Comercial',
+      status: opts.status ?? 'ativo',
       isRH: opts.isRH ?? false,
       isLider: opts.isLider ?? false,
       passwordHash: HASH_A,
@@ -232,6 +270,37 @@ async function seedRespostaMinima(
     valor: 3,
     respondidoEm,
     createdAt: respondidoEm,
+  });
+}
+
+// Contador para transferBatchId — sufixo unico de 36 chars por
+// fixture (a coluna canonica exige char(36); o formato nao precisa
+// ser valido conforme RFC — o schema so exige largura fixa).
+let batchCounter = 0;
+function nextTransferBatchId(): string {
+  batchCounter += 1;
+  const seq = String(batchCounter).padStart(6, '0');
+  return `00000000-0000-0000-0000-me042A${seq}`.substring(0, 36).padEnd(36, '0');
+}
+
+/**
+ * §6.8 segunda linha (ME-042) — vincula um liderado a um lider
+ * (opcao A) ou a um C-level (opcao B). Exatamente um dos dois deve
+ * ser passado. Cria uma linha `employeeLeaderHistory` com
+ * `dataFim: null` (vinculo ativo — S066).
+ */
+async function linkLeaderA(
+  employeeId: number,
+  opts: { liderId?: number; clevelId?: number },
+): Promise<void> {
+  await client.db.insert(employeeLeaderHistory).values({
+    employeeId,
+    liderId: opts.liderId ?? null,
+    clevelId: opts.clevelId ?? null,
+    dataInicio: new Date('2024-01-01'),
+    dataFim: null,
+    reason: 'Fixture ME-042 status/pendencies A',
+    transferBatchId: nextTransferBatchId(),
   });
 }
 
@@ -769,5 +838,326 @@ describe('instrumentA — reopenResponse (guard cruzado companyId)', () => {
         justificativa: 'j'.repeat(120),
       }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN', message: MSG_COMPANY_MISMATCH_A });
+  });
+});
+
+// ============================================================
+// ME-042 — getInstrumentAStatus (§6.8 segunda linha + §19.4 5a linha)
+// ============================================================
+
+describe('instrumentA — getInstrumentAStatus contratos e constantes', () => {
+  it('STATUS_PENDENCIA_INSTRUMENT_A_VALUES = ["pendente","atrasado"]', () => {
+    expect(STATUS_PENDENCIA_INSTRUMENT_A_VALUES).toEqual(['pendente', 'atrasado']);
+  });
+
+  it('TRIMESTRE_INPUT_SCHEMA_STATUS_A aceita `YYYY-QN`', () => {
+    expect(TRIMESTRE_INPUT_SCHEMA_STATUS_A.safeParse('2025-Q1').success).toBe(true);
+    expect(TRIMESTRE_INPUT_SCHEMA_STATUS_A.safeParse('2025-Q4').success).toBe(true);
+  });
+
+  it('TRIMESTRE_INPUT_SCHEMA_STATUS_A rejeita formato invalido', () => {
+    const parsed = TRIMESTRE_INPUT_SCHEMA_STATUS_A.safeParse('20-Q1');
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(parsed.error.issues[0]!.message).toBe(MSG_TRIMESTRE_INVALIDO_STATUS_A);
+    }
+  });
+
+  it('classifyStatusPendenciaA — atrasado quando now > dataCorte', () => {
+    // §6.3: dataCorte 2024-Q1 = 10/Abril 23:59:59 no fuso (default
+    // America/Sao_Paulo). Um `now` em 20/Abril esta apos o corte.
+    const now = new Date('2024-04-20T12:00:00Z');
+    const status = classifyStatusPendenciaA('2024-Q1', 'America/Sao_Paulo', now);
+    expect(status).toBe('atrasado');
+  });
+
+  it('classifyStatusPendenciaA — pendente quando now <= dataCorte', () => {
+    // §6.1: janela aberta a partir de 16/Marco. Um `now` em 25/Marco
+    // esta antes do corte de 10/Abril.
+    const now = new Date('2024-03-25T12:00:00Z');
+    const status = classifyStatusPendenciaA('2024-Q1', 'America/Sao_Paulo', now);
+    expect(status).toBe('pendente');
+  });
+
+  it('classifyStatusPendenciaA — trimestre invalido cai em `pendente` (conservador)', () => {
+    const now = new Date('2024-04-20T12:00:00Z');
+    const status = classifyStatusPendenciaA('LIXO', 'America/Sao_Paulo', now);
+    expect(status).toBe('pendente');
+  });
+
+  it('MSG_EMPRESA_NAO_ENCONTRADA_STATUS_A e literal canonico', () => {
+    expect(MSG_EMPRESA_NAO_ENCONTRADA_STATUS_A).toBe('Empresa não encontrada.');
+  });
+});
+
+describe('instrumentA — getInstrumentAStatus (escopo empresa)', () => {
+  const NOW_ANTES_CORTE = new Date('2025-04-05T12:00:00Z');
+  const NOW_DEPOIS_CORTE = new Date('2025-04-20T12:00:00Z');
+
+  let companyId: number;
+  let empRH: number;
+  let empA: number;
+  let empB: number;
+  let empC: number;
+  let empInativo: number;
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_STATUS_EMPRESA);
+    empRH = await createEmployee(companyId, { isRH: true });
+    empA = await createEmployee(companyId, { departamento: 'Comercial' });
+    empB = await createEmployee(companyId, { departamento: 'Financeiro' });
+    empC = await createEmployee(companyId, { departamento: 'Comercial' });
+    empInativo = await createEmployee(companyId, { status: 'inativo' });
+    // empA respondeu (1 linha basta para "pelo menos uma resposta").
+    await seedRespostaMinima(companyId, empA, '2025-Q1');
+  });
+
+  it('sem sessao -> UNAUTHORIZED', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const caller = factory(ctx(null));
+    await expect(
+      caller.getInstrumentAStatus({ companyId, trimestre: '2025-Q1' }),
+    ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+  });
+
+  it('Bruno consulta -> total = 5 ativos (4 + RH), respondidos = 1, pendentes = 4', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenSuperAdmin();
+    const caller = factory(ctx(token));
+    const result: GetInstrumentAStatusResult = await caller.getInstrumentAStatus({
+      companyId,
+      trimestre: '2025-Q1',
+    });
+    expect(result.companyId).toBe(companyId);
+    expect(result.trimestre).toBe('2025-Q1');
+    // Inativo excluido: total = 4 (empRH + empA + empB + empC).
+    expect(result.total).toBe(4);
+    expect(result.respondidos).toBe(1);
+    expect(result.pendentes).toHaveLength(3);
+    // empA respondeu — nao esta na lista.
+    const pendenteIds = result.pendentes.map((p) => p.employeeId);
+    expect(pendenteIds).not.toContain(empA);
+    expect(pendenteIds).not.toContain(empInativo);
+    expect(pendenteIds).toContain(empB);
+    expect(pendenteIds).toContain(empC);
+    expect(pendenteIds).toContain(empRH);
+    // Status canonico antes do corte -> pendente.
+    for (const p of result.pendentes) {
+      expect(p.status).toBe('pendente');
+    }
+  });
+
+  it('depois do corte -> status = atrasado (S121)', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_DEPOIS_CORTE });
+    const token = await tokenSuperAdmin();
+    const caller = factory(ctx(token));
+    const result = await caller.getInstrumentAStatus({
+      companyId,
+      trimestre: '2025-Q1',
+    });
+    for (const p of result.pendentes) {
+      expect(p.status).toBe('atrasado');
+    }
+  });
+
+  it('RH da mesma empresa -> mesmo resultado', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenPlatform('rh', empRH, companyId);
+    const caller = factory(ctx(token));
+    const result = await caller.getInstrumentAStatus({
+      companyId,
+      trimestre: '2025-Q1',
+    });
+    expect(result.total).toBe(4);
+    expect(result.respondidos).toBe(1);
+  });
+
+  it('pendentes carregam nome, departamento, cargo canonicos', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenSuperAdmin();
+    const caller = factory(ctx(token));
+    const result = await caller.getInstrumentAStatus({
+      companyId,
+      trimestre: '2025-Q1',
+    });
+    const pendB = result.pendentes.find((p) => p.employeeId === empB);
+    expect(pendB).toBeDefined();
+    expect(pendB!.departamento).toBe('Financeiro');
+    expect(pendB!.cargo).toBe('Analista');
+  });
+});
+
+describe('instrumentA — getInstrumentAStatus (escopo cadeia — lider)', () => {
+  const NOW_ANTES_CORTE = new Date('2025-04-05T12:00:00Z');
+
+  let companyId: number;
+  let liderId: number;
+  let outroLiderId: number;
+  let liderado1: number;
+  let liderado2: number;
+  let alheio: number;
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_STATUS_LIDER);
+    liderId = await createEmployee(companyId, { isLider: true });
+    outroLiderId = await createEmployee(companyId, { isLider: true });
+    liderado1 = await createEmployee(companyId);
+    liderado2 = await createEmployee(companyId);
+    alheio = await createEmployee(companyId);
+    await linkLeaderA(liderado1, { liderId });
+    await linkLeaderA(liderado2, { liderId });
+    await linkLeaderA(alheio, { liderId: outroLiderId });
+    await seedRespostaMinima(companyId, liderado1, '2025-Q1');
+  });
+
+  it('Lider so ve liderados diretos (2), com 1 respondido', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenPlatform('lider', liderId, companyId);
+    const caller = factory(ctx(token));
+    const result = await caller.getInstrumentAStatus({
+      companyId,
+      trimestre: '2025-Q1',
+    });
+    expect(result.total).toBe(2);
+    expect(result.respondidos).toBe(1);
+    expect(result.pendentes).toHaveLength(1);
+    expect(result.pendentes[0]!.employeeId).toBe(liderado2);
+    expect(result.pendentes[0]!.status).toBe('pendente');
+  });
+
+  it('Outro lider so ve o proprio liderado (alheio) -> total = 1', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenPlatform('lider', outroLiderId, companyId);
+    const caller = factory(ctx(token));
+    const result = await caller.getInstrumentAStatus({
+      companyId,
+      trimestre: '2025-Q1',
+    });
+    expect(result.total).toBe(1);
+    expect(result.pendentes[0]!.employeeId).toBe(alheio);
+  });
+
+  it('Lider sem liderados -> total = 0, pendentes = []', async () => {
+    const semLideradosCompany = await createCompany('10000000000755');
+    const liderSemLiderados = await createEmployee(semLideradosCompany, {
+      isLider: true,
+    });
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenPlatform('lider', liderSemLiderados, semLideradosCompany);
+    const caller = factory(ctx(token));
+    const result = await caller.getInstrumentAStatus({
+      companyId: semLideradosCompany,
+      trimestre: '2025-Q1',
+    });
+    expect(result.total).toBe(0);
+    expect(result.pendentes).toHaveLength(0);
+  });
+});
+
+describe('instrumentA — getInstrumentAStatus (escopo cadeia — clevel)', () => {
+  const NOW_ANTES_CORTE = new Date('2025-04-05T12:00:00Z');
+
+  let companyId: number;
+  let clevelId: number;
+  let liderado1: number;
+  let liderado2: number;
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_STATUS_CLEVEL);
+    clevelId = await createClevel(companyId);
+    liderado1 = await createEmployee(companyId);
+    liderado2 = await createEmployee(companyId);
+    await linkLeaderA(liderado1, { clevelId });
+    await linkLeaderA(liderado2, { clevelId });
+    await seedRespostaMinima(companyId, liderado2, '2025-Q1');
+  });
+
+  it('C-level so ve liderados diretos (2), com 1 respondido', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenPlatform('clevel', clevelId, companyId);
+    const caller = factory(ctx(token));
+    const result = await caller.getInstrumentAStatus({
+      companyId,
+      trimestre: '2025-Q1',
+    });
+    expect(result.total).toBe(2);
+    expect(result.respondidos).toBe(1);
+    expect(result.pendentes[0]!.employeeId).toBe(liderado1);
+  });
+});
+
+describe('instrumentA — getInstrumentAStatus (cross-company e schema)', () => {
+  const NOW_ANTES_CORTE = new Date('2025-04-05T12:00:00Z');
+
+  let companyA: number;
+  let companyB: number;
+  let empRhA: number;
+
+  beforeAll(async () => {
+    companyA = await createCompany('10000000000756');
+    companyB = await createCompany('10000000000757');
+    empRhA = await createEmployee(companyA, { isRH: true });
+  });
+
+  it('RH de companyA passando companyB -> FORBIDDEN (§2.4)', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenPlatform('rh', empRhA, companyA);
+    const caller = factory(ctx(token));
+    await expect(
+      caller.getInstrumentAStatus({ companyId: companyB, trimestre: '2025-Q1' }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
+
+  it('super_admin com companyId inexistente -> NOT_FOUND', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenSuperAdmin();
+    const caller = factory(ctx(token));
+    await expect(
+      caller.getInstrumentAStatus({ companyId: 999999999, trimestre: '2025-Q1' }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND', message: MSG_EMPRESA_NAO_ENCONTRADA_STATUS_A });
+  });
+
+  it('trimestre invalido -> BAD_REQUEST', async () => {
+    const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
+    const token = await tokenSuperAdmin();
+    const caller = factory(ctx(token));
+    await expect(
+      caller.getInstrumentAStatus({ companyId: companyA, trimestre: '2025Q1' }),
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+  });
+});
+
+describe('instrumentA — scopedEmployeeIdsByLeaderA helper', () => {
+  let companyId: number;
+  let liderId: number;
+  let clevelId: number;
+  let liderado1: number;
+  let liderado2: number;
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_STATUS_CROSS);
+    liderId = await createEmployee(companyId, { isLider: true });
+    clevelId = await createClevel(companyId);
+    liderado1 = await createEmployee(companyId);
+    liderado2 = await createEmployee(companyId);
+    await linkLeaderA(liderado1, { liderId });
+    await linkLeaderA(liderado2, { clevelId });
+  });
+
+  it('liderId apenas -> retorna liderados diretos', async () => {
+    const ids = await scopedEmployeeIdsByLeaderA(client.db, companyId, liderId, null);
+    expect(ids).toContain(liderado1);
+    expect(ids).not.toContain(liderado2);
+  });
+
+  it('clevelId apenas -> retorna liderados diretos', async () => {
+    const ids = await scopedEmployeeIdsByLeaderA(client.db, companyId, null, clevelId);
+    expect(ids).toContain(liderado2);
+    expect(ids).not.toContain(liderado1);
+  });
+
+  it('ambos null -> array vazio (defesa)', async () => {
+    const ids = await scopedEmployeeIdsByLeaderA(client.db, companyId, null, null);
+    expect(ids).toEqual([]);
   });
 });

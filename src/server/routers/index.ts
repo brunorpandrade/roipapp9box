@@ -23,6 +23,8 @@ import { createInstrumentARouter } from './instrumentA';
 import { createInstrumentCRouter } from './instrumentC';
 import { createMonthlyClosureRouter } from './monthlyClosure';
 import { createMonthlyDataRouter } from './monthlyData';
+import { createNineBoxRouter } from './nineBox';
+import { createPlenitudeRouter } from './plenitude';
 import { createQuarterlyCalculationRouter } from './quarterlyCalculation';
 
 /** Sub-router de saude: liveness sem sessao. */
@@ -145,6 +147,36 @@ const instrumentCRouter = createInstrumentCRouter();
  */
 const instrumentARouter = createInstrumentARouter();
 
+/**
+ * Sub-router `plenitude` (ME-042, Bloco B3). Primeira superficie tRPC
+ * de leitura publica do Eixo Y — 1 proc canonica do §6.8 setima linha
+ * + §19.4 nona linha: `getPlenitudeData`. Factory sem parametros —
+ * leitura pura, sem motor. O motor de plenitude (§6.4) foi entregue
+ * na ME-040 e materializa `plenitudeData` a cada submit do A ou C;
+ * este sub-router expoe a leitura da linha ja calculada. Guards
+ * canonicos: escopo empresa (§2.4), cadeia direta de lider (S066)
+ * quando `role === 'lider'`, colaborador inativo restrito a Bruno +
+ * RH (§3.13). PC1e §15.5 satisfeita por construcao arquitetural
+ * (C-levels nao tem entrada em `plenitudeData`).
+ */
+const plenitudeRouter = createPlenitudeRouter();
+
+/**
+ * Sub-router `nineBox` (ME-042, Bloco B3). Segunda superficie tRPC
+ * de leitura publica do Eixo Y — 2 procs canonicas do §7.9 + §19.4
+ * decima e decima-primeira linhas: `getNineBoxSnapshot` (S119 —
+ * discriminated union por `mode: 'employee'|'company'`) e
+ * `getNineBoxTrajectory` (S120 — N default 4, cap 20). Factory sem
+ * parametros — leitura pura, sem motor. O motor 9-Box (§7.1-7.8) foi
+ * entregue na ME-041 e materializa `nineBoxClassifications` a cada
+ * escrita do plenitude em que os dois eixos estao disponiveis; este
+ * sub-router expoe a leitura da linha ja calculada. Guards canonicos:
+ * escopo empresa (§2.4), cadeia direta (S066) quando `role ===
+ * 'lider'`, inativo restrito a Bruno + RH (§3.13). S122: modo empresa
+ * do snapshot restrito a Bruno + RH.
+ */
+const nineBoxRouter = createNineBoxRouter();
+
 /** Router raiz da plataforma. */
 export const appRouter = router({
   health: healthRouter,
@@ -159,6 +191,8 @@ export const appRouter = router({
   monthlyClosure: monthlyClosureRouter,
   instrumentC: instrumentCRouter,
   instrumentA: instrumentARouter,
+  plenitude: plenitudeRouter,
+  nineBox: nineBoxRouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */

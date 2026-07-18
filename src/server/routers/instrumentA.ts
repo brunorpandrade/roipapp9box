@@ -1,32 +1,48 @@
-// ROIP APP 9BOX — sub-router `instrumentA` (ME-039).
+// ROIP APP 9BOX — sub-router `instrumentA` (ME-039, editado em ME-042).
 //
-// Decima ME do Bloco B3. Fecha a SEGUNDA e ULTIMA perna canonica de
-// escrita do Eixo Y: par simetrico ao Instrumento C entregue na ME-038.
+// Decima ME do Bloco B3 (ME-039) — abriu o par canonico de escrita do
+// Eixo Y (reopen manual). Decima-terceira ME do Bloco B3 (ME-042) —
+// adiciona a leitura publica `getInstrumentAStatus` do §6.8 segunda
+// linha, alinhando a superficie de acompanhamento de coleta do
+// Instrumento A com o §19.4 (leitura publica do Eixo Y).
+//
 // A ponta de escrita "normal" do Instrumento A vive no Route Handler
 // canonico `POST /api/portal/save-instrument-a` (§6.8 primeira linha —
 // portal autenticado por CPF via `portalToken`, NAO via tRPC); este
-// sub-router expoe apenas o desbloqueio manual por Bruno (§6.8 sexta
-// linha). O motor de plenitude (§6.4) nasceu na ME-040 com hook real
-// em ambos os pontos de escrita canonicos do Eixo Y (Route Handler
+// sub-router expoe:
+//   - o desbloqueio manual por Bruno (§6.8 sexta linha, ME-039);
+//   - a leitura publica de status de coleta (§6.8 segunda linha,
+//     ME-042 — leitura de agregado + lista nominal por (companyId,
+//     trimestre), com autorizacao por escopo hierarquico).
+//
+// O motor de plenitude (§6.4) nasceu na ME-040 com hook real em ambos
+// os pontos de escrita canonicos do Eixo Y (Route Handler
 // `POST /api/portal/save-instrument-a` para A + `instrumentC.
 // saveInstrumentCAssessment` para C). Este sub-router NAO grava
-// resposta canonica de A — apenas registra desbloqueio em
-// `instrumentUnlockLog` —, portanto S094 se mantem valida aqui: NAO
-// ha hook de motor de plenitude neste sub-router porque nao ha
-// gravacao de resposta a acionar.
+// resposta canonica de A — S094 preservado: NAO ha hook de motor de
+// plenitude aqui porque nao ha gravacao de resposta a acionar.
 //
-// Procedure canonica (DOC 03 §6.8 sexta linha):
-//   - `instrumentA.reopenResponse` — desbloqueio manual do A por Bruno.
-//     Padrao canonico 100-500 (§2). Cria linha em `instrumentUnlockLog`
-//     com `instrumento='A'`, `expiraEm=now+24h`, `houveAlteracao=false`.
-//     Exclusivo super_admin (S086 estendido a A, analogo ao C).
+// Procedures canonicas:
+//   - `instrumentA.reopenResponse` (ME-039) — desbloqueio manual do A
+//     por Bruno. Padrao canonico 100-500 (§2). Cria linha em
+//     `instrumentUnlockLog` com `instrumento='A'`, `expiraEm=now+24h`,
+//     `houveAlteracao=false`. Exclusivo super_admin (S086 estendido a A,
+//     analogo ao C).
+//   - `instrumentA.getInstrumentAStatus` (ME-042 — §6.8 segunda linha
+//     + §19.4 quinta linha) — retorna `{ total, respondidos,
+//     pendentes: [{ employeeId, nome, departamento, cargo, status }] }`
+//     onde `status ∈ {'pendente','atrasado'}`. Autorizacao por escopo:
+//     RH e Bruno (empresa); Lider e C-level (cadeia descendente).
+//     S121: `status = 'atrasado'` quando `now > dataCorte` canonica
+//     (§6.3 dia 10 do mes subsequente ao ultimo mes do trimestre;
+//     replicada ao A por simetria §6.1/§6.2); caso contrario,
+//     'pendente'. §6.2 canoniza que C-level NAO responde o A —
+//     portanto o denominador `total` EXCLUI C-levels (que vivem em
+//     `cLevelMembers`, tabela separada de `employees` — a exclusao e
+//     por construcao). Ativos apenas (§7.6 replicado ao A por
+//     simetria — inativos nao aparecem no acompanhamento de coleta).
 //
-// NAO pertence ao escopo desta ME (S089 pattern replicado da ME-038):
-//   - `getInstrumentAStatus` (§6.8 segunda linha) — agregacao por
-//     empresa/trimestre com JOIN em employees e escopo hierarquico.
-//     Merece ME propria (analogo a `getPendencies` do C, que tambem
-//     ficou fora da ME-038). Incluir aqui inflaria a ME sem novo
-//     chamador de service.
+// NAO pertence ao escopo desta ME:
 //   - `saveInstrumentAResponse` (§6.8 primeira linha) — canonicamente
 //     via portal (nao tRPC). Vive no Route Handler
 //     `POST /api/portal/save-instrument-a/route.ts` (S097 revisada).
@@ -34,11 +50,13 @@
 // Convencoes canonicas herdadas:
 //   - DI factory `createInstrumentARouter(deps)` (S100, S084 estendido):
 //     `now` injetavel (default `() => new Date()`) para testes
-//     deterministicos. NAO ha hook de motor de plenitude porque este
-//     sub-router NAO grava resposta canonica de A — apenas reopen. O
-//     hook canonico do motor de plenitude vive no Route Handler
-//     `POST /api/portal/save-instrument-a` (ME-040) para o A e no
-//     router `instrumentC.saveInstrumentCAssessment` (ME-040) para o C.
+//     deterministicos. `now` tambem alimenta o corte canonico de
+//     `pendente | atrasado` no `getInstrumentAStatus` (S121). NAO ha
+//     hook de motor de plenitude porque este sub-router NAO grava
+//     resposta canonica de A — apenas reopen e leitura. O hook canonico
+//     do motor de plenitude vive no Route Handler `POST /api/portal/
+//     save-instrument-a` (ME-040) para o A e no router
+//     `instrumentC.saveInstrumentCAssessment` (ME-040) para o C.
 //   - `reopenResponse` (S093): pre-condicao de resposta previa existente
 //     (`MSG_REOPEN_SEM_RESPOSTA`); rejeita janela vigente empilhada
 //     (`MSG_REOPEN_JA_VIGENTE_A`); guard cruzado companyId (§2.4).
@@ -58,11 +76,18 @@
 // Testes tRPC: `tests/integration/instrumentA-router.test.ts`.
 
 import { TRPCError } from '@trpc/server';
-import { and, desc, eq, gt } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { RoipDatabase } from '../../db/client';
-import { employees, instrumentA_responses, instrumentUnlockLog } from '../../db/schema';
+import {
+  companies,
+  employeeLeaderHistory,
+  employees,
+  instrumentA_responses,
+  instrumentUnlockLog,
+} from '../../db/schema';
+import { getInstrumentoABDataCorte, parseTrimestreCicloReferencia } from '../../lib/cycleDates';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
 
 // ============================================================
@@ -137,6 +162,22 @@ export const MSG_REOPEN_SEM_RESPOSTA =
 export const MSG_REOPEN_JA_VIGENTE_A =
   'Já existe desbloqueio vigente para este colaborador neste trimestre.';
 
+/**
+ * §6.8 segunda linha (ME-042) — trimestre com formato invalido no
+ * `getInstrumentAStatus`. Mensagem canonica literal (S091 estendido).
+ * O schema Zod ja bloqueia formato invalido antes de chegar ao
+ * handler; a mensagem esta aqui para o teste asseriar quando o
+ * caminho for exercitado por parse manual (defesa em profundidade,
+ * padrao S092/S096).
+ */
+export const MSG_TRIMESTRE_INVALIDO_STATUS_A = 'Trimestre canônico deve seguir o formato YYYY-QN.';
+
+/**
+ * §2.4 (ME-042) — companyId ausente/invalido no `getInstrumentAStatus`
+ * para perfis com escopo de empresa. Mensagem canonica.
+ */
+export const MSG_EMPRESA_NAO_ENCONTRADA_STATUS_A = 'Empresa não encontrada.';
+
 // ============================================================
 // Schemas Zod canonicos (consumidos pelo router tRPC + Route Handler)
 // ============================================================
@@ -210,6 +251,68 @@ export interface ReopenResponseResult {
   unlockLogId: number;
   expiraEm: Date;
 }
+
+/**
+ * §6.8 segunda linha (ME-042) + S121 — status de coleta canonico de
+ * um colaborador pendente no acompanhamento do Instrumento A.
+ *   - `'pendente'`: trimestre em andamento (dataCorte >= now) SEM
+ *     resposta registrada.
+ *   - `'atrasado'`: trimestre ja fechou canonicamente (dataCorte
+ *     < now) e ainda nao ha resposta registrada. §6.7 canoniza que
+ *     resposta tardia ao A NAO e desbloqueio (o card permanece aberto
+ *     no portal); `'atrasado'` sinaliza visualmente para o RH que
+ *     o prazo canonico do trimestre expirou.
+ */
+export const STATUS_PENDENCIA_INSTRUMENT_A_VALUES = ['pendente', 'atrasado'] as const;
+
+/** Status canonico de um colaborador pendente no §6.8 segunda linha. */
+export type StatusPendenciaInstrumentA = (typeof STATUS_PENDENCIA_INSTRUMENT_A_VALUES)[number];
+
+/**
+ * §6.8 segunda linha — item canonico da lista `pendentes` do
+ * `getInstrumentAStatus`. Contem os atributos canonicos do colaborador
+ * (nome, departamento, cargo) e o status de pendencia (S121). `cargo`
+ * mapeia ao campo `employees.descricaoCBO` (canonico do cargo do
+ * colaborador comum — o campo `cargo` do schema pertence a
+ * `cLevelMembers`, tabela separada; C-levels nao respondem o A por
+ * §6.2 e portanto nao aparecem aqui).
+ */
+export interface InstrumentAStatusPendente {
+  employeeId: number;
+  nome: string;
+  departamento: string;
+  cargo: string;
+  status: StatusPendenciaInstrumentA;
+}
+
+/**
+ * §6.8 segunda linha — resultado canonico da leitura de status do A
+ * para (companyId, trimestre). `total` conta colaboradores ATIVOS
+ * elegiveis a responder (§7.6 replicado ao A por simetria; C-levels
+ * excluidos por §6.2 por construcao — vivem em `cLevelMembers`).
+ * `respondidos` = `total - pendentes.length` (contagem consistente
+ * com a lista devolvida — semantica de `respondidos: pelo menos uma
+ * resposta registrada no trimestre`).
+ */
+export interface GetInstrumentAStatusResult {
+  companyId: number;
+  trimestre: string;
+  total: number;
+  respondidos: number;
+  pendentes: InstrumentAStatusPendente[];
+}
+
+/**
+ * §6.1 — schema local do trimestre para o `getInstrumentAStatus`.
+ * Redeclarado como constante local por precedente do repo (cada
+ * router redeclara o proprio schema para evitar dependencia cruzada
+ * entre routers). Reusa a mesma regex canonica que o
+ * `TRIMESTRE_SCHEMA_INSTRUMENT_A`, mas com identificador dedicado
+ * a leitura de status.
+ */
+export const TRIMESTRE_INPUT_SCHEMA_STATUS_A = z.string().regex(/^\d{4}-Q[1-4]$/, {
+  message: MSG_TRIMESTRE_INVALIDO_STATUS_A,
+});
 
 // ============================================================
 // Dependencias injetaveis (S100 — sem hook de motor)
@@ -286,6 +389,69 @@ export function itensCobremGridCanonicoA(
 }
 
 /**
+ * §6.8 segunda linha + S066 (ME-042) — resolve os `employeeId`s da
+ * cadeia direta descendente do lider ou C-level para escopo canonico
+ * do `getInstrumentAStatus`. Exatamente um entre `liderId` e
+ * `clevelId` deve ser nao-nulo (padrao XOR canonico da tabela
+ * `employeeLeaderHistory`). `dataFim IS NULL` filtra vinculos ativos.
+ * O `companyId` filtra defensivamente cross-company (o titular ja
+ * teve o companyId cruzado em `assertCompanyScopePlenitude` analogo;
+ * aqui o filtro e defesa em profundidade).
+ * Retorna array vazio se nao houver liderados diretos.
+ */
+export async function scopedEmployeeIdsByLeaderA(
+  db: RoipDatabase,
+  companyId: number,
+  liderId: number | null,
+  clevelId: number | null,
+): Promise<number[]> {
+  if (liderId === null && clevelId === null) {
+    return [];
+  }
+  // O JOIN entre `employeeLeaderHistory` e `employees` cruza pelo
+  // `employeeId` (colaborador liderado) para filtrar pelo `companyId`
+  // do liderado. `dataFim IS NULL` filtra vinculos ativos.
+  const rows = await db
+    .select({ employeeId: employeeLeaderHistory.employeeId })
+    .from(employeeLeaderHistory)
+    .innerJoin(employees, eq(employees.id, employeeLeaderHistory.employeeId))
+    .where(
+      and(
+        eq(employees.companyId, companyId),
+        isNull(employeeLeaderHistory.dataFim),
+        liderId !== null
+          ? eq(employeeLeaderHistory.liderId, liderId)
+          : eq(employeeLeaderHistory.clevelId, clevelId as number),
+      ),
+    );
+  return rows.map((row) => row.employeeId);
+}
+
+/**
+ * §6.8 segunda linha + S121 — classifica status pendente segundo o
+ * corte canonico do trimestre. Retorna `'atrasado'` quando `now`
+ * ultrapassou a `dataCorte` canonica (§6.3 dia 10 do mes subsequente,
+ * replicada ao A por simetria §6.1/§6.2); caso contrario, `'pendente'`.
+ * Exportado para reuso em superficies que classificam pendencia sem
+ * chamar a proc completa (por exemplo, futuras superficies do portal).
+ */
+export function classifyStatusPendenciaA(
+  trimestre: string,
+  timeZone: string,
+  now: Date,
+): StatusPendenciaInstrumentA {
+  const parsed = parseTrimestreCicloReferencia(trimestre);
+  if (!parsed) {
+    // Trimestre invalido nao deveria chegar aqui (schema Zod bloqueia
+    // antes); defesa em profundidade: retorna 'pendente' como estado
+    // conservador — o chamador ja lidou com a validacao canonica.
+    return 'pendente';
+  }
+  const dataCorte = getInstrumentoABDataCorte(parsed.ano, parsed.trimestre, timeZone);
+  return now.getTime() > dataCorte.getTime() ? 'atrasado' : 'pendente';
+}
+
+/**
  * Resolve o `instrumentUnlockLog` do tipo 'A' vigente (`expiraEm > now`)
  * para o par (employeeId, trimestre), se houver. Ordenado por
  * `desbloqueadoEm DESC, id DESC` — o mais recente vence. Retorna
@@ -332,6 +498,178 @@ export function createInstrumentARouter(deps: InstrumentARouterDeps = {}) {
   const resolved = resolveDepsA(deps);
 
   return router({
+    /**
+     * §6.8 segunda linha + §19.4 quinta linha (ME-042) — leitura
+     * publica de status de coleta do Instrumento A por (companyId,
+     * trimestre). Retorna `{ total, respondidos, pendentes: [...] }`.
+     * Escopo canonico por perfil:
+     *   - Bruno (super_admin): atravessa companyId.
+     *   - RH e RH-Lider: escopo empresa (companyId do JWT).
+     *   - C-level: cadeia descendente direta (liderados via
+     *     `employeeLeaderHistory.clevelId` com `dataFim IS NULL`).
+     *   - Lider: cadeia descendente direta (liderados via
+     *     `employeeLeaderHistory.liderId` com `dataFim IS NULL`).
+     * `total` conta colaboradores ATIVOS elegiveis a responder no
+     * escopo do chamador (§7.6 replicado ao A por simetria); C-levels
+     * excluidos por §6.2 por construcao (vivem em `cLevelMembers`).
+     * `pendentes[].status` classificado por `classifyStatusPendenciaA`
+     * contra a `dataCorte` canonica no fuso da empresa (S121).
+     * `respondidos = total - pendentes.length` — semantica
+     * canonica: "pelo menos uma resposta registrada no trimestre".
+     */
+    getInstrumentAStatus: roleProcedure(['super_admin', 'rh', 'rh_lider', 'clevel', 'lider'])
+      .input(
+        z.object({
+          companyId: z.number().int().positive(),
+          trimestre: TRIMESTRE_INPUT_SCHEMA_STATUS_A,
+        }),
+      )
+      .query(async ({ ctx, input }): Promise<GetInstrumentAStatusResult> => {
+        // §2.4 — guard cruzado companyId (super_admin atravessa).
+        if (ctx.user.role !== 'super_admin' && ctx.user.companyId !== input.companyId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Empresa fora do escopo do titular.',
+          });
+        }
+
+        // Resolve o fuso canonico da empresa para o corte de status.
+        const [company] = await ctx.db
+          .select({
+            id: companies.id,
+            timezone: companies.timezone,
+          })
+          .from(companies)
+          .where(eq(companies.id, input.companyId))
+          .limit(1);
+        if (!company) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: MSG_EMPRESA_NAO_ENCONTRADA_STATUS_A,
+          });
+        }
+        const timeZone = company.timezone ?? 'America/Sao_Paulo';
+
+        // Resolve o escopo de colaboradores elegiveis segundo o perfil.
+        // Bruno + RH + RH-Lider: toda a empresa (status='ativo').
+        // Lider: liderados diretos ativos via employeeLeaderHistory.
+        // C-level: idem, cruzando por clevelId.
+        let empRows: {
+          id: number;
+          name: string;
+          departamento: string;
+          descricaoCBO: string;
+        }[];
+
+        if (
+          ctx.user.role === 'super_admin' ||
+          ctx.user.role === 'rh' ||
+          ctx.user.role === 'rh_lider'
+        ) {
+          empRows = await ctx.db
+            .select({
+              id: employees.id,
+              name: employees.name,
+              departamento: employees.departamento,
+              descricaoCBO: employees.descricaoCBO,
+            })
+            .from(employees)
+            .where(and(eq(employees.companyId, input.companyId), eq(employees.status, 'ativo')))
+            .orderBy(employees.id);
+        } else {
+          // Lider ou C-level — cadeia direta descendente. Reusa a
+          // logica dos motores B3: `employeeLeaderHistory` com
+          // `dataFim IS NULL` cruzado por `liderId` (para lider) OU
+          // `clevelId` (para C-level). Duas etapas para preservar
+          // Drizzle tipado sem LATERAL: primeiro colhe os employeeIds
+          // elegiveis, depois hidrata os atributos.
+          const liderIdMatch = ctx.user.role === 'lider' ? ctx.user.userId : null;
+          const clevelIdMatch = ctx.user.role === 'clevel' ? ctx.user.userId : null;
+
+          const scopedIds = await scopedEmployeeIdsByLeaderA(
+            ctx.db,
+            input.companyId,
+            liderIdMatch,
+            clevelIdMatch,
+          );
+
+          if (scopedIds.length === 0) {
+            empRows = [];
+          } else {
+            empRows = await ctx.db
+              .select({
+                id: employees.id,
+                name: employees.name,
+                departamento: employees.departamento,
+                descricaoCBO: employees.descricaoCBO,
+              })
+              .from(employees)
+              .where(
+                and(
+                  eq(employees.companyId, input.companyId),
+                  eq(employees.status, 'ativo'),
+                  inArray(employees.id, scopedIds),
+                ),
+              )
+              .orderBy(employees.id);
+          }
+        }
+
+        if (empRows.length === 0) {
+          return {
+            companyId: input.companyId,
+            trimestre: input.trimestre,
+            total: 0,
+            respondidos: 0,
+            pendentes: [],
+          };
+        }
+
+        const employeeIds = empRows.map((row) => row.id);
+
+        // Resolve quais colaboradores ja tem PELO MENOS UMA resposta
+        // registrada no trimestre. `instrumentA_responses` grava um
+        // registro por (employeeId, trimestre, dimensao, itemIndex) —
+        // 20 por resposta completa. Distinct por employeeId basta para
+        // a semantica de `respondidos: pelo menos uma resposta`.
+        const respondedRows = await ctx.db
+          .selectDistinct({ employeeId: instrumentA_responses.employeeId })
+          .from(instrumentA_responses)
+          .where(
+            and(
+              eq(instrumentA_responses.companyId, input.companyId),
+              eq(instrumentA_responses.trimestre, input.trimestre),
+              inArray(instrumentA_responses.employeeId, employeeIds),
+            ),
+          );
+        const respondedSet = new Set<number>(respondedRows.map((row) => row.employeeId));
+
+        const now = resolved.now();
+        const statusCanonico = classifyStatusPendenciaA(input.trimestre, timeZone, now);
+
+        const pendentes: InstrumentAStatusPendente[] = [];
+        for (const emp of empRows) {
+          if (respondedSet.has(emp.id)) {
+            continue;
+          }
+          pendentes.push({
+            employeeId: emp.id,
+            nome: emp.name,
+            departamento: emp.departamento,
+            cargo: emp.descricaoCBO,
+            status: statusCanonico,
+          });
+        }
+
+        return {
+          companyId: input.companyId,
+          trimestre: input.trimestre,
+          total: empRows.length,
+          respondidos: empRows.length - pendentes.length,
+          pendentes,
+        };
+      }),
+
     /**
      * §6.7 + §6.8 sexta linha — desbloqueio manual DIRETO por Bruno
      * (exclusivo super_admin). Cria linha em `instrumentUnlockLog` com
