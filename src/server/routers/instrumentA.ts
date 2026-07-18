@@ -6,10 +6,14 @@
 // canonico `POST /api/portal/save-instrument-a` (§6.8 primeira linha —
 // portal autenticado por CPF via `portalToken`, NAO via tRPC); este
 // sub-router expoe apenas o desbloqueio manual por Bruno (§6.8 sexta
-// linha). Depois desta ME, o motor de plenitude (§6.4) pode nascer na
-// ME seguinte ja com ambas as fontes disponiveis (A e C respondidos) —
-// RV-13 satisfeito naturalmente, sem hook no-op (S094 refutado com o
-// mesmo racional S088 do C).
+// linha). O motor de plenitude (§6.4) nasceu na ME-040 com hook real
+// em ambos os pontos de escrita canonicos do Eixo Y (Route Handler
+// `POST /api/portal/save-instrument-a` para A + `instrumentC.
+// saveInstrumentCAssessment` para C). Este sub-router NAO grava
+// resposta canonica de A — apenas registra desbloqueio em
+// `instrumentUnlockLog` —, portanto S094 se mantem valida aqui: NAO
+// ha hook de motor de plenitude neste sub-router porque nao ha
+// gravacao de resposta a acionar.
 //
 // Procedure canonica (DOC 03 §6.8 sexta linha):
 //   - `instrumentA.reopenResponse` — desbloqueio manual do A por Bruno.
@@ -30,9 +34,11 @@
 // Convencoes canonicas herdadas:
 //   - DI factory `createInstrumentARouter(deps)` (S100, S084 estendido):
 //     `now` injetavel (default `() => new Date()`) para testes
-//     deterministicos. NAO ha hook de motor de plenitude (S094 — motor
-//     futuro fara [EDIT] neste router para injetar hook real, mesma
-//     cirurgia que fara no `instrumentC`).
+//     deterministicos. NAO ha hook de motor de plenitude porque este
+//     sub-router NAO grava resposta canonica de A — apenas reopen. O
+//     hook canonico do motor de plenitude vive no Route Handler
+//     `POST /api/portal/save-instrument-a` (ME-040) para o A e no
+//     router `instrumentC.saveInstrumentCAssessment` (ME-040) para o C.
 //   - `reopenResponse` (S093): pre-condicao de resposta previa existente
 //     (`MSG_REOPEN_SEM_RESPOSTA`); rejeita janela vigente empilhada
 //     (`MSG_REOPEN_JA_VIGENTE_A`); guard cruzado companyId (§2.4).
@@ -206,14 +212,15 @@ export interface ReopenResponseResult {
 }
 
 // ============================================================
-// Dependencias injetaveis (S100 — sem hook de motor S094)
+// Dependencias injetaveis (S100 — sem hook de motor)
 // ============================================================
 
 /**
  * Relogio injetavel para testes deterministicos. Sem hook de motor de
- * plenitude (S094 — mesmo racional S088): o motor sera introduzido em
- * ME futura com [EDIT] neste router para injetar `onResponseSaved` real.
- * Hook no-op cria superficie sem chamador real (RV-13 estrito).
+ * plenitude porque este sub-router NAO grava resposta canonica de A —
+ * apenas reopen. O hook canonico do motor de plenitude (ME-040) vive
+ * no Route Handler `POST /api/portal/save-instrument-a` para o A e no
+ * router `instrumentC.saveInstrumentCAssessment` para o C.
  */
 export interface InstrumentARouterDeps {
   now?: () => Date;
@@ -316,9 +323,10 @@ export async function findVigenteInstrumentUnlockA(
  * Constroi o sub-router `instrumentA` com dependencias injetadas
  * (S100, S084 estendido). Producao chama sem argumentos — o unico
  * default e o relogio. Testes injetam `now` fixo para determinismo.
- * Sem hook de motor (S094 — motor futuro fara [EDIT] deste router para
- * plugar `onResponseSaved` real, mesma cirurgia analoga que fara no
- * `instrumentC`).
+ * Sem hook de motor de plenitude porque este sub-router NAO grava
+ * resposta canonica de A — apenas reopen. O hook canonico (ME-040)
+ * vive no Route Handler `POST /api/portal/save-instrument-a` para o
+ * A e no router `instrumentC.saveInstrumentCAssessment` para o C.
  */
 export function createInstrumentARouter(deps: InstrumentARouterDeps = {}) {
   const resolved = resolveDepsA(deps);

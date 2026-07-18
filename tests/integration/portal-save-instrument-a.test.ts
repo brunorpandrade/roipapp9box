@@ -26,9 +26,10 @@
 //   - §6.7 comportamento canonico: resposta tardia sem envio previo NAO
 //     e desbloqueio (INSERT normal mesmo apos dia 10 do mes seguinte).
 //
-// L32 cleanup em afterAll. CNPJs faixa 10000000000750..75X reservada
-// para o Route Handler (disjunta da faixa 740..746 do teste do router
-// tRPC deste mesmo ME-039).
+// L32 cleanup em afterAll. CNPJs faixa 10000000000750..759 reservada
+// para o Route Handler (ME-039, disjunta da faixa 740..746 do teste
+// do router tRPC deste mesmo ME-039). Faixa 771 (ME-040 EDIT) para o
+// describe do hook canonico do motor de plenitude.
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { and, eq, inArray } from 'drizzle-orm';
@@ -39,7 +40,9 @@ import {
   companies,
   employees,
   instrumentA_responses,
+  instrumentC_assessments,
   instrumentUnlockLog,
+  plenitudeData,
 } from '../../src/db/schema';
 import { signPortalToken } from '../../src/server/auth/portalToken';
 import {
@@ -49,10 +52,18 @@ import {
   MSG_EMPLOYEE_INATIVO_A,
   MSG_ITENS_INCOMPLETOS_A,
   MSG_TRIMESTRE_NAO_ABERTO_A,
+  NUM_ITENS_TOTAL_A,
 } from '../../src/server/routers/instrumentA';
+import {
+  DEFAULT_PLENITUDE_ENGINE,
+  NUM_DIMENSOES_PLENITUDE,
+  NUM_ITENS_POR_DIMENSAO_PLENITUDE,
+  type PlenitudeEngineFacade,
+} from '../../src/server/services/plenitudeCalculationEngine';
 import {
   __setPortalSaveInstrumentADbClient,
   __setPortalSaveInstrumentANow,
+  __setPortalSaveInstrumentAPlenitudeEngine,
   MSG_BODY_MALFORMED,
   MSG_EXPIRED_TOKEN,
   MSG_INVALID_TOKEN,
@@ -101,15 +112,26 @@ beforeAll(async () => {
 afterAll(async () => {
   __setPortalSaveInstrumentADbClient(null);
   __setPortalSaveInstrumentANow(null);
+  __setPortalSaveInstrumentAPlenitudeEngine(null);
   if (!client) return;
   if (createdCompanyIds.length > 0) {
-    // L32 cleanup em ordem topologica FK.
+    // L32 cleanup em ordem topologica FK. Motor de plenitude (ME-040)
+    // upserta em `plenitudeData` a cada save do A — precisa limpar
+    // antes de `employees` por causa da FK canonica ON DELETE RESTRICT.
+    // `instrumentC_assessments` limpa por defesa: teste do handler A
+    // pode gravar C via helper canonico para exercitar o hook.
+    await client.db
+      .delete(plenitudeData)
+      .where(inArray(plenitudeData.companyId, createdCompanyIds));
     await client.db
       .delete(instrumentUnlockLog)
       .where(inArray(instrumentUnlockLog.companyId, createdCompanyIds));
     await client.db
       .delete(instrumentA_responses)
       .where(inArray(instrumentA_responses.companyId, createdCompanyIds));
+    await client.db
+      .delete(instrumentC_assessments)
+      .where(inArray(instrumentC_assessments.companyId, createdCompanyIds));
     await client.db.delete(employees).where(inArray(employees.companyId, createdCompanyIds));
     await client.db
       .delete(cLevelMembers)
@@ -894,5 +916,290 @@ describe('POST /api/portal/save-instrument-a — §6.7 resposta tardia canonica'
         ),
       );
     expect(unlockRows.length).toBe(0);
+  });
+});
+
+// ============================================================
+// 8) Hook canonico do motor de plenitude (ME-040 — §6.4)
+// ============================================================
+
+describe('POST /api/portal/save-instrument-a — hook motor de plenitude ME-040', () => {
+  let companyIdHook: number;
+  let employeeIdHook: number;
+  let validTokenHook: string;
+
+  beforeAll(async () => {
+    companyIdHook = await createCompany('10000000000771');
+    employeeIdHook = await createEmployee(companyIdHook);
+    validTokenHook = await signPortalToken({
+      companyId: companyIdHook,
+      titularType: 'employee',
+      titularId: employeeIdHook,
+    });
+  });
+
+  // Restaura setter DI apos cada teste — evita vazamento de spy para
+  // teste seguinte que espera comportamento default.
+  const resetPlenitudeEngine = () => __setPortalSaveInstrumentAPlenitudeEngine(null);
+
+  it('INSERT dispara hook com trio canonico (companyId, employeeId, trimestre)', async () => {
+    const chamadas: Array<{
+      companyId: number;
+      employeeId: number;
+      trimestre: string;
+      now: Date;
+    }> = [];
+    const spy: PlenitudeEngineFacade = {
+      recalculatePlenitude: async (_db, cid, eid, tri, now) => {
+        chamadas.push({ companyId: cid, employeeId: eid, trimestre: tri, now });
+        return {
+          companyId: cid,
+          employeeId: eid,
+          trimestre: tri,
+          motivo: 'instrumento_c_ausente',
+          calculado: false,
+          scoreA: null,
+          scoreC: null,
+          plenitudeScore: null,
+          faixaPlenitude: null,
+          divergencia: null,
+          alertaDivergencia: false,
+          engajamentoA: null,
+          desenvolvimentoA: null,
+          pertencimentoA: null,
+          realizacaoA: null,
+          engajamentoC: null,
+          desenvolvimentoC: null,
+          pertencimentoC: null,
+          realizacaoC: null,
+          calculadoEm: now,
+        };
+      },
+    };
+    __setPortalSaveInstrumentAPlenitudeEngine(spy);
+    try {
+      const res = await callSave({
+        portalToken: validTokenHook,
+        trimestre: '2024-Q1',
+        respostas: gridCanonico(3),
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as SaveInstrumentASuccess;
+      expect(body.operacao).toBe('insert');
+      expect(chamadas.length).toBe(1);
+      expect(chamadas[0]!.companyId).toBe(companyIdHook);
+      expect(chamadas[0]!.employeeId).toBe(employeeIdHook);
+      expect(chamadas[0]!.trimestre).toBe('2024-Q1');
+      expect(chamadas[0]!.now.getTime()).toBe(NOW_ABERTO_Q1_2024.getTime());
+    } finally {
+      resetPlenitudeEngine();
+    }
+  });
+
+  it('OVERWRITE dispara hook com trio canonico', async () => {
+    // Setup: cria outro employee dedicado (nao vaza state entre casos).
+    const empOverwrite = await createEmployee(companyIdHook);
+    const tokenOverwrite = await signPortalToken({
+      companyId: companyIdHook,
+      titularType: 'employee',
+      titularId: empOverwrite,
+    });
+    const chamadas: string[] = [];
+    const spy: PlenitudeEngineFacade = {
+      recalculatePlenitude: async (_db, cid, eid, tri, now) => {
+        chamadas.push(`${cid}:${eid}:${tri}`);
+        return {
+          companyId: cid,
+          employeeId: eid,
+          trimestre: tri,
+          motivo: 'ambos_ausentes',
+          calculado: false,
+          scoreA: null,
+          scoreC: null,
+          plenitudeScore: null,
+          faixaPlenitude: null,
+          divergencia: null,
+          alertaDivergencia: false,
+          engajamentoA: null,
+          desenvolvimentoA: null,
+          pertencimentoA: null,
+          realizacaoA: null,
+          engajamentoC: null,
+          desenvolvimentoC: null,
+          pertencimentoC: null,
+          realizacaoC: null,
+          calculadoEm: now,
+        };
+      },
+    };
+    __setPortalSaveInstrumentAPlenitudeEngine(spy);
+    try {
+      // Primeiro submit (INSERT).
+      const res1 = await callSave({
+        portalToken: tokenOverwrite,
+        trimestre: '2024-Q1',
+        respostas: gridCanonico(3),
+      });
+      expect(res1.status).toBe(200);
+      expect(chamadas.length).toBe(1);
+      // Cria desbloqueio vigente para permitir OVERWRITE.
+      await client.db.insert(instrumentUnlockLog).values({
+        companyId: companyIdHook,
+        employeeId: empOverwrite,
+        trimestre: '2024-Q1',
+        instrumento: 'A',
+        desbloqueadoPor: FIXTURE_SUPER_ADMIN_ID,
+        desbloqueadoEm: new Date('2024-03-20T09:00:00Z'),
+        expiraEm: new Date('2024-03-21T09:00:00Z'),
+        justificativa: 'Teste de OVERWRITE do hook canonico '.padEnd(150, 'x'),
+        houveAlteracao: false,
+      });
+      // Segundo submit (OVERWRITE) dentro da janela.
+      __setPortalSaveInstrumentANow(() => new Date('2024-03-20T12:00:00Z'));
+      const res2 = await callSave({
+        portalToken: tokenOverwrite,
+        trimestre: '2024-Q1',
+        respostas: gridCanonico(4),
+      });
+      expect(res2.status).toBe(200);
+      const body2 = (await res2.json()) as SaveInstrumentASuccess;
+      expect(body2.operacao).toBe('overwrite');
+      expect(chamadas.length).toBe(2);
+      expect(chamadas[1]).toBe(`${companyIdHook}:${empOverwrite}:2024-Q1`);
+    } finally {
+      resetPlenitudeEngine();
+    }
+  });
+
+  it('default (sem setter) usa DEFAULT_PLENITUDE_ENGINE e grava plenitudeData', async () => {
+    // Sem injetar spy — handler usa DEFAULT_PLENITUDE_ENGINE (motor real).
+    // Como so A foi gravado (nao C), linha em plenitudeData nasce com nulos.
+    const empDefault = await createEmployee(companyIdHook);
+    const tokenDefault = await signPortalToken({
+      companyId: companyIdHook,
+      titularType: 'employee',
+      titularId: empDefault,
+    });
+    const res = await callSave({
+      portalToken: tokenDefault,
+      trimestre: '2024-Q1',
+      respostas: gridCanonico(3),
+    });
+    expect(res.status).toBe(200);
+    // Motor real rodou → linha em plenitudeData com scores nulos
+    // (§6.4 literal — falta C).
+    const linhas = await client.db
+      .select()
+      .from(plenitudeData)
+      .where(
+        and(
+          eq(plenitudeData.companyId, companyIdHook),
+          eq(plenitudeData.employeeId, empDefault),
+          eq(plenitudeData.trimestre, '2024-Q1'),
+        ),
+      );
+    expect(linhas.length).toBe(1);
+    expect(linhas[0]!.scoreA).toBeNull();
+    expect(linhas[0]!.scoreC).toBeNull();
+    expect(linhas[0]!.plenitudeScore).toBeNull();
+  });
+
+  it('failure do motor propaga como 500 no handler (nao silenciado)', async () => {
+    const empFail = await createEmployee(companyIdHook);
+    const tokenFail = await signPortalToken({
+      companyId: companyIdHook,
+      titularType: 'employee',
+      titularId: empFail,
+    });
+    const spy: PlenitudeEngineFacade = {
+      recalculatePlenitude: async () => {
+        throw new Error('Motor de plenitude falhou (teste canonico S102)');
+      },
+    };
+    __setPortalSaveInstrumentAPlenitudeEngine(spy);
+    try {
+      const res = await callSave({
+        portalToken: tokenFail,
+        trimestre: '2024-Q1',
+        respostas: gridCanonico(3),
+      });
+      expect(res.status).toBe(500);
+      // Response JA foi persistido pela transacao anterior — motor idempotente.
+      const linhas = await client.db
+        .select()
+        .from(instrumentA_responses)
+        .where(
+          and(
+            eq(instrumentA_responses.employeeId, empFail),
+            eq(instrumentA_responses.trimestre, '2024-Q1'),
+          ),
+        );
+      expect(linhas.length).toBe(NUM_ITENS_TOTAL_A);
+    } finally {
+      resetPlenitudeEngine();
+    }
+  });
+
+  it('DEFAULT_PLENITUDE_ENGINE eh o motor real da ME-040 (RV-13 estrito)', () => {
+    // Ancoragem canonica: producao usa o motor real.
+    expect(typeof DEFAULT_PLENITUDE_ENGINE.recalculatePlenitude).toBe('function');
+  });
+
+  it('hook chamado com now == relogio injetado (determinismo S044/L38)', async () => {
+    const empDeterm = await createEmployee(companyIdHook);
+    const tokenDeterm = await signPortalToken({
+      companyId: companyIdHook,
+      titularType: 'employee',
+      titularId: empDeterm,
+    });
+    let nowRecebido: Date | null = null;
+    const spy: PlenitudeEngineFacade = {
+      recalculatePlenitude: async (_db, cid, eid, tri, now) => {
+        nowRecebido = now;
+        return {
+          companyId: cid,
+          employeeId: eid,
+          trimestre: tri,
+          motivo: 'instrumento_c_ausente',
+          calculado: false,
+          scoreA: null,
+          scoreC: null,
+          plenitudeScore: null,
+          faixaPlenitude: null,
+          divergencia: null,
+          alertaDivergencia: false,
+          engajamentoA: null,
+          desenvolvimentoA: null,
+          pertencimentoA: null,
+          realizacaoA: null,
+          engajamentoC: null,
+          desenvolvimentoC: null,
+          pertencimentoC: null,
+          realizacaoC: null,
+          calculadoEm: now,
+        };
+      },
+    };
+    const nowFixo = new Date('2024-04-05T09:15:30Z');
+    __setPortalSaveInstrumentANow(() => nowFixo);
+    __setPortalSaveInstrumentAPlenitudeEngine(spy);
+    try {
+      const res = await callSave({
+        portalToken: tokenDeterm,
+        trimestre: '2024-Q1',
+        respostas: gridCanonico(2),
+      });
+      expect(res.status).toBe(200);
+      expect(nowRecebido).not.toBeNull();
+      expect((nowRecebido as unknown as Date).getTime()).toBe(nowFixo.getTime());
+    } finally {
+      resetPlenitudeEngine();
+    }
+  });
+
+  it('constantes canonicas do motor sao exportadas (NUM_DIMENSOES/ITENS_POR_DIM)', () => {
+    // Ancora RV-13: as constantes do motor sao consumidas pelo teste.
+    expect(NUM_DIMENSOES_PLENITUDE).toBe(4);
+    expect(NUM_ITENS_POR_DIMENSAO_PLENITUDE).toBe(5);
   });
 });

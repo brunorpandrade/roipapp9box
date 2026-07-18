@@ -1,12 +1,11 @@
-// ROIP APP 9BOX — sub-router `instrumentC` (ME-038).
+// ROIP APP 9BOX — sub-router `instrumentC` (ME-038, editado em ME-040).
 //
-// Nona ME do Bloco B3. Abre a ponta de escrita do Eixo Y: hoje o sistema
-// tem tabelas canonicas (`instrumentC_assessments`, `instrumentUnlockLog`,
-// `plenitudeData`) e services tipados, mas nenhuma superficie tRPC grava
-// avaliacao do Instrumento C. Este router e essa superficie. Cria a
-// pre-condicao real para o motor de plenitude (§6.4 — exige A e C ambos
-// respondidos e completos), sem antecipa-lo (RV-13 estrito — S088: motor
-// e hook nascem na mesma ME futura; aqui, NAO ha hook no-op).
+// Nona ME do Bloco B3 (ME-038) — abriu a ponta de escrita do Eixo Y.
+// Decima primeira ME do Bloco B3 (ME-040) — pluga o hook canonico do
+// motor de plenitude (§6.4). Com o motor entregue na ME-040, S088 e
+// satisfeito naturalmente: o hook `plenitudeEngine.recalculatePlenitude`
+// e chamado apos as transacoes atomicas de INSERT e OVERWRITE do C
+// (padrao S060 herdado do `quarterlyCalculation` × `roiCalculationEngine`).
 //
 // Procedures canonicas (DOC 03 §6.8 — a leitura literal do §6.8 lista 3
 // procs sob o namespace `instrumentC`; S089 estreita o escopo desta ME
@@ -49,8 +48,13 @@
 //     (`MSG_REOPEN_JA_VIGENTE`). Justificativa canonica 100-500 (§2).
 //   - DI factory `createInstrumentCRouter(deps)` (S084 estendido): `now`
 //     injetavel (default `() => new Date()`) para testes deterministicos.
-//     NAO ha hook de motor de plenitude (S088 — motor futuro faz
-//     [EDIT] neste router para injetar hook real).
+//     Motor de plenitude injetavel via `plenitudeEngine?:
+//     PlenitudeEngineFacade` (S105 — S060 herdado do
+//     `quarterlyCalculation` × `roiCalculationEngine`). Producao usa
+//     `DEFAULT_PLENITUDE_ENGINE`; testes injetam spy para asserir
+//     acoplamento. Hook chamado sincrono in-band FORA da transacao de
+//     escrita (S102): dentro forcaria tratar `MySql2Transaction ×
+//     MySql2Database`, padrao ja evitado no repo.
 //   - Zero SQL cru: 100% Drizzle tipado (RV-12). Transacao atomica via
 //     `db.transaction(async (tx) => ...)`.
 //   - Zero code dead: cada export tem chamador nos testes de integracao
@@ -87,6 +91,10 @@ import {
   parseTrimestreCicloReferencia,
 } from '../../lib/cycleDates';
 import { getActiveLeaderHistoryByEmployee } from '../services/employeeLeaderHistory';
+import {
+  DEFAULT_PLENITUDE_ENGINE,
+  type PlenitudeEngineFacade,
+} from '../services/plenitudeCalculationEngine';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
 
 // ============================================================
@@ -255,27 +263,32 @@ export interface ReopenAssessmentResult {
 }
 
 // ============================================================
-// Dependencias injetaveis (S084 estendido — sem hook de motor S088)
+// Dependencias injetaveis (S084 + S105 estendido — hook real ME-040)
 // ============================================================
 
 /**
- * Relogio injetavel para testes deterministicos. Sem hook de motor de
- * plenitude (S088): o motor sera introduzido em ME futura com [EDIT]
- * neste router para injetar `onAssessmentSaved` real (RV-13 estrito —
- * hook no-op cria superficie sem chamador real, precedente refutado nas
- * ME-036 e ME-037).
+ * Relogio injetavel para testes deterministicos. `plenitudeEngine`
+ * injetavel via `PlenitudeEngineFacade` (S105 — S060 herdado do
+ * `quarterlyCalculation` × `roiCalculationEngine`): producao usa
+ * `DEFAULT_PLENITUDE_ENGINE`; testes injetam spy para asserir
+ * acoplamento. O hook e chamado sincrono in-band FORA da transacao
+ * de escrita (S102) — dentro forcaria `MySql2Transaction ×
+ * MySql2Database`, padrao ja evitado no repo.
  */
 export interface InstrumentCRouterDeps {
   now?: () => Date;
+  plenitudeEngine?: PlenitudeEngineFacade;
 }
 
 interface ResolvedDeps {
   now: () => Date;
+  plenitudeEngine: PlenitudeEngineFacade;
 }
 
 function resolveDeps(deps: InstrumentCRouterDeps): ResolvedDeps {
   return {
     now: deps.now ?? (() => new Date()),
+    plenitudeEngine: deps.plenitudeEngine ?? DEFAULT_PLENITUDE_ENGINE,
   };
 }
 
@@ -401,10 +414,13 @@ function computeStatusJanela(
 
 /**
  * Constroi o sub-router `instrumentC` com dependencias injetadas
- * (S084 estendido). Producao chama sem argumentos — o unico default e o
- * relogio. Testes injetam `now` fixo para determinismo. Sem hook de
- * motor (S088 — motor futuro fara [EDIT] deste router para plugar
- * `onAssessmentSaved` real).
+ * (S084 + S105 estendido). Producao chama sem argumentos — defaults
+ * sao relogio (`() => new Date()`) e motor de plenitude
+ * (`DEFAULT_PLENITUDE_ENGINE`, ME-040). Testes injetam `now` fixo e
+ * `plenitudeEngine` spy para determinismo e assertividade do
+ * acoplamento. O hook e chamado sincrono in-band FORA da transacao
+ * de escrita — apos INSERT e OVERWRITE — para consumir A + C do
+ * (employeeId, trimestre) e upsertar `plenitudeData` (§6.4).
  */
 export function createInstrumentCRouter(deps: InstrumentCRouterDeps = {}) {
   const resolved = resolveDeps(deps);
@@ -571,6 +587,18 @@ export function createInstrumentCRouter(deps: InstrumentCRouterDeps = {}) {
                 );
             }
           });
+          // Hook canonico ME-040 (§6.4): motor de plenitude in-band FORA
+          // da transacao (S102). O motor le A e C do trio canonico e
+          // upserta `plenitudeData` — se A tambem esta completo,
+          // preenche scores; senao, mantem scores nulos (§6.4 literal).
+          // Reexecucao idempotente canonica.
+          await resolved.plenitudeEngine.recalculatePlenitude(
+            ctx.db,
+            input.companyId,
+            input.employeeId,
+            input.trimestre,
+            now,
+          );
           return {
             companyId: input.companyId,
             employeeId: input.employeeId,
@@ -606,6 +634,18 @@ export function createInstrumentCRouter(deps: InstrumentCRouterDeps = {}) {
             });
           }
         });
+        // Hook canonico ME-040 (§6.4): motor de plenitude in-band FORA
+        // da transacao (S102). O motor le A e C do trio canonico e
+        // upserta `plenitudeData` — se A tambem esta completo (§6.2
+        // acao 2 combinada com esta), preenche scores; senao, mantem
+        // scores nulos (§6.4 literal). Reexecucao idempotente canonica.
+        await resolved.plenitudeEngine.recalculatePlenitude(
+          ctx.db,
+          input.companyId,
+          input.employeeId,
+          input.trimestre,
+          now,
+        );
         return {
           companyId: input.companyId,
           employeeId: input.employeeId,

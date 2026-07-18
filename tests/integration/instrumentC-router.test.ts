@@ -22,9 +22,10 @@
 //     `instrumento='C'` e `expiraEm=now+24h`.
 //
 // Padrao S009 estendido (S076): uma company local por describe, CNPJ
-// unico da faixa 10000000000720..7XX (ME-038). L32 cleanup em afterAll
-// (todas as tabelas com FK compartilhada + fixture global superAdmins
-// id=1 preservada). JWT_SECRET fixo no arquivo.
+// unico da faixa 10000000000720..732 (ME-038) + 770 (ME-040 EDIT: hook
+// do motor de plenitude). L32 cleanup em afterAll (todas as tabelas
+// com FK compartilhada + `plenitudeData` adicionada em ME-040 + fixture
+// global superAdmins id=1 preservada). JWT_SECRET fixo no arquivo.
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, eq, inArray } from 'drizzle-orm';
@@ -37,6 +38,7 @@ import {
   employees,
   instrumentC_assessments,
   instrumentUnlockLog,
+  plenitudeData,
 } from '../../src/db/schema';
 import {
   deriveCredentialVersion,
@@ -73,6 +75,10 @@ import {
   VALOR_MIN,
   VALOR_SCHEMA_INSTRUMENT_C,
 } from '../../src/server/routers/instrumentC';
+import {
+  DEFAULT_PLENITUDE_ENGINE,
+  type PlenitudeEngineFacade,
+} from '../../src/server/services/plenitudeCalculationEngine';
 import { createCallerFactory, createContextInner, type Context } from '../../src/server/trpc';
 
 const TEST_URL =
@@ -105,6 +111,12 @@ beforeAll(async () => {
 afterAll(async () => {
   if (!client) return;
   if (createdCompanyIds.length > 0) {
+    // Motor de plenitude (ME-040) upserta em `plenitudeData` a cada
+    // `saveInstrumentCAssessment` — precisa limpar antes de `employees`
+    // por causa da FK canonica `plenitudeData_ibfk_2` ON DELETE RESTRICT.
+    await client.db
+      .delete(plenitudeData)
+      .where(inArray(plenitudeData.companyId, createdCompanyIds));
     await client.db
       .delete(instrumentUnlockLog)
       .where(inArray(instrumentUnlockLog.companyId, createdCompanyIds));
@@ -1282,5 +1294,281 @@ describe('instrumentC — reopenAssessment', () => {
         justificativa: 'j'.repeat(99),
       }),
     ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+  });
+});
+
+// ============================================================
+// 4) Hook canonico do motor de plenitude (ME-040 — §6.4)
+// ============================================================
+
+describe('instrumentC — hook canonico do motor de plenitude ME-040', () => {
+  let companyIdHook: number;
+  let liderIdHook: number;
+  let empColabHook: number;
+
+  beforeAll(async () => {
+    companyIdHook = await createCompany('10000000000770');
+    liderIdHook = await createEmployee(companyIdHook, { isLider: true });
+    empColabHook = await createEmployee(companyIdHook);
+    await bindVinculoLider(empColabHook, liderIdHook);
+  });
+
+  it('INSERT dispara hook com trio canonico (companyId, employeeId, trimestre)', async () => {
+    const chamadas: Array<{
+      companyId: number;
+      employeeId: number;
+      trimestre: string;
+      now: Date;
+    }> = [];
+    const spy: PlenitudeEngineFacade = {
+      recalculatePlenitude: async (_db, cid, eid, tri, now) => {
+        chamadas.push({ companyId: cid, employeeId: eid, trimestre: tri, now });
+        return {
+          companyId: cid,
+          employeeId: eid,
+          trimestre: tri,
+          motivo: 'instrumento_a_ausente',
+          calculado: false,
+          scoreA: null,
+          scoreC: null,
+          plenitudeScore: null,
+          faixaPlenitude: null,
+          divergencia: null,
+          alertaDivergencia: false,
+          engajamentoA: null,
+          desenvolvimentoA: null,
+          pertencimentoA: null,
+          realizacaoA: null,
+          engajamentoC: null,
+          desenvolvimentoC: null,
+          pertencimentoC: null,
+          realizacaoC: null,
+          calculadoEm: now,
+        };
+      },
+    };
+    const nowFixo = new Date('2024-03-25T12:00:00Z');
+    const { factory, ctx } = bindRouter({
+      now: () => nowFixo,
+      plenitudeEngine: spy,
+    });
+    const token = await tokenPlatform('lider', liderIdHook, companyIdHook);
+    const caller = factory(ctx(token));
+    const res = await caller.saveInstrumentCAssessment({
+      companyId: companyIdHook,
+      employeeId: empColabHook,
+      liderId: liderIdHook,
+      trimestre: '2024-Q1',
+      respostas: gridCanonico(3),
+    });
+    expect(res.operacao).toBe('insert');
+    expect(chamadas.length).toBe(1);
+    expect(chamadas[0]!.companyId).toBe(companyIdHook);
+    expect(chamadas[0]!.employeeId).toBe(empColabHook);
+    expect(chamadas[0]!.trimestre).toBe('2024-Q1');
+    expect(chamadas[0]!.now.getTime()).toBe(nowFixo.getTime());
+  });
+
+  it('OVERWRITE dispara hook com trio canonico', async () => {
+    // Setup: cria uma janela de desbloqueio vigente e insere uma
+    // avaliacao previa via caller (que aciona o hook uma vez), depois
+    // faz o OVERWRITE (segundo hook).
+    const outroColab = await createEmployee(companyIdHook);
+    await bindVinculoLider(outroColab, liderIdHook);
+    const chamadas: Array<string> = [];
+    const spy: PlenitudeEngineFacade = {
+      recalculatePlenitude: async (_db, cid, eid, tri, now) => {
+        chamadas.push(`${cid}:${eid}:${tri}`);
+        return {
+          companyId: cid,
+          employeeId: eid,
+          trimestre: tri,
+          motivo: 'ambos_ausentes',
+          calculado: false,
+          scoreA: null,
+          scoreC: null,
+          plenitudeScore: null,
+          faixaPlenitude: null,
+          divergencia: null,
+          alertaDivergencia: false,
+          engajamentoA: null,
+          desenvolvimentoA: null,
+          pertencimentoA: null,
+          realizacaoA: null,
+          engajamentoC: null,
+          desenvolvimentoC: null,
+          pertencimentoC: null,
+          realizacaoC: null,
+          calculadoEm: now,
+        };
+      },
+    };
+    const nowFixo = new Date('2024-03-26T12:00:00Z');
+    const { factory, ctx } = bindRouter({
+      now: () => nowFixo,
+      plenitudeEngine: spy,
+    });
+    const token = await tokenSuperAdmin();
+    const caller = factory(ctx(token));
+    // Primeiro submit (INSERT).
+    await caller.saveInstrumentCAssessment({
+      companyId: companyIdHook,
+      employeeId: outroColab,
+      liderId: liderIdHook,
+      trimestre: '2024-Q1',
+      respostas: gridCanonico(3),
+    });
+    expect(chamadas.length).toBe(1);
+    // Cria desbloqueio vigente para permitir OVERWRITE.
+    await client.db.insert(instrumentUnlockLog).values({
+      companyId: companyIdHook,
+      employeeId: outroColab,
+      trimestre: '2024-Q1',
+      instrumento: 'C',
+      desbloqueadoPor: FIXTURE_SUPER_ADMIN_ID,
+      desbloqueadoEm: new Date('2024-03-26T11:00:00Z'),
+      expiraEm: new Date('2024-03-27T11:00:00Z'),
+      justificativa: 'Teste de OVERWRITE canonico do hook '.padEnd(150, 'x'),
+      houveAlteracao: false,
+    });
+    // Segundo submit (OVERWRITE).
+    const res2 = await caller.saveInstrumentCAssessment({
+      companyId: companyIdHook,
+      employeeId: outroColab,
+      liderId: liderIdHook,
+      trimestre: '2024-Q1',
+      respostas: gridCanonico(4),
+    });
+    expect(res2.operacao).toBe('overwrite');
+    expect(chamadas.length).toBe(2);
+    expect(chamadas[1]).toBe(`${companyIdHook}:${outroColab}:2024-Q1`);
+  });
+
+  it('default (sem spy) usa DEFAULT_PLENITUDE_ENGINE e grava linha plenitudeData', async () => {
+    // Sem injetar spy — o factory usa DEFAULT_PLENITUDE_ENGINE (o motor
+    // real desta ME). Como so C foi gravado (nao A), linha aparece com
+    // scores nulos.
+    const outroColab = await createEmployee(companyIdHook);
+    await bindVinculoLider(outroColab, liderIdHook);
+    const { factory, ctx } = bindRouter({
+      now: () => new Date('2024-03-27T12:00:00Z'),
+    });
+    const token = await tokenSuperAdmin();
+    const caller = factory(ctx(token));
+    const res = await caller.saveInstrumentCAssessment({
+      companyId: companyIdHook,
+      employeeId: outroColab,
+      liderId: liderIdHook,
+      trimestre: '2024-Q1',
+      respostas: gridCanonico(3),
+    });
+    expect(res.operacao).toBe('insert');
+    // Motor real rodou → linha em `plenitudeData` com scores nulos.
+    const linhas = await client.db
+      .select()
+      .from(plenitudeData)
+      .where(
+        and(
+          eq(plenitudeData.companyId, companyIdHook),
+          eq(plenitudeData.employeeId, outroColab),
+          eq(plenitudeData.trimestre, '2024-Q1'),
+        ),
+      );
+    expect(linhas.length).toBe(1);
+    expect(linhas[0]!.scoreA).toBeNull();
+    expect(linhas[0]!.scoreC).toBeNull();
+    expect(linhas[0]!.plenitudeScore).toBeNull();
+  });
+
+  it('failure do motor propaga como erro do mutation (nao silenciado)', async () => {
+    const outroColab = await createEmployee(companyIdHook);
+    await bindVinculoLider(outroColab, liderIdHook);
+    const spy: PlenitudeEngineFacade = {
+      recalculatePlenitude: async () => {
+        throw new Error('Motor de plenitude falhou (teste canonico S102)');
+      },
+    };
+    const { factory, ctx } = bindRouter({
+      now: () => new Date('2024-03-28T12:00:00Z'),
+      plenitudeEngine: spy,
+    });
+    const token = await tokenSuperAdmin();
+    const caller = factory(ctx(token));
+    await expect(
+      caller.saveInstrumentCAssessment({
+        companyId: companyIdHook,
+        employeeId: outroColab,
+        liderId: liderIdHook,
+        trimestre: '2024-Q1',
+        respostas: gridCanonico(3),
+      }),
+    ).rejects.toThrow(/Motor de plenitude falhou/);
+    // Assessment JA foi persistido pela transacao anterior — o motor
+    // e idempotente (§6.4), sera recalculado no proximo submit.
+    const linhas = await client.db
+      .select()
+      .from(instrumentC_assessments)
+      .where(
+        and(
+          eq(instrumentC_assessments.employeeId, outroColab),
+          eq(instrumentC_assessments.trimestre, '2024-Q1'),
+        ),
+      );
+    expect(linhas.length).toBe(NUM_ITENS_TOTAL);
+  });
+
+  it('DEFAULT_PLENITUDE_ENGINE eh o motor real da ME-040 (RV-13 estrito)', () => {
+    // Ancoragem canonica: producao usa o motor real. Confirma que o
+    // factory sem args aponta para DEFAULT_PLENITUDE_ENGINE.
+    expect(typeof DEFAULT_PLENITUDE_ENGINE.recalculatePlenitude).toBe('function');
+  });
+
+  it('hook chamado com now == relogio injetado (determinismo S044/L38)', async () => {
+    const outroColab = await createEmployee(companyIdHook);
+    await bindVinculoLider(outroColab, liderIdHook);
+    let nowRecebido: Date | null = null;
+    const spy: PlenitudeEngineFacade = {
+      recalculatePlenitude: async (_db, cid, eid, tri, now) => {
+        nowRecebido = now;
+        return {
+          companyId: cid,
+          employeeId: eid,
+          trimestre: tri,
+          motivo: 'ambos_ausentes',
+          calculado: false,
+          scoreA: null,
+          scoreC: null,
+          plenitudeScore: null,
+          faixaPlenitude: null,
+          divergencia: null,
+          alertaDivergencia: false,
+          engajamentoA: null,
+          desenvolvimentoA: null,
+          pertencimentoA: null,
+          realizacaoA: null,
+          engajamentoC: null,
+          desenvolvimentoC: null,
+          pertencimentoC: null,
+          realizacaoC: null,
+          calculadoEm: now,
+        };
+      },
+    };
+    const nowFixo = new Date('2024-04-01T15:30:45Z');
+    const { factory, ctx } = bindRouter({
+      now: () => nowFixo,
+      plenitudeEngine: spy,
+    });
+    const token = await tokenSuperAdmin();
+    const caller = factory(ctx(token));
+    await caller.saveInstrumentCAssessment({
+      companyId: companyIdHook,
+      employeeId: outroColab,
+      liderId: liderIdHook,
+      trimestre: '2024-Q1',
+      respostas: gridCanonico(2),
+    });
+    expect(nowRecebido).not.toBeNull();
+    expect((nowRecebido as unknown as Date).getTime()).toBe(nowFixo.getTime());
   });
 });

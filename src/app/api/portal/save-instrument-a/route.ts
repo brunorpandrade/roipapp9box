@@ -1,13 +1,13 @@
 // ROIP APP 9BOX — Route Handler `POST /api/portal/save-instrument-a`
-// (ME-039, §6.8 primeira linha do DOC 03).
+// (ME-039, editado em ME-040; §6.8 primeira linha do DOC 03).
 //
-// Superficie canonica de ESCRITA do Instrumento A. Diferente do C
-// (tRPC administrativa), o A e canonicamente respondido via portal
-// autenticado por CPF — a procedura canonica leva o nome
-// `instrumentA.saveInstrumentAResponse` no DOC 03, mas o veiculo
-// canonico e o Route Handler REST literal deste arquivo (padrao S036
-// da ME-023 estendido: portalToken viaja no body, sem intermediarios
-// tRPC).
+// Decima ME do Bloco B3 (ME-039) — abriu a superficie canonica de
+// ESCRITA do Instrumento A. Decima primeira ME do Bloco B3 (ME-040) —
+// pluga o hook canonico do motor de plenitude (§6.4). Com o motor
+// entregue na ME-040, S094 e satisfeito naturalmente: o hook
+// `plenitudeEngine.recalculatePlenitude` e chamado apos as transacoes
+// atomicas de INSERT e OVERWRITE (padrao S036 herdado da ME-023
+// estendido com setter DI dedicado).
 //
 // Recebe `{ portalToken, trimestre, respostas: [{ dimensao, itemIndex,
 // valor }] × 20 }` no body. Verifica assinatura + expiracao do
@@ -29,16 +29,14 @@
 //     `MSG_TRIMESTRE_FECHADO` do C — A nao fecha; a mensagem canoniza
 //     "ja enviado, imutavel sem desbloqueio").
 //
-// Sem hook de motor de plenitude (S094 — mesmo racional S088 do C):
-// o motor `calculatePlenitudeScore` (§6.4) sera introduzido em ME
-// futura com [EDIT] tanto neste Route Handler quanto no
-// `instrumentC.saveInstrumentCAssessment` para injetar
-// `onResponseSaved` real. Hook no-op cria superficie sem chamador real
-// (RV-13 estrito). §6.2 lista "aciona `calculatePlenitudeScore`" como
-// acao canonica pos-envio, mas a acao E CANONICAMENTE ADIADA ate a ME
-// do motor — a ausencia atual apenas prolonga a pre-condicao
-// canonicamente incompleta (§6.4 exige A E C respondidos), o que ja
-// era a situacao antes da ME-039.
+// Hook canonico do motor de plenitude (S105 herdado do S060 do Eixo X):
+// setter `__setPortalSaveInstrumentAPlenitudeEngine` permite substituir
+// o default `DEFAULT_PLENITUDE_ENGINE` (ME-040) em testes. Producao
+// aponta para o motor real desta ME. Chamado sincrono in-band FORA da
+// transacao (S102) apos INSERT e OVERWRITE: le A + C do trio canonico
+// e upserta `plenitudeData` (§6.4). Se A ou C esta incompleto, o motor
+// upserta com scores nulos (§6.4 literal — "campos de score nulos");
+// se ambos completos, calcula e persiste os scores.
 //
 // Sem rate limit dedicado (canonico §5.8 nao contempla — o gate LGPD
 // e o login `/api/portal/login` ja rate-limitados na ME-023 sao os
@@ -62,6 +60,10 @@ import {
   parseTrimestreCicloReferencia,
 } from '../../../../lib/cycleDates';
 import { verifyPortalToken } from '../../../../server/auth/portalToken';
+import {
+  DEFAULT_PLENITUDE_ENGINE,
+  type PlenitudeEngineFacade,
+} from '../../../../server/services/plenitudeCalculationEngine';
 import {
   findVigenteInstrumentUnlockA,
   itensCobremGridCanonicoA,
@@ -134,6 +136,24 @@ let nowFn: () => Date = () => new Date();
  */
 export function __setPortalSaveInstrumentANow(next: (() => Date) | null): void {
   nowFn = next ?? (() => new Date());
+}
+
+// ============================================================
+// Motor de plenitude injetavel (S105 herdado do S060 do Eixo X)
+// ============================================================
+
+let plenitudeEngine: PlenitudeEngineFacade = DEFAULT_PLENITUDE_ENGINE;
+
+/**
+ * Hook interno para testes substituirem o motor de plenitude, permitindo
+ * assertividade de acoplamento (spy que conta chamadas / valida input) e
+ * isolamento de defeitos do motor durante o teste do Route Handler.
+ * Passar `null` restaura o default `DEFAULT_PLENITUDE_ENGINE` (ME-040).
+ */
+export function __setPortalSaveInstrumentAPlenitudeEngine(
+  next: PlenitudeEngineFacade | null,
+): void {
+  plenitudeEngine = next ?? DEFAULT_PLENITUDE_ENGINE;
 }
 
 // ============================================================
@@ -319,6 +339,16 @@ export async function POST(req: Request): Promise<NextResponse> {
     } catch {
       return handleUnexpected();
     }
+    // Hook canonico ME-040 (§6.4): motor de plenitude in-band FORA da
+    // transacao (S102). Le A e C do trio canonico e upserta
+    // `plenitudeData`. Reexecucao idempotente canonica. Falha do motor
+    // propaga como 500 (o instrumento ja foi persistido; motor pode ser
+    // reexecutado no proximo submit).
+    try {
+      await plenitudeEngine.recalculatePlenitude(db, companyId, titularId, trimestre, now);
+    } catch {
+      return handleUnexpected();
+    }
     const body200: SaveInstrumentASuccess = {
       companyId,
       employeeId: titularId,
@@ -348,6 +378,15 @@ export async function POST(req: Request): Promise<NextResponse> {
         });
       }
     });
+  } catch {
+    return handleUnexpected();
+  }
+  // Hook canonico ME-040 (§6.4): motor de plenitude in-band FORA da
+  // transacao (S102). Le A e C do trio canonico e upserta `plenitudeData`.
+  // Se C tambem esta completo (§6.2 acao 2 combinada com esta), preenche
+  // scores; senao, mantem nulos (§6.4 literal). Reexecucao idempotente.
+  try {
+    await plenitudeEngine.recalculatePlenitude(db, companyId, titularId, trimestre, now);
   } catch {
     return handleUnexpected();
   }
