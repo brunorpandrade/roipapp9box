@@ -43,6 +43,8 @@ import {
   employees,
   instrumentA_responses,
   instrumentC_assessments,
+  nineBoxCalculationLog,
+  nineBoxClassifications,
   plenitudeData,
 } from '../../src/db/schema';
 import {
@@ -97,6 +99,15 @@ beforeAll(async () => {
 afterAll(async () => {
   if (!client) return;
   if (createdCompanyIds.length > 0) {
+    // ME-041: `recalculatePlenitude` agora aciona `calculateNineBoxClassification`
+    // in-band (S112) em cenarios `ambos_completos`; log tem FK RESTRICT a
+    // employees, entao limpar as duas tabelas do 9-Box antes de employees.
+    await client.db
+      .delete(nineBoxCalculationLog)
+      .where(inArray(nineBoxCalculationLog.companyId, createdCompanyIds));
+    await client.db
+      .delete(nineBoxClassifications)
+      .where(inArray(nineBoxClassifications.companyId, createdCompanyIds));
     await client.db
       .delete(plenitudeData)
       .where(inArray(plenitudeData.companyId, createdCompanyIds));

@@ -38,6 +38,8 @@ import {
   employees,
   instrumentC_assessments,
   instrumentUnlockLog,
+  nineBoxCalculationLog,
+  nineBoxClassifications,
   plenitudeData,
 } from '../../src/db/schema';
 import {
@@ -111,6 +113,15 @@ beforeAll(async () => {
 afterAll(async () => {
   if (!client) return;
   if (createdCompanyIds.length > 0) {
+    // ME-041: `saveInstrumentCAssessment` → `recalculatePlenitude` →
+    // `calculateNineBoxClassification` (S112). Log tem FK RESTRICT a
+    // employees; limpar as duas tabelas do 9-Box antes de employees.
+    await client.db
+      .delete(nineBoxCalculationLog)
+      .where(inArray(nineBoxCalculationLog.companyId, createdCompanyIds));
+    await client.db
+      .delete(nineBoxClassifications)
+      .where(inArray(nineBoxClassifications.companyId, createdCompanyIds));
     // Motor de plenitude (ME-040) upserta em `plenitudeData` a cada
     // `saveInstrumentCAssessment` — precisa limpar antes de `employees`
     // por causa da FK canonica `plenitudeData_ibfk_2` ON DELETE RESTRICT.

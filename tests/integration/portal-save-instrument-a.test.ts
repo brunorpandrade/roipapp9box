@@ -42,6 +42,8 @@ import {
   instrumentA_responses,
   instrumentC_assessments,
   instrumentUnlockLog,
+  nineBoxCalculationLog,
+  nineBoxClassifications,
   plenitudeData,
 } from '../../src/db/schema';
 import { signPortalToken } from '../../src/server/auth/portalToken';
@@ -118,6 +120,15 @@ afterAll(async () => {
     // L32 cleanup em ordem topologica FK. Motor de plenitude (ME-040)
     // upserta em `plenitudeData` a cada save do A — precisa limpar
     // antes de `employees` por causa da FK canonica ON DELETE RESTRICT.
+    // ME-041: plenitude chama 9-Box (S112) em cenarios `ambos_completos`;
+    // log tem FK RESTRICT a employees, entao limpar log/classifications
+    // do 9-Box antes de plenitude/employees.
+    await client.db
+      .delete(nineBoxCalculationLog)
+      .where(inArray(nineBoxCalculationLog.companyId, createdCompanyIds));
+    await client.db
+      .delete(nineBoxClassifications)
+      .where(inArray(nineBoxClassifications.companyId, createdCompanyIds));
     // `instrumentC_assessments` limpa por defesa: teste do handler A
     // pode gravar C via helper canonico para exercitar o hook.
     await client.db

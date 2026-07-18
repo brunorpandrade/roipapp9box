@@ -51,9 +51,19 @@
 //     4x5 canonico. Qualquer contagem diferente = ausente/incompleto
 //     (defesa de ultima linha — a transacao atomica dos submits ja
 //     impede persistencia parcial em uso normal).
-//   - S108 — motor NAO chama motor 9-Box aqui. §6.2/§6.3 canonizam
-//     "aciona `calculateNineBoxClassification`" quando o calculo se
-//     concretiza; esse hook nasce na ME-041 com [EDIT] deste motor.
+//   - S108 — placeholder ANTECIPADO em ME-041. O motor 9-Box (§7)
+//     agora e acionado aqui, in-band, apenas quando `motivo ===
+//     'ambos_completos'` (S112) — precondicao canonica §7.1 do 9-Box.
+//   - S112 — hook UMA vez por escrita completa (paralelo a S088/S104):
+//     overwrites de service e caminhos incompletos NAO acionam 9-Box.
+//   - S113 — `nineBoxEngine?: NineBoxEngineFacade` opcional na
+//     assinatura, com `DEFAULT_NINE_BOX_ENGINE` como fallback (padrao
+//     S060/S105 replicado do proprio Eixo Y).
+//   - S117 — excecao do motor 9-Box PROPAGA ao caller do plenitude,
+//     sem try/catch silencioso. Como o UPSERT em `plenitudeData` ja
+//     ocorreu antes da chamada ao 9-Box (S110, paralelo direto ao
+//     S102 do proprio plenitude), o commit do plenitude nao e
+//     desfeito por falha do 9-Box.
 
 import { and, eq } from 'drizzle-orm';
 
@@ -64,6 +74,7 @@ import {
   instrumentC_assessments,
   plenitudeData,
 } from '../../db/schema';
+import { DEFAULT_NINE_BOX_ENGINE, type NineBoxEngineFacade } from './nineBoxCalculationEngine';
 
 // ============================================================
 // Constantes canonicas
@@ -428,6 +439,7 @@ export async function recalculatePlenitude(
   employeeId: number,
   trimestre: string,
   now: Date,
+  nineBoxEngine?: NineBoxEngineFacade,
 ): Promise<PlenitudeCalculationResult> {
   // -------- 1) Le A e C (query direta — sem SQL cru, sem service) --------
   const itensA = await db
@@ -598,7 +610,27 @@ export async function recalculatePlenitude(
       },
     });
 
-  // -------- 5) Retorno canonico tipado --------
+  // -------- 5) Hook canonico para o motor 9-Box (S112/S113/S117) --------
+  //
+  // Aciona `calculateNineBoxClassification` UMA vez por escrita
+  // canonica completa do plenitude. S112 canoniza a cobertura por
+  // caminho completo (paralelo direto a S088/S104 — sem hook em
+  // caminho incompleto e sem hook redundante em overwrites de service).
+  //
+  // S110/S117: motor 9-Box roda in-band, FORA da transacao do plenitude
+  // (o UPSERT em `plenitudeData` acima ja foi commitado); excecao
+  // propaga ao caller do plenitude sem try/catch silencioso — o
+  // commit do plenitude nao e desfeito por falha do 9-Box.
+  //
+  // S113: `nineBoxEngine` opcional injetavel; producao usa o
+  // `DEFAULT_NINE_BOX_ENGINE`. Testes de dogfood da chain (ME-041)
+  // substituem para spy/isolamento.
+  if (motivo === 'ambos_completos') {
+    const engine = nineBoxEngine ?? DEFAULT_NINE_BOX_ENGINE;
+    await engine.calculateNineBoxClassification(db, companyId, employeeId, trimestre, now);
+  }
+
+  // -------- 6) Retorno canonico tipado --------
   return {
     companyId,
     employeeId,
