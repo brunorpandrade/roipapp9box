@@ -24,6 +24,8 @@ import { createEconomicDiagnosisRouter } from './economicDiagnosis';
 import { createEmployeesRouter } from './employees';
 import { createInstrumentARouter } from './instrumentA';
 import { createInstrumentCRouter } from './instrumentC';
+import { createInstrumentDRouter } from './instrumentD';
+import { createIqlRouter } from './iql';
 import { createLeadershipTransferRouter } from './leadershipTransfer';
 import { createMonthlyClosureRouter } from './monthlyClosure';
 import { createMonthlyDataRouter } from './monthlyData';
@@ -282,6 +284,46 @@ const leadershipTransferRouter = createLeadershipTransferRouter();
  */
 const turnoverRouter = createTurnoverRouter();
 
+/**
+ * Sub-router `instrumentD` (ME-046, Bloco B3). Primeira superficie
+ * tRPC de leitura publica de status de coleta do Instrumento D —
+ * 1 proc canonica do §8.8 segunda linha + §19.5 segunda linha:
+ * `getInstrumentDStatus`. Factory com DI limitada ao relogio
+ * (S155, S100/S084 estendido; SEM hook de motor IQL — motor
+ * canonico vive no Route Handler `POST /api/portal/save-
+ * instrument-d` para o D e na proc `iql.calculateIQL` do router
+ * `iql`, S154). A ponta de escrita "normal" do Instrumento D vive
+ * no Route Handler `POST /api/portal/save-instrument-d` (§8.8
+ * primeira linha — portal autenticado por CPF via `portalToken`,
+ * NAO via tRPC — precedente ME-039). SEM `reopenResponse`: §8.1
+ * canoniza que o D nao fecha, portanto nao ha janela a reabrir.
+ * Cadencia canonica SEMESTRAL (S156) — regex Zod `^\d{4}-Q[13]$`.
+ * §8.6 Bloqueio 3 (C-level nao responde D) e arquitetural (FK
+ * `respondenteId → employees.id`).
+ */
+const instrumentDRouter = createInstrumentDRouter();
+
+/**
+ * Sub-router `iql` (ME-046, Bloco B3). Superficie tRPC canonica do
+ * IQL — 3 procs do §8.8 e §19.5: `calculateIQL` (S154 — Bruno
+ * exclusivo, reprocessamento manual, paralelo a
+ * `plenitude.calculatePlenitudeScore` e
+ * `nineBox.calculateNineBoxClassification`), `getIQLData` (leitura
+ * do agregado por par avaliado x trimestre, aplica Bloqueios 1 e
+ * 4 §8.6 + piso 3 §8.5 na CAMADA DE LEITURA S158) e `getTabelaIQL`
+ * (leitura consolidada com visibilidade §8.7: Bruno + RH empresa;
+ * C-level `acessoTotal=true` todos os lideres; C-level parcial ou
+ * Lider Cenario 2 cadeia propria; Lider Cenario 1 FORBIDDEN).
+ * Factory com DI de `now` e `iqlEngine` (S154, defaults reais);
+ * default `DEFAULT_IQL_ENGINE` aponta ao motor
+ * `iqlCalculationEngine` (S149) da mesma ME. Nome canonico unico
+ * `iql` — o alias historico superado pelo §19 do DOC 01 e
+ * bloqueado pelo check-forbidden-terms. Fecha o dominio
+ * de leitura publica do Eixo IQL para as matrizes de dashboards
+ * (§3.11, §19.5).
+ */
+const iqlRouter = createIqlRouter();
+
 /** Router raiz da plataforma. */
 export const appRouter = router({
   health: healthRouter,
@@ -305,6 +347,8 @@ export const appRouter = router({
   platformLogs: platformLogsRouter,
   leadershipTransfer: leadershipTransferRouter,
   turnover: turnoverRouter,
+  instrumentD: instrumentDRouter,
+  iql: iqlRouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */
