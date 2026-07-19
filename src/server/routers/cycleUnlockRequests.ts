@@ -53,7 +53,13 @@ import { TRPCError } from '@trpc/server';
 import { and, count, eq, isNull, sql as _sqlUnused } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { cycleUnlockRequests, monthlyClosureStatus, monthlyUnlockLog } from '../../db/schema';
+import {
+  cLevelMembers,
+  cycleUnlockRequests,
+  employees,
+  monthlyClosureStatus,
+  monthlyUnlockLog,
+} from '../../db/schema';
 import { protectedProcedure, roleProcedure, router } from '../trpc';
 
 // (import intencional isolado para o linter — o alias `_sqlUnused` acima
@@ -160,6 +166,14 @@ export const MSG_CREATE_NAO_AUTORIZADO =
 /** DOC 03 §4.3 — autorizacao negada por perfil/liderId (hasPending). HTTP 403. */
 export const MSG_HAS_PENDING_NAO_AUTORIZADO =
   'Perfil sem permissão para consultar solicitações desta chave.';
+
+/**
+ * DOC 03 §4.3 (§5.6 cross-ref) — aba `faturamento` exige Responsavel
+ * financeiro para nao-Bruno. Introduzida em ME-044 (fechamento canonico
+ * da divida D005 registrada na ME-032). HTTP 403.
+ */
+export const MSG_CREATE_FATURAMENTO_NAO_RF =
+  'Apenas o Responsavel financeiro pode solicitar desbloqueio de faturamento.';
 
 // ============================================================
 // Zod schemas de entrada
@@ -268,15 +282,13 @@ export interface DecideCycleUnlockRequestResult {
  *     - outros: FORBIDDEN.
  *   - `aba='faturamento'`:
  *     - super_admin: qualquer.
- *     - outros: `companyId === input.companyId`. A checagem canonica de
- *       `isResponsavelFinanceiro=true` e do B1 (ficha do titular) — nao
- *       replicamos SELECT extra aqui. Racional: `roleProcedure` sozinho
- *       nao filtra RF (nao ha claim `isRF` no JWT), e o backend do RF vai
- *       ser reforcado com verificacao explicita quando a superficie for
- *       montada no B5 (ME-066). Ate la o guard e por empresa; a ausencia
- *       de RF valido resulta em INSERT sem contexto real, que sera
- *       filtrado pelo motor de alertas (D049) e pela UI. Registrado como
- *       D058 (divida da ME-032).
+ *     - outros: `companyId === input.companyId` E caller e o Responsavel
+ *       financeiro vigente da empresa (`isResponsavelFinanceiro=true` +
+ *       `status='ativo'`) — enforcement por SELECT direto no handler,
+ *       nao aqui (`assertCreateAuthorization` e sincrona). A checagem
+ *       fina RF vive no handler `create` via `isCallerResponsavelFinanceiro`.
+ *       Fechamento canonico da divida D005 (registrada na ME-032) —
+ *       superficie de RF montada em ME-044 e refletida aqui.
  */
 function assertCreateAuthorization(
   user: AuthenticatedUserView,
@@ -317,7 +329,8 @@ function assertCreateAuthorization(
     throw new TRPCError({ code: 'FORBIDDEN', message: MSG_CREATE_NAO_AUTORIZADO });
   }
 
-  // input.aba === 'faturamento' — mesma empresa basta (D058 pendente).
+  // input.aba === 'faturamento' — mesma empresa; guard fino RF acontece
+  // no handler (SELECT async). D005 fechada em ME-044.
   return;
 }
 
@@ -364,6 +377,56 @@ function assertHasPendingAuthorization(
 // ============================================================
 // Validacao canonica de tamanho (padrao 100-500 — DOC 03 §2)
 // ============================================================
+
+/**
+ * Fechamento canonico da divida D005 (ME-044). Verifica se o caller
+ * autenticado nao-Bruno e o Responsavel financeiro vigente da empresa
+ * (§5.6 canonico). Para `role='clevel'` consulta `cLevelMembers`
+ * cruzando `id === userId + companyId + isResponsavelFinanceiro=true +
+ * status='ativo'`. Para os demais perfis administrativos (`rh`,
+ * `rh_lider`, `lider`) consulta `employees` com criterio analogo.
+ * Retorna boolean; o handler converte em FORBIDDEN quando false.
+ */
+async function isCallerResponsavelFinanceiro(
+  db: import('../../db/client').RoipDatabase,
+  user: AuthenticatedUserView,
+  companyId: number,
+): Promise<boolean> {
+  if (user.role === 'super_admin') {
+    return true;
+  }
+  if (user.companyId !== companyId) {
+    return false;
+  }
+  if (user.role === 'clevel') {
+    const rows = await db
+      .select({ id: cLevelMembers.id })
+      .from(cLevelMembers)
+      .where(
+        and(
+          eq(cLevelMembers.id, user.userId),
+          eq(cLevelMembers.companyId, companyId),
+          eq(cLevelMembers.isResponsavelFinanceiro, true),
+          eq(cLevelMembers.status, 'ativo'),
+        ),
+      )
+      .limit(1);
+    return rows[0] !== undefined;
+  }
+  const rows = await db
+    .select({ id: employees.id })
+    .from(employees)
+    .where(
+      and(
+        eq(employees.id, user.userId),
+        eq(employees.companyId, companyId),
+        eq(employees.isResponsavelFinanceiro, true),
+        eq(employees.status, 'ativo'),
+      ),
+    )
+    .limit(1);
+  return rows[0] !== undefined;
+}
 
 /**
  * Aplica a regra canonica 100-500 (DOC 03 §2.2). Lanca `BAD_REQUEST` com a
@@ -433,6 +496,20 @@ function buildRouter(evaluateAdminAlerts: EvaluateAdminUnlockAlerts, now: () => 
       .mutation(async ({ ctx, input }): Promise<CreateCycleUnlockRequestResult> => {
         // (1) Guard cruzado por aba (matriz canonica §4.3 / §13.2).
         assertCreateAuthorization(ctx.user, input);
+
+        // (1.a) Guard fino canonico D005 (fechado em ME-044): aba
+        // `faturamento` para nao-Bruno exige Responsavel financeiro.
+        // Salvaguarda em duas camadas: `assertCreateAuthorization` ja
+        // filtrou por empresa e perfil; aqui refinamos para RF.
+        if (input.aba === 'faturamento' && ctx.user.role !== 'super_admin') {
+          const isRF = await isCallerResponsavelFinanceiro(ctx.db, ctx.user, input.companyId);
+          if (!isRF) {
+            throw new TRPCError({
+              code: 'FORBIDDEN',
+              message: MSG_CREATE_FATURAMENTO_NAO_RF,
+            });
+          }
+        }
 
         // (2) Validacao canonica 100-500 da justificativa (§2.2 / §2.3).
         const justificativaTrim = assertJustificationLength(

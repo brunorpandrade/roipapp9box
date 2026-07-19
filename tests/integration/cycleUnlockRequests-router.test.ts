@@ -20,7 +20,7 @@
 // adiciona 1 test file e ~55 testes.
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { ne } from 'drizzle-orm';
+import { eq, ne } from 'drizzle-orm';
 
 import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/client';
 import {
@@ -520,8 +520,13 @@ describe('cycleUnlockRequests.create — DOC 03 §4.3 + DOC 06 §13.2', () => {
     ).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
 
-  it('Faturamento: qualquer perfil admin da mesma empresa cria (D058 provisório)', async () => {
+  it('Faturamento: Responsavel financeiro cria (D005 fechada em ME-044)', async () => {
     const employeeId = await seedEmployee(client, companyId, { cpf: '30000010012' });
+    // Marca como RF apos INSERT (helper nao expoe o flag).
+    await client.db
+      .update(employees)
+      .set({ isResponsavelFinanceiro: true })
+      .where(eq(employees.id, employeeId));
     const token = await tokenPlatform('lider', employeeId, companyId);
     const { factory, ctx } = bindCapturingRouter(client);
     const caller = factory(ctx(token));
@@ -533,6 +538,25 @@ describe('cycleUnlockRequests.create — DOC 03 §4.3 + DOC 06 §13.2', () => {
       justificativa: JUSTIFICATIVA_OK,
     });
     expect(result.id).toBeGreaterThan(0);
+  });
+
+  it('Faturamento: non-RF = FORBIDDEN literal (D005 fechada em ME-044)', async () => {
+    const employeeId = await seedEmployee(client, companyId, { cpf: '30000010112' });
+    const token = await tokenPlatform('lider', employeeId, companyId);
+    const { factory, ctx } = bindCapturingRouter(client);
+    const caller = factory(ctx(token));
+
+    await expect(
+      caller.create({
+        companyId,
+        mes: MES_ALVO,
+        aba: 'faturamento',
+        justificativa: JUSTIFICATIVA_OK,
+      }),
+    ).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+      message: 'Apenas o Responsavel financeiro pode solicitar desbloqueio de faturamento.',
+    });
   });
 
   it('Mes com status=aberto → 409 MSG_MES_NAO_FECHADO', async () => {

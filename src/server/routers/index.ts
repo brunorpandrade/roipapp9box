@@ -17,6 +17,7 @@
 import { protectedProcedure, publicProcedure, roleProcedure, router } from '../trpc';
 import { authRouter } from './auth';
 import { createCLevelMembersRouter } from './cLevelMembers';
+import { createCompanyRouter } from './company';
 import { createCycleUnlockRequestsRouter } from './cycleUnlockRequests';
 import { createDashboardRouter } from './dashboard';
 import { createEconomicDiagnosisRouter } from './economicDiagnosis';
@@ -26,8 +27,10 @@ import { createInstrumentCRouter } from './instrumentC';
 import { createMonthlyClosureRouter } from './monthlyClosure';
 import { createMonthlyDataRouter } from './monthlyData';
 import { createNineBoxRouter } from './nineBox';
+import { createPlatformLogsRouter } from './platformLogs';
 import { createPlenitudeRouter } from './plenitude';
 import { createQuarterlyCalculationRouter } from './quarterlyCalculation';
+import { createRevenueRouter } from './revenue';
 
 /** Sub-router de saude: liveness sem sessao. */
 const healthRouter = router({
@@ -207,6 +210,46 @@ const employeesRouter = createEmployeesRouter();
  */
 const cLevelMembersRouter = createCLevelMembersRouter();
 
+/**
+ * Sub-router `company` (ME-044, Bloco B3). Primeira superficie tRPC
+ * de escrita canonica de PAPEIS FUNCIONAIS de empresa (DOC 03 §5.5) —
+ * 1 proc: `setResponsavelFinanceiro` Bruno EXCLUSIVO. Transacao atomica
+ * canonica: resolve titular vigente (varredura em `employees` +
+ * `cLevelMembers` com `.for('update')`), UPDATE flag do anterior (se
+ * houver) + UPDATE flag do novo + INSERT em
+ * `responsavelFinanceiroTransferLog` via service canonico
+ * `insertTransferLogEntry`. Discriminacao canonica de cenario:
+ * `atribuido` (sem RF vigente, `reason` = literal canonico) ou
+ * `transferido` (com RF vigente, `reason` = justificativa 100-500 do
+ * payload). Hook D050 (`EmitD050Facade`) por default no-op — motor
+ * canonico de notificacoes vira em ME futura do Bloco B6 (padrao S049).
+ */
+const companyRouter = createCompanyRouter();
+
+/**
+ * Sub-router `revenue` (ME-044, Bloco B3). Superficie tRPC de escrita e
+ * leitura canonica do faturamento mensal (DOC 03 §5.10, §5.12) — 3 procs:
+ * `saveFaturamento` (Bruno OU Responsavel financeiro; UPSERT canonico
+ * `.onDuplicateKeyUpdate({set})` na linha `companyMonthlyData(companyId,
+ * mes)`; pre-condicao `monthlyClosureStatus.status !== 'fechado'`),
+ * `getFaturamento` (leitura pura por perfil administrativo da mesma
+ * empresa) e `getCardResumoPendente` (§5.12 — janela de 12 meses do
+ * relogio injetavel; retorna meses sem `faturamentoBruto`). Guard fino
+ * RF (SELECT `isResponsavelFinanceiro`) vive no handler para nao-Bruno.
+ */
+const revenueRouter = createRevenueRouter();
+
+/**
+ * Sub-router `platformLogs` (ME-044, Bloco B3). Superficie tRPC de
+ * LEITURA canonica de logs de plataforma acessiveis EXCLUSIVAMENTE por
+ * Bruno (DOC 06) — 1 proc: `listResponsavelFinanceiroTransfers` que
+ * retorna o historico completo do `responsavelFinanceiroTransferLog` de
+ * uma empresa ordenado do mais recente ao mais antigo (DESC). Reutiliza
+ * o service canonico `listTransferLogByCompany` (ordem ASC canonica) e
+ * aplica `.reverse()` — zero edicao do service.
+ */
+const platformLogsRouter = createPlatformLogsRouter();
+
 /** Router raiz da plataforma. */
 export const appRouter = router({
   health: healthRouter,
@@ -225,6 +268,9 @@ export const appRouter = router({
   nineBox: nineBoxRouter,
   employees: employeesRouter,
   cLevelMembers: cLevelMembersRouter,
+  company: companyRouter,
+  revenue: revenueRouter,
+  platformLogs: platformLogsRouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */
