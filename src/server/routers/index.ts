@@ -16,9 +16,11 @@
 
 import { protectedProcedure, publicProcedure, roleProcedure, router } from '../trpc';
 import { authRouter } from './auth';
+import { createCLevelMembersRouter } from './cLevelMembers';
 import { createCycleUnlockRequestsRouter } from './cycleUnlockRequests';
 import { createDashboardRouter } from './dashboard';
 import { createEconomicDiagnosisRouter } from './economicDiagnosis';
+import { createEmployeesRouter } from './employees';
 import { createInstrumentARouter } from './instrumentA';
 import { createInstrumentCRouter } from './instrumentC';
 import { createMonthlyClosureRouter } from './monthlyClosure';
@@ -177,6 +179,34 @@ const plenitudeRouter = createPlenitudeRouter();
  */
 const nineBoxRouter = createNineBoxRouter();
 
+/**
+ * Sub-router `employees` (ME-043, Bloco B3). Primeira superficie tRPC
+ * de ESCRITA canonica sobre a tabela `employees` (DOC 01 §4.5) — 5 das
+ * 8 procs canonicas do §16.7 do DOC 03 (`create`, `update`,
+ * `inactivate`, `reactivate`, `delete`). Factory sem dependencias
+ * externas de motor: o placeholder do Perfil Individual (§10.12) e
+ * criado por INSERT canonico DIRETO na transacao do `create` — nao
+ * ha hook DI porque o motor de assessment do §10 (ME-049a) le
+ * `individualProfilePlaceholders`, nao emite. Guards canonicos:
+ * `roleProcedure(['super_admin','rh','rh_lider'])` nas 4 primeiras;
+ * `roleProcedure(['super_admin'])` no `delete` (§16.4). Escopo por
+ * empresa via `assertCompanyScope` (§2.4). RF explicitamente fora do
+ * escopo (S127) — reativado em ME-044 via
+ * `company.setResponsavelFinanceiro`.
+ */
+const employeesRouter = createEmployeesRouter();
+
+/**
+ * Sub-router `cLevelMembers` (ME-043, Bloco B3). Segunda superficie
+ * tRPC de ESCRITA canonica sobre `cLevelMembers` (DOC 01 §4.4) — 5
+ * procs canonicas do §16.7, TODAS Bruno EXCLUSIVO (DOC 02 §12):
+ * `create`, `update`, `inactivate` (S128 semantica seca — sem
+ * `motivoSaida`, sem `employeeTerminationEvents`, §12.2 exclui C-level
+ * de turnover), `reactivate` e `delete` (§16.4). Placeholder do
+ * §10.12 tambem por INSERT canonico direto. RF fora do escopo (S127).
+ */
+const cLevelMembersRouter = createCLevelMembersRouter();
+
 /** Router raiz da plataforma. */
 export const appRouter = router({
   health: healthRouter,
@@ -193,6 +223,8 @@ export const appRouter = router({
   instrumentA: instrumentARouter,
   plenitude: plenitudeRouter,
   nineBox: nineBoxRouter,
+  employees: employeesRouter,
+  cLevelMembers: cLevelMembersRouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */
