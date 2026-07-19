@@ -72,7 +72,7 @@ import {
   MSG_ISRH_APENAS_BRUNO,
   MSG_JA_ATIVO,
   MSG_JA_INATIVO,
-  MSG_LIDER_COM_LIDERADOS_R1_TRANSITORIA,
+  MSG_LIDER_COM_LIDERADOS_USE_M2V2,
   MSG_LIDER_INICIAL_INVALIDO,
   MSG_MOTIVO_SAIDA_OBRIGATORIO,
   MSG_TOGGLE_RF_FORA_ESCOPO,
@@ -348,8 +348,9 @@ describe('employees — contratos publicos exportados', () => {
       'Este colaborador e o Responsavel financeiro da empresa. Antes de inativar, ' +
         'atribua o papel de Responsavel financeiro a outro colaborador.',
     );
-    expect(MSG_LIDER_COM_LIDERADOS_R1_TRANSITORIA).toBe(
-      'Este colaborador possui liderados ativos. Transfira a lideranca antes de inativar.',
+    expect(MSG_LIDER_COM_LIDERADOS_USE_M2V2).toBe(
+      'Este colaborador possui liderados ativos. Use leadershipTransfer.execute ' +
+        'para transferir liderados e inativar em transacao atomica canonica (§14.9).',
     );
     expect(MSG_MOTIVO_SAIDA_OBRIGATORIO).toBe(
       'Selecione o motivo de saida (voluntario ou involuntario) antes de confirmar a inativacao.',
@@ -744,7 +745,7 @@ describe('employees.inactivate — RH + Bruno, transacao §12.6', () => {
     ).rejects.toMatchObject({ code: 'CONFLICT', message: MSG_INACTIVATE_RF_BLOQUEADO });
   });
 
-  it('lider com liderados = CONFLICT literal S126 (R1 transitorio)', async () => {
+  it('lider com liderados = CONFLICT literal S148 apontando ao M2 v2', async () => {
     const { factory, ctx } = bindRouter();
     const t = await tokenSuperAdmin();
     const caller = factory(ctx(t));
@@ -752,7 +753,7 @@ describe('employees.inactivate — RH + Bruno, transacao §12.6', () => {
       caller.inactivate({ employeeId: alvoLiderComLiderados, motivoSaida: 'voluntario' }),
     ).rejects.toMatchObject({
       code: 'CONFLICT',
-      message: MSG_LIDER_COM_LIDERADOS_R1_TRANSITORIA,
+      message: MSG_LIDER_COM_LIDERADOS_USE_M2V2,
     });
   });
 

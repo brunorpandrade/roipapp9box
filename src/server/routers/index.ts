@@ -24,6 +24,7 @@ import { createEconomicDiagnosisRouter } from './economicDiagnosis';
 import { createEmployeesRouter } from './employees';
 import { createInstrumentARouter } from './instrumentA';
 import { createInstrumentCRouter } from './instrumentC';
+import { createLeadershipTransferRouter } from './leadershipTransfer';
 import { createMonthlyClosureRouter } from './monthlyClosure';
 import { createMonthlyDataRouter } from './monthlyData';
 import { createNineBoxRouter } from './nineBox';
@@ -31,6 +32,7 @@ import { createPlatformLogsRouter } from './platformLogs';
 import { createPlenitudeRouter } from './plenitude';
 import { createQuarterlyCalculationRouter } from './quarterlyCalculation';
 import { createRevenueRouter } from './revenue';
+import { createTurnoverRouter } from './turnover';
 
 /** Sub-router de saude: liveness sem sessao. */
 const healthRouter = router({
@@ -250,6 +252,36 @@ const revenueRouter = createRevenueRouter();
  */
 const platformLogsRouter = createPlatformLogsRouter();
 
+/**
+ * Sub-router `leadershipTransfer` (ME-045, Bloco B3). Padrao canonico
+ * UNICO de transferencia de liderados M2 v2 (§14). 4 procs canonicas
+ * §14.12 — Bruno + RH em todas: `canInactivate`, `getCandidates`,
+ * `checkEmailForPromotion`, `execute`. Encapsulamento canonico §14.8
+ * (S146): SEM `notifications`/`alerts`; `employeeLeaderHistory` e a
+ * unica superficie de auditoria. Fusao canonica E01 aprovada com
+ * §12.6: `execute` recebe `motivoSaida` obrigatorio e a transacao
+ * atomica §14.9 estende o Passo 6 com INSERT em
+ * `employeeTerminationEvents`. Factory com DI de `now` e
+ * `generateBatchId` (S144) para testes deterministicos; defaults reais
+ * (`crypto.randomUUID`). Fecha o restante R1 da ME-043 em conjunto com
+ * o [EDIT] `employees.inactivate` (S148 — bloqueio backend canonico
+ * como salvaguarda para chamadas API diretas).
+ */
+const leadershipTransferRouter = createLeadershipTransferRouter();
+
+/**
+ * Sub-router `turnover` (ME-045, Bloco B3). Superficie tRPC de leitura
+ * canonica das taxas trimestral e rolling 12m — 2 procs canonicas
+ * §12.8: `getByCompany` (com abertura pelos 3 niveis hierarquicos
+ * canonicos e por motivo) e `getByDepartamento` (sem abertura por
+ * nivel, §12.3). Autorizacao S147: Bruno + RH + RH-Lider + C-level
+ * (matriz administrativa canonica de leitura). Consome motor
+ * deterministico `turnoverEngine` (S141 aprovado — headcount por
+ * proxy admissao + termination futura). Reusa `TRIMESTRE_INPUT_SCHEMA`
+ * de `quarterlyCalculation` (S142). Factory sem parametros — motor puro.
+ */
+const turnoverRouter = createTurnoverRouter();
+
 /** Router raiz da plataforma. */
 export const appRouter = router({
   health: healthRouter,
@@ -271,6 +303,8 @@ export const appRouter = router({
   company: companyRouter,
   revenue: revenueRouter,
   platformLogs: platformLogsRouter,
+  leadershipTransfer: leadershipTransferRouter,
+  turnover: turnoverRouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */

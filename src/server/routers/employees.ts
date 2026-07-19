@@ -14,7 +14,8 @@
 //     `company.setResponsavelFinanceiro` na ME-044).
 //   - `employees.inactivate`  — RH + Bruno. `motivoSaida` obrigatorio
 //     (§12.6). Bloqueios canonicos: RF sem substituto (§5.6); lider com
-//     liderados ativos (S126 — bloqueio R1 transitorio ate ME-045 M2 v2).
+//     liderados ativos (S148 — bloqueio canonico apontando ao fluxo M2 v2
+//     `leadershipTransfer.execute` §14.9 como salvaguarda backend).
 //     Transacao atomica: UPDATE `status='inativo'` + INSERT
 //     `employeeTerminationEvents` (snapshots §12.6) + CLOSE do vinculo
 //     ativo em `employeeLeaderHistory` (`dataFim=now`).
@@ -147,19 +148,19 @@ export const MSG_INACTIVATE_RF_BLOQUEADO =
   'atribua o papel de Responsavel financeiro a outro colaborador.';
 
 /**
- * S126 — mensagem transitoria R1 (comando de abertura ME-043).
- *
- * O DOC 03 §16.3 canoniza que a inativacao de lider com liderados ativos
- * ACIONA o fluxo M2 v2 (§14). Como o fluxo M2 v2 vive na ME-045
- * (`leadershipTransfer.execute` + procs auxiliares §14.12) e ainda nao
- * existe no repositorio, esta ME retorna CONFLICT com o texto literal
- * abaixo — bloqueio conservador declarado no R1 do plano. A ME-045
- * substitui a chamada por invocacao do fluxo transacional canonico e
- * esta constante torna-se dead code (removida na mesma ME junto com o
- * respectivo teste). NAO exportar de outro modulo.
+ * S148 — fechamento canonico de R1 na ME-045. O DOC 03 §16.3 canoniza que
+ * a inativacao de lider com liderados ativos ACIONA o fluxo canonico
+ * M2 v2 (§14). O fluxo M2 v2 e ENTRADA UNICA de inativacao de lider com
+ * liderados — vive em `leadershipTransfer.execute` (§14.9). Esta procedure
+ * (`employees.inactivate`) permanece como salvaguarda backend defensiva
+ * para casos de race condition ou chamada API direta que contorne a UI;
+ * na hipotese normal a UI direciona ao M2 v2 antes desta procedure ser
+ * chamada. A mensagem canonica de fechamento aponta explicitamente o
+ * metodo canonico.
  */
-export const MSG_LIDER_COM_LIDERADOS_R1_TRANSITORIA =
-  'Este colaborador possui liderados ativos. Transfira a lideranca antes de inativar.' as const;
+export const MSG_LIDER_COM_LIDERADOS_USE_M2V2 =
+  'Este colaborador possui liderados ativos. Use leadershipTransfer.execute ' +
+  'para transferir liderados e inativar em transacao atomica canonica (§14.9).';
 
 /**
  * §12.6 — motivoSaida obrigatorio para colaborador comum. Mensagem
@@ -732,7 +733,7 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           if (liderados > 0) {
             throw new TRPCError({
               code: 'CONFLICT',
-              message: MSG_LIDER_COM_LIDERADOS_R1_TRANSITORIA,
+              message: MSG_LIDER_COM_LIDERADOS_USE_M2V2,
             });
           }
         }
