@@ -99,7 +99,11 @@ prepare_paths() {
   chmod 755 "$HOME" 2>/dev/null || $SUDO chmod 755 "$HOME" 2>/dev/null || true
   mkdir -p "$ROIP_MYSQL_ROOT" "$ROIP_MYSQL_DATADIR" "$(dirname "$ROIP_MYSQL_SOCKET")"
   # init-file com a senha canonica (L33): ALTER USER + FLUSH.
-  cat > "$ROIP_MYSQL_INIT_FILE" <<EOF
+  # L75: escrita via $SUDO tee — apos o primeiro run o arquivo e o
+  # diretorio ficam mysql-owned e `cat >` como user nao-root falharia
+  # silenciosamente, preservando init-file antigo. Reescrita e
+  # incondicional a cada run (S162).
+  $SUDO tee "$ROIP_MYSQL_INIT_FILE" > /dev/null <<EOF
 ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '$ROIP_MYSQL_ROOT_PASSWORD';
 FLUSH PRIVILEGES;
 EOF
