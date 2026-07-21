@@ -96,10 +96,16 @@ const TIPOS_QUE_ALERTAM_AO_FECHAR: readonly CycleScheduleTipo[] = [
 
 /**
  * Tipos canonicos que fecham automaticamente no dia 11 do mes seguinte
- * ao trimestre/mes (DOC 06 §14.6). Instrumentos A e D permanecem
- * `aberto`/`atrasado` indefinidamente ate fechamento manual (Y8).
+ * ao trimestre/mes (DOC 06 §14.6). Instrumentos A e D permanecem em
+ * `aberto`/`atrasado` indefinidamente (Y8) e nunca fecham automaticamente
+ * por este motor.
+ *
+ * Exportado a partir da ME-046a (S161) para que a regua nova
+ * `verify-canonic-consistency` (passo 10 do validate) confirme, em texto,
+ * que a lista canonica se mantem exatamente `['instrumento_c',
+ * 'fechamento_mensal']` em ordem — invariante estrutural DOC 06 §14.6.
  */
-const TIPOS_QUE_FECHAM_NO_DIA_11: readonly CycleScheduleTipo[] = [
+export const TIPOS_QUE_FECHAM_NO_DIA_11: readonly CycleScheduleTipo[] = [
   'instrumento_c',
   'fechamento_mensal',
 ] as const;

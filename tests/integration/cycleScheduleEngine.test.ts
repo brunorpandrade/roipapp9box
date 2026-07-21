@@ -33,6 +33,7 @@ import {
   refreshCycleSchedule,
   REFRESH_HORIZON_MONTHS,
   type RefreshCycleScheduleResult,
+  TIPOS_QUE_FECHAM_NO_DIA_11,
   updateCycleSchedule,
   type UpdateCycleScheduleResult,
   updateCycleScheduleStatuses,
@@ -696,6 +697,16 @@ describe('service cycleScheduleEngine — contratos exportados (ME-030)', () => 
   it('inArray combinado com tipos e status e nativamente compativel', () => {
     // Sanity check para o import inArray usado nos testes acima e no motor.
     expect(inArray).toBeTypeOf('function');
+  });
+
+  it('TIPOS_QUE_FECHAM_NO_DIA_11 e canonico (ME-046a S161)', () => {
+    // Chamador tipado da constante exportada na ME-046a. A regua
+    // `verify-canonic-consistency --mode=repo` (passo 10 do validate)
+    // policia esta constante em texto; este teste garante que a
+    // camada tipada continua consumindo os literais canonicos em ordem
+    // e que a serie estrutural DOC 06 §14.6 (Y8: A/D nunca fecham
+    // automaticamente) permanece verdadeira.
+    expect([...TIPOS_QUE_FECHAM_NO_DIA_11]).toEqual(['instrumento_c', 'fechamento_mensal']);
   });
 
   it('RefreshCycleScheduleResult tem forma canonica {criados, existentes, total}', () => {

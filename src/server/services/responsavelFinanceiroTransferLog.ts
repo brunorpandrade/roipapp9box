@@ -2,7 +2,7 @@
 //
 // Log dedicado append-only das transicoes do papel Responsavel financeiro
 // (DOC 01 §5.1). Registro obrigatorio em qualquer transacao
-// `companies.setResponsavelFinanceiro` do Bloco B3. Aqui expomos apenas os
+// `company.setResponsavelFinanceiro` do Bloco B3. Aqui expomos apenas os
 // primitivos de insercao e leitura — o append-only e a exclusividade de
 // Bruno como ator sao garantidos pelo caller.
 
