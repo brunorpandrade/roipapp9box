@@ -17,6 +17,7 @@
 import { protectedProcedure, publicProcedure, roleProcedure, router } from '../trpc';
 import { authRouter } from './auth';
 import { createCLevelMembersRouter } from './cLevelMembers';
+import { createClimateRouter } from './climate';
 import { createCompanyRouter } from './company';
 import { createCycleUnlockRequestsRouter } from './cycleUnlockRequests';
 import { createDashboardRouter } from './dashboard';
@@ -324,6 +325,25 @@ const instrumentDRouter = createInstrumentDRouter();
  */
 const iqlRouter = createIqlRouter();
 
+/**
+ * Sub-router `climate` (ME-047, Bloco B3). Superficie tRPC canonica
+ * do Bloco Clima e Engajamento — 2 procs canonicas do §9.11 e §19.6
+ * do DOC 03: `getClimateBlock` (leitura por escopo empresa ou
+ * departamento com resolucao automatica do trimestre mais recente e
+ * piso 3 na leitura — S158/S174/S177) e `recalculateAggregates`
+ * (S175 — Bruno exclusivo, reprocessamento manual de todos os
+ * escopos vigentes; paralelismo com
+ * `plenitude.calculatePlenitudeScore`,
+ * `nineBox.calculateNineBoxClassification` e `iql.calculateIQL`).
+ * Factory com DI de `now` e `climateEngine` (S168, defaults reais);
+ * default `DEFAULT_CLIMATE_ENGINE` aponta ao motor
+ * `climateCalculationEngine` (CC031) da mesma ME. Escopo `equipe`
+ * bloqueado no router (S174): o Chat IA le direto do schema por
+ * F3B canonizada em DOC 04 §5.5. Fecha a superficie publica do
+ * Bloco Clima para o Bloco B5 (UI) e para o Bloco B4 (IA).
+ */
+const climateRouter = createClimateRouter();
+
 /** Router raiz da plataforma. */
 export const appRouter = router({
   health: healthRouter,
@@ -349,6 +369,7 @@ export const appRouter = router({
   turnover: turnoverRouter,
   instrumentD: instrumentDRouter,
   iql: iqlRouter,
+  climate: climateRouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */

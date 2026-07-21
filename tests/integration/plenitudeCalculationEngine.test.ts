@@ -39,6 +39,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 
 import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/client';
 import {
+  climateEngagementData,
   companies,
   employees,
   instrumentA_responses,
@@ -47,6 +48,11 @@ import {
   nineBoxClassifications,
   plenitudeData,
 } from '../../src/db/schema';
+import {
+  type ClimateCalculationResult,
+  type ClimateEngineFacade,
+  DEFAULT_CLIMATE_ENGINE,
+} from '../../src/server/services/climateCalculationEngine';
 import {
   computeAlertaDivergencia,
   computeDivergencia,
@@ -99,15 +105,22 @@ beforeAll(async () => {
 afterAll(async () => {
   if (!client) return;
   if (createdCompanyIds.length > 0) {
-    // ME-041: `recalculatePlenitude` agora aciona `calculateNineBoxClassification`
+    // ME-041: `recalculatePlenitude` aciona `calculateNineBoxClassification`
     // in-band (S112) em cenarios `ambos_completos`; log tem FK RESTRICT a
     // employees, entao limpar as duas tabelas do 9-Box antes de employees.
+    // ME-047: `recalculatePlenitude` tambem aciona
+    // `recalculateAggregates` do Clima in-band (S170) em cenarios
+    // `ambos_completos`; `climateEngagementData` tem FK RESTRICT a
+    // employees (via liderId) e a companies, entao limpar antes.
     await client.db
       .delete(nineBoxCalculationLog)
       .where(inArray(nineBoxCalculationLog.companyId, createdCompanyIds));
     await client.db
       .delete(nineBoxClassifications)
       .where(inArray(nineBoxClassifications.companyId, createdCompanyIds));
+    await client.db
+      .delete(climateEngagementData)
+      .where(inArray(climateEngagementData.companyId, createdCompanyIds));
     await client.db
       .delete(plenitudeData)
       .where(inArray(plenitudeData.companyId, createdCompanyIds));
@@ -1036,5 +1049,142 @@ describe('plenitudeCalculationEngine — nome canonico do arquivo (S106)', () =>
     // Marker canonico: confirma que a faixa 760.. e reservada a ME-040
     // e que este teste esta ancorado no repo real (nao mock).
     expect(CNPJ_CONSTANTES).toBe('10000000000760');
+  });
+});
+
+// ============================================================
+// Hook canonico Clima (S170) — [EDIT] pela ME-047
+// ============================================================
+//
+// Chamador tipado do hook do Clima (S168/S170): quando
+// `recalculatePlenitude` retorna `motivo === 'ambos_completos'`,
+// `recalculateAggregates` do motor Clima e acionado UMA vez, APOS
+// o hook do 9-Box. Restricao canonica: motivos incompletos NAO
+// acionam o hook (mesma restricao do 9-Box — S112 replicada em
+// S170). O spy DI verifica acoplamento por chamada; nao chama o
+// motor real do Clima (fixture-only). Faixa CNPJ 10000000000840
+// reservada a ME-047 (S178).
+
+// CNPJ 840 reservado a este [EDIT] (S178 — faixa 840..849 da ME-047).
+const CNPJ_HOOK_CLIMA = '10000000000840';
+
+describe('plenitudeCalculationEngine — hook Clima S170 ([EDIT] ME-047)', () => {
+  it('DEFAULT_CLIMATE_ENGINE implementa ClimateEngineFacade (RV-13)', () => {
+    const facade: ClimateEngineFacade = DEFAULT_CLIMATE_ENGINE;
+    expect(typeof facade.recalculateAggregates).toBe('function');
+  });
+
+  it('hook Clima acionado UMA vez quando motivo === ambos_completos (S170)', async () => {
+    const companyId = await createCompany(CNPJ_HOOK_CLIMA);
+    const employeeId = await createEmployee(companyId);
+    const liderId = await createEmployee(companyId);
+    const trimestre = '2019-Q4';
+    const now = new Date('2019-11-15T00:00:00Z');
+    const valor3 = () => 3;
+
+    // Grava A e C completos: motivo -> ambos_completos.
+    await insertRespostasA(companyId, employeeId, trimestre, valor3, now);
+    await insertAvaliacoesC(companyId, employeeId, liderId, trimestre, valor3, now);
+
+    let chamadas = 0;
+    const argsRecebidos: {
+      companyId: number;
+      trimestre: string;
+    }[] = [];
+    const climateSpy: ClimateEngineFacade = {
+      recalculateAggregates: async (
+        _db,
+        cId,
+        tri,
+        calculadoEm,
+      ): Promise<ClimateCalculationResult> => {
+        chamadas += 1;
+        argsRecebidos.push({ companyId: cId, trimestre: tri });
+        return {
+          companyId: cId,
+          trimestre: tri,
+          escopos: [],
+          calculadoEm,
+        };
+      },
+    };
+
+    // 9-Box DI default (real); Clima DI spy.
+    const result = await recalculatePlenitude(
+      client.db,
+      companyId,
+      employeeId,
+      trimestre,
+      now,
+      undefined,
+      climateSpy,
+    );
+    expect(result.motivo).toBe<PlenitudeCalculationMotivo>('ambos_completos');
+    expect(chamadas).toBe(1);
+    expect(argsRecebidos[0]).toEqual({ companyId, trimestre });
+  });
+
+  it('hook Clima NAO acionado quando motivo != ambos_completos (S170)', async () => {
+    const companyId = await createCompany('10000000000841');
+    const employeeId = await createEmployee(companyId);
+    const trimestre = '2020-Q1';
+    const now = new Date('2020-04-15T00:00:00Z');
+    const valor3 = () => 3;
+
+    // Grava apenas A completo -> motivo === 'instrumento_c_ausente'.
+    await insertRespostasA(companyId, employeeId, trimestre, valor3, now);
+
+    let chamadas = 0;
+    const climateSpy: ClimateEngineFacade = {
+      recalculateAggregates: async (_db, cId, tri, calculadoEm) => {
+        chamadas += 1;
+        return { companyId: cId, trimestre: tri, escopos: [], calculadoEm };
+      },
+    };
+
+    const result = await recalculatePlenitude(
+      client.db,
+      companyId,
+      employeeId,
+      trimestre,
+      now,
+      undefined,
+      climateSpy,
+    );
+    expect(result.motivo).toBe<PlenitudeCalculationMotivo>('instrumento_c_ausente');
+    expect(chamadas).toBe(0);
+  });
+
+  it('hook Clima escreve linha canonica em climateEngagementData com DI default', async () => {
+    const companyId = await createCompany('10000000000842');
+    const employeeId = await createEmployee(companyId);
+    const liderId = await createEmployee(companyId);
+    const trimestre = '2020-Q2';
+    const now = new Date('2020-07-15T00:00:00Z');
+    const valor3 = () => 3;
+
+    await insertRespostasA(companyId, employeeId, trimestre, valor3, now);
+    await insertAvaliacoesC(companyId, employeeId, liderId, trimestre, valor3, now);
+
+    // DI default real -> motor Clima real grava em climateEngagementData.
+    await recalculatePlenitude(client.db, companyId, employeeId, trimestre, now);
+
+    const linhaEmpresa = await client.db
+      .select()
+      .from(climateEngagementData)
+      .where(
+        and(
+          eq(climateEngagementData.companyId, companyId),
+          eq(climateEngagementData.escopo, 'empresa'),
+          eq(climateEngagementData.trimestre, trimestre),
+        ),
+      );
+    expect(linhaEmpresa.length).toBe(1);
+    expect(linhaEmpresa[0]?.countCobertura).toBe(1);
+    // countTotal cobre os employees ativos com dataAdmissao <= dia16
+    // do escopo empresa (2 empregados neste teste — employee avaliado
+    // + lider ficticio, ambos ativos e admitidos em 2020-01-01);
+    // C-levels excluidos por construcao.
+    expect(linhaEmpresa[0]?.countTotal).toBe(2);
   });
 });

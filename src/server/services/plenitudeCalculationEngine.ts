@@ -74,6 +74,7 @@ import {
   instrumentC_assessments,
   plenitudeData,
 } from '../../db/schema';
+import { DEFAULT_CLIMATE_ENGINE, type ClimateEngineFacade } from './climateCalculationEngine';
 import { DEFAULT_NINE_BOX_ENGINE, type NineBoxEngineFacade } from './nineBoxCalculationEngine';
 
 // ============================================================
@@ -440,6 +441,7 @@ export async function recalculatePlenitude(
   trimestre: string,
   now: Date,
   nineBoxEngine?: NineBoxEngineFacade,
+  climateEngine?: ClimateEngineFacade,
 ): Promise<PlenitudeCalculationResult> {
   // -------- 1) Le A e C (query direta — sem SQL cru, sem service) --------
   const itensA = await db
@@ -630,7 +632,37 @@ export async function recalculatePlenitude(
     await engine.calculateNineBoxClassification(db, companyId, employeeId, trimestre, now);
   }
 
-  // -------- 6) Retorno canonico tipado --------
+  // -------- 6) Hook canonico para o motor Clima (S170) --------
+  //
+  // Aciona `recalculateAggregates` UMA vez por escrita canonica
+  // completa do plenitude, APOS o hook do 9-Box. Paralelo direto de
+  // S104/S112 (9-Box hook): scoreA e gravado em `plenitudeData`
+  // apenas em `ambos_completos`; recalcular o Clima em outro motivo
+  // seria trabalho perdido. §9.10 canoniza "sempre que
+  // calculatePlenitudeScore e executado para qualquer colaborador"
+  // — a leitura literal do §9.1 restringe a fonte a `scoreA IS NOT
+  // NULL`, o que implica motivo `ambos_completos` na semantica
+  // vigente do §6.4.
+  //
+  // S110/S117 replicados: motor Clima roda in-band, FORA da
+  // transacao do plenitude (o UPSERT em `plenitudeData` acima ja
+  // foi commitado); excecao propaga ao caller do plenitude sem
+  // try/catch silencioso — o commit do plenitude nao e desfeito
+  // por falha do Clima.
+  //
+  // S168: `climateEngine` opcional injetavel; producao usa o
+  // `DEFAULT_CLIMATE_ENGINE`. Testes de dogfood da chain (ME-047)
+  // substituem para spy/isolamento.
+  //
+  // S169: motor recalcula TODOS os escopos vigentes da empresa
+  // no trimestre — assinatura `(db, companyId, trimestre, now)`
+  // sem `employeeId` (paralelo aos jobs canonicos §17 do DOC 06).
+  if (motivo === 'ambos_completos') {
+    const engineClimate = climateEngine ?? DEFAULT_CLIMATE_ENGINE;
+    await engineClimate.recalculateAggregates(db, companyId, trimestre, now);
+  }
+
+  // -------- 7) Retorno canonico tipado --------
   return {
     companyId,
     employeeId,

@@ -45,6 +45,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 
 import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/client';
 import {
+  climateEngagementData,
   companies,
   employees,
   instrumentA_responses,
@@ -112,6 +113,13 @@ afterAll(async () => {
   if (!client) return;
   if (createdCompanyIds.length > 0) {
     // Ordem canonica de delete respeitando FKs.
+    // ME-047: `recalculatePlenitude` do dogfood dispara motor Clima
+    // in-band (S170) em cenarios `ambos_completos`; limpar
+    // `climateEngagementData` antes de `employees` (FK RESTRICT em
+    // `liderId`) e `companies` (FK RESTRICT em `companyId`).
+    await client.db
+      .delete(climateEngagementData)
+      .where(inArray(climateEngagementData.companyId, createdCompanyIds));
     await client.db
       .delete(nineBoxCalculationLog)
       .where(inArray(nineBoxCalculationLog.companyId, createdCompanyIds));
