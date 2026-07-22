@@ -35,6 +35,7 @@ import { createPlatformLogsRouter } from './platformLogs';
 import { createPlenitudeRouter } from './plenitude';
 import { createQuarterlyCalculationRouter } from './quarterlyCalculation';
 import { createRevenueRouter } from './revenue';
+import { createSpreadsheetsRouter } from './spreadsheets';
 import { createTurnoverRouter } from './turnover';
 
 /** Sub-router de saude: liveness sem sessao. */
@@ -344,6 +345,27 @@ const iqlRouter = createIqlRouter();
  */
 const climateRouter = createClimateRouter();
 
+/**
+ * Sub-router `spreadsheets` (ME-048, Bloco B3). Superficie tRPC canonica
+ * do §3.11 do DOC 03 — 4 procs xlsx para preenchimento mensal em
+ * planilha: `downloadRHTemplate` e `uploadRHData` (fluxo RH), e
+ * `downloadLeaderTemplate` e `uploadLeaderData` (fluxo Lider).
+ * Biblioteca canonica: `exceljs` 4.4.0 (S184-rev — cell protection
+ * nativa exigida por §3.11 CC3 nao disponivel em xlsx SheetJS
+ * Community). Templates gerados com sheet protection ativa e locked=
+ * true nas celulas read-only (Meta cinza, Demanda '—' Familia 6,
+ * Demanda/Realizado peso zero). Uploads delegam a
+ * `monthlyData.saveMonthlyRHData` e `monthlyData.saveMonthlyLeaderData`
+ * via DI Facade `DEFAULT_MONTHLY_DATA_FACADE` (caller tRPC interno,
+ * S185) — reusa 100% das validacoes §3.12 e a semantica de vinculo-
+ * no-mes (S080). Retorno consolidado tipado (S186) com contagens
+ * sucesso/erro por linha. Autorizacao herda das procs reusadas:
+ * fluxo RH exige super_admin/rh/rh_lider; fluxo Lider exige
+ * super_admin/rh/rh_lider/clevel/lider. Zero SQL cru (RV-12); zero
+ * codigo morto (RV-13); nenhuma edicao em monthlyData.ts.
+ */
+const spreadsheetsRouter = createSpreadsheetsRouter();
+
 /** Router raiz da plataforma. */
 export const appRouter = router({
   health: healthRouter,
@@ -370,6 +392,7 @@ export const appRouter = router({
   instrumentD: instrumentDRouter,
   iql: iqlRouter,
   climate: climateRouter,
+  spreadsheets: spreadsheetsRouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */
