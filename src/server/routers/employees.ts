@@ -1,7 +1,12 @@
-// ROIP APP 9BOX — sub-router `employees` (ME-043).
+// ROIP APP 9BOX — sub-router `employees` (ME-043 + ME-043b).
 //
-// Primeira superficie tRPC de ESCRITA canonica sobre a tabela `employees`
-// (DOC 01 §4.5). Cobre 5 das 8 procs canonicas do §16.7 do DOC 03:
+// Superficie tRPC de ESCRITA canonica sobre a tabela `employees`
+// (DOC 01 §4.5). Cobre 6 das 8 procs canonicas do §16.7 do DOC 03
+// apos a ME-043b — ME-043 entregou create/update/inactivate/reactivate/
+// delete; ME-043b acrescenta `uploadCSV` (§16.6) reusando `create` como
+// via canonica de INSERT por linha (RV-13 preservada; padrao S185
+// replicado da ME-048; contrato S186 compartilhado via S193 do
+// `_shared/uploadResult.ts`).
 //
 //   - `employees.create`      — RH + Bruno. Transacao atomica: INSERT
 //     `employees` + INSERT `individualProfilePlaceholders`
@@ -26,6 +31,16 @@
 //     nao e RF. Transacao: DELETE do placeholder + DELETE das metas +
 //     DELETE do colaborador. Erros de FK residuais convertidos em
 //     CONFLICT canonico (salvaguarda).
+//   - `employees.uploadCSV`   — RH + Bruno (ME-043b, §16.6). Parser
+//     unificado XLSX+CSV via `exceljs 4.4.0` (S184-rev canonizada na
+//     ME-048; `wb.csv.read(stream)` retorna o mesmo `Worksheet` que
+//     `wb.xlsx.load(buf)`, permitindo pipeline unico). Cabecalho
+//     canonico validado antes das linhas; linha valida delega a
+//     `employees.create` via caller tRPC interno (S185 replicado com
+//     `EmployeesFacade.create` — `DEFAULT_EMPLOYEES_FACADE` produz o
+//     caller sobre `createEmployeesRouter()` compartilhando o `ctx`).
+//     Linha invalida agrega em `LinhaErro` sem abortar (semantica
+//     canonica §16.6 — modal de resumo pos-upload).
 //
 // Fora do escopo (S127 — comando de abertura ME-043):
 //   - Ativacao/transferencia de Responsavel financeiro (§5.4/§5.5).
@@ -50,6 +65,8 @@
 
 import { TRPCError } from '@trpc/server';
 import { and, count, eq, isNull } from 'drizzle-orm';
+import ExcelJS from 'exceljs';
+import { Readable } from 'node:stream';
 import { z } from 'zod';
 
 import type { RoipDatabase } from '../../db/client';
@@ -70,7 +87,15 @@ import {
   plenitudeData,
 } from '../../db/schema';
 
-import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import {
+  createCallerFactory,
+  roleProcedure,
+  router,
+  type AuthenticatedUser,
+  type Context,
+} from '../trpc';
+
+import type { LinhaErro, UploadResult } from './_shared/uploadResult';
 
 // ============================================================
 // Constantes canonicas
@@ -107,6 +132,76 @@ export const REASON_CADASTRO_INICIAL = 'Cadastro inicial do colaborador' as cons
  * Analogo ao `REASON_CADASTRO_INICIAL`; distinto do padrao 100-500.
  */
 export const REASON_REATIVACAO = 'Reativacao do colaborador' as const;
+
+// ============================================================
+// Constantes canonicas do uploadCSV (§16.6 — S190, S191)
+// ============================================================
+
+/**
+ * S190 — cabecalho canonico literal do arquivo de cadastro em massa
+ * (14 colunas, linha 1 do arquivo). Ordem canonica fixa; qualquer
+ * divergencia sobe BAD_REQUEST global com `MSG_UPLOAD_CABECALHOS_INVALIDOS`.
+ * Rotulos derivados de §16.2 (formulario canonico) e §4.5 (schema).
+ */
+export const COLUNAS_CANONICAS_EMPLOYEES = [
+  'Nome completo',
+  'CPF',
+  'E-mail',
+  'Data de nascimento',
+  'Data de admissao',
+  'CBO',
+  'Descricao do CBO',
+  'Departamento',
+  'Senioridade',
+  'Nivel hierarquico',
+  'Familia de funcao',
+  'Ativar como Lider',
+  'Ativar como RH',
+  'Nome do lider direto',
+] as const;
+
+/** S191 — mapa canonico rotulo humano → literal do enum `jobFamily`. */
+export const MAP_FAMILIA_FUNCAO: Record<string, (typeof JOB_FAMILY_VALUES)[number]> = {
+  'Vendas e comercial': 'vendas_comercial',
+  'Producao e operacoes': 'producao_operacoes',
+  'Tecnico e especialista': 'tecnico_especialista',
+  'Administrativo e suporte': 'administrativo_suporte',
+  'Atendimento e relacionamento': 'atendimento_relacionamento',
+  'Lideranca e gestao': 'lideranca_gestao',
+};
+
+/** S191 — mapa canonico rotulo humano → literal do enum `senioridade`. */
+export const MAP_SENIORIDADE: Record<string, 'junior' | 'pleno' | 'senior'> = {
+  Junior: 'junior',
+  Pleno: 'pleno',
+  Senior: 'senior',
+};
+
+/** S191 — mapa canonico rotulo humano → literal do enum `nivelHierarquico`. */
+export const MAP_NIVEL_HIERARQUICO: Record<string, NivelHierarquico> = {
+  Operacional: 'operacional',
+  Tatico: 'tatico',
+  Estrategico: 'estrategico',
+};
+
+/**
+ * S191 — rotulos canonicos exatos de `departamento` (identicos aos 19
+ * valores literais do enum §4.5 — sem transformacao). Set derivado do
+ * enum para lookup O(1) preservando a tipagem literal.
+ */
+export const SET_DEPARTAMENTO_CANONICO: ReadonlySet<string> = new Set(DEPARTAMENTO_VALUES);
+
+/** S189 — content types aceitos no `uploadCSV`. */
+export const UPLOAD_CONTENT_TYPES = ['xlsx', 'csv'] as const;
+
+/**
+ * S196 — teto canonico de linhas por upload. Protege memoria contra
+ * arquivo abusivo (cabecalho valido + 10^6 linhas) e nao existe no
+ * canonico como numero explicito; escolhido como 10.000 (largamente
+ * suficiente para PMEs alvo — DOC 00). Excedente sobe BAD_REQUEST
+ * global com `MSG_UPLOAD_LINHAS_EXCEDIDAS`.
+ */
+export const UPLOAD_MAX_LINHAS = 10_000 as const;
 
 // ============================================================
 // Mensagens canonicas literais (testadas verbatim — padrao S073/S091)
@@ -202,6 +297,64 @@ export const MSG_JA_ATIVO = 'Colaborador ja esta ativo.' as const;
  */
 export const MSG_LIDER_INICIAL_INVALIDO =
   'Lider informado nao existe, nao pertence a esta empresa ou nao esta ativo.' as const;
+
+// ============================================================
+// Mensagens canonicas do uploadCSV (§16.6 — S073/S091 replicado; S196)
+// ============================================================
+
+/**
+ * §16.6 — cabecalho do arquivo divergente dos 14 rotulos canonicos em
+ * ordem. Mensagem global (aborta upload); nao entra em `LinhaErro`.
+ */
+export const MSG_UPLOAD_CABECALHOS_INVALIDOS = 'Cabecalhos do arquivo invalidos.' as const;
+
+/** S189 — `contentType` fora do conjunto canonico `{xlsx, csv}`. */
+export const MSG_UPLOAD_CONTENT_TYPE_INVALIDO =
+  'Tipo de arquivo invalido. Aceitos: xlsx e csv.' as const;
+
+/** S196 — teto de linhas excedido (proteção de memoria). */
+export const MSG_UPLOAD_LINHAS_EXCEDIDAS =
+  'Arquivo excede o limite canonico de 10000 linhas de dados.' as const;
+
+/** §16.6 — payload base64 vazio, corrompido ou nao decodificavel. */
+export const MSG_UPLOAD_ARQUIVO_INVALIDO = 'Arquivo invalido ou corrompido.' as const;
+
+/** §16.6 — algum campo obrigatorio da linha esta vazio (§16.2). */
+export const MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO = 'Campo obrigatorio vazio.' as const;
+
+/** §16.6 — mesmo CPF aparece em duas ou mais linhas do proprio arquivo. */
+export const MSG_UPLOAD_CPF_DUPLICADO_ARQUIVO = 'CPF duplicado dentro do arquivo.' as const;
+
+/** §16.6 — CPF ja existe na empresa (dedupe canonico — linha ignorada). */
+export const MSG_UPLOAD_CPF_JA_EXISTE = 'CPF ja cadastrado nesta empresa.' as const;
+
+/** §16.6 — nome do lider direto informado nao corresponde a lider ativo. */
+export const MSG_UPLOAD_LIDER_NAO_ENCONTRADO = 'Lider direto nao encontrado.' as const;
+
+/**
+ * S192 — dois ou mais lideres ativos com nome identico na empresa
+ * impedem a resolucao univoca; linha ignorada com esta mensagem.
+ */
+export const MSG_UPLOAD_LIDER_AMBIGUO =
+  'Lider direto ambiguo — ha mais de um lider ativo com este nome.' as const;
+
+/** S191 — rotulo de Departamento/Familia/Senioridade/Nivel nao canonico. */
+export const MSG_UPLOAD_ENUM_INVALIDO = 'Valor invalido para o campo.' as const;
+
+/** §16.6 — data invalida (formato ou valor). */
+export const MSG_UPLOAD_DATA_INVALIDA = 'Data invalida.' as const;
+
+/** §16.6 — CPF nao normaliza para 11 digitos (S125 superficial). */
+export const MSG_UPLOAD_CPF_INVALIDO = 'CPF invalido.' as const;
+
+/** §16.6 — e-mail com formato invalido. */
+export const MSG_UPLOAD_EMAIL_INVALIDO = 'E-mail invalido.' as const;
+
+/**
+ * §16.6 — booleano fora de `{SIM, NAO}` (case-insensitive; vazio = NAO).
+ * Aplicavel a colunas "Ativar como Lider" e "Ativar como RH".
+ */
+export const MSG_UPLOAD_BOOLEANO_INVALIDO = 'Valor invalido — use SIM ou NAO.' as const;
 
 // ============================================================
 // Codigos MySQL usados como salvaguarda de conversao para TRPCError
@@ -308,6 +461,19 @@ export const DELETE_EMPLOYEE_INPUT_SCHEMA = z.object({
   employeeId: z.number().int().positive(),
 });
 
+/**
+ * §16.6 (ME-043b) — input canonico de `employees.uploadCSV`.
+ * `contentBase64` transporta o arquivo XLSX ou CSV integralmente em
+ * Base64. `contentType` canoniza o parser aplicavel (S189). A validacao
+ * profunda (cabecalho, colunas, linhas) ocorre apos a decodificacao,
+ * dentro do proprio handler.
+ */
+export const UPLOAD_CSV_INPUT_SCHEMA = z.object({
+  companyId: z.number().int().positive(),
+  contentBase64: z.string().min(1),
+  contentType: z.enum(UPLOAD_CONTENT_TYPES),
+});
+
 // ============================================================
 // Tipos publicos exportados (RV-13 — exercitados nos testes)
 // ============================================================
@@ -344,6 +510,54 @@ export interface DeleteEmployeeResult {
   deleted: boolean;
 }
 
+/**
+ * Retorno canonico do `uploadCSV` (S186, alias direto — o contrato
+ * `UploadResult` e canonizado no modulo compartilhado `_shared/
+ * uploadResult.ts`; S193).
+ */
+export type UploadCSVResult = UploadResult;
+
+// ============================================================
+// Facade canonica de reuso via caller tRPC interno (S185, S194)
+// ============================================================
+
+/**
+ * S194 — abstracao injetavel que expoe a proc canonica `employees.create`
+ * a chamadores INTERNOS do proprio sub-router (concretamente:
+ * `employees.uploadCSV`). Producao usa `DEFAULT_EMPLOYEES_FACADE` que
+ * abre um caller tRPC sobre o proprio router compartilhando o `ctx`
+ * (JWT verificado, db conectado, guards de autorizacao aplicados);
+ * testes injetam mock para isolar o parser dos efeitos colaterais do
+ * INSERT canonico ou para exercitar erros determinados por linha.
+ *
+ * Preserva RV-13 (unica via de INSERT em `employees` e a proc `create`);
+ * reusa transacao canonica S126 (INSERT employees + placeholder +
+ * leaderHistory quando `liderInicialId`); reusa integralmente todas as
+ * mensagens canonicas literais e todos os guards (§2.4, §12 DOC 02).
+ */
+export interface EmployeesFacade {
+  create(
+    ctx: Context,
+    input: z.infer<typeof CREATE_EMPLOYEE_INPUT_SCHEMA>,
+  ): Promise<CreateEmployeeResult>;
+}
+
+/**
+ * Default canonico: caller tRPC interno do proprio `createEmployeesRouter`
+ * compartilhando o `ctx`. O caller e instanciado on-demand no handler
+ * do `uploadCSV` (nunca em tempo de importacao), portanto NAO cria
+ * loop de instanciacao — `createEmployeesRouter()` interno e chamado
+ * apenas quando ha upload em curso, e o factory retorna um objeto
+ * router pronto sem executar os handlers.
+ */
+export const DEFAULT_EMPLOYEES_FACADE: EmployeesFacade = {
+  async create(ctx, input) {
+    const factory = createCallerFactory(createEmployeesRouter());
+    const caller = factory(ctx);
+    return await caller.create(input);
+  },
+};
+
 // ============================================================
 // Dependencias injetaveis (DI factory — padrao S100/S084)
 // ============================================================
@@ -351,18 +565,22 @@ export interface DeleteEmployeeResult {
 /**
  * Dependencias do sub-router `employees`. `now` injetavel para testes
  * deterministicos das transacoes atomicas (dataInativacao, dataFim,
- * dataInicio do vinculo). Sem hook de motor: o Perfil Individual §10.12
- * e criado DIRETAMENTE nas transacoes de `create` (INSERT canonico),
- * nao via DI — o motor de assessment do §10 (ME-049a) NAO consome
- * hook aqui, apenas le `individualProfilePlaceholders`.
+ * dataInicio do vinculo). `employeesFacade` (S194) injetavel para
+ * isolar o parser do `uploadCSV` nos testes — producao usa
+ * `DEFAULT_EMPLOYEES_FACADE`. Sem hook de motor: o Perfil Individual
+ * §10.12 e criado DIRETAMENTE nas transacoes de `create` (INSERT
+ * canonico), nao via DI — o motor de assessment do §10 (ME-049a)
+ * NAO consome hook aqui, apenas le `individualProfilePlaceholders`.
  */
 export interface EmployeesRouterDeps {
   now?: () => Date;
+  employeesFacade?: EmployeesFacade;
 }
 
-/** DI default: relogio real. */
+/** DI default: relogio real + facade default. */
 export const DEFAULT_EMPLOYEES_ROUTER_DEPS: Required<EmployeesRouterDeps> = {
   now: () => new Date(),
+  employeesFacade: DEFAULT_EMPLOYEES_FACADE,
 };
 
 // ============================================================
@@ -567,6 +785,537 @@ export function buildEmployeeInsertPayload(
 }
 
 // ============================================================
+// Helpers do uploadCSV §16.6 (ME-043b — RV-13 preservada; padrao S049
+// helper local por sub-router — leitura de workbook duplica o padrao
+// generico de `spreadsheets.ts` com especializacao para CSV unificado
+// via `wb.csv.read(Readable.from([csv]))`).
+// ============================================================
+
+/**
+ * S189 — decodifica Base64 → Buffer e delega ao parser exceljs 4.4.0
+ * conforme `contentType`. XLSX via `wb.xlsx.load(buffer)`; CSV via
+ * `wb.csv.read(Readable)` — ambos retornam o mesmo tipo `Worksheet`.
+ * Falhas de decodificacao/parse sobem `BAD_REQUEST` global.
+ */
+export async function readEmployeesWorkbook(
+  contentBase64: string,
+  contentType: (typeof UPLOAD_CONTENT_TYPES)[number],
+): Promise<ExcelJS.Worksheet> {
+  let buf: Buffer;
+  try {
+    buf = Buffer.from(contentBase64, 'base64');
+  } catch {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_UPLOAD_ARQUIVO_INVALIDO });
+  }
+  if (buf.length === 0) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_UPLOAD_ARQUIVO_INVALIDO });
+  }
+  const wb = new ExcelJS.Workbook();
+  if (contentType === 'xlsx') {
+    try {
+      // exceljs 4.4.0 typing herdado do Buffer classico (pre-Node 22);
+      // cast documentado no precedente de `spreadsheets.ts:753`.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await wb.xlsx.load(buf as any);
+    } catch {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_UPLOAD_ARQUIVO_INVALIDO });
+    }
+    const ws = wb.worksheets[0];
+    if (!ws) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_UPLOAD_ARQUIVO_INVALIDO });
+    }
+    return ws;
+  }
+  // contentType === 'csv'
+  try {
+    const stream = Readable.from([buf.toString('utf8')]);
+    const ws = await wb.csv.read(stream);
+    return ws;
+  } catch {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_UPLOAD_ARQUIVO_INVALIDO });
+  }
+}
+
+/**
+ * Le uma celula preservando string; null/undefined vira ''. Padrao
+ * canonico herdado de `spreadsheets.ts` — celulas RichText retornam
+ * `{text}`, celulas Date retornam `Date` (convertido via toString).
+ */
+export function upCellString(ws: ExcelJS.Worksheet, row: number, col: number): string {
+  const v = ws.getRow(row).getCell(col).value;
+  if (v === null || v === undefined) {
+    return '';
+  }
+  if (typeof v === 'object' && v !== null && 'text' in v) {
+    return String((v as { text: unknown }).text ?? '').trim();
+  }
+  if (v instanceof Date) {
+    return v.toISOString().slice(0, 10);
+  }
+  return String(v).trim();
+}
+
+/**
+ * Numero de linhas com conteudo em qualquer coluna (equivalente ao
+ * helper `usedRowCount` de `spreadsheets.ts`, replicado por S049).
+ */
+export function upUsedRowCount(ws: ExcelJS.Worksheet): number {
+  let last = 0;
+  ws.eachRow({ includeEmpty: false }, (_row, rowNumber) => {
+    if (rowNumber > last) {
+      last = rowNumber;
+    }
+  });
+  return last;
+}
+
+/**
+ * Parseia data no formato DD/MM/AAAA ou ISO YYYY-MM-DD. Retorna
+ * `Date` valida ou `null` se invalida. `Date` sem componente de hora
+ * (00:00:00 UTC) para casar com o tipo `date` do Drizzle §4.5.
+ */
+export function upParseData(raw: string): Date | null {
+  const s = raw.trim();
+  if (s === '') {
+    return null;
+  }
+  // ISO YYYY-MM-DD.
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (iso) {
+    const y = Number(iso[1]);
+    const m = Number(iso[2]);
+    const d = Number(iso[3]);
+    return upBuildDateSafe(y, m, d);
+  }
+  // BR DD/MM/AAAA.
+  const br = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(s);
+  if (br) {
+    const d = Number(br[1]);
+    const m = Number(br[2]);
+    const y = Number(br[3]);
+    return upBuildDateSafe(y, m, d);
+  }
+  return null;
+}
+
+/**
+ * Constroi `Date` UTC 00:00:00 validando que os campos batem (rejeita
+ * `31/02/2000` que o construtor `Date` aceitaria como `03/03/2000`).
+ */
+export function upBuildDateSafe(y: number, m: number, d: number): Date | null {
+  if (y < 1900 || y > 2100) {
+    return null;
+  }
+  if (m < 1 || m > 12) {
+    return null;
+  }
+  if (d < 1 || d > 31) {
+    return null;
+  }
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (dt.getUTCFullYear() !== y) {
+    return null;
+  }
+  if (dt.getUTCMonth() !== m - 1) {
+    return null;
+  }
+  if (dt.getUTCDate() !== d) {
+    return null;
+  }
+  return dt;
+}
+
+/**
+ * Parseia booleano no dominio canonico `{SIM, NAO}` (case-insensitive;
+ * trim; vazio ou undefined → `false`; qualquer outra string →
+ * `undefined` indicando erro para o chamador registrar `LinhaErro`).
+ */
+export function upParseSimNao(raw: string): boolean | undefined {
+  const s = raw.trim().toUpperCase();
+  if (s === '') {
+    return false;
+  }
+  if (s === 'SIM') {
+    return true;
+  }
+  if (s === 'NAO' || s === 'NÃO') {
+    return false;
+  }
+  return undefined;
+}
+
+/**
+ * S192 — resolve nome do lider direto em `employees.id` da mesma empresa,
+ * exigindo `isLider=true` e `status='ativo'`. Retorna o id univoco,
+ * `'not_found'` ou `'ambiguous'`. `LIMIT 2` e suficiente para
+ * caracterizar ambiguidade (>= 2 = ambiguo; a terceira ocorrencia nao
+ * altera o veredito canonico).
+ */
+export async function upResolveLiderPorNome(
+  db: RoipDatabase,
+  companyId: number,
+  nome: string,
+): Promise<{ tipo: 'ok'; liderId: number } | { tipo: 'not_found' | 'ambiguous' }> {
+  const rows = await db
+    .select({ id: employees.id })
+    .from(employees)
+    .where(
+      and(
+        eq(employees.companyId, companyId),
+        eq(employees.name, nome),
+        eq(employees.isLider, true),
+        eq(employees.status, 'ativo'),
+      ),
+    )
+    .limit(2);
+  if (rows.length === 0) {
+    return { tipo: 'not_found' };
+  }
+  if (rows.length > 1) {
+    return { tipo: 'ambiguous' };
+  }
+  return { tipo: 'ok', liderId: rows[0]!.id };
+}
+
+/**
+ * Estrutura interna canonica de uma linha ja parseada e pronta para
+ * delegar ao `employees.create`. Nao exportada — consumida apenas pelo
+ * `parseEmployeesUpload` e pelo handler do `uploadCSV`.
+ */
+interface UploadLinhaParsed {
+  linha: number;
+  input: z.infer<typeof CREATE_EMPLOYEE_INPUT_SCHEMA>;
+}
+
+/**
+ * §16.6 — parser canonico do arquivo. Aborta com BAD_REQUEST global se
+ * o cabecalho divergir; caso contrario percorre linhas 2..N acumulando
+ * (a) linhas prontas em `linhas[]` (validas dentro do proprio arquivo)
+ * e (b) `LinhaErro[]` para linhas ignoradas (campo vazio, enum invalido,
+ * data invalida, CPF invalido, CPF duplicado dentro do proprio arquivo,
+ * lider por nome nao encontrado/ambiguo). CPFs ja existentes na
+ * empresa NAO sao detectados aqui (a proc `create` levanta `CONFLICT`
+ * canonico via `uq_employee_cpf` — capturado no handler).
+ */
+export async function parseEmployeesUpload(
+  db: RoipDatabase,
+  companyId: number,
+  ws: ExcelJS.Worksheet,
+): Promise<{ linhas: UploadLinhaParsed[]; erros: LinhaErro[] }> {
+  // 1) Cabecalho canonico exato.
+  for (let i = 0; i < COLUNAS_CANONICAS_EMPLOYEES.length; i += 1) {
+    const esperado = COLUNAS_CANONICAS_EMPLOYEES[i]!;
+    const encontrado = upCellString(ws, 1, i + 1);
+    if (encontrado !== esperado) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_UPLOAD_CABECALHOS_INVALIDOS });
+    }
+  }
+
+  const last = upUsedRowCount(ws);
+  const totalLinhas = last - 1;
+  if (totalLinhas > UPLOAD_MAX_LINHAS) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_UPLOAD_LINHAS_EXCEDIDAS });
+  }
+
+  const linhas: UploadLinhaParsed[] = [];
+  const erros: LinhaErro[] = [];
+  const cpfsVistosNoArquivo = new Set<string>();
+
+  for (let r = 2; r <= last; r += 1) {
+    const nome = upCellString(ws, r, 1);
+    const cpfRaw = upCellString(ws, r, 2);
+    const email = upCellString(ws, r, 3);
+    const dtNascRaw = upCellString(ws, r, 4);
+    const dtAdmRaw = upCellString(ws, r, 5);
+    const cbo = upCellString(ws, r, 6);
+    const descCBO = upCellString(ws, r, 7);
+    const departamentoRaw = upCellString(ws, r, 8);
+    const senioridadeRaw = upCellString(ws, r, 9);
+    const nivelRaw = upCellString(ws, r, 10);
+    const familiaRaw = upCellString(ws, r, 11);
+    const ativarLiderRaw = upCellString(ws, r, 12);
+    const ativarRHRaw = upCellString(ws, r, 13);
+    const nomeLider = upCellString(ws, r, 14);
+
+    // Linha totalmente vazia — ignorada silenciosamente (semantica
+    // §16.6: apenas linhas com conteudo entram no relatorio).
+    const preenchida =
+      nome !== '' ||
+      cpfRaw !== '' ||
+      email !== '' ||
+      dtNascRaw !== '' ||
+      dtAdmRaw !== '' ||
+      cbo !== '' ||
+      descCBO !== '' ||
+      departamentoRaw !== '' ||
+      senioridadeRaw !== '' ||
+      nivelRaw !== '' ||
+      familiaRaw !== '' ||
+      ativarLiderRaw !== '' ||
+      ativarRHRaw !== '' ||
+      nomeLider !== '';
+    if (!preenchida) {
+      continue;
+    }
+
+    // Validacoes canonicas §16.2 — obrigatorios.
+    if (nome === '') {
+      erros.push({
+        linha: r,
+        coluna: 'Nome completo',
+        mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO,
+      });
+      continue;
+    }
+    if (cpfRaw === '') {
+      erros.push({ linha: r, coluna: 'CPF', mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO });
+      continue;
+    }
+    const cpf = cpfRaw.replace(/\D+/g, '');
+    if (cpf.length !== CPF_LENGTH) {
+      erros.push({ linha: r, coluna: 'CPF', mensagem: MSG_UPLOAD_CPF_INVALIDO });
+      continue;
+    }
+    if (cpfsVistosNoArquivo.has(cpf)) {
+      erros.push({ linha: r, coluna: 'CPF', mensagem: MSG_UPLOAD_CPF_DUPLICADO_ARQUIVO });
+      continue;
+    }
+
+    if (dtNascRaw === '') {
+      erros.push({
+        linha: r,
+        coluna: 'Data de nascimento',
+        mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO,
+      });
+      continue;
+    }
+    const dtNasc = upParseData(dtNascRaw);
+    if (!dtNasc) {
+      erros.push({
+        linha: r,
+        coluna: 'Data de nascimento',
+        mensagem: MSG_UPLOAD_DATA_INVALIDA,
+      });
+      continue;
+    }
+    if (dtAdmRaw === '') {
+      erros.push({
+        linha: r,
+        coluna: 'Data de admissao',
+        mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO,
+      });
+      continue;
+    }
+    const dtAdm = upParseData(dtAdmRaw);
+    if (!dtAdm) {
+      erros.push({
+        linha: r,
+        coluna: 'Data de admissao',
+        mensagem: MSG_UPLOAD_DATA_INVALIDA,
+      });
+      continue;
+    }
+    if (cbo === '') {
+      erros.push({ linha: r, coluna: 'CBO', mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO });
+      continue;
+    }
+    if (descCBO === '') {
+      erros.push({
+        linha: r,
+        coluna: 'Descricao do CBO',
+        mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO,
+      });
+      continue;
+    }
+    if (departamentoRaw === '') {
+      erros.push({
+        linha: r,
+        coluna: 'Departamento',
+        mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO,
+      });
+      continue;
+    }
+    if (!SET_DEPARTAMENTO_CANONICO.has(departamentoRaw)) {
+      erros.push({ linha: r, coluna: 'Departamento', mensagem: MSG_UPLOAD_ENUM_INVALIDO });
+      continue;
+    }
+    if (senioridadeRaw === '') {
+      erros.push({
+        linha: r,
+        coluna: 'Senioridade',
+        mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO,
+      });
+      continue;
+    }
+    const senioridade = MAP_SENIORIDADE[senioridadeRaw];
+    if (!senioridade) {
+      erros.push({ linha: r, coluna: 'Senioridade', mensagem: MSG_UPLOAD_ENUM_INVALIDO });
+      continue;
+    }
+    if (nivelRaw === '') {
+      erros.push({
+        linha: r,
+        coluna: 'Nivel hierarquico',
+        mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO,
+      });
+      continue;
+    }
+    const nivelHierarquico = MAP_NIVEL_HIERARQUICO[nivelRaw];
+    if (!nivelHierarquico) {
+      erros.push({
+        linha: r,
+        coluna: 'Nivel hierarquico',
+        mensagem: MSG_UPLOAD_ENUM_INVALIDO,
+      });
+      continue;
+    }
+    if (familiaRaw === '') {
+      erros.push({
+        linha: r,
+        coluna: 'Familia de funcao',
+        mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO,
+      });
+      continue;
+    }
+    const jobFamily = MAP_FAMILIA_FUNCAO[familiaRaw];
+    if (!jobFamily) {
+      erros.push({
+        linha: r,
+        coluna: 'Familia de funcao',
+        mensagem: MSG_UPLOAD_ENUM_INVALIDO,
+      });
+      continue;
+    }
+
+    const isLider = upParseSimNao(ativarLiderRaw);
+    if (isLider === undefined) {
+      erros.push({
+        linha: r,
+        coluna: 'Ativar como Lider',
+        mensagem: MSG_UPLOAD_BOOLEANO_INVALIDO,
+      });
+      continue;
+    }
+    const isRH = upParseSimNao(ativarRHRaw);
+    if (isRH === undefined) {
+      erros.push({
+        linha: r,
+        coluna: 'Ativar como RH',
+        mensagem: MSG_UPLOAD_BOOLEANO_INVALIDO,
+      });
+      continue;
+    }
+
+    let liderInicialId: number | undefined = undefined;
+    if (nomeLider !== '') {
+      const res = await upResolveLiderPorNome(db, companyId, nomeLider);
+      if (res.tipo === 'not_found') {
+        erros.push({
+          linha: r,
+          coluna: 'Nome do lider direto',
+          mensagem: MSG_UPLOAD_LIDER_NAO_ENCONTRADO,
+        });
+        continue;
+      }
+      if (res.tipo === 'ambiguous') {
+        erros.push({
+          linha: r,
+          coluna: 'Nome do lider direto',
+          mensagem: MSG_UPLOAD_LIDER_AMBIGUO,
+        });
+        continue;
+      }
+      if (res.tipo !== 'ok') {
+        // Unreachable — os dois branches acima cobrem 'not_found' e
+        // 'ambiguous'; salvaguarda para o TS narrowing (o union do
+        // retorno inclui `{tipo: 'not_found'|'ambiguous'}` sem
+        // `liderId`).
+        continue;
+      }
+      liderInicialId = res.liderId;
+    }
+
+    // E-mail e opcional para colaborador puro; obrigatorio se
+    // `isLider=true` OU `isRH=true` (§16.2). Se preenchido, valida
+    // formato basico (regex do zod aplicaria dentro do `create`, mas
+    // preferimos capturar aqui como LinhaErro para preservar semantica
+    // "processa todas as linhas").
+    const emailNormalizado = email === '' ? undefined : email;
+    if (emailNormalizado !== undefined) {
+      const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNormalizado);
+      if (!emailOk) {
+        erros.push({ linha: r, coluna: 'E-mail', mensagem: MSG_UPLOAD_EMAIL_INVALIDO });
+        continue;
+      }
+    }
+    if ((isLider || isRH) && emailNormalizado === undefined) {
+      erros.push({
+        linha: r,
+        coluna: 'E-mail',
+        mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO,
+      });
+      continue;
+    }
+
+    // Linha aprovada — agrega input canonico do `create`.
+    cpfsVistosNoArquivo.add(cpf);
+    linhas.push({
+      linha: r,
+      input: {
+        companyId,
+        name: nome,
+        cpf,
+        email: emailNormalizado,
+        dataNascimento: dtNasc,
+        dataAdmissao: dtAdm,
+        cbo,
+        descricaoCBO: descCBO,
+        jobFamily,
+        senioridade,
+        nivelHierarquico,
+        departamento: departamentoRaw as (typeof DEPARTAMENTO_VALUES)[number],
+        isRH,
+        isLider,
+        liderInicialId,
+      },
+    });
+  }
+
+  return { linhas, erros };
+}
+
+/**
+ * Converte um erro emitido pelo `EmployeesFacade.create` numa
+ * `LinhaErro` canonica preservando a mensagem literal quando a proc
+ * emite `TRPCError`, ou generalizando para 'Erro ao gravar linha.'
+ * quando o motivo nao e canonico (salvaguarda).
+ */
+export function upErroFacadeToLinhaErro(err: unknown, linha: number): LinhaErro {
+  if (err instanceof TRPCError) {
+    // Mapeamento canonico do CPF ja existente na empresa (uq_employee_cpf
+    // convertido em CONFLICT pelo `rethrowMysqlError`).
+    if (err.message === MSG_CPF_DUPLICADO) {
+      return {
+        linha,
+        coluna: 'CPF',
+        mensagem: MSG_UPLOAD_CPF_JA_EXISTE,
+      };
+    }
+    // Mapeamento canonico do guard §12 DOC 02: caller RH tentando
+    // ativar `isRH=true` — preserva mensagem canonica literal.
+    if (err.message === MSG_ISRH_APENAS_BRUNO) {
+      return {
+        linha,
+        coluna: 'Ativar como RH',
+        mensagem: err.message,
+      };
+    }
+    return { linha, coluna: '-', mensagem: err.message };
+  }
+  return { linha, coluna: '-', mensagem: 'Erro ao gravar linha.' };
+}
+
+// ============================================================
 // Factory canonica do sub-router
 // ============================================================
 
@@ -576,7 +1325,7 @@ export function buildEmployeeInsertPayload(
  * injetam `now` explicito.
  */
 export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
-  const { now } = { ...DEFAULT_EMPLOYEES_ROUTER_DEPS, ...deps };
+  const { now, employeesFacade } = { ...DEFAULT_EMPLOYEES_ROUTER_DEPS, ...deps };
 
   return router({
     // --------------------------------------------------------
@@ -922,6 +1671,55 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           }
           rethrowMysqlError(err);
         }
+      }),
+
+    // --------------------------------------------------------
+    // employees.uploadCSV — RH + Bruno (ME-043b, §16.6)
+    // --------------------------------------------------------
+    uploadCSV: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+      .input(UPLOAD_CSV_INPUT_SCHEMA)
+      .mutation(async ({ ctx, input }): Promise<UploadCSVResult> => {
+        assertCompanyScope(ctx.user, input.companyId);
+
+        // Leitura + parse do arquivo (aborta com BAD_REQUEST global se
+        // cabecalho invalido, tipo invalido, arquivo corrompido ou
+        // teto de linhas estourado).
+        const ws = await readEmployeesWorkbook(input.contentBase64, input.contentType);
+        const { linhas, erros } = await parseEmployeesUpload(ctx.db, input.companyId, ws);
+
+        if (linhas.length === 0) {
+          return {
+            ok: false,
+            linhasProcessadas: erros.length,
+            linhasSucesso: 0,
+            linhasErro: erros.length,
+            erros,
+          };
+        }
+
+        // Delega linha a linha ao caller canonico (S185/S194). Erros
+        // canonicos de negocio (`CPF duplicado`, `isRH apenas Bruno`,
+        // etc.) sao capturados por linha para preservar semantica
+        // §16.6 "processa todas".
+        const sucessos: number[] = [];
+        for (const linha of linhas) {
+          try {
+            await employeesFacade.create(ctx, linha.input);
+            sucessos.push(linha.linha);
+          } catch (err) {
+            erros.push(upErroFacadeToLinhaErro(err, linha.linha));
+          }
+        }
+
+        const linhasSucesso = sucessos.length;
+        const linhasErro = erros.length;
+        return {
+          ok: linhasErro === 0 && linhasSucesso > 0,
+          linhasProcessadas: linhasSucesso + linhasErro,
+          linhasSucesso,
+          linhasErro,
+          erros,
+        };
       }),
   });
 }

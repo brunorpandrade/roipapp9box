@@ -216,21 +216,15 @@ export const UPLOAD_LEADER_DATA_INPUT_SCHEMA = z.object({
 // Tipos publicos canonicos
 // ============================================================
 
-/** Erro em uma linha do upload (S186 — consolidado). */
-export interface LinhaErro {
-  linha: number;
-  coluna: string;
-  mensagem: string;
-}
+// S193 (ME-043b) — UploadResult e LinhaErro extraidos para modulo
+// compartilhado `_shared/uploadResult.ts` para servir como fonte
+// canonica unica dos dois sub-routers que produzem uploads
+// (spreadsheets e employees). Importados como types locais para uso
+// interno neste arquivo e reexportados como types para preservar ABI
+// dos importadores externos.
+import type { LinhaErro, UploadResult } from './_shared/uploadResult';
 
-/** Retorno consolidado canonico dos uploads (S186). */
-export interface UploadResult {
-  ok: boolean;
-  linhasProcessadas: number;
-  linhasSucesso: number;
-  linhasErro: number;
-  erros: LinhaErro[];
-}
+export type { LinhaErro, UploadResult };
 
 /** Retorno canonico dos downloads: buffer XLSX em Base64 + metadata. */
 export interface DownloadResult {
