@@ -103,9 +103,21 @@ prepare_paths() {
   # diretorio ficam mysql-owned e `cat >` como user nao-root falharia
   # silenciosamente, preservando init-file antigo. Reescrita e
   # incondicional a cada run (S162).
+  #
+  # L86 (ME-049a): CREATE DATABASE IF NOT EXISTS das 3 bases canonicas
+  # (`roip`, `roip_test`, `roip_validate`) e idempotente e roda a cada
+  # start (via --init-file), garantindo que o ramo de reuso do
+  # datadir tambem tenha as bases presentes. Corrige o defeito
+  # observado na auditoria RV-01 da ME-049a: apos reiniciar mysqld
+  # sobre datadir preexistente, as bases nao eram recriadas e o
+  # validate falhava com `ER_BAD_DB_ERROR`. IF NOT EXISTS preserva
+  # dados quando as bases ja existem.
   $SUDO tee "$ROIP_MYSQL_INIT_FILE" > /dev/null <<EOF
 ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '$ROIP_MYSQL_ROOT_PASSWORD';
 FLUSH PRIVILEGES;
+CREATE DATABASE IF NOT EXISTS roip;
+CREATE DATABASE IF NOT EXISTS roip_test;
+CREATE DATABASE IF NOT EXISTS roip_validate;
 EOF
   # Owner mysql em toda a arvore + init-file 644 (L65).
   # $SUDO obrigatorio: quando o script roda como user nao-root, chown

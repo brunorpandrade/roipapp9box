@@ -23,6 +23,7 @@ import { createCycleUnlockRequestsRouter } from './cycleUnlockRequests';
 import { createDashboardRouter } from './dashboard';
 import { createEconomicDiagnosisRouter } from './economicDiagnosis';
 import { createEmployeesRouter } from './employees';
+import { createIndividualProfilePlaceholdersRouter } from './individualProfilePlaceholders';
 import { createInstrumentARouter } from './instrumentA';
 import { createInstrumentCRouter } from './instrumentC';
 import { createInstrumentDRouter } from './instrumentD';
@@ -366,6 +367,32 @@ const climateRouter = createClimateRouter();
  */
 const spreadsheetsRouter = createSpreadsheetsRouter();
 
+/**
+ * Sub-router `individualProfilePlaceholders` (ME-049a, Bloco B3).
+ * Superficie tRPC canonica de LEITURA sobre `individualProfilePlaceholders`
+ * (DOC 01 §4.9) — 2 procs canonicas do §10.13 do DOC 03:
+ * `individualProfilePlaceholders.list` (Bruno + RH; filtro opcional
+ * por `status`) e `individualProfilePlaceholders.getByEmployeeId`
+ * (Bruno + RH; S198 canonizada nesta ME — §10.13 e silente para o
+ * escopo, e ampliar sem base DOC 02 seria inventar permissao). O
+ * consumo pelo colaborador se da pelo Route Handler
+ * `POST /api/portal/profile-form-state`; o consumo por lider/C-level
+ * se da por procs de outros routers (painel/organograma) em ME
+ * futura. A superficie de ESCRITA canonica do Perfil Individual
+ * (`getFormState`, `saveBlockResponses`, `submitAssessment` do
+ * §10.13) foi implementada como Route Handlers em
+ * `/api/portal/profile-form-state`, `/api/portal/save-profile-block`
+ * e `/api/portal/submit-profile-assessment` (S197 canonizada nesta
+ * ME — precedente ME-039 e ME-046: portal autenticado por
+ * `portalToken` NAO usa tRPC). O motor deterministico das 5 camadas
+ * (§10.4-§10.6) vive em
+ * `src/server/services/individualProfileEngine.ts` e e acoplado ao
+ * Route Handler de submit via Facade DI
+ * `DEFAULT_INDIVIDUAL_PROFILE_ENGINE` (padrao S105 herdado do S060).
+ * Zero SQL cru (RV-12); zero codigo morto (RV-13).
+ */
+const individualProfilePlaceholdersRouter = createIndividualProfilePlaceholdersRouter();
+
 /** Router raiz da plataforma. */
 export const appRouter = router({
   health: healthRouter,
@@ -393,6 +420,7 @@ export const appRouter = router({
   iql: iqlRouter,
   climate: climateRouter,
   spreadsheets: spreadsheetsRouter,
+  individualProfilePlaceholders: individualProfilePlaceholdersRouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */
