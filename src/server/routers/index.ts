@@ -33,6 +33,7 @@ import { createLeadershipTransferRouter } from './leadershipTransfer';
 import { createMonthlyClosureRouter } from './monthlyClosure';
 import { createMonthlyDataRouter } from './monthlyData';
 import { createNineBoxRouter } from './nineBox';
+import { createNr1Router } from './nr1';
 import { createPlatformLogsRouter } from './platformLogs';
 import { createPlenitudeRouter } from './plenitude';
 import { createQuarterlyCalculationRouter } from './quarterlyCalculation';
@@ -414,6 +415,33 @@ const individualProfilePlaceholdersRouter = createIndividualProfilePlaceholdersR
  */
 const individualProfileRouter = createIndividualProfileRouter();
 
+/**
+ * Sub-router `nr1` (ME-049cd, Bloco B3). Abre a superficie tRPC do
+ * Radar NR-1 (DOC 03 §11.2-§11.15) — 6 das 8 procs canonicas do
+ * §11.17/§19.8: `configureCycle`, `editClosingDate`, `cancelCycle`,
+ * `closeCycle` (interna, exposta transitoriamente como super_admin por
+ * S208/S216), `getCycleDetails` e `getCollectionStatus`. As outras
+ * duas ficam fora deste router por decisao canonica: `saveResponse`
+ * vive no Route Handler `POST /api/portal/save-nr1-response` (S214,
+ * aplicacao de S207 — portal autenticado por `portalToken` nunca usa
+ * tRPC) e `downloadReport` (§11.12) sai para a ME-049e porque o gate
+ * de ambiente de S218 reprovou na abertura desta ME (sem headless
+ * chrome disponivel; RV-04 impede despachar comando nao executado).
+ *
+ * A transicao `agendado -> aberto` NAO ganhou proc (S237): §19.8 e
+ * DOC 00 §12.9 enumeram exatamente 8 procs do dominio e nenhuma abre
+ * ciclo; ela vive como `openScheduledNr1Cycles` no motor, no
+ * precedente do §19.13 executado pela ME-030. O
+ * `runDailyInstrumentStatusJob` do Bloco B6 (DOC 06 §16.1) reusa as
+ * duas funcoes do motor sem edita-las.
+ *
+ * Factory com DI (S205): `now`, `nr1Engine` e `alertFacade`
+ * injetaveis, defaults reais. O hook `emitAlertPostGravacao` (S217)
+ * nasce no-op — o motor de alertas do DOC 06 §8 chega no Bloco B6 e
+ * substitui o default sem editar motor nem router.
+ */
+const nr1Router = createNr1Router();
+
 /** Router raiz da plataforma. */
 export const appRouter = router({
   health: healthRouter,
@@ -443,6 +471,7 @@ export const appRouter = router({
   spreadsheets: spreadsheetsRouter,
   individualProfilePlaceholders: individualProfilePlaceholdersRouter,
   individualProfile: individualProfileRouter,
+  nr1: nr1Router,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */
