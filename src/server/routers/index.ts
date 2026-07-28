@@ -24,6 +24,8 @@ import { createDashboardRouter } from './dashboard';
 import { createEconomicDiagnosisRouter } from './economicDiagnosis';
 import { createEmployeesRouter } from './employees';
 import { createIndividualProfileRouter } from './individualProfile';
+// eslint-disable-next-line @stylistic/max-len -- import canonico do religador S244
+import { createDefaultIndividualProfileReportGenerationFacade } from '../services/individualProfileAI';
 import { createIndividualProfilePlaceholdersRouter } from './individualProfilePlaceholders';
 import { createInstrumentARouter } from './instrumentA';
 import { createInstrumentCRouter } from './instrumentC';
@@ -411,9 +413,18 @@ const individualProfilePlaceholdersRouter = createIndividualProfilePlaceholdersR
  * (S211/S231), escopo empresa (§2.4), inativo restrito a Bruno + RH
  * (§3.13) e cadeia direta de lider (S066) — matriz DOC 02 por S230.
  * Tentativa vigente resolvida na camada de leitura (S213).
- * `generatePDF` e qualquer chamada de IA ficam na ME-050/51 (E04).
+ *
+ * S244 (ME-050/51): religacao do wrapper de geracao IA. O default do
+ * modulo continua no-op defensivo (compatibilidade de testes-unit); o
+ * `reportGenerationFactory` injetado aqui produz a Facade real com
+ * `ctx.db` de cada request, apontando ao motor
+ * `individualProfileAI.ts` (S244) via
+ * `createDefaultIndividualProfileReportGenerationFacade`. `pdfRenderer`
+ * continua com o default `puppeteer-core` (S260 — Facade DI).
  */
-const individualProfileRouter = createIndividualProfileRouter();
+const individualProfileRouter = createIndividualProfileRouter({
+  reportGenerationFactory: createDefaultIndividualProfileReportGenerationFacade,
+});
 
 /**
  * Sub-router `nr1` (ME-049cd, Bloco B3). Abre a superficie tRPC do

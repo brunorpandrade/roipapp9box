@@ -61,6 +61,7 @@ import {
   nr1AreaDivergenceAnalysis,
 } from '../../db/schema';
 import { roleProcedure, router } from '../trpc';
+import { signPdfEphemeralToken } from '../auth/pdfEphemeralToken';
 import {
   adesaoPercentualNr1,
   AVISO_COLABORADORES_MINIMO_NR1,
@@ -103,6 +104,14 @@ export const MSG_AVISO_EMPRESA_PEQUENA_NR1 =
 
 /** §11.2 — ciclo inexistente ou fora do escopo consultado. */
 export const MSG_CICLO_NAO_ENCONTRADO_NR1 = 'Ciclo do Radar NR-1 não encontrado.';
+
+/**
+ * §11.12 — download so e liberado sobre ciclo fechado. `startDownloadToken`
+ * bloqueia com esta mensagem qualquer tentativa contra ciclo agendado ou
+ * aberto (S254). Ciclo cancelado (deletado) cai em MSG_CICLO_NAO_ENCONTRADO_NR1.
+ */
+export const MSG_CICLO_NAO_FECHADO_NR1 =
+  'O relatório do Radar NR-1 só está disponível após o fechamento do ciclo.';
 
 /** §11.2 — edicao de data exige ciclo em `aberto`. */
 export const MSG_EDICAO_EXIGE_CICLO_ABERTO_NR1 =
@@ -210,6 +219,14 @@ export const GET_CYCLE_DETAILS_INPUT_SCHEMA_NR1 = z.object({
 
 /** §11.17 — payload de `getCollectionStatus`. */
 export const GET_COLLECTION_STATUS_INPUT_SCHEMA_NR1 = z.object({
+  cicloDbId: z.number().int().positive(),
+});
+
+/**
+ * §11.12 — payload de `startDownloadToken` (S254 — emissao do token
+ * efemero de 5 minutos para download do PDF do ciclo fechado).
+ */
+export const START_DOWNLOAD_TOKEN_INPUT_SCHEMA_NR1 = z.object({
   cicloDbId: z.number().int().positive(),
 });
 
@@ -332,6 +349,19 @@ export interface GetCollectionStatusResultNr1 {
    */
   clevelsOmitidosDaListagem: number;
   linhas: readonly LinhaColetaNr1[];
+}
+
+/**
+ * §11.12 — retorno de `startDownloadToken` (S254). `token` viaja pela
+ * query string do endpoint `GET /api/nr1/download-report`; o `downloadUrl`
+ * pronto e conveniencia canonica ao frontend (evita concatenar path).
+ * `expiresAtEpochSeconds` deixa o frontend refresh-antes-de-usar sem
+ * chamada extra.
+ */
+export interface StartDownloadTokenResultNr1 {
+  token: string;
+  downloadUrl: string;
+  expiresAtEpochSeconds: number;
 }
 
 // ============================================================
@@ -883,6 +913,88 @@ export function createNr1Router(deps: Nr1RouterDeps = {}) {
             respostaInvalida: s.respostaInvalida === true,
             inativadoAposSnapshot: s.inativadoAposSnapshot === true,
           })),
+        };
+      }),
+
+    /**
+     * §11.12 — emite o `pdfEphemeralToken` (S254 — HS256/TTL 300s) que
+     * autoriza o `GET /api/nr1/download-report`. O download real
+     * (Route Handler) valida o token, agrega os dados do ciclo,
+     * renderiza HTML deterministico e devolve o PDF.
+     *
+     * Segurança canônica (§11.12):
+     * - Autorizacao pela roleProcedure (RH + Bruno) — sem link publico.
+     * - Isolamento por empresa: `assertCompanyScopeNr1(ctx.user, ciclo.companyId)`.
+     * - Ciclo precisa estar `fechado`: agendado/aberto retorna
+     *   `PRECONDITION_FAILED` com mensagem canonica; ciclo ausente
+     *   retorna `NOT_FOUND`.
+     * - TTL 300s minimiza o valor operacional do token vazado por log
+     *   intermediario.
+     *
+     * S244-analogo (telemetria): o `userId` do token e o originador
+     * derivado do `ctx.user` (Super Admin ou perfil administrativo).
+     * O token NUNCA carrega o titular do relatorio (o §11.12 nao tem
+     * titular individual — o consumidor e a empresa/ciclo).
+     */
+    startDownloadToken: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+      .input(START_DOWNLOAD_TOKEN_INPUT_SCHEMA_NR1)
+      .mutation(async ({ ctx, input }): Promise<StartDownloadTokenResultNr1> => {
+        const [ciclo] = await ctx.db
+          .select({
+            id: copsoqCycles.id,
+            companyId: copsoqCycles.companyId,
+            status: copsoqCycles.status,
+          })
+          .from(copsoqCycles)
+          .where(eq(copsoqCycles.id, input.cicloDbId))
+          .limit(1);
+        if (!ciclo) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: MSG_CICLO_NAO_ENCONTRADO_NR1,
+          });
+        }
+        assertCompanyScopeNr1(ctx.user, ciclo.companyId);
+        if (ciclo.status !== 'fechado') {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: MSG_CICLO_NAO_FECHADO_NR1,
+          });
+        }
+
+        // Originador logado — Bruno atravessa como `super_admin`; RH
+        // e RH-Lider viajam como `employee` no token (padrao da
+        // telemetria canonica §2.6 do DOC 04, replicado ao token
+        // efemero para simetria de auditoria).
+        const triggeredByUserId =
+          ctx.user.role === 'super_admin' ? ctx.user.superAdminId : ctx.user.userId;
+        const triggeredByUserType: 'super_admin' | 'employee' =
+          ctx.user.role === 'super_admin' ? 'super_admin' : 'employee';
+
+        const issuedAt = resolved.now();
+        const token = await signPdfEphemeralToken(
+          {
+            scope: 'nr1_report',
+            companyId: ciclo.companyId,
+            resourceId: ciclo.id,
+            userId: triggeredByUserId,
+            userType: triggeredByUserType,
+          },
+          issuedAt,
+        );
+
+        const iatSeconds = Math.floor(issuedAt.getTime() / 1000);
+        // O TTL canonico (300s) vive em `pdfEphemeralToken.ts` como
+        // `PDF_EPHEMERAL_TTL_SECONDS`; nao replicamos aqui para evitar
+        // drift. Reconstrucao via aritmetica identica.
+        const expiresAtEpochSeconds = iatSeconds + 5 * 60;
+
+        const downloadUrl = `/api/nr1/download-report?token=${encodeURIComponent(token)}`;
+
+        return {
+          token,
+          downloadUrl,
+          expiresAtEpochSeconds,
         };
       }),
   });

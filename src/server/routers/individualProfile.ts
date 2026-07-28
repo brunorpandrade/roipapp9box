@@ -92,12 +92,20 @@ import { z } from 'zod';
 import type { RoipDatabase } from '../../db/client';
 import {
   cLevelMembers,
+  companies,
   employees,
   individualProfileAssessments,
   individualProfilePlaceholders,
   individualProfileScores,
 } from '../../db/schema';
 import { getActiveLeaderHistoryByEmployee } from '../services/employeeLeaderHistory';
+import { DEFAULT_PDF_RENDERER_FACADE, type PdfRendererFacade } from '../services/pdfRenderer';
+import {
+  composeIndividualProfileFilename,
+  type IndividualProfileExpandidoJson,
+  type IndividualProfileSubvector,
+  renderIndividualProfileHTML,
+} from '../pdf-templates/individualProfileTemplate';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
 import { assertCompanyScope } from './employees';
 
@@ -138,6 +146,18 @@ export const MSG_RETESTE_PRECONDICAO =
 export const MSG_RETESTE_SEM_TENTATIVA =
   'Nenhuma tentativa registrada para o colaborador informado.';
 
+/**
+ * §10.10 — pre-condicao para o download do PDF: o `expandidoJson` ja
+ * esta cacheado. Enquanto NULL, a IA ainda nao gerou (ou falhou); o
+ * frontend redispara `getReport` em polling curto (§13.1). Mensagem
+ * canonica literal preservada do §10.10.
+ */
+export const MSG_GENERATE_PDF_AGUARDE = 'Aguarde a geração do relatório para baixar o PDF.';
+
+/** §10.10 — score canonico ausente para o titular informado. */
+export const MSG_GENERATE_PDF_SCORE_AUSENTE =
+  'Perfil Individual ainda não foi respondido ou não passou pelo motor.';
+
 // ============================================================
 // Enums e schemas Zod canonicos
 // ============================================================
@@ -145,8 +165,10 @@ export const MSG_RETESTE_SEM_TENTATIVA =
 /** Enum canonico de `userType` (DOC 01 §9.1/§9.2/§4.9). */
 export const INDIVIDUAL_PROFILE_USER_TYPES = ['employee', 'clevel'] as const;
 
-/** Titular canonico do Perfil Individual (polimorfismo padrao B, §2.3). */
-export type IndividualProfileUserType = (typeof INDIVIDUAL_PROFILE_USER_TYPES)[number];
+// Titular canonico do Perfil Individual — re-export a partir de `_shared`
+// (S244: quebra a dependencia circular com `individualProfileAI.ts`).
+export type { IndividualProfileUserType } from './_shared/individualProfileGenerationTypes';
+import type { IndividualProfileUserType } from './_shared/individualProfileGenerationTypes';
 
 /** Input canonico comum as duas procs: empresa + titular polimorfico. */
 const TARGET_INPUT_SHAPE = {
@@ -160,6 +182,19 @@ export const GET_REPORT_INPUT_SCHEMA = z.object(TARGET_INPUT_SHAPE);
 
 /** Input canonico de `releaseRetest` (§10.7). */
 export const RELEASE_RETEST_INPUT_SCHEMA = z.object(TARGET_INPUT_SHAPE);
+
+/** Input canonico de `generatePDF` (§10.10). Mesmo shape do titular. */
+export const GENERATE_PDF_INPUT_SCHEMA = z.object(TARGET_INPUT_SHAPE);
+
+/**
+ * Retorno canonico de `generatePDF` (§10.10). `pdfBase64` viaja pelo
+ * transporte tRPC (JSON); o frontend converte em Blob para download
+ * direto. O filename canonico segue a normalizacao do §10.10.
+ */
+export interface GeneratePDFResult {
+  pdfBase64: string;
+  filename: string;
+}
 
 // ============================================================
 // Tipos publicos exportados
@@ -207,40 +242,56 @@ export interface ReleaseRetestResult {
 }
 
 // ============================================================
-// Facade DI da geracao de textos (S210 + S205)
+// Facade DI da geracao de textos (S210 + S205 + S244)
 // ============================================================
 
-/** Argumentos do gatilho de geracao assincrona dos textos (§10.13). */
-export interface TriggerReportGenerationArgs {
-  scoreId: number;
-  companyId: number;
-  userType: IndividualProfileUserType;
-  userId: number;
-  tentativa: number;
-  gerarResumo: boolean;
-  gerarExpandido: boolean;
-}
+// Contratos compartilhados vivem em `_shared/individualProfileGenerationTypes.ts`
+// (S244 — quebra a dependencia circular com `individualProfileAI.ts`,
+// que implementa a Facade real).
+export type {
+  IndividualProfileReportGenerationFacade,
+  TriggerReportGenerationArgs,
+} from './_shared/individualProfileGenerationTypes';
+// eslint-disable-next-line @stylistic/max-len -- import canonico do tipo compartilhado
+import type { IndividualProfileReportGenerationFacade } from './_shared/individualProfileGenerationTypes';
 
 /**
- * Fachada canonica do gatilho de geracao dos textos do relatorio. No
- * Bloco B3 nao existe camada de IA; o default e no-op deliberado
- * (S210). A ME-050/51 substitui o default pelo wrapper real em [EDIT]
- * cirurgico unico (S224), sem tocar nas procs.
+ * DI default canonica — no-op defensivo (S210). O motor IA real da
+ * ME-050/51 vive em `individualProfileAI.ts`; o `appRouter` religa via
+ * `reportGenerationFactory` (S244) passando `db` de request. Testes de
+ * router unit ainda podem confiar no no-op quando o comportamento
+ * observado nao depende da geracao.
  */
-export interface IndividualProfileReportGenerationFacade {
-  triggerReportGeneration: (args: TriggerReportGenerationArgs) => Promise<void>;
-}
-
-/** DI default canonica — no-op enquanto o Bloco B4 nao existe (S210). */
 export const DEFAULT_INDIVIDUAL_PROFILE_REPORT_GENERATION: IndividualProfileReportGenerationFacade =
   {
     triggerReportGeneration: () => Promise.resolve(),
   };
 
-/** Dependencias injetaveis da factory (S205). */
+/** Dependencias injetaveis da factory (S205 + S244 + S261). */
 export interface IndividualProfileRouterDeps {
   now?: () => Date;
+  /**
+   * Facade estatica (usada por testes que injetam spy). Prevalece sobre
+   * `reportGenerationFactory` quando presente.
+   */
   reportGeneration?: IndividualProfileReportGenerationFacade;
+  /**
+   * Factory canonica S244 — recebe o `db` do request no handler e
+   * produz a Facade real. O `appRouter` de producao injeta esta
+   * factory apontando ao `makeIndividualProfileReportGenerationFacade`
+   * de `individualProfileAI.ts`. Testes que precisam do wrapper real
+   * injetam a mesma factory sobre `roip_test`.
+   */
+  reportGenerationFactory?: (
+    db: import('../../db/client').RoipDatabase,
+  ) => IndividualProfileReportGenerationFacade;
+  /**
+   * Renderer PDF injetavel (S260). Default: `DEFAULT_PDF_RENDERER_FACADE`
+   * que usa `puppeteer-core`. Testes de integracao substituem por stub
+   * deterministico — a toolchain Puppeteer real e exercitada apenas
+   * pelo runtime Manus.
+   */
+  pdfRenderer?: PdfRendererFacade;
 }
 
 // ============================================================
@@ -418,7 +469,24 @@ function resolveLiberador(user: AuthenticatedUser): {
  */
 export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps = {}) {
   const now = deps.now ?? ((): Date => new Date());
-  const reportGeneration = deps.reportGeneration ?? DEFAULT_INDIVIDUAL_PROFILE_REPORT_GENERATION;
+  const staticFacade = deps.reportGeneration ?? DEFAULT_INDIVIDUAL_PROFILE_REPORT_GENERATION;
+  const reportGenerationFactory = deps.reportGenerationFactory;
+  const pdfRenderer = deps.pdfRenderer ?? DEFAULT_PDF_RENDERER_FACADE;
+
+  /**
+   * Resolucao canonica por request (S244): `reportGeneration` estatica
+   * quando explicitamente injetada; caso contrario, factory por-request
+   * quando fornecida (recebe `ctx.db`); caso contrario, o no-op
+   * defensivo. Testes-unit de router preservam o no-op por default;
+   * producao (via appRouter) injeta a factory apontando ao motor IA.
+   */
+  const resolveReportGeneration = (
+    db: import('../../db/client').RoipDatabase,
+  ): IndividualProfileReportGenerationFacade => {
+    if (deps.reportGeneration !== undefined) return staticFacade;
+    if (reportGenerationFactory !== undefined) return reportGenerationFactory(db);
+    return staticFacade;
+  };
 
   return router({
     // ============================================================
@@ -468,6 +536,17 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
         const gerandoResumo = score.resumoJson === null;
         const gerandoExpandido = score.expandidoJson === null;
         if (gerandoResumo || gerandoExpandido) {
+          // §2.6 telemetria — quem originou (Bruno ou usuario
+          // administrativo). Deriva do `ctx.user` autenticado, nunca
+          // do input do titular.
+          const triggeredByUserId =
+            ctx.user.role === 'super_admin' ? ctx.user.superAdminId : ctx.user.userId;
+          const triggeredByUserType: 'super_admin' | 'employee' =
+            ctx.user.role === 'super_admin' ? 'super_admin' : 'employee';
+          // S244 — resolucao da facade por-request: prevalece override
+          // estatico; producao usa factory com `ctx.db`; fallback e
+          // no-op defensivo.
+          const reportGeneration = resolveReportGeneration(ctx.db);
           await reportGeneration.triggerReportGeneration({
             scoreId: score.id,
             companyId: input.companyId,
@@ -476,6 +555,8 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
             tentativa: score.tentativa,
             gerarResumo: gerandoResumo,
             gerarExpandido: gerandoExpandido,
+            triggeredByUserId,
+            triggeredByUserType,
           });
         }
 
@@ -568,6 +649,165 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
             retesteLiberadoEm,
           };
         });
+      }),
+
+    // ============================================================
+    // Proc 3 — generatePDF (§10.10; S261)
+    // ============================================================
+    generatePDF: roleProcedure(['super_admin', 'rh'])
+      .input(GENERATE_PDF_INPUT_SCHEMA)
+      .mutation(async ({ ctx, input }): Promise<GeneratePDFResult> => {
+        // §2.4 — isolamento por empresa. Super Admin atravessa.
+        assertCompanyScope(ctx.user, input.companyId);
+        // §10.11 + §15.5 — PC1e antes de qualquer leitura (S211).
+        assertPC1e(ctx.user, input.userType);
+        await resolveTitular(ctx.db, ctx.user, input.companyId, input.userType, input.userId);
+        await assertLiderDireto(ctx.db, ctx.user, input.userType, input.userId);
+
+        // S213 — tentativa vigente.
+        const score = await getScoreVigente(ctx.db, input.companyId, input.userType, input.userId);
+        if (!score) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: MSG_GENERATE_PDF_SCORE_AUSENTE,
+          });
+        }
+        // §10.10 — pre-condicao: expandidoJson cacheado. Enquanto NULL,
+        // a IA ainda nao gerou (Momento 2 §3.3) ou falhou (§11.1).
+        if (score.expandidoJson === null || score.expandidoJson === undefined) {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: MSG_GENERATE_PDF_AGUARDE,
+          });
+        }
+
+        // Company: nome fantasia + logo (§10.10 cabecalho canonico).
+        const [company] = await ctx.db
+          .select({
+            nomeFantasia: companies.nomeFantasia,
+            logoUrl: companies.logoUrl,
+          })
+          .from(companies)
+          .where(eq(companies.id, input.companyId))
+          .limit(1);
+        if (!company) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Empresa nao encontrada.',
+          });
+        }
+
+        // Assessment: enviadoEm -> data_aplicacao.
+        const [assessment] = await ctx.db
+          .select({ enviadoEm: individualProfileAssessments.enviadoEm })
+          .from(individualProfileAssessments)
+          .where(eq(individualProfileAssessments.id, score.assessmentId))
+          .limit(1);
+        const dataAplicacao = assessment?.enviadoEm
+          ? new Date(assessment.enviadoEm).toISOString().slice(0, 10)
+          : '';
+
+        // Identificacao canonica do titular.
+        let nome = '';
+        let cargo = '';
+        let nivelHierarquico: 'operacional' | 'tatico' | 'estrategico' = 'operacional';
+        let departamento = '';
+        if (input.userType === 'clevel') {
+          const [row] = await ctx.db
+            .select({ name: cLevelMembers.name, cargo: cLevelMembers.cargo })
+            .from(cLevelMembers)
+            .where(eq(cLevelMembers.id, input.userId))
+            .limit(1);
+          nome = row?.name ?? '';
+          cargo = row?.cargo ?? '';
+          nivelHierarquico = 'estrategico';
+          departamento = 'Alta lideranca';
+        } else {
+          const [row] = await ctx.db
+            .select({
+              name: employees.name,
+              descricaoCBO: employees.descricaoCBO,
+              nivelHierarquico: employees.nivelHierarquico,
+              departamento: employees.departamento,
+            })
+            .from(employees)
+            .where(eq(employees.id, input.userId))
+            .limit(1);
+          nome = row?.name ?? '';
+          cargo = row?.descricaoCBO ?? '';
+          nivelHierarquico =
+            (row?.nivelHierarquico as 'operacional' | 'tatico' | 'estrategico') ?? 'operacional';
+          departamento = row?.departamento ?? '';
+        }
+
+        // Subvetores: 25 valores canonicos (Postura 4 + Estrutura 5 +
+        // Motor 5 + Equilibrio 5 + Assinatura 6). Valores nulos
+        // renderizam como 0 na barra — comportamento defensivo canonico.
+        const subvetores: IndividualProfileSubvector[] = [];
+        const nn = (v: string | null): number => (v === null ? 0 : Number.parseFloat(v));
+        subvetores.push(
+          { bloco: 'Postura', rotulo: 'Assertividade e ritmo', valor: nn(score.post_assert) },
+          { bloco: 'Postura', rotulo: 'Orientacao a tarefas', valor: nn(score.post_tarefas) },
+          { bloco: 'Postura', rotulo: 'Orientacao a pessoas', valor: nn(score.post_pessoas) },
+          { bloco: 'Postura', rotulo: 'Comportamento sob pressao', valor: nn(score.post_pressao) },
+          { bloco: 'Estrutura', rotulo: 'Abertura a experiencia', valor: nn(score.est_abert) },
+          { bloco: 'Estrutura', rotulo: 'Disciplina e autogestao', valor: nn(score.est_disc) },
+          { bloco: 'Estrutura', rotulo: 'Extroversao', valor: nn(score.est_ext) },
+          { bloco: 'Estrutura', rotulo: 'Amabilidade', valor: nn(score.est_amab) },
+          { bloco: 'Estrutura', rotulo: 'Estabilidade emocional', valor: nn(score.est_estab) },
+          { bloco: 'Motor', rotulo: 'Maestria', valor: nn(score.mot_maestria) },
+          { bloco: 'Motor', rotulo: 'Lideranca', valor: nn(score.mot_lideranca) },
+          { bloco: 'Motor', rotulo: 'Autonomia', valor: nn(score.mot_autonomia) },
+          { bloco: 'Motor', rotulo: 'Seguranca', valor: nn(score.mot_seguranca) },
+          { bloco: 'Motor', rotulo: 'Proposito', valor: nn(score.mot_proposito) },
+          { bloco: 'Equilibrio', rotulo: 'Autoconsciencia', valor: nn(score.equ_autocons) },
+          { bloco: 'Equilibrio', rotulo: 'Autogestao', valor: nn(score.equ_autogest) },
+          { bloco: 'Equilibrio', rotulo: 'Leitura do outro', valor: nn(score.equ_leitura) },
+          { bloco: 'Equilibrio', rotulo: 'Influencia e conducao', valor: nn(score.equ_influencia) },
+          { bloco: 'Equilibrio', rotulo: 'Indice geral', valor: nn(score.equ_indice) },
+          { bloco: 'Assinatura', rotulo: 'Sabedoria', valor: nn(score.ass_sabed) },
+          { bloco: 'Assinatura', rotulo: 'Coragem', valor: nn(score.ass_coragem) },
+          { bloco: 'Assinatura', rotulo: 'Humanidade', valor: nn(score.ass_humanid) },
+          { bloco: 'Assinatura', rotulo: 'Justica', valor: nn(score.ass_justica) },
+          { bloco: 'Assinatura', rotulo: 'Temperanca', valor: nn(score.ass_temper) },
+          { bloco: 'Assinatura', rotulo: 'Transcendencia', valor: nn(score.ass_transc) },
+        );
+
+        const generatedAt = now();
+        const generatedAtDate = generatedAt.toISOString().slice(0, 10);
+
+        const html = renderIndividualProfileHTML({
+          company: {
+            nomeFantasia: company.nomeFantasia ?? '',
+            ...(company.logoUrl ? { logoUrl: company.logoUrl } : {}),
+          },
+          identificacao: {
+            nome,
+            cargo,
+            nivelHierarquico,
+            departamento,
+            liderDireto: input.userType === 'clevel' ? 'Nao se aplica' : '',
+            dataAplicacao,
+          },
+          expandido: score.expandidoJson as IndividualProfileExpandidoJson,
+          subvetores,
+          generatedAtDate,
+        });
+
+        let pdfBytes: Uint8Array;
+        try {
+          pdfBytes = await pdfRenderer.renderPdf(html);
+        } catch (err) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Falha na geracao do PDF: ${(err as Error).message}`,
+          });
+        }
+
+        return {
+          pdfBase64: Buffer.from(pdfBytes).toString('base64'),
+          filename: composeIndividualProfileFilename(nome, generatedAtDate),
+        };
       }),
   });
 }

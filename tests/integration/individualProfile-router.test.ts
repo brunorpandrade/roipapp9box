@@ -427,7 +427,7 @@ describe('individualProfile — contratos publicos exportados', () => {
     expect(() => assertPC1e(rh, 'clevel')).toThrow(MSG_PC1E_PERFIL_INDIVIDUAL_CLEVEL);
   });
 
-  it('DEFAULT_INDIVIDUAL_PROFILE_REPORT_GENERATION e no-op resolvido (S210)', async () => {
+  it('DEFAULT_INDIVIDUAL_PROFILE_REPORT_GENERATION continua no-op (S244)', async () => {
     const result = await DEFAULT_INDIVIDUAL_PROFILE_REPORT_GENERATION.triggerReportGeneration({
       scoreId: 1,
       companyId: 1,
@@ -436,6 +436,8 @@ describe('individualProfile — contratos publicos exportados', () => {
       tentativa: 1,
       gerarResumo: true,
       gerarExpandido: true,
+      triggeredByUserId: 1,
+      triggeredByUserType: 'super_admin',
     });
     expect(result).toBeUndefined();
   });
