@@ -84,7 +84,7 @@ export interface ClaudeCallTelemetryContext {
   companyId: number;
   surface: ClaudeCallSurface;
   userId: number;
-  userType: 'super_admin' | 'employee';
+  userType: 'super_admin' | 'employee' | 'clevel';
 }
 
 /** Opcoes canonicas de uma chamada. */
@@ -124,7 +124,7 @@ export interface ClaudeCallTelemetryRecord {
   status: ClaudeCallStatus;
   retriesEffective: number;
   userId: number;
-  userType: 'super_admin' | 'employee';
+  userType: 'super_admin' | 'employee' | 'clevel';
 }
 
 /** Resultado canonico. Union discriminada por `ok`. */

@@ -20,6 +20,7 @@ import { createCLevelMembersRouter } from './cLevelMembers';
 import { createClimateRouter } from './climate';
 import { createCompanyRouter } from './company';
 import { createCycleUnlockRequestsRouter } from './cycleUnlockRequests';
+import { createAiChatRouter } from './aiChat';
 import { createDashboardRouter } from './dashboard';
 import { createEconomicDiagnosisRouter } from './economicDiagnosis';
 import { createEmployeesRouter } from './employees';
@@ -106,6 +107,16 @@ const economicDiagnosisRouter = createEconomicDiagnosisRouter();
  * lider (S066) e mascaramento canonico da matriz DOC 02 §3.3 (S067).
  */
 const dashboardRouter = createDashboardRouter();
+
+/**
+ * Sub-router `aiChat` (ME-052, Bloco B4). Superficie tRPC canonica do
+ * Chat IA (DOC 04 §5) — 3 procs canonicas §5.8: `sendMessage`,
+ * `getHistory`, `getArchivedHistory`. Restrito no MVP aos niveis
+ * `equipe` e `individual` (S263); `global` e `departamento` sao
+ * bloqueados na entrada Zod. Factory sem parametros — Facade DI
+ * default liga o motor real ao wrapper `claudeCall` canonico.
+ */
+const aiChatRouter = createAiChatRouter();
 
 /**
  * Sub-router `monthlyData` (ME-036, Bloco B3). Superficie principal de
@@ -483,6 +494,7 @@ export const appRouter = router({
   individualProfilePlaceholders: individualProfilePlaceholdersRouter,
   individualProfile: individualProfileRouter,
   nr1: nr1Router,
+  aiChat: aiChatRouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */

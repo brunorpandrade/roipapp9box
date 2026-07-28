@@ -48,7 +48,18 @@
 //     nos 2 bloqueados. Lider RECEBE 403 (nenhum dos 5).
 //
 // Chamador exclusivo: `appRouter` (acoplado em `routers/index.ts`).
-// Testes: `tests/integration/dashboard-router.test.ts`.
+// Testes: `tests/integration/dashboard-router.test.ts` +
+// `tests/integration/dashboard-router-diagnostico.test.ts`.
+//
+// EDIT ME-052 (S266): acrescenta 2 procs canonicas §6.6 do DOC 04:
+//   - `dashboard.getDiagnostico` — leitura do cache canonico
+//     `performanceQuarterlyData.diagnosticoIA` +
+//     `.diagnosticoIAgeradoEm`. Aceita qualquer trimestre; retorna
+//     `null` quando ainda nao gerado.
+//   - `dashboard.generateDiagnostico` — geracao via motor
+//     `diagnosticoIAService`. Guard §6.6 restringe ao trimestre atual.
+//     Injecao via Facade DI (`DashboardRouterDeps.diagnosticoIAFactory`)
+//     para stub em teste.
 
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq } from 'drizzle-orm';
@@ -63,8 +74,18 @@ import {
   plenitudeData,
   performanceQuarterlyData,
 } from '../../db/schema';
+import { getTrimestreFromDateInTimezone } from '../../lib/quarterlyPeriod';
+import {
+  createDefaultDiagnosticoIAServiceDeps,
+  generateDiagnosticoIA,
+  type DiagnosticoIAServiceDeps,
+  type GenerateDiagnosticoIAArgs,
+  type GenerateDiagnosticoIAOutcome,
+} from '../services/diagnosticoIAService';
 import { getActiveLeaderHistoryByEmployee } from '../services/employeeLeaderHistory';
-import { roleProcedure, router } from '../trpc';
+import { getPerformanceQuarterlyDataByQuarter } from '../services/performanceQuarterlyData';
+import type { ChatIaUserType } from '../services/_shared/dashboardContextTypes';
+import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
 
 // ============================================================
 // Constantes e tipos publicos
@@ -180,11 +201,99 @@ async function isEmployeeDirectlyLedBy(
 // ============================================================
 
 /**
- * Factory canonica do sub-router `dashboard`. Sem parametros — as procs
- * sao leitura pura. Simetria com `createEconomicDiagnosisRouter` (ME-035)
- * e com `createQuarterlyCalculationRouter` (ME-034).
+ * Facade canonica do motor Diagnostico IA (S266). Permite substituir
+ * por stub deterministico em teste sem instanciar Claude API.
  */
-export function createDashboardRouter() {
+export interface DiagnosticoIAServiceFacade {
+  generateDiagnosticoIA: (args: GenerateDiagnosticoIAArgs) => Promise<GenerateDiagnosticoIAOutcome>;
+}
+
+/**
+ * Dependencias canonicas do sub-router `dashboard`. Adicionadas na
+ * ME-052 (S266) para permitir injecao do motor Diagnostico IA sem
+ * quebrar chamadas existentes.
+ */
+export interface DashboardRouterDeps {
+  diagnosticoIAFactory?: (db: RoipDatabase) => DiagnosticoIAServiceFacade;
+  /** Fuso canonico da empresa para derivar trimestre atual (§6.6). */
+  timeZone?: string;
+  /** Clock injetavel para testes deterministicos. */
+  now?: () => Date;
+}
+
+/**
+ * Fuso canonico default da plataforma (`America/Sao_Paulo`). Usado
+ * para derivar o trimestre atual da empresa via
+ * `getTrimestreFromDateInTimezone`.
+ */
+export const DASHBOARD_DEFAULT_TIME_ZONE = 'America/Sao_Paulo';
+
+/** Defaults canonicos do sub-router. */
+export const DEFAULT_DASHBOARD_ROUTER_DEPS: Required<DashboardRouterDeps> = {
+  diagnosticoIAFactory: (db: RoipDatabase) => {
+    const deps: DiagnosticoIAServiceDeps = createDefaultDiagnosticoIAServiceDeps(db);
+    return {
+      generateDiagnosticoIA: (args) => generateDiagnosticoIA(deps, args),
+    };
+  },
+  timeZone: DASHBOARD_DEFAULT_TIME_ZONE,
+  now: () => new Date(),
+};
+
+/**
+ * Deriva o `userType` canonico do `ctx.user` para telemetria do
+ * Diagnostico IA (§2.6). Consistente com o helper equivalente em
+ * `routers/aiChat.ts`.
+ */
+function deriveUserTypeFromCtx(user: AuthenticatedUser): ChatIaUserType {
+  if (user.role === 'super_admin') {
+    return 'super_admin';
+  }
+  if (user.role === 'clevel') {
+    return 'clevel';
+  }
+  return 'employee';
+}
+
+/**
+ * Deriva o `userId` canonico do `ctx.user` (super_admin usa
+ * `superAdminId`).
+ */
+function deriveUserIdFromCtx(user: AuthenticatedUser): number {
+  if (user.role === 'super_admin') {
+    return user.superAdminId;
+  }
+  return user.userId;
+}
+
+/**
+ * Deriva o trimestre canonico atual (`YYYY-QN`) a partir do fuso
+ * canonico da plataforma. Base para o guard §6.6.
+ */
+function deriveTrimestreAtual(deps: { now: () => Date; timeZone: string }): string {
+  const parts = getTrimestreFromDateInTimezone(deps.now(), deps.timeZone);
+  return `${parts.ano}-Q${parts.trimestre}`;
+}
+
+/**
+ * Zod schema canonico do input das procs Diagnostico IA.
+ */
+export const DIAGNOSTICO_INPUT_SCHEMA = z.object({
+  employeeId: z.number().int().positive(),
+  trimestre: TRIMESTRE_INPUT_SCHEMA_DASHBOARD,
+});
+
+/**
+ * Factory canonica do sub-router `dashboard`. `deps` opcional para
+ * DI do motor Diagnostico IA (ME-052 S266) e para clock canonico. As
+ * procs preexistentes permanecem intocadas — `createDashboardRouter()`
+ * sem args continua produzindo o router com defaults reais.
+ */
+export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
+  const routerDeps: Required<DashboardRouterDeps> = {
+    ...DEFAULT_DASHBOARD_ROUTER_DEPS,
+    ...deps,
+  };
   return router({
     // ============================================================
     // Proc 1 — getEmployeeDashboard (§3.11 + §3.13 + §15.4)
@@ -427,6 +536,174 @@ export function createDashboardRouter() {
             roiEmpresa: maskAcessoLimitado,
             folhaPorcentagem: maskAcessoLimitado,
           },
+        };
+      }),
+
+    // ============================================================
+    // Proc 3 (ME-052, S266) — getDiagnostico (§6.6 do DOC 04)
+    // ============================================================
+    /**
+     * Le o cache canonico do Diagnostico IA
+     * (`performanceQuarterlyData.diagnosticoIA` +
+     * `.diagnosticoIAgeradoEm`). Retorna `null` em ambos os campos
+     * quando o diagnostico ainda nao foi gerado para o trimestre.
+     * Aceita qualquer trimestre canonico (leitura e read-only).
+     */
+    getDiagnostico: roleProcedure(['super_admin', 'rh', 'rh_lider', 'clevel', 'lider'])
+      .input(DIAGNOSTICO_INPUT_SCHEMA)
+      .query(async ({ ctx, input }) => {
+        // Reusa o guard canonico de escopo do getEmployeeDashboard:
+        // valida cross-empresa, colaborador inativo e cadeia direta
+        // do lider. Como as procs sao independentes, replicamos aqui
+        // a checagem essencial.
+        const [emp] = await ctx.db
+          .select({
+            companyId: employees.companyId,
+            status: employees.status,
+          })
+          .from(employees)
+          .where(eq(employees.id, input.employeeId))
+          .limit(1);
+        if (!emp) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Colaborador nao encontrado.',
+          });
+        }
+        if (ctx.user.role !== 'super_admin') {
+          if (ctx.user.companyId !== emp.companyId) {
+            throw new TRPCError({
+              code: 'FORBIDDEN',
+              message: 'Colaborador fora do escopo da empresa.',
+            });
+          }
+        }
+        if (emp.status === 'inativo') {
+          const allowsInactive =
+            ctx.user.role === 'super_admin' ||
+            ctx.user.role === 'rh' ||
+            ctx.user.role === 'rh_lider';
+          if (!allowsInactive) {
+            throw new TRPCError({
+              code: 'FORBIDDEN',
+              message: 'Dashboard de colaborador inativo restrito a Bruno e RH.',
+            });
+          }
+        }
+        if (ctx.user.role === 'lider') {
+          if (ctx.user.userId !== input.employeeId) {
+            const link = await getActiveLeaderHistoryByEmployee(ctx.db, input.employeeId);
+            if (!link || link.liderId !== ctx.user.userId) {
+              throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'Colaborador fora da cadeia direta do lider.',
+              });
+            }
+          }
+        }
+        const quarterlyRow = await getPerformanceQuarterlyDataByQuarter(
+          ctx.db,
+          emp.companyId,
+          input.employeeId,
+          input.trimestre,
+        );
+        return {
+          diagnostico: quarterlyRow?.diagnosticoIA ?? null,
+          diagnosticoGeradoEm: quarterlyRow?.diagnosticoIAgeradoEm ?? null,
+          trimestre: input.trimestre,
+        };
+      }),
+
+    // ============================================================
+    // Proc 4 (ME-052, S266) — generateDiagnostico (§6.6 do DOC 04)
+    // ============================================================
+    /**
+     * Gera (ou atualiza) o Diagnostico IA via motor
+     * `diagnosticoIAService`. Guard §6.6 canonico: aceita apenas o
+     * trimestre atual da empresa; trimestres anteriores retornam
+     * BAD_REQUEST canonico. Retorna o texto gerado + timestamp.
+     */
+    generateDiagnostico: roleProcedure(['super_admin', 'rh', 'rh_lider', 'clevel', 'lider'])
+      .input(DIAGNOSTICO_INPUT_SCHEMA)
+      .mutation(async ({ ctx, input }) => {
+        const [emp] = await ctx.db
+          .select({
+            companyId: employees.companyId,
+            status: employees.status,
+          })
+          .from(employees)
+          .where(eq(employees.id, input.employeeId))
+          .limit(1);
+        if (!emp) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Colaborador nao encontrado.',
+          });
+        }
+        if (ctx.user.role !== 'super_admin') {
+          if (ctx.user.companyId !== emp.companyId) {
+            throw new TRPCError({
+              code: 'FORBIDDEN',
+              message: 'Colaborador fora do escopo da empresa.',
+            });
+          }
+        }
+        if (emp.status === 'inativo') {
+          const allowsInactive =
+            ctx.user.role === 'super_admin' ||
+            ctx.user.role === 'rh' ||
+            ctx.user.role === 'rh_lider';
+          if (!allowsInactive) {
+            throw new TRPCError({
+              code: 'FORBIDDEN',
+              message: 'Dashboard de colaborador inativo restrito a Bruno e RH.',
+            });
+          }
+        }
+        if (ctx.user.role === 'lider') {
+          if (ctx.user.userId !== input.employeeId) {
+            const link = await getActiveLeaderHistoryByEmployee(ctx.db, input.employeeId);
+            if (!link || link.liderId !== ctx.user.userId) {
+              throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'Colaborador fora da cadeia direta do lider.',
+              });
+            }
+          }
+        }
+        const trimestreAtual = deriveTrimestreAtual(routerDeps);
+        const facade = routerDeps.diagnosticoIAFactory(ctx.db);
+        const outcome = await facade.generateDiagnosticoIA({
+          companyId: emp.companyId,
+          employeeId: input.employeeId,
+          trimestreSolicitado: input.trimestre,
+          trimestreAtual,
+          viewerRole: ctx.user.role,
+          viewerUserId: deriveUserIdFromCtx(ctx.user),
+          viewerUserType: deriveUserTypeFromCtx(ctx.user),
+        });
+        if (outcome.kind === 'not_current_quarter') {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: outcome.message,
+          });
+        }
+        if (outcome.kind === 'quarterly_data_not_found' || outcome.kind === 'context_not_found') {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: outcome.message,
+          });
+        }
+        if (outcome.kind === 'failed_claude') {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: outcome.message,
+          });
+        }
+        return {
+          diagnostico: outcome.diagnostico,
+          diagnosticoGeradoEm: outcome.diagnosticoIAgeradoEm,
+          trimestre: input.trimestre,
         };
       }),
   });
