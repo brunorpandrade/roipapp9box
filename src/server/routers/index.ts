@@ -23,6 +23,7 @@ import { createCycleUnlockRequestsRouter } from './cycleUnlockRequests';
 import { createDashboardRouter } from './dashboard';
 import { createEconomicDiagnosisRouter } from './economicDiagnosis';
 import { createEmployeesRouter } from './employees';
+import { createIndividualProfileRouter } from './individualProfile';
 import { createIndividualProfilePlaceholdersRouter } from './individualProfilePlaceholders';
 import { createInstrumentARouter } from './instrumentA';
 import { createInstrumentCRouter } from './instrumentC';
@@ -393,6 +394,26 @@ const spreadsheetsRouter = createSpreadsheetsRouter();
  */
 const individualProfilePlaceholdersRouter = createIndividualProfilePlaceholdersRouter();
 
+/**
+ * Sub-router `individualProfile` (ME-049b, Bloco B3). Fecha a
+ * superficie de LEITURA e de RETESTE do Perfil Individual (DOC 03
+ * §10.7-§10.13) — 2 procs canonicas do §10.13:
+ * `individualProfile.getReport` (metadados da tentativa vigente +
+ * textos quando ja gerados; S233) e `individualProfile.releaseRetest`
+ * (§10.7 — libera nova tentativa quando a confiabilidade veio baixa;
+ * transacao atomica INSERT da tentativa + transicao do placeholder,
+ * S232). Factory com DI de `now` e `reportGeneration` (S205); o
+ * default de geracao e no-op deliberado (S210) porque o Bloco B4 nao
+ * existe — a ME-050/51 o substitui pelo wrapper real em [EDIT]
+ * cirurgico unico (S224). Guards canonicos: PC1e §10.11/§15.5 como
+ * FORBIDDEN quando o titular e C-level e o caller nao e Bruno
+ * (S211/S231), escopo empresa (§2.4), inativo restrito a Bruno + RH
+ * (§3.13) e cadeia direta de lider (S066) — matriz DOC 02 por S230.
+ * Tentativa vigente resolvida na camada de leitura (S213).
+ * `generatePDF` e qualquer chamada de IA ficam na ME-050/51 (E04).
+ */
+const individualProfileRouter = createIndividualProfileRouter();
+
 /** Router raiz da plataforma. */
 export const appRouter = router({
   health: healthRouter,
@@ -421,6 +442,7 @@ export const appRouter = router({
   climate: climateRouter,
   spreadsheets: spreadsheetsRouter,
   individualProfilePlaceholders: individualProfilePlaceholdersRouter,
+  individualProfile: individualProfileRouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */

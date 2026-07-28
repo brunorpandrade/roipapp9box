@@ -75,11 +75,17 @@ export const NUM_BLOCOS_TOTAL = 10;
 export const NUM_ITENS_POR_BLOCO = 8;
 
 /**
- * TTL da tela de confirmacao pos-envio (§10.13). Grava-se
- * `exibirConfirmacaoAte = now + 24h` para o portal mostrar a
- * confirmacao ao colaborador em novo acesso apos submit.
+ * TTL do card "Enviado" no portal do colaborador. Canonico literal e
+ * convergente em tres DOCs: DOC 03 §10.9 ("`individualProfileScores.
+ * exibirConfirmacaoAte = enviadoEm + 7 dias`"), DOC 03 §10.13 (pipeline
+ * do `submitAssessment`, passos 3 e 4), DOC 01 §9.2 (comentario da
+ * coluna) e DOC 04 §3. Grava-se `exibirConfirmacaoAte = now + 7 dias`.
+ *
+ * CC033 (ME-049b): a ME-049a gravava `now + 24h`, divergindo dos tres
+ * DOCs. Corrigido por RV-09 (o canonico prevalece sobre o codigo) na
+ * ME imediatamente seguinte a deteccao.
  */
-export const CONFIRMACAO_TTL_HORAS = 24;
+export const CONFIRMACAO_TTL_DIAS = 7;
 
 /** Itens Likert invertidos (Anexo A §8.2). */
 const ITENS_LIKERT_INVERTIDOS: ReadonlySet<number> = new Set([6, 12, 14, 29, 31, 44, 63, 70, 79]);
@@ -782,7 +788,7 @@ export async function runAssessment(
   }
   const respostas = normalizeRespostas(assessment.respostas);
   const enviadoEm = now;
-  const exibirConfirmacaoAte = new Date(now.getTime() + CONFIRMACAO_TTL_HORAS * 3600 * 1000);
+  const exibirConfirmacaoAte = new Date(now.getTime() + CONFIRMACAO_TTL_DIAS * 24 * 3600 * 1000);
 
   // -------- 2) Camada 1 --------
   const iaAtt = computeIaAtt(respostas);

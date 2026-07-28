@@ -457,7 +457,7 @@ describe('POST /api/portal/submit-profile-assessment — Facade DI', () => {
           status: 'enviado',
           calculadoEm: NOW,
           enviadoEm: NOW,
-          exibirConfirmacaoAte: new Date(NOW.getTime() + 24 * 3600 * 1000),
+          exibirConfirmacaoAte: new Date(NOW.getTime() + 7 * 24 * 3600 * 1000),
         };
       },
     };

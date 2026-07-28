@@ -58,7 +58,7 @@ import {
   computeMotorHierarchy,
   computePerfilComportamental,
   computeTop3Assinatura,
-  CONFIRMACAO_TTL_HORAS,
+  CONFIRMACAO_TTL_DIAS,
   DEFAULT_INDIVIDUAL_PROFILE_ENGINE,
   itemKey,
   normalizeSubvector,
@@ -270,7 +270,7 @@ describe('individualProfileEngine — constantes canonicas', () => {
     expect(NUM_BLOCOS_TOTAL).toBe(10);
     expect(NUM_ITENS_POR_BLOCO).toBe(8);
     expect(NUM_BLOCOS_TOTAL * NUM_ITENS_POR_BLOCO).toBe(NUM_ITENS_TOTAL);
-    expect(CONFIRMACAO_TTL_HORAS).toBe(24);
+    expect(CONFIRMACAO_TTL_DIAS).toBe(7);
   });
 
   it('itemKey formata canonicamente ITEM_XXX (padStart 3)', () => {
@@ -822,7 +822,7 @@ describe('individualProfileEngine — runAssessment consistente (persistencia)',
     expect(result.confiabilidadeNivel).toBe('alta');
     expect(result.enviadoEm).toEqual(now);
     expect(result.exibirConfirmacaoAte.getTime()).toBe(
-      now.getTime() + CONFIRMACAO_TTL_HORAS * 3600 * 1000,
+      now.getTime() + CONFIRMACAO_TTL_DIAS * 24 * 3600 * 1000,
     );
 
     // Assessment atualizado.
