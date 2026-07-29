@@ -1,0 +1,27 @@
+/* ROIP APP 9BOX — estilos globais canonicos (ME-055 Bloco A). */
+/*                                                              */
+/* Diretivas Tailwind canonicas + reset residual minimo. A fonte */
+/* Inter e injetada via `next/font/google` em `src/app/layout.tsx` */
+/* e disponibilizada via a CSS variable `--font-inter`.           */
+/*                                                              */
+/* Origem canonica: DOC 05 §2.1 (background e text tokens),      */
+/* §2.2 (Inter como fonte unica).                                 */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  /* §2.1 background page + §2.1 text primary. Hex direto (nao token) */
+  /* para independer de configuracao de CSS variables no tema. */
+  background: #f9fafb;
+  color: #111827;
+  font-family: var(--font-inter), Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
