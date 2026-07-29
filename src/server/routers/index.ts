@@ -22,6 +22,7 @@ import { createCompanyRouter } from './company';
 import { createCycleUnlockRequestsRouter } from './cycleUnlockRequests';
 import { createAiChatRouter } from './aiChat';
 import { createDashboardRouter } from './dashboard';
+import { createExportsRouter } from './exports';
 import { createEconomicDiagnosisRouter } from './economicDiagnosis';
 import { createEmployeesRouter } from './employees';
 import { createIndividualProfileRouter } from './individualProfile';
@@ -117,6 +118,20 @@ const dashboardRouter = createDashboardRouter();
  * default liga o motor real ao wrapper `claudeCall` canonico.
  */
 const aiChatRouter = createAiChatRouter();
+
+/**
+ * Sub-router `exports` (ME-053, Bloco B4). Central de Relatorios
+ * canonica (DOC 03 §13.12) — 6 procs canonicas:
+ * `getResumoDashboard` (xlsx §13.3), `getEvolucaoTrimestral` (xlsx
+ * §13.4), `getClimaEngajamento` (PDF §13.6 — sem token),
+ * `generateRelatorioExecutivo` (PDF com IA §13.5),
+ * `getSnapshot9Box` (PDF §13.7 + token efemero),
+ * `getBoardDeck` (PDF §13.8 + token efemero). Autorizacao por perfil
+ * + gate `acessoTotal` para C-level + `assertTrimestreFechado` como
+ * pre-condicao canonica §13.2. Factory com Facade DI do motor IA
+ * (S275) — testes de integracao substituem por stub deterministico.
+ */
+const exportsRouter = createExportsRouter();
 
 /**
  * Sub-router `monthlyData` (ME-036, Bloco B3). Superficie principal de
@@ -495,6 +510,7 @@ export const appRouter = router({
   individualProfile: individualProfileRouter,
   nr1: nr1Router,
   aiChat: aiChatRouter,
+  exports: exportsRouter,
 });
 
 /** Tipo do router raiz — consumido pelo cliente tipado (Bloco B3/UI). */

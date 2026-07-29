@@ -152,13 +152,47 @@ describe('auth/pdfEphemeralToken (ME-050/51)', () => {
     }
   });
 
-  it('rejeita scope fora do union canonico como malformed (reserva ME-053)', async () => {
+  it('aceita os 3 novos scopes canonicos ME-053 (S277)', async () => {
+    // ME-053 D3/S277: union scope estendida para
+    // ['nr1_report','snapshot_9box','board_deck','executive_report'].
+    for (const scope of ['snapshot_9box', 'board_deck', 'executive_report'] as const) {
+      const iat = Math.floor(BASE_TIME_MS / 1000);
+      const token = await new SignJWT({
+        kind: 'pdf_ephemeral',
+        scope,
+        companyId: 7,
+        resourceId: 42,
+        userType: 'super_admin',
+      })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setSubject('900')
+        .setIssuedAt(iat)
+        .setExpirationTime(iat + PDF_EPHEMERAL_TTL_SECONDS)
+        .sign(new TextEncoder().encode(TEST_SECRET));
+      const result = await verifyPdfEphemeralToken(token, BASE_DATE);
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.claims.scope).toBe(scope);
+      }
+    }
+  });
+
+  it('emite tokens dos 3 novos scopes canonicos ME-053 via signPdfEphemeralToken', async () => {
+    for (const scope of ['snapshot_9box', 'board_deck', 'executive_report'] as const) {
+      const token = await signPdfEphemeralToken({ ...CANON_INPUT, scope }, BASE_DATE);
+      const result = await verifyPdfEphemeralToken(token, BASE_DATE);
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.claims.scope).toBe(scope);
+      }
+    }
+  });
+
+  it('rejeita scope fora dos 4 valores canonicos como malformed', async () => {
     const iat = Math.floor(BASE_TIME_MS / 1000);
-    // `snapshot_9box` esta reservado para a ME-053 (S251); nesta ME nao
-    // e aceito pelo verifier.
     const foreiro = await new SignJWT({
       kind: 'pdf_ephemeral',
-      scope: 'snapshot_9box',
+      scope: 'scope_desconhecido_nao_canonico',
       companyId: 7,
       resourceId: 42,
       userType: 'super_admin',

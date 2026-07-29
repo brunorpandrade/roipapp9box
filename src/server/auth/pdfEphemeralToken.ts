@@ -44,11 +44,25 @@ export const PDF_EPHEMERAL_TTL_SECONDS = 5 * 60;
 
 /**
  * Scope canonico do token — union fechado. ME-050/51 abre com um unico
- * consumidor; ME-053 estende para `'snapshot_9box' | 'board_deck'` por
- * str_replace cirurgico (S251). Clima e engajamento nao entra — usa URL
- * direto sem token, conforme DOC 03 §13.6.
+ * consumidor; ME-053 estende canonicamente para 4 valores por decisao
+ * D3/S277 (aprovado por Bruno na sessao N7/S226 da ME-053):
+ * `'snapshot_9box'`, `'board_deck'` e `'executive_report'`. Clima e
+ * engajamento nao entra — usa URL direto sem token, conforme DOC 03
+ * §13.6.
+ *
+ * Semantica canonica de `resourceId` por scope:
+ * - `nr1_report`: `copsoqCycles.id`.
+ * - `snapshot_9box`: `executiveReportCache.id` NUNCA e reusado aqui;
+ *   `resourceId` codifica `companyId << 20 | escopoKey` (S277 — mesma
+ *   convencao dos demais on-the-fly). O Route Handler valida a matriz
+ *   canonica pos-verificacao do token; o resourceId serve apenas para
+ *   binding audit-trail.
+ * - `board_deck`: mesma convencao de `snapshot_9box`.
+ * - `executive_report`: `executiveReportCache.id` — cache persiste, o
+ *   Route Handler resolve o binario via `conteudoPdfUrl`.
  */
-export type PdfEphemeralTokenScope = 'nr1_report';
+export type PdfEphemeralTokenScope =
+  'nr1_report' | 'snapshot_9box' | 'board_deck' | 'executive_report';
 
 /** Claims de entrada para emissao do token. */
 export interface PdfEphemeralTokenInput {
@@ -169,7 +183,12 @@ export async function verifyPdfEphemeralToken(
   const iat = payload.iat;
   const exp = payload.exp;
 
-  if (scope !== 'nr1_report') {
+  if (
+    scope !== 'nr1_report' &&
+    scope !== 'snapshot_9box' &&
+    scope !== 'board_deck' &&
+    scope !== 'executive_report'
+  ) {
     return { valid: false, reason: 'malformed' };
   }
   if (
