@@ -13,15 +13,19 @@
 // Escopo canonico §13.8: empresa ou departamento (sem equipe).
 
 import { NextResponse } from 'next/server';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, lte } from 'drizzle-orm';
 
 import { createDbClient, type RoipDbClient } from '../../../../../db/client';
 import {
   companies,
   companyEconomicDiagnosis,
+  copsoqCycles,
+  copsoqFactorScores,
+  departments,
   employees,
   nineBoxClassifications,
 } from '../../../../../db/schema';
+import { getFatorNr1 } from '../../../../../server/services/nr1CalculationEngine';
 import { verifyPdfEphemeralToken } from '../../../../../server/auth/pdfEphemeralToken';
 import { deriveResourceIdCanonicoEscopo } from '../../../../../server/routers/exports';
 import {
@@ -46,6 +50,7 @@ import {
 import { sanitizeRazaoSocial } from '../../../../../server/routers/spreadsheets';
 import {
   formatTrimestreCicloReferencia,
+  getLastMonthOfTrimestre,
   getPreviousTrimestre,
   parseTrimestreCicloReferencia,
 } from '../../../../../lib/cycleDates';
@@ -157,9 +162,11 @@ export async function GET(req: Request): Promise<NextResponse> {
   // Elemento 2: ROI.
   const roi = await computeRoiElement(db, claims.companyId, trimestre, escopoTipo);
 
-  // Elemento 3: radar (canonicamente vazio — depende de copsoqCycles;
-  // handler renderiza placeholder canonico quando ausente).
-  const radar: BoardDeckRadarFator[] = [];
+  // Elemento 3: radar dos 8 fatores NR-1 (ME-054 — fecha D060).
+  // Leitura de `copsoqFactorScores` do ciclo fechado vigente no
+  // trimestre; placeholder canonico preservado quando nao ha ciclo
+  // elegivel ou scores no escopo.
+  const radar = await computeRadarElement(db, claims.companyId, trimestre, escopoTipo, escopoRef);
 
   // Elemento 4: turnover.
   const turnover = await computeTurnoverElement(
@@ -249,6 +256,96 @@ async function compute9BoxDistribution(
     distribuicao[q] += 1;
   }
   return { distribuicao, totalClassificados: nbRows.length };
+}
+
+/**
+ * Elemento 3 canonico §13.8 (ME-054 — fecha D060): radar dos 8
+ * fatores psicossociais agregado no escopo.
+ *
+ * Regra de selecao do ciclo (pre-canonizacao ME-054, D8): ciclo
+ * `copsoqCycles` mais recente com `status='fechado'` e
+ * `dataFechamento` <= ultimo dia do trimestre solicitado — o radar
+ * "vigente" no trimestre. Scores lidos de `copsoqFactorScores` (ja
+ * materializados pelo motor NR-1 no fechamento do ciclo):
+ * `escopo='empresa'` para empresa; `escopo='departamento'` +
+ * `escopoDepartamentoId` resolvido por nome para departamento.
+ * Nomes canonicos dos fatores via `getFatorNr1` (§11.6). Array
+ * vazio (placeholder canonico do template) quando nao ha ciclo
+ * elegivel, departamento inexistente ou scores ausentes.
+ */
+async function computeRadarElement(
+  db: RoipDbClient['db'],
+  companyId: number,
+  trimestre: string,
+  escopoTipo: 'empresa' | 'departamento',
+  escopoReferencia: string | null,
+): Promise<BoardDeckRadarFator[]> {
+  const parsed = parseTrimestreCicloReferencia(trimestre);
+  if (!parsed) {
+    return [];
+  }
+  const ultimoMes = getLastMonthOfTrimestre(parsed.trimestre);
+  const fimTrimestre = new Date(Date.UTC(parsed.ano, ultimoMes, 0));
+
+  const [ciclo] = await db
+    .select({ id: copsoqCycles.id })
+    .from(copsoqCycles)
+    .where(
+      and(
+        eq(copsoqCycles.companyId, companyId),
+        eq(copsoqCycles.status, 'fechado'),
+        lte(copsoqCycles.dataFechamento, fimTrimestre),
+      ),
+    )
+    .orderBy(desc(copsoqCycles.dataFechamento), desc(copsoqCycles.id))
+    .limit(1);
+  if (!ciclo) {
+    return [];
+  }
+
+  const scoreWhere = [
+    eq(copsoqFactorScores.cicloDbId, ciclo.id),
+    eq(copsoqFactorScores.companyId, companyId),
+  ];
+  if (escopoTipo === 'empresa') {
+    scoreWhere.push(eq(copsoqFactorScores.escopo, 'empresa'));
+  } else {
+    if (escopoReferencia === null) {
+      return [];
+    }
+    const [dept] = await db
+      .select({ id: departments.id })
+      .from(departments)
+      .where(eq(departments.nome, escopoReferencia))
+      .limit(1);
+    if (!dept) {
+      return [];
+    }
+    scoreWhere.push(
+      eq(copsoqFactorScores.escopo, 'departamento'),
+      eq(copsoqFactorScores.escopoDepartamentoId, dept.id),
+    );
+  }
+
+  const scoreRows = await db
+    .select({ fator: copsoqFactorScores.fator, score: copsoqFactorScores.score })
+    .from(copsoqFactorScores)
+    .where(and(...scoreWhere))
+    .orderBy(copsoqFactorScores.fator);
+
+  const radar: BoardDeckRadarFator[] = [];
+  for (const row of scoreRows) {
+    const descritor = getFatorNr1(row.fator);
+    if (!descritor) {
+      continue;
+    }
+    radar.push({
+      fatorId: descritor.id,
+      nome: descritor.nome,
+      scoreZeroCem: Math.round(Number.parseFloat(row.score) * 100) / 100,
+    });
+  }
+  return radar;
 }
 
 async function computeRoiElement(

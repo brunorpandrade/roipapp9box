@@ -14,12 +14,17 @@
 //   - `iql` = null em autovisualizacao (individual + equipe).
 //   - `roi_estimado_medio` = null quando lider (equipe).
 //
-// D059 (nesta ME): agregados de equipe (score_desempenho_medio,
-// plenitude_score_medio, distribuicao_9box, roi_estimado_medio,
-// perc_meta_atingida_media, assiduidade_media, historico agregado
-// dos 4 trimestres, lista_colaboradores) declarados aqui como
-// campos canonicos mas populados como `null` nesta ME — motor de
-// agregacao canonico entra em ME futura dedicada.
+// D059 (FECHADO na ME-054): agregados de equipe, distribuicao_9box,
+// historico agregado dos 4 trimestres, detalhamento_variaveis,
+// dialogos_desenvolvimento_recentes, dx/dy e assiduidade populados
+// pelos motores de agregacao on-read desta ME.
+//
+// CC (ME-054, D3 Opcao B): as chaves de `distribuicao_9box` do DOC 04
+// §8.3.2 usavam nomenclatura generica de 9-box de mercado (estrela,
+// alto_desempenho, ...) sem correspondencia com os 9 quadrantes
+// canonicos do produto (DOC 01 enum + DOC 03 §6). Corrigidas aqui
+// para os nomes canonicos em snake_case; correcao canonica do DOC 04
+// registrada no fechamento da ME-054.
 
 /**
  * Nivel canonico do dashboard suportado pelo Chat IA no MVP (S263).
@@ -57,7 +62,19 @@ export interface DashboardIndividualContextPayload {
   eixo_x: {
     score_desempenho: number | null;
     indice_desempenho: number | null;
-    detalhamento_variaveis: Array<Record<string, unknown>>;
+    /**
+     * Detalhamento por variavel do mes mais recente com dados do
+     * trimestre atual (ME-054). `percentual` = razao executado/demanda
+     * do motor Eixo X convertida a escala 0-100 (cap canonico 150).
+     */
+    detalhamento_variaveis: Array<{
+      nome: string;
+      meta: number | null;
+      demanda: number | null;
+      executado: number | null;
+      percentual: number | null;
+      peso: number | null;
+    }>;
   };
   eixo_y: {
     plenitude_score: number | null;
@@ -101,7 +118,21 @@ export interface DashboardIndividualContextPayload {
     count_respondentes: number;
     por_dimensao: Record<string, number | null>;
   } | null;
-  historico_4_trimestres: Array<Record<string, unknown>>;
+  /**
+   * Historico canonico §8.3.1 (ME-054): 4 trimestres mais recentes
+   * enriquecidos com plenitude, quadrante, assiduidade e financeiro.
+   * `financeiro` = null por linha quando o viewer e lider (§5.6).
+   */
+  historico_4_trimestres: Array<{
+    trimestre: string;
+    score_desempenho: number | null;
+    plenitude_score: number | null;
+    quadrante: string | null;
+    perc_meta_atingida: number | null;
+    capacidade_ociosa: number | null;
+    assiduidade: number | null;
+    financeiro: { roi_estimado: number | null } | null;
+  }>;
   dialogos_desenvolvimento_recentes: Array<{
     titulo: string;
     created_at: string;
@@ -142,13 +173,39 @@ export interface DashboardEquipeIdentificacao {
 }
 
 /**
+ * Chave canonica snake_case de cada um dos 9 quadrantes do produto
+ * (ME-054, D3 Opcao B). Fonte dos nomes: enum
+ * `nineBoxClassifications.quadrante` (DOC 01) — nomenclatura unica
+ * exibida nas telas e falada pela IA.
+ */
+export const NINE_BOX_QUADRANTE_TO_KEY = {
+  'ALTO IMPACTO': 'alto_impacto',
+  'DESEMPENHO REPRESADO': 'desempenho_represado',
+  'POTENCIAL SUBUTILIZADO': 'potencial_subutilizado',
+  'ALTA ENTREGA': 'alta_entrega',
+  'EQUILÍBRIO FRÁGIL': 'equilibrio_fragil',
+  'DESEMPENHO CRÍTICO': 'desempenho_critico',
+  'RISCO DE ESGOTAMENTO': 'risco_de_esgotamento',
+  'DESGASTE OCULTO': 'desgaste_oculto',
+  'RISCO CRÍTICO': 'risco_critico',
+} as const;
+
+/** Chave canonica de quadrante no payload (ME-054, D3 Opcao B). */
+export type NineBoxQuadranteKey =
+  (typeof NINE_BOX_QUADRANTE_TO_KEY)[keyof typeof NINE_BOX_QUADRANTE_TO_KEY];
+
+/**
+ * Distribuicao canonica por quadrante (ME-054): contagem de diretos
+ * classificados no trimestre atual, chaveada pelos nomes canonicos.
+ */
+export type DashboardEquipeDistribuicao9Box = Record<NineBoxQuadranteKey, number>;
+
+/**
  * Payload canonico do contexto do dashboard de equipe (§8.3.2).
  * Estrutura literal do JSON enviado ao user prompt do Chat IA.
  *
- * D059: campos agregados (score_desempenho_medio, plenitude_score_medio,
- * distribuicao_9box, historico_4_trimestres agregado) declarados aqui
- * como `null` ou array vazio nesta ME. Motor de agregacao canonico
- * em ME futura.
+ * D059 (FECHADO na ME-054): agregados, distribuicao_9box e
+ * historico_4_trimestres populados pelo motor de agregacao on-read.
  */
 export interface DashboardEquipeContextPayload {
   identificacao: DashboardEquipeIdentificacao;
@@ -166,17 +223,7 @@ export interface DashboardEquipeContextPayload {
     perc_meta_atingida_media: number | null;
     assiduidade_media: number | null;
   };
-  distribuicao_9box: {
-    estrela: number;
-    alto_desempenho: number;
-    solido: number;
-    desenvolvimento: number;
-    consistente: number;
-    manutencao: number;
-    duvida: number;
-    abaixo_esperado: number;
-    critico: number;
-  };
+  distribuicao_9box: DashboardEquipeDistribuicao9Box;
   /**
    * IQL do lider. Bloqueado (`null`) quando usuario logado e o proprio
    * lider (autovisualizacao — §5.6 equipe).
@@ -189,7 +236,18 @@ export interface DashboardEquipeContextPayload {
     nota_clima: number | null;
     adesao: number | null;
   };
-  historico_4_trimestres: Array<Record<string, unknown>>;
+  /**
+   * Historico canonico §8.3.2 (ME-054): ate 4 trimestres distintos
+   * mais recentes com medias da equipe. `roi_medio` = null por linha
+   * quando o viewer e lider (§5.6).
+   */
+  historico_4_trimestres: Array<{
+    trimestre: string;
+    score_desempenho_medio: number | null;
+    plenitude_score_medio: number | null;
+    roi_medio: number | null;
+    nota_clima: number | null;
+  }>;
   lista_colaboradores: Array<{
     nome: string;
     quadrante: string | null;

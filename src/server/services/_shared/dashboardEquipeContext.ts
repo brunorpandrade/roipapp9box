@@ -10,33 +10,42 @@
 //     equipe).
 //   - `lista_colaboradores` sem financeiro individual quando lider.
 //
-// D059: agregados (score_desempenho_medio, plenitude_score_medio,
-// distribuicao_9box, historico_4_trimestres agregado) declarados
-// como `null` / arrays vazios nesta ME. Motor de agregacao canonico
-// em ME futura.
+// D059 (FECHADO na ME-054): motor de agregacao canonico on-read —
+// medias dos diretos ativos (performanceQuarterlyData +
+// plenitudeData + performanceData.assiduidade), distribuicao 9-Box
+// por quadrante canonico (D3 Opcao B) e historico agregado dos 4
+// trimestres mais recentes. Media aritmetica dos presentes,
+// ignorando NULL; agregado `null` quando nenhum direto tem dado.
 //
 // Regras invioláveis desta ME:
 // - RV-12: 100% Drizzle tipado.
 // - RV-13: consumido por `aiChatService` (level=equipe). Testes unit
-//   em `tests/unit/dashboardContext.test.ts`.
+//   em `tests/unit/dashboardContext.test.ts`; integracao ME-054 em
+//   `tests/integration/me054-equipe-aggregates.test.ts`.
+// - L87: colunas camelCase verificadas em `tables.ts`.
 
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../../db/client';
 import {
   employees,
   employeeLeaderHistory,
   nineBoxClassifications,
+  performanceData,
   performanceQuarterlyData,
+  plenitudeData,
 } from '../../../db/schema';
 import { getClimateByEquipeQuarter } from '../climateEngagementData';
 import { getIqlDataByLiderQuarter } from '../iqlData';
 
-import type {
-  DashboardEquipeContextArgs,
-  DashboardEquipeContextPayload,
-  DashboardEquipeIdentificacao,
+import {
+  NINE_BOX_QUADRANTE_TO_KEY,
+  type DashboardEquipeContextArgs,
+  type DashboardEquipeContextPayload,
+  type DashboardEquipeDistribuicao9Box,
+  type DashboardEquipeIdentificacao,
 } from './dashboardContextTypes';
+import { mediaDosPresentes, mesesDoTrimestre } from './dashboardPeriods';
 
 // ============================================================
 // Cortes canonicos §2.4 (defensivos)
@@ -255,6 +264,202 @@ async function composeEquipeClimaBlock(
 }
 
 // ============================================================
+// Motor de agregacao canonico da equipe (ME-054 — fecha D059)
+// ============================================================
+
+/** Ids dos diretos ativos do lider (vinculo `dataFim IS NULL`). */
+async function listDiretosAtivos(db: RoipDatabase, liderId: number): Promise<number[]> {
+  const vinculos = await db
+    .select({ employeeId: employeeLeaderHistory.employeeId })
+    .from(employeeLeaderHistory)
+    .where(and(eq(employeeLeaderHistory.liderId, liderId), isNull(employeeLeaderHistory.dataFim)))
+    .limit(EQUIPE_LISTA_COLABORADORES_CAP);
+  return vinculos.map((v) => v.employeeId);
+}
+
+interface AgregadosEquipeInput {
+  db: RoipDatabase;
+  employeeIds: number[];
+  trimestre: string | null;
+  bloqueiaFinanceiro: boolean;
+}
+
+/**
+ * Medias canonicas §8.3.2 sobre os diretos ativos no trimestre atual.
+ * Fontes: `performanceQuarterlyData` (desempenho, capacidade ociosa,
+ * ROI, % meta), `plenitudeData` (plenitude, score A) e
+ * `performanceData.assiduidade` (meses do trimestre — DOC 03 §2
+ * Passo 1). Media dos presentes; `null` sem dados.
+ */
+async function composeAgregadosEquipe(
+  input: AgregadosEquipeInput,
+): Promise<DashboardEquipeContextPayload['agregados']> {
+  const vazio: DashboardEquipeContextPayload['agregados'] = {
+    score_desempenho_medio: null,
+    plenitude_score_medio: null,
+    score_a_medio: null,
+    capacidade_ociosa_media: null,
+    roi_estimado_medio: null,
+    perc_meta_atingida_media: null,
+    assiduidade_media: null,
+  };
+  if (input.employeeIds.length === 0 || input.trimestre === null) {
+    return vazio;
+  }
+  const quarterlyRows = await input.db
+    .select({
+      scoreDesempenho: performanceQuarterlyData.scoreDesempenho,
+      capacidadeOciosa: performanceQuarterlyData.capacidadeOciosa,
+      roiEstimado: performanceQuarterlyData.roiEstimado,
+      percMetaAtingida: performanceQuarterlyData.percMetaAtingida,
+    })
+    .from(performanceQuarterlyData)
+    .where(
+      and(
+        eq(performanceQuarterlyData.trimestre, input.trimestre),
+        inArray(performanceQuarterlyData.employeeId, input.employeeIds),
+      ),
+    );
+  const plenitudeRows = await input.db
+    .select({
+      plenitudeScore: plenitudeData.plenitudeScore,
+      scoreA: plenitudeData.scoreA,
+    })
+    .from(plenitudeData)
+    .where(
+      and(
+        eq(plenitudeData.trimestre, input.trimestre),
+        inArray(plenitudeData.employeeId, input.employeeIds),
+      ),
+    );
+  const meses = mesesDoTrimestre(input.trimestre);
+  const assiduidadeRows =
+    meses.length === 0
+      ? []
+      : await input.db
+          .select({ assiduidade: performanceData.assiduidade })
+          .from(performanceData)
+          .where(
+            and(
+              inArray(performanceData.employeeId, input.employeeIds),
+              inArray(performanceData.mes, meses),
+            ),
+          );
+  return {
+    score_desempenho_medio: mediaDosPresentes(quarterlyRows.map((r) => num(r.scoreDesempenho))),
+    plenitude_score_medio: mediaDosPresentes(plenitudeRows.map((r) => num(r.plenitudeScore))),
+    score_a_medio: mediaDosPresentes(plenitudeRows.map((r) => num(r.scoreA))),
+    capacidade_ociosa_media: mediaDosPresentes(quarterlyRows.map((r) => num(r.capacidadeOciosa))),
+    // Bloqueio canonico §5.6 equipe: sem financeiro para lider.
+    roi_estimado_medio: input.bloqueiaFinanceiro
+      ? null
+      : mediaDosPresentes(quarterlyRows.map((r) => num(r.roiEstimado))),
+    perc_meta_atingida_media: mediaDosPresentes(quarterlyRows.map((r) => num(r.percMetaAtingida))),
+    assiduidade_media: mediaDosPresentes(assiduidadeRows.map((r) => num(r.assiduidade))),
+  };
+}
+
+/**
+ * Distribuicao canonica por quadrante (D3 Opcao B): contagem das
+ * classificacoes 9-Box dos diretos no trimestre atual, chaveada
+ * pelos nomes canonicos do produto.
+ */
+async function composeDistribuicao9Box(
+  db: RoipDatabase,
+  employeeIds: number[],
+  trimestre: string | null,
+): Promise<DashboardEquipeDistribuicao9Box> {
+  const distribuicao = Object.fromEntries(
+    Object.values(NINE_BOX_QUADRANTE_TO_KEY).map((key) => [key, 0]),
+  ) as DashboardEquipeDistribuicao9Box;
+  if (employeeIds.length === 0 || trimestre === null) {
+    return distribuicao;
+  }
+  const rows = await db
+    .select({ quadrante: nineBoxClassifications.quadrante })
+    .from(nineBoxClassifications)
+    .where(
+      and(
+        eq(nineBoxClassifications.trimestre, trimestre),
+        inArray(nineBoxClassifications.employeeId, employeeIds),
+      ),
+    );
+  for (const row of rows) {
+    const key = NINE_BOX_QUADRANTE_TO_KEY[row.quadrante];
+    distribuicao[key] += 1;
+  }
+  return distribuicao;
+}
+
+interface HistoricoEquipeInput {
+  db: RoipDatabase;
+  companyId: number;
+  liderId: number;
+  employeeIds: number[];
+  bloqueiaFinanceiro: boolean;
+}
+
+/**
+ * Historico canonico §8.3.2: ate 4 trimestres distintos mais
+ * recentes com medias da equipe (desempenho, plenitude, ROI) e
+ * `nota_clima` da equipe (`climateEngagementData`). Ordem
+ * decrescente de trimestre.
+ */
+async function composeHistoricoEquipe(
+  input: HistoricoEquipeInput,
+): Promise<DashboardEquipeContextPayload['historico_4_trimestres']> {
+  if (input.employeeIds.length === 0) {
+    return [];
+  }
+  const trimestreRows = await input.db
+    .selectDistinct({ trimestre: performanceQuarterlyData.trimestre })
+    .from(performanceQuarterlyData)
+    .where(inArray(performanceQuarterlyData.employeeId, input.employeeIds))
+    .orderBy(desc(performanceQuarterlyData.trimestre))
+    .limit(4);
+  const historico: DashboardEquipeContextPayload['historico_4_trimestres'] = [];
+  for (const { trimestre } of trimestreRows) {
+    const quarterlyRows = await input.db
+      .select({
+        scoreDesempenho: performanceQuarterlyData.scoreDesempenho,
+        roiEstimado: performanceQuarterlyData.roiEstimado,
+      })
+      .from(performanceQuarterlyData)
+      .where(
+        and(
+          eq(performanceQuarterlyData.trimestre, trimestre),
+          inArray(performanceQuarterlyData.employeeId, input.employeeIds),
+        ),
+      );
+    const plenitudeRows = await input.db
+      .select({ plenitudeScore: plenitudeData.plenitudeScore })
+      .from(plenitudeData)
+      .where(
+        and(
+          eq(plenitudeData.trimestre, trimestre),
+          inArray(plenitudeData.employeeId, input.employeeIds),
+        ),
+      );
+    const climaRow = await getClimateByEquipeQuarter(
+      input.db,
+      input.companyId,
+      input.liderId,
+      trimestre,
+    );
+    historico.push({
+      trimestre,
+      score_desempenho_medio: mediaDosPresentes(quarterlyRows.map((r) => num(r.scoreDesempenho))),
+      plenitude_score_medio: mediaDosPresentes(plenitudeRows.map((r) => num(r.plenitudeScore))),
+      roi_medio: input.bloqueiaFinanceiro
+        ? null
+        : mediaDosPresentes(quarterlyRows.map((r) => num(r.roiEstimado))),
+      nota_clima: num((climaRow as { notaClima?: string | null } | null)?.notaClima ?? null),
+    });
+  }
+  return historico;
+}
+
+// ============================================================
 // Entry point canonico do loader
 // ============================================================
 
@@ -263,9 +468,8 @@ async function composeEquipeClimaBlock(
  * identificado por `liderId`. Aplica bloqueios §5.6 conforme
  * argumentos. Retorna `null` se o lider nao existe ou nao e lider.
  *
- * D059: agregados (media desempenho, media plenitude, distribuicao
- * 9-Box, historico agregado) declarados como `null` / arrays vazios.
- * Motor de agregacao canonico em ME futura.
+ * ME-054 (fecha D059): agregados, distribuicao 9-Box e historico
+ * agregado populados pelo motor de agregacao on-read desta ME.
  */
 export async function loadDashboardEquipeContext(
   db: RoipDatabase,
@@ -328,33 +532,32 @@ export async function loadDashboardEquipeContext(
     bloqueiaFinanceiro,
   });
 
-  // 5. Composicao final canonica.
+  // 5. Motor de agregacao canonico (ME-054 — fecha D059).
+  const employeeIds = await listDiretosAtivos(db, args.liderId);
+  const agregados = await composeAgregadosEquipe({
+    db,
+    employeeIds,
+    trimestre: trimestreAtual,
+    bloqueiaFinanceiro,
+  });
+  const distribuicao9Box = await composeDistribuicao9Box(db, employeeIds, trimestreAtual);
+  const historico = await composeHistoricoEquipe({
+    db,
+    companyId: args.companyId,
+    liderId: args.liderId,
+    employeeIds,
+    bloqueiaFinanceiro,
+  });
+
+  // 6. Composicao final canonica.
   return {
     identificacao: idResult.identificacao,
     trimestre_atual: trimestreAtual,
-    agregados: {
-      score_desempenho_medio: null,
-      plenitude_score_medio: null,
-      score_a_medio: null,
-      capacidade_ociosa_media: null,
-      roi_estimado_medio: bloqueiaFinanceiro ? null : null,
-      perc_meta_atingida_media: null,
-      assiduidade_media: null,
-    },
-    distribuicao_9box: {
-      estrela: 0,
-      alto_desempenho: 0,
-      solido: 0,
-      desenvolvimento: 0,
-      consistente: 0,
-      manutencao: 0,
-      duvida: 0,
-      abaixo_esperado: 0,
-      critico: 0,
-    },
+    agregados,
+    distribuicao_9box: distribuicao9Box,
     iql_lider: iqlBlock,
     clima_equipe: climaBlock,
-    historico_4_trimestres: [],
+    historico_4_trimestres: historico,
     lista_colaboradores: listaColaboradores,
   };
 }

@@ -19,19 +19,30 @@
 //   Schema `performanceQuarterlyData` e camelCase (verificado em
 //   `tables.ts`).
 // - §8.3.1 nota final: campos ausentes recebem `null` explicito.
-// - D059: `detalhamento_variaveis`, `historico_4_trimestres`,
-//   `dialogos_desenvolvimento_recentes` populados nesta ME com o
-//   minimo canonico; refinamento em MEs futuras.
+// - D059 (FECHADO na ME-054): `detalhamento_variaveis` (join
+//   performanceVariableData x employeeGoals do mes mais recente com
+//   dados do trimestre), `historico_4_trimestres` enriquecido
+//   (plenitude, quadrante, assiduidade, financeiro),
+//   `dialogos_desenvolvimento_recentes` (developmentDialogs nao
+//   arquivados), `dx`/`dy` (delta ordinal de posicao 9-Box vs
+//   trimestre anterior — pre-canonizacao ME-054), `assiduidade`
+//   (media de performanceData.assiduidade dos meses do trimestre —
+//   DOC 03 §2 Passo 1) e dimensoes pertencimento/realizacao do
+//   eixo Y.
 
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../../db/client';
 import {
+  developmentDialogs,
+  employeeGoals,
   employees,
   individualProfileAssessments,
   individualProfileScores,
   nineBoxClassifications,
+  performanceData,
   performanceQuarterlyData,
+  performanceVariableData,
   plenitudeData,
 } from '../../../db/schema';
 import { getIqlDataByLiderQuarter } from '../iqlData';
@@ -41,6 +52,7 @@ import type {
   DashboardIndividualContextPayload,
   DashboardIndividualIdentificacao,
 } from './dashboardContextTypes';
+import { mediaDosPresentes, mesesDoTrimestre } from './dashboardPeriods';
 
 // ============================================================
 // Helpers de conversao numerica canonica
@@ -361,6 +373,163 @@ async function composeIdentificacao(
 }
 
 // ============================================================
+// Motores de enriquecimento canonico (ME-054 — fecha D059)
+// ============================================================
+
+/**
+ * Posicao ordinal canonica dos eixos 9-Box (pre-canonizacao ME-054):
+ * baixo/baixa = 0, medio/media = 1, alto/alta = 2.
+ */
+const POSICAO_X_ORDINAL: Record<'baixo' | 'medio' | 'alto', number> = {
+  baixo: 0,
+  medio: 1,
+  alto: 2,
+};
+const POSICAO_Y_ORDINAL: Record<'baixa' | 'media' | 'alta', number> = {
+  baixa: 0,
+  media: 1,
+  alta: 2,
+};
+
+/**
+ * Deriva `dx`/`dy` canonicos: delta ordinal da posicao atual vs a do
+ * trimestre imediatamente anterior na serie de classificacoes do
+ * colaborador. `null` sem registro anterior.
+ */
+function deriveDxDy(
+  atual: { posicaoX: 'baixo' | 'medio' | 'alto'; posicaoY: 'baixa' | 'media' | 'alta' } | null,
+  anterior: { posicaoX: 'baixo' | 'medio' | 'alto'; posicaoY: 'baixa' | 'media' | 'alta' } | null,
+): { dx: number | null; dy: number | null } {
+  if (atual === null || anterior === null) {
+    return { dx: null, dy: null };
+  }
+  return {
+    dx: POSICAO_X_ORDINAL[atual.posicaoX] - POSICAO_X_ORDINAL[anterior.posicaoX],
+    dy: POSICAO_Y_ORDINAL[atual.posicaoY] - POSICAO_Y_ORDINAL[anterior.posicaoY],
+  };
+}
+
+/**
+ * Detalhamento canonico por variavel (§8.3.1 eixo_x): join de
+ * `performanceVariableData` (mes mais recente com dados do trimestre
+ * atual) com `employeeGoals` (nome e meta por `variableIndex`).
+ * `percentual` = razao do motor Eixo X (0-1.5) convertida a 0-100.
+ */
+async function composeDetalhamentoVariaveis(
+  db: RoipDatabase,
+  employeeId: number,
+  trimestre: string | null,
+): Promise<DashboardIndividualContextPayload['eixo_x']['detalhamento_variaveis']> {
+  if (trimestre === null) {
+    return [];
+  }
+  const meses = mesesDoTrimestre(trimestre);
+  if (meses.length === 0) {
+    return [];
+  }
+  const [ultimoMesComDados] = await db
+    .select({ id: performanceData.id })
+    .from(performanceData)
+    .where(and(eq(performanceData.employeeId, employeeId), inArray(performanceData.mes, meses)))
+    .orderBy(desc(performanceData.mes))
+    .limit(1);
+  if (!ultimoMesComDados) {
+    return [];
+  }
+  const variaveis = await db
+    .select({
+      variableIndex: performanceVariableData.variableIndex,
+      demanda: performanceVariableData.demanda,
+      executado: performanceVariableData.executado,
+      desempenho: performanceVariableData.desempenho,
+      peso: performanceVariableData.peso,
+    })
+    .from(performanceVariableData)
+    .where(eq(performanceVariableData.performanceDataId, ultimoMesComDados.id))
+    .orderBy(performanceVariableData.variableIndex);
+  if (variaveis.length === 0) {
+    return [];
+  }
+  const goals = await db
+    .select({
+      variableIndex: employeeGoals.variableIndex,
+      variableName: employeeGoals.variableName,
+      goal: employeeGoals.goal,
+    })
+    .from(employeeGoals)
+    .where(eq(employeeGoals.employeeId, employeeId));
+  const goalByIndex = new Map(goals.map((g) => [g.variableIndex, g]));
+  return variaveis.map((v) => {
+    const goal = goalByIndex.get(v.variableIndex);
+    const razao = num(v.desempenho);
+    return {
+      nome: goal?.variableName ?? `Variável ${v.variableIndex}`,
+      meta: num(goal?.goal ?? null),
+      demanda: num(v.demanda),
+      executado: num(v.executado),
+      percentual: razao === null ? null : Math.round(razao * 100 * 100) / 100,
+      peso: num(v.peso),
+    };
+  });
+}
+
+/**
+ * Assiduidade canonica do trimestre (DOC 03 §2 Passo 1): media de
+ * `performanceData.assiduidade` dos meses do trimestre com dado
+ * presente. `null` sem dados.
+ */
+async function composeAssiduidadeTrimestre(
+  db: RoipDatabase,
+  employeeId: number,
+  trimestre: string | null,
+): Promise<number | null> {
+  if (trimestre === null) {
+    return null;
+  }
+  const meses = mesesDoTrimestre(trimestre);
+  if (meses.length === 0) {
+    return null;
+  }
+  const rows = await db
+    .select({ assiduidade: performanceData.assiduidade })
+    .from(performanceData)
+    .where(and(eq(performanceData.employeeId, employeeId), inArray(performanceData.mes, meses)));
+  return mediaDosPresentes(rows.map((r) => num(r.assiduidade)));
+}
+
+/** Corte canonico de dialogos recentes no contexto (ME-054). */
+const DIALOGOS_RECENTES_CAP = 10;
+
+/**
+ * Dialogos de Desenvolvimento recentes (§8.3.1): nao arquivados do
+ * colaborador, mais recentes primeiro, cap defensivo de 10.
+ */
+async function composeDialogosRecentes(
+  db: RoipDatabase,
+  employeeId: number,
+): Promise<DashboardIndividualContextPayload['dialogos_desenvolvimento_recentes']> {
+  const rows = await db
+    .select({
+      titulo: developmentDialogs.titulo,
+      status: developmentDialogs.status,
+      pendencia: developmentDialogs.pendencia,
+      createdAt: developmentDialogs.createdAt,
+    })
+    .from(developmentDialogs)
+    .where(
+      and(eq(developmentDialogs.employeeId, employeeId), eq(developmentDialogs.arquivado, false)),
+    )
+    .orderBy(desc(developmentDialogs.createdAt), desc(developmentDialogs.id))
+    .limit(DIALOGOS_RECENTES_CAP);
+  return rows.map((row) => ({
+    titulo: row.titulo ?? '',
+    created_at: row.createdAt.toISOString().slice(0, 10),
+    status: row.status,
+    pendencia: row.pendencia,
+  }));
+}
+
+// ============================================================
 // Entry point canonico do loader
 // ============================================================
 
@@ -376,11 +545,9 @@ async function composeIdentificacao(
  *     respondentes.
  *   - `perfil_individual` omitido (undefined) se §5.3 nao atende.
  *
- * D059: `detalhamento_variaveis` array vazio; `historico_4_trimestres`
- * populado com os 4 registros mais recentes de
- * `performanceQuarterlyData` (leitura direta, sem enriquecimento);
- * `dialogos_desenvolvimento_recentes` array vazio (motor de
- * developmentDialogs por employee em ME futura).
+ * ME-054 (fecha D059): `detalhamento_variaveis`, historico
+ * enriquecido, dialogos recentes, dx/dy, assiduidade e dimensoes
+ * pertencimento/realizacao populados pelos motores desta ME.
  */
 export async function loadDashboardIndividualContext(
   db: RoipDatabase,
@@ -422,19 +589,25 @@ export async function loadDashboardIndividualContext(
         .limit(1)
     : [null];
 
-  // 4. 9-Box — leitura direta do trimestre atual.
-  const [latestNineBox] = latestQuarterly
-    ? await db
-        .select()
-        .from(nineBoxClassifications)
-        .where(
-          and(
-            eq(nineBoxClassifications.employeeId, args.employeeId),
-            eq(nineBoxClassifications.trimestre, latestQuarterly.trimestre),
-          ),
-        )
-        .limit(1)
-    : [null];
+  // 4. 9-Box — atual + trimestre imediatamente anterior na serie
+  //    (ME-054: fonte do dx/dy ordinal).
+  const nineBoxSerie = await db
+    .select({
+      trimestre: nineBoxClassifications.trimestre,
+      quadrante: nineBoxClassifications.quadrante,
+      posicaoX: nineBoxClassifications.posicaoX,
+      posicaoY: nineBoxClassifications.posicaoY,
+    })
+    .from(nineBoxClassifications)
+    .where(eq(nineBoxClassifications.employeeId, args.employeeId))
+    .orderBy(desc(nineBoxClassifications.trimestre))
+    .limit(2);
+  const latestNineBox =
+    latestQuarterly && nineBoxSerie[0]?.trimestre === latestQuarterly.trimestre
+      ? nineBoxSerie[0]
+      : null;
+  const previousNineBox = latestNineBox ? (nineBoxSerie[1] ?? null) : null;
+  const dxDy = deriveDxDy(latestNineBox, previousNineBox);
 
   // 5. Detectores canonicos (§5.6).
   const bloqueiaFinanceiro = shouldBlockFinanceiro(args.viewerRole);
@@ -465,6 +638,67 @@ export async function loadDashboardIndividualContext(
     companyId: args.companyId,
   });
 
+  // 8b. Motores de enriquecimento ME-054 (fecha D059).
+  const trimestreAtualStr = deriveTrimestreAtual(latestQuarterly);
+  const detalhamentoVariaveis = await composeDetalhamentoVariaveis(
+    db,
+    args.employeeId,
+    trimestreAtualStr,
+  );
+  const assiduidadeAtual = await composeAssiduidadeTrimestre(
+    db,
+    args.employeeId,
+    trimestreAtualStr,
+  );
+  const dialogosRecentes = await composeDialogosRecentes(db, args.employeeId);
+
+  // 8c. Historico enriquecido (§8.3.1): plenitude, quadrante,
+  //     assiduidade e financeiro por trimestre da serie.
+  const trimestresHistorico = quarterlyRows.map((row) => row.trimestre);
+  const plenitudeHistorico =
+    trimestresHistorico.length === 0
+      ? []
+      : await db
+          .select({
+            trimestre: plenitudeData.trimestre,
+            plenitudeScore: plenitudeData.plenitudeScore,
+          })
+          .from(plenitudeData)
+          .where(
+            and(
+              eq(plenitudeData.employeeId, args.employeeId),
+              inArray(plenitudeData.trimestre, trimestresHistorico),
+            ),
+          );
+  const plenitudePorTrimestre = new Map(
+    plenitudeHistorico.map((row) => [row.trimestre, num(row.plenitudeScore)]),
+  );
+  const nineBoxHistorico =
+    trimestresHistorico.length === 0
+      ? []
+      : await db
+          .select({
+            trimestre: nineBoxClassifications.trimestre,
+            quadrante: nineBoxClassifications.quadrante,
+          })
+          .from(nineBoxClassifications)
+          .where(
+            and(
+              eq(nineBoxClassifications.employeeId, args.employeeId),
+              inArray(nineBoxClassifications.trimestre, trimestresHistorico),
+            ),
+          );
+  const quadrantePorTrimestre = new Map(
+    nineBoxHistorico.map((row) => [row.trimestre, row.quadrante as string]),
+  );
+  const assiduidadePorTrimestre = new Map<string, number | null>();
+  for (const trimestre of trimestresHistorico) {
+    assiduidadePorTrimestre.set(
+      trimestre,
+      await composeAssiduidadeTrimestre(db, args.employeeId, trimestre),
+    );
+  }
+
   // 9. Composicao final canonica. Campos ausentes = null explicito
   //    (§8.3.1 nota final).
   const payload: DashboardIndividualContextPayload = {
@@ -473,7 +707,7 @@ export async function loadDashboardIndividualContext(
     eixo_x: {
       score_desempenho: num(latestQuarterly?.scoreDesempenho ?? null),
       indice_desempenho: num(latestQuarterly?.indiceDesempenho ?? null),
-      detalhamento_variaveis: [],
+      detalhamento_variaveis: detalhamentoVariaveis,
     },
     eixo_y: {
       plenitude_score: num(
@@ -511,15 +745,25 @@ export async function loadDashboardIndividualContext(
             )?.desenvolvimentoC ?? null,
           ),
         },
-        pertencimento: { a: null, c: null },
-        realizacao: { a: null, c: null },
+        pertencimento: {
+          a: num(
+            (latestPlenitude as { pertencimentoA?: string | null } | null)?.pertencimentoA ?? null,
+          ),
+          c: num(
+            (latestPlenitude as { pertencimentoC?: string | null } | null)?.pertencimentoC ?? null,
+          ),
+        },
+        realizacao: {
+          a: num((latestPlenitude as { realizacaoA?: string | null } | null)?.realizacaoA ?? null),
+          c: num((latestPlenitude as { realizacaoC?: string | null } | null)?.realizacaoC ?? null),
+        },
       },
     },
     capacidade_ociosa: {
       valor: num(latestQuarterly?.capacidadeOciosa ?? null),
       faixa: deriveCapacidadeOciosaFaixa(num(latestQuarterly?.capacidadeOciosa ?? null)),
     },
-    assiduidade: null,
+    assiduidade: assiduidadeAtual,
     financeiro: bloqueiaFinanceiro
       ? null
       : {
@@ -529,22 +773,26 @@ export async function loadDashboardIndividualContext(
           perc_meta_atingida: num(latestQuarterly?.percMetaAtingida ?? null),
         },
     '9box': {
-      quadrante: (latestNineBox as { quadrante?: string | null } | null)?.quadrante ?? null,
-      // D059: `dx`/`dy` numericos do movimento (§5.5) exigem motor de
-      // classificacao de movimento nao presente no MVP. `direcaoMovimento`
-      // e enum ('subiu', 'desceu', 'lateral', ...); a conversao canonica
-      // para (dx, dy) numericos e materia de ME futura.
-      dx: null,
-      dy: null,
+      quadrante: latestNineBox?.quadrante ?? null,
+      // ME-054 (fecha D059): delta ordinal de posicao vs trimestre
+      // anterior (pre-canonizacao — baixo/baixa=0, medio/media=1,
+      // alto/alta=2). `null` sem registro anterior.
+      dx: dxDy.dx,
+      dy: dxDy.dy,
     },
     iql: iqlBlock,
     historico_4_trimestres: quarterlyRows.map((row) => ({
       trimestre: row.trimestre,
       score_desempenho: num(row.scoreDesempenho),
-      capacidade_ociosa: num(row.capacidadeOciosa),
+      plenitude_score: plenitudePorTrimestre.get(row.trimestre) ?? null,
+      quadrante: quadrantePorTrimestre.get(row.trimestre) ?? null,
       perc_meta_atingida: num(row.percMetaAtingida),
+      capacidade_ociosa: num(row.capacidadeOciosa),
+      assiduidade: assiduidadePorTrimestre.get(row.trimestre) ?? null,
+      // Bloqueio canonico §5.6: sem financeiro por linha para lider.
+      financeiro: bloqueiaFinanceiro ? null : { roi_estimado: num(row.roiEstimado) },
     })),
-    dialogos_desenvolvimento_recentes: [],
+    dialogos_desenvolvimento_recentes: dialogosRecentes,
   };
 
   if (perfilBlock !== undefined) {

@@ -28,6 +28,7 @@ type StubRow = Record<string, unknown>;
 
 interface FakeSelectChain {
   select: (fields?: unknown) => FakeSelectChain;
+  selectDistinct: (fields?: unknown) => FakeSelectChain;
   from: (t: unknown) => FakeSelectChain;
   where: (c: unknown) => FakeSelectChain;
   orderBy: (...args: unknown[]) => FakeSelectChain;
@@ -45,6 +46,7 @@ function buildFakeDb(queue: StubRow[][]) {
     let terminated = false;
     const chain: FakeSelectChain = {
       select: () => chain,
+      selectDistinct: () => chain,
       from: () => chain,
       where: () => chain,
       orderBy: () => chain,
@@ -64,6 +66,7 @@ function buildFakeDb(queue: StubRow[][]) {
   }
   return {
     select: (fields?: unknown) => makeChain().select(fields),
+    selectDistinct: (fields?: unknown) => makeChain().selectDistinct(fields),
   } as unknown as Parameters<typeof loadDashboardIndividualContext>[0];
 }
 
@@ -312,18 +315,16 @@ describe('loadDashboardEquipeContext — §5.6 e D059', () => {
     expect(ctx!.iql_lider).toBeNull();
   });
 
-  it('declara agregados como `null` (D059) — nesta ME nao ha motor de agregacao', async () => {
+  it('agregados null, distribuicao zerada e historico vazio sem diretos (ME-054)', async () => {
+    // Lider existe mas nao tem diretos ativos → trimestre_atual null;
+    // o motor de agregacao ME-054 retorna agregados null, distribuicao
+    // zerada e historico vazio por construcao (employeeIds vazio).
     const queue: StubRow[][] = [
-      [{ name: 'Lider Y', departamento: 'Vendas', isLider: true }],
-      [{ id: 30 }],
-      [{ employeeId: 30 }],
-      [{ trimestre: '2026-Q2' }],
-      [], // iql
-      [], // clima
-      [{ employeeId: 30 }],
-      [{ name: 'Colab C' }],
-      [{ quadrante: 'SOLIDO' }],
-      [{ scoreDesempenho: '75.00' }],
+      [{ name: 'Lider Y', departamento: 'Vendas', isLider: true }], // identificacao: employees
+      [], // identificacao: diretos (vazio)
+      [], // trimestre_atual: primeiroDireto (vazio)
+      [], // listaColaboradores: vinculos (vazio)
+      [], // listDiretosAtivos (vazio)
     ];
     const db = buildFakeDb(queue);
     const args: DashboardEquipeContextArgs = {
@@ -335,13 +336,15 @@ describe('loadDashboardEquipeContext — §5.6 e D059', () => {
     };
     const ctx = await loadDashboardEquipeContext(db, args);
     expect(ctx).not.toBeNull();
-    // D059: todos os agregados null.
+    expect(ctx!.trimestre_atual).toBeNull();
+    // Agregados null (sem diretos → media dos presentes vazia).
     expect(ctx!.agregados.score_desempenho_medio).toBeNull();
     expect(ctx!.agregados.plenitude_score_medio).toBeNull();
     expect(ctx!.agregados.roi_estimado_medio).toBeNull();
-    // Distribuicao 9-Box zerada (D059 — sem motor de agregacao).
-    expect(ctx!.distribuicao_9box.estrela).toBe(0);
-    // Historico agregado vazio (D059).
+    // Distribuicao 9-Box com chaves canonicas (D3 Opcao B), zerada.
+    expect(ctx!.distribuicao_9box.alto_impacto).toBe(0);
+    expect(ctx!.distribuicao_9box.risco_critico).toBe(0);
+    // Historico agregado vazio.
     expect(ctx!.historico_4_trimestres).toEqual([]);
   });
 
