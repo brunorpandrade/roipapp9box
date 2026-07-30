@@ -1,4 +1,5 @@
-// ROIP APP 9BOX — Layout canonico perfil-agnostic (ME-055 Bloco B).
+// ROIP APP 9BOX — Layout canonico perfil-agnostic (ME-055 Bloco B;
+// ME-056 Bloco E).
 //
 // Origem canonica: DOC 05 §3 (estrutura comum a todos os menus — sidebar
 // 256px fixa) + §4 (header 56px + indicador contextual §4.2).
@@ -6,10 +7,14 @@
 // Design canonizado nesta ME (D2): Layout e 100% dumb. Nao consulta
 // sessao, nao conhece `ProfileKey`, nao aplica filtros condicionais. O
 // consumidor (ME-056 — paineis) chama `resolveMenuItems(profileKey,
-// isResponsavelFinanceiro)` e monta as props `menuItems`, `activeHref`,
-// `header`, `superAdminContext` prontos. Isso desacopla a resolucao de
-// perfil da renderizacao do shell e permite testar o Layout com
-// combinacoes arbitrarias sem replicar a matriz canonica de perfis.
+// isResponsavelFinanceiro)` e monta as props `menuItems`, `header`,
+// `superAdminContext` prontos. Isso desacopla a resolucao de perfil da
+// renderizacao do shell e permite testar o Layout com combinacoes
+// arbitrarias sem replicar a matriz canonica de perfis.
+//
+// ME-056 Bloco E: `activeHref` opcional. Quando omitido, o Sidebar
+// (client component) resolve via `usePathname()`. Server components de
+// painel omitem — a rota corrente do App Router e a fonte natural.
 
 import type { JSX, ReactNode } from 'react';
 
@@ -29,8 +34,12 @@ export interface LayoutProps {
   /**
    * Rota corrente. Passada ao Sidebar para destacar o item ativo (§3
    * estrutura comum: teal `#14B8A6` + borda esquerda branca 4px).
+   *
+   * ME-056 Bloco E: opcional. Quando ausente, o Sidebar (client
+   * component) resolve via `usePathname()`. Server components de
+   * painel omitem para deixar o pathname corrente ser a fonte.
    */
-  readonly activeHref: string;
+  readonly activeHref?: string;
   /**
    * Props canonicas do header §4 ja preenchidas pelo consumidor (nome
    * fantasia da empresa, foto do usuario, flag `showNotificationBell`
@@ -63,6 +72,7 @@ export function Layout(props: LayoutProps): JSX.Element {
       }}
     >
       <Sidebar items={menuItems} activeHref={activeHref} />
+      {/* activeHref undefined → Sidebar resolve via usePathname (ME-056 Bloco E). */}
       <div
         style={{
           flex: 1,

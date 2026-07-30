@@ -1,4 +1,6 @@
-// ROIP APP 9BOX — Sidebar canonico (ME-055 Bloco B).
+'use client';
+
+// ROIP APP 9BOX — Sidebar canonico (ME-055 Bloco B; ME-056 Bloco E).
 //
 // Origem canonica: DOC 05 §3 (estrutura comum a todos os menus).
 //
@@ -13,8 +15,16 @@
 // - Item "Sair" no rodape fixo.
 //
 // Perfil-agnostic (D2): recebe `items` (ja resolvido por `resolveMenuItems`
-// no consumidor — Layout) e `activeHref` (rota corrente). Nao consulta
-// sessao, nao conhece ProfileKey, nao aplica filtros condicionais.
+// no consumidor — Layout). Nao consulta sessao, nao conhece ProfileKey,
+// nao aplica filtros condicionais.
+//
+// ME-056 Bloco E: `activeHref` opcional. Quando ausente, o Sidebar
+// resolve o pathname corrente via `usePathname()` (client component). O
+// prop explicito continua suportado por consumidores que querem forcar
+// um `activeHref` (testes, snapshots pre-hidratacao, cenarios sem
+// pathname). Refactor minimo: `'use client'` no topo do arquivo, hook
+// consumido apenas quando `activeHref === undefined`; comparacao por
+// igualdade exata preservada.
 //
 // Renderizacao canonica do item "Sair": o ultimo item de cada
 // configuracao §3.1-§3.10 e sempre "Sair" (verificado por
@@ -26,6 +36,7 @@ import { ArrowLeft as ArrowLeftIcon } from 'lucide-react';
 import type { JSX } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 import type { MenuItem } from '../../lib/menu/menuConfig';
 
@@ -48,8 +59,14 @@ export interface SidebarProps {
    * Comparacao por igualdade exata; em caso de multiplos itens com o
    * mesmo `href` (nao ocorre canonicamente), apenas o primeiro sera
    * destacado.
+   *
+   * ME-056 Bloco E: opcional. Quando ausente (`undefined`), o
+   * componente resolve via `usePathname()` — o pathname corrente do
+   * App Router. Consumidores tipicos (server components de painel)
+   * passam nada; consumidores que precisam de override explicito
+   * (testes, snapshots) passam string literal.
    */
-  readonly activeHref: string;
+  readonly activeHref?: string;
 }
 
 function isSairItem(item: MenuItem): boolean {
@@ -57,7 +74,13 @@ function isSairItem(item: MenuItem): boolean {
 }
 
 export function Sidebar(props: SidebarProps): JSX.Element {
-  const { items, activeHref } = props;
+  const { items } = props;
+  const pathname = usePathname();
+  // Fallback canonico ME-056 Bloco E: pathname corrente quando o
+  // consumidor nao forca. String vazia quando nem prop nem hook
+  // devolvem valor (cenario impossivel no App Router, mas defense-
+  // in-depth para SSG e testes sem router mockado).
+  const activeHref = props.activeHref ?? pathname ?? '';
 
   // Separa canonicamente o item "Sair" para o rodape fixo (§3).
   const mainItems = items.filter((item) => !isSairItem(item));
