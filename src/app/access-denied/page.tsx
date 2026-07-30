@@ -1,4 +1,4 @@
-// ROIP APP 9BOX — pagina AccessDeniedPage (ME-023, DOC 02 §8).
+// ROIP APP 9BOX — pagina AccessDeniedPage (ME-023; refactor mínimo ME-055c CC040).
 //
 // Rota alvo do rewrite server-side do `middleware.ts` (S033) para quando
 // um perfil autenticado tenta acessar rota fora do proprio escopo (§10).
@@ -15,10 +15,23 @@
 //     `?role=<super_admin|rh|rh_lider|clevel|lider>` publicado pelo
 //     middleware; ausencia cai em `/` (login).
 //
-// Sidebar canonica do perfil autenticado e header canonico contextualizado
-// (§8.1) sao layouts globais reutilizados por rotas administrativas —
-// integrados em MEs de UI (Fase 3+). Nesta ME, a pagina renderiza o card
-// central canonico; o layout global sera enxertado quando existir.
+// **ME-055c CC040 (refactor mínimo — correcao canonica retroativa):**
+// - Substituido `#1E3A8A` do botao primario pelo token canonico
+//   `COLORS.primary.navy` (#1F3A5F) — alinha ao DOC 05 §2.1 canonico.
+// - Substituidos hexes hardcoded (#F9FAFB, #FFFFFF, #FEF3C7, #D97706,
+//   #111827, #374151) por tokens de `src/lib/design-tokens/colors.ts`
+//   (Bloco A ME-055a) — canoniza a dependencia de cor a fonte unica de
+//   verdade.
+// - Nenhuma mensagem canonica §9/§11.5/S039 tocada. Comportamento
+//   preservado bit-exact.
+//
+// **D064 (debito canonico novo):** integracao ao Layout perfil-agnostic
+// da ME-055b (§8.1 canonico) exige leitura server-side da sessao real
+// para preencher `HeaderProps.user.displayName` + `companyDisplayName` +
+// resolver `MenuConfig` do perfil. Esse pattern sera canonizado na
+// ME-056 (paineis), quando o helper de leitura de sessao server-side
+// entrar em producao. Nesta ME-055c, preservamos o card central canonico
+// intacto — refactor "verdadeiramente mínimo" S298 Opção A.
 //
 // Server component (padrao App Router). Sem estado; nao ha operacao
 // (§8.2: "AccessDeniedPage e apenas visualizacao + botao de retorno").
@@ -29,6 +42,7 @@ import {
 } from '../../lib/routes/accessDeniedMessages';
 import { panelPathForRole } from '../../lib/routes/redirectByRole';
 import { ALL_GUARD_ROLES, type GuardRole } from '../../lib/routes/matrix';
+import { COLORS } from '../../lib/design-tokens/colors';
 
 interface AccessDeniedPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -59,8 +73,8 @@ export default async function AccessDeniedPage({ searchParams }: AccessDeniedPag
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '24px',
-        background: '#F9FAFB',
+        padding: 24,
+        background: COLORS.background.page,
         fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif',
       }}
     >
@@ -69,9 +83,9 @@ export default async function AccessDeniedPage({ searchParams }: AccessDeniedPag
         aria-live="polite"
         style={{
           width: '100%',
-          maxWidth: '480px',
-          background: '#FFFFFF',
-          borderRadius: '12px',
+          maxWidth: 480,
+          background: COLORS.background.card,
+          borderRadius: 12,
           boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
           padding: '40px 32px',
           textAlign: 'center',
@@ -80,23 +94,23 @@ export default async function AccessDeniedPage({ searchParams }: AccessDeniedPag
         <div
           aria-hidden="true"
           style={{
-            width: '72px',
-            height: '72px',
+            width: 72,
+            height: 72,
             borderRadius: '50%',
-            background: '#FEF3C7',
+            background: COLORS.badge.warningBg,
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            marginBottom: '24px',
+            marginBottom: 24,
           }}
         >
           <svg
-            width="36"
-            height="36"
+            width={36}
+            height={36}
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#D97706"
-            strokeWidth="2"
+            stroke={COLORS.semantic.warning}
+            strokeWidth={2}
             strokeLinecap="round"
             strokeLinejoin="round"
           >
@@ -108,9 +122,9 @@ export default async function AccessDeniedPage({ searchParams }: AccessDeniedPag
         <h1
           style={{
             margin: '0 0 16px 0',
-            fontSize: '24px',
+            fontSize: 24,
             fontWeight: 700,
-            color: '#111827',
+            color: COLORS.text.primary,
             lineHeight: 1.3,
           }}
         >
@@ -121,9 +135,9 @@ export default async function AccessDeniedPage({ searchParams }: AccessDeniedPag
           data-testid="access-denied-message"
           style={{
             margin: '0 0 32px 0',
-            fontSize: '15px',
+            fontSize: 15,
             lineHeight: 1.6,
-            color: '#374151',
+            color: COLORS.text.secondary,
           }}
         >
           {messageEntry.message}
@@ -134,11 +148,11 @@ export default async function AccessDeniedPage({ searchParams }: AccessDeniedPag
           style={{
             display: 'inline-block',
             padding: '12px 24px',
-            background: '#1E3A8A',
+            background: COLORS.primary.navy,
             color: '#FFFFFF',
-            borderRadius: '6px',
+            borderRadius: 6,
             textDecoration: 'none',
-            fontSize: '15px',
+            fontSize: 15,
             fontWeight: 600,
           }}
         >

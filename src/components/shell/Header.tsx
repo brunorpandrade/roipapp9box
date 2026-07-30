@@ -17,6 +17,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { NotificationBell, type NotificationItem } from './NotificationBell';
+import { initialsFromName } from '../../lib/avatar/initials';
 import { COLORS } from '../../lib/design-tokens/colors';
 
 /**
@@ -82,22 +83,10 @@ export interface HeaderProps {
   readonly unreadNotificationCount?: number;
 }
 
-function initialsFromName(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 0 || parts[0] === undefined || parts[0] === '') {
-    return '??';
-  }
-  const first = parts[0].charAt(0).toUpperCase();
-  if (parts.length === 1) {
-    // Fallback nome unico §2.10: primeiras duas letras.
-    return (parts[0].slice(0, 2).toUpperCase() || first).padEnd(2, first);
-  }
-  const last = parts[parts.length - 1];
-  if (last === undefined || last === '') {
-    return first.padEnd(2, first);
-  }
-  return `${first}${last.charAt(0).toUpperCase()}`;
-}
+// `initialsFromName` foi refatorada para `src/lib/avatar/initials.ts` na
+// ME-055c (Bloco C1 — Avatares §2.10). Comportamento canonico preservado
+// bit-exact: consumo compartilhado com o `Avatar.tsx` desta ME e com o
+// consumidor do topbar (nome+foto do usuario, nome+logo da empresa).
 
 export function Header(props: HeaderProps): JSX.Element {
   const {
