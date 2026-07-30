@@ -35,6 +35,7 @@ import {
   MOTIVO_TERMINATION_VALUES,
   NIVEL_HIERARQUICO_VALUES,
   ONBOARDING_ESTAGIO_VALUES,
+  RF_EVENT_TYPE_VALUES,
   SEVERIDADE_VALUES,
   TIPO_ACESSO_VALUES,
   TIPO_CICLO_VALUES,
@@ -276,7 +277,7 @@ export const responsavelFinanceiroTransferLog = mysqlTable('responsavelFinanceir
   actorSuperAdminId: int('actorSuperAdminId')
     .notNull()
     .references(() => superAdmins.id, { onDelete: 'restrict' }),
-  eventType: mysqlEnum('eventType', ['atribuido', 'transferido', 'removido']).notNull(),
+  eventType: mysqlEnum('eventType', RF_EVENT_TYPE_VALUES).notNull(),
   reason: varchar('reason', { length: 500 }).notNull(),
   createdAt: timestamp('createdAt').defaultNow(),
 });

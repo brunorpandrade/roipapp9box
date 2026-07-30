@@ -42,12 +42,12 @@ import {
 import { SPACING } from '../../src/lib/design-tokens/spacing';
 import { TYPOGRAPHY } from '../../src/lib/design-tokens/typography';
 
-describe('MENU_ITEM_LABELS — 25 itens canonicos DOC 05 §2.7 (pos-CC039)', () => {
-  it('contem exatamente 25 entradas', () => {
-    expect(MENU_ITEM_LABELS).toHaveLength(25);
+describe('MENU_ITEM_LABELS — 26 itens canonicos DOC 05 §2.7 (pos-CC039 + ME-057b)', () => {
+  it('contem exatamente 26 entradas', () => {
+    expect(MENU_ITEM_LABELS).toHaveLength(26);
   });
 
-  it('preserva a ordem canonica bit-exact do DOC 05 §2.7 (pos-CC039)', () => {
+  it('preserva a ordem canonica bit-exact do DOC 05 §2.7 (pos-CC039 + ME-057b)', () => {
     expect([...MENU_ITEM_LABELS]).toEqual([
       'Painel',
       'Início',
@@ -66,6 +66,7 @@ describe('MENU_ITEM_LABELS — 25 itens canonicos DOC 05 §2.7 (pos-CC039)', () 
       'Notificações',
       'Desbloqueios',
       'Logs administrativos',
+      'Transferências de Responsável financeiro',
       'Log de acesso individual',
       'Histórico da empresa',
       'Relatórios e exportações',
@@ -83,10 +84,10 @@ describe('MENU_ITEM_LABELS — 25 itens canonicos DOC 05 §2.7 (pos-CC039)', () 
   });
 });
 
-describe('LUCIDE_ICON_BY_MENU_ITEM — mapeamento canonico S466 Opcao A + CC039', () => {
-  it('cobre todos os 25 itens canonicos', () => {
+describe('LUCIDE_ICON_BY_MENU_ITEM — mapeamento canonico S466 Opcao A + CC039 + ME-057b', () => {
+  it('cobre todos os 26 itens canonicos', () => {
     const keys = Object.keys(LUCIDE_ICON_BY_MENU_ITEM) as MenuItemLabel[];
-    expect(keys).toHaveLength(25);
+    expect(keys).toHaveLength(26);
     for (const label of MENU_ITEM_LABELS) {
       expect(LUCIDE_ICON_BY_MENU_ITEM[label]).toBeDefined();
     }
@@ -112,6 +113,7 @@ describe('LUCIDE_ICON_BY_MENU_ITEM — mapeamento canonico S466 Opcao A + CC039'
     ['Notificações', BellRing],
     ['Desbloqueios', Unlock],
     ['Logs administrativos', FileText],
+    ['Transferências de Responsável financeiro', FileText],
     ['Log de acesso individual', FileText],
     ['Histórico da empresa', FileText],
     ['Relatórios e exportações', FileBarChart],

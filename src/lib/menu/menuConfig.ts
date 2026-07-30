@@ -118,10 +118,12 @@ const ITEM_SAIR: MenuLinkItem = {
 };
 
 // §3.1 — Super Admin global (`/super-admin`).
-// "Logs administrativos" carrega 2 subitens (§3.1 item 5): "Transferencias
-// de Responsavel financeiro" e "Log de acesso individual". Os subitens
-// reaproveitam o icone `FileText` do pai (pos-CC039 ambos existem como
-// labels canonicos em §2.7).
+// "Logs administrativos" carrega 2 subitens (§3.1 item 5, ordem canonica):
+// (1) "Transferencias de Responsavel financeiro" → /super-admin/logs/
+// responsavel-financeiro (ME-057b) e (2) "Log de acesso individual" →
+// /super-admin/logs/acesso-individual (ME-055b). Os subitens reaproveitam
+// o icone `FileText` do pai (padrao CC039 + nota canonica ME-057b sobre
+// o 3o label acrescentado em §2.7).
 const MENU_SUPER_ADMIN_GLOBAL: MenuConfig = [
   {
     type: 'link',
@@ -153,6 +155,12 @@ const MENU_SUPER_ADMIN_GLOBAL: MenuConfig = [
     href: '/super-admin/logs',
     icon: LUCIDE_ICON_BY_MENU_ITEM['Logs administrativos'],
     children: [
+      {
+        type: 'link',
+        label: 'Transferências de Responsável financeiro',
+        href: '/super-admin/logs/responsavel-financeiro',
+        icon: LUCIDE_ICON_BY_MENU_ITEM['Transferências de Responsável financeiro'],
+      },
       {
         type: 'link',
         label: 'Log de acesso individual',

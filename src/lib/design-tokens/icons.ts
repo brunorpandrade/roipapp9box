@@ -15,6 +15,13 @@
 // §3.4 e §3.5, subitem de "Logs administrativos" em §3.1) e "Historico
 // da empresa" (item de topo em §3.2 item 11). Ambos mapeiam para
 // `FileText`. Total de 23 → 25 sem alterar mapeamentos preexistentes.
+//
+// Nota canonica ME-057b (correcao retroativa canonica in-scope): label
+// "Transferencias de Responsavel financeiro" acrescentado — subitem
+// canonico de "Logs administrativos" (§3.1 item 5, PRIMEIRO subitem
+// canonico) que a ME-055 esqueceu de adicionar. Mapeia para `FileText`
+// (padrao CC039 — subitens de "Logs administrativos" reaproveitam o
+// icone do pai). Total 25 → 26 sem alterar mapeamentos preexistentes.
 
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -66,6 +73,7 @@ export const MENU_ITEM_LABELS = [
   'Notificações',
   'Desbloqueios',
   'Logs administrativos',
+  'Transferências de Responsável financeiro',
   'Log de acesso individual',
   'Histórico da empresa',
   'Relatórios e exportações',
@@ -98,6 +106,7 @@ export const LUCIDE_ICON_BY_MENU_ITEM: Record<MenuItemLabel, LucideIcon> = {
   Notificações: BellRing,
   Desbloqueios: Unlock,
   'Logs administrativos': FileText,
+  'Transferências de Responsável financeiro': FileText,
   'Log de acesso individual': FileText,
   'Histórico da empresa': FileText,
   'Relatórios e exportações': FileBarChart,

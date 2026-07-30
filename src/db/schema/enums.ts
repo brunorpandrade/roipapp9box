@@ -111,6 +111,13 @@ export const TIPO_ACESSO_VALUES = [
 ] as const;
 export type TipoAcesso = (typeof TIPO_ACESSO_VALUES)[number];
 
+// §15.3 — eventType (responsavelFinanceiroTransferLog). Extracao canonica
+// do enum inline de tables.ts:279 realizada em ME-057b. Consumido pela
+// rota /super-admin/logs/responsavel-financeiro (§14.20) para narrowing
+// de filtro no dropdown e mapeamento canonico label + badge color.
+export const RF_EVENT_TYPE_VALUES = ['atribuido', 'transferido', 'removido'] as const;
+export type RfEventType = (typeof RF_EVENT_TYPE_VALUES)[number];
+
 // §15.3 — motivo (employeeTerminationEvents).
 export const MOTIVO_TERMINATION_VALUES = ['voluntario', 'involuntario'] as const;
 export type MotivoTermination = (typeof MOTIVO_TERMINATION_VALUES)[number];
