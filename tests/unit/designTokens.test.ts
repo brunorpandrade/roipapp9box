@@ -1,8 +1,8 @@
-// ROIP APP 9BOX — testes canonicos dos design tokens (ME-055 Bloco A).
+// ROIP APP 9BOX — testes canonicos dos design tokens (ME-055 Bloco A + CC039).
 //
 // Verifica presenca canonica bit-exact:
-// - 23 itens de menu §2.7 na ordem canonica exata.
-// - 23 mapeamentos LucideIcon canonicos (S466 Opcao A).
+// - 25 itens de menu §2.7 na ordem canonica exata (pos-CC039).
+// - 25 mapeamentos LucideIcon canonicos (S466 Opcao A + CC039).
 // - Hex canonicos da paleta §2.1 preservados.
 // - Escalas canonicas §2.4 (Clima) e §2.5 (Radar NR-1) alinhadas.
 
@@ -42,12 +42,12 @@ import {
 import { SPACING } from '../../src/lib/design-tokens/spacing';
 import { TYPOGRAPHY } from '../../src/lib/design-tokens/typography';
 
-describe('MENU_ITEM_LABELS — 23 itens canonicos DOC 05 §2.7', () => {
-  it('contem exatamente 23 entradas', () => {
-    expect(MENU_ITEM_LABELS).toHaveLength(23);
+describe('MENU_ITEM_LABELS — 25 itens canonicos DOC 05 §2.7 (pos-CC039)', () => {
+  it('contem exatamente 25 entradas', () => {
+    expect(MENU_ITEM_LABELS).toHaveLength(25);
   });
 
-  it('preserva a ordem canonica bit-exact do DOC 05 §2.7', () => {
+  it('preserva a ordem canonica bit-exact do DOC 05 §2.7 (pos-CC039)', () => {
     expect([...MENU_ITEM_LABELS]).toEqual([
       'Painel',
       'Início',
@@ -66,6 +66,8 @@ describe('MENU_ITEM_LABELS — 23 itens canonicos DOC 05 §2.7', () => {
       'Notificações',
       'Desbloqueios',
       'Logs administrativos',
+      'Log de acesso individual',
+      'Histórico da empresa',
       'Relatórios e exportações',
       'Onboarding de líderes',
       'Instrumentos (placeholder Fase 1)',
@@ -81,10 +83,10 @@ describe('MENU_ITEM_LABELS — 23 itens canonicos DOC 05 §2.7', () => {
   });
 });
 
-describe('LUCIDE_ICON_BY_MENU_ITEM — mapeamento canonico S466 Opcao A', () => {
-  it('cobre todos os 23 itens canonicos', () => {
+describe('LUCIDE_ICON_BY_MENU_ITEM — mapeamento canonico S466 Opcao A + CC039', () => {
+  it('cobre todos os 25 itens canonicos', () => {
     const keys = Object.keys(LUCIDE_ICON_BY_MENU_ITEM) as MenuItemLabel[];
-    expect(keys).toHaveLength(23);
+    expect(keys).toHaveLength(25);
     for (const label of MENU_ITEM_LABELS) {
       expect(LUCIDE_ICON_BY_MENU_ITEM[label]).toBeDefined();
     }
@@ -110,6 +112,8 @@ describe('LUCIDE_ICON_BY_MENU_ITEM — mapeamento canonico S466 Opcao A', () => 
     ['Notificações', BellRing],
     ['Desbloqueios', Unlock],
     ['Logs administrativos', FileText],
+    ['Log de acesso individual', FileText],
+    ['Histórico da empresa', FileText],
     ['Relatórios e exportações', FileBarChart],
     ['Onboarding de líderes', GraduationCap],
     ['Instrumentos (placeholder Fase 1)', ClipboardList],
