@@ -323,7 +323,7 @@ describe('service cycleScheduleEngine — updateCycleScheduleStatuses (ME-030)',
     });
     const now = new Date('2026-04-11T15:00:00Z');
     const emitidos: Array<{ tipo: string; ref: string }> = [];
-    const emit: EmitAutoAlert = async (t, r) => {
+    const emit: EmitAutoAlert = async (c, t, r) => {
       emitidos.push({ tipo: t, ref: r });
     };
     const res = await updateCycleScheduleStatuses(client.db, now, emit);
@@ -344,7 +344,7 @@ describe('service cycleScheduleEngine — updateCycleScheduleStatuses (ME-030)',
     });
     const now = new Date('2026-04-11T15:00:00Z');
     const emitidos: Array<{ tipo: string; ref: string }> = [];
-    const emit: EmitAutoAlert = async (t, r) => {
+    const emit: EmitAutoAlert = async (c, t, r) => {
       emitidos.push({ tipo: t, ref: r });
     };
     const res = await updateCycleScheduleStatuses(client.db, now, emit);
@@ -438,7 +438,7 @@ describe('service cycleScheduleEngine — updateCycleScheduleStatuses (ME-030)',
     });
     const now = new Date('2026-04-11T15:00:00Z');
     const emitidos: Array<{ tipo: string; ref: string }> = [];
-    const emit: EmitAutoAlert = async (t, r) => {
+    const emit: EmitAutoAlert = async (c, t, r) => {
       emitidos.push({ tipo: t, ref: r });
     };
     const res = await updateCycleScheduleStatuses(client.db, now, emit);
@@ -475,7 +475,7 @@ describe('service cycleScheduleEngine — updateCycleSchedule (ME-030)', () => {
   it('cria linha nova com status=fechado quando inexistente e alerta para C', async () => {
     const now = new Date('2026-04-11T15:00:00Z');
     const emitidos: Array<{ tipo: string; ref: string }> = [];
-    const emit: EmitAutoAlert = async (t, r) => {
+    const emit: EmitAutoAlert = async (c, t, r) => {
       emitidos.push({ tipo: t, ref: r });
     };
     const res = await updateCycleSchedule(
@@ -509,7 +509,7 @@ describe('service cycleScheduleEngine — updateCycleSchedule (ME-030)', () => {
     });
     const now = new Date('2026-04-11T15:00:00Z');
     const emitidos: Array<{ tipo: string; ref: string }> = [];
-    const emit: EmitAutoAlert = async (t, r) => {
+    const emit: EmitAutoAlert = async (c, t, r) => {
       emitidos.push({ tipo: t, ref: r });
     };
     const res = await updateCycleSchedule(
@@ -536,7 +536,7 @@ describe('service cycleScheduleEngine — updateCycleSchedule (ME-030)', () => {
     });
     const now = new Date('2026-04-12T15:00:00Z');
     const emitidos: Array<{ tipo: string; ref: string }> = [];
-    const emit: EmitAutoAlert = async (t, r) => {
+    const emit: EmitAutoAlert = async (c, t, r) => {
       emitidos.push({ tipo: t, ref: r });
     };
     const res = await updateCycleSchedule(
@@ -554,7 +554,7 @@ describe('service cycleScheduleEngine — updateCycleSchedule (ME-030)', () => {
   it('fechamento_mensal fechando dispara ciclo_mensal_fechado', async () => {
     const now = new Date('2026-04-11T15:00:00Z');
     const emitidos: Array<{ tipo: string; ref: string }> = [];
-    const emit: EmitAutoAlert = async (t, r) => {
+    const emit: EmitAutoAlert = async (c, t, r) => {
       emitidos.push({ tipo: t, ref: r });
     };
     const res = await updateCycleSchedule(
@@ -572,7 +572,7 @@ describe('service cycleScheduleEngine — updateCycleSchedule (ME-030)', () => {
   it('radar_nr1 fecha SEM disparar alerta (evaluateNR1Alerts cobre)', async () => {
     const now = new Date('2026-04-11T15:00:00Z');
     const emitidos: Array<{ tipo: string; ref: string }> = [];
-    const emit: EmitAutoAlert = async (t, r) => {
+    const emit: EmitAutoAlert = async (c, t, r) => {
       emitidos.push({ tipo: t, ref: r });
     };
     const res = await updateCycleSchedule(client.db, companyId, 'radar_nr1', '2026-Q1', now, emit);
@@ -583,7 +583,7 @@ describe('service cycleScheduleEngine — updateCycleSchedule (ME-030)', () => {
   it('instrumento_a e instrumento_d fechados manualmente NAO alertam por este motor', async () => {
     const now = new Date('2026-04-11T15:00:00Z');
     const emitidos: Array<{ tipo: string; ref: string }> = [];
-    const emit: EmitAutoAlert = async (t, r) => {
+    const emit: EmitAutoAlert = async (c, t, r) => {
       emitidos.push({ tipo: t, ref: r });
     };
     const resA = await updateCycleSchedule(

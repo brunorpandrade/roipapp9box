@@ -695,7 +695,7 @@ describe('service monthlyClosureOrchestrator — processClosedMonth (ME-031)', (
       alertasCapturados.push({ companyId, mes });
     };
     const emitCapturados: Array<{ tipo: string; ref: string }> = [];
-    const emitCaptor: EmitAutoAlert = async (tipo, ref) => {
+    const emitCaptor: EmitAutoAlert = async (_companyId, tipo, ref) => {
       emitCapturados.push({ tipo, ref });
     };
 
@@ -775,7 +775,7 @@ describe('service monthlyClosureOrchestrator — processClosedMonth (ME-031)', (
     });
 
     const emitCapturados: Array<{ tipo: string; ref: string }> = [];
-    const emitCaptor: EmitAutoAlert = async (tipo, ref) => {
+    const emitCaptor: EmitAutoAlert = async (_companyId, tipo, ref) => {
       emitCapturados.push({ tipo, ref });
     };
 
@@ -805,7 +805,7 @@ describe('service monthlyClosureOrchestrator — processClosedMonth (ME-031)', (
 
   it('sem linha em monthlyClosureStatus: processadoEmMarcado=false, cascata parcial', async () => {
     const emitCapturados: Array<{ tipo: string; ref: string }> = [];
-    const emitCaptor: EmitAutoAlert = async (tipo, ref) => {
+    const emitCaptor: EmitAutoAlert = async (_companyId, tipo, ref) => {
       emitCapturados.push({ tipo, ref });
     };
     const now = new Date('2026-02-11T00:00:00Z');
@@ -879,7 +879,7 @@ describe('service monthlyClosureOrchestrator — runDailyClosureJob (ME-031)', (
     // 11 Fev 2026 12:00 UTC → dia 11 tambem em -03:00 (09:00 local SP)
     const now = new Date('2026-02-11T12:00:00Z');
     const emitCapturados: Array<{ tipo: string; ref: string }> = [];
-    const emitCaptor: EmitAutoAlert = async (tipo, ref) => {
+    const emitCaptor: EmitAutoAlert = async (_companyId, tipo, ref) => {
       emitCapturados.push({ tipo, ref });
     };
 

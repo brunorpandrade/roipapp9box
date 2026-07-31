@@ -31,9 +31,11 @@ import {
 import {
   ABA_UNLOCK_VALUES,
   DEPARTAMENTO_VALUES,
+  EMAIL_QUEUE_KIND_VALUES,
   JOB_FAMILY_VALUES,
   MOTIVO_TERMINATION_VALUES,
   NIVEL_HIERARQUICO_VALUES,
+  NOTIFICATION_DESTINATARIO_TIPO_VALUES,
   ONBOARDING_ESTAGIO_VALUES,
   PORTAL_INSTRUMENT_VALUES,
   RF_EVENT_TYPE_VALUES,
@@ -1191,7 +1193,10 @@ export const notifications = mysqlTable(
   {
     id: int('id').autoincrement().primaryKey(),
     companyId: int('companyId').references(() => companies.id, { onDelete: 'cascade' }),
-    destinatarioTipo: mysqlEnum('destinatarioTipo', ['rh', 'bruno']).notNull(),
+    destinatarioTipo: mysqlEnum(
+      'destinatarioTipo',
+      NOTIFICATION_DESTINATARIO_TIPO_VALUES,
+    ).notNull(),
     destinatarioEmployeeId: int('destinatarioEmployeeId').references(() => employees.id, {
       onDelete: 'cascade',
     }),
@@ -1291,7 +1296,10 @@ export const emailNotifications = mysqlTable(
     notificationId: int('notificationId').references(() => notifications.id, {
       onDelete: 'set null',
     }),
-    destinatarioTipo: mysqlEnum('destinatarioTipo', ['rh', 'bruno']).notNull(),
+    destinatarioTipo: mysqlEnum(
+      'destinatarioTipo',
+      NOTIFICATION_DESTINATARIO_TIPO_VALUES,
+    ).notNull(),
     destinatarioEmail: varchar('destinatarioEmail', { length: 255 }).notNull(),
     destinatarioEmployeeId: int('destinatarioEmployeeId').references(() => employees.id, {
       onDelete: 'set null',
@@ -1364,12 +1372,15 @@ export const emailQueue = mysqlTable(
     companyId: int('companyId')
       .notNull()
       .references(() => companies.id, { onDelete: 'cascade' }),
-    destinatarioTipo: mysqlEnum('destinatarioTipo', ['rh', 'bruno']).notNull(),
+    destinatarioTipo: mysqlEnum(
+      'destinatarioTipo',
+      NOTIFICATION_DESTINATARIO_TIPO_VALUES,
+    ).notNull(),
     destinatarioEmail: varchar('destinatarioEmail', { length: 255 }).notNull(),
     destinatarioEmployeeId: int('destinatarioEmployeeId').references(() => employees.id, {
       onDelete: 'set null',
     }),
-    tipoEnvio: mysqlEnum('tipoEnvio', ['imediato', 'digest_semanal']).notNull(),
+    tipoEnvio: mysqlEnum('tipoEnvio', EMAIL_QUEUE_KIND_VALUES).notNull(),
     alertIds: json('alertIds').notNull(),
     scheduledFor: timestamp('scheduledFor').notNull(),
     processedAt: timestamp('processedAt'),

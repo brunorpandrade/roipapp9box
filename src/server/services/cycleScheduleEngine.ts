@@ -62,7 +62,17 @@ import type { CycleScheduleTipo } from './cycleSchedule';
  * pelo caller (job cron, outro motor). No-op default enquanto o motor
  * de alertas do DOC 06 §8 nao existir.
  */
+/**
+ * **CC048 (ME-059).** Assinatura ampliada para incluir `companyId` como
+ * primeiro parametro. Motivacao canonica: o motor de alertas (DOC 06
+ * §8) exige `companyId` para gravar em `alerts` e `notifications`. O
+ * caller `updateCycleScheduleStatuses` processa multiplas empresas em
+ * batch e ja tem `cand.companyId` disponivel na chamada — apenas a
+ * assinatura anterior nao propagava. A correcao e cirurgica: 3 sites
+ * neste arquivo + ~10 sites em `tests/integration/cycleScheduleEngine.test.ts`.
+ */
 export type EmitAutoAlert = (
+  companyId: number,
   tipoCiclo: CycleScheduleTipo,
   cicloReferencia: string,
 ) => Promise<void>;
@@ -332,7 +342,7 @@ export async function updateCycleScheduleStatuses(
       };
       paraFechado.push(info);
       if (TIPOS_QUE_ALERTAM_AO_FECHAR.includes(cand.tipoCiclo)) {
-        await emitAutoAlert(cand.tipoCiclo, cand.cicloReferencia);
+        await emitAutoAlert(cand.companyId, cand.tipoCiclo, cand.cicloReferencia);
       }
     }
   }
@@ -409,7 +419,7 @@ export async function updateCycleSchedule(
     });
 
   if (wasNotFechado && TIPOS_QUE_ALERTAM_AO_FECHAR.includes(tipoCiclo)) {
-    await emitAutoAlert(tipoCiclo, cicloReferencia);
+    await emitAutoAlert(companyId, tipoCiclo, cicloReferencia);
   }
 
   return { transitionedToFechado: wasNotFechado };

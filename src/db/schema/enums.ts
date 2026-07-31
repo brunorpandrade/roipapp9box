@@ -136,6 +136,27 @@ export const PORTAL_INSTRUMENT_VALUES = [
 ] as const;
 export type PortalInstrumentType = (typeof PORTAL_INSTRUMENT_VALUES)[number];
 
+// §15.3 — destinatarioTipo (notifications, emailQueue, emailNotifications).
+// Extracao canonica do enum inline realizada em ME-059 (padrao bit-exact
+// L98 estabelecido em ME-057b/ME-058). Consumido pelo motor de alertas
+// `resolveDestinatarios` (3 trilhas — RH+Bruno padrao, apenas Bruno para
+// D049, apenas RF para D050), pelo pipeline M5 (INSERT em notifications),
+// pelo pipeline M7 (agrupamento em emailQueue), pelo endpoint canonico
+// do sino `/api/notifications` (§10.2 filtro de contagem/lista) e por
+// todos os testes de integracao do motor.
+export const NOTIFICATION_DESTINATARIO_TIPO_VALUES = ['rh', 'bruno'] as const;
+export type NotificationDestinatarioTipo = (typeof NOTIFICATION_DESTINATARIO_TIPO_VALUES)[number];
+
+// §15.3 — tipoEnvio (emailQueue — 2 valores canonicos MVP). Extracao
+// canonica do enum inline realizada em ME-059 (padrao L98 bit-exact).
+// A tabela `emailNotifications.tipoEnvio` inclui o valor extra
+// 'digest_diario' como reserva canonica de extensibilidade (§6.6), fora
+// do escopo do motor de alertas ME-059 (o pipeline M7 nunca enfileira
+// digest_diario). Consumido pelo pipeline M7, pelos testes de motor e
+// pelo helper `nextWeeklyDigestDate` (calculo canonico de scheduledFor).
+export const EMAIL_QUEUE_KIND_VALUES = ['imediato', 'digest_semanal'] as const;
+export type EmailQueueKind = (typeof EMAIL_QUEUE_KIND_VALUES)[number];
+
 // Guardas canonicas de contagem (RV-15: nenhum numero sem medicao — estas
 // constantes sao as fontes literais das §15.1 e §15.2, contadas do proprio
 // array pelo TypeScript).
@@ -148,7 +169,16 @@ type _AssertDepartamentoCount = (typeof DEPARTAMENTO_VALUES)['length'] extends 1
 type _AssertNotificationTipoCount = (typeof NOTIFICATION_TIPO_VALUES)['length'] extends 17
   ? true
   : never;
+type _AssertNotificationDestinatarioTipoCount =
+  (typeof NOTIFICATION_DESTINATARIO_TIPO_VALUES)['length'] extends 2 ? true : never;
+type _AssertEmailQueueKindCount = (typeof EMAIL_QUEUE_KIND_VALUES)['length'] extends 2
+  ? true
+  : never;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _CHECK_DEPARTAMENTO: _AssertDepartamentoCount = true;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _CHECK_NOTIFICATION_TIPO: _AssertNotificationTipoCount = true;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _CHECK_NOTIFICATION_DESTINATARIO_TIPO: _AssertNotificationDestinatarioTipoCount = true;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _CHECK_EMAIL_QUEUE_KIND: _AssertEmailQueueKindCount = true;
