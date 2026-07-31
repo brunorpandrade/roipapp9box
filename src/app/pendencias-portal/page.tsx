@@ -1,0 +1,193 @@
+// ROIP APP 9BOX — rota canonica `/pendencias-portal` (ME-058 §14.23).
+//
+// Origem canonica:
+// - DOC 05 §14.23 (Rota `/pendencias-portal`) — carga inicial com filtros
+//   default; 3 cards resumo, 6 filtros, tabela 11 colunas, ordenacao
+//   tripla canonica S328.
+// - DOC 02 §10.4 + §9.9 — matrix.ts ja restringe a rh/rh_lider/super_admin;
+//   este page.tsx faz guard defensivo (S317).
+// - Layout canonico ME-056: getServerSession + resolveProfileKey +
+//   resolveMenuItems + <Layout>.
+// - Mockup canonico primario: `painel_principal_fase7_v5.html` linhas
+//   1192-1400 (CC047 canonizada nesta ME-058).
+//
+// **RV-13.** Cada export tem chamador na propria ME:
+//   - `PendenciasPortalPage` (default) → runtime Next 15.
+
+import { redirect } from 'next/navigation';
+import type { JSX } from 'react';
+import { and, eq, isNull } from 'drizzle-orm';
+
+import { Layout } from '../../components/shell/Layout';
+import { closeDbClient, createDbClient } from '../../db/client';
+import { employeeLeaderHistory, employees } from '../../db/schema';
+import { COLORS } from '../../lib/design-tokens/colors';
+import { resolveMenuItems } from '../../lib/menu/menuConfig';
+import { loadPendenciasPage } from '../../lib/pendencias/pendenciasEngine';
+import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
+import { getServerSession } from '../../server/session/serverSession';
+
+import { PendenciasClient } from './PendenciasClient';
+import { parsePendenciasFilters } from './filters';
+
+function resolveDatabaseUrl(): string {
+  const url = process.env.DATABASE_URL;
+  if (url === undefined || url.length === 0) {
+    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
+  }
+  return url;
+}
+
+/**
+ * Resolve flags canonicas de perfil para o menu (ME-056 pattern). Para
+ * `/pendencias-portal` o unico interesse do menu e distinguir RH puro
+ * (§3.5) de RH-Lider (§3.6 ou §3.7 conforme hasDescendingChain).
+ */
+async function resolveMenuFlagsForRH(
+  db: ReturnType<typeof createDbClient>['db'],
+  userId: number,
+): Promise<{
+  readonly isRH: boolean;
+  readonly isLider: boolean;
+  readonly hasDescendingChain: boolean;
+}> {
+  const rows = await db
+    .select({ isRH: employees.isRH, isLider: employees.isLider })
+    .from(employees)
+    .where(eq(employees.id, userId))
+    .limit(1);
+  const emp = rows[0];
+  const isRH = emp?.isRH ?? false;
+  const isLider = emp?.isLider ?? false;
+
+  // hasDescendingChain: existe pelo menos 1 liderado direto ativo que
+  // tambem e lider?
+  if (!isLider) {
+    return { isRH, isLider, hasDescendingChain: false };
+  }
+  const chainRows = await db
+    .select({ id: employees.id })
+    .from(employeeLeaderHistory)
+    .innerJoin(employees, eq(employees.id, employeeLeaderHistory.employeeId))
+    .where(
+      and(
+        eq(employeeLeaderHistory.liderId, userId),
+        isNull(employeeLeaderHistory.dataFim),
+        eq(employees.isLider, true),
+      ),
+    )
+    .limit(1);
+  return { isRH, isLider, hasDescendingChain: chainRows.length > 0 };
+}
+
+/**
+ * Resolve flags canonicas para C-level (numero total, acessoTotal). Nao
+ * consumido em `/pendencias-portal` (matrix.ts nega C-level), mas o
+ * `resolveProfileKey` exige as flags como entrada canonica. Retorna 0/
+ * false por seguranca defensiva.
+ */
+function defaultCLevelFlags(): { readonly cLevelCount: number; readonly acessoTotal: boolean } {
+  return { cLevelCount: 0, acessoTotal: false };
+}
+
+interface PageProps {
+  readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function PendenciasPortalPage(props: PageProps): Promise<JSX.Element> {
+  const session = await getServerSession();
+  if (session === null) {
+    redirect('/');
+  }
+
+  // Guard defense-in-depth ao matrix.ts §10.4 + §9.9. Super admin acessa
+  // a rota base tambem (matrix.ts permite); RH e RH-Lider acessam;
+  // C-level e Lider recebem redirect via middleware antes de chegar
+  // aqui.
+  if (session.kind === 'super_admin') {
+    // Bruno usa /super-admin/empresa/[id]/pendencias-portal (contexto
+    // dentro-de-empresa). A rota base sem companyId nao faz sentido para
+    // ele — redireciona ao /super-admin (padrao canonico ME-057c).
+    redirect('/super-admin');
+  }
+  if (session.role !== 'rh' && session.role !== 'rh_lider') {
+    // Middleware ja bloquearia; defense-in-depth.
+    redirect('/access-denied?rota=/pendencias-portal');
+  }
+
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const menuFlags = await resolveMenuFlagsForRH(client.db, session.userId);
+    const cFlags = defaultCLevelFlags();
+    const profileKey = resolveProfileKey({
+      session,
+      isRH: menuFlags.isRH,
+      isLider: menuFlags.isLider,
+      acessoTotal: cFlags.acessoTotal,
+      hasDescendingChain: menuFlags.hasDescendingChain,
+      cLevelCount: cFlags.cLevelCount,
+      isSuperAdminInCompany: false,
+    });
+    const menuItems = resolveMenuItems(profileKey, false);
+    if (menuItems === null) {
+      throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
+    }
+
+    const rawParams = (await props.searchParams) ?? {};
+    const filters = parsePendenciasFilters(rawParams);
+
+    const initialResult = await loadPendenciasPage({
+      db: client.db,
+      companyId: session.companyId,
+      filters,
+      page: 1,
+      pageSize: 50,
+    });
+
+    return (
+      <Layout
+        menuItems={menuItems}
+        header={{
+          leftMode: 'in_company',
+          companyDisplayName: session.companyDisplayName,
+          companyLogoUrl: session.companyLogoUrl ?? undefined,
+          user: { displayName: session.displayName },
+          showNotificationBell: true,
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div>
+            <h1
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                color: COLORS.text.primary,
+                margin: 0,
+              }}
+            >
+              Pendências no portal
+            </h1>
+            <p
+              style={{
+                fontSize: 13,
+                color: COLORS.text.secondary,
+                margin: '4px 0 0 0',
+              }}
+            >
+              Colaboradores com instrumentos pendentes ou atrasados no portal do colaborador. Envie
+              lembretes individualmente ou em massa; cooldown de 72 horas por (colaborador,
+              instrumento).
+            </p>
+          </div>
+          <PendenciasClient
+            companyId={null}
+            initialResult={initialResult}
+            initialFilters={filters}
+          />
+        </div>
+      </Layout>
+    );
+  } finally {
+    await closeDbClient(client);
+  }
+}

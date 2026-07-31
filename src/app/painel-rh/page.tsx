@@ -22,8 +22,16 @@ import { createDbClient } from '../../db/client';
 import { cLevelMembers, companies, employees, employeeLeaderHistory } from '../../db/schema';
 import { COLORS } from '../../lib/design-tokens/colors';
 import { resolveMenuItems } from '../../lib/menu/menuConfig';
+import { countPendenciasEmpresa } from '../../lib/pendencias/pendenciasEngine';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { getServerSession } from '../../server/session/serverSession';
+import {
+  CARD_58_LINK,
+  CARD_58_SUB_POSITIVE,
+  CARD_58_SUB_ZERO,
+  CARD_58_TITLE,
+  CARD_COLOR_PENDENCIAS,
+} from '../pendencias-portal/mappings';
 
 function resolveDatabaseUrl(): string {
   const url = process.env.DATABASE_URL;
@@ -168,6 +176,64 @@ function StructuralCard(props: {
   );
 }
 
+/**
+ * Card canonico §5.8 "Pendencias no portal" — refactor S321/S312
+ * canonizada em ME-058. Cores literais §5.8 linhas 648-649:
+ * - `#16A34A` (verde) quando total === 0 + sub "Empresa em dia..."
+ * - `#D97706` (laranja) quando total > 0 + link "Ver detalhamento →"
+ * Ambos os textos consumidos via constantes canonicas de mappings.
+ */
+function PendenciasPortalCard(props: { readonly totalPendencias: number }): JSX.Element {
+  const isZero = props.totalPendencias === 0;
+  const cor = isZero ? CARD_COLOR_PENDENCIAS.zero : CARD_COLOR_PENDENCIAS.positive;
+  return (
+    <div
+      style={{
+        background: COLORS.background.card,
+        border: `1px solid ${COLORS.border.default}`,
+        borderLeft: `4px solid ${cor}`,
+        borderRadius: 8,
+        padding: '20px 24px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+      }}
+    >
+      <span
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          color: COLORS.text.tertiary,
+        }}
+      >
+        {CARD_58_TITLE}
+      </span>
+      <span style={{ fontSize: 32, fontWeight: 700, color: cor, lineHeight: 1 }}>
+        {props.totalPendencias}
+      </span>
+      <span style={{ fontSize: 13, color: COLORS.text.secondary }}>
+        {isZero ? CARD_58_SUB_ZERO : CARD_58_SUB_POSITIVE}
+      </span>
+      {!isZero ? (
+        <a
+          href="/pendencias-portal"
+          style={{
+            fontSize: 13,
+            color: COLORS.accent.teal,
+            textDecoration: 'none',
+            fontWeight: 500,
+            marginTop: 4,
+          }}
+        >
+          {CARD_58_LINK}
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
 function ComingSoonBlock(props: {
   readonly title: string;
   readonly canonicalText: string;
@@ -240,10 +306,14 @@ export default async function PainelRhPage(): Promise<JSX.Element> {
     throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
   }
 
-  const [data, companyLogoUrl] = await Promise.all([
+  const client = createDbClient(resolveDatabaseUrl());
+  const [data, companyLogoUrl, totalPendenciasPortal] = await Promise.all([
     loadRhPanelData(session.companyId),
     loadCompanyLogo(session.companyId),
-  ]);
+    countPendenciasEmpresa({ db: client.db, companyId: session.companyId }),
+  ]).finally(() => {
+    void client.pool.end();
+  });
 
   const showsMinhaEquipe = profileKey === 'rh_lider_c1' || profileKey === 'rh_lider_c2';
   const showsCadeiaIndireta = profileKey === 'rh_lider_c2';
@@ -298,10 +368,7 @@ export default async function PainelRhPage(): Promise<JSX.Element> {
             title="Status dados do mês — Líderes"
             canonicalText="Coleta de dados em andamento"
           />
-          <ComingSoonBlock
-            title="Pendências no portal"
-            canonicalText="Coleta de dados em andamento"
-          />
+          <PendenciasPortalCard totalPendencias={totalPendenciasPortal} />
           <ComingSoonBlock title="Radar NR-1" canonicalText="Coleta de dados em andamento" />
           <ComingSoonBlock
             title="Status da plataforma"

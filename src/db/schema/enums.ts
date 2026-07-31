@@ -122,6 +122,20 @@ export type RfEventType = (typeof RF_EVENT_TYPE_VALUES)[number];
 export const MOTIVO_TERMINATION_VALUES = ['voluntario', 'involuntario'] as const;
 export type MotivoTermination = (typeof MOTIVO_TERMINATION_VALUES)[number];
 
+// §15.3 — instrumentType (portalReminderLog + filtro §14.23). Extracao
+// canonica do enum inline de tables.ts:1234 realizada em ME-058 (padrao
+// bit-exact da extracao RF_EVENT_TYPE_VALUES em ME-057b). Consumido pela
+// rota /pendencias-portal (§14.23) para narrowing do filtro dropdown,
+// pelo motor `pendenciasEngine.ts` (agregacao cross-instrumento) e pelos
+// mappings canonicos (label + coluna 6 da tabela).
+export const PORTAL_INSTRUMENT_VALUES = [
+  'meuPerfil',
+  'autoAvaliacao',
+  'avaliacaoLiderancaDireta',
+  'radarNR1',
+] as const;
+export type PortalInstrumentType = (typeof PORTAL_INSTRUMENT_VALUES)[number];
+
 // Guardas canonicas de contagem (RV-15: nenhum numero sem medicao — estas
 // constantes sao as fontes literais das §15.1 e §15.2, contadas do proprio
 // array pelo TypeScript).

@@ -35,6 +35,7 @@ import {
   MOTIVO_TERMINATION_VALUES,
   NIVEL_HIERARQUICO_VALUES,
   ONBOARDING_ESTAGIO_VALUES,
+  PORTAL_INSTRUMENT_VALUES,
   RF_EVENT_TYPE_VALUES,
   SEVERIDADE_VALUES,
   TIPO_ACESSO_VALUES,
@@ -1231,12 +1232,7 @@ export const portalReminderLog = mysqlTable(
     employeeId: int('employeeId')
       .notNull()
       .references(() => employees.id, { onDelete: 'cascade' }),
-    instrumentType: mysqlEnum('instrumentType', [
-      'meuPerfil',
-      'autoAvaliacao',
-      'avaliacaoLiderancaDireta',
-      'radarNR1',
-    ]).notNull(),
+    instrumentType: mysqlEnum('instrumentType', PORTAL_INSTRUMENT_VALUES).notNull(),
     cycleReference: varchar('cycleReference', { length: 20 }),
     sentAt: timestamp('sentAt').notNull().defaultNow(),
     sentBy: varchar('sentBy', { length: 36 }).notNull(),
