@@ -1290,9 +1290,9 @@ export const emailNotifications = mysqlTable(
   'emailNotifications',
   {
     id: int('id').autoincrement().primaryKey(),
-    companyId: int('companyId')
-      .notNull()
-      .references(() => companies.id, { onDelete: 'cascade' }),
+    companyId: int('companyId').references(() => companies.id, {
+      onDelete: 'set null',
+    }),
     notificationId: int('notificationId').references(() => notifications.id, {
       onDelete: 'set null',
     }),
@@ -1369,9 +1369,9 @@ export const emailQueue = mysqlTable(
   'emailQueue',
   {
     id: int('id').autoincrement().primaryKey(),
-    companyId: int('companyId')
-      .notNull()
-      .references(() => companies.id, { onDelete: 'cascade' }),
+    companyId: int('companyId').references(() => companies.id, {
+      onDelete: 'set null',
+    }),
     destinatarioTipo: mysqlEnum(
       'destinatarioTipo',
       NOTIFICATION_DESTINATARIO_TIPO_VALUES,

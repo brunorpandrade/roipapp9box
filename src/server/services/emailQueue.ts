@@ -108,13 +108,17 @@ export async function markEmailQueueProcessing(
 
 /**
  * Transicao processando → enviado: grava `status='enviado'` e o
- * `emailNotificationId` da linha em `emailNotifications`. WHERE guard:
- * so afeta linha com `status='processando'`. Retorna linhas afetadas.
+ * `emailNotificationId` da linha em `emailNotifications` (ou `null`
+ * quando §11.5 passo 4a silencio: digest sem alertas apos filtro
+ * canonico — a linha e finalizada como enviada sem gerar registro em
+ * `emailNotifications`, coerente com "Nenhuma linha em
+ * `emailNotifications` gravada"). WHERE guard: so afeta linha com
+ * `status='processando'`. Retorna linhas afetadas.
  */
 export async function markEmailQueueSent(
   db: RoipDatabase,
   id: number,
-  emailNotificationId: number,
+  emailNotificationId: number | null,
 ): Promise<number> {
   const [result] = await db
     .update(emailQueue)
@@ -136,6 +140,32 @@ export async function markEmailQueueFailed(
   const [result] = await db
     .update(emailQueue)
     .set({ status: 'falhou', retries: novoRetries })
+    .where(and(eq(emailQueue.id, id), eq(emailQueue.status, 'processando')));
+  return result.affectedRows;
+}
+
+/**
+ * Transicao processando → pendente com `retries` incrementado
+ * (CC051 NOVA — ME-060). Consumida pelo worker `runEmailQueueJob` (§11.2
+ * passo 6): quando o envio SMTP falha e `novoRetries < 3`, a linha volta
+ * a fila para reprocessamento no proximo ciclo (backoff canonico simples
+ * de 1 min do §12.10). WHERE guard: so afeta linha com
+ * `status='processando'`. Retorna linhas afetadas.
+ *
+ * Motivacao canonica CC051: o DOC 06 §11.2 canoniza duas transicoes
+ * distintas de falha — retry (retries<3, volta a fila) e falha final
+ * (retries>=3, marca como `falhou`). O DAL original (ME-017) cobria
+ * apenas a segunda; esta amplia canonicamente para cobrir a primeira,
+ * mantendo o padrao de WHERE guard e RV-12 (caller fornece `novoRetries`).
+ */
+export async function markEmailQueueRetry(
+  db: RoipDatabase,
+  id: number,
+  novoRetries: number,
+): Promise<number> {
+  const [result] = await db
+    .update(emailQueue)
+    .set({ status: 'pendente', retries: novoRetries })
     .where(and(eq(emailQueue.id, id), eq(emailQueue.status, 'processando')));
   return result.affectedRows;
 }

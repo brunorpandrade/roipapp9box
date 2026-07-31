@@ -924,7 +924,7 @@ CREATE TABLE `companyJobFamilies` (
 
 CREATE TABLE `emailNotifications` (
   `id` INT PRIMARY KEY AUTO_INCREMENT,
-  `companyId` INT NOT NULL,
+  `companyId` INT DEFAULT NULL,
   `notificationId` INT DEFAULT NULL,
   `destinatarioTipo` ENUM('rh','bruno') NOT NULL,
   `destinatarioEmail` VARCHAR(255) NOT NULL,
@@ -941,7 +941,7 @@ CREATE TABLE `emailNotifications` (
   `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_emailNotifications_company_created` (`companyId`, `createdAt`),
   INDEX `idx_emailNotifications_destinatario` (`destinatarioTipo`, `destinatarioEmail`, `enviadoEm`),
-  FOREIGN KEY (`companyId`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`companyId`) REFERENCES `companies`(`id`) ON DELETE SET NULL,
   FOREIGN KEY (`notificationId`) REFERENCES `notifications`(`id`) ON DELETE SET NULL,
   FOREIGN KEY (`destinatarioEmployeeId`) REFERENCES `employees`(`id`) ON DELETE SET NULL
 );
@@ -968,7 +968,7 @@ CREATE TABLE `cycleSchedule` (
 
 CREATE TABLE `emailQueue` (
   `id` INT PRIMARY KEY AUTO_INCREMENT,
-  `companyId` INT NOT NULL,
+  `companyId` INT DEFAULT NULL,
   `destinatarioTipo` ENUM('rh','bruno') NOT NULL,
   `destinatarioEmail` VARCHAR(255) NOT NULL,
   `destinatarioEmployeeId` INT DEFAULT NULL,
@@ -983,7 +983,7 @@ CREATE TABLE `emailQueue` (
   `updatedAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX `idx_emailQueue_status_scheduledFor` (`status`, `scheduledFor`),
   INDEX `idx_emailQueue_company_destinatario` (`companyId`, `destinatarioEmail`, `status`),
-  FOREIGN KEY (`companyId`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`companyId`) REFERENCES `companies`(`id`) ON DELETE SET NULL,
   FOREIGN KEY (`destinatarioEmployeeId`) REFERENCES `employees`(`id`) ON DELETE SET NULL,
   FOREIGN KEY (`emailNotificationId`) REFERENCES `emailNotifications`(`id`) ON DELETE SET NULL
 );

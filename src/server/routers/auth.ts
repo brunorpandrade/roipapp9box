@@ -80,6 +80,7 @@ import { findPlatformUserByCpf, type PlatformUserCandidate } from '../services/a
 import { getCLevelMemberById, updateCLevelMemberCredential } from '../services/cLevelMembers';
 import { getCompanyById } from '../services/companies';
 import { getEmployeeById, updateEmployeeCredential } from '../services/employees';
+import { enqueueTransactional } from '../services/emailDispatcher';
 import {
   getSuperAdminByEmail,
   getSuperAdminById,
@@ -87,6 +88,7 @@ import {
   updateSuperAdminPassword,
 } from '../services/superAdmins';
 import { protectedProcedure, publicProcedure, roleProcedure, router } from '../trpc';
+import { formatDataHoraCanonica } from '../../lib/email';
 
 // ---- Constantes canonicas do §13 ---------------------------------------
 
@@ -207,6 +209,13 @@ const EMAIL_CHANGE_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
  * H3, fora do escopo desta ME).
  */
 const CREDENTIAL_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * URL base canonica dos links de e-mail transacional (ME-060). Reflete o
+ * dominio de producao do ROIP APP. Sobrescrivel via env `BASE_URL` para
+ * ambientes de staging/teste.
+ */
+const BASE_URL_CANONICO = process.env['BASE_URL'] ?? 'https://app.roip.com.br';
 
 // ---- Zod schemas de entrada --------------------------------------------
 
@@ -556,6 +565,26 @@ async function emitCredentialToken(
     userId: number;
     tipo: CredentialTokenTipo;
     tipoAccessTokens: 'password_reset' | 'first_access';
+    /**
+     * Religacao canonica Template 1 (ME-060 §12.2). Opcional para
+     * preservar compatibilidade com callers de MEs anteriores; quando
+     * presente e `tipoAccessTokens='password_reset'`, o e-mail canonico
+     * de reset e enfileirado em `emailQueue` via
+     * `emailDispatcher.enqueueTransactional`.
+     *
+     * Nota canonica sobre `tipoAccessTokens='first_access'`: Template 2
+     * (§12.3) esta canonicamente diferido por **D068** (ME-060). Quando
+     * o token `first_access` for emitido por outros callers em ME futura
+     * (ME-022c ou equivalente), o Template 2 sera religado no mesmo
+     * padrao aqui.
+     */
+    emailDispatch?: {
+      destinatarioEmail: string;
+      nomeDoUsuario: string;
+      companyId: number | null;
+      destinatarioEmployeeId: number | null;
+      destinatarioTipo: 'rh' | 'bruno';
+    };
   },
 ): Promise<void> {
   const now = new Date();
@@ -579,6 +608,27 @@ async function emitCredentialToken(
     type: params.tipoAccessTokens,
     expiresAt,
   });
+
+  // Religacao canonica Template 1 (§12.2 / §12.9) — ME-060.
+  if (
+    params.tipoAccessTokens === 'password_reset' &&
+    params.emailDispatch !== undefined &&
+    params.emailDispatch.destinatarioEmail !== ''
+  ) {
+    await enqueueTransactional(ctx.db, {
+      companyId: params.emailDispatch.companyId,
+      destinatarioEmail: params.emailDispatch.destinatarioEmail,
+      destinatarioTipo: params.emailDispatch.destinatarioTipo,
+      destinatarioEmployeeId: params.emailDispatch.destinatarioEmployeeId,
+      now,
+      templateId: '1',
+      payload: {
+        nomeDoUsuario: params.emailDispatch.nomeDoUsuario,
+        baseUrl: BASE_URL_CANONICO,
+        jwtToken: jwt,
+      },
+    });
+  }
 }
 
 /**
@@ -922,6 +972,13 @@ export const authRouter = router({
                   userId: resolved.user.id,
                   tipo: 'reset',
                   tipoAccessTokens: 'password_reset',
+                  emailDispatch: {
+                    destinatarioEmail: resolved.user.email ?? '',
+                    nomeDoUsuario: resolved.user.name,
+                    companyId: only.companyId,
+                    destinatarioEmployeeId: null,
+                    destinatarioTipo: 'rh',
+                  },
                 });
               } else if (resolved.kind === 'employee' && resolved.user.status === 'ativo') {
                 await emitCredentialToken(ctx, {
@@ -929,6 +986,13 @@ export const authRouter = router({
                   userId: resolved.user.id,
                   tipo: 'reset',
                   tipoAccessTokens: 'password_reset',
+                  emailDispatch: {
+                    destinatarioEmail: resolved.user.email ?? '',
+                    nomeDoUsuario: resolved.user.name,
+                    companyId: only.companyId,
+                    destinatarioEmployeeId: resolved.user.id,
+                    destinatarioTipo: 'rh',
+                  },
                 });
               }
               // Empresa inativa NAO impede a emissao aqui — o §4.4 nao
@@ -969,6 +1033,13 @@ export const authRouter = router({
           userId: admin.id,
           tipo: 'reset',
           tipoAccessTokens: 'password_reset',
+          emailDispatch: {
+            destinatarioEmail: admin.email,
+            nomeDoUsuario: admin.name,
+            companyId: null,
+            destinatarioEmployeeId: null,
+            destinatarioTipo: 'bruno',
+          },
         });
       }
 
@@ -1365,8 +1436,23 @@ export const authRouter = router({
         expiresAt,
       });
 
-      // (h) — Template 3 de e-mail (envio real fica no worker de email —
-      //       Fase de motores). Fora do escopo desta ME.
+      // (h) — Religacao canonica Template 3 (ME-060 §12.4). Enfileira
+      //       e-mail transacional para o NOVO endereco (aguardando
+      //       confirmacao). companyId=null: Super Admin nao pertence a
+      //       nenhuma empresa (CC052 canonizada).
+      await enqueueTransactional(ctx.db, {
+        companyId: null,
+        destinatarioEmail: input.novoEmail,
+        destinatarioTipo: 'bruno',
+        destinatarioEmployeeId: null,
+        now,
+        templateId: '3',
+        payload: {
+          nomeDoBruno: admin.name,
+          baseUrl: BASE_URL_CANONICO,
+          jwtToken: jwt,
+        },
+      });
 
       // Reset do rate limit no sucesso.
       ctx.rateLimiter.reset(key);
@@ -1511,6 +1597,9 @@ export const authRouter = router({
       // (e) — UPDATE do e-mail. UNIQUE violation (novoEmail tomado por
       //       outro super_admin nesse meio-tempo) mapeia para 'invalido'
       //       (S030). Erros de rede do banco sobem naturalmente.
+      // Preserva o e-mail ANTIGO antes do UPDATE — o Template 4 (aviso de
+      // seguranca) e enviado para o endereco anterior apos conclusao.
+      const emailAntigo = admin.email;
       try {
         await updateSuperAdminEmail(ctx.db, superAdminId, novoEmail);
       } catch (err) {
@@ -1520,6 +1609,24 @@ export const authRouter = router({
         throw err;
       }
       await markTokenAsUsed(ctx.db, record.id, now);
+
+      // (f') — Religacao canonica Template 4 (ME-060 §12.5). Aviso de
+      //        seguranca enviado ao e-mail ANTIGO apos conclusao
+      //        bem-sucedida da alteracao (§12.5 gatilho literal).
+      //        companyId=null: Super Admin (CC052 canonizada).
+      await enqueueTransactional(ctx.db, {
+        companyId: null,
+        destinatarioEmail: emailAntigo,
+        destinatarioTipo: 'bruno',
+        destinatarioEmployeeId: null,
+        now,
+        templateId: '4',
+        payload: {
+          nomeDoBruno: admin.name,
+          dataHora: formatDataHoraCanonica(now),
+          novoEmail,
+        },
+      });
 
       // (f) — 200 canonica literal §4.9 3d. Invalidacao "inclusive a atual"
       //       automatica via S011 (email participa da derivacao do pwv).
