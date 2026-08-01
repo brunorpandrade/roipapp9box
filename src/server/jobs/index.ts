@@ -1,15 +1,21 @@
-// ROIP APP 9BOX — barrel canonico de `src/server/jobs/` (ME-060).
+// ROIP APP 9BOX — barrel canonico de `src/server/jobs/` (ME-060 + ME-063a).
 //
 // Origem canonica:
-// - DOC 06 §11.2, §11.3, §11.4, §11.5.
+// - DOC 06 §11.2, §11.3, §11.4, §11.5 (workers de e-mail).
+// - DOC 06 §15 (Inventario canonico dos jobs cron + orquestracao).
 //
 // Contrato canonico:
-// - API publica dos 3 workers de e-mail desta ME. Consumida por testes
-//   de integracao e (em producao) por um cron scheduler externo (que
-//   sera adicionado em ME-063 — B6 sub-e, junto com os demais jobs cron
-//   consolidados).
+// - API publica dos 3 workers de e-mail de ME-060 + orquestrador
+//   canonico do scheduler cron de ME-063a. Consumido por testes de
+//   integracao e (em producao) pelo cron externo que chama
+//   `scheduler.runByName(name)` conforme a cadencia canonica.
+// - ME-063b estendera este barrel canonicamente com os 4 jobs cron
+//   restantes (`runDailyClosureJob`, `runDailyInstrumentStatusJob`,
+//   `refreshCycleScheduleCounters`, `archiveAiConversationsJob`) sem
+//   remover exports existentes.
 //
-// **RV-13.** Cada export tem chamador na propria ME (via testes).
+// **RV-13.** Cada export tem chamador na propria ME (via workers +
+// scheduler + testes).
 
 export {
   EMAIL_QUEUE_JOB_BATCH_LIMIT,
@@ -34,3 +40,18 @@ export type {
   WeeklyDigestJobDependencies,
   WeeklyDigestJobResult,
 } from './weeklyDigestJob';
+
+export {
+  CRON_JOB_CADENCE_BY_NAME,
+  DEFAULT_CRON_SCHEDULER_DEPENDENCIES,
+  createCronScheduler,
+} from './scheduler';
+export type {
+  CronCadence,
+  CronJobExecutionResult,
+  CronJobHandler,
+  CronJobName,
+  CronSchedulerContract,
+  CronSchedulerDependencies,
+  RegisteredCronJob,
+} from './scheduler';

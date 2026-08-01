@@ -1,4 +1,5 @@
-// ROIP APP 9BOX — worker canonico `runEmailQueueJob` (ME-060 §11.2).
+// ROIP APP 9BOX — worker canonico `runEmailQueueJob` (ME-060 §11.2 +
+// ME-063a extensao canonica templates 2 e L).
 //
 // Origem canonica:
 // - DOC 06 §11.2 (worker `runEmailQueueJob` cron 1 min).
@@ -53,9 +54,11 @@ import {
   getEmojiSeveridade,
   getRotuloLegivel,
   renderTemplate1,
+  renderTemplate2,
   renderTemplate3,
   renderTemplate4,
   renderTemplateA,
+  renderTemplateL,
   resolveContextoCurto,
   sendEmailViaSmtp,
   TRANSACTIONAL_MARKER_HEAD,
@@ -66,8 +69,10 @@ import {
   type SmtpEnvelope,
   type SmtpSendResult,
   type Template1Payload,
+  type Template2Payload,
   type Template3Payload,
   type Template4Payload,
+  type TemplateLPayload,
   type TransactionalTemplateId,
 } from '../../lib/email';
 import { resolveLinkDestino, type LinkResolverContext } from '../../lib/alerts/linkResolver';
@@ -332,7 +337,8 @@ async function loadCandidateBatch(db: RoipDatabase, now: Date): Promise<QueueIte
 interface TransactionalDecoded {
   readonly kind: 'transactional';
   readonly templateId: TransactionalTemplateId;
-  readonly payload: Template1Payload | Template3Payload | Template4Payload;
+  readonly payload:
+    Template1Payload | Template2Payload | Template3Payload | Template4Payload | TemplateLPayload;
 }
 
 interface AlertDecoded {
@@ -351,14 +357,24 @@ function decodeAlertIds(alertIds: unknown): PayloadDecoded {
     const templateIdRaw = alertIds[1];
     const payloadJson = alertIds[2];
     if (
-      (templateIdRaw !== '1' && templateIdRaw !== '3' && templateIdRaw !== '4') ||
-      typeof payloadJson !== 'string'
+      templateIdRaw !== '1' &&
+      templateIdRaw !== '2' &&
+      templateIdRaw !== '3' &&
+      templateIdRaw !== '4' &&
+      templateIdRaw !== 'L'
     ) {
+      return { kind: 'invalido' };
+    }
+    if (typeof payloadJson !== 'string') {
       return { kind: 'invalido' };
     }
     try {
       const parsed = JSON.parse(payloadJson) as
-        Template1Payload | Template3Payload | Template4Payload;
+        | Template1Payload
+        | Template2Payload
+        | Template3Payload
+        | Template4Payload
+        | TemplateLPayload;
       return {
         kind: 'transactional',
         templateId: templateIdRaw as TransactionalTemplateId,
@@ -378,10 +394,14 @@ function renderTransactionalEmail(decoded: TransactionalDecoded): RenderedEmail 
   switch (decoded.templateId) {
     case '1':
       return renderTemplate1(decoded.payload as Template1Payload);
+    case '2':
+      return renderTemplate2(decoded.payload as Template2Payload);
     case '3':
       return renderTemplate3(decoded.payload as Template3Payload);
     case '4':
       return renderTemplate4(decoded.payload as Template4Payload);
+    case 'L':
+      return renderTemplateL(decoded.payload as TemplateLPayload);
   }
 }
 

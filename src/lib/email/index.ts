@@ -1,4 +1,4 @@
-// ROIP APP 9BOX — barrel canonico do modulo de e-mail (ME-060).
+// ROIP APP 9BOX — barrel canonico do modulo de e-mail (ME-060 + ME-063a).
 //
 // Origem canonica:
 // - DOC 06 §11 (Sistema canonico de disparo de e-mails).
@@ -7,13 +7,14 @@
 // Contrato canonico:
 // - API publica do modulo — consumida por `emailDispatcher.ts`,
 //   `jobs/emailQueueJob.ts`, `jobs/weeklyDigestJob.ts`,
-//   `routers/auth.ts` (religacao) e testes.
+//   `jobs/scheduler.ts` (ME-063a), `routers/auth.ts` (religacao) e
+//   testes.
 // - Reexporta apenas o que precisa ser consumido fora de `src/lib/email/`.
 //   Utilitarios internos (escapeHtml, s(), etc.) permanecem privados aos
 //   arquivos onde vivem.
 //
 // **RV-13.** Cada export tem chamador na propria ME:
-//   - Tipos → dispatcher + workers + auth.ts + testes.
+//   - Tipos → dispatcher + workers + scheduler + auth.ts + testes.
 //   - Funcoes de render → workers + testes.
 //   - Funcoes de filtragem/ordenacao → workers + testes.
 //   - Utilitarios de formato → workers + auth.ts + testes.
@@ -23,10 +24,14 @@ export type {
   PerfilPainel,
   RenderedEmail,
   Template1Payload,
+  Template2Payload,
   Template3Payload,
   Template4Payload,
   TemplateAPayload,
   TemplateBPayload,
+  TemplateLInstrumentoPendente,
+  TemplateLInstrumentoTipo,
+  TemplateLPayload,
   TransactionalMarker,
   TransactionalPayloadUnion,
   TransactionalTemplateId,
@@ -66,6 +71,14 @@ export {
 } from './templates/template1_resetPassword';
 
 export {
+  renderTemplate2,
+  TEMPLATE_2_ASSUNTO,
+  TEMPLATE_2_CORPO_HTML,
+  TEMPLATE_2_CORPO_TEXTO,
+  TEMPLATE_2_ID,
+} from './templates/template2_firstAccess';
+
+export {
   renderTemplate3,
   TEMPLATE_3_ASSUNTO,
   TEMPLATE_3_CORPO_HTML,
@@ -98,3 +111,14 @@ export {
   TEMPLATE_B_ID,
   TEMPLATE_B_URL_NOTIFICACOES,
 } from './templates/templateB_weeklyDigest';
+
+export {
+  renderListaInstrumentosHtml,
+  renderListaInstrumentosTexto,
+  renderTemplateL,
+  TEMPLATE_L_ASSUNTO,
+  TEMPLATE_L_CORPO_HTML,
+  TEMPLATE_L_CORPO_TEXTO,
+  TEMPLATE_L_ID,
+  TEMPLATE_L_INSTRUMENTO_ROTULO,
+} from './templates/templateL_portalReminder';
