@@ -72,6 +72,7 @@ describe('integration ME-055c error pages (RV-11) — paginas §16 x MySQL real'
         descricaoAtividade: 'Descricao',
         contextoMercado: 'Contexto',
         mesKickoff: 1,
+        kickoffDate: new Date('2020-01-01'),
       })
       .$returningId();
   });

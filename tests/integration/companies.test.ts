@@ -39,6 +39,7 @@ function buildValidCompany(overrides: Partial<NewCompany> = {}): NewCompany {
     descricaoAtividade: 'Descricao da atividade',
     contextoMercado: 'Contexto de mercado',
     mesKickoff: 1,
+    kickoffDate: new Date('2020-01-01'),
     ...overrides,
   };
 }

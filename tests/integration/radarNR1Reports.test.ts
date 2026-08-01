@@ -64,6 +64,7 @@ describe('service radarNR1Reports (ME-016)', () => {
         descricaoAtividade: 'Descricao',
         contextoMercado: 'Contexto',
         mesKickoff: 1,
+        kickoffDate: new Date('2020-01-01'),
       })
       .$returningId();
     if (!companyRow) throw new Error('beforeAll: falha ao criar company local');
@@ -171,6 +172,7 @@ describe('service radarNR1Reports (ME-016)', () => {
         descricaoAtividade: 'Descricao',
         contextoMercado: 'Contexto',
         mesKickoff: 1,
+        kickoffDate: new Date('2020-01-01'),
       })
       .$returningId();
     if (!tempCompany) throw new Error('falha ao criar company temporaria');

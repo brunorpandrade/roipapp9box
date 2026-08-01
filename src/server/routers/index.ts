@@ -34,6 +34,7 @@ import { createInstrumentARouter } from './instrumentA';
 import { createInstrumentCRouter } from './instrumentC';
 import { createInstrumentDRouter } from './instrumentD';
 import { createIqlRouter } from './iql';
+import { createLeaderOnboardingRouter } from './leaderOnboarding';
 import { createLeadershipTransferRouter } from './leadershipTransfer';
 import { createMonthlyClosureRouter } from './monthlyClosure';
 import { createMonthlyDataRouter } from './monthlyData';
@@ -333,6 +334,19 @@ const leadershipTransferRouter = createLeadershipTransferRouter();
 const turnoverRouter = createTurnoverRouter();
 
 /**
+ * Sub-router `leaderOnboarding` (ME-062, Bloco B6 sub-d). Vertical
+ * residual operacional do DOC 06 §21 — kanban de onboarding de
+ * lideres. 4 procs canonicas: `list` (§21.1), `getDetail` (§21.2 com
+ * bloqueio absoluto §21.4), `updateStage` (§21.2 transacao atomica
+ * anotacao+stageLog+employees) e `getSummaryCounts` (§21.3).
+ * Autorizacao canonica: Bruno + RH + RH-Lider. Padrao Facade DI S244:
+ * `now` injetavel para testes deterministicos, default `new Date()`
+ * real em producao. Consumido pelas telas `/onboarding-lideres` e
+ * `/super-admin/empresa/[id]/onboarding-lideres`.
+ */
+const leaderOnboardingRouter = createLeaderOnboardingRouter();
+
+/**
  * Sub-router `instrumentD` (ME-046, Bloco B3). Primeira superficie
  * tRPC de leitura publica de status de coleta do Instrumento D —
  * 1 proc canonica do §8.8 segunda linha + §19.5 segunda linha:
@@ -517,6 +531,7 @@ export const appRouter = router({
   platformLogs: platformLogsRouter,
   leadershipTransfer: leadershipTransferRouter,
   turnover: turnoverRouter,
+  leaderOnboarding: leaderOnboardingRouter,
   instrumentD: instrumentDRouter,
   iql: iqlRouter,
   climate: climateRouter,

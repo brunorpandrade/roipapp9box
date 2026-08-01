@@ -101,6 +101,7 @@ describe('ME-057c — historico consolidado da empresa (MySQL real, §14.21)', (
       descricaoAtividade: 'A',
       contextoMercado: 'A',
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
     });
     await client.db.update(companies).set({ status: 'ativa' }).where(eq(companies.id, companyIdA));
 
@@ -121,6 +122,7 @@ describe('ME-057c — historico consolidado da empresa (MySQL real, §14.21)', (
       descricaoAtividade: 'B',
       contextoMercado: 'B',
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
     });
     await client.db.update(companies).set({ status: 'ativa' }).where(eq(companies.id, companyIdB));
 

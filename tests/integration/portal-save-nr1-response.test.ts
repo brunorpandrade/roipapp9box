@@ -121,6 +121,7 @@ async function createCompany(cnpj: string): Promise<number> {
       descricaoAtividade: 'Consultoria',
       contextoMercado: 'PMEs BR',
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
       timezone: 'UTC',
       status: 'ativa',
     })

@@ -70,6 +70,7 @@ describe('createAdminUnlockAlertHook — factory canonica P11 (ME-061)', () => {
         descricaoAtividade: 'x',
         contextoMercado: 'x',
         mesKickoff: 1,
+        kickoffDate: new Date('2020-01-01'),
         status: 'ativa',
         createdAt: new Date('2025-01-01T00:00:00Z'),
       })

@@ -96,6 +96,7 @@ describe('MARCO CANONICO — cadeia ME-059+060+061 completa (create → e-mail)'
         descricaoAtividade: 'x',
         contextoMercado: 'x',
         mesKickoff: 1,
+        kickoffDate: new Date('2020-01-01'),
         status: 'ativa',
         // Fora janela onboarding — evita supressao M1 em outros tipos
         // (administrativos §3.6 sao isentos, mas mantem o padrao canonico).

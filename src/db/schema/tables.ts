@@ -96,6 +96,7 @@ export const companies = mysqlTable('companies', {
   modoAnoFiscal: mysqlEnum('modoAnoFiscal', ['padrao', 'customizado']).notNull().default('padrao'),
   mesInicioAnoFiscal: int('mesInicioAnoFiscal').notNull().default(1),
   mesKickoff: int('mesKickoff').notNull(),
+  kickoffDate: date('kickoffDate').notNull(),
   timezone: varchar('timezone', { length: 50 }).notNull().default('America/Sao_Paulo'),
   encarregadoLgpdNome: varchar('encarregadoLgpdNome', { length: 255 }),
   encarregadoLgpdEmail: varchar('encarregadoLgpdEmail', { length: 255 }),

@@ -143,6 +143,7 @@ describe('ME-058 — pendencias-portal (MySQL real, §14.23 + refactor §5.8)', 
       descricaoAtividade: 'A',
       contextoMercado: 'A',
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
     });
     await client.db.update(companies).set({ status: 'ativa' }).where(eq(companies.id, companyIdA));
 
@@ -163,6 +164,7 @@ describe('ME-058 — pendencias-portal (MySQL real, §14.23 + refactor §5.8)', 
       descricaoAtividade: 'B',
       contextoMercado: 'B',
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
     });
     await client.db.update(companies).set({ status: 'ativa' }).where(eq(companies.id, companyIdB));
 

@@ -53,6 +53,7 @@ describe('service leaderOnboardingNotes (ME-011)', () => {
         descricaoAtividade: 'Descricao',
         contextoMercado: 'Contexto',
         mesKickoff: 1,
+        kickoffDate: new Date('2020-01-01'),
       })
       .$returningId();
     if (!row) throw new Error('beforeAll: falha ao criar company');

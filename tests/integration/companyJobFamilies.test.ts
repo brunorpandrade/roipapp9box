@@ -39,6 +39,7 @@ async function seedCompany(client: RoipDbClient): Promise<number> {
     descricaoAtividade: 'Descricao',
     contextoMercado: 'Contexto',
     mesKickoff: 4,
+    kickoffDate: new Date('2020-01-01'),
   });
 }
 

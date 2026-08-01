@@ -66,6 +66,7 @@ describe('factories de religacao — hooks NOOP → motor real', () => {
         descricaoAtividade: 'x',
         contextoMercado: 'x',
         mesKickoff: 1,
+        kickoffDate: new Date('2020-01-01'),
         createdAt: new Date('2025-01-01T00:00:00Z'), // fora janela onboarding
       })
       .$returningId();

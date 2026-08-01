@@ -75,6 +75,7 @@ describe('service companyMonthlyData (ME-013)', () => {
         descricaoAtividade: 'Descricao',
         contextoMercado: 'Contexto',
         mesKickoff: 1,
+        kickoffDate: new Date('2020-01-01'),
       })
       .$returningId();
     if (!companyRow) throw new Error('beforeAll: falha ao criar company local');

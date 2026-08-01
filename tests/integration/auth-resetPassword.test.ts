@@ -100,6 +100,7 @@ describe('auth.resetPassword — ordem canonica §4.5 (ME-022b)', () => {
       descricaoAtividade: 'Atividade',
       contextoMercado: 'Mercado',
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
     });
     await client.db.update(companies).set({ status: 'ativa' }).where(eq(companies.id, companyId));
   });

@@ -36,6 +36,7 @@ async function criaEmpresa(client: RoipDbClient, cnpj: string): Promise<number> 
       descricaoAtividade: 'x',
       contextoMercado: 'x',
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
     })
     .$returningId();
   if (!row) throw new Error(`falha ao criar empresa ${cnpj}`);

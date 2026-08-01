@@ -60,6 +60,7 @@ describe('emitAlertPostGravacao — variante NR-1 §8.10', () => {
         descricaoAtividade: 'x',
         contextoMercado: 'x',
         mesKickoff: 1,
+        kickoffDate: new Date('2020-01-01'),
       })
       .$returningId();
     if (!c) throw new Error('setup empresa');

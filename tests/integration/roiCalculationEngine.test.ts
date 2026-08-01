@@ -185,6 +185,7 @@ async function createCompany(cnpj: string, opts: FixtureOptions = {}): Promise<n
       thresholdDesempenhoBaixo: opts.thresholdBaixo ?? 60,
       thresholdDesempenhoMedio: opts.thresholdMedio ?? 85,
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
       status: 'ativa',
     })
     .$returningId();

@@ -44,6 +44,7 @@ describe('checkB3NaoRecorrencia — §9.2 janela 183 dias', () => {
         descricaoAtividade: 'x',
         contextoMercado: 'x',
         mesKickoff: 1,
+        kickoffDate: new Date('2020-01-01'),
       })
       .$returningId();
     if (!c) throw new Error('setup company');

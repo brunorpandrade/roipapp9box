@@ -103,6 +103,7 @@ describe('bootstrap tRPC — guards canonicos (ME-021)', () => {
       descricaoAtividade: 'Atividade',
       contextoMercado: 'Mercado',
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
     });
     // Empresa nasce 'inativa' (default do schema); ativa para os cenarios
     // administrativos padrao.

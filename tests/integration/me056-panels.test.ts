@@ -94,6 +94,7 @@ describe('ME-056 — Paineis + resolveServerSession (MySQL real)', () => {
       descricaoAtividade: 'A',
       contextoMercado: 'A',
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
     });
     await client.db.update(companies).set({ status: 'ativa' });
   });
@@ -337,6 +338,7 @@ describe('ME-056 — Paineis + resolveServerSession (MySQL real)', () => {
         descricaoAtividade: 'B',
         contextoMercado: 'B',
         mesKickoff: 1,
+        kickoffDate: new Date('2020-01-01'),
       });
       const companyIdC = await createCompany(client.db, {
         razaoSocial: 'ROIP ME-056 C LTDA',
@@ -355,6 +357,7 @@ describe('ME-056 — Paineis + resolveServerSession (MySQL real)', () => {
         descricaoAtividade: 'C',
         contextoMercado: 'C',
         mesKickoff: 1,
+        kickoffDate: new Date('2020-01-01'),
       });
       await client.db
         .update(companies)

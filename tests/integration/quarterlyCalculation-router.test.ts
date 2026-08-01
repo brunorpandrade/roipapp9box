@@ -188,6 +188,7 @@ async function createCompany(cnpj: string, opts: CompanyOpts = {}): Promise<numb
       roiSegmentoMinimo: opts.roiSegmentoMinimo === undefined ? '2.00' : opts.roiSegmentoMinimo,
       roiSegmentoMaximo: opts.roiSegmentoMaximo === undefined ? '4.00' : opts.roiSegmentoMaximo,
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
       status: 'ativa',
     })
     .$returningId();

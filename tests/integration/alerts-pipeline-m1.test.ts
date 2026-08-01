@@ -1,8 +1,8 @@
-// ROIP APP 9BOX — teste integracao stepM1Onboarding (ME-059).
-// Cobre §8.3 sob CC049: proxy `companies.createdAt` para kickoffDate
-// canonico. Empresa recem-criada dentro da janela 90d suprime alertas
-// nao-isentos. Empresa criada ha mais de 90d libera. Tipos isentos
-// passam sem consulta.
+// ROIP APP 9BOX — teste integracao stepM1Onboarding (ME-059 → ME-062a).
+// Cobre §8.3 sob D066 canonicamente fechada: consulta direta ao campo
+// `companies.kickoffDate`. Empresa com kickoff dentro da janela 90d
+// suprime alertas nao-isentos. Empresa com kickoff acima de 90d libera.
+// Tipos isentos passam sem consulta.
 
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -17,7 +17,7 @@ import {
 const TEST_URL =
   process.env.DATABASE_URL_TEST ?? 'mysql://root:roip_local_root@127.0.0.1:3306/roip_test';
 
-async function criaEmpresa(client: RoipDbClient, cnpj: string, createdAt: Date): Promise<number> {
+async function criaEmpresa(client: RoipDbClient, cnpj: string, kickoffDate: Date): Promise<number> {
   const [row] = await client.db
     .insert(companies)
     .values({
@@ -37,26 +37,26 @@ async function criaEmpresa(client: RoipDbClient, cnpj: string, createdAt: Date):
       descricaoAtividade: 'x',
       contextoMercado: 'x',
       mesKickoff: 1,
-      createdAt,
+      kickoffDate,
     })
     .$returningId();
   if (!row) throw new Error(`falha ao criar empresa ${cnpj}`);
   return row.id;
 }
 
-describe('stepM1Onboarding — §8.3 sob CC049 (proxy createdAt)', () => {
+describe('stepM1Onboarding — §8.3 (D066 fechada em ME-062a)', () => {
   let client: RoipDbClient;
   let empresaNova: number;
   let empresaVelha: number;
 
   const AGORA = new Date('2026-06-01T12:00:00Z');
-  const CREATED_HOJE = new Date('2026-05-30T00:00:00Z'); // 2 dias
-  const CREATED_100_DIAS = new Date('2026-02-21T00:00:00Z'); // ~100 dias antes
+  const KICKOFF_2_DIAS = new Date('2026-05-30T00:00:00Z'); // 2 dias antes de AGORA
+  const KICKOFF_100_DIAS = new Date('2026-02-21T00:00:00Z'); // ~100 dias antes
 
   beforeAll(async () => {
     client = createDbClient(TEST_URL);
-    empresaNova = await criaEmpresa(client, '10190000000002', CREATED_HOJE);
-    empresaVelha = await criaEmpresa(client, '10190000000003', CREATED_100_DIAS);
+    empresaNova = await criaEmpresa(client, '10190000000002', KICKOFF_2_DIAS);
+    empresaVelha = await criaEmpresa(client, '10190000000003', KICKOFF_100_DIAS);
   });
 
   afterAll(async () => {
@@ -69,7 +69,7 @@ describe('stepM1Onboarding — §8.3 sob CC049 (proxy createdAt)', () => {
     expect(M1_ONBOARDING_JANELA_DIAS).toBe(90);
   });
 
-  describe('empresa dentro da janela 90d (createdAt=2d atras)', () => {
+  describe('empresa dentro da janela 90d (kickoff=2d atras)', () => {
     it('desempenho_queda_brusca (nao isento) → suprime', async () => {
       const res = await stepM1Onboarding(client.db, empresaNova, 'desempenho_queda_brusca', AGORA);
       expect(res.suppress).toBe(true);
@@ -138,7 +138,7 @@ describe('stepM1Onboarding — §8.3 sob CC049 (proxy createdAt)', () => {
     });
   });
 
-  describe('empresa fora da janela 90d (createdAt=100d atras)', () => {
+  describe('empresa fora da janela 90d (kickoff=100d atras)', () => {
     it('desempenho_queda_brusca → passa (motivo=fora_onboarding)', async () => {
       const res = await stepM1Onboarding(client.db, empresaVelha, 'desempenho_queda_brusca', AGORA);
       expect(res.suppress).toBe(false);

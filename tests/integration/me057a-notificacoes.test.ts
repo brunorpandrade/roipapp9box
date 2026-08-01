@@ -84,6 +84,7 @@ describe('ME-057a — /notificacoes (MySQL real)', () => {
       descricaoAtividade: 'A',
       contextoMercado: 'A',
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
     });
     await client.db.update(companies).set({ status: 'ativa' }).where(eq(companies.id, companyIdA));
 
@@ -104,6 +105,7 @@ describe('ME-057a — /notificacoes (MySQL real)', () => {
       descricaoAtividade: 'B',
       contextoMercado: 'B',
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
     });
     await client.db.update(companies).set({ status: 'ativa' }).where(eq(companies.id, companyIdB));
 

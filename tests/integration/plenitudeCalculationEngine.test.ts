@@ -170,6 +170,7 @@ async function createCompany(
       thresholdPlenitudeBaixo: opts.thresholdBaixo ?? null,
       thresholdPlenitudeMedio: opts.thresholdMedio ?? null,
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
       status: 'ativa',
     })
     .$returningId();

@@ -180,6 +180,7 @@ async function seedActiveCompany(client: RoipDbClient, cnpj: string): Promise<nu
     descricaoAtividade: 'Atividade',
     contextoMercado: 'Mercado',
     mesKickoff: 1,
+    kickoffDate: new Date('2020-01-01'),
   });
   await client.db.update(companies).set({ status: 'ativa' });
   return companyId;

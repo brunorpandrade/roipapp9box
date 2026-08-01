@@ -84,6 +84,7 @@ describe('integration ME-055c shell (RV-11) — resolveMenuItems x MySQL real', 
         descricaoAtividade: 'Descricao',
         contextoMercado: 'Contexto',
         mesKickoff: 1,
+        kickoffDate: new Date('2020-01-01'),
       })
       .$returningId();
     if (!companyRow) throw new Error('beforeEach: falha ao criar company local');

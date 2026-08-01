@@ -47,6 +47,7 @@ CREATE TABLE `companies` (
   `modoAnoFiscal` ENUM('padrao','customizado') NOT NULL DEFAULT 'padrao',
   `mesInicioAnoFiscal` INT NOT NULL DEFAULT 1,
   `mesKickoff` INT NOT NULL,
+  `kickoffDate` DATE NOT NULL,
   `timezone` VARCHAR(50) NOT NULL DEFAULT 'America/Sao_Paulo',
   `encarregadoLgpdNome` VARCHAR(255) DEFAULT NULL,
   `encarregadoLgpdEmail` VARCHAR(255) DEFAULT NULL,

@@ -118,6 +118,7 @@ describe('auth.loginPlatform — ordem canonica §4.1 (ME-022a)', () => {
       descricaoAtividade: 'A',
       contextoMercado: 'A',
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
     });
     companyIdB = await createCompany(client.db, {
       razaoSocial: 'ROIP loginPlatform B LTDA',
@@ -136,6 +137,7 @@ describe('auth.loginPlatform — ordem canonica §4.1 (ME-022a)', () => {
       descricaoAtividade: 'B',
       contextoMercado: 'B',
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
     });
     await client.db.update(companies).set({ status: 'ativa' });
   });

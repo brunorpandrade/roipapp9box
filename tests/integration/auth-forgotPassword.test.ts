@@ -127,6 +127,7 @@ describe('auth.forgotPassword — ordem canonica §4.4 (ME-022b)', () => {
       descricaoAtividade: 'Atividade A',
       contextoMercado: 'Mercado A',
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
     });
     companyIdB = await createCompany(client.db, {
       razaoSocial: 'ME-022b Empresa B LTDA',
@@ -145,6 +146,7 @@ describe('auth.forgotPassword — ordem canonica §4.4 (ME-022b)', () => {
       descricaoAtividade: 'Atividade B',
       contextoMercado: 'Mercado B',
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
     });
     await client.db.update(companies).set({ status: 'ativa' });
   });

@@ -88,6 +88,7 @@ function fixture(cnpj: string, tag: string, timezone?: string): CompanyFixture {
     descricaoAtividade: 'Descricao',
     contextoMercado: 'Contexto',
     mesKickoff: 1,
+    kickoffDate: new Date('2020-01-01'),
     ...(timezone !== undefined ? { timezone } : {}),
   };
 }

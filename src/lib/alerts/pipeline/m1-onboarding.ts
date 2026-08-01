@@ -1,4 +1,4 @@
-// ROIP APP 9BOX — passo M1 do pipeline anti-ruido (ME-059).
+// ROIP APP 9BOX — passo M1 do pipeline anti-ruido (ME-059 → ME-062 D066).
 //
 // Origem canonica: DOC 06 §8.3 (Supressao de onboarding — 90 dias
 // pos-kickoff). Regra literal:
@@ -10,19 +10,25 @@
 //   - Log de trace: `alert.suppressed.onboarding { companyId, tipo }`.
 //     Sem gravacao em `alerts` nem em `notifications`.
 //
-// **CC049 (ME-059).** O campo `companies.kickoffDate` referenciado
-// pelo §8.3 canonico NAO existe no schema real (DOC 01 §4.3). Apenas
-// `mesKickoff` (int 1-12) e presente — semantica distinta (mes do ano
-// fiscal, nao data efetiva de kickoff). Proxy canonico operacional:
-// `companies.createdAt` como aproximacao — empresa criada ha menos de
-// 90 dias = janela de onboarding. Debito canonico D066 registrado
-// para adicionar `kickoffDate` (date) explicito ao schema em ME
-// futura (Bloco B6 sub-b ou posterior); ao migrar, este passo M1
-// consumira o campo dedicado sem retrabalho da assinatura interna.
+// **CC049 FECHADA em ME-062 (D066).** Ate ME-061 o campo canonico
+// `companies.kickoffDate` referenciado pelo §8.3 NAO existia no schema
+// real (DOC 01 §4.2); apenas `mesKickoff` (int 1-12) — semantica
+// distinta (mes do ano fiscal, nao data efetiva de kickoff). Proxy
+// operacional temporario: `companies.createdAt` como aproximacao. A
+// migration canonica ME-062 (0000_canonical.sql sob S339) adiciona
+// `kickoffDate DATE NOT NULL` ao schema `companies` — este passo M1
+// passa a consumir o campo dedicado literalmente conforme §8.3, sem
+// proxy. CC049 canonicamente encerrada; D066 canonicamente fechada.
+//
+// Regra de imutabilidade canonica CC054 (ME-062, N5 aprovada):
+// `kickoffDate` e imutavel apos o primeiro trimestre fechado — padrao
+// bit-exact aos campos irmaos `mesInicioAnoFiscal`/`mesKickoff` do
+// DOC 01 §4.2. Validacao aplicada em `companies.update` (fora do
+// escopo deste modulo — este passo apenas consome o campo).
 //
 // Contrato canonico:
 // - Funcao com I/O. Le `companies.kickoffDate` do repo real.
-// - Retorno canonico: `{ suppress: boolean }`.
+// - Retorno canonico: `{ suppress: boolean, motivo: ... }`.
 // - Consumido apenas por `emitAlert` (nao aplicavel a
 //   `emitAlertPostGravacao` — NR-1 e canonicamente isento).
 //
@@ -58,14 +64,19 @@ export interface M1Result {
 }
 
 /**
- * Aplica passo M1 canonico sob CC049 (proxy `createdAt`). Isentos
- * passam sem consulta ao banco.
+ * Aplica passo M1 canonico contra `companies.kickoffDate` real (D066
+ * fechada em ME-062). Isentos passam sem consulta ao banco.
  *
- * Nota canonica sobre `createdAt` ausente: `companies.createdAt` tem
- * default `NOW()` e sempre esta populado apos INSERT — o motivo
- * canonico `kickoff_ausente` e preservado apenas como salvaguarda
- * defensiva (registro corrompido ou empresa deletada durante execucao
- * do pipeline).
+ * Nota canonica sobre `kickoffDate` ausente: `companies.kickoffDate` e
+ * `NOT NULL` no schema real — o motivo canonico `kickoff_ausente` e
+ * preservado apenas como salvaguarda defensiva (empresa deletada
+ * durante execucao do pipeline, ou linha retornada sem `kickoffDate`
+ * por corrupcao). Nao ha caminho canonico em que uma empresa ativa
+ * chegue aqui sem `kickoffDate` populado.
+ *
+ * `kickoffDate` e `date` no schema — Drizzle desserializa como `Date`
+ * (JavaScript). A comparacao canonica `NOW() < kickoffDate +
+ * INTERVAL 90 DAY` traduz-se em milissegundos com `getTime()`.
  */
 export async function stepM1Onboarding(
   db: RoipDatabase,
@@ -79,18 +90,22 @@ export async function stepM1Onboarding(
   }
 
   const rows = await db
-    .select({ createdAt: companies.createdAt })
+    .select({ kickoffDate: companies.kickoffDate })
     .from(companies)
     .where(eq(companies.id, companyId))
     .limit(1);
   const first = rows[0];
-  if (first === undefined || first.createdAt === null) {
+  if (first === undefined || first.kickoffDate === null) {
     return { suppress: true, motivo: 'kickoff_ausente' };
   }
 
-  // Comparacao canonica: NOW() < createdAt + 90 DIAS (CC049 proxy).
-  // `createdAt` no schema e `timestamp` — comparacao direta em ms.
-  const kickoffMs = first.createdAt.getTime();
+  // Comparacao canonica: NOW() < kickoffDate + 90 DIAS (§8.3 literal).
+  // `kickoffDate` no schema e `date` — Drizzle desserializa como Date
+  // com hora 00:00:00 local. Comparacao direta em ms preserva a
+  // semantica "90 dias corridos pos-kickoff".
+  const kickoffValue: Date =
+    first.kickoffDate instanceof Date ? first.kickoffDate : new Date(first.kickoffDate);
+  const kickoffMs = kickoffValue.getTime();
   const limiteMs = kickoffMs + M1_ONBOARDING_JANELA_DIAS * 24 * 60 * 60 * 1000;
   if (now.getTime() < limiteMs) {
     return { suppress: true, motivo: 'dentro_onboarding' };

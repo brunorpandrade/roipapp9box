@@ -76,6 +76,7 @@ describe('authLookup — findPlatformUserByCpf (ME-022a)', () => {
       descricaoAtividade: 'Atividade A',
       contextoMercado: 'Mercado A',
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
     });
     companyIdB = await createCompany(client.db, {
       razaoSocial: 'ROIP AuthLookup B LTDA',
@@ -94,6 +95,7 @@ describe('authLookup — findPlatformUserByCpf (ME-022a)', () => {
       descricaoAtividade: 'Atividade B',
       contextoMercado: 'Mercado B',
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
     });
     await client.db.update(companies).set({ status: 'ativa' });
   });

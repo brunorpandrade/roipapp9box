@@ -70,7 +70,7 @@ import { Readable } from 'node:stream';
 import { z } from 'zod';
 
 import type { RoipDatabase } from '../../db/client';
-import type { NivelHierarquico } from '../../db/schema';
+import type { NivelHierarquico, OnboardingEstagio } from '../../db/schema';
 import {
   DEPARTAMENTO_VALUES,
   JOB_FAMILY_VALUES,
@@ -83,6 +83,7 @@ import {
   individualProfilePlaceholders,
   instrumentA_responses,
   instrumentC_assessments,
+  leaderOnboardingStageLog,
   performanceData,
   plenitudeData,
 } from '../../db/schema';
@@ -626,6 +627,26 @@ export function resolveActorForTermination(user: AuthenticatedUser): {
     return { actorTipo: 'superAdmin', actorId: user.superAdminId };
   }
   return { actorTipo: 'employee', actorId: user.userId };
+}
+
+/**
+ * ME-062 (DOC 06 §21.1/§21.2) — retorna o `autorTipo`/`autorId` canonico
+ * de `leaderOnboardingStageLog` e `leaderOnboardingNotes` a partir do
+ * usuario autenticado. Bruno cai em `super_admin`; RH/RH-Lider caem em
+ * `rh` (o enum canonico de autoria e binario). `autorId` e o
+ * `superAdminId` para Bruno ou o `userId` para RH/RH-Lider.
+ *
+ * Consumido pelos hooks canonicos acoplados a `employees.update`
+ * (ativacao/desativacao/reativacao de `isLider`) — RV-13.
+ */
+export function resolveAutorLeaderOnb(user: AuthenticatedUser): {
+  autorTipo: 'super_admin' | 'rh';
+  autorId: number;
+} {
+  if (user.role === 'super_admin') {
+    return { autorTipo: 'super_admin', autorId: user.superAdminId };
+  }
+  return { autorTipo: 'rh', autorId: user.userId };
 }
 
 /**
@@ -1401,6 +1422,28 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
               leaderHistoryId = historyInserted.id;
             }
 
+            // ME-062 (DOC 06 §21.1) — hook canonico onLeaderActivated
+            // acoplado ao create quando `isLider=true` no payload
+            // inicial. Registra entrada canonica no kanban (transicao
+            // NULL → 'treinar' — primeiro estagio canonico do §21.1).
+            // `onboardingEstagio` do payload ja foi setado por
+            // `buildEmployeeInsertPayload` para o default 'treinar' via
+            // `.default('treinar')` do schema quando `isLider=true`;
+            // este hook garante o registro em `leaderOnboardingStageLog`
+            // para a linha de historia canonica do card.
+            if (input.isLider === true) {
+              const autor = resolveAutorLeaderOnb(ctx.user);
+              await tx.insert(leaderOnboardingStageLog).values({
+                companyId: input.companyId,
+                employeeId,
+                estagioAnterior: null,
+                estagioNovo: 'treinar',
+                autorTipo: autor.autorTipo,
+                autorId: autor.autorId,
+                createdAt: now(),
+              });
+            }
+
             return { employeeId, placeholderId, leaderHistoryId };
           });
         } catch (err) {
@@ -1448,11 +1491,55 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
         if (input.isRH !== undefined) patch.isRH = input.isRH;
         if (input.isLider !== undefined) patch.isLider = input.isLider;
 
-        const [result] = await ctx.db
-          .update(employees)
-          .set(patch)
-          .where(eq(employees.id, input.employeeId));
-        return { employeeId: input.employeeId, affected: result.affectedRows };
+        // ------------------------------------------------------
+        // ME-062 (DOC 06 §21.1) — hooks canonicos de onboarding
+        // de lideres. Acoplados a transicao de `isLider` na mesma
+        // transacao do UPDATE de employees para preservar
+        // atomicidade canonica. O caller (`resolveActorForTermination`
+        // padrao — reusado aqui via `resolveAutorLeaderOnb`) captura
+        // o autor da mudanca de estagio; anotacao canonica NAO e
+        // gerada pelos hooks (§21.1 nota — anotacao viva apenas em
+        // `leaderOnboarding.updateStage` manual do modal).
+        // ------------------------------------------------------
+        const previousIsLider = row.isLider === true;
+        const nextIsLider = input.isLider !== undefined ? input.isLider : previousIsLider;
+        const leaderOnbAutor = resolveAutorLeaderOnb(ctx.user);
+        const nowInstant = now();
+
+        return await ctx.db.transaction(async (tx) => {
+          if (previousIsLider === false && nextIsLider === true) {
+            // Ativacao ou reativacao canonica (§21.1).
+            const ultimoEstagio = (row.onboardingUltimoEstagio ?? null) as OnboardingEstagio | null;
+            const proximoEstagio: OnboardingEstagio = ultimoEstagio ?? 'treinar';
+            patch.onboardingEstagio = proximoEstagio;
+            patch.onboardingUltimoEstagio = null;
+
+            // INSERT canonico em stageLog (§21.1 — entrada OU reentrada:
+            // ambos registram como transicao NULL → estagio efetivo).
+            await tx.insert(leaderOnboardingStageLog).values({
+              companyId: row.companyId,
+              employeeId: row.id,
+              estagioAnterior: null,
+              estagioNovo: proximoEstagio,
+              autorTipo: leaderOnbAutor.autorTipo,
+              autorId: leaderOnbAutor.autorId,
+              createdAt: nowInstant,
+            });
+          } else if (previousIsLider === true && nextIsLider === false) {
+            // Desativacao canonica (§21.1) — guarda o estagio atual em
+            // `onboardingUltimoEstagio` e limpa `onboardingEstagio`.
+            // SEM INSERT em stageLog (§21.1 nota canonica).
+            const estagioAtual = (row.onboardingEstagio ?? null) as OnboardingEstagio | null;
+            patch.onboardingUltimoEstagio = estagioAtual;
+            patch.onboardingEstagio = null;
+          }
+
+          const [result] = await tx
+            .update(employees)
+            .set(patch)
+            .where(eq(employees.id, input.employeeId));
+          return { employeeId: input.employeeId, affected: result.affectedRows };
+        });
       }),
 
     // --------------------------------------------------------

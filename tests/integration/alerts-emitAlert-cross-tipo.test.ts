@@ -68,6 +68,7 @@ describe('emitAlert — cross-tipo pipeline completo M1-M7', () => {
         descricaoAtividade: 'x',
         contextoMercado: 'x',
         mesKickoff: 1,
+        kickoffDate: new Date('2020-01-01'),
         createdAt: CREATED_ANTIGA,
       })
       .$returningId();

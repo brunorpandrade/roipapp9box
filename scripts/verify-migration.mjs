@@ -34,7 +34,7 @@ const VALIDATE_DB = 'roip_validate';
 
 const EXPECTED = {
   tables: 53,
-  columns: 691,
+  columns: 692,
   fks: 107,
   departments: 19,
 };

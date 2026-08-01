@@ -65,6 +65,7 @@ describe('resolveDestinatarios — §7 trilhas canonicas', () => {
         descricaoAtividade: 'Descricao',
         contextoMercado: 'Contexto',
         mesKickoff: 1,
+        kickoffDate: new Date('2020-01-01'),
       })
       .$returningId();
     if (!cRow) throw new Error('setup falhou: company');
@@ -315,6 +316,7 @@ describe('resolveDestinatarios — §7 trilhas canonicas', () => {
           descricaoAtividade: 'x',
           contextoMercado: 'x',
           mesKickoff: 1,
+          kickoffDate: new Date('2020-01-01'),
         })
         .$returningId();
       if (!c2) throw new Error('setup c2');

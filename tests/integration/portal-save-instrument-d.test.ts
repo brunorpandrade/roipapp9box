@@ -149,6 +149,7 @@ async function createCompany(cnpj: string, status: 'ativa' | 'inativa' = 'ativa'
       roiSegmentoMinimo: '2.00',
       roiSegmentoMaximo: '4.00',
       mesKickoff: 1,
+      kickoffDate: new Date('2020-01-01'),
       status,
     })
     .$returningId();
