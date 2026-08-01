@@ -18,12 +18,19 @@
 //   - Cancel      → silencioso (canonico DOC 06 §13.4)
 //
 // Convencoes canonicas herdadas de S043/S046 (ME-030/ME-031):
-//   - Motor de alertas ainda-nao-existente (DOC 06 §8 — ME futura) injetado
-//     via dependency injection. Tipo local `EvaluateAdminUnlockAlerts` (nao
-//     reusa o `EvaluateAdminAlerts` da ME-031 porque a assinatura canonica
-//     e distinta: `(tipo, requestId)` aqui vs `(tipo, companyId, mes)` la —
-//     no wiring real ambos apontam para o mesmo motor). Default no-op
-//     documentado. Padrao factory `createCycleUnlockRequestsRouter(deps)`.
+//   - Motor de alertas (DOC 06 §8 — nascido em ME-059/060/061) injetado
+//     via dependency injection. Tipo local `EvaluateAdminUnlockAlerts`
+//     (nao reusa o `EvaluateAdminAlerts` da ME-031 porque a assinatura
+//     canonica e distinta: `(tipo, requestId)` aqui vs
+//     `(tipo, companyId, mes)` la — no wiring real ambos apontam para o
+//     mesmo motor). Default no-op documentado. Padrao factory
+//     `createCycleUnlockRequestsRouter(deps)`.
+//   - Padrao Facade DI S244 canonizado em ME-061: dep opcional
+//     `evaluateAdminAlertsFactory: (db) => EvaluateAdminUnlockAlerts` que
+//     recebe `ctx.db` no request. Producao aponta a
+//     `createAdminUnlockAlertHook` do modulo `src/lib/alerts/hooks.ts`;
+//     testes ME-032 preservam padrao legado `evaluateAdminAlerts` direto
+//     (compat retroativa bit-exact).
 //   - `now` sempre parametro opcional injetavel (default `new Date()`) para
 //     testes deterministicos. Testes injetam relogio fixo; producao usa o
 //     default.
@@ -98,13 +105,45 @@ export const NOOP_EVALUATE_ADMIN_UNLOCK_ALERTS: EvaluateAdminUnlockAlerts = asyn
 };
 
 /**
+ * Factory canonica (padrao Facade DI S244 canonizado em ME-061) que
+ * produz um `EvaluateAdminUnlockAlerts` a partir do `db` do request.
+ *
+ * Consumido por `createCycleUnlockRequestsRouter({ evaluateAdminAlertsFactory })`.
+ * O `appRouter` (`src/server/routers/index.ts`) passa
+ * `createAdminUnlockAlertHook` do modulo `src/lib/alerts/hooks.ts`
+ * (religacao canonica ME-061); testes de integracao passam factories
+ * capturadoras deterministicas ou preservam o padrao legado
+ * `evaluateAdminAlerts` direto (compat retroativa).
+ */
+export type EvaluateAdminUnlockAlertsFactory = (
+  db: import('../../db/client').RoipDatabase,
+) => EvaluateAdminUnlockAlerts;
+
+/** No-op canonico do factory — devolve o NOOP legado. */
+export const NOOP_EVALUATE_ADMIN_UNLOCK_ALERTS_FACTORY: EvaluateAdminUnlockAlertsFactory = () =>
+  NOOP_EVALUATE_ADMIN_UNLOCK_ALERTS;
+
+/**
  * Dependencias injetaveis do router. Todas opcionais — defaults substituem
  * por no-op / relogio real. Testes injetam callbacks capturadores e `now`
- * fixo; producao usa `NOOP_EVALUATE_ADMIN_UNLOCK_ALERTS` (ate o motor de
- * alertas do B6 nascer) e `() => new Date()`.
+ * fixo; producao (pos-ME-061) passa `evaluateAdminAlertsFactory:
+ * createAdminUnlockAlertHook` para religar ao motor canonico ME-059+060.
+ *
+ * Precedencia canonica de resolucao (dentro do handler):
+ *   1. `evaluateAdminAlertsFactory(ctx.db)` se presente (padrao S244 —
+ *      producao e testes end-to-end da ME-061);
+ *   2. `evaluateAdminAlerts` se presente (padrao legado — testes ME-032
+ *      preservados sem edicao);
+ *   3. `NOOP_EVALUATE_ADMIN_UNLOCK_ALERTS` (default silente).
+ *
+ * A convivencia dos dois campos e canonica: assinatura do motor real e
+ * `(tipo, requestId) => Promise<void>` — a factory apenas antecipa a
+ * ligacao ao `db`, sem alterar a assinatura publica. Compatibilidade
+ * bit-exact com testes ME-032 preservada.
  */
 export interface CycleUnlockRequestsRouterDeps {
   evaluateAdminAlerts?: EvaluateAdminUnlockAlerts;
+  evaluateAdminAlertsFactory?: EvaluateAdminUnlockAlertsFactory;
   now?: () => Date;
 }
 
@@ -476,17 +515,33 @@ type AuthenticatedUserView =
 export function createCycleUnlockRequestsRouter(
   deps: CycleUnlockRequestsRouterDeps = {},
 ): ReturnType<typeof buildRouter> {
-  const evaluateAdminAlerts = deps.evaluateAdminAlerts ?? NOOP_EVALUATE_ADMIN_UNLOCK_ALERTS;
+  const legacyEvaluate = deps.evaluateAdminAlerts;
+  const factoryEvaluate = deps.evaluateAdminAlertsFactory;
   const now = deps.now ?? (() => new Date());
-  return buildRouter(evaluateAdminAlerts, now);
+
+  // Resolver canonico (§S244 ME-061): factory tem precedencia; legacy e
+  // compat de teste; NOOP fecha o default silente.
+  const resolveEvaluate = (
+    db: import('../../db/client').RoipDatabase,
+  ): EvaluateAdminUnlockAlerts => {
+    if (factoryEvaluate !== undefined) return factoryEvaluate(db);
+    if (legacyEvaluate !== undefined) return legacyEvaluate;
+    return NOOP_EVALUATE_ADMIN_UNLOCK_ALERTS;
+  };
+
+  return buildRouter(resolveEvaluate, now);
 }
 
 /**
  * Corpo real do factory — separado para preservar inferencia do tipo de
  * retorno do `router({...})` do tRPC. Chamado exclusivamente pela factory
- * publica acima.
+ * publica acima. Recebe `resolveEvaluate` (function `(db) => hook`) em
+ * lugar do hook direto para permitir religacao S244 pos-ME-061.
  */
-function buildRouter(evaluateAdminAlerts: EvaluateAdminUnlockAlerts, now: () => Date) {
+function buildRouter(
+  resolveEvaluate: (db: import('../../db/client').RoipDatabase) => EvaluateAdminUnlockAlerts,
+  now: () => Date,
+) {
   return router({
     // ============================================================
     // create — DOC 03 §4.3 + DOC 06 §13.2
@@ -595,7 +650,11 @@ function buildRouter(evaluateAdminAlerts: EvaluateAdminUnlockAlerts, now: () => 
 
         // (7) Gatilho canonico apos INSERT bem-sucedido (§13.2).
         // fire-and-forget: se falhar, warning; a solicitacao permanece.
-        void evaluateAdminAlerts('desbloqueio_solicitado', newId).catch(() => {
+        // Resolucao canonica S244 (ME-061): `resolveEvaluate(ctx.db)`
+        // producao aponta ao motor real; testes ME-032 legado
+        // interceptam via `evaluateAdminAlerts` direto (compat retroativa).
+        const evaluateCreate = resolveEvaluate(ctx.db);
+        void evaluateCreate('desbloqueio_solicitado', newId).catch(() => {
           // Motor real deve logar; aqui o silencio e canonico (§13.2).
         });
 
@@ -772,8 +831,9 @@ function buildRouter(evaluateAdminAlerts: EvaluateAdminUnlockAlerts, now: () => 
               .where(eq(cycleUnlockRequests.id, input.id));
           });
 
-          // Gatilho canonico pos-COMMIT (§13.6).
-          void evaluateAdminAlerts('desbloqueio_recusado', input.id).catch(() => {
+          // Gatilho canonico pos-COMMIT (§13.6). Resolucao S244 (ME-061).
+          const evaluateRecusada = resolveEvaluate(ctx.db);
+          void evaluateRecusada('desbloqueio_recusado', input.id).catch(() => {
             // Silencio canonico.
           });
 
@@ -887,8 +947,9 @@ function buildRouter(evaluateAdminAlerts: EvaluateAdminUnlockAlerts, now: () => 
           // Sub-passo 6: COMMIT (implicito — return da callback).
         });
 
-        // Gatilho canonico pos-COMMIT (§13.5).
-        void evaluateAdminAlerts('desbloqueio_aprovado', input.id).catch(() => {
+        // Gatilho canonico pos-COMMIT (§13.5). Resolucao S244 (ME-061).
+        const evaluateAprovada = resolveEvaluate(ctx.db);
+        void evaluateAprovada('desbloqueio_aprovado', input.id).catch(() => {
           // Silencio canonico.
         });
 

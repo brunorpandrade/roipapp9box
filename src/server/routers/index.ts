@@ -14,6 +14,7 @@
 // perfil. Nenhuma delas persiste dado; sao os chamadores minimos que
 // mantem o bootstrap vivo e testavel sem antecipar dominio do Bloco B3.
 
+import { createAdminUnlockAlertHook } from '../../lib/alerts/hooks';
 import { protectedProcedure, publicProcedure, roleProcedure, router } from '../trpc';
 import { authRouter } from './auth';
 import { createCLevelMembersRouter } from './cLevelMembers';
@@ -72,13 +73,27 @@ const adminRouter = router({
 });
 
 /**
- * Sub-router `cycleUnlockRequests` (ME-032, Bloco B3). Factory instanciada
- * com defaults no-op — motor de alertas administrativos ainda nao existe
- * (DOC 06 §8, Bloco B6). Quando nascer, o `appRouter` sera atualizado com
- * `createCycleUnlockRequestsRouter({ evaluateAdminAlerts: motorReal })`
- * sem editar o sub-router. Padrao S049 (S043/S046 estendido).
+ * Sub-router `cycleUnlockRequests` (ME-032, Bloco B3, religado em ME-061).
+ * Factory instanciada com religacao canonica S244 ao motor de alertas
+ * canonico (DOC 06 §8 — ME-059 + §11-§12 ME-060 + §13 hook ME-061). O
+ * `evaluateAdminAlertsFactory` recebe `ctx.db` no request e devolve a
+ * funcao `(tipo, requestId) => Promise<void>` que:
+ *   1. Carrega estado canonico da solicitacao por `requestId` (SELECT em
+ *      `cycleUnlockRequests` + resolucao de solicitanteNome/liderNome).
+ *   2. Monta payload canonico §4.9-§4.11 do DOC 06 (snapshot metadados
+ *      completo por tipo).
+ *   3. Chama `emitAlert` do motor ME-059 (pipeline M1-M7 com trilha
+ *      RH+Bruno §7.1, severidade `atencao` + override T1 imediato §6.5,
+ *      link canonico condicional §5).
+ *   4. `stepM7Enqueue` grava linha canonica em `emailQueue` que sera
+ *      consumida pelo `runEmailQueueJob` do ME-060 (Template A imediato).
+ *
+ * Padrao Facade DI S244 (S049 estendido). Testes ME-032 preservam padrao
+ * legado `evaluateAdminAlerts` direto — compat retroativa bit-exact.
  */
-const cycleUnlockRequestsRouter = createCycleUnlockRequestsRouter();
+const cycleUnlockRequestsRouter = createCycleUnlockRequestsRouter({
+  evaluateAdminAlertsFactory: createAdminUnlockAlertHook,
+});
 
 /**
  * Sub-router `quarterlyCalculation` (ME-034, Bloco B3). Factory instanciada
