@@ -1,4 +1,4 @@
-// ROIP APP 9BOX — orquestrador canonico dos jobs cron (ME-063a).
+// ROIP APP 9BOX — orquestrador canonico dos jobs cron (ME-063a + ME-063b).
 //
 // Origem canonica:
 // - DOC 06 §15 (Inventario canonico dos jobs cron da camada).
@@ -6,6 +6,8 @@
 // - DOC 06 §15.3 (Idempotencia canonica de cada job).
 // - DOC 06 §15.4 (Comportamento canonico em falha de job cron).
 // - DOC 06 §11.2, §11.3, §11.4 (workers de e-mail religados em ME-060).
+// - DOC 06 §16.1, §16.2 (runDailyInstrumentStatusJob + archiveAiConversationsJob).
+// - DOC 06 §14.8, §15.1.4 (refreshCycleScheduleCounters).
 //
 // Contrato canonico:
 // - Factory `createCronScheduler` retorna orquestrador canonico com
@@ -21,10 +23,33 @@
 // - Em ME-063a, registro canonico dos 3 workers de e-mail JA RELIGADOS
 //   em ME-060 (§15.1.5 runEmailQueueJob, §15.1.6 resetStuckEmailQueue,
 //   §15.1.7 runWeeklyDigestJob).
-// - Prospectivamente, o type `CronJobName` inclui os 4 jobs canonicos de
-//   ME-063b (§15.1.1 runDailyClosureJob, §15.1.2 runDailyInstrumentStatusJob,
-//   §15.1.4 refreshCycleScheduleCounters, §15.1.8 archiveAiConversationsJob);
-//   ME-063b estende o registry canonicamente sem alterar este arquivo.
+// - Em ME-063b (S354), extensao canonica do registry para os 4 jobs
+//   operacionais restantes (§15.1.1 runDailyClosureJob, §15.1.2
+//   runDailyInstrumentStatusJob, §15.1.4 refreshCycleScheduleCounters,
+//   §15.1.8 archiveAiConversationsJob). Handlers consomem os motores
+//   canonicos JA RELIGADOS em MEs anteriores (S244 estendido —
+//   `monthlyClosureOrchestrator` ME-050/051, `cycleScheduleEngine`
+//   ME-030 + ME-063b, `nr1CalculationEngine` ME-049cd, `aiConversations`
+//   ME-054). Nenhum motor novo — wrappers cron canonicos apenas.
+// - Wrappers canonicos por-empresa (`runDailyClosureJob` §15.1.1 +
+//   `archiveAiConversationsJob` §15.1.8) iteram sobre `companies` com
+//   `status='ativa'` e delegam ao motor por empresa. Idempotencia
+//   canonica (§15.3) preservada pelo proprio motor.
+// - `runDailyInstrumentStatusJob` (§15.1.2 + §16.1) e canonicamente
+//   GLOBAL — os ciclos NR-1 nao tem fuso local (schema `copsoqCycles`
+//   usa DATE sem tz). Cadencia `daily_local_per_company` significa
+//   apenas que o cron externo dispara com a mesma frequencia canonica
+//   do `runDailyClosureJob`; execucao dupla no mesmo dia e no-op por
+//   idempotencia canonica do motor NR-1.
+// - **Template L** (§12.8) NAO e enfileirado por nenhum job cron —
+//   canonicamente disparado apenas via `emailDispatcher.enqueueTransactional`
+//   pelo caller `/pendencias-portal/actions.ts` (server action RH +
+//   Bruno, cooldown 72h em `portalReminderLog`). Confirmado bit-exact
+//   contra DOC 06 §12.8 + §12.9, DOC 01 §12.1 (schema
+//   `portalReminderLog.sentByType ENUM('employee','superAdmin')` —
+//   sem tipo 'system'/'cron'), DOC 05 §5.5 (nota canonica de
+//   coexistencia). RV-09 dirigida na abertura ME-063b + L102 canonizada
+//   ME-063a.
 // - Job canonico §15.1.3 `runDailyClimateAggregationJob` fica FORA do
 //   escopo canonico desta camada (DOC 06 §15.1.3 literal: "fora do escopo
 //   direto desta camada"). Nao aparece em `CronJobName` deste modulo.
@@ -52,10 +77,44 @@
 //   - `DEFAULT_CRON_SCHEDULER_DEPENDENCIES` → `createCronScheduler` +
 //     testes.
 //   - `CRON_JOB_CADENCE_BY_NAME` → `createCronScheduler` + testes.
-//   - `createCronScheduler` → testes de integracao (ME-063a).
+//   - `createCronScheduler` → testes de integracao (ME-063a + ME-063b).
+//   - Resultados canonicos ME-063b (`RunDailyClosureJobBatchResult`,
+//     `RunDailyInstrumentStatusJobResult`,
+//     `ArchiveAiConversationsBatchResult`) → tipos de retorno dos
+//     makers + testes de integracao.
+
+import { and, eq, lte } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../db/client';
+import { companies, copsoqCycles } from '../../db/schema';
 import { sendEmailViaSmtp, type SmtpEnvelope, type SmtpSendResult } from '../../lib/email';
+import { archiveAiConversationsBefore } from '../services/aiConversations';
+import {
+  NOOP_EMIT_AUTO_ALERT,
+  refreshCycleScheduleCounters,
+  type EmitAutoAlert,
+  type RefreshCycleScheduleCountersResult,
+} from '../services/cycleScheduleEngine';
+import {
+  NOOP_EVALUATE_ADMIN_ALERTS,
+  NOOP_EVALUATE_MONTHLY_ALERTS,
+  NOOP_RECALCULATE_QUARTER,
+  NOOP_TRIGGER_QUARTERLY_CALCULATION,
+  runDailyClosureJob,
+  type EvaluateAdminAlerts,
+  type EvaluateMonthlyAlerts,
+  type RecalculateQuarter,
+  type RunDailyClosureJobResult,
+  type TriggerQuarterlyCalculation,
+} from '../services/monthlyClosureOrchestrator';
+import {
+  closeNr1Cycle,
+  DEFAULT_NR1_ALERT_FACADE,
+  openScheduledNr1Cycles,
+  type CloseNr1CycleResult,
+  type Nr1AlertFacade,
+  type OpenScheduledNr1CyclesResult,
+} from '../services/nr1CalculationEngine';
 import { runEmailQueueJob, type EmailQueueJobResult } from './emailQueueJob';
 import { resetStuckEmailQueue } from './resetStuckEmailQueueJob';
 import { runWeeklyDigestJob, type WeeklyDigestJobResult } from './weeklyDigestJob';
@@ -175,20 +234,46 @@ export interface RegisteredCronJob {
 /**
  * Dependencias canonicas injetaveis do scheduler. Bit-exact ao padrao
  * DI de `EmailQueueJobDependencies` / `WeeklyDigestJobDependencies` de
- * ME-060. Em producao, todos os defaults ficam ativos; em testes, o
- * caller injeta stubs para `sendEmail` (transporte SMTP).
+ * ME-060 (S244 estendido em ME-063b). Em producao, todos os defaults
+ * ficam ativos; em testes, o caller injeta stubs para `sendEmail`
+ * (transporte SMTP) e para as deps canonicas do
+ * `monthlyClosureOrchestrator` (emitAutoAlert, evaluateMonthlyAlerts,
+ * evaluateAdminAlerts, triggerQuarterlyCalculation, recalculateQuarter)
+ * + `nr1AlertFacade` do `closeNr1Cycle`.
+ *
+ * **Sem uso interno de `new Date()`.** Todos os handlers consomem o
+ * `now` propagado por `runByName` (padrao deterministico canonico).
+ *
+ * **Idempotencia canonica preservada pelos motores.** O scheduler nao
+ * adiciona chave `(companyId, data)` — a idempotencia canonica (§15.3)
+ * esta canonicamente embutida em cada motor via filtro SQL
+ * (`WHERE status='...'`, `WHERE archivedAt IS NULL`,
+ * verificacoes de status corrente).
  */
 export interface CronSchedulerDependencies {
   readonly sendEmail: (envelope: SmtpEnvelope) => Promise<SmtpSendResult>;
+  readonly emitAutoAlert: EmitAutoAlert;
+  readonly evaluateMonthlyAlerts: EvaluateMonthlyAlerts;
+  readonly evaluateAdminAlerts: EvaluateAdminAlerts;
+  readonly triggerQuarterlyCalculation: TriggerQuarterlyCalculation;
+  readonly recalculateQuarter: RecalculateQuarter;
+  readonly nr1AlertFacade: Nr1AlertFacade;
 }
 
 /**
  * Default canonico das dependencias — envio SMTP real via
- * `sendEmailViaSmtp` (ME-060). Testes substituem por stub que captura
- * as chamadas.
+ * `sendEmailViaSmtp` (ME-060) + NOOPs canonicos dos motores (S244
+ * estendido em ME-063b). Testes substituem por stubs que capturam
+ * as chamadas / injetam comportamento determinado.
  */
 export const DEFAULT_CRON_SCHEDULER_DEPENDENCIES: CronSchedulerDependencies = {
   sendEmail: sendEmailViaSmtp,
+  emitAutoAlert: NOOP_EMIT_AUTO_ALERT,
+  evaluateMonthlyAlerts: NOOP_EVALUATE_MONTHLY_ALERTS,
+  evaluateAdminAlerts: NOOP_EVALUATE_ADMIN_ALERTS,
+  triggerQuarterlyCalculation: NOOP_TRIGGER_QUARTERLY_CALCULATION,
+  recalculateQuarter: NOOP_RECALCULATE_QUARTER,
+  nr1AlertFacade: DEFAULT_NR1_ALERT_FACADE,
 };
 
 /**
@@ -258,15 +343,289 @@ function makeRunWeeklyDigestJobHandler(deps: CronSchedulerDependencies): CronJob
 }
 
 // -----------------------------------------------------------------------
+// Handlers canonicos ME-063b (§15.1.1, §15.1.2, §15.1.4, §15.1.8)
+// -----------------------------------------------------------------------
+
+/**
+ * Resultado canonico do batch `runDailyClosureJob` (§15.1.1) — o
+ * wrapper cron itera empresas ativas e delega ao motor por empresa.
+ * Idempotencia canonica (§15.3) preservada pelo proprio motor
+ * (`monthlyClosureOrchestrator.runDailyClosureJob`).
+ */
+export interface RunDailyClosureJobBatchResult {
+  readonly companiesInspecionadas: number;
+  readonly companiesProcessadas: number;
+  readonly resultsByCompany: readonly {
+    readonly companyId: number;
+    readonly result: RunDailyClosureJobResult;
+  }[];
+}
+
+/**
+ * Resultado canonico do `runDailyInstrumentStatusJob` (§15.1.2 + §16.1).
+ * O wrapper cron consome dois motores canonicos JA RELIGADOS em MEs
+ * anteriores:
+ * 1. `openScheduledNr1Cycles(db, now)` — global; transiciona
+ *    `agendado -> aberto` os ciclos NR-1 cujo `dataAbertura <= hoje`
+ *    (§16.1 passo 1).
+ * 2. Para cada ciclo NR-1 em `status='aberto'` com `dataFechamento
+ *    <= hoje`, chama `closeNr1Cycle(db, cicloDbId, now, deps)` —
+ *    transiciona `aberto -> fechado` (§16.1 passo 2).
+ *
+ * Transicoes `pendente -> atrasado` de instrumentos A/C/D nao entram
+ * aqui — sao canonicamente realizadas por `updateCycleScheduleStatuses`
+ * dentro do `runDailyClosureJob` Hook 2 (§14.6 + §15.2).
+ *
+ * Idempotencia canonica (§15.3): ambos os motores verificam status
+ * corrente antes de atualizar — reexecucao no mesmo dia e no-op.
+ */
+export interface RunDailyInstrumentStatusJobResult {
+  readonly abertura: OpenScheduledNr1CyclesResult;
+  readonly ciclosFechados: readonly CloseNr1CycleResult[];
+}
+
+/**
+ * Resultado canonico do batch `archiveAiConversationsJob` (§15.1.8 +
+ * §16.2). O wrapper cron itera empresas ativas e delega ao motor por
+ * empresa. Idempotencia canonica (§15.3) preservada pelo proprio motor
+ * (`aiConversations.archiveAiConversationsBefore` — cláusula
+ * `WHERE archivedAt IS NULL AND createdAt < cutoff`).
+ */
+export interface ArchiveAiConversationsBatchResult {
+  readonly companiesInspecionadas: number;
+  readonly linhasArquivadasTotal: number;
+  readonly resultsByCompany: readonly {
+    readonly companyId: number;
+    readonly linhasArquivadas: number;
+  }[];
+}
+
+/**
+ * Janela canonica de arquivamento do Chat IA (§16.2): mensagens com
+ * `createdAt < now - 6 meses` sao arquivadas. Constante extraida para
+ * inspecao dos testes.
+ */
+export const AI_CONVERSATIONS_ARCHIVE_MONTHS = 6;
+
+/**
+ * Handler canonico do `runDailyClosureJob` (§15.1.1 / §13.7 + §16.1).
+ * Itera empresas com `status='ativa'` e delega ao motor canonico
+ * `monthlyClosureOrchestrator.runDailyClosureJob(db, companyId, now, deps)`
+ * por empresa (S048 canonico: instancia unica por empresa).
+ *
+ * Deps DI (S244 estendido em ME-063b) propagam bit-exact ao motor:
+ * `emitAutoAlert`, `evaluateMonthlyAlerts`, `evaluateAdminAlerts`,
+ * `triggerQuarterlyCalculation`, `recalculateQuarter`.
+ *
+ * Idempotencia canonica (§15.3) preservada pelo motor:
+ * `WHERE status='desbloqueado' AND expiraEm < NOW()`; verificacao de
+ * status corrente antes de transicionar; fechamento do dia 11 so
+ * atinge o mes imediatamente anterior.
+ *
+ * Falha em uma empresa NAO interrompe o batch — cada empresa e
+ * isolada em try/catch canonico interno. Falha e propagada como
+ * excecao apenas se TODAS as empresas falharem (garante que o
+ * `runByName` retorna `status='error'` apenas se o batch falhar por
+ * completo; do contrario retorna `status='ok'` com o inventario das
+ * empresas processadas com sucesso — semantica canonica de degradacao
+ * gradual §15.4).
+ */
+function makeRunDailyClosureJobHandler(deps: CronSchedulerDependencies): CronJobHandler {
+  return async (db, now): Promise<RunDailyClosureJobBatchResult> => {
+    const empresasAtivas = await db
+      .select({ id: companies.id })
+      .from(companies)
+      .where(eq(companies.status, 'ativa'));
+
+    const results: { companyId: number; result: RunDailyClosureJobResult }[] = [];
+    let processadasComSucesso = 0;
+    let ultimoErro: unknown = null;
+
+    for (const empresa of empresasAtivas) {
+      try {
+        const result = await runDailyClosureJob(db, empresa.id, now, {
+          emitAutoAlert: deps.emitAutoAlert,
+          evaluateMonthlyAlerts: deps.evaluateMonthlyAlerts,
+          evaluateAdminAlerts: deps.evaluateAdminAlerts,
+          triggerQuarterlyCalculation: deps.triggerQuarterlyCalculation,
+          recalculateQuarter: deps.recalculateQuarter,
+        });
+        results.push({ companyId: empresa.id, result });
+        processadasComSucesso += 1;
+      } catch (err) {
+        ultimoErro = err;
+        logCronWarn({
+          name: 'runDailyClosureJob',
+          companyId: empresa.id,
+          status: 'error',
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    if (empresasAtivas.length > 0 && processadasComSucesso === 0) {
+      throw ultimoErro instanceof Error
+        ? ultimoErro
+        : new Error('runDailyClosureJob: todas as empresas ativas falharam');
+    }
+
+    return {
+      companiesInspecionadas: empresasAtivas.length,
+      companiesProcessadas: processadasComSucesso,
+      resultsByCompany: results,
+    };
+  };
+}
+
+/**
+ * Handler canonico do `runDailyInstrumentStatusJob` (§15.1.2 + §16.1).
+ * Consome bit-exact os motores NR-1 canonicos JA RELIGADOS em ME-049cd:
+ *
+ * 1. `openScheduledNr1Cycles(db, now)` — global; transiciona
+ *    `agendado -> aberto` (§16.1 passo 1). Cria snapshots em
+ *    `copsoqCycleSnapshot`.
+ * 2. Para cada ciclo NR-1 com `status='aberto'` e `dataFechamento <=
+ *    hoje` (comparacao canonica em UTC — schema `copsoqCycles` usa
+ *    DATE sem tz), chama `closeNr1Cycle(db, cicloDbId, now, deps)` —
+ *    transiciona `aberto -> fechado` com calculo canonico de scores,
+ *    convergencia/divergencia, alertas.
+ *
+ * **Global sem loop por empresa.** Ciclos NR-1 sao canonicamente
+ * globais (nao ha fuso local em `copsoqCycles.dataFechamento`). A
+ * cadencia `daily_local_per_company` significa apenas que o cron
+ * externo dispara com a mesma frequencia canonica do
+ * `runDailyClosureJob`; execucao dupla no mesmo dia e no-op por
+ * idempotencia canonica dos motores.
+ *
+ * Deps DI (S244 estendido em ME-063b): `nr1AlertFacade` propaga
+ * bit-exact ao `closeNr1Cycle`.
+ *
+ * Idempotencia canonica (§15.3): ambos os motores verificam status
+ * corrente (`agendado`/`aberto`) antes de atualizar. Reexecucao no
+ * mesmo dia produz `abertura.ciclosAbertos=[]` +
+ * `ciclosFechados=[]`.
+ */
+function makeRunDailyInstrumentStatusJobHandler(deps: CronSchedulerDependencies): CronJobHandler {
+  return async (db, now): Promise<RunDailyInstrumentStatusJobResult> => {
+    const abertura = await openScheduledNr1Cycles(db, now);
+
+    const abertosParaFechar = await db
+      .select({ id: copsoqCycles.id })
+      .from(copsoqCycles)
+      .where(and(eq(copsoqCycles.status, 'aberto'), lte(copsoqCycles.dataFechamento, now)));
+
+    const ciclosFechados: CloseNr1CycleResult[] = [];
+    for (const linha of abertosParaFechar) {
+      const result = await closeNr1Cycle(db, linha.id, now, {
+        alertFacade: deps.nr1AlertFacade,
+      });
+      ciclosFechados.push(result);
+    }
+
+    return { abertura, ciclosFechados };
+  };
+}
+
+/**
+ * Handler canonico do `refreshCycleScheduleCounters` (§15.1.4 +
+ * §14.8). Reconciliacao diaria canonica dos contadores
+ * `cycleSchedule.totalRespondidos` para linhas em `aberto`/`atrasado`.
+ * Consume bit-exact `cycleScheduleEngine.refreshCycleScheduleCounters`
+ * (Hook 5 — ME-063b S354).
+ *
+ * **NAO consome `updateCycleScheduleStatuses`** — este ja e
+ * canonicamente executado dentro do `runDailyClosureJob` Hook 2
+ * (§15.2 + §14.6). Consumo duplo violaria a ordem canonica e a
+ * idempotencia (§15.3). Cadencia canonica §15.1.4: 00:15 UTC —
+ * independente da cadencia por-empresa dos jobs §15.1.1/§15.1.2.
+ *
+ * Sem deps DI proprias — o motor e puro.
+ *
+ * Idempotencia canonica (§15.3): agregacao deterministica; UPDATE
+ * canonico apenas se novo valor diverge do persistido.
+ */
+function makeRefreshCycleScheduleCountersHandler(): CronJobHandler {
+  return async (db, now): Promise<RefreshCycleScheduleCountersResult> => {
+    return refreshCycleScheduleCounters(db, now);
+  };
+}
+
+/**
+ * Handler canonico do `archiveAiConversationsJob` (§15.1.8 + §16.2).
+ * Itera empresas com `status='ativa'` e delega ao motor canonico
+ * `aiConversations.archiveAiConversationsBefore(db, companyId, cutoff,
+ * archivedAt)` por empresa. `cutoff` canonico = `now - 6 meses`
+ * (constante `AI_CONVERSATIONS_ARCHIVE_MONTHS`).
+ *
+ * Idempotencia canonica (§15.3) preservada pelo motor: clausula
+ * `WHERE archivedAt IS NULL AND createdAt < cutoff` — reexecucao no
+ * mesmo dia so arquiva o que ficou de fora da primeira passagem.
+ *
+ * Falha em uma empresa NAO interrompe o batch (mesma semantica
+ * canonica do `runDailyClosureJob` — degradacao gradual §15.4).
+ */
+function makeArchiveAiConversationsJobHandler(): CronJobHandler {
+  return async (db, now): Promise<ArchiveAiConversationsBatchResult> => {
+    const empresasAtivas = await db
+      .select({ id: companies.id })
+      .from(companies)
+      .where(eq(companies.status, 'ativa'));
+
+    const cutoff = new Date(now.getTime());
+    cutoff.setMonth(cutoff.getMonth() - AI_CONVERSATIONS_ARCHIVE_MONTHS);
+
+    const results: { companyId: number; linhasArquivadas: number }[] = [];
+    let linhasArquivadasTotal = 0;
+    let processadasComSucesso = 0;
+    let ultimoErro: unknown = null;
+
+    for (const empresa of empresasAtivas) {
+      try {
+        const linhasArquivadas = await archiveAiConversationsBefore(db, empresa.id, cutoff, now);
+        results.push({ companyId: empresa.id, linhasArquivadas });
+        linhasArquivadasTotal += linhasArquivadas;
+        processadasComSucesso += 1;
+      } catch (err) {
+        ultimoErro = err;
+        logCronWarn({
+          name: 'archiveAiConversationsJob',
+          companyId: empresa.id,
+          status: 'error',
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    if (empresasAtivas.length > 0 && processadasComSucesso === 0) {
+      throw ultimoErro instanceof Error
+        ? ultimoErro
+        : new Error('archiveAiConversationsJob: todas as empresas ativas falharam');
+    }
+
+    return {
+      companiesInspecionadas: empresasAtivas.length,
+      linhasArquivadasTotal,
+      resultsByCompany: results,
+    };
+  };
+}
+
+// -----------------------------------------------------------------------
 // Factory canonica
 // -----------------------------------------------------------------------
 
 /**
  * Cria orquestrador canonico dos jobs cron (§15.1 + §15.4). Em ME-063a
- * registra os 3 workers de e-mail JA RELIGADOS em ME-060; em ME-063b,
- * a factory sera estendida canonicamente para incluir os 4 jobs
- * restantes (`runDailyClosureJob`, `runDailyInstrumentStatusJob`,
- * `refreshCycleScheduleCounters`, `archiveAiConversationsJob`).
+ * registrou os 3 workers de e-mail JA RELIGADOS em ME-060; em ME-063b
+ * (S354) registra os 4 jobs operacionais restantes canonicos:
+ * `runDailyClosureJob` (§15.1.1), `runDailyInstrumentStatusJob`
+ * (§15.1.2), `refreshCycleScheduleCounters` (§15.1.4),
+ * `archiveAiConversationsJob` (§15.1.8).
+ *
+ * **Registro canonico completo** — 7 dos 8 jobs canonicos do §15.1
+ * (§15.1.3 `runDailyClimateAggregationJob` fica FORA por prescricao
+ * literal do DOC 06 — "fora do escopo direto desta camada"; §15.1.9
+ * cron do dia 11 nao e job independente).
  *
  * Comportamento canonico:
  * - `runByName` encapsula o handler em try/catch. Sucesso →
@@ -285,7 +644,8 @@ export function createCronScheduler(
   const registry = new Map<CronJobName, RegisteredCronJob>();
 
   // Ordem canonica de insercao bit-exact ao §15.1 (cron interval-based
-  // → daily-based). ME-063a registra apenas os 3 workers de e-mail.
+  // → daily-based). ME-063a: 3 workers de e-mail. ME-063b: 4 jobs
+  // operacionais.
 
   const runEmailQueueJobEntry: RegisteredCronJob = {
     name: 'runEmailQueueJob',
@@ -307,6 +667,34 @@ export function createCronScheduler(
     handler: makeRunWeeklyDigestJobHandler(deps),
   };
   registry.set('runWeeklyDigestJob', runWeeklyDigestJobEntry);
+
+  const runDailyClosureJobEntry: RegisteredCronJob = {
+    name: 'runDailyClosureJob',
+    cadence: CRON_JOB_CADENCE_BY_NAME.runDailyClosureJob,
+    handler: makeRunDailyClosureJobHandler(deps),
+  };
+  registry.set('runDailyClosureJob', runDailyClosureJobEntry);
+
+  const runDailyInstrumentStatusJobEntry: RegisteredCronJob = {
+    name: 'runDailyInstrumentStatusJob',
+    cadence: CRON_JOB_CADENCE_BY_NAME.runDailyInstrumentStatusJob,
+    handler: makeRunDailyInstrumentStatusJobHandler(deps),
+  };
+  registry.set('runDailyInstrumentStatusJob', runDailyInstrumentStatusJobEntry);
+
+  const refreshCycleScheduleCountersEntry: RegisteredCronJob = {
+    name: 'refreshCycleScheduleCounters',
+    cadence: CRON_JOB_CADENCE_BY_NAME.refreshCycleScheduleCounters,
+    handler: makeRefreshCycleScheduleCountersHandler(),
+  };
+  registry.set('refreshCycleScheduleCounters', refreshCycleScheduleCountersEntry);
+
+  const archiveAiConversationsJobEntry: RegisteredCronJob = {
+    name: 'archiveAiConversationsJob',
+    cadence: CRON_JOB_CADENCE_BY_NAME.archiveAiConversationsJob,
+    handler: makeArchiveAiConversationsJobHandler(),
+  };
+  registry.set('archiveAiConversationsJob', archiveAiConversationsJobEntry);
 
   async function runByName(
     name: CronJobName,

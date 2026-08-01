@@ -44,10 +44,17 @@
 //   - `instrumento_a/d` → nunca fecham automaticamente, nunca alertam
 //     por este motor.
 
-import { and, eq, inArray, lt } from 'drizzle-orm';
+import { and, countDistinct, eq, inArray, lt } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../db/client';
-import { companies, cycleSchedule } from '../../db/schema';
+import {
+  companies,
+  copsoq_responses,
+  cycleSchedule,
+  instrumentA_responses,
+  instrumentC_assessments,
+  instrumentD_responses,
+} from '../../db/schema';
 import {
   isCicloReferenciaImediatamenteAnterior,
   getDayInTimezone,
@@ -462,4 +469,172 @@ export async function incrementCycleScheduleCounter(
     .set({ totalRespondidos: novoValor })
     .where(eq(cycleSchedule.id, id));
   return res.affectedRows;
+}
+
+// ============================================================
+// Hook 5 — refreshCycleScheduleCounters(now) — ME-063b (S354)
+// ============================================================
+
+/**
+ * Resultado canonico de `refreshCycleScheduleCounters` (§15.1.4).
+ * - `startedAt`: momento de inicio da reconciliacao (parametro `now`
+ *   do caller — deterministico).
+ * - `ciclosVarridos`: total de linhas `cycleSchedule` em status
+ *   `aberto` ou `atrasado` inspecionadas.
+ * - `ciclosReconciliados`: total de linhas cujo `totalRespondidos` foi
+ *   efetivamente atualizado (o novo valor diverge do persistido).
+ * - `ciclosSkipadosFechamentoMensal`: contagem de linhas de tipo
+ *   `fechamento_mensal` skipadas canonicamente (nao ha instrumento
+ *   com respostas a agregar).
+ * - `ciclosSkipadosNr1SemOrigem`: contagem de linhas `radar_nr1` com
+ *   `origemDbId=NULL` skipadas canonicamente (sem chave ao ciclo mae
+ *   em `copsoqCycles`).
+ */
+export interface RefreshCycleScheduleCountersResult {
+  readonly startedAt: Date;
+  readonly ciclosVarridos: number;
+  readonly ciclosReconciliados: number;
+  readonly ciclosSkipadosFechamentoMensal: number;
+  readonly ciclosSkipadosNr1SemOrigem: number;
+}
+
+/**
+ * **DOC 06 §15.1.4 + §14.8.** Reconciliacao diaria canonica dos
+ * contadores `cycleSchedule.totalRespondidos` para linhas em status
+ * `aberto` ou `atrasado`. Corrige as race conditions do incremento
+ * otimista de `incrementCycleScheduleCounter` (Hook 4 — §14.8:
+ * "reconciliacao diaria via `refreshCycleScheduleCounters`, job cron
+ * de outra ME").
+ *
+ * **Cadencia canonica (§15.1.4):** cron diario 00:15 UTC — independente
+ * da cadencia por-empresa dos jobs `runDailyClosureJob` (§15.1.1) e
+ * `runDailyInstrumentStatusJob` (§15.1.2). Nao executa
+ * `updateCycleScheduleStatuses` (JA canonicamente executado dentro do
+ * `runDailyClosureJob` Hook 1 — orquestrador `monthlyClosureOrchestrator`).
+ *
+ * **Estrategia canonica bit-exact:**
+ * - Le todas as linhas `aberto|atrasado` de uma vez (linhas `fechado`
+ *   ja tiveram contador definitivo gravado por `closeNr1Cycle` ou pelo
+ *   fluxo de fechamento canonico do proprio tipo).
+ * - Para cada linha, recalcula o `totalRespondidos` canonico por
+ *   agregacao `COUNT(DISTINCT ...)` sobre a tabela de respostas
+ *   correspondente ao `tipoCiclo`:
+ *   - `instrumento_a`: `COUNT(DISTINCT employeeId) FROM
+ *     instrumentA_responses WHERE companyId=? AND trimestre=?`.
+ *   - `instrumento_c`: `COUNT(DISTINCT employeeId) FROM
+ *     instrumentC_assessments WHERE companyId=? AND trimestre=?`.
+ *   - `instrumento_d`: `COUNT(DISTINCT respondenteId) FROM
+ *     instrumentD_responses WHERE companyId=? AND trimestre=?`.
+ *   - `radar_nr1`: `COUNT(DISTINCT employeeId) FROM copsoq_responses
+ *     WHERE cicloDbId=?` (usa `cycleSchedule.origemDbId` como chave
+ *     canonica a `copsoqCycles.id`; se `NULL`, skipa canonicamente).
+ *   - `fechamento_mensal`: skipa canonicamente (nao ha instrumento
+ *     com respostas a agregar; contador nao se aplica).
+ * - Aplica UPDATE canonico apenas se o valor recalculado diverge do
+ *   persistido — evita write desnecessario e reduz churn de
+ *   `updatedAt` em produccao.
+ *
+ * **Idempotencia canonica (§15.3):** agregacao deterministica;
+ * reexecucao no mesmo momento produz resultado bit-exact e converge
+ * para a contagem canonica em uma passagem. Compatibilidade canonica
+ * com `incrementCycleScheduleCounter` preservada — o incremento
+ * otimista continua valendo para o "tempo real" da UI; a reconciliacao
+ * canonica corrige apenas divergencias acumuladas.
+ *
+ * **Comportamento canonico em falha (§15.4):** este motor nao encapsula
+ * try/catch — o scheduler (`runByName`) e canonicamente responsavel
+ * pelo log estruturado e ausencia de retry. Excecao aqui sobe para
+ * o handler cron.
+ */
+export async function refreshCycleScheduleCounters(
+  db: RoipDatabase,
+  now: Date,
+): Promise<RefreshCycleScheduleCountersResult> {
+  const startedAt = now;
+
+  const cyclesAtivos = await db
+    .select({
+      id: cycleSchedule.id,
+      companyId: cycleSchedule.companyId,
+      tipoCiclo: cycleSchedule.tipoCiclo,
+      cicloReferencia: cycleSchedule.cicloReferencia,
+      origemDbId: cycleSchedule.origemDbId,
+      totalRespondidosAtual: cycleSchedule.totalRespondidos,
+    })
+    .from(cycleSchedule)
+    .where(inArray(cycleSchedule.status, ['aberto', 'atrasado']));
+
+  let ciclosReconciliados = 0;
+  let ciclosSkipadosFechamentoMensal = 0;
+  let ciclosSkipadosNr1SemOrigem = 0;
+
+  for (const linha of cyclesAtivos) {
+    if (linha.tipoCiclo === 'fechamento_mensal') {
+      ciclosSkipadosFechamentoMensal += 1;
+      continue;
+    }
+
+    let novoValor: number | null = null;
+
+    if (linha.tipoCiclo === 'instrumento_a') {
+      const [row] = await db
+        .select({ c: countDistinct(instrumentA_responses.employeeId) })
+        .from(instrumentA_responses)
+        .where(
+          and(
+            eq(instrumentA_responses.companyId, linha.companyId),
+            eq(instrumentA_responses.trimestre, linha.cicloReferencia),
+          ),
+        );
+      novoValor = Number(row?.c ?? 0);
+    } else if (linha.tipoCiclo === 'instrumento_c') {
+      const [row] = await db
+        .select({ c: countDistinct(instrumentC_assessments.employeeId) })
+        .from(instrumentC_assessments)
+        .where(
+          and(
+            eq(instrumentC_assessments.companyId, linha.companyId),
+            eq(instrumentC_assessments.trimestre, linha.cicloReferencia),
+          ),
+        );
+      novoValor = Number(row?.c ?? 0);
+    } else if (linha.tipoCiclo === 'instrumento_d') {
+      const [row] = await db
+        .select({ c: countDistinct(instrumentD_responses.respondenteId) })
+        .from(instrumentD_responses)
+        .where(
+          and(
+            eq(instrumentD_responses.companyId, linha.companyId),
+            eq(instrumentD_responses.trimestre, linha.cicloReferencia),
+          ),
+        );
+      novoValor = Number(row?.c ?? 0);
+    } else if (linha.tipoCiclo === 'radar_nr1') {
+      if (linha.origemDbId === null) {
+        ciclosSkipadosNr1SemOrigem += 1;
+        continue;
+      }
+      const [row] = await db
+        .select({ c: countDistinct(copsoq_responses.employeeId) })
+        .from(copsoq_responses)
+        .where(eq(copsoq_responses.cicloDbId, linha.origemDbId));
+      novoValor = Number(row?.c ?? 0);
+    }
+
+    if (novoValor !== null && novoValor !== linha.totalRespondidosAtual) {
+      await db
+        .update(cycleSchedule)
+        .set({ totalRespondidos: novoValor })
+        .where(eq(cycleSchedule.id, linha.id));
+      ciclosReconciliados += 1;
+    }
+  }
+
+  return {
+    startedAt,
+    ciclosVarridos: cyclesAtivos.length,
+    ciclosReconciliados,
+    ciclosSkipadosFechamentoMensal,
+    ciclosSkipadosNr1SemOrigem,
+  };
 }

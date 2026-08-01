@@ -15,7 +15,6 @@ import {
   CRON_JOB_CADENCE_BY_NAME,
   createCronScheduler,
   DEFAULT_CRON_SCHEDULER_DEPENDENCIES,
-  type CronJobName,
   type CronSchedulerDependencies,
 } from '../../src/server/jobs/scheduler';
 import type { EmailQueueJobResult } from '../../src/server/jobs/emailQueueJob';
@@ -90,12 +89,20 @@ describe('scheduler cron — registry canonico §15.1 + createCronScheduler', ()
     expect(typeof scheduler.listRegistered).toBe('function');
   });
 
-  it('listRegistered retorna 3 jobs ativos em ME-063a (workers de e-mail religados em ME-060)', () => {
+  it('listRegistered retorna 7 jobs canonicos pos ME-063b (3 workers e-mail ME-063a + 4 operacionais ME-063b)', () => {
     const scheduler = createCronScheduler();
     const registered = scheduler.listRegistered();
-    expect(registered).toHaveLength(3);
+    expect(registered).toHaveLength(7);
     const names = registered.map((r) => r.name);
-    expect(names).toEqual(['runEmailQueueJob', 'resetStuckEmailQueue', 'runWeeklyDigestJob']);
+    expect(names).toEqual([
+      'runEmailQueueJob',
+      'resetStuckEmailQueue',
+      'runWeeklyDigestJob',
+      'runDailyClosureJob',
+      'runDailyInstrumentStatusJob',
+      'refreshCycleScheduleCounters',
+      'archiveAiConversationsJob',
+    ]);
   });
 
   it('cadencias canonicas bit-exact §15.1 mapeadas em CRON_JOB_CADENCE_BY_NAME', () => {
@@ -121,38 +128,6 @@ describe('scheduler cron — registry canonico §15.1 + createCronScheduler', ()
     // Nao invocamos o SMTP real — apenas verificamos que o default aponta
     // para a funcao canonica (comparacao por referencia).
     expect(typeof DEFAULT_CRON_SCHEDULER_DEPENDENCIES.sendEmail).toBe('function');
-  });
-});
-
-describe('scheduler cron — runByName com job nao registrado (§15.4)', () => {
-  let client: RoipDbClient;
-  beforeAll(async () => {
-    client = createDbClient(TEST_URL);
-  });
-  afterAll(async () => {
-    await closeDbClient(client);
-  });
-
-  it('runByName com nome nao registrado retorna status=error canonico', async () => {
-    const scheduler = createCronScheduler();
-    const now = new Date('2026-01-05T10:00:00Z');
-    // Nomes canonicos de ME-063b (nao registrados em ME-063a) — devem
-    // retornar erro canonico sem lancar.
-    const naoRegistrados: CronJobName[] = [
-      'runDailyClosureJob',
-      'runDailyInstrumentStatusJob',
-      'refreshCycleScheduleCounters',
-      'archiveAiConversationsJob',
-    ];
-    for (const name of naoRegistrados) {
-      const result = await scheduler.runByName(name, client.db, now);
-      expect(result.status).toBe('error');
-      expect(result.name).toBe(name);
-      expect(result.cadence).toBe(CRON_JOB_CADENCE_BY_NAME[name]);
-      expect(result.error).toContain(name);
-      expect(result.error).toContain('nao registrado');
-      expect(result.durationMs).toBe(0);
-    }
   });
 });
 
@@ -190,7 +165,10 @@ describe('scheduler cron — runByName end-to-end com MySQL real', () => {
   it('runByName(runEmailQueueJob) processa fila vazia canonicamente (candidatosLidos=0)', async () => {
     const now = new Date('2026-01-05T10:00:00Z');
     const stub = makeStubSendEmail([]);
-    const deps: CronSchedulerDependencies = { sendEmail: stub.sendEmail };
+    const deps: CronSchedulerDependencies = {
+      ...DEFAULT_CRON_SCHEDULER_DEPENDENCIES,
+      sendEmail: stub.sendEmail,
+    };
     const scheduler = createCronScheduler(deps);
     const result = await scheduler.runByName('runEmailQueueJob', client.db, now);
     expect(result.status).toBe('ok');
@@ -229,7 +207,10 @@ describe('scheduler cron — runByName end-to-end com MySQL real', () => {
     const stub = makeStubSendEmail([
       { id: inserted.id, result: { smtpMessageId: '<abc123@test.local>' } },
     ]);
-    const scheduler = createCronScheduler({ sendEmail: stub.sendEmail });
+    const scheduler = createCronScheduler({
+      ...DEFAULT_CRON_SCHEDULER_DEPENDENCIES,
+      sendEmail: stub.sendEmail,
+    });
     const result = await scheduler.runByName('runEmailQueueJob', client.db, now);
 
     expect(result.status).toBe('ok');
@@ -305,7 +286,10 @@ describe('scheduler cron — deps canonicas propagam ao handler (§15.1.5 runEma
       scheduledFor: new Date(now.getTime() - 30_000),
     });
     const stub = makeStubSendEmail([{ id: 0, result: { smtpMessageId: '<propaga@test.local>' } }]);
-    const scheduler = createCronScheduler({ sendEmail: stub.sendEmail });
+    const scheduler = createCronScheduler({
+      ...DEFAULT_CRON_SCHEDULER_DEPENDENCIES,
+      sendEmail: stub.sendEmail,
+    });
     await scheduler.runByName('runEmailQueueJob', client.db, now);
     expect(stub.calls).toHaveLength(1);
     const firstCall = stub.calls[0];
