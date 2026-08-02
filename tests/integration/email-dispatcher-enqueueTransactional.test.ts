@@ -124,7 +124,7 @@ describe('enqueueTransactional — §12.9 marker canonico', () => {
       templateId: '4',
       payload: {
         nomeDoBruno: 'Bruno',
-        dataHora: '31/07/2026 as 14:30',
+        dataHora: '31/07/2026 às 14:30',
         novoEmail: 'novo@roip.com',
       },
     });
@@ -133,7 +133,7 @@ describe('enqueueTransactional — §12.9 marker canonico', () => {
     if (row === undefined) throw new Error('row undefined');
     const marker = row.alertIds as unknown as [string, string, string];
     const parsed = JSON.parse(marker[2]) as { dataHora: string; novoEmail: string };
-    expect(parsed.dataHora).toBe('31/07/2026 as 14:30');
+    expect(parsed.dataHora).toBe('31/07/2026 às 14:30');
     expect(parsed.novoEmail).toBe('novo@roip.com');
   });
 });

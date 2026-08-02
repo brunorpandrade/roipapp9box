@@ -110,8 +110,8 @@ describe('renderTemplateA — §12.6 integracao', () => {
       alerts,
     });
     expect(r.assunto).toBe('[ROIP APP] ACME Ltda — rot-desempenho_queda_brusca');
-    expect(r.corpoTexto).toContain('Ola, Bruno,');
-    expect(r.corpoTexto).toContain('Voce tem 1 novo(s) alerta(s)');
+    expect(r.corpoTexto).toContain('Olá, Bruno,');
+    expect(r.corpoTexto).toContain('Você tem 1 novo(s) alerta(s)');
     expect(r.corpoTexto).toContain('🔴 rot-desempenho_queda_brusca');
     expect(r.corpoTexto).toContain('ctx-desempenho_queda_brusca');
     expect(r.corpoTexto).toContain('[Ver detalhes →] /link/desempenho_queda_brusca');

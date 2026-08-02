@@ -6,20 +6,20 @@
 // - DOC 06 §11.1 (Handlebars T5 canonizada; HTML inline).
 //
 // Reproducoes bit-exact obrigatorias:
-// - Assunto: "[ROIP APP] Redefinicao de senha"
+// - Assunto: "[ROIP APP] Redefinição de senha"
 // - Corpo canonico (texto):
-//     Ola, {nomeDoUsuario}!
+//     Olá, {nomeDoUsuario}!
 //
-//     Recebemos uma solicitacao de redefinicao de senha para sua conta na
+//     Recebemos uma solicitação de redefinição de senha para sua conta na
 //     plataforma ROIP APP.
 //
-//     Clique no botao abaixo para escolher uma nova senha. O link e valido
+//     Clique no botão abaixo para escolher uma nova senha. O link é válido
 //     por 24 horas.
 //
 //     [Redefinir senha]  → link: {baseUrl}/reset-password?token={jwtToken}
 //
-//     Se voce nao solicitou essa alteracao, ignore este e-mail. Sua senha
-//     permanecera inalterada.
+//     Se você não solicitou essa alteração, ignore este e-mail. Sua senha
+//     permanecerá inalterada.
 //
 //     Atenciosamente,
 //     Equipe ROIP APP
@@ -48,21 +48,21 @@ import type { RenderedEmail, Template1Payload } from '../types';
 export const TEMPLATE_1_ID = 'roip.template.1.resetPassword' as const;
 
 /** Assunto canonico literal (§12.2). */
-export const TEMPLATE_1_ASSUNTO = '[ROIP APP] Redefinicao de senha' as const;
+export const TEMPLATE_1_ASSUNTO = '[ROIP APP] Redefinição de senha' as const;
 
 /**
  * Corpo canonico literal em texto plano (§12.2). Reproducao bit-exact
  * das linhas do §12.2. `\n` entre linhas; sem trailing whitespace.
  */
-export const TEMPLATE_1_CORPO_TEXTO = `Ola, {{nomeDoUsuario}}!
+export const TEMPLATE_1_CORPO_TEXTO = `Olá, {{nomeDoUsuario}}!
 
-Recebemos uma solicitacao de redefinicao de senha para sua conta na plataforma ROIP APP.
+Recebemos uma solicitação de redefinição de senha para sua conta na plataforma ROIP APP.
 
-Clique no botao abaixo para escolher uma nova senha. O link e valido por 24 horas.
+Clique no botão abaixo para escolher uma nova senha. O link é válido por 24 horas.
 
 [Redefinir senha]  → link: {{baseUrl}}/reset-password?token={{jwtToken}}
 
-Se voce nao solicitou essa alteracao, ignore este e-mail. Sua senha permanecera inalterada.
+Se você não solicitou essa alteração, ignore este e-mail. Sua senha permanecerá inalterada.
 
 Atenciosamente,
 Equipe ROIP APP` as const;
@@ -76,14 +76,14 @@ export const TEMPLATE_1_CORPO_HTML = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Redefinicao de senha</title>
+<title>Redefinição de senha</title>
 </head>
 <body style="font-family: Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.5; margin: 0; padding: 20px;">
-<p>Ola, {{nomeDoUsuario}}!</p>
-<p>Recebemos uma solicitacao de redefinicao de senha para sua conta na plataforma ROIP APP.</p>
-<p>Clique no botao abaixo para escolher uma nova senha. O link e valido por 24 horas.</p>
+<p>Olá, {{nomeDoUsuario}}!</p>
+<p>Recebemos uma solicitação de redefinição de senha para sua conta na plataforma ROIP APP.</p>
+<p>Clique no botão abaixo para escolher uma nova senha. O link é válido por 24 horas.</p>
 <p><a href="{{baseUrl}}/reset-password?token={{jwtToken}}" style="display: inline-block; padding: 12px 24px; background-color: #1a56db; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold;">Redefinir senha</a></p>
-<p>Se voce nao solicitou essa alteracao, ignore este e-mail. Sua senha permanecera inalterada.</p>
+<p>Se você não solicitou essa alteração, ignore este e-mail. Sua senha permanecerá inalterada.</p>
 <p>Atenciosamente,<br>Equipe ROIP APP</p>
 </body>
 </html>` as const;

@@ -10,21 +10,21 @@
 // - Assunto: "[ROIP APP] {nome_empresa} — Resumo semanal de alertas
 //            ({weekStart_DD/MM/YYYY} a {weekEnd_DD/MM/YYYY})"
 // - Corpo canonico literal:
-//     Ola, {primeiroNome},
+//     Olá, {primeiroNome},
 //
-//     Este e o resumo dos alertas acumulados na semana de
+//     Este é o resumo dos alertas acumulados na semana de
 //     {weekStart_DD/MM} a {weekEnd_DD/MM} para {nome_empresa}.
 //
-//     {N} atencao · {M} observacao
+//     {N} atenção · {M} observação
 //
-//     Atencao
+//     Atenção
 //     {lista_atencao}
 //
-//     Observacao
+//     Observação
 //     {lista_observacao}
 //
-//     Acesse o historico completo em https://app.roip.com.br/notificacoes.
-//     Este e-mail foi enviado automaticamente. Nao responda.
+//     Acesse o histórico completo em https://app.roip.com.br/notificacoes.
+//     Este e-mail foi enviado automaticamente. Não responda.
 //
 // Regras canonicas de composicao (§12.7):
 // - `critico` NAO aparece no digest (foi enviado como imediato).
@@ -137,19 +137,19 @@ function renderCorpoTexto(
   const listaAtencao = renderListaTexto(atencoes);
   const listaObservacao = renderListaTexto(observacoes);
 
-  const corpo = `Ola, {{primeiroNome}},
+  const corpo = `Olá, {{primeiroNome}},
 
-Este e o resumo dos alertas acumulados na semana de {{weekStartShort}} a {{weekEndShort}} para {{nomeEmpresa}}.
+Este é o resumo dos alertas acumulados na semana de {{weekStartShort}} a {{weekEndShort}} para {{nomeEmpresa}}.
 
-{{N}} atencao · {{M}} observacao
+{{N}} atenção · {{M}} observação
 
-Atencao
+Atenção
 ${listaAtencao}
 
-Observacao
+Observação
 ${listaObservacao}
 
-Acesse o historico completo em ${TEMPLATE_B_URL_NOTIFICACOES}. Este e-mail foi enviado automaticamente. Nao responda.`;
+Acesse o histórico completo em ${TEMPLATE_B_URL_NOTIFICACOES}. Este e-mail foi enviado automaticamente. Não responda.`;
 
   return renderTemplate(`${TEMPLATE_B_ID}.texto`, corpo, {
     primeiroNome: payload.primeiroNome,
@@ -178,15 +178,15 @@ function renderCorpoHtml(
 <title>Resumo semanal de alertas</title>
 </head>
 <body style="font-family: Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.5; margin: 0; padding: 20px;">
-<p>Ola, {{primeiroNome}},</p>
-<p>Este e o resumo dos alertas acumulados na semana de {{weekStartShort}} a {{weekEndShort}} para {{nomeEmpresa}}.</p>
-<p style="font-weight: bold;">{{N}} atencao · {{M}} observacao</p>
-<h3 style="margin-top: 24px; color: #92400e;">Atencao</h3>
+<p>Olá, {{primeiroNome}},</p>
+<p>Este é o resumo dos alertas acumulados na semana de {{weekStartShort}} a {{weekEndShort}} para {{nomeEmpresa}}.</p>
+<p style="font-weight: bold;">{{N}} atenção · {{M}} observação</p>
+<h3 style="margin-top: 24px; color: #92400e;">Atenção</h3>
 ${listaAtencaoHtml}
-<h3 style="margin-top: 24px; color: #4b5563;">Observacao</h3>
+<h3 style="margin-top: 24px; color: #4b5563;">Observação</h3>
 ${listaObservacaoHtml}
-<p style="margin-top: 24px;">Acesse o historico completo em <a href="${TEMPLATE_B_URL_NOTIFICACOES}" style="color: #1a56db;">${TEMPLATE_B_URL_NOTIFICACOES}</a>.</p>
-<p style="color: #888; font-size: 12px;">Este e-mail foi enviado automaticamente. Nao responda.</p>
+<p style="margin-top: 24px;">Acesse o histórico completo em <a href="${TEMPLATE_B_URL_NOTIFICACOES}" style="color: #1a56db;">${TEMPLATE_B_URL_NOTIFICACOES}</a>.</p>
+<p style="color: #888; font-size: 12px;">Este e-mail foi enviado automaticamente. Não responda.</p>
 </body>
 </html>`;
 

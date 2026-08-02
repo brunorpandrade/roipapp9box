@@ -89,13 +89,13 @@ describe('renderTemplateB — §12.7 integracao', () => {
     expect(r.assunto).toBe(
       '[ROIP APP] ACME Ltda — Resumo semanal de alertas (05/01/2026 a 12/01/2026)',
     );
-    expect(r.corpoTexto).toContain('Ola, Ana,');
-    // Contador: 1 atencao, 2 observacao
-    expect(r.corpoTexto).toContain('1 atencao · 2 observacao');
+    expect(r.corpoTexto).toContain('Olá, Ana,');
+    // Contador: 1 atenção, 2 observação
+    expect(r.corpoTexto).toContain('1 atenção · 2 observação');
     // Semana no formato DD/MM curto
     expect(r.corpoTexto).toContain('semana de 05/01 a 12/01');
-    expect(r.corpoTexto).toContain('Atencao');
-    expect(r.corpoTexto).toContain('Observacao');
+    expect(r.corpoTexto).toContain('Atenção');
+    expect(r.corpoTexto).toContain('Observação');
     expect(r.corpoTexto).toContain(TEMPLATE_B_URL_NOTIFICACOES);
   });
 
@@ -108,7 +108,7 @@ describe('renderTemplateB — §12.7 integracao', () => {
       weekEndFormatted: '12/01/2026',
       alerts,
     });
-    expect(r.corpoTexto).toContain('1 atencao · 0 observacao');
+    expect(r.corpoTexto).toContain('1 atenção · 0 observação');
     expect(r.corpoTexto).toContain('(nenhum)');
   });
 });

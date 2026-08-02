@@ -153,7 +153,7 @@ export interface Template3Payload {
 
 /**
  * Payload canonico do Template 4 (§12.5). `dataHora` no formato canonico
- * `DD/MM/YYYY as HH:mm` — o caller (auth.ts) formata antes de enfileirar.
+ * `DD/MM/YYYY às HH:mm` — o caller (auth.ts) formata antes de enfileirar.
  */
 export interface Template4Payload {
   readonly nomeDoBruno: string;

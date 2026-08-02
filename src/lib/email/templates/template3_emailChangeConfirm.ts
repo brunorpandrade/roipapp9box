@@ -10,20 +10,20 @@
 //   Bruno. Reproducao literal obrigatoria.
 //
 // Reproducoes bit-exact obrigatorias:
-// - Assunto: "[ROIP APP] Confirme a alteracao do seu e-mail de acesso"
+// - Assunto: "[ROIP APP] Confirme a alteração do seu e-mail de acesso"
 // - Corpo canonico:
-//     Ola, {nomeDoBruno}!
+//     Olá, {nomeDoBruno}!
 //
-//     Recebemos uma solicitacao para alterar o e-mail de acesso a
-//     plataforma ROIP APP para este endereco.
+//     Recebemos uma solicitação para alterar o e-mail de acesso à
+//     plataforma ROIP APP para este endereço.
 //
-//     Clique no botao abaixo para confirmar a alteracao. O link e valido
+//     Clique no botão abaixo para confirmar a alteração. O link é válido
 //     por 24 horas.
 //
-//     [Confirmar alteracao]  → link: {baseUrl}/confirmar-alteracao-email?token={jwtToken}
+//     [Confirmar alteração]  → link: {baseUrl}/confirmar-alteracao-email?token={jwtToken}
 //
-//     Se voce nao solicitou essa alteracao, ignore este e-mail. Nenhuma
-//     modificacao sera feita.
+//     Se você não solicitou essa alteração, ignore este e-mail. Nenhuma
+//     modificação será feita.
 //
 //     Atenciosamente,
 //     Equipe ROIP APP
@@ -49,18 +49,18 @@ export const TEMPLATE_3_ID = 'roip.template.3.emailChangeConfirm' as const;
 
 /** Assunto canonico literal (§12.4). */
 export const TEMPLATE_3_ASSUNTO =
-  '[ROIP APP] Confirme a alteracao do seu e-mail de acesso' as const;
+  '[ROIP APP] Confirme a alteração do seu e-mail de acesso' as const;
 
 /** Corpo canonico literal em texto plano (§12.4). Reproducao bit-exact. */
-export const TEMPLATE_3_CORPO_TEXTO = `Ola, {{nomeDoBruno}}!
+export const TEMPLATE_3_CORPO_TEXTO = `Olá, {{nomeDoBruno}}!
 
-Recebemos uma solicitacao para alterar o e-mail de acesso a plataforma ROIP APP para este endereco.
+Recebemos uma solicitação para alterar o e-mail de acesso à plataforma ROIP APP para este endereço.
 
-Clique no botao abaixo para confirmar a alteracao. O link e valido por 24 horas.
+Clique no botão abaixo para confirmar a alteração. O link é válido por 24 horas.
 
-[Confirmar alteracao]  → link: {{baseUrl}}/confirmar-alteracao-email?token={{jwtToken}}
+[Confirmar alteração]  → link: {{baseUrl}}/confirmar-alteracao-email?token={{jwtToken}}
 
-Se voce nao solicitou essa alteracao, ignore este e-mail. Nenhuma modificacao sera feita.
+Se você não solicitou essa alteração, ignore este e-mail. Nenhuma modificação será feita.
 
 Atenciosamente,
 Equipe ROIP APP` as const;
@@ -70,14 +70,14 @@ export const TEMPLATE_3_CORPO_HTML = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Confirmacao de alteracao de e-mail</title>
+<title>Confirmação de alteração de e-mail</title>
 </head>
 <body style="font-family: Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.5; margin: 0; padding: 20px;">
-<p>Ola, {{nomeDoBruno}}!</p>
-<p>Recebemos uma solicitacao para alterar o e-mail de acesso a plataforma ROIP APP para este endereco.</p>
-<p>Clique no botao abaixo para confirmar a alteracao. O link e valido por 24 horas.</p>
-<p><a href="{{baseUrl}}/confirmar-alteracao-email?token={{jwtToken}}" style="display: inline-block; padding: 12px 24px; background-color: #1a56db; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold;">Confirmar alteracao</a></p>
-<p>Se voce nao solicitou essa alteracao, ignore este e-mail. Nenhuma modificacao sera feita.</p>
+<p>Olá, {{nomeDoBruno}}!</p>
+<p>Recebemos uma solicitação para alterar o e-mail de acesso à plataforma ROIP APP para este endereço.</p>
+<p>Clique no botão abaixo para confirmar a alteração. O link é válido por 24 horas.</p>
+<p><a href="{{baseUrl}}/confirmar-alteracao-email?token={{jwtToken}}" style="display: inline-block; padding: 12px 24px; background-color: #1a56db; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold;">Confirmar alteração</a></p>
+<p>Se você não solicitou essa alteração, ignore este e-mail. Nenhuma modificação será feita.</p>
 <p>Atenciosamente,<br>Equipe ROIP APP</p>
 </body>
 </html>` as const;

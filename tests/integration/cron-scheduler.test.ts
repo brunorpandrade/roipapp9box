@@ -221,7 +221,7 @@ describe('scheduler cron — runByName end-to-end com MySQL real', () => {
     const firstCall = stub.calls[0];
     if (!firstCall) throw new Error('stub.calls[0] ausente — teste canonico presume 1 chamada');
     expect(firstCall.envelope.to).toBe('ana@empresa.com');
-    expect(firstCall.envelope.subject).toBe('[ROIP APP] Redefinicao de senha');
+    expect(firstCall.envelope.subject).toBe('[ROIP APP] Redefinição de senha');
 
     // Verifica que a linha foi canonicamente marcada como enviada.
     const [row] = await client.db

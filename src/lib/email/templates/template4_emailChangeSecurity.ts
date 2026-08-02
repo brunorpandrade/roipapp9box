@@ -9,17 +9,17 @@
 // Reproducoes bit-exact obrigatorias:
 // - Assunto: "[ROIP APP] Seu e-mail de acesso foi alterado"
 // - Corpo canonico:
-//     Ola, {nomeDoBruno}!
+//     Olá, {nomeDoBruno}!
 //
-//     Este e um aviso de seguranca. Seu e-mail de acesso a plataforma ROIP
+//     Este é um aviso de segurança. Seu e-mail de acesso à plataforma ROIP
 //     APP foi alterado em {dataHora}.
 //
 //     Novo e-mail: {novoEmail}
 //
-//     Se foi voce quem realizou essa alteracao, nenhuma acao e necessaria.
-//     A partir de agora, faca login usando o novo e-mail.
+//     Se foi você quem realizou essa alteração, nenhuma ação é necessária.
+//     A partir de agora, faça login usando o novo e-mail.
 //
-//     Se nao foi voce, contate imediatamente o suporte para restaurar a
+//     Se não foi você, contate imediatamente o suporte para restaurar a
 //     conta.
 //
 //     Atenciosamente,
@@ -30,7 +30,7 @@
 // - Envio para o e-mail ANTIGO **apos** conclusao bem-sucedida da
 //   alteracao (§12.5 gatilho literal).
 // - Variaveis canonicas: `{nomeDoBruno}`, `{dataHora}` no formato canonico
-//   `DD/MM/YYYY as HH:mm`, `{novoEmail}`.
+//   `DD/MM/YYYY às HH:mm`, `{novoEmail}`.
 //
 // **RV-13.** Cada export tem chamador na propria ME:
 //   - `TEMPLATE_4_ID` → `renderTemplate4` + testes.
@@ -50,15 +50,15 @@ export const TEMPLATE_4_ID = 'roip.template.4.emailChangeSecurity' as const;
 export const TEMPLATE_4_ASSUNTO = '[ROIP APP] Seu e-mail de acesso foi alterado' as const;
 
 /** Corpo canonico literal em texto plano (§12.5). Reproducao bit-exact. */
-export const TEMPLATE_4_CORPO_TEXTO = `Ola, {{nomeDoBruno}}!
+export const TEMPLATE_4_CORPO_TEXTO = `Olá, {{nomeDoBruno}}!
 
-Este e um aviso de seguranca. Seu e-mail de acesso a plataforma ROIP APP foi alterado em {{dataHora}}.
+Este é um aviso de segurança. Seu e-mail de acesso à plataforma ROIP APP foi alterado em {{dataHora}}.
 
 Novo e-mail: {{novoEmail}}
 
-Se foi voce quem realizou essa alteracao, nenhuma acao e necessaria. A partir de agora, faca login usando o novo e-mail.
+Se foi você quem realizou essa alteração, nenhuma ação é necessária. A partir de agora, faça login usando o novo e-mail.
 
-Se nao foi voce, contate imediatamente o suporte para restaurar a conta.
+Se não foi você, contate imediatamente o suporte para restaurar a conta.
 
 Atenciosamente,
 Equipe ROIP APP` as const;
@@ -68,25 +68,25 @@ export const TEMPLATE_4_CORPO_HTML = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Aviso de seguranca — e-mail alterado</title>
+<title>Aviso de segurança — e-mail alterado</title>
 </head>
 <body style="font-family: Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.5; margin: 0; padding: 20px;">
-<p>Ola, {{nomeDoBruno}}!</p>
-<p>Este e um aviso de seguranca. Seu e-mail de acesso a plataforma ROIP APP foi alterado em {{dataHora}}.</p>
+<p>Olá, {{nomeDoBruno}}!</p>
+<p>Este é um aviso de segurança. Seu e-mail de acesso à plataforma ROIP APP foi alterado em {{dataHora}}.</p>
 <p><strong>Novo e-mail:</strong> {{novoEmail}}</p>
-<p>Se foi voce quem realizou essa alteracao, nenhuma acao e necessaria. A partir de agora, faca login usando o novo e-mail.</p>
-<p>Se nao foi voce, contate imediatamente o suporte para restaurar a conta.</p>
+<p>Se foi você quem realizou essa alteração, nenhuma ação é necessária. A partir de agora, faça login usando o novo e-mail.</p>
+<p>Se não foi você, contate imediatamente o suporte para restaurar a conta.</p>
 <p>Atenciosamente,<br>Equipe ROIP APP</p>
 </body>
 </html>` as const;
 
 /**
- * Formata Date UTC para o formato canonico `DD/MM/YYYY as HH:mm` no fuso
+ * Formata Date UTC para o formato canonico `DD/MM/YYYY às HH:mm` no fuso
  * `America/Sao_Paulo` (canonico §11.1 T7 + §12.5). Consumido pelo caller
  * (`auth.confirmEmailChange`) antes de enfileirar.
  *
- * Formato canonico literal: "31/07/2026 as 14:30" — com zero-padding em
- * dia, mes, hora e minuto; ano com 4 digitos; separador " as " literal.
+ * Formato canonico literal: "31/07/2026 às 14:30" — com zero-padding em
+ * dia, mes, hora e minuto; ano com 4 digitos; separador " às " literal.
  */
 export function formatDataHoraCanonica(date: Date, timezone: string = 'America/Sao_Paulo'): string {
   const fmt = new Intl.DateTimeFormat('en-US', {
@@ -108,7 +108,7 @@ export function formatDataHoraCanonica(date: Date, timezone: string = 'America/S
   const hourRaw = byType.get('hour') ?? '00';
   const hour = hourRaw === '24' ? '00' : hourRaw;
   const minute = byType.get('minute') ?? '00';
-  return `${day}/${month}/${year} as ${hour}:${minute}`;
+  return `${day}/${month}/${year} às ${hour}:${minute}`;
 }
 
 /**

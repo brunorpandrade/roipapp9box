@@ -64,7 +64,7 @@ describe('runEmailQueueJob — fluxo transacional Super Admin (CC052)', () => {
     expect(result.outcomes.enviado).toBeGreaterThanOrEqual(1);
     expect(sendEmail).toHaveBeenCalled();
     const callArgs = sendEmail.mock.calls[0]?.[0];
-    expect(callArgs.subject).toBe('[ROIP APP] Redefinicao de senha');
+    expect(callArgs.subject).toBe('[ROIP APP] Redefinição de senha');
     expect(callArgs.to).toBe(brunoEmail);
 
     // Verifica emailQueue: status='enviado' + emailNotificationId FK
@@ -81,7 +81,7 @@ describe('runEmailQueueJob — fluxo transacional Super Admin (CC052)', () => {
       .where(eq(emailNotifications.id, q.emailNotificationId ?? 0));
     const n = nRows[0];
     if (n === undefined) throw new Error('emailNotifications row missing');
-    expect(n.assunto).toBe('[ROIP APP] Redefinicao de senha');
+    expect(n.assunto).toBe('[ROIP APP] Redefinição de senha');
     expect(n.smtpMessageId).toBe('<msg-t1@smtp>');
     expect(n.success).toBe(true);
     expect(n.companyId).toBeNull(); // CC052 preservado

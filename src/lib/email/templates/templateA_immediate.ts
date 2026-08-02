@@ -11,14 +11,14 @@
 // - Assunto (1 alerta):   "[ROIP APP] {nome_empresa} — {tipo_legivel}"
 // - Assunto (N alertas):  "[ROIP APP] {nome_empresa} — {N} novos alertas"
 // - Corpo canonico literal (estrutura fixa):
-//     Ola, {primeiroNome},
+//     Olá, {primeiroNome},
 //
-//     Voce tem {N} novo(s) alerta(s) da plataforma ROIP APP.
+//     Você tem {N} novo(s) alerta(s) da plataforma ROIP APP.
 //
 //     {lista_segmentada_por_severidade}
 //
 //     Acesse seu painel de controle em https://app.roip.com.br/painel-{perfil}.
-//     Este e-mail foi enviado automaticamente. Nao responda.
+//     Este e-mail foi enviado automaticamente. Não responda.
 //
 // Regras canonicas de segmentacao (§12.6):
 // - Ordem: primeiro `critico`, depois `atencao`.
@@ -125,13 +125,13 @@ function renderCorpoTexto(payload: TemplateAPayload, painelUrl: string): string 
     })
     .join('\n\n');
 
-  const corpo = `Ola, {{primeiroNome}},
+  const corpo = `Olá, {{primeiroNome}},
 
-Voce tem {{N}} novo(s) alerta(s) da plataforma ROIP APP.
+Você tem {{N}} novo(s) alerta(s) da plataforma ROIP APP.
 
 ${lista}
 
-Acesse seu painel de controle em {{painelUrl}}. Este e-mail foi enviado automaticamente. Nao responda.`;
+Acesse seu painel de controle em {{painelUrl}}. Este e-mail foi enviado automaticamente. Não responda.`;
 
   return renderTemplate(`${TEMPLATE_A_ID}.texto`, corpo, {
     primeiroNome: payload.primeiroNome,
@@ -164,11 +164,11 @@ function renderCorpoHtml(payload: TemplateAPayload, painelUrl: string): string {
 <title>Novos alertas ROIP APP</title>
 </head>
 <body style="font-family: Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.5; margin: 0; padding: 20px;">
-<p>Ola, {{primeiroNome}},</p>
-<p>Voce tem {{N}} novo(s) alerta(s) da plataforma ROIP APP.</p>
+<p>Olá, {{primeiroNome}},</p>
+<p>Você tem {{N}} novo(s) alerta(s) da plataforma ROIP APP.</p>
 ${listaHtml}
 <p>Acesse seu painel de controle em <a href="{{painelUrl}}" style="color: #1a56db;">{{painelUrl}}</a>.</p>
-<p style="color: #888; font-size: 12px;">Este e-mail foi enviado automaticamente. Nao responda.</p>
+<p style="color: #888; font-size: 12px;">Este e-mail foi enviado automaticamente. Não responda.</p>
 </body>
 </html>`;
 
