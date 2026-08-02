@@ -1,4 +1,5 @@
-# ROIP APP 9BOX — scripts/despachar_me.sh.tpl (ME-050/51, N2/S221).
+# ROIP APP 9BOX — scripts/despachar_me.sh.tpl (ME-050/51, N2/S221;
+# CC057 aplicada em ME-065).
 #
 # Template CONGELADO do comando de despacho ao Manus. Uso canonico:
 # copiar este arquivo, substituir os slots `{{...}}` pelos valores da
@@ -30,15 +31,36 @@ Manus, aplicar a {{ME_ID}} contra o repositorio
 `https://github.com/brunorpandrade/roipapp9box.git`, a partir do
 HEAD baseline `{{HEAD_BASELINE}}`.
 
-PASSO 1 — Preparar o clone.
+NOTA CANONICA S006 (L104 canonizada em ME-064).
+
+Arquivos operacionais S006 canonicamente NAO entram no repositorio
+em nenhum dispatch (nem aplicacao, nem commit). Higienizacao S006
+pre-commit lista bit-exact:
+
+  - `{{ZIP_FILENAME}}` (ZIP anexado ao dispatch);
+  - `manifest.sha256`;
+  - `retorno_{{ME_ID}}*.md` (retornos gerados por este dispatch);
+  - qualquer `*.md` em raiz do repositorio nao presente no manifesto
+    canonico da ME.
+
+Regra canonica: qualquer artefato de retorno gerado pelo Manus e
+operacional S006 e nunca entra em `git add`. Detectada via bug
+canonico do dispatch de commit ME-064 (RV-05 canonica ao detectar
+`retorno_meXXX.md` staged).
+
+PASSO 1 — Preparar o clone (L105 canonizada em ME-064).
 
   git clone https://github.com/brunorpandrade/roipapp9box.git
   cd roipapp9box
-  git checkout {{HEAD_BASELINE}}
+  git checkout main
+  git fetch origin
+  git reset --hard origin/main
+  [ "$(git rev-parse HEAD)" = "{{HEAD_BASELINE}}" ] || { echo "STOP — HEAD mismatch: esperado {{HEAD_BASELINE}}, obtido $(git rev-parse HEAD)"; exit 1; }
 
 Confirmar que `git rev-parse HEAD` retorna EXATAMENTE
 `{{HEAD_BASELINE}}` antes de prosseguir. Divergencia = STOP e reportar
-sem aplicar.
+sem aplicar. NUNCA usar `git checkout <SHA>` (produz detached HEAD =
+commit orfao + push "Everything up-to-date" falso).
 
 PASSO 2 — Descompactar o ZIP.
 
@@ -83,7 +105,9 @@ Gerar `retorno_{{ME_ID}}.md` contendo:
 Enviar `retorno_{{ME_ID}}.md` como upload ao Bruno.
 
 NAO COMMITAR. O commit vira em bloco separado apos a auditoria RV-01
-do Bruno.
+do Bruno. Neste dispatch de aplicacao, `retorno_{{ME_ID}}.md` e
+operacional S006 e nao entra no repositorio (conforme NOTA CANONICA
+S006 acima).
 
 ARTEFATOS CANONICOS DESTA ME:
 
