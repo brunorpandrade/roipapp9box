@@ -3,3 +3,5 @@ node_modules/
 out/
 next-env.d.ts
 src/db/migrations/
+
+docs/aceite/VALIDACAO_ACEITACAO.md

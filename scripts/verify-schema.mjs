@@ -437,9 +437,9 @@ function main() {
   console.log(`Total de FKs em tables.ts: ${totalTsFks}`);
 
   // Invariantes canonicos (§20)
-  if (totalSqlCols !== 691) {
+  if (totalSqlCols !== 692) {
     console.log(
-      `${YELLOW}AVISO:${RESET} migration tem ${totalSqlCols} colunas; canonico §20 = 691.`,
+      `${YELLOW}AVISO:${RESET} migration tem ${totalSqlCols} colunas; canonico §20 = 692.`,
     );
   }
   if (totalSqlFks !== 107) {
