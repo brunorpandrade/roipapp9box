@@ -97,12 +97,12 @@ import { createIndividualProfileRouter } from '../../src/server/routers/individu
 import { createNr1Router } from '../../src/server/routers/nr1';
 import type { PdfRendererFacade } from '../../src/server/services/pdfRenderer';
 import { createCallerFactory, createContextInner, type Context } from '../../src/server/trpc';
+import { GET as nr1DownloadReportGET } from '../../src/app/api/nr1/download-report/route';
 import {
   __setNr1DownloadReportDbClient,
   __setNr1DownloadReportNow,
   __setNr1DownloadReportPdfRenderer,
-  GET as nr1DownloadReportGET,
-} from '../../src/app/api/nr1/download-report/route';
+} from '../../src/app/api/nr1/download-report/internals';
 
 const TEST_URL =
   process.env.DATABASE_URL_TEST ?? 'mysql://root:roip_local_root@127.0.0.1:3306/roip_test';

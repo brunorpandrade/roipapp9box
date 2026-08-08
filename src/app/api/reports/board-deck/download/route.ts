@@ -1,5 +1,5 @@
 // ROIP APP 9BOX — Route Handler `GET /api/reports/board-deck/download`
-// (ME-053, S275).
+// (ME-053, S275; ME-070 refactor S366).
 //
 // Endpoint canonico de download do PDF do Board deck (DOC 03 §13.8).
 // Gera on-the-fly — sem cache. Consome o `pdfEphemeralToken`
@@ -11,11 +11,16 @@
 //      sem abertura por nivel).
 //
 // Escopo canonico §13.8: empresa ou departamento (sem equipe).
+//
+// S366 canonizada (ME-069, aplicacao bulk ME-070): estado privado
+// dbClient, renderer PDF, relogio e respectivos escape hatches
+// migraram para `./internals.ts` irmao. Este arquivo exporta apenas
+// GET para conformidade Next 15 App Router.
 
 import { NextResponse } from 'next/server';
 import { and, desc, eq, inArray, lte } from 'drizzle-orm';
 
-import { createDbClient, type RoipDbClient } from '../../../../../db/client';
+import { type RoipDbClient } from '../../../../../db/client';
 import {
   companies,
   companyEconomicDiagnosis,
@@ -28,10 +33,6 @@ import {
 import { getFatorNr1 } from '../../../../../server/services/nr1CalculationEngine';
 import { verifyPdfEphemeralToken } from '../../../../../server/auth/pdfEphemeralToken';
 import { deriveResourceIdCanonicoEscopo } from '../../../../../server/routers/exports';
-import {
-  DEFAULT_PDF_RENDERER_FACADE,
-  type PdfRendererFacade,
-} from '../../../../../server/services/pdfRenderer';
 import {
   composeBoardDeckFilename,
   renderBoardDeckHTML,
@@ -55,42 +56,7 @@ import {
   parseTrimestreCicloReferencia,
 } from '../../../../../lib/cycleDates';
 
-// ============================================================
-// Cliente injetavel
-// ============================================================
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (!url || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
-let dbClient: RoipDbClient | null = null;
-
-function getDbClient(): RoipDbClient {
-  if (dbClient === null) {
-    dbClient = createDbClient(resolveDatabaseUrl());
-  }
-  return dbClient;
-}
-
-export function __setBoardDeckDbClient(next: RoipDbClient | null): void {
-  dbClient = next;
-}
-
-let pdfRendererFacade: PdfRendererFacade = DEFAULT_PDF_RENDERER_FACADE;
-
-export function __setBoardDeckPdfRenderer(next: PdfRendererFacade | null): void {
-  pdfRendererFacade = next ?? DEFAULT_PDF_RENDERER_FACADE;
-}
-
-let nowFn: () => Date = () => new Date();
-
-export function __setBoardDeckNow(next: (() => Date) | null): void {
-  nowFn = next ?? (() => new Date());
-}
+import { getDbClient, getNowFn, getPdfRendererFacade } from './internals';
 
 // ============================================================
 // Handler canonico
@@ -109,7 +75,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'escopo_invalido' }, { status: 400 });
   }
 
-  const now = nowFn();
+  const now = getNowFn()();
   const verification = await verifyPdfEphemeralToken(token, now);
   if (!verification.valid) {
     return NextResponse.json(
@@ -195,7 +161,7 @@ export async function GET(req: Request): Promise<NextResponse> {
 
   let pdfBytes: Uint8Array;
   try {
-    pdfBytes = await pdfRendererFacade.renderPdf(html);
+    pdfBytes = await getPdfRendererFacade().renderPdf(html);
   } catch (err) {
     return NextResponse.json(
       { error: 'falha_render', message: (err as Error).message },

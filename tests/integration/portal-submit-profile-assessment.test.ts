@@ -36,6 +36,7 @@ import {
   NUM_ITENS_TOTAL,
   type IndividualProfileEngineFacade,
 } from '../../src/server/services/individualProfileEngine';
+import { POST as submitPOST } from '../../src/app/api/portal/submit-profile-assessment/route';
 import {
   __setPortalSubmitProfileAssessmentDbClient,
   __setPortalSubmitProfileAssessmentEngine,
@@ -47,11 +48,10 @@ import {
   MSG_BODY_MALFORMED,
   MSG_INVALID_TOKEN,
   MSG_MISSING_TOKEN,
-  POST as submitPOST,
   todosOs10BlocosConcluidos,
   todosOs80Presentes,
   type SubmitProfileAssessmentSuccess,
-} from '../../src/app/api/portal/submit-profile-assessment/route';
+} from '../../src/app/api/portal/submit-profile-assessment/internals';
 
 const TEST_URL =
   process.env.DATABASE_URL_TEST ?? 'mysql://root:roip_local_root@127.0.0.1:3306/roip_test';

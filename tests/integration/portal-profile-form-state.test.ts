@@ -29,6 +29,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/client';
 import { companies, employees, individualProfileAssessments } from '../../src/db/schema';
 import { signPortalToken } from '../../src/server/auth/portalToken';
+import { POST as profileFormStatePOST } from '../../src/app/api/portal/profile-form-state/route';
 import {
   __setPortalProfileFormStateDbClient,
   __setPortalProfileFormStateNow,
@@ -36,9 +37,8 @@ import {
   MSG_EXPIRED_TOKEN,
   MSG_INVALID_TOKEN,
   MSG_MISSING_TOKEN,
-  POST as profileFormStatePOST,
   type ProfileFormStateSuccess,
-} from '../../src/app/api/portal/profile-form-state/route';
+} from '../../src/app/api/portal/profile-form-state/internals';
 
 const TEST_URL =
   process.env.DATABASE_URL_TEST ?? 'mysql://root:roip_local_root@127.0.0.1:3306/roip_test';

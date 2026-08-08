@@ -1,5 +1,6 @@
 // ROIP APP 9BOX — Route Handler `POST /api/portal/profile-form-state`
-// (ME-049a; DOC 03 §10.13 primeira proc + DOC 05 §7.5).
+// (ME-049a; DOC 03 §10.13 primeira proc + DOC 05 §7.5; ME-070 refactor
+// S366).
 //
 // Vigesima ME do Bloco B3 (ME-049a) — abre a superficie canonica de
 // LEITURA do questionario do Perfil Individual via portal. Precedente
@@ -30,18 +31,23 @@
 // Convencoes canonicas herdadas:
 //   - DI setters (padrao S036/S105): 2 hooks canonicos
 //     `__setPortalProfileFormStateDbClient`,
-//     `__setPortalProfileFormStateNow`.
+//     `__setPortalProfileFormStateNow` (agora em `./internals.ts`).
 //   - Zero SQL cru: 100% Drizzle tipado (RV-12).
 //   - Zero code dead: cada export tem chamador direto no teste
 //     `tests/integration/portal-profile-form-state.test.ts`.
 //   - L77: erros do mysql2 propagam ao caller externo embrulhados em
 //     DrizzleQueryError; o `try/catch` do handler converte em 500
 //     canonico (`MSG_UNEXPECTED`).
+//
+// S366 canonizada (ME-069, aplicacao bulk ME-070): constantes de
+// mensagem, tipo `ProfileFormStateSuccess`, estado privado dbClient,
+// relogio e escape hatches migraram para `./internals.ts` irmao.
+// Este arquivo exporta apenas POST para conformidade Next 15 App
+// Router.
 
 import { NextResponse } from 'next/server';
 import { and, desc, eq } from 'drizzle-orm';
 
-import { createDbClient, type RoipDbClient } from '../../../../db/client';
 import { individualProfileAssessments } from '../../../../db/schema';
 import { verifyPortalToken } from '../../../../server/auth/portalToken';
 import {
@@ -49,84 +55,16 @@ import {
   NUM_ITENS_POR_BLOCO,
 } from '../../../../server/services/individualProfileEngine';
 
-// ============================================================
-// Mensagens canonicas (paralelas a save-instrument-a)
-// ============================================================
-
-/** Token ausente no body -> 400. */
-export const MSG_MISSING_TOKEN = 'Sessão ausente.';
-
-/** Token invalido -> 401. */
-export const MSG_INVALID_TOKEN = 'Sessão inválida. Faça a identificação novamente.';
-
-/** Token expirado -> 401. */
-export const MSG_EXPIRED_TOKEN = 'Sessão expirada. Faça a identificação novamente.';
-
-/** Body malformado -> 400. */
-export const MSG_BODY_MALFORMED = 'Requisição malformada.';
-
-/** Erro inesperado -> 500. */
-export const MSG_UNEXPECTED = 'Erro ao ler o estado do questionário.';
-
-// ============================================================
-// Cliente DB e DI para testes
-// ============================================================
-
-let dbClient: RoipDbClient | null = null;
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (typeof url !== 'string' || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
-function getDbClient(): RoipDbClient {
-  if (dbClient === null) {
-    dbClient = createDbClient(resolveDatabaseUrl());
-  }
-  return dbClient;
-}
-
-/** Hook interno para testes (padrao S036). */
-export function __setPortalProfileFormStateDbClient(next: RoipDbClient | null): void {
-  dbClient = next;
-}
-
-// ============================================================
-// Relogio injetavel
-// ============================================================
-
-let nowFn: () => Date = () => new Date();
-
-/** Hook interno para testes (padrao S100 replicado). */
-export function __setPortalProfileFormStateNow(next: (() => Date) | null): void {
-  nowFn = next ?? (() => new Date());
-}
-
-// ============================================================
-// Retornos canonicos
-// ============================================================
-
-/**
- * Corpo canonico 200 de `profile-form-state`. Contrato tipado
- * (DOC 05 §7.5: pop-up abre em `blocoAtual`, respostas de blocos
- * anteriores pre-preenchidas visualmente, barra de progresso mostra
- * `blocoAtual - 1` de 10 concluidos).
- */
-export interface ProfileFormStateSuccess {
-  companyId: number;
-  userType: 'employee' | 'clevel';
-  userId: number;
-  assessmentId: number;
-  tentativa: number;
-  blocoAtual: number;
-  blocosCompletos: readonly number[];
-  respostas: Record<string, string | number>;
-  totalBlocos: number;
-  itensPorBloco: number;
-}
+import {
+  MSG_BODY_MALFORMED,
+  MSG_EXPIRED_TOKEN,
+  MSG_INVALID_TOKEN,
+  MSG_MISSING_TOKEN,
+  MSG_UNEXPECTED,
+  getDbClient,
+  getNowFn,
+  type ProfileFormStateSuccess,
+} from './internals';
 
 // ============================================================
 // Body parsing
@@ -162,7 +100,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   const { companyId, titularType, titularId } = verified.claims;
-  const now = nowFn();
+  const now = getNowFn()();
 
   const { db } = getDbClient();
 

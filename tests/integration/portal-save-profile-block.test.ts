@@ -25,6 +25,7 @@ import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/c
 import { companies, employees, individualProfileAssessments } from '../../src/db/schema';
 import { signPortalToken } from '../../src/server/auth/portalToken';
 import { itemKey } from '../../src/server/services/individualProfileEngine';
+import { POST as saveBlockPOST } from '../../src/app/api/portal/save-profile-block/route';
 import {
   __setPortalSaveProfileBlockDbClient,
   __setPortalSaveProfileBlockNow,
@@ -39,9 +40,8 @@ import {
   MSG_BODY_MALFORMED,
   MSG_INVALID_TOKEN,
   MSG_MISSING_TOKEN,
-  POST as saveBlockPOST,
   type SaveProfileBlockSuccess,
-} from '../../src/app/api/portal/save-profile-block/route';
+} from '../../src/app/api/portal/save-profile-block/internals';
 
 const TEST_URL =
   process.env.DATABASE_URL_TEST ?? 'mysql://root:roip_local_root@127.0.0.1:3306/roip_test';

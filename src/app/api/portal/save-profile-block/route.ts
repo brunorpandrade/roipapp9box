@@ -1,5 +1,6 @@
 // ROIP APP 9BOX — Route Handler `POST /api/portal/save-profile-block`
-// (ME-049a; DOC 03 §10.13 segunda proc + DOC 05 §7.5).
+// (ME-049a; DOC 03 §10.13 segunda proc + DOC 05 §7.5; ME-070 refactor
+// S366).
 //
 // Vigesima ME do Bloco B3 (ME-049a) — abre a superficie canonica de
 // ESCRITA de progresso do questionario do Perfil Individual. Precedente
@@ -34,94 +35,45 @@
 // Convencoes canonicas herdadas:
 //   - DI setters (padrao S036): 2 hooks
 //     `__setPortalSaveProfileBlockDbClient`,
-//     `__setPortalSaveProfileBlockNow`.
+//     `__setPortalSaveProfileBlockNow` (agora em `./internals.ts` sob
+//     S366).
 //   - Zero SQL cru: 100% Drizzle tipado (RV-12).
 //   - Zero code dead: cada export tem chamador direto no teste
 //     `tests/integration/portal-save-profile-block.test.ts`.
+//
+// S366 canonizada (ME-069, aplicacao bulk ME-070): constantes de
+// mensagem, tipo `SaveProfileBlockSuccess`, funcoes `itensDoBloco` e
+// `bloqueEstaCompleto`, estado privado dbClient, relogio e escape
+// hatches migraram para `./internals.ts` irmao. Este arquivo exporta
+// apenas POST para conformidade Next 15 App Router.
 
 import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 
-import { createDbClient, type RoipDbClient } from '../../../../db/client';
 import { individualProfileAssessments } from '../../../../db/schema';
 import { verifyPortalToken } from '../../../../server/auth/portalToken';
+import { NUM_BLOCOS_TOTAL } from '../../../../server/services/individualProfileEngine';
+
 import {
-  itemKey,
-  NUM_BLOCOS_TOTAL,
-  NUM_ITENS_POR_BLOCO,
-} from '../../../../server/services/individualProfileEngine';
+  MSG_ASSESSMENT_NAO_EM_ANDAMENTO,
+  MSG_ASSESSMENT_NAO_ENCONTRADO,
+  MSG_ASSESSMENT_TITULAR_MISMATCH,
+  MSG_BLOCO_FORA_DE_RANGE,
+  MSG_BLOCO_INCOMPLETO,
+  MSG_BLOCO_JA_COMPLETO_TRAVADO,
+  MSG_BODY_MALFORMED,
+  MSG_EXPIRED_TOKEN,
+  MSG_INVALID_TOKEN,
+  MSG_MISSING_TOKEN,
+  MSG_UNEXPECTED,
+  bloqueEstaCompleto,
+  getDbClient,
+  getNowFn,
+  type SaveProfileBlockSuccess,
+} from './internals';
 
 // ============================================================
-// Mensagens canonicas
-// ============================================================
-
-export const MSG_MISSING_TOKEN = 'Sessão ausente.';
-export const MSG_INVALID_TOKEN = 'Sessão inválida. Faça a identificação novamente.';
-export const MSG_EXPIRED_TOKEN = 'Sessão expirada. Faça a identificação novamente.';
-export const MSG_BODY_MALFORMED = 'Requisição malformada.';
-export const MSG_ASSESSMENT_NAO_ENCONTRADO = 'Tentativa não encontrada.';
-export const MSG_ASSESSMENT_TITULAR_MISMATCH = 'Tentativa não pertence ao titular.';
-export const MSG_ASSESSMENT_NAO_EM_ANDAMENTO =
-  'Tentativa não está em preenchimento (já enviada ou inconsistente).';
-export const MSG_BLOCO_FORA_DE_RANGE = 'Bloco fora do intervalo canônico (1 a 10).';
-export const MSG_BLOCO_INCOMPLETO = 'Todos os 8 itens do bloco precisam estar respondidos.';
-export const MSG_BLOCO_JA_COMPLETO_TRAVADO =
-  'Bloco já concluído. Só é possível voltar 1 bloco a partir do bloco atual.';
-export const MSG_UNEXPECTED = 'Erro ao gravar o progresso do bloco.';
-
-// ============================================================
-// Cliente DB e DI para testes
-// ============================================================
-
-let dbClient: RoipDbClient | null = null;
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (typeof url !== 'string' || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
-function getDbClient(): RoipDbClient {
-  if (dbClient === null) {
-    dbClient = createDbClient(resolveDatabaseUrl());
-  }
-  return dbClient;
-}
-
-/** Hook interno para testes. */
-export function __setPortalSaveProfileBlockDbClient(next: RoipDbClient | null): void {
-  dbClient = next;
-}
-
-// ============================================================
-// Relogio injetavel
-// ============================================================
-
-let nowFn: () => Date = () => new Date();
-
-/** Hook interno para testes. */
-export function __setPortalSaveProfileBlockNow(next: (() => Date) | null): void {
-  nowFn = next ?? (() => new Date());
-}
-
-// ============================================================
-// Retornos canonicos
-// ============================================================
-
-export interface SaveProfileBlockSuccess {
-  companyId: number;
-  userType: 'employee' | 'clevel';
-  userId: number;
-  assessmentId: number;
-  blocoAtual: number;
-  blocosCompletos: readonly number[];
-  totalBlocos: number;
-}
-
-// ============================================================
-// Body parsing e helpers
+// Body parsing e helpers privados
 // ============================================================
 
 interface RequestBody {
@@ -129,35 +81,6 @@ interface RequestBody {
   assessmentId: unknown;
   bloco: unknown;
   respostas: unknown;
-}
-
-/**
- * Retorna o intervalo canonico de itens (1..80) que o bloco N cobre.
- * Bloco 1 -> [1..8]; Bloco 2 -> [9..16]; ...; Bloco 10 -> [73..80].
- */
-export function itensDoBloco(bloco: number): readonly number[] {
-  const inicio = (bloco - 1) * NUM_ITENS_POR_BLOCO + 1;
-  const out: number[] = [];
-  for (let i = 0; i < NUM_ITENS_POR_BLOCO; i += 1) out.push(inicio + i);
-  return out;
-}
-
-/**
- * Valida que todos os 8 itens do bloco estao presentes no payload
- * de respostas do bloco (record de `ITEM_XXX` -> `string | number`).
- * Nao valida tipo/valor por item — a Camada 2 do motor faz o dispatch.
- */
-export function bloqueEstaCompleto(
-  bloco: number,
-  respostasBloco: Record<string, unknown>,
-): boolean {
-  const itens = itensDoBloco(bloco);
-  for (const item of itens) {
-    if (!(itemKey(item) in respostasBloco)) return false;
-    const v = respostasBloco[itemKey(item)];
-    if (v === null || v === undefined) return false;
-  }
-  return true;
 }
 
 function normalizeRespostas(raw: unknown): Record<string, string | number> | null {
@@ -213,7 +136,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ msg }, { status: 401 });
   }
   const { companyId, titularType, titularId } = verified.claims;
-  const now = nowFn();
+  const now = getNowFn()();
 
   const { db } = getDbClient();
 

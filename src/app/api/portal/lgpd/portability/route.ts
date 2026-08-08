@@ -1,5 +1,5 @@
 // ROIP APP 9BOX — Route Handler `GET /api/portal/lgpd/portability`
-// (ME-062b, DOC 06 §19.6, S197 + S207 + S343).
+// (ME-062b, DOC 06 §19.6, S197 + S207 + S343; ME-070 refactor S366).
 //
 // Endpoint canonico de download do PDF de portabilidade LGPD do
 // titular autenticado no portal do colaborador. Chamado pelo botao
@@ -38,10 +38,14 @@
 // GET canonico: o botao do modal dispara `<a href="?token=...">` ou
 // equivalente; Content-Disposition attachment funciona bem com GET;
 // nao ha corpo (dados vem do token verificado).
+//
+// S366 canonizada (ME-069, aplicacao bulk ME-070): constantes de
+// mensagem, estado privado dbClient, renderer PDF, relogio e escape
+// hatches migraram para `./internals.ts` irmao. Este arquivo exporta
+// apenas GET para conformidade Next 15 App Router.
 
 import { NextResponse } from 'next/server';
 
-import { createDbClient, type RoipDbClient } from '../../../../../db/client';
 import { verifyPortalToken } from '../../../../../server/auth/portalToken';
 import {
   buildLgpdPortabilityPayload,
@@ -52,70 +56,17 @@ import {
   composeLgpdPortabilityFilename,
   renderLgpdPortabilityHTML,
 } from '../../../../../server/pdf-templates/lgpdPortabilityTemplate';
+
 import {
-  DEFAULT_PDF_RENDERER_FACADE,
-  type PdfRendererFacade,
-} from '../../../../../server/services/pdfRenderer';
-
-// ============================================================
-// Mensagens canonicas exportadas (padrao consolidado)
-// ============================================================
-
-export const MSG_INVALID_TOKEN_LGPD_PORTABILITY =
-  'Sessão inválida. Faça a identificação novamente.';
-export const MSG_EXPIRED_TOKEN_LGPD_PORTABILITY =
-  'Sessão expirada. Faça a identificação novamente.';
-export const MSG_MISSING_TOKEN_LGPD_PORTABILITY = 'Sessão ausente.';
-export const MSG_TITULAR_NOT_FOUND_LGPD_PORTABILITY = 'Titular não encontrado.';
-export const MSG_COMPANY_NOT_FOUND_LGPD_PORTABILITY = 'Empresa não encontrada.';
-
-// ============================================================
-// Cliente de banco injetavel (S036)
-// ============================================================
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (typeof url !== 'string' || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
-let dbClient: RoipDbClient | null = null;
-
-function getDbClient(): RoipDbClient {
-  if (dbClient === null) {
-    dbClient = createDbClient(resolveDatabaseUrl());
-  }
-  return dbClient;
-}
-
-/** Hook interno para testes substituirem o client (S036). */
-export function __setLgpdPortabilityDbClient(next: RoipDbClient | null): void {
-  dbClient = next;
-}
-
-// ============================================================
-// Renderer PDF injetavel (S260)
-// ============================================================
-
-let pdfRendererFacade: PdfRendererFacade = DEFAULT_PDF_RENDERER_FACADE;
-
-/** Hook interno para testes substituirem o renderer (S260). */
-export function __setLgpdPortabilityPdfRenderer(next: PdfRendererFacade | null): void {
-  pdfRendererFacade = next ?? DEFAULT_PDF_RENDERER_FACADE;
-}
-
-// ============================================================
-// Relogio injetavel (S100 / padrao consolidado)
-// ============================================================
-
-let nowFn: () => Date = () => new Date();
-
-/** Hook interno para testes substituirem o `now` (S100). */
-export function __setLgpdPortabilityNow(next: (() => Date) | null): void {
-  nowFn = next ?? (() => new Date());
-}
+  MSG_COMPANY_NOT_FOUND_LGPD_PORTABILITY,
+  MSG_EXPIRED_TOKEN_LGPD_PORTABILITY,
+  MSG_INVALID_TOKEN_LGPD_PORTABILITY,
+  MSG_MISSING_TOKEN_LGPD_PORTABILITY,
+  MSG_TITULAR_NOT_FOUND_LGPD_PORTABILITY,
+  getDbClient,
+  getNowFn,
+  getPdfRendererFacade,
+} from './internals';
 
 // ============================================================
 // Retornos canonicos padronizados
@@ -189,7 +140,7 @@ export async function GET(req: Request): Promise<NextResponse> {
   }
 
   // Data canonica de geracao (`YYYY-MM-DD` UTC, deterministico).
-  const now = nowFn();
+  const now = getNowFn()();
   const yy = now.getUTCFullYear();
   const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
   const dd = String(now.getUTCDate()).padStart(2, '0');
@@ -211,7 +162,7 @@ export async function GET(req: Request): Promise<NextResponse> {
   // `puppeteer-core` com binario canonico do ambiente.
   let pdfBytes: Uint8Array;
   try {
-    pdfBytes = await pdfRendererFacade.renderPdf(html);
+    pdfBytes = await getPdfRendererFacade().renderPdf(html);
   } catch (err) {
     return returnFalhaRender((err as Error).message);
   }

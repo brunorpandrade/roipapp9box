@@ -70,7 +70,7 @@ import {
   type SeveridadeUi,
   type StatusUi,
 } from './mappings';
-import type { NotificacoesListResult, NotificacoesListRow } from './page';
+import type { NotificacoesListResult, NotificacoesListRow } from './internals';
 
 // -----------------------------------------------------------------------
 // Props

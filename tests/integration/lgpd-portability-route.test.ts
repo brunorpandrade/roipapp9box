@@ -40,16 +40,16 @@ import {
 } from '../../src/db/schema';
 import { signPortalToken } from '../../src/server/auth/portalToken';
 import type { PdfRendererFacade } from '../../src/server/services/pdfRenderer';
+import { GET as lgpdPortabilityGET } from '../../src/app/api/portal/lgpd/portability/route';
 import {
   __setLgpdPortabilityDbClient,
   __setLgpdPortabilityNow,
   __setLgpdPortabilityPdfRenderer,
-  GET as lgpdPortabilityGET,
   MSG_EXPIRED_TOKEN_LGPD_PORTABILITY,
   MSG_INVALID_TOKEN_LGPD_PORTABILITY,
   MSG_MISSING_TOKEN_LGPD_PORTABILITY,
   MSG_TITULAR_NOT_FOUND_LGPD_PORTABILITY,
-} from '../../src/app/api/portal/lgpd/portability/route';
+} from '../../src/app/api/portal/lgpd/portability/internals';
 
 const TEST_URL =
   process.env.DATABASE_URL_TEST ?? 'mysql://root:roip_local_root@127.0.0.1:3306/roip_test';

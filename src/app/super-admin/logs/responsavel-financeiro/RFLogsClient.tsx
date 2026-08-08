@@ -30,7 +30,7 @@ import {
   resolveEventTypeBadgeStyle,
   resolveEventTypeLabel,
 } from './mappings';
-import type { EmpresaOption, RFLogListResult, RFLogListRow } from './page';
+import type { EmpresaOption, RFLogListResult, RFLogListRow } from './internals';
 
 // -----------------------------------------------------------------------
 // Props

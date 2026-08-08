@@ -31,7 +31,7 @@ import {
   insertNotification,
   markNotificationRead,
 } from '../../src/server/services/notifications';
-import { loadNotificacoesPage } from '../../src/app/notificacoes/page';
+import { loadNotificacoesPage } from '../../src/app/notificacoes/internals';
 import {
   CANONICAL_DEFAULT_FILTERS,
   type NotificacoesFilters,

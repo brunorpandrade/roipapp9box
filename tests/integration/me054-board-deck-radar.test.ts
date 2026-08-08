@@ -26,12 +26,12 @@ import {
 import { signPdfEphemeralToken } from '../../src/server/auth/pdfEphemeralToken';
 import { deriveResourceIdCanonicoEscopo } from '../../src/server/routers/exports';
 import type { PdfRendererFacade } from '../../src/server/services/pdfRenderer';
+import { GET as boardDeckGet } from '../../src/app/api/reports/board-deck/download/route';
 import {
   __setBoardDeckDbClient,
   __setBoardDeckNow,
   __setBoardDeckPdfRenderer,
-  GET as boardDeckGet,
-} from '../../src/app/api/reports/board-deck/download/route';
+} from '../../src/app/api/reports/board-deck/download/internals';
 
 const TEST_URL =
   process.env.DATABASE_URL_TEST ?? 'mysql://root:roip_local_root@127.0.0.1:3306/roip_test';

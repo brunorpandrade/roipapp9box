@@ -15,7 +15,7 @@
 import { closeDbClient, createDbClient } from '../../../../db/client';
 import { getServerSession } from '../../../../server/session/serverSession';
 
-import { loadRFLogsPage, type RFLogListResult } from './page';
+import { loadRFLogsPage, type RFLogListResult } from './internals';
 import { type RFLogsFilters } from './filters';
 
 function resolveDatabaseUrl(): string {

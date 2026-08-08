@@ -23,6 +23,7 @@ import {
   copsoq_responses,
   employees,
 } from '../../src/db/schema';
+import { POST as saveNr1POST } from '../../src/app/api/portal/save-nr1-response/route';
 import {
   __setPortalSaveNr1ResponseDbClient,
   __setPortalSaveNr1ResponseNow,
@@ -39,9 +40,8 @@ import {
   MSG_MISSING_TOKEN_NR1_SAVE,
   MSG_SEM_SNAPSHOT_NR1,
   normalizeRespostasNr1,
-  POST as saveNr1POST,
   type SaveNr1ResponseSuccess,
-} from '../../src/app/api/portal/save-nr1-response/route';
+} from '../../src/app/api/portal/save-nr1-response/internals';
 import { signNr1StartToken } from '../../src/server/auth/nr1StartToken';
 import { signPortalToken } from '../../src/server/auth/portalToken';
 import {

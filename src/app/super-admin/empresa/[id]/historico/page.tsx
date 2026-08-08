@@ -24,8 +24,15 @@
 //
 // **RV-13.** Cada export tem chamador na propria ME:
 //   - `HistoricoPage` (default export) → runtime Next 15.
-//   - `getHistoricoCanonicalDefaultFilters` → runtime (fallback quando
-//     Next 15 nao passa searchParams em contexto de teste unit isolado).
+//   - `getHistoricoCanonicalDefaultFilters` migrou para
+//     `./internals.ts` sob S366 CC068 (ME-070). Consumido como
+//     fallback quando Next 15 nao passa searchParams em contexto de
+//     teste unit isolado.
+//
+// S366 canonizada (ME-069 piloto para route.ts; ME-070 CC068 aplicacao
+// tambem para page.tsx): helper de fallback migrou para
+// `./internals.ts` irmao. Este arquivo exporta apenas o default para
+// conformidade Next 15 App Router (`next build`).
 
 import { notFound, redirect } from 'next/navigation';
 import type { JSX } from 'react';
@@ -42,11 +49,7 @@ import { resolveProfileKey } from '../../../../../lib/session/resolveProfileKey'
 import { getServerSession } from '../../../../../server/session/serverSession';
 
 import { HistoricoClient } from './HistoricoClient';
-import {
-  CANONICAL_HISTORICO_DEFAULT_FILTERS,
-  parseHistoricoFiltersFromSearchParams,
-  type HistoricoFilters,
-} from './filters';
+import { parseHistoricoFiltersFromSearchParams } from './filters';
 
 function resolveDatabaseUrl(): string {
   const url = process.env.DATABASE_URL;
@@ -172,9 +175,7 @@ export default async function HistoricoPage(props: PageProps): Promise<JSX.Eleme
 
 // -----------------------------------------------------------------------
 // Fallback canonico (Next 15 chama sem searchParams em contexto de
-// teste unit isolado)
+// teste unit isolado) — migrado para `./internals.ts` sob S366 CC068
+// (ME-070). Testes que precisavam de `getHistoricoCanonicalDefaultFilters`
+// agora importam de `./internals` diretamente.
 // -----------------------------------------------------------------------
-
-export function getHistoricoCanonicalDefaultFilters(): HistoricoFilters {
-  return CANONICAL_HISTORICO_DEFAULT_FILTERS;
-}

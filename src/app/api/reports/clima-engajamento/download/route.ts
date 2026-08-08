@@ -1,5 +1,5 @@
 // ROIP APP 9BOX — Route Handler `GET /api/reports/clima-engajamento/download`
-// (ME-053, S275).
+// (ME-053, S275; ME-070 refactor S366).
 //
 // Endpoint canonico de download do PDF de Clima e engajamento
 // (DOC 03 §13.6). Gera on-the-fly, sem cache, sem persistencia. Nao
@@ -19,12 +19,17 @@
 // - 401 — JWT ausente ou invalido.
 // - 403 — perfil sem permissao.
 // - 404 — empresa/agregados de clima ausentes.
+//
+// S366 canonizada (ME-069, aplicacao bulk ME-070): estado privado
+// dbClient, renderer PDF, relogio e respectivos escape hatches
+// migraram para `./internals.ts` irmao. Este arquivo exporta apenas
+// GET para conformidade Next 15 App Router.
 
 import { NextResponse } from 'next/server';
 import { and, desc, eq } from 'drizzle-orm';
 import { jwtVerify } from 'jose';
 
-import { createDbClient, type RoipDbClient } from '../../../../../db/client';
+import { type RoipDbClient } from '../../../../../db/client';
 import {
   cLevelMembers,
   climateEngagementData,
@@ -39,51 +44,12 @@ import {
   type ClimaBlocoEscopo,
 } from '../../../../../server/pdf-templates/climaEngajamentoTemplate';
 import {
-  DEFAULT_PDF_RENDERER_FACADE,
-  type PdfRendererFacade,
-} from '../../../../../server/services/pdfRenderer';
-import {
   EXEC_REPORT_CLIMA_PISO_RESPONDENTES,
   EXEC_REPORT_NOTA_AGREGACAO_DEPARTAMENTO,
   EXEC_REPORT_NOTA_AGREGACAO_EMPRESA,
 } from '../../../../../server/services/executiveReportEngine';
 
-// ============================================================
-// Cliente injetavel
-// ============================================================
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (!url || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
-let dbClient: RoipDbClient | null = null;
-
-function getDbClient(): RoipDbClient {
-  if (dbClient === null) {
-    dbClient = createDbClient(resolveDatabaseUrl());
-  }
-  return dbClient;
-}
-
-export function __setClimaDownloadDbClient(next: RoipDbClient | null): void {
-  dbClient = next;
-}
-
-let pdfRendererFacade: PdfRendererFacade = DEFAULT_PDF_RENDERER_FACADE;
-
-export function __setClimaDownloadPdfRenderer(next: PdfRendererFacade | null): void {
-  pdfRendererFacade = next ?? DEFAULT_PDF_RENDERER_FACADE;
-}
-
-let nowFn: () => Date = () => new Date();
-
-export function __setClimaDownloadNow(next: (() => Date) | null): void {
-  nowFn = next ?? (() => new Date());
-}
+import { getDbClient, getNowFn, getPdfRendererFacade } from './internals';
 
 // ============================================================
 // Helper: extrai + verifica JWT do request
@@ -274,7 +240,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     blocosDepartamentos.push({ ...blocoDept, equipes });
   }
 
-  const now = nowFn();
+  const now = getNowFn()();
   const geradoEmIso = now.toISOString();
   const razaoSocialSan = sanitizeRazaoSocial(company.razaoSocial);
   const html = renderClimaEngajamentoHTML({
@@ -288,7 +254,7 @@ export async function GET(req: Request): Promise<NextResponse> {
 
   let pdfBytes: Uint8Array;
   try {
-    pdfBytes = await pdfRendererFacade.renderPdf(html);
+    pdfBytes = await getPdfRendererFacade().renderPdf(html);
   } catch (err) {
     return NextResponse.json(
       { error: 'falha_render', message: (err as Error).message },

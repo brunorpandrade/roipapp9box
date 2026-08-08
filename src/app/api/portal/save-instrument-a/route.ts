@@ -1,5 +1,6 @@
 // ROIP APP 9BOX — Route Handler `POST /api/portal/save-instrument-a`
-// (ME-039, editado em ME-040; §6.8 primeira linha do DOC 03).
+// (ME-039, editado em ME-040; §6.8 primeira linha do DOC 03; ME-070
+// refactor S366).
 //
 // Decima ME do Bloco B3 (ME-039) — abriu a superficie canonica de
 // ESCRITA do Instrumento A. Decima primeira ME do Bloco B3 (ME-040) —
@@ -30,13 +31,14 @@
 //     "ja enviado, imutavel sem desbloqueio").
 //
 // Hook canonico do motor de plenitude (S105 herdado do S060 do Eixo X):
-// setter `__setPortalSaveInstrumentAPlenitudeEngine` permite substituir
-// o default `DEFAULT_PLENITUDE_ENGINE` (ME-040) em testes. Producao
-// aponta para o motor real desta ME. Chamado sincrono in-band FORA da
-// transacao (S102) apos INSERT e OVERWRITE: le A + C do trio canonico
-// e upserta `plenitudeData` (§6.4). Se A ou C esta incompleto, o motor
-// upserta com scores nulos (§6.4 literal — "campos de score nulos");
-// se ambos completos, calcula e persiste os scores.
+// setter `__setPortalSaveInstrumentAPlenitudeEngine` (agora em
+// `./internals.ts` sob S366) permite substituir o default
+// `DEFAULT_PLENITUDE_ENGINE` (ME-040) em testes. Producao aponta para
+// o motor real desta ME. Chamado sincrono in-band FORA da transacao
+// (S102) apos INSERT e OVERWRITE: le A + C do trio canonico e upserta
+// `plenitudeData` (§6.4). Se A ou C esta incompleto, o motor upserta
+// com scores nulos (§6.4 literal — "campos de score nulos"); se ambos
+// completos, calcula e persiste os scores.
 //
 // Sem rate limit dedicado (canonico §5.8 nao contempla — o gate LGPD
 // e o login `/api/portal/login` ja rate-limitados na ME-023 sao os
@@ -49,21 +51,22 @@
 // auto-suficiente (mesmo padrao de `consent-lgpd`). A visao agregada
 // administrativa (`getInstrumentAStatus` §6.8 segunda linha) vive na
 // plataforma admin e nasce em ME futura.
+//
+// S366 canonizada (ME-069, aplicacao bulk ME-070): constantes de
+// mensagem, tipo `SaveInstrumentASuccess`, estado privado dbClient,
+// relogio, motor de plenitude e escape hatches migraram para
+// `./internals.ts` irmao. Este arquivo exporta apenas POST para
+// conformidade Next 15 App Router.
 
 import { NextResponse } from 'next/server';
 import { and, eq } from 'drizzle-orm';
 
-import { createDbClient, type RoipDbClient } from '../../../../db/client';
 import { companies, employees, instrumentA_responses } from '../../../../db/schema';
 import {
   getInstrumentoABDataAbertura,
   parseTrimestreCicloReferencia,
 } from '../../../../lib/cycleDates';
 import { verifyPortalToken } from '../../../../server/auth/portalToken';
-import {
-  DEFAULT_PLENITUDE_ENGINE,
-  type PlenitudeEngineFacade,
-} from '../../../../server/services/plenitudeCalculationEngine';
 import {
   findVigenteInstrumentUnlockA,
   itensCobremGridCanonicoA,
@@ -77,101 +80,16 @@ import {
   TRIMESTRE_SCHEMA_INSTRUMENT_A,
 } from '../../../../server/routers/instrumentA';
 
-// ============================================================
-// Mensagens canonicas de token (paralelas a ME-023, S036 literal)
-// ============================================================
-
-/** Token ausente no body -> 400 (§4.3 padrao portal). */
-export const MSG_MISSING_TOKEN = 'Sessão ausente.';
-
-/** Token invalido -> 401 (§4.3 padrao portal). */
-export const MSG_INVALID_TOKEN = 'Sessão inválida. Faça a identificação novamente.';
-
-/** Token expirado -> 401 (§4.3 padrao portal). */
-export const MSG_EXPIRED_TOKEN = 'Sessão expirada. Faça a identificação novamente.';
-
-/** Body malformado (payload nao-JSON, campos ausentes, tipos errados) -> 400. */
-export const MSG_BODY_MALFORMED = 'Requisição malformada.';
-
-// ============================================================
-// Cliente DB e DI para testes (padrao S036 herdado da ME-023)
-// ============================================================
-
-let dbClient: RoipDbClient | null = null;
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (typeof url !== 'string' || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
-function getDbClient(): RoipDbClient {
-  if (dbClient === null) {
-    dbClient = createDbClient(resolveDatabaseUrl());
-  }
-  return dbClient;
-}
-
-/**
- * Hook interno para testes de integracao substituirem o client
- * (padrao S036 da ME-023 — `__setPortalXxxDbClient`). Consumido por
- * `tests/integration/portal-save-instrument-a.test.ts`.
- */
-export function __setPortalSaveInstrumentADbClient(next: RoipDbClient | null): void {
-  dbClient = next;
-}
-
-// ============================================================
-// Relogio injetavel (paralelo a S100 do router A)
-// ============================================================
-
-let nowFn: () => Date = () => new Date();
-
-/**
- * Hook interno para testes substituirem o relogio, permitindo cobertura
- * deterministica dos ramos de janela (`nao_aberta`, `aberta`,
- * `desbloqueada`). Passar `null` restaura o default `() => new Date()`.
- */
-export function __setPortalSaveInstrumentANow(next: (() => Date) | null): void {
-  nowFn = next ?? (() => new Date());
-}
-
-// ============================================================
-// Motor de plenitude injetavel (S105 herdado do S060 do Eixo X)
-// ============================================================
-
-let plenitudeEngine: PlenitudeEngineFacade = DEFAULT_PLENITUDE_ENGINE;
-
-/**
- * Hook interno para testes substituirem o motor de plenitude, permitindo
- * assertividade de acoplamento (spy que conta chamadas / valida input) e
- * isolamento de defeitos do motor durante o teste do Route Handler.
- * Passar `null` restaura o default `DEFAULT_PLENITUDE_ENGINE` (ME-040).
- */
-export function __setPortalSaveInstrumentAPlenitudeEngine(
-  next: PlenitudeEngineFacade | null,
-): void {
-  plenitudeEngine = next ?? DEFAULT_PLENITUDE_ENGINE;
-}
-
-// ============================================================
-// Retornos canonicos
-// ============================================================
-
-/**
- * Corpo canonico 200 do save. `operacao` distingue INSERT (primeiro
- * envio) de OVERWRITE (dentro de desbloqueio vigente).
- */
-export interface SaveInstrumentASuccess {
-  companyId: number;
-  employeeId: number;
-  trimestre: string;
-  itensGravados: number;
-  operacao: 'insert' | 'overwrite';
-  respondidoEm: string;
-}
+import {
+  MSG_BODY_MALFORMED,
+  MSG_EXPIRED_TOKEN,
+  MSG_INVALID_TOKEN,
+  MSG_MISSING_TOKEN,
+  getDbClient,
+  getNowFn,
+  getPortalSaveInstrumentAPlenitudeEngine,
+  type SaveInstrumentASuccess,
+} from './internals';
 
 // ============================================================
 // Body parsing
@@ -286,7 +204,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ msg: MSG_BODY_MALFORMED }, { status: 400 });
   }
   const dataAbertura = getInstrumentoABDataAbertura(parsed.ano, parsed.trimestre, comp.timezone);
-  const now = nowFn();
+  const now = getNowFn()();
 
   // §6.1 — antes do dia 16 do ultimo mes -> nao aberto (S095).
   if (now < dataAbertura) {
@@ -310,6 +228,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   const jaExiste = jaExistemRows.length > 0;
 
   const desbloqueioVigente = await findVigenteInstrumentUnlockA(db, titularId, trimestre, now);
+  const plenitudeEngine = getPortalSaveInstrumentAPlenitudeEngine();
 
   if (jaExiste) {
     if (!desbloqueioVigente) {

@@ -47,7 +47,7 @@ import { getServerSession, type ServerSession } from '../../server/session/serve
 import { archiveNotification, markNotificationRead } from '../../server/services/notifications';
 
 import type { NotificacoesFilters } from './filters';
-import type { NotificacoesListResult } from './page';
+import type { NotificacoesListResult } from './internals';
 
 // -----------------------------------------------------------------------
 // Contexto canonico do destinatario
@@ -247,7 +247,7 @@ export async function listarNotificacoesAction(
   const dest = resolveDestinatario(session);
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    const { loadNotificacoesPage } = await import('./page');
+    const { loadNotificacoesPage } = await import('./internals');
     return await loadNotificacoesPage(client.db, dest.tipo, dest.employeeId, filters);
   } finally {
     await closeDbClient(client);

@@ -62,6 +62,7 @@ import {
   NUM_ITENS_POR_DIMENSAO_PLENITUDE,
   type PlenitudeEngineFacade,
 } from '../../src/server/services/plenitudeCalculationEngine';
+import { POST as saveInstrumentAPOST } from '../../src/app/api/portal/save-instrument-a/route';
 import {
   __setPortalSaveInstrumentADbClient,
   __setPortalSaveInstrumentANow,
@@ -70,9 +71,8 @@ import {
   MSG_EXPIRED_TOKEN,
   MSG_INVALID_TOKEN,
   MSG_MISSING_TOKEN,
-  POST as saveInstrumentAPOST,
   type SaveInstrumentASuccess,
-} from '../../src/app/api/portal/save-instrument-a/route';
+} from '../../src/app/api/portal/save-instrument-a/internals';
 
 const TEST_URL =
   process.env.DATABASE_URL_TEST ?? 'mysql://root:roip_local_root@127.0.0.1:3306/roip_test';

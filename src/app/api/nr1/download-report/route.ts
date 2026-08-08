@@ -1,5 +1,5 @@
 // ROIP APP 9BOX — Route Handler `GET /api/nr1/download-report`
-// (ME-050/51, S250 + S254).
+// (ME-050/51, S250 + S254; ME-070 refactor S366).
 //
 // Endpoint canonico de download do PDF do Radar NR-1 (DOC 03 §11.12).
 // Consome o `pdfEphemeralToken` (S254, HS256/TTL 300s) via query
@@ -33,68 +33,23 @@
 // - 401 — token ausente, invalido, expirado, ou scope errado.
 // - 404 — ciclo nao existe ou nao esta fechado; empresa nao existe.
 // - 500 — falha na renderizacao (Puppeteer, storage etc.).
+//
+// S366 canonizada (ME-069, aplicacao bulk ME-070): estado privado
+// dbClient, renderer PDF, relogio e respectivos escape hatches
+// migraram para `./internals.ts` irmao. Este arquivo exporta apenas
+// GET para conformidade Next 15 App Router (`next build`).
 
 import { NextResponse } from 'next/server';
 
-import { createDbClient, type RoipDbClient } from '../../../../db/client';
 import { verifyPdfEphemeralToken } from '../../../../server/auth/pdfEphemeralToken';
 import { buildNr1TemplateInput } from '../../../../server/services/nr1Report';
-import {
-  DEFAULT_PDF_RENDERER_FACADE,
-  type PdfRendererFacade,
-} from '../../../../server/services/pdfRenderer';
 import { insertRadarNR1Report } from '../../../../server/services/radarNR1Reports';
 import {
   composeNr1ReportFilename,
   renderNr1ReportHTML,
 } from '../../../../server/pdf-templates/nr1Template';
 
-// ============================================================
-// Cliente de banco (S036)
-// ============================================================
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (!url || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
-let dbClient: RoipDbClient | null = null;
-
-function getDbClient(): RoipDbClient {
-  if (dbClient === null) {
-    dbClient = createDbClient(resolveDatabaseUrl());
-  }
-  return dbClient;
-}
-
-/** Hook interno para testes substituirem o client (S036). */
-export function __setNr1DownloadReportDbClient(next: RoipDbClient | null): void {
-  dbClient = next;
-}
-
-// ============================================================
-// Renderer PDF injetavel (S260)
-// ============================================================
-
-let pdfRendererFacade: PdfRendererFacade = DEFAULT_PDF_RENDERER_FACADE;
-
-/** Hook interno para testes substituirem o renderer (S260). */
-export function __setNr1DownloadReportPdfRenderer(next: PdfRendererFacade | null): void {
-  pdfRendererFacade = next ?? DEFAULT_PDF_RENDERER_FACADE;
-}
-
-// ============================================================
-// Relogio injetavel (S100)
-// ============================================================
-
-let nowFn: () => Date = () => new Date();
-
-export function __setNr1DownloadReportNow(next: (() => Date) | null): void {
-  nowFn = next ?? (() => new Date());
-}
+import { getDbClient, getNowFn, getPdfRendererFacade } from './internals';
 
 // ============================================================
 // Retornos canonicos
@@ -127,6 +82,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     return RETURNS.tokenAusente();
   }
 
+  const nowFn = getNowFn();
   const now = nowFn();
   const verification = await verifyPdfEphemeralToken(token, now);
   if (!verification.valid) {
@@ -166,7 +122,7 @@ export async function GET(req: Request): Promise<NextResponse> {
   // Converte em PDF via facade.
   let pdfBytes: Uint8Array;
   try {
-    pdfBytes = await pdfRendererFacade.renderPdf(html);
+    pdfBytes = await getPdfRendererFacade().renderPdf(html);
   } catch (err) {
     return RETURNS.falhaRender((err as Error).message);
   }

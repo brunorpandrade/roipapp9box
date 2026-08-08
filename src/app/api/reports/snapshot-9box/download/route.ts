@@ -1,5 +1,5 @@
 // ROIP APP 9BOX — Route Handler `GET /api/reports/snapshot-9box/download`
-// (ME-053, S275).
+// (ME-053, S275; ME-070 refactor S366).
 //
 // Endpoint canonico de download do PDF do Snapshot 9-Box (DOC 03
 // §13.7). Gera on-the-fly — sem cache, sem persistencia do binario.
@@ -16,18 +16,19 @@
 // deterministicamente da mesma tripla (companyId, escopoTipo,
 // escopoReferencia) — o handler recomputa e compara para prevenir
 // reuso do token com parametros diferentes.
+//
+// S366 canonizada (ME-069, aplicacao bulk ME-070): estado privado
+// dbClient, renderer PDF, relogio e respectivos escape hatches
+// migraram para `./internals.ts` irmao. Este arquivo exporta apenas
+// GET para conformidade Next 15 App Router.
 
 import { NextResponse } from 'next/server';
 import { and, eq, inArray } from 'drizzle-orm';
 
-import { createDbClient, type RoipDbClient } from '../../../../../db/client';
+import { type RoipDbClient } from '../../../../../db/client';
 import { companies, employees, nineBoxClassifications } from '../../../../../db/schema';
 import { verifyPdfEphemeralToken } from '../../../../../server/auth/pdfEphemeralToken';
 import { deriveResourceIdCanonicoEscopo } from '../../../../../server/routers/exports';
-import {
-  DEFAULT_PDF_RENDERER_FACADE,
-  type PdfRendererFacade,
-} from '../../../../../server/services/pdfRenderer';
 import {
   composeSnapshot9BoxFilename,
   NINE_BOX_QUADRANTES,
@@ -39,42 +40,7 @@ import {
 } from '../../../../../server/pdf-templates/snapshot9BoxTemplate';
 import { sanitizeRazaoSocial } from '../../../../../server/routers/spreadsheets';
 
-// ============================================================
-// Cliente injetavel
-// ============================================================
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (!url || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
-let dbClient: RoipDbClient | null = null;
-
-function getDbClient(): RoipDbClient {
-  if (dbClient === null) {
-    dbClient = createDbClient(resolveDatabaseUrl());
-  }
-  return dbClient;
-}
-
-export function __setSnapshot9BoxDbClient(next: RoipDbClient | null): void {
-  dbClient = next;
-}
-
-let pdfRendererFacade: PdfRendererFacade = DEFAULT_PDF_RENDERER_FACADE;
-
-export function __setSnapshot9BoxPdfRenderer(next: PdfRendererFacade | null): void {
-  pdfRendererFacade = next ?? DEFAULT_PDF_RENDERER_FACADE;
-}
-
-let nowFn: () => Date = () => new Date();
-
-export function __setSnapshot9BoxNow(next: (() => Date) | null): void {
-  nowFn = next ?? (() => new Date());
-}
+import { getDbClient, getNowFn, getPdfRendererFacade } from './internals';
 
 // ============================================================
 // Handler canonico
@@ -93,7 +59,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'escopo_invalido' }, { status: 400 });
   }
 
-  const now = nowFn();
+  const now = getNowFn()();
   const verification = await verifyPdfEphemeralToken(token, now);
   if (!verification.valid) {
     return NextResponse.json(
@@ -183,7 +149,7 @@ export async function GET(req: Request): Promise<NextResponse> {
 
   let pdfBytes: Uint8Array;
   try {
-    pdfBytes = await pdfRendererFacade.renderPdf(html);
+    pdfBytes = await getPdfRendererFacade().renderPdf(html);
   } catch (err) {
     return NextResponse.json(
       { error: 'falha_render', message: (err as Error).message },

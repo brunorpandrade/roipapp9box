@@ -17,6 +17,13 @@
 // **RV-13.** Cada export tem chamador na propria ME:
 //   - default export → runtime Next 15.
 //   - `loadEmpresasListForBruno` → mesmo arquivo (chamador local).
+//   - `BrunoDALEmpresaOption` migrou para `./internals.ts` sob S366
+//     CC068 (ME-070). Consumido por client component e teste.
+//
+// S366 canonizada (ME-069 piloto para route.ts; ME-070 CC068 aplicacao
+// tambem para page.tsx): tipo publico migrou para `./internals.ts`
+// irmao. Este arquivo exporta apenas o default para conformidade Next
+// 15 App Router (`next build`).
 
 import { redirect } from 'next/navigation';
 import { asc } from 'drizzle-orm';
@@ -36,17 +43,14 @@ import { getServerSession } from '../../../../server/session/serverSession';
 
 import { DALLogsBrunoClient } from './DALLogsBrunoClient';
 
+import { type BrunoDALEmpresaOption } from './internals';
+
 function resolveDatabaseUrl(): string {
   const url = process.env.DATABASE_URL;
   if (url === undefined || url.length === 0) {
     throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
   }
   return url;
-}
-
-export interface BrunoDALEmpresaOption {
-  readonly id: number;
-  readonly nomeFantasia: string;
 }
 
 async function loadEmpresasListForBruno(

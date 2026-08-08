@@ -22,21 +22,21 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/client';
 import { cLevelMembers, companies, employees, lgpdConsents } from '../../src/db/schema';
 import { LGPD_TERM_VERSION } from '../../src/lib/env';
+import { POST as portalLoginPOST } from '../../src/app/api/portal/login/route';
 import {
   __setPortalLoginDbClient,
   MSG_COMPANY_INACTIVE,
   MSG_CPF_NOT_FOUND,
   MSG_INVALID_CPF,
   MSG_RATE_LIMIT,
-  POST as portalLoginPOST,
-} from '../../src/app/api/portal/login/route';
+} from '../../src/app/api/portal/login/internals';
+import { POST as portalConsentPOST } from '../../src/app/api/portal/consent-lgpd/route';
 import {
   __setPortalConsentDbClient,
   MSG_EXPIRED_TOKEN,
   MSG_INVALID_TOKEN,
   MSG_MISSING_TOKEN,
-  POST as portalConsentPOST,
-} from '../../src/app/api/portal/consent-lgpd/route';
+} from '../../src/app/api/portal/consent-lgpd/internals';
 import { signPortalToken } from '../../src/server/auth/portalToken';
 import { createCompany } from '../../src/server/services/companies';
 import { createEmployee } from '../../src/server/services/employees';

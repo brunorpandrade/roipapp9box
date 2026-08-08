@@ -24,6 +24,7 @@ import {
   copsoqCycleSnapshot,
   employees,
 } from '../../src/db/schema';
+import { POST as nr1FormStatePOST } from '../../src/app/api/portal/nr1-form-state/route';
 import {
   __setPortalNr1FormStateDbClient,
   __setPortalNr1FormStateNow,
@@ -36,8 +37,7 @@ import {
   MSG_INVALID_TOKEN_NR1_FORM,
   MSG_MISSING_TOKEN_NR1_FORM,
   type Nr1FormStateSuccess,
-  POST as nr1FormStatePOST,
-} from '../../src/app/api/portal/nr1-form-state/route';
+} from '../../src/app/api/portal/nr1-form-state/internals';
 import { verifyNr1StartToken } from '../../src/server/auth/nr1StartToken';
 import { signPortalToken } from '../../src/server/auth/portalToken';
 import {

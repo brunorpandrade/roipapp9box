@@ -1,5 +1,5 @@
 // ROIP APP 9BOX — Route Handler `GET /api/reports/executive/download`
-// (ME-053, S275).
+// (ME-053, S275; ME-070 refactor S366).
 //
 // Endpoint canonico de download do PDF do Relatorio executivo
 // trimestral (DOC 03 §13.5). Consome o `pdfEphemeralToken`
@@ -22,61 +22,18 @@
 // - 200 + application/pdf — sucesso.
 // - 401 — token ausente/invalido/expirado/scope errado.
 // - 404 — cache ausente ou binario nao encontrado no storage.
+//
+// S366 canonizada (ME-069, aplicacao bulk ME-070): estado privado
+// dbClient, storage facade, relogio e respectivos escape hatches
+// migraram para `./internals.ts` irmao. Este arquivo exporta apenas
+// GET para conformidade Next 15 App Router.
 
 import { NextResponse } from 'next/server';
 
-import { createDbClient, type RoipDbClient } from '../../../../../db/client';
 import { verifyPdfEphemeralToken } from '../../../../../server/auth/pdfEphemeralToken';
 import { getExecutiveReportCacheById } from '../../../../../server/services/executiveReportCache';
-import {
-  DEFAULT_EXECUTIVE_REPORT_STORAGE,
-  type ExecutiveReportStorageFacade,
-} from '../../../../../server/services/executiveReportStorage';
 
-// ============================================================
-// Cliente de banco (S036)
-// ============================================================
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (!url || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
-let dbClient: RoipDbClient | null = null;
-
-function getDbClient(): RoipDbClient {
-  if (dbClient === null) {
-    dbClient = createDbClient(resolveDatabaseUrl());
-  }
-  return dbClient;
-}
-
-export function __setExecutiveDownloadDbClient(next: RoipDbClient | null): void {
-  dbClient = next;
-}
-
-// ============================================================
-// Storage injetavel (S276)
-// ============================================================
-
-let storageFacade: ExecutiveReportStorageFacade = DEFAULT_EXECUTIVE_REPORT_STORAGE;
-
-export function __setExecutiveDownloadStorage(next: ExecutiveReportStorageFacade | null): void {
-  storageFacade = next ?? DEFAULT_EXECUTIVE_REPORT_STORAGE;
-}
-
-// ============================================================
-// Relogio injetavel (S100)
-// ============================================================
-
-let nowFn: () => Date = () => new Date();
-
-export function __setExecutiveDownloadNow(next: (() => Date) | null): void {
-  nowFn = next ?? (() => new Date());
-}
+import { getDbClient, getExecutiveDownloadStorage, getNowFn } from './internals';
 
 // ============================================================
 // Handler canonico
@@ -89,7 +46,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'token_ausente' }, { status: 401 });
   }
 
-  const now = nowFn();
+  const now = getNowFn()();
   const verification = await verifyPdfEphemeralToken(token, now);
   if (!verification.valid) {
     return NextResponse.json(
@@ -116,7 +73,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'company_mismatch' }, { status: 401 });
   }
 
-  const bytes = await storageFacade.readPdfFromPath(cacheRow.conteudoPdfUrl);
+  const bytes = await getExecutiveDownloadStorage().readPdfFromPath(cacheRow.conteudoPdfUrl);
   if (bytes === null) {
     return NextResponse.json({ error: 'binario_nao_encontrado' }, { status: 404 });
   }

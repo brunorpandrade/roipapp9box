@@ -53,6 +53,7 @@ import {
   type IqlCalculationResult,
   type IqlEngineFacade,
 } from '../../src/server/services/iqlCalculationEngine';
+import { POST as saveInstrumentDPOST } from '../../src/app/api/portal/save-instrument-d/route';
 import {
   __setPortalSaveInstrumentDDbClient,
   __setPortalSaveInstrumentDIqlEngine,
@@ -61,9 +62,8 @@ import {
   MSG_EXPIRED_TOKEN,
   MSG_INVALID_TOKEN,
   MSG_MISSING_TOKEN,
-  POST as saveInstrumentDPOST,
   type SaveInstrumentDSuccess,
-} from '../../src/app/api/portal/save-instrument-d/route';
+} from '../../src/app/api/portal/save-instrument-d/internals';
 
 const TEST_URL =
   process.env.DATABASE_URL_TEST ?? 'mysql://root:roip_local_root@127.0.0.1:3306/roip_test';

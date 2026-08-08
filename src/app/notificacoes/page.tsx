@@ -1,4 +1,5 @@
-// ROIP APP 9BOX — rota canonica /notificacoes (ME-057a).
+// ROIP APP 9BOX — rota canonica /notificacoes (ME-057a; ME-070 refactor
+// S366 CC068).
 //
 // Origem canonica:
 // - DOC 05 §14.19 (Rota `/notificacoes`) — barra de filtros com 6
@@ -32,31 +33,33 @@
 //
 // **RV-13.** Cada export tem chamador na propria ME:
 //   - `NotificacoesListResult`, `NotificacoesListRow`,
-//     `loadNotificacoesPage` → `actions.ts` (re-fetch de filtros e
-//     paginacao) + `me057a-notificacoes.test.ts` (integration).
+//     `loadNotificacoesPage`, `getCanonicalDefaultFilters` migraram
+//     para `./internals.ts` sob S366 CC068 (ME-070). Consumidos por
+//     `actions.ts` (re-fetch de filtros e paginacao) +
+//     `me057a-notificacoes.test.ts` (integration).
 //   - default export → runtime Next 15.
+//
+// S366 canonizada (ME-069 piloto para route.ts; ME-070 CC068 aplicacao
+// tambem para page.tsx): tipos publicos, funcao de query e helper de
+// fallback migraram para `./internals.ts` irmao. Este arquivo exporta
+// apenas o default para conformidade Next 15 App Router (`next build`).
 
 import { redirect } from 'next/navigation';
-import { and, desc, eq, gte, isNotNull, isNull, like, lt, or, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import type { JSX } from 'react';
 
 import { Layout } from '../../components/shell/Layout';
 import { closeDbClient, createDbClient, type RoipDatabase } from '../../db/client';
-import { employees, employeeLeaderHistory, notifications } from '../../db/schema';
-import type { NotificationTipo, Severidade } from '../../db/schema/enums';
+import { employees, employeeLeaderHistory } from '../../db/schema';
 import { COLORS } from '../../lib/design-tokens/colors';
 import { resolveMenuItems } from '../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { getServerSession, type ServerSession } from '../../server/session/serverSession';
 
 import { NotificacoesClient } from './NotificacoesClient';
-import {
-  CANONICAL_DEFAULT_FILTERS,
-  parseFiltersFromSearchParams,
-  resolvePeriodoRange,
-  type NotificacoesFilters,
-} from './filters';
-import { resolveTiposFromCategoria } from './mappings';
+import { parseFiltersFromSearchParams } from './filters';
+
+import { loadNotificacoesPage } from './internals';
 
 function resolveDatabaseUrl(): string {
   const url = process.env.DATABASE_URL;
@@ -64,36 +67,6 @@ function resolveDatabaseUrl(): string {
     throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
   }
   return url;
-}
-
-// -----------------------------------------------------------------------
-// Tipos publicos do resultado
-// -----------------------------------------------------------------------
-
-/**
- * Linha canonica da tabela renderizada §14.19. Inclui campos necessarios
- * para as 8 colunas (checkbox, data/hora, tipo, severidade, titulo,
- * colaborador, status, acao). `colaboradorNome` derivado do
- * `subtitulo` da notificacao ou de query complementar (fase futura); por
- * ora usa `subtitulo` como fonte canonica quando disponivel.
- */
-export interface NotificacoesListRow {
-  readonly id: number;
-  readonly tipo: NotificationTipo;
-  readonly severidade: Severidade;
-  readonly titulo: string;
-  readonly subtitulo: string | null;
-  readonly linkDestino: string | null;
-  readonly lidaEm: Date | null;
-  readonly arquivadaEm: Date | null;
-  readonly createdAt: Date;
-}
-
-export interface NotificacoesListResult {
-  readonly rows: readonly NotificacoesListRow[];
-  readonly totalCount: number;
-  readonly unreadCount: number;
-  readonly filtersApplied: NotificacoesFilters;
 }
 
 // -----------------------------------------------------------------------
@@ -144,165 +117,6 @@ async function loadFlagsForRhSession(
     isLider: row.isLider === true,
     isResponsavelFinanceiro: row.isResponsavelFinanceiro === true,
     hasDescendingChain: chainRows.length > 0,
-  };
-}
-
-// -----------------------------------------------------------------------
-// Query canonica da lista (server-side, Drizzle tipado)
-// -----------------------------------------------------------------------
-
-/**
- * Carrega uma pagina da lista de notificacoes aplicando os filtros
- * canonicos §14.19. Fonte unica de query — invocada tanto pelo server
- * component na renderizacao inicial quanto pela `listarNotificacoesAction`
- * em re-fetches subsequentes (RV-12 100% Drizzle tipado + DRY).
- *
- * Convencao canonica:
- * - `destinatarioTipo` + `destinatarioEmployeeId` sao **guards
- *   obrigatorios** do WHERE (defense-in-depth contra chamadas mal
- *   formadas). Bruno usa (`'bruno'`, NULL); RH usa (`'rh'`, userId).
- * - Filtros construidos como conjuncao de clausulas opcionais. Filtro
- *   ausente = clausula ausente.
- */
-export async function loadNotificacoesPage(
-  db: RoipDatabase,
-  destinatarioTipo: 'bruno' | 'rh',
-  destinatarioEmployeeId: number | null,
-  filters: NotificacoesFilters,
-): Promise<NotificacoesListResult> {
-  const now = new Date();
-  const periodoRange = resolvePeriodoRange(
-    filters.periodo,
-    filters.periodoPersonalizadoInicio,
-    filters.periodoPersonalizadoFim,
-    now,
-  );
-
-  // Clausula de destinatario (obrigatoria)
-  const destClause =
-    destinatarioEmployeeId === null
-      ? and(
-          eq(notifications.destinatarioTipo, destinatarioTipo),
-          isNull(notifications.destinatarioEmployeeId),
-        )
-      : and(
-          eq(notifications.destinatarioTipo, destinatarioTipo),
-          eq(notifications.destinatarioEmployeeId, destinatarioEmployeeId),
-        );
-
-  // Clausula de categoria (tipo IN [...] quando filtro != 'todos')
-  const tiposFiltrados = resolveTiposFromCategoria(filters.categoria);
-  const categoriaClause =
-    filters.categoria === 'todos'
-      ? undefined
-      : tiposFiltrados.length === 0
-        ? sql`1 = 0` // categoria valida mas sem tipos mapeados (ex: 'plenitude')
-        : or(...tiposFiltrados.map((t) => eq(notifications.tipo, t)));
-
-  // Clausula de severidade
-  const severidadeClause =
-    filters.severidade === 'todas' ? undefined : eq(notifications.severidade, filters.severidade);
-
-  // Clausula de periodo (createdAt range)
-  const periodoClause =
-    periodoRange === null
-      ? filters.periodo === 'personalizado'
-        ? sql`1 = 0` // personalizado sem datas validas → vazio canonico
-        : undefined
-      : and(
-          gte(notifications.createdAt, periodoRange.from),
-          lt(notifications.createdAt, periodoRange.to),
-        );
-
-  // Clausula de status (mapping canonico §14.19 → mappings.ts)
-  const statusClause = (() => {
-    switch (filters.status) {
-      case 'nao_lidas_e_lidas':
-        return isNull(notifications.arquivadaEm);
-      case 'nao_lidas':
-        return and(isNull(notifications.arquivadaEm), isNull(notifications.lidaEm));
-      case 'lidas':
-        return and(isNull(notifications.arquivadaEm), isNotNull(notifications.lidaEm));
-      case 'arquivadas':
-        return isNotNull(notifications.arquivadaEm);
-      case 'todas':
-        return undefined;
-    }
-  })();
-
-  // Clausula de busca (LIKE em titulo OR subtitulo — sem colaborador
-  // dedicado; refactor futuro quando linkage `destinatarioEmployeeId ×
-  // employees.nome` estiver populado para busca por nome de colaborador
-  // referido, nao destinatario. Nesta ME §14.19 aplicamos LIKE em campos
-  // textuais canonicos do notif — cobre uso pratico e mantem WHERE
-  // seguro via prepared parameter do Drizzle).
-  const searchClause =
-    filters.searchColaborador === ''
-      ? undefined
-      : or(
-          like(notifications.titulo, `%${filters.searchColaborador}%`),
-          like(notifications.subtitulo, `%${filters.searchColaborador}%`),
-        );
-
-  const whereClause = and(
-    destClause,
-    categoriaClause,
-    severidadeClause,
-    periodoClause,
-    statusClause,
-    searchClause,
-  );
-
-  const offset = (filters.page - 1) * filters.pageSize;
-
-  const [rowsRaw, totalRow, unreadRow] = await Promise.all([
-    db
-      .select({
-        id: notifications.id,
-        tipo: notifications.tipo,
-        severidade: notifications.severidade,
-        titulo: notifications.titulo,
-        subtitulo: notifications.subtitulo,
-        linkDestino: notifications.linkDestino,
-        lidaEm: notifications.lidaEm,
-        arquivadaEm: notifications.arquivadaEm,
-        createdAt: notifications.createdAt,
-      })
-      .from(notifications)
-      .where(whereClause)
-      .orderBy(desc(notifications.createdAt), desc(notifications.id))
-      .limit(filters.pageSize)
-      .offset(offset),
-    db
-      .select({ total: sql<number>`count(*)`.mapWith(Number) })
-      .from(notifications)
-      .where(whereClause),
-    // unread count SEMPRE ignora filtros de status/periodo/etc — reflete
-    // o header canonico "{N} notificacoes · {X} nao lidas". "Nao lidas"
-    // canonicamente exclui arquivadas.
-    db
-      .select({ total: sql<number>`count(*)`.mapWith(Number) })
-      .from(notifications)
-      .where(and(destClause, isNull(notifications.lidaEm), isNull(notifications.arquivadaEm))),
-  ]);
-
-  const rows: readonly NotificacoesListRow[] = rowsRaw.map((r) => ({
-    id: r.id,
-    tipo: r.tipo as NotificationTipo,
-    severidade: (r.severidade ?? 'info') as Severidade,
-    titulo: r.titulo,
-    subtitulo: r.subtitulo,
-    linkDestino: r.linkDestino,
-    lidaEm: r.lidaEm,
-    arquivadaEm: r.arquivadaEm,
-    createdAt: r.createdAt ?? new Date(0),
-  }));
-
-  return {
-    rows,
-    totalCount: totalRow[0]?.total ?? 0,
-    unreadCount: unreadRow[0]?.total ?? 0,
-    filtersApplied: filters,
   };
 }
 
@@ -430,13 +244,4 @@ export default async function NotificacoesPage(props: PageProps): Promise<JSX.El
   } finally {
     await closeDbClient(client);
   }
-}
-
-// -----------------------------------------------------------------------
-// Fallback canonico do estado inicial quando searchParams e undefined
-// (Next 15 chama sem searchParams em contexto de teste unit isolado)
-// -----------------------------------------------------------------------
-
-export function getCanonicalDefaultFilters(): NotificacoesFilters {
-  return CANONICAL_DEFAULT_FILTERS;
 }

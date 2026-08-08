@@ -40,7 +40,7 @@ import {
 import {
   loadEmpresasList,
   loadRFLogsPage,
-} from '../../src/app/super-admin/logs/responsavel-financeiro/page';
+} from '../../src/app/super-admin/logs/responsavel-financeiro/internals';
 // eslint-disable-next-line @stylistic/max-len -- path canonico de rota app router Next 15
 import { CANONICAL_RF_DEFAULT_FILTERS } from '../../src/app/super-admin/logs/responsavel-financeiro/filters';
 

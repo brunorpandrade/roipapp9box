@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# ROIP APP 9BOX — validate (ME-003 + ME-010 + ME-046a).
-# Regua de aceite permanente (§4). Encadeia, na ordem exata, as 10 verificacoes
+# ROIP APP 9BOX — validate (ME-003 + ME-010 + ME-046a + ME-069/ME-070).
+# Regua de aceite permanente (§4). Encadeia, na ordem exata, as 11 verificacoes
 # que constituem a fronteira canonica do repo. Falha (RC != 0) no primeiro
 # erro, imprimindo qual regua reprovou.
 #
@@ -20,13 +20,24 @@
 # cycleSchedule, ausencia de termos abandonados em src/tests). O modo
 # --mode=docs da mesma regua vive fora do validate (fundacao de abertura
 # de ME em Claude via ROIP_DOCS_DIR; passo 1 do protocolo §3).
+#
+# Passo 11 (`next build`) entrou na ME-070 (CC066 canonicamente reaberta a
+# partir do piloto ME-069/S366). Origem canonica: Next 15 App Router recusa
+# exports nao-canonicos em `route.ts` (Route Handler aceita apenas
+# GET/HEAD/OPTIONS/POST/PUT/PATCH/DELETE + Route Segment Config). Sem esta
+# regua, MEs futuras podem reintroduzir MSG_*, tipos, funcoes auxiliares
+# ou escape hatches como exports publicos em `route.ts`, contornando a
+# segregacao S366. `next build` e a UNICA regua que reprova essa classe
+# de defeito estruturalmente (typecheck nao vai la; `verify-schema` mede
+# DB). Custo: ~30s local; barato diante do custo canonico de detectar em
+# producao pos-deploy.
 
 set -o pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT" || exit 2
 
-TOTAL=10
+TOTAL=11
 STEP=0
 FAILED=""
 
@@ -59,7 +70,8 @@ run_step "verify-migration.mjs" node scripts/verify-migration.mjs
 run_step "vitest run" npx vitest run
 run_step "verify-canonic-consistency.mjs --mode=repo" \
   node scripts/verify-canonic-consistency.mjs --mode=repo
+run_step "next build" npx next build
 
 echo ""
-echo "=== validate: 10/10 PASS ==="
+echo "=== validate: 11/11 PASS ==="
 exit 0

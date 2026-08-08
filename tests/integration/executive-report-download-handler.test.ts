@@ -21,12 +21,12 @@ import { signPdfEphemeralToken } from '../../src/server/auth/pdfEphemeralToken';
 import { upsertExecutiveReportCache } from '../../src/server/services/executiveReportCache';
 // eslint-disable-next-line @stylistic/max-len -- import path canonico
 import type { ExecutiveReportStorageFacade } from '../../src/server/services/executiveReportStorage';
+import { GET as executiveDownloadGet } from '../../src/app/api/reports/executive/download/route';
 import {
   __setExecutiveDownloadDbClient,
   __setExecutiveDownloadNow,
   __setExecutiveDownloadStorage,
-  GET as executiveDownloadGet,
-} from '../../src/app/api/reports/executive/download/route';
+} from '../../src/app/api/reports/executive/download/internals';
 
 const TEST_URL =
   process.env.DATABASE_URL_TEST ?? 'mysql://root:roip_local_root@127.0.0.1:3306/roip_test';

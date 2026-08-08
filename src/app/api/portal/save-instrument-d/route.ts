@@ -1,5 +1,5 @@
 // ROIP APP 9BOX — Route Handler `POST /api/portal/save-instrument-d`
-// (ME-046; DOC 03 §8.8 primeira linha).
+// (ME-046; DOC 03 §8.8 primeira linha; ME-070 refactor S366).
 //
 // Decima-setima ME do Bloco B3 (ME-046) — abre a superficie canonica
 // de ESCRITA do Instrumento D. Precedente direto: Route Handler
@@ -20,13 +20,13 @@
 // clevelId) resolvido pelo snapshot.
 //
 // Hook canonico do motor IQL (S152/S157 herdado do S060/S105 do
-// plenitude): setter `__setPortalSaveInstrumentDIqlEngine` permite
-// substituir o default `DEFAULT_IQL_ENGINE` (mesma ME-046) em
-// testes. Producao aponta para o motor real desta ME. Chamado
-// sincrono in-band FORA da transacao (S157) apos INSERT: le todas
-// as respostas de D do (avaliado, trimestre) e UPSERT em `iqlData`
-// (§8.5). Reexecucao idempotente canonica (§8.5 "Reprocessamento
-// retroativo").
+// plenitude): setter `__setPortalSaveInstrumentDIqlEngine` (agora em
+// `./internals.ts` sob S366) permite substituir o default
+// `DEFAULT_IQL_ENGINE` (mesma ME-046) em testes. Producao aponta para
+// o motor real desta ME. Chamado sincrono in-band FORA da transacao
+// (S157) apos INSERT: le todas as respostas de D do (avaliado,
+// trimestre) e UPSERT em `iqlData` (§8.5). Reexecucao idempotente
+// canonica (§8.5 "Reprocessamento retroativo").
 //
 // Sem rate limit dedicado — mesmo raciocinio do save do A (o gate
 // LGPD e o `/api/portal/login` ja rate-limitados na ME-023 sao os
@@ -43,8 +43,9 @@
 //   - DI setters (padrao S036/S105 herdado da ME-023 e ME-040): 3
 //     hooks canonicos `__setPortalSaveInstrumentDDbClient`,
 //     `__setPortalSaveInstrumentDNow`,
-//     `__setPortalSaveInstrumentDIqlEngine`. Producao usa defaults
-//     reais; testes substituem por spy/isolamento.
+//     `__setPortalSaveInstrumentDIqlEngine` (agora em `./internals.ts`
+//     sob S366). Producao usa defaults reais; testes substituem por
+//     spy/isolamento.
 //   - Zero SQL cru: 100% Drizzle tipado (RV-12). Transacao atomica
 //     do INSERT via `db.transaction(async (tx) => ...)` (L54).
 //   - Zero code dead: cada export tem chamador direto no teste
@@ -55,11 +56,16 @@
 //     canonico (o cinto de duplicidade `MSG_JA_RESPONDIDO_D` e
 //     verificado ANTES da transacao — a UNIQUE canonica
 //     `uq_iD_unica_resposta` e defesa em ultima instancia).
+//
+// S366 canonizada (ME-069, aplicacao bulk ME-070): constantes de
+// mensagem, tipo `SaveInstrumentDSuccess`, estado privado dbClient,
+// relogio, motor IQL e escape hatches migraram para `./internals.ts`
+// irmao. Este arquivo exporta apenas POST para conformidade Next 15
+// App Router.
 
 import { NextResponse } from 'next/server';
 import { and, eq } from 'drizzle-orm';
 
-import { createDbClient, type RoipDbClient } from '../../../../db/client';
 import { companies, employees, instrumentD_responses } from '../../../../db/schema';
 import { verifyPortalToken } from '../../../../server/auth/portalToken';
 import {
@@ -76,110 +82,17 @@ import {
   resolveDia16InstrumentD,
   TRIMESTRE_SCHEMA_INSTRUMENT_D,
 } from '../../../../server/routers/instrumentD';
+
 import {
-  DEFAULT_IQL_ENGINE,
-  type IqlEngineFacade,
-} from '../../../../server/services/iqlCalculationEngine';
-
-// ============================================================
-// Mensagens canonicas de token (paralelas ao save-instrument-a)
-// ============================================================
-
-/** Token ausente no body -> 400 (§4.3 padrao portal). */
-export const MSG_MISSING_TOKEN = 'Sessão ausente.';
-
-/** Token invalido -> 401 (§4.3 padrao portal). */
-export const MSG_INVALID_TOKEN = 'Sessão inválida. Faça a identificação novamente.';
-
-/** Token expirado -> 401 (§4.3 padrao portal). */
-export const MSG_EXPIRED_TOKEN = 'Sessão expirada. Faça a identificação novamente.';
-
-/** Body malformado (payload nao-JSON, campos ausentes, tipos errados) -> 400. */
-export const MSG_BODY_MALFORMED = 'Requisição malformada.';
-
-// ============================================================
-// Cliente DB e DI para testes (padrao S036 herdado da ME-023)
-// ============================================================
-
-let dbClient: RoipDbClient | null = null;
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (typeof url !== 'string' || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
-function getDbClient(): RoipDbClient {
-  if (dbClient === null) {
-    dbClient = createDbClient(resolveDatabaseUrl());
-  }
-  return dbClient;
-}
-
-/**
- * Hook interno para testes de integracao substituirem o client
- * (padrao S036 da ME-023 — `__setPortalXxxDbClient`). Consumido por
- * `tests/integration/portal-save-instrument-d.test.ts`. Passar `null`
- * restaura o comportamento default.
- */
-export function __setPortalSaveInstrumentDDbClient(next: RoipDbClient | null): void {
-  dbClient = next;
-}
-
-// ============================================================
-// Relogio injetavel (paralelo a S100 do router A)
-// ============================================================
-
-let nowFn: () => Date = () => new Date();
-
-/**
- * Hook interno para testes substituirem o relogio, permitindo
- * cobertura deterministica dos ramos de snapshot dia 16 (§8.3) e
- * classificacao de status (§8.1). Passar `null` restaura o default
- * `() => new Date()`.
- */
-export function __setPortalSaveInstrumentDNow(next: (() => Date) | null): void {
-  nowFn = next ?? (() => new Date());
-}
-
-// ============================================================
-// Motor IQL injetavel (S152 herdado do S060/S105)
-// ============================================================
-
-let iqlEngine: IqlEngineFacade = DEFAULT_IQL_ENGINE;
-
-/**
- * Hook interno para testes substituirem o motor IQL, permitindo
- * assertividade de acoplamento (spy que conta chamadas / valida
- * input) e isolamento de defeitos do motor durante o teste do Route
- * Handler. Passar `null` restaura o default `DEFAULT_IQL_ENGINE`.
- */
-export function __setPortalSaveInstrumentDIqlEngine(next: IqlEngineFacade | null): void {
-  iqlEngine = next ?? DEFAULT_IQL_ENGINE;
-}
-
-// ============================================================
-// Retornos canonicos
-// ============================================================
-
-/**
- * Corpo canonico 200 do save. Diferente do A, o D so tem operacao
- * `insert` — nao ha OVERWRITE porque o D nao fecha (§8.1) e a
- * resposta e imutavel apos gravada. Reflete o par avaliado
- * resolvido pelo snapshot §8.3 para consumo pelo cliente do portal.
- */
-export interface SaveInstrumentDSuccess {
-  companyId: number;
-  respondenteId: number;
-  avaliadoTipo: 'employee' | 'clevel';
-  avaliadoId: number;
-  trimestre: string;
-  itensGravados: number;
-  operacao: 'insert';
-  respondidoEm: string;
-}
+  MSG_BODY_MALFORMED,
+  MSG_EXPIRED_TOKEN,
+  MSG_INVALID_TOKEN,
+  MSG_MISSING_TOKEN,
+  getDbClient,
+  getNowFn,
+  getPortalSaveInstrumentDIqlEngine,
+  type SaveInstrumentDSuccess,
+} from './internals';
 
 // ============================================================
 // Body parsing
@@ -314,7 +227,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ msg: MSG_SEM_VINCULO_SNAPSHOT_D }, { status: 403 });
   }
 
-  const now = nowFn();
+  const now = getNowFn()();
 
   // §8.1 canoniza que o D NAO fecha — resposta tardia e comportamento
   // normal (nao gera marca de atraso persistida; o status "atrasado"
@@ -377,6 +290,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   // idempotente canonica. Falha do motor propaga como 500 (a
   // resposta ja foi persistida; motor pode ser reexecutado no
   // proximo save ou via `iql.calculateIQL` de Bruno).
+  const iqlEngine = getPortalSaveInstrumentDIqlEngine();
   try {
     if (avaliado.avaliadoTipo === 'employee') {
       await iqlEngine.recalculateForLeader(db, companyId, avaliado.avaliadoId, trimestre, now);
