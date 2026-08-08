@@ -7,7 +7,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/client';
 import { companies, employees, notifications, superAdmins } from '../../src/db/schema';
-import { __setNotificationsRouteDbClient, GET, PATCH } from '../../src/app/api/notifications/route';
+import { GET, PATCH } from '../../src/app/api/notifications/route';
+import { __setNotificationsRouteDbClient } from '../../src/app/api/notifications/internals';
 import type { ServerSession } from '../../src/server/session/serverSession';
 
 const TEST_URL =

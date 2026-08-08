@@ -1,4 +1,5 @@
-// ROIP APP 9BOX — Route Handler canonico `/api/notifications` (ME-059).
+// ROIP APP 9BOX — Route Handler canonico `/api/notifications`
+// (ME-059 origem, ME-069 refactor S366).
 //
 // Origem canonica:
 // - DOC 06 §10.2 (endpoint `notifications.getUnreadCount` — polling
@@ -13,8 +14,12 @@
 // - S197 canonizada (ME-057c): padrao Route Handler `POST /api/*` para
 //   escrita. Adaptacao canonica ME-059: GET/PATCH em rota unificada
 //   com querystring de modo/acao, evitando proliferacao de sub-rotas.
+// - S366 canonizada (ME-069, piloto D072): helpers auxiliares
+//   (MSG_*, tipos, escape hatches, estado dbClient) segregados em
+//   `./internals.ts` irmao. Este arquivo exporta apenas GET e PATCH
+//   para conformidade Next 15 App Router (`next build`).
 //
-// Contrato canonico:
+// Contrato canonico (INALTERADO pelo refactor S366):
 // - GET com `?mode=count` → payload §10.2 (total + 4 counts por severidade).
 // - GET com `?mode=unread` → payload §10.4 (top 10 nao lidas ordenadas
 //   por createdAt desc + id desc, com lidaEm IS NULL e arquivadaEm IS NULL).
@@ -37,86 +42,33 @@
 //     dropdown listUnread), testes de integracao ME-059.
 //   - `PATCH` → consumido por marcacoes rapidas do sino (dropdown ou
 //     navegacao contextual), testes de integracao ME-059.
-//   - `__setNotificationsRouteDbClient` → escape hatch canonico de
-//     teste (padrao ME-057c bit-exact).
+//   - Escape hatch `__setNotificationsRouteDbClient` MIGROU para
+//     `./internals.ts` (S366) — teste passa a importar de la.
 
 import { and, count, desc, eq, isNull, sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
-import { createDbClient, type RoipDbClient } from '../../../db/client';
 import { notifications } from '../../../db/schema';
 import { archiveNotification, markNotificationRead } from '../../../server/services/notifications';
 import { getServerSession } from '../../../server/session/serverSession';
 import { resolveDestClauseFromSession } from '../../../lib/alerts/notificationsEndpointHelper';
 
-export const MSG_UNAUTHORIZED = 'Sessao ausente.';
-export const MSG_FORBIDDEN = 'Perfil sem sino canonico (§10.1).';
-export const MSG_INVALID_MODE = 'Parametro "mode" invalido — use count OU unread.';
-export const MSG_INVALID_ACTION = 'Parametro "action" invalido — use read OU archive.';
-export const MSG_MISSING_ID = 'Parametro "id" ausente ou invalido.';
-export const MSG_NOT_FOUND = 'Notificacao nao encontrada OU sem permissao.';
-
-/**
- * Limite canonico do dropdown do sino (§10.4 — 10 ultimas nao lidas).
- */
-export const LISTA_UNREAD_LIMIT = 10 as const;
-
-/**
- * Escape hatch canonico de teste. Padrao bit-exact estabelecido em
- * ME-057c (Route Handler `/api/portal/consent-lgpd`). Injeta cliente
- * customizado (ex.: MySQL fixture) para permitir teste de integracao
- * sem levantar servidor Next.
- */
-let dbClient: RoipDbClient | null = null;
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (typeof url !== 'string' || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
-function getDbClient(): RoipDbClient {
-  if (dbClient === null) {
-    dbClient = createDbClient(resolveDatabaseUrl());
-  }
-  return dbClient;
-}
-
-export function __setNotificationsRouteDbClient(next: RoipDbClient | null): void {
-  dbClient = next;
-}
+import {
+  LISTA_UNREAD_LIMIT,
+  MSG_FORBIDDEN,
+  MSG_INVALID_ACTION,
+  MSG_INVALID_MODE,
+  MSG_MISSING_ID,
+  MSG_NOT_FOUND,
+  MSG_UNAUTHORIZED,
+  getDbClient,
+  type UnreadCountPayload,
+  type UnreadListItem,
+} from './internals';
 
 // ============================================================
 // GET — count OU listagem
 // ============================================================
-
-/**
- * Payload canonico `?mode=count` (§10.2 linha 1097).
- */
-export interface UnreadCountPayload {
-  total: number;
-  criticoCount: number;
-  atencaoCount: number;
-  observacaoCount: number;
-  infoCount: number;
-}
-
-/**
- * Payload canonico `?mode=unread` (§10.4). Item nu — o pop-up de
- * detalhe consome via `notifications.getById(id)` em rota separada
- * (fora do escopo ME-059).
- */
-export interface UnreadListItem {
-  id: number;
-  tipo: string;
-  titulo: string;
-  subtitulo: string | null;
-  linkDestino: string | null;
-  severidade: string;
-  createdAt: string; // ISO
-}
 
 export async function GET(req: Request): Promise<NextResponse> {
   const session = await getServerSession();
