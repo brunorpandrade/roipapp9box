@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "validate": "bash scripts/validate.sh"
+    "validate": "bash scripts/validate.sh",
+    "seed:super-admin": "node scripts/seed-super-admin.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "5.101.2",
