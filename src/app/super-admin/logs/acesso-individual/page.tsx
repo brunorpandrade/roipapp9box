@@ -73,7 +73,7 @@ interface PageProps {
 export default async function DALLogsBrunoPage(props: PageProps): Promise<JSX.Element> {
   const session = await getServerSession();
   if (session === null) {
-    redirect('/');
+    redirect('/login-super-admin');
   }
 
   // Guard §10.6 + §9.14 defense-in-depth ao middleware.

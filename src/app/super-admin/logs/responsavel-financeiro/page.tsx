@@ -72,7 +72,7 @@ interface PageProps {
 export default async function RFLogsPage(props: PageProps): Promise<JSX.Element> {
   const session = await getServerSession();
   if (session === null) {
-    redirect('/');
+    redirect('/login-super-admin');
   }
 
   // Guard §10.8 + §9.12 (defense-in-depth ao middleware — matrix.ts).

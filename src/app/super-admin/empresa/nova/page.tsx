@@ -43,7 +43,7 @@ import { NovaEmpresaClient } from './NovaEmpresaClient';
 export default async function NovaEmpresaPage(): Promise<JSX.Element> {
   const session = await getServerSession();
   if (session === null) {
-    redirect('/');
+    redirect('/login-super-admin');
   }
   // Guard §10.3 + §9.1 (defense-in-depth ao middleware). `/super-admin/*`
   // ja e restrito a `super_admin` no middleware; este guard revalida

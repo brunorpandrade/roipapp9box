@@ -52,7 +52,7 @@ export default async function SuperAdminPendenciasPortalPage(
 ): Promise<JSX.Element> {
   const session = await getServerSession();
   if (session === null) {
-    redirect('/');
+    redirect('/login-super-admin');
   }
   if (session.kind !== 'super_admin') {
     redirect('/');

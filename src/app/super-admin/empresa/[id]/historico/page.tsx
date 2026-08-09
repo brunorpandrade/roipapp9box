@@ -74,7 +74,7 @@ interface PageProps {
 export default async function HistoricoPage(props: PageProps): Promise<JSX.Element> {
   const session = await getServerSession();
   if (session === null) {
-    redirect('/');
+    redirect('/login-super-admin');
   }
   // Guard §10.3 + §9.1 (defense-in-depth ao middleware — matrix.ts
   // matchPrefix `/super-admin/empresa/`).
