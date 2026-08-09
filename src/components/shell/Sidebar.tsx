@@ -38,6 +38,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { LUCIDE_ICON_BY_MENU_ITEM } from '../../lib/design-tokens/icons';
 import type { MenuItem } from '../../lib/menu/menuConfig';
 
 const SIDEBAR_NAVY = '#1F3A5F';
@@ -174,7 +175,7 @@ function SidebarItemRow(props: {
     );
   }
 
-  const Icon = item.icon;
+  const Icon = LUCIDE_ICON_BY_MENU_ITEM[item.iconKey];
   const isActive = item.href === activeHref;
 
   return (
@@ -222,7 +223,7 @@ function SidebarItemRow(props: {
           }}
         >
           {item.children.map((child) => {
-            const ChildIcon = child.icon;
+            const ChildIcon = LUCIDE_ICON_BY_MENU_ITEM[child.iconKey];
             const childActive = child.href === activeHref;
             return (
               <li key={`${child.label}-${child.href}`}>
