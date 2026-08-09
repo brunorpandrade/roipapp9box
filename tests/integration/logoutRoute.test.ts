@@ -1,8 +1,14 @@
-// ROIP APP 9BOX — teste do Route Handler `GET /logout` (ME-Rota-C-D075).
+// ROIP APP 9BOX — teste do Route Handler `GET /logout` (ME-Rota-C-D075
+// + ME-072-fix3 detecção de prefetch).
 //
 // Cobertura canonica bit-exact:
-// - Chama `clearSessionCookie()` → `cookieStore.delete('session')`.
-// - Chama `redirect('/')` → lanca NEXT_REDIRECT com destino '/'.
+// - Request normal (sem headers de prefetch): chama `clearSessionCookie()`
+//   → `cookieStore.delete('session')`, e chama `redirect('/')` → lanca
+//   NEXT_REDIRECT com destino '/'.
+// - Request de prefetch (`Next-Router-Prefetch: 1` ou `Purpose: prefetch`):
+//   retorna 204 SEM tocar no cookie e SEM redirect. Protege contra
+//   apagamento silencioso da sessao por prefetch automatico do Next 15
+//   App Router (bug canonico bit-exact detectado em ME-072-fix3).
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -30,16 +36,19 @@ vi.mock('next/navigation', () => ({
 
 import { GET } from '../../src/app/logout/route';
 
-describe('GET /logout — route handler canonico (ME-Rota-C-D075)', () => {
+function makeRequest(headers: Record<string, string> = {}): Request {
+  return new Request('https://example.test/logout', { headers });
+}
+
+describe('GET /logout — route handler canonico (ME-Rota-C-D075 + fix3)', () => {
   beforeEach(() => {
-    // limpa array preservando referencia.
     cookieDeleteCallsRef.length = 0;
   });
 
-  it("apaga cookie 'session' e lanca NEXT_REDIRECT para '/'", async () => {
+  it("apaga cookie 'session' e lanca NEXT_REDIRECT para '/' em request normal", async () => {
     let caughtDigest: string | null = null;
     try {
-      await GET();
+      await GET(makeRequest());
       throw new Error('esperava NEXT_REDIRECT');
     } catch (err) {
       const digest = (err as { digest?: string }).digest;
@@ -47,9 +56,19 @@ describe('GET /logout — route handler canonico (ME-Rota-C-D075)', () => {
     }
     expect(caughtDigest).not.toBeNull();
     expect(caughtDigest ?? '').toContain('NEXT_REDIRECT');
-    // Verificamos que destino e a raiz — o digest carrega ';/;' entre
-    // 'replace' e o status HTTP.
     expect(caughtDigest ?? '').toMatch(/replace;\/;/);
     expect(cookieDeleteCallsRef).toEqual(['session']);
+  });
+
+  it('retorna 204 SEM tocar no cookie quando header Next-Router-Prefetch: 1', async () => {
+    const res = await GET(makeRequest({ 'Next-Router-Prefetch': '1' }));
+    expect(res.status).toBe(204);
+    expect(cookieDeleteCallsRef).toEqual([]);
+  });
+
+  it('retorna 204 SEM tocar no cookie quando header Purpose: prefetch', async () => {
+    const res = await GET(makeRequest({ Purpose: 'prefetch' }));
+    expect(res.status).toBe(204);
+    expect(cookieDeleteCallsRef).toEqual([]);
   });
 });

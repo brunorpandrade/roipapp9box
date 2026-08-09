@@ -250,6 +250,7 @@ export function Header(props: HeaderProps): JSX.Element {
 
         <Link
           href="/logout"
+          prefetch={false}
           style={{
             fontSize: 13,
             fontWeight: 500,

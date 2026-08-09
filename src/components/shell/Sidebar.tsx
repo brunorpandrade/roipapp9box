@@ -182,6 +182,7 @@ function SidebarItemRow(props: {
     <>
       <Link
         href={item.href}
+        prefetch={item.href === '/logout' ? false : undefined}
         aria-current={isActive ? 'page' : undefined}
         style={{
           display: 'flex',
@@ -229,6 +230,7 @@ function SidebarItemRow(props: {
               <li key={`${child.label}-${child.href}`}>
                 <Link
                   href={child.href}
+                  prefetch={child.href === '/logout' ? false : undefined}
                   aria-current={childActive ? 'page' : undefined}
                   style={{
                     display: 'flex',
