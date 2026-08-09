@@ -1,4 +1,5 @@
-// ROIP APP 9BOX — Painel Super Admin global (ME-056 Bloco C).
+// ROIP APP 9BOX — Painel Super Admin global (ME-056 Bloco C;
+// estendido em ME-Rota-C-D075 com 4 correcoes canonicas bit-exact §5.3).
 //
 // Origem canonica:
 // - DOC 05 §5.1 (estrutura comum), §5.3 (Painel do Super Admin
@@ -14,6 +15,15 @@
 //   `cLevelMembers` filtrados por `status='ativa/ativo'`) + estado
 //   canonico §5.2 "Coleta de dados em andamento" para cards de
 //   agregado analitico que dependem de motores de fase futura.
+//
+// ME-Rota-C-D075 — 4 correcoes canonicas bit-exact §5.3:
+// - G1: Toggle segmentado 3 estados canonicos (padrao: apenas ativas;
+//   ativas+inativas; apenas inativas) — implementado 100% server-side
+//   via `searchParams.filter` + 3 <a href="?filter=..."> canonicos.
+// - G2: Coluna Status (badge ativa/inativa) — 5a coluna canonica.
+// - G3: 2 blocos ComingSoon canonicos (crescimento base empresas +
+//   crescimento base colaboradores) alinhados a §5.3 literal.
+// - G4: Empty state canonico bit-exact conforme filtro ativo.
 //
 // **Server component App Router Next 15.** Consome `getServerSession`
 // (Bloco A) → `resolveProfileKey` (Bloco B) → `resolveMenuItems` (ME-055b).
@@ -32,13 +42,18 @@
 // nascem com consumidor real na propria ME-056.
 
 import { redirect } from 'next/navigation';
-import { eq, sql } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import type { JSX } from 'react';
 
 import { Layout } from '../../components/shell/Layout';
 import { createDbClient } from '../../db/client';
 import { cLevelMembers, companies, employees } from '../../db/schema';
 import { COLORS } from '../../lib/design-tokens/colors';
+import {
+  DEFAULT_COMPANY_LIST_FILTER,
+  resolveCompanyListFilter,
+  type CompanyListFilter,
+} from '../../lib/company/resolveCompanyListFilter';
 import { resolveMenuItems } from '../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { getServerSession } from '../../server/session/serverSession';
@@ -55,16 +70,27 @@ interface SuperAdminPanelData {
   readonly companiesActiveCount: number;
   readonly companiesInactiveCount: number;
   readonly collaboratorsActiveCount: number;
-  readonly activeCompanies: readonly {
+  readonly companiesList: readonly {
     readonly id: number;
     readonly nomeFantasia: string;
     readonly cnpj: string;
+    readonly status: 'ativa' | 'inativa';
     readonly createdAt: Date | null;
     readonly employeeCount: number;
   }[];
 }
 
-async function loadPanelData(): Promise<SuperAdminPanelData> {
+/**
+ * Deriva o array de status canonicos bit-exact a consultar conforme
+ * o filtro §5.3 do toggle 3 estados. ME-Rota-C-D075.
+ */
+function statusesForFilter(filter: CompanyListFilter): ('ativa' | 'inativa')[] {
+  if (filter === 'active') return ['ativa'];
+  if (filter === 'inactive') return ['inativa'];
+  return ['ativa', 'inativa'];
+}
+
+async function loadPanelData(filter: CompanyListFilter): Promise<SuperAdminPanelData> {
   const client = createDbClient(resolveDatabaseUrl());
   try {
     const [companiesActiveRows, companiesInactiveRows, employeesActiveRows, cLevelActiveRows] =
@@ -87,15 +113,18 @@ async function loadPanelData(): Promise<SuperAdminPanelData> {
           .where(eq(cLevelMembers.status, 'ativo')),
       ]);
 
-    const activeCompaniesList = await client.db
+    // Lista de empresas conforme filtro canonico §5.3 (D075).
+    const statuses = statusesForFilter(filter);
+    const companiesList = await client.db
       .select({
         id: companies.id,
         nomeFantasia: companies.nomeFantasia,
         cnpj: companies.cnpj,
+        status: companies.status,
         createdAt: companies.createdAt,
       })
       .from(companies)
-      .where(eq(companies.status, 'ativa'))
+      .where(inArray(companies.status, statuses))
       .orderBy(companies.nomeFantasia);
 
     // Contagem de employees ativos por empresa (subquery agregada).
@@ -131,10 +160,14 @@ async function loadPanelData(): Promise<SuperAdminPanelData> {
       companiesInactiveCount: Number(companiesInactiveRows[0]?.count ?? 0),
       collaboratorsActiveCount:
         Number(employeesActiveRows[0]?.count ?? 0) + Number(cLevelActiveRows[0]?.count ?? 0),
-      activeCompanies: activeCompaniesList.map((c) => ({
+      companiesList: companiesList.map((c) => ({
         id: c.id,
         nomeFantasia: c.nomeFantasia,
         cnpj: c.cnpj,
+        // Narrow canonico bit-exact: a query WHERE inArray(status,
+        // ['ativa','inativa']) garante nao-null; fallback defensivo
+        // para 'inativa' se driver retornar null (nunca acontece).
+        status: (c.status ?? 'inativa') as 'ativa' | 'inativa',
         createdAt: c.createdAt,
         employeeCount: countByCompany.get(c.id) ?? 0,
       })),
@@ -221,10 +254,87 @@ function ComingSoonBlock(props: {
 }
 
 // -----------------------------------------------------------------------
+// Toggle 3 estados canonico bit-exact §5.3 (ME-Rota-C-D075 — G1)
+// -----------------------------------------------------------------------
+
+function FilterToggle(props: { readonly current: CompanyListFilter }): JSX.Element {
+  const items: readonly { readonly key: CompanyListFilter; readonly label: string }[] = [
+    { key: 'active', label: 'Apenas ativas' },
+    { key: 'all', label: 'Ativas + inativas' },
+    { key: 'inactive', label: 'Apenas inativas' },
+  ];
+  return (
+    <div
+      role="group"
+      aria-label="Filtro da lista de empresas"
+      style={{
+        display: 'inline-flex',
+        border: `1px solid ${COLORS.border.default}`,
+        borderRadius: 6,
+        overflow: 'hidden',
+        background: COLORS.background.card,
+      }}
+    >
+      {items.map((item, idx) => {
+        const isActive = item.key === props.current;
+        const href = item.key === DEFAULT_COMPANY_LIST_FILTER ? '?' : `?filter=${item.key}`;
+        return (
+          <a
+            key={item.key}
+            href={href}
+            aria-pressed={isActive}
+            style={{
+              padding: '8px 14px',
+              fontSize: 13,
+              fontWeight: isActive ? 600 : 500,
+              color: isActive ? '#FFFFFF' : COLORS.text.secondary,
+              background: isActive ? COLORS.primary.navy : COLORS.background.card,
+              borderLeft: idx === 0 ? 'none' : `1px solid ${COLORS.border.default}`,
+              textDecoration: 'none',
+            }}
+          >
+            {item.label}
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Badge canonico bit-exact de status (§5.3) — verde ativa, cinza inativa.
+ */
+function StatusBadge(props: { readonly status: 'ativa' | 'inativa' }): JSX.Element {
+  const isAtiva = props.status === 'ativa';
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        padding: '2px 8px',
+        borderRadius: 12,
+        fontSize: 11,
+        fontWeight: 600,
+        color: isAtiva ? COLORS.badge.successText : COLORS.text.tertiary,
+        background: isAtiva ? COLORS.badge.successBg : COLORS.border.default,
+        textTransform: 'capitalize',
+      }}
+    >
+      {isAtiva ? 'Ativa' : 'Inativa'}
+    </span>
+  );
+}
+
+// -----------------------------------------------------------------------
 // Rota canonica /super-admin (§5.3)
 // -----------------------------------------------------------------------
 
-export default async function SuperAdminGlobalPanel(): Promise<JSX.Element> {
+interface SuperAdminPageProps {
+  readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function SuperAdminGlobalPanel(
+  props: SuperAdminPageProps,
+): Promise<JSX.Element> {
   const session = await getServerSession();
   // Defense-in-depth §10.3: middleware canonico ja bloqueia, aqui
   // apenas cobrimos o cenario de sessao ausente/corrompida.
@@ -261,12 +371,27 @@ export default async function SuperAdminGlobalPanel(): Promise<JSX.Element> {
     throw new Error('Menu canonico ausente para super_admin_global — inconsistencia §3.1');
   }
 
-  const data = await loadPanelData();
+  // Resolve o filtro canonico bit-exact §5.3 do toggle 3 estados (D075).
+  const resolvedSearchParams = (await props.searchParams) ?? {};
+  const filter = resolveCompanyListFilter(resolvedSearchParams.filter);
+
+  const data = await loadPanelData(filter);
 
   const inactiveSub =
     data.companiesInactiveCount === 0
       ? 'Nenhuma inativa'
       : `${data.companiesInactiveCount} inativa${data.companiesInactiveCount === 1 ? '' : 's'}`;
+
+  // Titulo da lista + empty state canonico bit-exact §5.3 conforme filtro.
+  const listTitle =
+    filter === 'active'
+      ? `Empresas ativas (${data.companiesList.length})`
+      : filter === 'inactive'
+        ? `Empresas inativas (${data.companiesList.length})`
+        : `Todas as empresas (${data.companiesList.length})`;
+
+  const emptyStateMessage =
+    filter === 'inactive' ? 'Nenhuma empresa inativa.' : 'Nenhuma empresa cadastrada.';
 
   return (
     <Layout
@@ -282,7 +407,8 @@ export default async function SuperAdminGlobalPanel(): Promise<JSX.Element> {
         Painel Super Admin
       </h1>
 
-      {/* Bloco "Painel de metricas" §5.3: cards + zona extensivel. */}
+      {/* Bloco "Painel de metricas" §5.3: 2 cards + 2 blocos de
+          crescimento canonicos bit-exact (G3 D075). */}
       <section style={{ marginTop: 24 }} aria-label="Painel de métricas">
         <h2
           style={{
@@ -314,15 +440,17 @@ export default async function SuperAdminGlobalPanel(): Promise<JSX.Element> {
             sub="Total na plataforma"
           />
           <ComingSoonBlock
-            title="Crescimento da base"
+            title="Crescimento da base de empresas"
+            canonicalText="Coleta de dados em andamento"
+          />
+          <ComingSoonBlock
+            title="Crescimento da base de colaboradores"
             canonicalText="Coleta de dados em andamento"
           />
         </div>
       </section>
 
-      {/* Botao canonico §5.3: `[+ Cadastrar nova empresa]`. Rota
-          `/super-admin/empresa/nova` entra em ME futura (B5.3); aqui
-          fica como link canonico com estilo primario teal. */}
+      {/* Botao canonico §5.3: `[+ Cadastrar nova empresa]`. */}
       <section style={{ marginTop: 32 }}>
         <a
           href="/super-admin/empresa/nova"
@@ -343,23 +471,34 @@ export default async function SuperAdminGlobalPanel(): Promise<JSX.Element> {
         </a>
       </section>
 
-      {/* Lista canonica de empresas §5.3. Estado default: apenas
-          ativas. Toggle 3 estados (ativas / ativas+inativas /
-          inativas) e ME futura B5.3. */}
+      {/* Lista canonica de empresas §5.3 com toggle 3 estados (G1 D075)
+          + coluna Status (G2 D075) + empty state canonico (G4 D075). */}
       <section style={{ marginTop: 32 }} aria-label="Lista de empresas">
-        <h2
+        <div
           style={{
-            fontSize: 14,
-            fontWeight: 600,
-            color: COLORS.text.primary,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+            flexWrap: 'wrap',
             margin: '0 0 12px 0',
           }}
         >
-          Empresas ativas ({data.companiesActiveCount})
-        </h2>
-        {data.activeCompanies.length === 0 ? (
+          <h2
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: COLORS.text.primary,
+              margin: 0,
+            }}
+          >
+            {listTitle}
+          </h2>
+          <FilterToggle current={filter} />
+        </div>
+        {data.companiesList.length === 0 ? (
           <p style={{ fontSize: 13, color: COLORS.text.secondary, margin: 0 }}>
-            Nenhuma empresa ativa cadastrada.
+            {emptyStateMessage}
           </p>
         ) : (
           <div
@@ -370,12 +509,34 @@ export default async function SuperAdminGlobalPanel(): Promise<JSX.Element> {
               overflow: 'hidden',
             }}
           >
-            {data.activeCompanies.map((c, i) => (
+            {/* Cabecalho da tabela canonica bit-exact §5.3 (5 colunas). */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '2fr 1fr 100px 1fr 1fr',
+                gap: 12,
+                padding: '10px 16px',
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: COLORS.text.tertiary,
+                background: COLORS.background.elevated,
+                borderBottom: `1px solid ${COLORS.border.default}`,
+              }}
+            >
+              <span>Nome fantasia</span>
+              <span>CNPJ</span>
+              <span>Status</span>
+              <span>Total colaboradores</span>
+              <span>Data de cadastro</span>
+            </div>
+            {data.companiesList.map((c, i) => (
               <div
                 key={c.id}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '2fr 1fr 1fr 1fr',
+                  gridTemplateColumns: '2fr 1fr 100px 1fr 1fr',
                   gap: 12,
                   padding: '12px 16px',
                   fontSize: 13,
@@ -385,6 +546,7 @@ export default async function SuperAdminGlobalPanel(): Promise<JSX.Element> {
               >
                 <span style={{ fontWeight: 500 }}>{c.nomeFantasia}</span>
                 <span style={{ color: COLORS.text.secondary }}>{c.cnpj}</span>
+                <StatusBadge status={c.status} />
                 <span style={{ color: COLORS.text.secondary }}>
                   {c.employeeCount} colaboradores
                 </span>

@@ -636,8 +636,13 @@ async function emitCredentialToken(
  * precedencia inviolavel do §2.3. Retorna undefined quando o employee
  * existente NAO e RH nem Lider — cenario canonico de "colaborador puro"
  * em `employees` (§4.1 passo g).
+ *
+ * ME-Rota-C-D075: exportado para reuso em `src/lib/auth/`
+ * `authenticatePlatformUser.ts` (server action `loginPlatformAction`).
+ * Fonte canonica UNICA — o helper server-side reusa a mesma logica de
+ * precedencia §2.3 aqui aplicada pela procedure `auth.loginPlatform`.
  */
-function resolveTargetAndRole(
+export function resolveTargetAndRole(
   candidate: PlatformUserCandidate,
 ):
   | { kind: 'employee'; user: NonNullable<PlatformUserCandidate['employee']>; role: PlatformRole }

@@ -1,14 +1,15 @@
-// ROIP APP 9BOX — helper canonico de sessao server-side (ME-056 Bloco A).
+// ROIP APP 9BOX — helper canonico de sessao server-side (ME-056 Bloco A;
+// estendido em ME-Rota-C-D075 com `setSessionCookie` + `clearSessionCookie`).
 //
 // Origem canonica:
-// - DOC 02 §5.1 (Super Admin — JWT sem `exp`).
-// - DOC 02 §5.2 (perfis administrativos — JWT sliding 8h).
+// - DOC 02 §5.1 (Super Admin — JWT sem `exp`; cookie persistente).
+// - DOC 02 §5.2 (perfis administrativos — JWT sliding 8h; cookie 8h).
 // - DOC 02 §8.1 (Layout perfil-agnostic requer `displayName` +
 //   `companyDisplayName` — nao carregados pelo JWT; queridos ao banco).
 // - DOC 01 §4.2 (`superAdmins.name`), §4.3 (`companies.nomeFantasia`,
 //   `companies.logoUrl`), §4.5 (`employees.name`), §4.5 clevel
 //   (`cLevelMembers.name`).
-// - S298 + D064 canonizada nesta ME.
+// - S298 + D064 canonizada.
 //
 // Contrato canonico:
 // - `getServerSession()` — helper de conveniencia consumido por server
@@ -23,13 +24,21 @@
 //   `getServerSession` apenas resolve `token` do cookie e `db` do
 //   ambiente. Separacao existe para permitir teste unit sem depender
 //   de `cookies()` do Next e sem singleton de banco (S205 Facade DI).
+// - `setSessionCookie(token, kind)` — helper canonico ME-Rota-C-D075.
+//   Grava o cookie `session` httpOnly canonico apos autenticacao
+//   bem-sucedida. `kind === 'super_admin'` → cookie persistente
+//   (maxAge 365 dias, alinhado a §5.1 sem exp). `kind === 'platform'`
+//   → cookie 8h (alinhado a §5.2 sliding).
+// - `clearSessionCookie()` — helper canonico ME-Rota-C-D075. Apaga
+//   o cookie `session`, consumido pela rota `/logout` (D075).
 //
-// **D064 (fecha nesta ME).** Pattern canonico de leitura de sessao
-// server-side reutilizado por: `access-denied/page.tsx` (refactor
-// desta ME); rotas de painel (Blocos C+D); rotas transversais
-// futuras (B5.3). Cookie `session` corresponde a constante local do
-// `middleware.ts` (S040/S037) e do `not-found.tsx` — este modulo NAO
-// exporta a constante para nao criar dependencia inversa; e literal.
+// **D064 canonicamente FECHADA em ME-056.** Pattern canonico de leitura
+// de sessao server-side reutilizado por: `access-denied/page.tsx`
+// (refactor da ME-056); rotas de painel (Blocos C+D); rotas
+// transversais futuras (B5.3). Cookie `session` corresponde a
+// constante local do `middleware.ts` (S040/S037) e do `not-found.tsx`
+// — este modulo NAO exporta a constante para nao criar dependencia
+// inversa; e literal.
 //
 // **RV-13.** Cada export tem chamador na propria ME:
 //   - `getServerSession` → consumido por `super-admin/page.tsx`,
@@ -42,6 +51,13 @@
 //   - `ServerSession` (tipo) → consumido por
 //     `resolveProfileKey` (Bloco B), pelas 4 rotas de painel e pelo
 //     refactor do AccessDenied.
+//   - `setSessionCookie` → consumido por
+//     `src/app/actions.ts` (`loginPlatformAction`) +
+//     `src/app/login-super-admin/actions.ts` (`loginSuperAdminAction`)
+//     na ME-Rota-C-D075 + `tests/unit/sessionCookie.test.ts` (mock).
+//   - `clearSessionCookie` → consumido por
+//     `src/app/logout/route.ts` (GET handler) na ME-Rota-C-D075 +
+//     `tests/unit/sessionCookie.test.ts` (mock).
 
 import { cookies } from 'next/headers';
 import { eq } from 'drizzle-orm';
@@ -243,4 +259,65 @@ export async function getServerSession(): Promise<ServerSession | null> {
   } finally {
     await client.pool.end();
   }
+}
+
+// -----------------------------------------------------------------------
+// Helpers canonicos de escrita do cookie de sessao (ME-Rota-C-D075)
+// -----------------------------------------------------------------------
+
+/**
+ * TTL canonico bit-exact do cookie do Super Admin (§5.1 DOC 02 —
+ * "sessao nunca expira por inatividade"). O JWT do Super Admin nao
+ * carrega `exp`; o cookie precisa persistir entre visitas do browser.
+ * 365 dias (em segundos) alinha com a intencao canonica de sessao
+ * persistente. O cookie e limpo apenas via `/logout` (D075) ou
+ * expiracao do proprio browser.
+ */
+const SUPER_ADMIN_COOKIE_MAX_AGE_SECONDS = 365 * 24 * 60 * 60;
+
+/**
+ * TTL canonico bit-exact do cookie de plataforma (§5.2 DOC 02 —
+ * "sliding 8h"). Alinha com `PLATFORM_SESSION_TTL_SECONDS` de `jwt.ts`
+ * (mesmo horizonte). Reemissao sliding a cada request autenticado NAO
+ * e escopo desta ME — sera adicionada em ME futura se necessario. Por
+ * ora o cookie expira em 8h e o usuario re-autentica.
+ */
+const PLATFORM_COOKIE_MAX_AGE_SECONDS = 8 * 60 * 60;
+
+export type SessionKind = 'super_admin' | 'platform';
+
+/**
+ * Grava o cookie `session` httpOnly canonico apos autenticacao
+ * bem-sucedida. `kind === 'super_admin'` → maxAge 365 dias (§5.1
+ * sessao persistente). `kind === 'platform'` → maxAge 8h (§5.2
+ * sliding). Flags canonicos comuns: `httpOnly: true`, `sameSite: 'lax'`
+ * (permite redirect apos submit), `secure: NODE_ENV === 'production'`
+ * (produz sessao HTTPS-only em Railway), `path: '/'` (canonico global).
+ *
+ * Server actions (`loginPlatformAction`, `loginSuperAdminAction`)
+ * chamam este helper apos `signPlatformToken` / `signSuperAdminToken`
+ * antes de `redirect()`. Route handlers idem.
+ */
+export async function setSessionCookie(token: string, kind: SessionKind): Promise<void> {
+  const cookieStore = await cookies();
+  const maxAge =
+    kind === 'super_admin' ? SUPER_ADMIN_COOKIE_MAX_AGE_SECONDS : PLATFORM_COOKIE_MAX_AGE_SECONDS;
+  cookieStore.set(SESSION_COOKIE, token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge,
+  });
+}
+
+/**
+ * Apaga o cookie `session` canonico. Consumido pela rota `/logout`
+ * (D075) para encerrar a sessao administrativa. A implementacao
+ * canonica Next 15 e `cookieStore.delete(name)` — remove o cookie do
+ * browser no proximo request.
+ */
+export async function clearSessionCookie(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.delete(SESSION_COOKIE);
 }
