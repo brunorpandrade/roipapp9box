@@ -59,6 +59,13 @@ import {
   employees,
   responsavelFinanceiroTransferLog,
 } from '../../db/schema';
+import {
+  CnpjDuplicateError,
+  CreateCompanyInputSchema,
+  CreateCompanyValidationError,
+  executeCreateCompany,
+  normalizeCreateCompanyInput,
+} from '../../lib/company/createCompanyInput';
 import { insertTransferLogEntry } from '../services/responsavelFinanceiroTransferLog';
 
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
@@ -531,6 +538,59 @@ export function createCompanyRouter(deps: CompanyRouterDeps = {}) {
         });
 
         return result;
+      }),
+
+    // --------------------------------------------------------
+    // company.create — Bruno EXCLUSIVO (ME-Rota-C-D074, D074 FECHADA)
+    // --------------------------------------------------------
+    // Origem canonica:
+    // - DOC 05 §5.3 (botao [+ Cadastrar nova empresa]) + §13.1 (Aba 1
+    //   Parametros gerais — save unico das 9 secoes canonicas) +
+    //   §18.7 (mensagens canonicas literais bit-exact).
+    // - DOC 01 §4.2 (tabela companies — 35 colunas canonicas bit-exact).
+    // - RV-08: zero decisoes Manus — Zod schema + `normalizeCreateCompanyInput`
+    //   pre-decidem toda validacao canonica bit-exact (§13.1 linhas 1490-1497).
+    // - RV-12: 100% Drizzle tipado — sem SQL cru.
+    // - RV-13: chamador da procedure = `NovaEmpresaClient.tsx` via
+    //   `criarEmpresaAction` (server action) + `companyCreate.test.ts`.
+    //
+    // Ordem canonica bit-exact:
+    // 1. `roleProcedure(['super_admin'])` — Bruno EXCLUSIVO (§DOC 02 §10.3).
+    // 2. Parse Zod (§18.7 mensagens literais bit-exact).
+    // 3. Normalizacao canonica bit-exact (§DOC 01 §4.2 linha 180 — modo
+    //    padrao forca mesInicioAnoFiscal=1 + mesKickoff∈{1,4,7,10};
+    //    status FORCADO='inativa').
+    // 4. INSERT via Drizzle tipado. Colisao de CNPJ (unique constraint):
+    //    catch canonico bit-exact ER_DUP_ENTRY → TRPCError CONFLICT com
+    //    mensagem canonica bit-exact MSG_CNPJ_DUPLICADO.
+    // 5. Retorno canonico bit-exact `{ companyId: number }` para o cliente
+    //    fazer o redirect §5.4 DOC 05.
+    create: roleProcedure(['super_admin'])
+      .input(CreateCompanyInputSchema)
+      .mutation(async ({ ctx, input }): Promise<{ companyId: number }> => {
+        // (1) Normalizacao canonica bit-exact §DOC 01 §4.2 (linha 180).
+        // Aplica as regras server-side FORCE: modo padrao + status inativa.
+        let normalized;
+        try {
+          normalized = normalizeCreateCompanyInput(input);
+        } catch (err) {
+          if (err instanceof CreateCompanyValidationError) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: err.canonicalMessage });
+          }
+          throw err;
+        }
+
+        // (2) INSERT canonico bit-exact via helper puro (§RV-12/§RV-13).
+        // Colisao de CNPJ (unique constraint bit-exact §4.2) capturada
+        // canonicamente bit-exact e convertida em TRPCError CONFLICT.
+        try {
+          return await executeCreateCompany(ctx.db, normalized);
+        } catch (err) {
+          if (err instanceof CnpjDuplicateError) {
+            throw new TRPCError({ code: 'CONFLICT', message: err.canonicalMessage });
+          }
+          throw err;
+        }
       }),
   });
 }
