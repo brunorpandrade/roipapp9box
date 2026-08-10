@@ -75,6 +75,7 @@ interface SuperAdminPanelData {
     readonly nomeFantasia: string;
     readonly cnpj: string;
     readonly status: 'ativa' | 'inativa';
+    readonly isDemo: boolean;
     readonly createdAt: Date | null;
     readonly employeeCount: number;
   }[];
@@ -118,7 +119,12 @@ async function loadPanelData(filter: CompanyListFilter): Promise<SuperAdminPanel
           .where(and(eq(cLevelMembers.status, 'ativo'), eq(companies.isDemo, false))),
       ]);
 
-    // Lista de empresas conforme filtro canonico §5.3 (D075) + ME-068 E-068-11.
+    // Lista de empresas §5.3 (D075) + ME-068a-fix corrigido: Super Admin
+    // TEM acesso total canonico bit-exact a todas as empresas — incluindo
+    // demos — para poder navegar e demonstrar. Contadores agregados acima
+    // permanecem filtrados por `isDemo=false` (metricas de negocio limpas);
+    // a LISTA e as subqueries de contagem por empresa mostram TUDO. Badge
+    // visual DEMO diferencia visualmente cada linha.
     const statuses = statusesForFilter(filter);
     const companiesList = await client.db
       .select({
@@ -126,22 +132,24 @@ async function loadPanelData(filter: CompanyListFilter): Promise<SuperAdminPanel
         nomeFantasia: companies.nomeFantasia,
         cnpj: companies.cnpj,
         status: companies.status,
+        isDemo: companies.isDemo,
         createdAt: companies.createdAt,
       })
       .from(companies)
-      .where(and(inArray(companies.status, statuses), eq(companies.isDemo, false)))
+      .where(inArray(companies.status, statuses))
       .orderBy(companies.nomeFantasia);
 
-    // Contagem de employees ativos por empresa (subquery agregada), com
-    // filtro `companies.isDemo=false` propagado via innerJoin.
+    // Contagem de employees ativos por empresa (subquery agregada). Sem
+    // filtro `isDemo` — a lista mostra TODAS as empresas + suas contagens
+    // reais de colaboradores. Contadores agregados acima ja excluem demos
+    // do total-plataforma canonico bit-exact.
     const employeesByCompany = await client.db
       .select({
         companyId: employees.companyId,
         count: sql<number>`count(*)`,
       })
       .from(employees)
-      .innerJoin(companies, eq(employees.companyId, companies.id))
-      .where(and(eq(employees.status, 'ativo'), eq(companies.isDemo, false)))
+      .where(eq(employees.status, 'ativo'))
       .groupBy(employees.companyId);
 
     const cLevelByCompany = await client.db
@@ -150,8 +158,7 @@ async function loadPanelData(filter: CompanyListFilter): Promise<SuperAdminPanel
         count: sql<number>`count(*)`,
       })
       .from(cLevelMembers)
-      .innerJoin(companies, eq(cLevelMembers.companyId, companies.id))
-      .where(and(eq(cLevelMembers.status, 'ativo'), eq(companies.isDemo, false)))
+      .where(eq(cLevelMembers.status, 'ativo'))
       .groupBy(cLevelMembers.companyId);
 
     const countByCompany = new Map<number, number>();
@@ -176,6 +183,7 @@ async function loadPanelData(filter: CompanyListFilter): Promise<SuperAdminPanel
         // ['ativa','inativa']) garante nao-null; fallback defensivo
         // para 'inativa' se driver retornar null (nunca acontece).
         status: (c.status ?? 'inativa') as 'ativa' | 'inativa',
+        isDemo: Boolean(c.isDemo),
         createdAt: c.createdAt,
         employeeCount: countByCompany.get(c.id) ?? 0,
       })),
@@ -328,6 +336,31 @@ function StatusBadge(props: { readonly status: 'ativa' | 'inativa' }): JSX.Eleme
       }}
     >
       {isAtiva ? 'Ativa' : 'Inativa'}
+    </span>
+  );
+}
+
+/**
+ * Badge canonico DEMO — identificacao visual de empresa demo (ME-068a-fix).
+ * Super Admin ve empresas demo na lista + este badge sinaliza claramente
+ * que a linha nao e cliente real. Contadores agregados excluem demos.
+ */
+function DemoBadge(): JSX.Element {
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        marginLeft: 6,
+        padding: '2px 8px',
+        borderRadius: 12,
+        fontSize: 10,
+        fontWeight: 700,
+        letterSpacing: '0.04em',
+        color: '#FFFFFF',
+        background: COLORS.primary.navy,
+      }}
+    >
+      DEMO
     </span>
   );
 }
@@ -554,7 +587,10 @@ export default async function SuperAdminGlobalPanel(
               >
                 <span style={{ fontWeight: 500 }}>{c.nomeFantasia}</span>
                 <span style={{ color: COLORS.text.secondary }}>{c.cnpj}</span>
-                <StatusBadge status={c.status} />
+                <span>
+                  <StatusBadge status={c.status} />
+                  {c.isDemo ? <DemoBadge /> : null}
+                </span>
                 <span style={{ color: COLORS.text.secondary }}>
                   {c.employeeCount} colaboradores
                 </span>
