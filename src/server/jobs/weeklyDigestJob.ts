@@ -449,6 +449,8 @@ export async function runWeeklyDigestJob(
   now: Date,
   deps: WeeklyDigestJobDependencies = DEFAULT_DEPENDENCIES,
 ): Promise<WeeklyDigestJobResult> {
+  // ME-068 E-068-11 canonico: filtro `isDemo=false` — motor de e-mails
+  // nunca envia digest semanal para empresa-demo.
   const empresas = await db
     .select({
       id: companies.id,
@@ -457,6 +459,7 @@ export async function runWeeklyDigestJob(
       status: companies.status,
     })
     .from(companies)
+    .where(eq(companies.isDemo, false))
     .orderBy(asc(companies.id));
 
   let empresasProcessadas = 0;

@@ -1,0 +1,530 @@
+[
+  {
+    "nome": "Eduardo Almeida",
+    "userType": "clevel",
+    "userId": 1,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-15"
+  },
+  {
+    "nome": "Patrícia Menezes",
+    "userType": "clevel",
+    "userId": 2,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-15"
+  },
+  {
+    "nome": "Ricardo Nogueira",
+    "userType": "clevel",
+    "userId": 3,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-15"
+  },
+  {
+    "nome": "Juliana Freitas",
+    "userType": "employee",
+    "userId": 4,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-23"
+  },
+  {
+    "nome": "Fernando Salles",
+    "userType": "employee",
+    "userId": 5,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-04"
+  },
+  {
+    "nome": "Camila Batista",
+    "userType": "employee",
+    "userId": 6,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-10"
+  },
+  {
+    "nome": "Marcelo Vieira",
+    "userType": "employee",
+    "userId": 7,
+    "status": "respondido",
+    "confiabilidadeNivel": "moderada",
+    "respondidoEm": "2026-01-26"
+  },
+  {
+    "nome": "Gustavo Almeida",
+    "userType": "employee",
+    "userId": 8,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-23"
+  },
+  {
+    "nome": "Márcio Fernandes",
+    "userType": "employee",
+    "userId": 9,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-30"
+  },
+  {
+    "nome": "Bianca Martins",
+    "userType": "employee",
+    "userId": 10,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-03"
+  },
+  {
+    "nome": "Thiago Costa",
+    "userType": "employee",
+    "userId": 11,
+    "status": "respondido",
+    "confiabilidadeNivel": "moderada",
+    "respondidoEm": "2026-01-30"
+  },
+  {
+    "nome": "Renata Lima",
+    "userType": "employee",
+    "userId": 12,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-31"
+  },
+  {
+    "nome": "Bruno Cardoso",
+    "userType": "employee",
+    "userId": 13,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-24"
+  },
+  {
+    "nome": "Denise Rocha",
+    "userType": "employee",
+    "userId": 14,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-19"
+  },
+  {
+    "nome": "Claudia Nascimento",
+    "userType": "employee",
+    "userId": 15,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-15"
+  },
+  {
+    "nome": "Marisa Oliveira",
+    "userType": "employee",
+    "userId": 16,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-27"
+  },
+  {
+    "nome": "Roberto Santos",
+    "userType": "employee",
+    "userId": 17,
+    "status": "inconsistente",
+    "confiabilidadeNivel": "baixa",
+    "respondidoEm": "2026-02-01"
+  },
+  {
+    "nome": "Everton Nunes",
+    "userType": "employee",
+    "userId": 18,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-21"
+  },
+  {
+    "nome": "André Luiz Costa",
+    "userType": "employee",
+    "userId": 19,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-06"
+  },
+  {
+    "nome": "Tiago Martins",
+    "userType": "employee",
+    "userId": 20,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-13"
+  },
+  {
+    "nome": "Paulo Henrique Lima",
+    "userType": "employee",
+    "userId": 21,
+    "status": "respondido",
+    "confiabilidadeNivel": "moderada",
+    "respondidoEm": "2026-01-21"
+  },
+  {
+    "nome": "Sérgio Moura",
+    "userType": "employee",
+    "userId": 22,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-15"
+  },
+  {
+    "nome": "Lucas Ferreira",
+    "userType": "employee",
+    "userId": 23,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-14"
+  },
+  {
+    "nome": "Caio Santos",
+    "userType": "employee",
+    "userId": 24,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-07"
+  },
+  {
+    "nome": "Rafael Teixeira",
+    "userType": "employee",
+    "userId": 25,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-28"
+  },
+  {
+    "nome": "Gabriel Oliveira",
+    "userType": "employee",
+    "userId": 26,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-08"
+  },
+  {
+    "nome": "Vinícius Ribeiro",
+    "userType": "employee",
+    "userId": 27,
+    "status": "inconsistente",
+    "confiabilidadeNivel": "baixa",
+    "respondidoEm": "2026-02-05"
+  },
+  {
+    "nome": "José Carlos Pereira",
+    "userType": "employee",
+    "userId": 29,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-02"
+  },
+  {
+    "nome": "Cristiano Barbosa",
+    "userType": "employee",
+    "userId": 51,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-23"
+  },
+  {
+    "nome": "Danilo Azevedo",
+    "userType": "employee",
+    "userId": 32,
+    "status": "respondido",
+    "confiabilidadeNivel": "moderada",
+    "respondidoEm": "2026-01-18"
+  },
+  {
+    "nome": "Aline Prado",
+    "userType": "employee",
+    "userId": 33,
+    "status": "respondido",
+    "confiabilidadeNivel": "moderada",
+    "respondidoEm": "2026-02-03"
+  },
+  {
+    "nome": "Sônia Cardoso",
+    "userType": "employee",
+    "userId": 34,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-01"
+  },
+  {
+    "nome": "Renata Campos",
+    "userType": "employee",
+    "userId": 35,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-02"
+  },
+  {
+    "nome": "Jéssica Moura",
+    "userType": "employee",
+    "userId": 36,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-26"
+  },
+  {
+    "nome": "Paula Ribeiro",
+    "userType": "employee",
+    "userId": 37,
+    "status": "respondido",
+    "confiabilidadeNivel": "moderada",
+    "respondidoEm": "2026-02-06"
+  },
+  {
+    "nome": "Renato Silva",
+    "userType": "employee",
+    "userId": 38,
+    "status": "respondido",
+    "confiabilidadeNivel": "moderada",
+    "respondidoEm": "2026-02-05"
+  },
+  {
+    "nome": "Daniel Moraes",
+    "userType": "employee",
+    "userId": 39,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-22"
+  },
+  {
+    "nome": "Everton Lima",
+    "userType": "employee",
+    "userId": 40,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-30"
+  },
+  {
+    "nome": "Adriano Souza",
+    "userType": "employee",
+    "userId": 41,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-28"
+  },
+  {
+    "nome": "Jonas Rocha",
+    "userType": "employee",
+    "userId": 42,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-05"
+  },
+  {
+    "nome": "Leonardo Pires",
+    "userType": "employee",
+    "userId": 43,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-17"
+  },
+  {
+    "nome": "Fábio Henrique",
+    "userType": "employee",
+    "userId": 44,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-29"
+  },
+  {
+    "nome": "Pedro Augusto",
+    "userType": "employee",
+    "userId": 45,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-24"
+  },
+  {
+    "nome": "Marina Lopes",
+    "userType": "employee",
+    "userId": 46,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-13"
+  },
+  {
+    "nome": "Tatiane Freitas",
+    "userType": "employee",
+    "userId": 47,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-27"
+  },
+  {
+    "nome": "Carlos Eduardo Mendes",
+    "userType": "employee",
+    "userId": 48,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-02-02"
+  },
+  {
+    "nome": "João Pedro Ramos",
+    "userType": "employee",
+    "userId": 49,
+    "status": "respondido",
+    "confiabilidadeNivel": "moderada",
+    "respondidoEm": "2026-01-18"
+  },
+  {
+    "nome": "Alexandre Gouveia",
+    "userType": "employee",
+    "userId": 50,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-01-31"
+  },
+  {
+    "nome": "Ademir Prado",
+    "userType": "employee",
+    "userId": 52,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-06-24"
+  },
+  {
+    "nome": "Isabela Rezende",
+    "userType": "employee",
+    "userId": 53,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-08-18"
+  },
+  {
+    "nome": "Wanderson Alves",
+    "userType": "employee",
+    "userId": 54,
+    "status": "inconsistente",
+    "confiabilidadeNivel": "baixa",
+    "respondidoEm": "2026-09-14"
+  },
+  {
+    "nome": "Fernanda Correia",
+    "userType": "employee",
+    "userId": 55,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-09-11"
+  },
+  {
+    "nome": "Diego Ferraz",
+    "userType": "employee",
+    "userId": 56,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-10-30"
+  },
+  {
+    "nome": "Vitor Ramos",
+    "userType": "employee",
+    "userId": 57,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-10-31"
+  },
+  {
+    "nome": "Cauê Fonseca",
+    "userType": "employee",
+    "userId": 58,
+    "status": "inconsistente",
+    "confiabilidadeNivel": "baixa",
+    "respondidoEm": "2026-12-08"
+  },
+  {
+    "nome": "Beatriz Nogueira",
+    "userType": "employee",
+    "userId": 59,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2026-12-23"
+  },
+  {
+    "nome": "Igor Beltrão",
+    "userType": "employee",
+    "userId": 60,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2027-03-16"
+  },
+  {
+    "nome": "Rodrigo Oliveira",
+    "userType": "employee",
+    "userId": 61,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2027-03-22"
+  },
+  {
+    "nome": "Vinicius Nogueira",
+    "userType": "employee",
+    "userId": 62,
+    "status": "respondido",
+    "confiabilidadeNivel": "moderada",
+    "respondidoEm": "2027-04-18"
+  },
+  {
+    "nome": "Larissa Mendes",
+    "userType": "employee",
+    "userId": 63,
+    "status": "inconsistente",
+    "confiabilidadeNivel": "baixa",
+    "respondidoEm": "2027-06-03"
+  },
+  {
+    "nome": "Márcia Silveira",
+    "userType": "employee",
+    "userId": 64,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2027-06-14"
+  },
+  {
+    "nome": "Camila Duarte",
+    "userType": "employee",
+    "userId": 65,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2027-07-18"
+  },
+  {
+    "nome": "Wesley Duarte",
+    "userType": "employee",
+    "userId": 66,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2027-08-27"
+  },
+  {
+    "nome": "Otávio Braga",
+    "userType": "employee",
+    "userId": 67,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2027-09-01"
+  },
+  {
+    "nome": "Marina Peixoto",
+    "userType": "employee",
+    "userId": 68,
+    "status": "respondido",
+    "confiabilidadeNivel": "alta",
+    "respondidoEm": "2027-11-22"
+  },
+  {
+    "nome": "Rafaela Torres",
+    "userType": "employee",
+    "userId": 69,
+    "status": "inconsistente",
+    "confiabilidadeNivel": "baixa",
+    "respondidoEm": "2027-12-31"
+  }
+]

@@ -42,7 +42,7 @@
 // nascem com consumidor real na propria ME-056.
 
 import { redirect } from 'next/navigation';
-import { eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { JSX } from 'react';
 
 import { Layout } from '../../components/shell/Layout';
@@ -93,27 +93,32 @@ function statusesForFilter(filter: CompanyListFilter): ('ativa' | 'inativa')[] {
 async function loadPanelData(filter: CompanyListFilter): Promise<SuperAdminPanelData> {
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    // ME-068 E-068-11 canonico: painel §5.3 exclui empresas-demo (Nativa e
+    // afins) de todos os contadores e listagens. Junta com `companies` nos
+    // sub-agregados de employees/cLevelMembers para propagar o filtro.
     const [companiesActiveRows, companiesInactiveRows, employeesActiveRows, cLevelActiveRows] =
       await Promise.all([
         client.db
           .select({ count: sql<number>`count(*)` })
           .from(companies)
-          .where(eq(companies.status, 'ativa')),
+          .where(and(eq(companies.status, 'ativa'), eq(companies.isDemo, false))),
         client.db
           .select({ count: sql<number>`count(*)` })
           .from(companies)
-          .where(eq(companies.status, 'inativa')),
+          .where(and(eq(companies.status, 'inativa'), eq(companies.isDemo, false))),
         client.db
           .select({ count: sql<number>`count(*)` })
           .from(employees)
-          .where(eq(employees.status, 'ativo')),
+          .innerJoin(companies, eq(employees.companyId, companies.id))
+          .where(and(eq(employees.status, 'ativo'), eq(companies.isDemo, false))),
         client.db
           .select({ count: sql<number>`count(*)` })
           .from(cLevelMembers)
-          .where(eq(cLevelMembers.status, 'ativo')),
+          .innerJoin(companies, eq(cLevelMembers.companyId, companies.id))
+          .where(and(eq(cLevelMembers.status, 'ativo'), eq(companies.isDemo, false))),
       ]);
 
-    // Lista de empresas conforme filtro canonico §5.3 (D075).
+    // Lista de empresas conforme filtro canonico §5.3 (D075) + ME-068 E-068-11.
     const statuses = statusesForFilter(filter);
     const companiesList = await client.db
       .select({
@@ -124,17 +129,19 @@ async function loadPanelData(filter: CompanyListFilter): Promise<SuperAdminPanel
         createdAt: companies.createdAt,
       })
       .from(companies)
-      .where(inArray(companies.status, statuses))
+      .where(and(inArray(companies.status, statuses), eq(companies.isDemo, false)))
       .orderBy(companies.nomeFantasia);
 
-    // Contagem de employees ativos por empresa (subquery agregada).
+    // Contagem de employees ativos por empresa (subquery agregada), com
+    // filtro `companies.isDemo=false` propagado via innerJoin.
     const employeesByCompany = await client.db
       .select({
         companyId: employees.companyId,
         count: sql<number>`count(*)`,
       })
       .from(employees)
-      .where(eq(employees.status, 'ativo'))
+      .innerJoin(companies, eq(employees.companyId, companies.id))
+      .where(and(eq(employees.status, 'ativo'), eq(companies.isDemo, false)))
       .groupBy(employees.companyId);
 
     const cLevelByCompany = await client.db
@@ -143,7 +150,8 @@ async function loadPanelData(filter: CompanyListFilter): Promise<SuperAdminPanel
         count: sql<number>`count(*)`,
       })
       .from(cLevelMembers)
-      .where(eq(cLevelMembers.status, 'ativo'))
+      .innerJoin(companies, eq(cLevelMembers.companyId, companies.id))
+      .where(and(eq(cLevelMembers.status, 'ativo'), eq(companies.isDemo, false)))
       .groupBy(cLevelMembers.companyId);
 
     const countByCompany = new Map<number, number>();

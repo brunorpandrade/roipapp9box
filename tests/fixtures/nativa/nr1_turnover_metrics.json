@@ -1,0 +1,524 @@
+[
+  {
+    "trimestre": "2026-Q1",
+    "escopo": "empresa",
+    "departamento": null,
+    "headcountInicio": 48,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 0.0,
+    "aberturaPorNivel": {}
+  },
+  {
+    "trimestre": "2026-Q1",
+    "escopo": "departamento",
+    "departamento": "Administrativo",
+    "departamentoKey": "ADM",
+    "headcountInicio": 7,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 0.0
+  },
+  {
+    "trimestre": "2026-Q1",
+    "escopo": "departamento",
+    "departamento": "Comercial",
+    "departamentoKey": "COM",
+    "headcountInicio": 5,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 0.0
+  },
+  {
+    "trimestre": "2026-Q1",
+    "escopo": "departamento",
+    "departamento": "Logística",
+    "departamentoKey": "LOG",
+    "headcountInicio": 7,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 0.0
+  },
+  {
+    "trimestre": "2026-Q1",
+    "escopo": "departamento",
+    "departamento": "Produção",
+    "departamentoKey": "PRO",
+    "headcountInicio": 22,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 0.0
+  },
+  {
+    "trimestre": "2026-Q2",
+    "escopo": "empresa",
+    "departamento": null,
+    "headcountInicio": 48,
+    "saidasTotal": 1,
+    "saidasVoluntarias": 1,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 2.08,
+    "turnoverAnualizado": 2.13,
+    "aberturaPorNivel": {
+      "operacional": {
+        "saidas": 1,
+        "vol": 1,
+        "invol": 0
+      }
+    }
+  },
+  {
+    "trimestre": "2026-Q2",
+    "escopo": "departamento",
+    "departamento": "Administrativo",
+    "departamentoKey": "ADM",
+    "headcountInicio": 7,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 0.0
+  },
+  {
+    "trimestre": "2026-Q2",
+    "escopo": "departamento",
+    "departamento": "Comercial",
+    "departamentoKey": "COM",
+    "headcountInicio": 5,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 0.0
+  },
+  {
+    "trimestre": "2026-Q2",
+    "escopo": "departamento",
+    "departamento": "Logística",
+    "departamentoKey": "LOG",
+    "headcountInicio": 7,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 0.0
+  },
+  {
+    "trimestre": "2026-Q2",
+    "escopo": "departamento",
+    "departamento": "Produção",
+    "departamentoKey": "PRO",
+    "headcountInicio": 22,
+    "saidasTotal": 1,
+    "saidasVoluntarias": 1,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 4.55,
+    "turnoverAnualizado": 4.76
+  },
+  {
+    "trimestre": "2026-Q3",
+    "escopo": "empresa",
+    "departamento": null,
+    "headcountInicio": 48,
+    "saidasTotal": 2,
+    "saidasVoluntarias": 1,
+    "saidasInvoluntarias": 1,
+    "turnoverTrimestral": 4.17,
+    "turnoverAnualizado": 6.25,
+    "aberturaPorNivel": {
+      "operacional": {
+        "saidas": 2,
+        "vol": 1,
+        "invol": 1
+      }
+    }
+  },
+  {
+    "trimestre": "2026-Q3",
+    "escopo": "departamento",
+    "departamento": "Administrativo",
+    "departamentoKey": "ADM",
+    "headcountInicio": 7,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 0.0
+  },
+  {
+    "trimestre": "2026-Q3",
+    "escopo": "departamento",
+    "departamento": "Comercial",
+    "departamentoKey": "COM",
+    "headcountInicio": 5,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 0.0
+  },
+  {
+    "trimestre": "2026-Q3",
+    "escopo": "departamento",
+    "departamento": "Logística",
+    "departamentoKey": "LOG",
+    "headcountInicio": 7,
+    "saidasTotal": 1,
+    "saidasVoluntarias": 1,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 14.29,
+    "turnoverAnualizado": 14.29
+  },
+  {
+    "trimestre": "2026-Q3",
+    "escopo": "departamento",
+    "departamento": "Produção",
+    "departamentoKey": "PRO",
+    "headcountInicio": 22,
+    "saidasTotal": 1,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 1,
+    "turnoverTrimestral": 4.55,
+    "turnoverAnualizado": 9.09
+  },
+  {
+    "trimestre": "2026-Q4",
+    "escopo": "empresa",
+    "departamento": null,
+    "headcountInicio": 50,
+    "saidasTotal": 3,
+    "saidasVoluntarias": 1,
+    "saidasInvoluntarias": 2,
+    "turnoverTrimestral": 6.0,
+    "turnoverAnualizado": 12.5,
+    "aberturaPorNivel": {
+      "operacional": {
+        "saidas": 3,
+        "vol": 1,
+        "invol": 2
+      }
+    }
+  },
+  {
+    "trimestre": "2026-Q4",
+    "escopo": "departamento",
+    "departamento": "Administrativo",
+    "departamentoKey": "ADM",
+    "headcountInicio": 7,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 0.0
+  },
+  {
+    "trimestre": "2026-Q4",
+    "escopo": "departamento",
+    "departamento": "Comercial",
+    "departamentoKey": "COM",
+    "headcountInicio": 5,
+    "saidasTotal": 1,
+    "saidasVoluntarias": 1,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 20.0,
+    "turnoverAnualizado": 20.0
+  },
+  {
+    "trimestre": "2026-Q4",
+    "escopo": "departamento",
+    "departamento": "Logística",
+    "departamentoKey": "LOG",
+    "headcountInicio": 7,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 14.29
+  },
+  {
+    "trimestre": "2026-Q4",
+    "escopo": "departamento",
+    "departamento": "Produção",
+    "departamentoKey": "PRO",
+    "headcountInicio": 22,
+    "saidasTotal": 2,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 2,
+    "turnoverTrimestral": 9.09,
+    "turnoverAnualizado": 18.18
+  },
+  {
+    "trimestre": "2027-Q1",
+    "escopo": "empresa",
+    "departamento": null,
+    "headcountInicio": 50,
+    "saidasTotal": 3,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 3,
+    "turnoverTrimestral": 6.0,
+    "turnoverAnualizado": 18.75,
+    "aberturaPorNivel": {
+      "operacional": {
+        "saidas": 3,
+        "vol": 0,
+        "invol": 3
+      }
+    }
+  },
+  {
+    "trimestre": "2027-Q1",
+    "escopo": "departamento",
+    "departamento": "Administrativo",
+    "departamentoKey": "ADM",
+    "headcountInicio": 7,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 0.0
+  },
+  {
+    "trimestre": "2027-Q1",
+    "escopo": "departamento",
+    "departamento": "Comercial",
+    "departamentoKey": "COM",
+    "headcountInicio": 5,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 20.0
+  },
+  {
+    "trimestre": "2027-Q1",
+    "escopo": "departamento",
+    "departamento": "Logística",
+    "departamentoKey": "LOG",
+    "headcountInicio": 7,
+    "saidasTotal": 1,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 1,
+    "turnoverTrimestral": 14.29,
+    "turnoverAnualizado": 28.57
+  },
+  {
+    "trimestre": "2027-Q1",
+    "escopo": "departamento",
+    "departamento": "Produção",
+    "departamentoKey": "PRO",
+    "headcountInicio": 22,
+    "saidasTotal": 2,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 2,
+    "turnoverTrimestral": 9.09,
+    "turnoverAnualizado": 27.27
+  },
+  {
+    "trimestre": "2027-Q2",
+    "escopo": "empresa",
+    "departamento": null,
+    "headcountInicio": 50,
+    "saidasTotal": 2,
+    "saidasVoluntarias": 2,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 4.0,
+    "turnoverAnualizado": 20.83,
+    "aberturaPorNivel": {
+      "operacional": {
+        "saidas": 2,
+        "vol": 2,
+        "invol": 0
+      }
+    }
+  },
+  {
+    "trimestre": "2027-Q2",
+    "escopo": "departamento",
+    "departamento": "Administrativo",
+    "departamentoKey": "ADM",
+    "headcountInicio": 7,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 0.0
+  },
+  {
+    "trimestre": "2027-Q2",
+    "escopo": "departamento",
+    "departamento": "Comercial",
+    "departamentoKey": "COM",
+    "headcountInicio": 5,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 20.0
+  },
+  {
+    "trimestre": "2027-Q2",
+    "escopo": "departamento",
+    "departamento": "Logística",
+    "departamentoKey": "LOG",
+    "headcountInicio": 7,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 28.57
+  },
+  {
+    "trimestre": "2027-Q2",
+    "escopo": "departamento",
+    "departamento": "Produção",
+    "departamentoKey": "PRO",
+    "headcountInicio": 22,
+    "saidasTotal": 2,
+    "saidasVoluntarias": 2,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 9.09,
+    "turnoverAnualizado": 31.82
+  },
+  {
+    "trimestre": "2027-Q3",
+    "escopo": "empresa",
+    "departamento": null,
+    "headcountInicio": 51,
+    "saidasTotal": 1,
+    "saidasVoluntarias": 1,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 1.96,
+    "turnoverAnualizado": 18.0,
+    "aberturaPorNivel": {
+      "operacional": {
+        "saidas": 1,
+        "vol": 1,
+        "invol": 0
+      }
+    }
+  },
+  {
+    "trimestre": "2027-Q3",
+    "escopo": "departamento",
+    "departamento": "Administrativo",
+    "departamentoKey": "ADM",
+    "headcountInicio": 7,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 0.0
+  },
+  {
+    "trimestre": "2027-Q3",
+    "escopo": "departamento",
+    "departamento": "Comercial",
+    "departamentoKey": "COM",
+    "headcountInicio": 5,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 20.0
+  },
+  {
+    "trimestre": "2027-Q3",
+    "escopo": "departamento",
+    "departamento": "Logística",
+    "departamentoKey": "LOG",
+    "headcountInicio": 7,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 14.29
+  },
+  {
+    "trimestre": "2027-Q3",
+    "escopo": "departamento",
+    "departamento": "Produção",
+    "departamentoKey": "PRO",
+    "headcountInicio": 23,
+    "saidasTotal": 1,
+    "saidasVoluntarias": 1,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 4.35,
+    "turnoverAnualizado": 31.82
+  },
+  {
+    "trimestre": "2027-Q4",
+    "escopo": "empresa",
+    "departamento": null,
+    "headcountInicio": 52,
+    "saidasTotal": 1,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 1,
+    "turnoverTrimestral": 1.92,
+    "turnoverAnualizado": 14.0,
+    "aberturaPorNivel": {
+      "operacional": {
+        "saidas": 1,
+        "vol": 0,
+        "invol": 1
+      }
+    }
+  },
+  {
+    "trimestre": "2027-Q4",
+    "escopo": "departamento",
+    "departamento": "Administrativo",
+    "departamentoKey": "ADM",
+    "headcountInicio": 7,
+    "saidasTotal": 1,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 1,
+    "turnoverTrimestral": 14.29,
+    "turnoverAnualizado": 14.29
+  },
+  {
+    "trimestre": "2027-Q4",
+    "escopo": "departamento",
+    "departamento": "Comercial",
+    "departamentoKey": "COM",
+    "headcountInicio": 5,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 0.0
+  },
+  {
+    "trimestre": "2027-Q4",
+    "escopo": "departamento",
+    "departamento": "Logística",
+    "departamentoKey": "LOG",
+    "headcountInicio": 7,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 14.29
+  },
+  {
+    "trimestre": "2027-Q4",
+    "escopo": "departamento",
+    "departamento": "Produção",
+    "departamentoKey": "PRO",
+    "headcountInicio": 24,
+    "saidasTotal": 0,
+    "saidasVoluntarias": 0,
+    "saidasInvoluntarias": 0,
+    "turnoverTrimestral": 0.0,
+    "turnoverAnualizado": 22.73
+  }
+]

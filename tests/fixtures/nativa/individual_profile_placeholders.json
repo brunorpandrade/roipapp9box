@@ -1,0 +1,485 @@
+[
+  {
+    "userType": "clevel",
+    "userId": 1,
+    "nome": "Eduardo Almeida",
+    "status": "respondido",
+    "respondidoEm": "2026-02-15"
+  },
+  {
+    "userType": "clevel",
+    "userId": 2,
+    "nome": "Patrícia Menezes",
+    "status": "respondido",
+    "respondidoEm": "2026-02-15"
+  },
+  {
+    "userType": "clevel",
+    "userId": 3,
+    "nome": "Ricardo Nogueira",
+    "status": "respondido",
+    "respondidoEm": "2026-02-15"
+  },
+  {
+    "userType": "employee",
+    "userId": 4,
+    "nome": "Juliana Freitas",
+    "status": "respondido",
+    "respondidoEm": "2026-01-23"
+  },
+  {
+    "userType": "employee",
+    "userId": 5,
+    "nome": "Fernando Salles",
+    "status": "respondido",
+    "respondidoEm": "2026-02-04"
+  },
+  {
+    "userType": "employee",
+    "userId": 6,
+    "nome": "Camila Batista",
+    "status": "respondido",
+    "respondidoEm": "2026-02-10"
+  },
+  {
+    "userType": "employee",
+    "userId": 7,
+    "nome": "Marcelo Vieira",
+    "status": "respondido",
+    "respondidoEm": "2026-01-26"
+  },
+  {
+    "userType": "employee",
+    "userId": 8,
+    "nome": "Gustavo Almeida",
+    "status": "respondido",
+    "respondidoEm": "2026-01-23"
+  },
+  {
+    "userType": "employee",
+    "userId": 9,
+    "nome": "Márcio Fernandes",
+    "status": "respondido",
+    "respondidoEm": "2026-01-30"
+  },
+  {
+    "userType": "employee",
+    "userId": 10,
+    "nome": "Bianca Martins",
+    "status": "respondido",
+    "respondidoEm": "2026-02-03"
+  },
+  {
+    "userType": "employee",
+    "userId": 11,
+    "nome": "Thiago Costa",
+    "status": "respondido",
+    "respondidoEm": "2026-01-30"
+  },
+  {
+    "userType": "employee",
+    "userId": 12,
+    "nome": "Renata Lima",
+    "status": "respondido",
+    "respondidoEm": "2026-01-31"
+  },
+  {
+    "userType": "employee",
+    "userId": 13,
+    "nome": "Bruno Cardoso",
+    "status": "respondido",
+    "respondidoEm": "2026-01-24"
+  },
+  {
+    "userType": "employee",
+    "userId": 14,
+    "nome": "Denise Rocha",
+    "status": "respondido",
+    "respondidoEm": "2026-01-19"
+  },
+  {
+    "userType": "employee",
+    "userId": 15,
+    "nome": "Claudia Nascimento",
+    "status": "respondido",
+    "respondidoEm": "2026-02-15"
+  },
+  {
+    "userType": "employee",
+    "userId": 16,
+    "nome": "Marisa Oliveira",
+    "status": "respondido",
+    "respondidoEm": "2026-01-27"
+  },
+  {
+    "userType": "employee",
+    "userId": 17,
+    "nome": "Roberto Santos",
+    "status": "respondido",
+    "respondidoEm": "2026-02-01"
+  },
+  {
+    "userType": "employee",
+    "userId": 18,
+    "nome": "Everton Nunes",
+    "status": "respondido",
+    "respondidoEm": "2026-01-21"
+  },
+  {
+    "userType": "employee",
+    "userId": 19,
+    "nome": "André Luiz Costa",
+    "status": "respondido",
+    "respondidoEm": "2026-02-06"
+  },
+  {
+    "userType": "employee",
+    "userId": 20,
+    "nome": "Tiago Martins",
+    "status": "respondido",
+    "respondidoEm": "2026-02-13"
+  },
+  {
+    "userType": "employee",
+    "userId": 21,
+    "nome": "Paulo Henrique Lima",
+    "status": "respondido",
+    "respondidoEm": "2026-01-21"
+  },
+  {
+    "userType": "employee",
+    "userId": 22,
+    "nome": "Sérgio Moura",
+    "status": "respondido",
+    "respondidoEm": "2026-02-15"
+  },
+  {
+    "userType": "employee",
+    "userId": 23,
+    "nome": "Lucas Ferreira",
+    "status": "respondido",
+    "respondidoEm": "2026-02-14"
+  },
+  {
+    "userType": "employee",
+    "userId": 24,
+    "nome": "Caio Santos",
+    "status": "respondido",
+    "respondidoEm": "2026-02-07"
+  },
+  {
+    "userType": "employee",
+    "userId": 25,
+    "nome": "Rafael Teixeira",
+    "status": "respondido",
+    "respondidoEm": "2026-01-28"
+  },
+  {
+    "userType": "employee",
+    "userId": 26,
+    "nome": "Gabriel Oliveira",
+    "status": "respondido",
+    "respondidoEm": "2026-02-08"
+  },
+  {
+    "userType": "employee",
+    "userId": 27,
+    "nome": "Vinícius Ribeiro",
+    "status": "respondido",
+    "respondidoEm": "2026-02-05"
+  },
+  {
+    "userType": "employee",
+    "userId": 28,
+    "nome": "Bruno Henrique Alves",
+    "status": "pendente",
+    "respondidoEm": null
+  },
+  {
+    "userType": "employee",
+    "userId": 29,
+    "nome": "José Carlos Pereira",
+    "status": "respondido",
+    "respondidoEm": "2026-02-02"
+  },
+  {
+    "userType": "employee",
+    "userId": 30,
+    "nome": "Felipe Barros",
+    "status": "pendente",
+    "respondidoEm": null
+  },
+  {
+    "userType": "employee",
+    "userId": 31,
+    "nome": "Marcos Vinícius Souza",
+    "status": "pendente",
+    "respondidoEm": null
+  },
+  {
+    "userType": "employee",
+    "userId": 51,
+    "nome": "Cristiano Barbosa",
+    "status": "respondido",
+    "respondidoEm": "2026-01-23"
+  },
+  {
+    "userType": "employee",
+    "userId": 32,
+    "nome": "Danilo Azevedo",
+    "status": "respondido",
+    "respondidoEm": "2026-01-18"
+  },
+  {
+    "userType": "employee",
+    "userId": 33,
+    "nome": "Aline Prado",
+    "status": "respondido",
+    "respondidoEm": "2026-02-03"
+  },
+  {
+    "userType": "employee",
+    "userId": 34,
+    "nome": "Sônia Cardoso",
+    "status": "respondido",
+    "respondidoEm": "2026-02-01"
+  },
+  {
+    "userType": "employee",
+    "userId": 35,
+    "nome": "Renata Campos",
+    "status": "respondido",
+    "respondidoEm": "2026-02-02"
+  },
+  {
+    "userType": "employee",
+    "userId": 36,
+    "nome": "Jéssica Moura",
+    "status": "respondido",
+    "respondidoEm": "2026-01-26"
+  },
+  {
+    "userType": "employee",
+    "userId": 37,
+    "nome": "Paula Ribeiro",
+    "status": "respondido",
+    "respondidoEm": "2026-02-06"
+  },
+  {
+    "userType": "employee",
+    "userId": 38,
+    "nome": "Renato Silva",
+    "status": "respondido",
+    "respondidoEm": "2026-02-05"
+  },
+  {
+    "userType": "employee",
+    "userId": 39,
+    "nome": "Daniel Moraes",
+    "status": "respondido",
+    "respondidoEm": "2026-01-22"
+  },
+  {
+    "userType": "employee",
+    "userId": 40,
+    "nome": "Everton Lima",
+    "status": "respondido",
+    "respondidoEm": "2026-01-30"
+  },
+  {
+    "userType": "employee",
+    "userId": 41,
+    "nome": "Adriano Souza",
+    "status": "respondido",
+    "respondidoEm": "2026-01-28"
+  },
+  {
+    "userType": "employee",
+    "userId": 42,
+    "nome": "Jonas Rocha",
+    "status": "respondido",
+    "respondidoEm": "2026-02-05"
+  },
+  {
+    "userType": "employee",
+    "userId": 43,
+    "nome": "Leonardo Pires",
+    "status": "respondido",
+    "respondidoEm": "2026-01-17"
+  },
+  {
+    "userType": "employee",
+    "userId": 44,
+    "nome": "Fábio Henrique",
+    "status": "respondido",
+    "respondidoEm": "2026-01-29"
+  },
+  {
+    "userType": "employee",
+    "userId": 45,
+    "nome": "Pedro Augusto",
+    "status": "respondido",
+    "respondidoEm": "2026-01-24"
+  },
+  {
+    "userType": "employee",
+    "userId": 46,
+    "nome": "Marina Lopes",
+    "status": "respondido",
+    "respondidoEm": "2026-02-13"
+  },
+  {
+    "userType": "employee",
+    "userId": 47,
+    "nome": "Tatiane Freitas",
+    "status": "respondido",
+    "respondidoEm": "2026-01-27"
+  },
+  {
+    "userType": "employee",
+    "userId": 48,
+    "nome": "Carlos Eduardo Mendes",
+    "status": "respondido",
+    "respondidoEm": "2026-02-02"
+  },
+  {
+    "userType": "employee",
+    "userId": 49,
+    "nome": "João Pedro Ramos",
+    "status": "respondido",
+    "respondidoEm": "2026-01-18"
+  },
+  {
+    "userType": "employee",
+    "userId": 50,
+    "nome": "Alexandre Gouveia",
+    "status": "respondido",
+    "respondidoEm": "2026-01-31"
+  },
+  {
+    "userType": "employee",
+    "userId": 52,
+    "nome": "Ademir Prado",
+    "status": "respondido",
+    "respondidoEm": "2026-06-24"
+  },
+  {
+    "userType": "employee",
+    "userId": 53,
+    "nome": "Isabela Rezende",
+    "status": "respondido",
+    "respondidoEm": "2026-08-18"
+  },
+  {
+    "userType": "employee",
+    "userId": 54,
+    "nome": "Wanderson Alves",
+    "status": "respondido",
+    "respondidoEm": "2026-09-14"
+  },
+  {
+    "userType": "employee",
+    "userId": 55,
+    "nome": "Fernanda Correia",
+    "status": "respondido",
+    "respondidoEm": "2026-09-11"
+  },
+  {
+    "userType": "employee",
+    "userId": 56,
+    "nome": "Diego Ferraz",
+    "status": "respondido",
+    "respondidoEm": "2026-10-30"
+  },
+  {
+    "userType": "employee",
+    "userId": 57,
+    "nome": "Vitor Ramos",
+    "status": "respondido",
+    "respondidoEm": "2026-10-31"
+  },
+  {
+    "userType": "employee",
+    "userId": 58,
+    "nome": "Cauê Fonseca",
+    "status": "respondido",
+    "respondidoEm": "2026-12-08"
+  },
+  {
+    "userType": "employee",
+    "userId": 59,
+    "nome": "Beatriz Nogueira",
+    "status": "respondido",
+    "respondidoEm": "2026-12-23"
+  },
+  {
+    "userType": "employee",
+    "userId": 60,
+    "nome": "Igor Beltrão",
+    "status": "respondido",
+    "respondidoEm": "2027-03-16"
+  },
+  {
+    "userType": "employee",
+    "userId": 61,
+    "nome": "Rodrigo Oliveira",
+    "status": "respondido",
+    "respondidoEm": "2027-03-22"
+  },
+  {
+    "userType": "employee",
+    "userId": 62,
+    "nome": "Vinicius Nogueira",
+    "status": "respondido",
+    "respondidoEm": "2027-04-18"
+  },
+  {
+    "userType": "employee",
+    "userId": 63,
+    "nome": "Larissa Mendes",
+    "status": "respondido",
+    "respondidoEm": "2027-06-03"
+  },
+  {
+    "userType": "employee",
+    "userId": 64,
+    "nome": "Márcia Silveira",
+    "status": "respondido",
+    "respondidoEm": "2027-06-14"
+  },
+  {
+    "userType": "employee",
+    "userId": 65,
+    "nome": "Camila Duarte",
+    "status": "respondido",
+    "respondidoEm": "2027-07-18"
+  },
+  {
+    "userType": "employee",
+    "userId": 66,
+    "nome": "Wesley Duarte",
+    "status": "respondido",
+    "respondidoEm": "2027-08-27"
+  },
+  {
+    "userType": "employee",
+    "userId": 67,
+    "nome": "Otávio Braga",
+    "status": "respondido",
+    "respondidoEm": "2027-09-01"
+  },
+  {
+    "userType": "employee",
+    "userId": 68,
+    "nome": "Marina Peixoto",
+    "status": "respondido",
+    "respondidoEm": "2027-11-22"
+  },
+  {
+    "userType": "employee",
+    "userId": 69,
+    "nome": "Rafaela Torres",
+    "status": "respondido",
+    "respondidoEm": "2027-12-31"
+  }
+]

@@ -103,6 +103,12 @@ export const companies = mysqlTable('companies', {
   encarregadoLgpdTelefone: varchar('encarregadoLgpdTelefone', { length: 20 }),
   encarregadoLgpdPoliticaUrl: varchar('encarregadoLgpdPoliticaUrl', { length: 500 }),
   status: mysqlEnum('status', ['ativa', 'inativa']).default('inativa'),
+  // ME-068 E-068-11: flag canonica de empresa-demo. Motores automaticos
+  // (cycleScheduleEngine, monthlyClosureOrchestrator, alertas, e-mails)
+  // filtram `isDemo = false` antes de processar. Contadores e listagens
+  // do painel Super Admin §5.3 filtram `isDemo = false` antes de agregar.
+  // Nativa Alimentos Ltda. (id=1) entra com isDemo=true no seed inicial.
+  isDemo: boolean('isDemo').notNull().default(false),
   createdAt: timestamp('createdAt').defaultNow(),
   updatedAt: timestamp('updatedAt').defaultNow().onUpdateNow(),
 });

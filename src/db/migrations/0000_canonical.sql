@@ -54,8 +54,10 @@ CREATE TABLE `companies` (
   `encarregadoLgpdTelefone` VARCHAR(20) DEFAULT NULL,
   `encarregadoLgpdPoliticaUrl` VARCHAR(500) DEFAULT NULL,
   `status` ENUM('ativa','inativa') DEFAULT 'inativa',
+  `isDemo` BOOLEAN NOT NULL DEFAULT false,
   `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updatedAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updatedAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX `idx_companies_isDemo` (`isDemo`)
 );
 
 CREATE TABLE `companyMonthlyData` (

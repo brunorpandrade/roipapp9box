@@ -8,6 +8,13 @@
       "when": 0,
       "tag": "0000_canonical",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1754783100000,
+      "tag": "0001_add_is_demo",
+      "breakpoints": true
     }
   ]
 }

@@ -147,6 +147,7 @@ interface CompanyInfo {
   readonly razaoSocial: string;
   readonly timezone: string;
   readonly status: string | null;
+  readonly isDemo: boolean;
 }
 
 async function loadCompanyInfo(
@@ -159,6 +160,7 @@ async function loadCompanyInfo(
       razaoSocial: companies.razaoSocial,
       timezone: companies.timezone,
       status: companies.status,
+      isDemo: companies.isDemo,
     })
     .from(companies)
     .where(eq(companies.id, companyId))
@@ -438,6 +440,20 @@ export async function runEmailQueueJob(
           // Volta a `pendente` com o mesmo retries. Preserva estado canonico
           // para reprocessamento ao reativar (§11.6).
           await markEmailQueueRetry(db, item.id, item.retries);
+          outcomes.empresa_desativada += 1;
+          logQueueEvent({
+            id: item.id,
+            companyId: item.companyId,
+            outcome: 'empresa_desativada',
+          });
+          continue;
+        }
+        // ME-068 E-068-11 canonico: empresa-demo (Nativa e afins) nunca
+        // dispara e-mail. Defense-in-depth caso um item seja enfileirado
+        // manualmente. Marca como falha final (nao retryable — semantica
+        // canonica: e-mails de demo nao sao valida deliverables).
+        if (companyInfo.isDemo) {
+          await markEmailQueueFailed(db, item.id, item.retries + 1);
           outcomes.empresa_desativada += 1;
           logQueueEvent({
             id: item.id,

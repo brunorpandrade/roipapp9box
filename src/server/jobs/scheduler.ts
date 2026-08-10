@@ -432,10 +432,12 @@ export const AI_CONVERSATIONS_ARCHIVE_MONTHS = 6;
  */
 function makeRunDailyClosureJobHandler(deps: CronSchedulerDependencies): CronJobHandler {
   return async (db, now): Promise<RunDailyClosureJobBatchResult> => {
+    // ME-068 E-068-11 canonico: filtro `isDemo=false` — motor nunca processa
+    // empresas-demo (Nativa Alimentos Ltda. e afins) automaticamente.
     const empresasAtivas = await db
       .select({ id: companies.id })
       .from(companies)
-      .where(eq(companies.status, 'ativa'));
+      .where(and(eq(companies.status, 'ativa'), eq(companies.isDemo, false)));
 
     const results: { companyId: number; result: RunDailyClosureJobResult }[] = [];
     let processadasComSucesso = 0;
@@ -566,10 +568,11 @@ function makeRefreshCycleScheduleCountersHandler(): CronJobHandler {
  */
 function makeArchiveAiConversationsJobHandler(): CronJobHandler {
   return async (db, now): Promise<ArchiveAiConversationsBatchResult> => {
+    // ME-068 E-068-11 canonico: filtro `isDemo=false`.
     const empresasAtivas = await db
       .select({ id: companies.id })
       .from(companies)
-      .where(eq(companies.status, 'ativa'));
+      .where(and(eq(companies.status, 'ativa'), eq(companies.isDemo, false)));
 
     const cutoff = new Date(now.getTime());
     cutoff.setMonth(cutoff.getMonth() - AI_CONVERSATIONS_ARCHIVE_MONTHS);

@@ -1,0 +1,61 @@
+[
+  {
+    "departamento": "Produção",
+    "departamentoKey": "PRO",
+    "listaFatoresDivergentesCriticos": [],
+    "listaFatoresDivergentesPositivos": [],
+    "classificacao": "convergente"
+  },
+  {
+    "departamento": "Logística",
+    "departamentoKey": "LOG",
+    "listaFatoresDivergentesCriticos": [
+      {
+        "fatorNum": 3,
+        "fatorNome": "Conflitos de papel",
+        "diferenca": -10.12
+      }
+    ],
+    "listaFatoresDivergentesPositivos": [],
+    "classificacao": "divergencia_critica"
+  },
+  {
+    "departamento": "Comercial",
+    "departamentoKey": "COM",
+    "listaFatoresDivergentesCriticos": [],
+    "listaFatoresDivergentesPositivos": [
+      {
+        "fatorNum": 4,
+        "fatorNome": "Autonomia",
+        "diferenca": 11.28
+      },
+      {
+        "fatorNum": 7,
+        "fatorNome": "Insegurança no trabalho",
+        "diferenca": 11.58
+      }
+    ],
+    "classificacao": "divergencia_positiva"
+  },
+  {
+    "departamento": "Administrativo",
+    "departamentoKey": "ADM",
+    "listaFatoresDivergentesCriticos": [],
+    "listaFatoresDivergentesPositivos": [],
+    "classificacao": "convergente"
+  },
+  {
+    "departamento": "DIR+FIN",
+    "departamentoKey": "DIR+FIN",
+    "listaFatoresDivergentesCriticos": [],
+    "listaFatoresDivergentesPositivos": [],
+    "classificacao": "convergente"
+  },
+  {
+    "departamento": "QUA+RH",
+    "departamentoKey": "QUA+RH",
+    "listaFatoresDivergentesCriticos": [],
+    "listaFatoresDivergentesPositivos": [],
+    "classificacao": "convergente"
+  }
+]

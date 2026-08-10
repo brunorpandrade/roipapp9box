@@ -1,0 +1,4012 @@
+[
+  {
+    "nome": "Juliana Freitas",
+    "employeeId": 4,
+    "trimestre": "2026-Q1",
+    "scoreA": 85.0,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Fernando Salles",
+    "employeeId": 5,
+    "trimestre": "2026-Q1",
+    "scoreA": 82.5,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Camila Batista",
+    "employeeId": 6,
+    "trimestre": "2026-Q1",
+    "scoreA": 83.75,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 95.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Marcelo Vieira",
+    "employeeId": 7,
+    "trimestre": "2026-Q1",
+    "scoreA": 71.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Gustavo Almeida",
+    "employeeId": 8,
+    "trimestre": "2026-Q1",
+    "scoreA": 87.5,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Márcio Fernandes",
+    "employeeId": 9,
+    "trimestre": "2026-Q1",
+    "scoreA": 66.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Bianca Martins",
+    "employeeId": 10,
+    "trimestre": "2026-Q1",
+    "scoreA": 82.5,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Thiago Costa",
+    "employeeId": 11,
+    "trimestre": "2026-Q1",
+    "scoreA": 60.0,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 50.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Renata Lima",
+    "employeeId": 12,
+    "trimestre": "2026-Q1",
+    "scoreA": 81.25,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Bruno Cardoso",
+    "employeeId": 13,
+    "trimestre": "2026-Q1",
+    "scoreA": 85.0,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Denise Rocha",
+    "employeeId": 14,
+    "trimestre": "2026-Q1",
+    "scoreA": 73.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Claudia Nascimento",
+    "employeeId": 15,
+    "trimestre": "2026-Q1",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Marisa Oliveira",
+    "employeeId": 16,
+    "trimestre": "2026-Q1",
+    "scoreA": 85.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Roberto Santos",
+    "employeeId": 17,
+    "trimestre": "2026-Q1",
+    "scoreA": 72.5,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Everton Nunes",
+    "employeeId": 18,
+    "trimestre": "2026-Q1",
+    "scoreA": 76.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "André Luiz Costa",
+    "employeeId": 19,
+    "trimestre": "2026-Q1",
+    "scoreA": 87.5,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 95.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Tiago Martins",
+    "employeeId": 20,
+    "trimestre": "2026-Q1",
+    "scoreA": 83.75,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Paulo Henrique Lima",
+    "employeeId": 21,
+    "trimestre": "2026-Q1",
+    "scoreA": 63.75,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Sérgio Moura",
+    "employeeId": 22,
+    "trimestre": "2026-Q1",
+    "scoreA": 80.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Lucas Ferreira",
+    "employeeId": 23,
+    "trimestre": "2026-Q1",
+    "scoreA": 86.25,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Caio Santos",
+    "employeeId": 24,
+    "trimestre": "2026-Q1",
+    "scoreA": 75.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Rafael Teixeira",
+    "employeeId": 25,
+    "trimestre": "2026-Q1",
+    "scoreA": 80.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Gabriel Oliveira",
+    "employeeId": 26,
+    "trimestre": "2026-Q1",
+    "scoreA": 80.0,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Vinícius Ribeiro",
+    "employeeId": 27,
+    "trimestre": "2026-Q1",
+    "scoreA": 65.0,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Bruno Henrique Alves",
+    "employeeId": 28,
+    "trimestre": "2026-Q1",
+    "scoreA": 60.0,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 50.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "José Carlos Pereira",
+    "employeeId": 29,
+    "trimestre": "2026-Q1",
+    "scoreA": 83.75,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Felipe Barros",
+    "employeeId": 30,
+    "trimestre": "2026-Q1",
+    "scoreA": 42.5,
+    "engajamentoA": 40.0,
+    "desenvolvimentoA": 45.0,
+    "pertencimentoA": 40.0,
+    "realizacaoA": 45.0
+  },
+  {
+    "nome": "Marcos Vinícius Souza",
+    "employeeId": 31,
+    "trimestre": "2026-Q1",
+    "scoreA": 58.75,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 55.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Cristiano Barbosa",
+    "employeeId": 51,
+    "trimestre": "2026-Q1",
+    "scoreA": 73.75,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Danilo Azevedo",
+    "employeeId": 32,
+    "trimestre": "2026-Q1",
+    "scoreA": 55.0,
+    "engajamentoA": 55.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 45.0
+  },
+  {
+    "nome": "Aline Prado",
+    "employeeId": 33,
+    "trimestre": "2026-Q1",
+    "scoreA": 76.25,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Sônia Cardoso",
+    "employeeId": 34,
+    "trimestre": "2026-Q1",
+    "scoreA": 80.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Renata Campos",
+    "employeeId": 35,
+    "trimestre": "2026-Q1",
+    "scoreA": 85.0,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Jéssica Moura",
+    "employeeId": 36,
+    "trimestre": "2026-Q1",
+    "scoreA": 70.0,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Paula Ribeiro",
+    "employeeId": 37,
+    "trimestre": "2026-Q1",
+    "scoreA": 68.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Renato Silva",
+    "employeeId": 38,
+    "trimestre": "2026-Q1",
+    "scoreA": 81.25,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Daniel Moraes",
+    "employeeId": 39,
+    "trimestre": "2026-Q1",
+    "scoreA": 81.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Everton Lima",
+    "employeeId": 40,
+    "trimestre": "2026-Q1",
+    "scoreA": 66.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 55.0
+  },
+  {
+    "nome": "Adriano Souza",
+    "employeeId": 41,
+    "trimestre": "2026-Q1",
+    "scoreA": 83.75,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Jonas Rocha",
+    "employeeId": 42,
+    "trimestre": "2026-Q1",
+    "scoreA": 76.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Leonardo Pires",
+    "employeeId": 43,
+    "trimestre": "2026-Q1",
+    "scoreA": 90.0,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 100.0
+  },
+  {
+    "nome": "Fábio Henrique",
+    "employeeId": 44,
+    "trimestre": "2026-Q1",
+    "scoreA": 68.75,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Pedro Augusto",
+    "employeeId": 45,
+    "trimestre": "2026-Q1",
+    "scoreA": 55.0,
+    "engajamentoA": 50.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 55.0,
+    "realizacaoA": 55.0
+  },
+  {
+    "nome": "Marina Lopes",
+    "employeeId": 46,
+    "trimestre": "2026-Q1",
+    "scoreA": 78.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Tatiane Freitas",
+    "employeeId": 47,
+    "trimestre": "2026-Q1",
+    "scoreA": 66.25,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Carlos Eduardo Mendes",
+    "employeeId": 48,
+    "trimestre": "2026-Q1",
+    "scoreA": 86.25,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "João Pedro Ramos",
+    "employeeId": 49,
+    "trimestre": "2026-Q1",
+    "scoreA": 72.5,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Alexandre Gouveia",
+    "employeeId": 50,
+    "trimestre": "2026-Q1",
+    "scoreA": 65.0,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Juliana Freitas",
+    "employeeId": 4,
+    "trimestre": "2026-Q2",
+    "scoreA": 85.0,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Fernando Salles",
+    "employeeId": 5,
+    "trimestre": "2026-Q2",
+    "scoreA": 80.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Camila Batista",
+    "employeeId": 6,
+    "trimestre": "2026-Q2",
+    "scoreA": 81.25,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Marcelo Vieira",
+    "employeeId": 7,
+    "trimestre": "2026-Q2",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Gustavo Almeida",
+    "employeeId": 8,
+    "trimestre": "2026-Q2",
+    "scoreA": 82.5,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Márcio Fernandes",
+    "employeeId": 9,
+    "trimestre": "2026-Q2",
+    "scoreA": 73.75,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Bianca Martins",
+    "employeeId": 10,
+    "trimestre": "2026-Q2",
+    "scoreA": 82.5,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Thiago Costa",
+    "employeeId": 11,
+    "trimestre": "2026-Q2",
+    "scoreA": 60.0,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 50.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Renata Lima",
+    "employeeId": 12,
+    "trimestre": "2026-Q2",
+    "scoreA": 81.25,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Bruno Cardoso",
+    "employeeId": 13,
+    "trimestre": "2026-Q2",
+    "scoreA": 85.0,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Denise Rocha",
+    "employeeId": 14,
+    "trimestre": "2026-Q2",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Claudia Nascimento",
+    "employeeId": 15,
+    "trimestre": "2026-Q2",
+    "scoreA": 70.0,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Marisa Oliveira",
+    "employeeId": 16,
+    "trimestre": "2026-Q2",
+    "scoreA": 82.5,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Roberto Santos",
+    "employeeId": 17,
+    "trimestre": "2026-Q2",
+    "scoreA": 75.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Everton Nunes",
+    "employeeId": 18,
+    "trimestre": "2026-Q2",
+    "scoreA": 81.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "André Luiz Costa",
+    "employeeId": 19,
+    "trimestre": "2026-Q2",
+    "scoreA": 86.25,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Tiago Martins",
+    "employeeId": 20,
+    "trimestre": "2026-Q2",
+    "scoreA": 85.0,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Paulo Henrique Lima",
+    "employeeId": 21,
+    "trimestre": "2026-Q2",
+    "scoreA": 56.25,
+    "engajamentoA": 50.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 50.0
+  },
+  {
+    "nome": "Sérgio Moura",
+    "employeeId": 22,
+    "trimestre": "2026-Q2",
+    "scoreA": 82.5,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Lucas Ferreira",
+    "employeeId": 23,
+    "trimestre": "2026-Q2",
+    "scoreA": 82.5,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Caio Santos",
+    "employeeId": 24,
+    "trimestre": "2026-Q2",
+    "scoreA": 72.5,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Rafael Teixeira",
+    "employeeId": 25,
+    "trimestre": "2026-Q2",
+    "scoreA": 86.25,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Gabriel Oliveira",
+    "employeeId": 26,
+    "trimestre": "2026-Q2",
+    "scoreA": 82.5,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 95.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Vinícius Ribeiro",
+    "employeeId": 27,
+    "trimestre": "2026-Q2",
+    "scoreA": 42.5,
+    "engajamentoA": 40.0,
+    "desenvolvimentoA": 50.0,
+    "pertencimentoA": 40.0,
+    "realizacaoA": 40.0
+  },
+  {
+    "nome": "Bruno Henrique Alves",
+    "employeeId": 28,
+    "trimestre": "2026-Q2",
+    "scoreA": 42.5,
+    "engajamentoA": 45.0,
+    "desenvolvimentoA": 45.0,
+    "pertencimentoA": 40.0,
+    "realizacaoA": 40.0
+  },
+  {
+    "nome": "José Carlos Pereira",
+    "employeeId": 29,
+    "trimestre": "2026-Q2",
+    "scoreA": 82.5,
+    "engajamentoA": 95.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Felipe Barros",
+    "employeeId": 30,
+    "trimestre": "2026-Q2",
+    "scoreA": 42.5,
+    "engajamentoA": 45.0,
+    "desenvolvimentoA": 40.0,
+    "pertencimentoA": 45.0,
+    "realizacaoA": 40.0
+  },
+  {
+    "nome": "Cristiano Barbosa",
+    "employeeId": 51,
+    "trimestre": "2026-Q2",
+    "scoreA": 73.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Danilo Azevedo",
+    "employeeId": 32,
+    "trimestre": "2026-Q2",
+    "scoreA": 65.0,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Aline Prado",
+    "employeeId": 33,
+    "trimestre": "2026-Q2",
+    "scoreA": 75.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Sônia Cardoso",
+    "employeeId": 34,
+    "trimestre": "2026-Q2",
+    "scoreA": 81.25,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Renata Campos",
+    "employeeId": 35,
+    "trimestre": "2026-Q2",
+    "scoreA": 80.0,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Jéssica Moura",
+    "employeeId": 36,
+    "trimestre": "2026-Q2",
+    "scoreA": 71.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Paula Ribeiro",
+    "employeeId": 37,
+    "trimestre": "2026-Q2",
+    "scoreA": 72.5,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Renato Silva",
+    "employeeId": 38,
+    "trimestre": "2026-Q2",
+    "scoreA": 83.75,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Daniel Moraes",
+    "employeeId": 39,
+    "trimestre": "2026-Q2",
+    "scoreA": 80.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Everton Lima",
+    "employeeId": 40,
+    "trimestre": "2026-Q2",
+    "scoreA": 72.5,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Adriano Souza",
+    "employeeId": 41,
+    "trimestre": "2026-Q2",
+    "scoreA": 67.5,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Jonas Rocha",
+    "employeeId": 42,
+    "trimestre": "2026-Q2",
+    "scoreA": 78.75,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Leonardo Pires",
+    "employeeId": 43,
+    "trimestre": "2026-Q2",
+    "scoreA": 81.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Fábio Henrique",
+    "employeeId": 44,
+    "trimestre": "2026-Q2",
+    "scoreA": 70.0,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Pedro Augusto",
+    "employeeId": 45,
+    "trimestre": "2026-Q2",
+    "scoreA": 57.5,
+    "engajamentoA": 55.0,
+    "desenvolvimentoA": 55.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Marina Lopes",
+    "employeeId": 46,
+    "trimestre": "2026-Q2",
+    "scoreA": 82.5,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Tatiane Freitas",
+    "employeeId": 47,
+    "trimestre": "2026-Q2",
+    "scoreA": 72.5,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Carlos Eduardo Mendes",
+    "employeeId": 48,
+    "trimestre": "2026-Q2",
+    "scoreA": 82.5,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "João Pedro Ramos",
+    "employeeId": 49,
+    "trimestre": "2026-Q2",
+    "scoreA": 73.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Alexandre Gouveia",
+    "employeeId": 50,
+    "trimestre": "2026-Q2",
+    "scoreA": 67.5,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Ademir Prado",
+    "employeeId": 52,
+    "trimestre": "2026-Q2",
+    "scoreA": 71.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Juliana Freitas",
+    "employeeId": 4,
+    "trimestre": "2026-Q3",
+    "scoreA": 80.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Fernando Salles",
+    "employeeId": 5,
+    "trimestre": "2026-Q3",
+    "scoreA": 82.5,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Camila Batista",
+    "employeeId": 6,
+    "trimestre": "2026-Q3",
+    "scoreA": 82.5,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Marcelo Vieira",
+    "employeeId": 7,
+    "trimestre": "2026-Q3",
+    "scoreA": 71.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Gustavo Almeida",
+    "employeeId": 8,
+    "trimestre": "2026-Q3",
+    "scoreA": 87.5,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Márcio Fernandes",
+    "employeeId": 9,
+    "trimestre": "2026-Q3",
+    "scoreA": 70.0,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Bianca Martins",
+    "employeeId": 10,
+    "trimestre": "2026-Q3",
+    "scoreA": 77.5,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Thiago Costa",
+    "employeeId": 11,
+    "trimestre": "2026-Q3",
+    "scoreA": 58.75,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 55.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Renata Lima",
+    "employeeId": 12,
+    "trimestre": "2026-Q3",
+    "scoreA": 83.75,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Bruno Cardoso",
+    "employeeId": 13,
+    "trimestre": "2026-Q3",
+    "scoreA": 78.75,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Denise Rocha",
+    "employeeId": 14,
+    "trimestre": "2026-Q3",
+    "scoreA": 75.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Claudia Nascimento",
+    "employeeId": 15,
+    "trimestre": "2026-Q3",
+    "scoreA": 68.75,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Marisa Oliveira",
+    "employeeId": 16,
+    "trimestre": "2026-Q3",
+    "scoreA": 78.75,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Roberto Santos",
+    "employeeId": 17,
+    "trimestre": "2026-Q3",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Everton Nunes",
+    "employeeId": 18,
+    "trimestre": "2026-Q3",
+    "scoreA": 80.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "André Luiz Costa",
+    "employeeId": 19,
+    "trimestre": "2026-Q3",
+    "scoreA": 80.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Tiago Martins",
+    "employeeId": 20,
+    "trimestre": "2026-Q3",
+    "scoreA": 78.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Paulo Henrique Lima",
+    "employeeId": 21,
+    "trimestre": "2026-Q3",
+    "scoreA": 61.25,
+    "engajamentoA": 55.0,
+    "desenvolvimentoA": 50.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Sérgio Moura",
+    "employeeId": 22,
+    "trimestre": "2026-Q3",
+    "scoreA": 86.25,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Lucas Ferreira",
+    "employeeId": 23,
+    "trimestre": "2026-Q3",
+    "scoreA": 82.5,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Caio Santos",
+    "employeeId": 24,
+    "trimestre": "2026-Q3",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Rafael Teixeira",
+    "employeeId": 25,
+    "trimestre": "2026-Q3",
+    "scoreA": 82.5,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Gabriel Oliveira",
+    "employeeId": 26,
+    "trimestre": "2026-Q3",
+    "scoreA": 80.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Vinícius Ribeiro",
+    "employeeId": 27,
+    "trimestre": "2026-Q3",
+    "scoreA": 37.5,
+    "engajamentoA": 30.0,
+    "desenvolvimentoA": 35.0,
+    "pertencimentoA": 40.0,
+    "realizacaoA": 45.0
+  },
+  {
+    "nome": "Bruno Henrique Alves",
+    "employeeId": 28,
+    "trimestre": "2026-Q3",
+    "scoreA": 41.25,
+    "engajamentoA": 45.0,
+    "desenvolvimentoA": 30.0,
+    "pertencimentoA": 45.0,
+    "realizacaoA": 45.0
+  },
+  {
+    "nome": "José Carlos Pereira",
+    "employeeId": 29,
+    "trimestre": "2026-Q3",
+    "scoreA": 82.5,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Cristiano Barbosa",
+    "employeeId": 51,
+    "trimestre": "2026-Q3",
+    "scoreA": 68.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Danilo Azevedo",
+    "employeeId": 32,
+    "trimestre": "2026-Q3",
+    "scoreA": 60.0,
+    "engajamentoA": 55.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Aline Prado",
+    "employeeId": 33,
+    "trimestre": "2026-Q3",
+    "scoreA": 77.5,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Sônia Cardoso",
+    "employeeId": 34,
+    "trimestre": "2026-Q3",
+    "scoreA": 78.75,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Renata Campos",
+    "employeeId": 35,
+    "trimestre": "2026-Q3",
+    "scoreA": 78.75,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Jéssica Moura",
+    "employeeId": 36,
+    "trimestre": "2026-Q3",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Paula Ribeiro",
+    "employeeId": 37,
+    "trimestre": "2026-Q3",
+    "scoreA": 70.0,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Renato Silva",
+    "employeeId": 38,
+    "trimestre": "2026-Q3",
+    "scoreA": 83.75,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Daniel Moraes",
+    "employeeId": 39,
+    "trimestre": "2026-Q3",
+    "scoreA": 82.5,
+    "engajamentoA": 95.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Everton Lima",
+    "employeeId": 40,
+    "trimestre": "2026-Q3",
+    "scoreA": 72.5,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Jonas Rocha",
+    "employeeId": 42,
+    "trimestre": "2026-Q3",
+    "scoreA": 76.25,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Leonardo Pires",
+    "employeeId": 43,
+    "trimestre": "2026-Q3",
+    "scoreA": 78.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Fábio Henrique",
+    "employeeId": 44,
+    "trimestre": "2026-Q3",
+    "scoreA": 68.75,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Pedro Augusto",
+    "employeeId": 45,
+    "trimestre": "2026-Q3",
+    "scoreA": 57.5,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 50.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 55.0
+  },
+  {
+    "nome": "Marina Lopes",
+    "employeeId": 46,
+    "trimestre": "2026-Q3",
+    "scoreA": 80.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Tatiane Freitas",
+    "employeeId": 47,
+    "trimestre": "2026-Q3",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Carlos Eduardo Mendes",
+    "employeeId": 48,
+    "trimestre": "2026-Q3",
+    "scoreA": 82.5,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "João Pedro Ramos",
+    "employeeId": 49,
+    "trimestre": "2026-Q3",
+    "scoreA": 65.0,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Alexandre Gouveia",
+    "employeeId": 50,
+    "trimestre": "2026-Q3",
+    "scoreA": 71.25,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Ademir Prado",
+    "employeeId": 52,
+    "trimestre": "2026-Q3",
+    "scoreA": 70.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Isabela Rezende",
+    "employeeId": 53,
+    "trimestre": "2026-Q3",
+    "scoreA": 65.0,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Wanderson Alves",
+    "employeeId": 54,
+    "trimestre": "2026-Q3",
+    "scoreA": 68.75,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Fernanda Correia",
+    "employeeId": 55,
+    "trimestre": "2026-Q3",
+    "scoreA": 68.75,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 55.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Diego Ferraz",
+    "employeeId": 56,
+    "trimestre": "2026-Q3",
+    "scoreA": 70.0,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Juliana Freitas",
+    "employeeId": 4,
+    "trimestre": "2026-Q4",
+    "scoreA": 85.0,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Fernando Salles",
+    "employeeId": 5,
+    "trimestre": "2026-Q4",
+    "scoreA": 80.0,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Camila Batista",
+    "employeeId": 6,
+    "trimestre": "2026-Q4",
+    "scoreA": 83.75,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Marcelo Vieira",
+    "employeeId": 7,
+    "trimestre": "2026-Q4",
+    "scoreA": 70.0,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Gustavo Almeida",
+    "employeeId": 8,
+    "trimestre": "2026-Q4",
+    "scoreA": 86.25,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Márcio Fernandes",
+    "employeeId": 9,
+    "trimestre": "2026-Q4",
+    "scoreA": 70.0,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Bianca Martins",
+    "employeeId": 10,
+    "trimestre": "2026-Q4",
+    "scoreA": 87.5,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Thiago Costa",
+    "employeeId": 11,
+    "trimestre": "2026-Q4",
+    "scoreA": 62.5,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 55.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Renata Lima",
+    "employeeId": 12,
+    "trimestre": "2026-Q4",
+    "scoreA": 80.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Bruno Cardoso",
+    "employeeId": 13,
+    "trimestre": "2026-Q4",
+    "scoreA": 87.5,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Denise Rocha",
+    "employeeId": 14,
+    "trimestre": "2026-Q4",
+    "scoreA": 67.5,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Claudia Nascimento",
+    "employeeId": 15,
+    "trimestre": "2026-Q4",
+    "scoreA": 70.0,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Marisa Oliveira",
+    "employeeId": 16,
+    "trimestre": "2026-Q4",
+    "scoreA": 83.75,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Roberto Santos",
+    "employeeId": 17,
+    "trimestre": "2026-Q4",
+    "scoreA": 75.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Everton Nunes",
+    "employeeId": 18,
+    "trimestre": "2026-Q4",
+    "scoreA": 87.5,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "André Luiz Costa",
+    "employeeId": 19,
+    "trimestre": "2026-Q4",
+    "scoreA": 82.5,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Tiago Martins",
+    "employeeId": 20,
+    "trimestre": "2026-Q4",
+    "scoreA": 82.5,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Paulo Henrique Lima",
+    "employeeId": 21,
+    "trimestre": "2026-Q4",
+    "scoreA": 65.0,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Sérgio Moura",
+    "employeeId": 22,
+    "trimestre": "2026-Q4",
+    "scoreA": 77.5,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Lucas Ferreira",
+    "employeeId": 23,
+    "trimestre": "2026-Q4",
+    "scoreA": 86.25,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Caio Santos",
+    "employeeId": 24,
+    "trimestre": "2026-Q4",
+    "scoreA": 68.75,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Rafael Teixeira",
+    "employeeId": 25,
+    "trimestre": "2026-Q4",
+    "scoreA": 86.25,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 95.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Gabriel Oliveira",
+    "employeeId": 26,
+    "trimestre": "2026-Q4",
+    "scoreA": 80.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "José Carlos Pereira",
+    "employeeId": 29,
+    "trimestre": "2026-Q4",
+    "scoreA": 86.25,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Cristiano Barbosa",
+    "employeeId": 51,
+    "trimestre": "2026-Q4",
+    "scoreA": 71.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Danilo Azevedo",
+    "employeeId": 32,
+    "trimestre": "2026-Q4",
+    "scoreA": 43.75,
+    "engajamentoA": 45.0,
+    "desenvolvimentoA": 40.0,
+    "pertencimentoA": 55.0,
+    "realizacaoA": 35.0
+  },
+  {
+    "nome": "Aline Prado",
+    "employeeId": 33,
+    "trimestre": "2026-Q4",
+    "scoreA": 38.75,
+    "engajamentoA": 40.0,
+    "desenvolvimentoA": 30.0,
+    "pertencimentoA": 45.0,
+    "realizacaoA": 40.0
+  },
+  {
+    "nome": "Sônia Cardoso",
+    "employeeId": 34,
+    "trimestre": "2026-Q4",
+    "scoreA": 76.25,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Renata Campos",
+    "employeeId": 35,
+    "trimestre": "2026-Q4",
+    "scoreA": 82.5,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Jéssica Moura",
+    "employeeId": 36,
+    "trimestre": "2026-Q4",
+    "scoreA": 73.75,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Paula Ribeiro",
+    "employeeId": 37,
+    "trimestre": "2026-Q4",
+    "scoreA": 70.0,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Renato Silva",
+    "employeeId": 38,
+    "trimestre": "2026-Q4",
+    "scoreA": 80.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Daniel Moraes",
+    "employeeId": 39,
+    "trimestre": "2026-Q4",
+    "scoreA": 81.25,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Everton Lima",
+    "employeeId": 40,
+    "trimestre": "2026-Q4",
+    "scoreA": 71.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Jonas Rocha",
+    "employeeId": 42,
+    "trimestre": "2026-Q4",
+    "scoreA": 78.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Leonardo Pires",
+    "employeeId": 43,
+    "trimestre": "2026-Q4",
+    "scoreA": 87.5,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Fábio Henrique",
+    "employeeId": 44,
+    "trimestre": "2026-Q4",
+    "scoreA": 71.25,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Marina Lopes",
+    "employeeId": 46,
+    "trimestre": "2026-Q4",
+    "scoreA": 78.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Tatiane Freitas",
+    "employeeId": 47,
+    "trimestre": "2026-Q4",
+    "scoreA": 66.25,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 55.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Carlos Eduardo Mendes",
+    "employeeId": 48,
+    "trimestre": "2026-Q4",
+    "scoreA": 81.25,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "João Pedro Ramos",
+    "employeeId": 49,
+    "trimestre": "2026-Q4",
+    "scoreA": 73.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Alexandre Gouveia",
+    "employeeId": 50,
+    "trimestre": "2026-Q4",
+    "scoreA": 68.75,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Ademir Prado",
+    "employeeId": 52,
+    "trimestre": "2026-Q4",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Isabela Rezende",
+    "employeeId": 53,
+    "trimestre": "2026-Q4",
+    "scoreA": 73.75,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Wanderson Alves",
+    "employeeId": 54,
+    "trimestre": "2026-Q4",
+    "scoreA": 70.0,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Fernanda Correia",
+    "employeeId": 55,
+    "trimestre": "2026-Q4",
+    "scoreA": 68.75,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Diego Ferraz",
+    "employeeId": 56,
+    "trimestre": "2026-Q4",
+    "scoreA": 72.5,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Vitor Ramos",
+    "employeeId": 57,
+    "trimestre": "2026-Q4",
+    "scoreA": 71.25,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Cauê Fonseca",
+    "employeeId": 58,
+    "trimestre": "2026-Q4",
+    "scoreA": 68.75,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Beatriz Nogueira",
+    "employeeId": 59,
+    "trimestre": "2026-Q4",
+    "scoreA": 62.5,
+    "engajamentoA": 55.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Juliana Freitas",
+    "employeeId": 4,
+    "trimestre": "2027-Q1",
+    "scoreA": 78.75,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Fernando Salles",
+    "employeeId": 5,
+    "trimestre": "2027-Q1",
+    "scoreA": 82.5,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Camila Batista",
+    "employeeId": 6,
+    "trimestre": "2027-Q1",
+    "scoreA": 82.5,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Marcelo Vieira",
+    "employeeId": 7,
+    "trimestre": "2027-Q1",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Gustavo Almeida",
+    "employeeId": 8,
+    "trimestre": "2027-Q1",
+    "scoreA": 81.25,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Márcio Fernandes",
+    "employeeId": 9,
+    "trimestre": "2027-Q1",
+    "scoreA": 71.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Bianca Martins",
+    "employeeId": 10,
+    "trimestre": "2027-Q1",
+    "scoreA": 83.75,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Thiago Costa",
+    "employeeId": 11,
+    "trimestre": "2027-Q1",
+    "scoreA": 57.5,
+    "engajamentoA": 55.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 55.0
+  },
+  {
+    "nome": "Renata Lima",
+    "employeeId": 12,
+    "trimestre": "2027-Q1",
+    "scoreA": 82.5,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Bruno Cardoso",
+    "employeeId": 13,
+    "trimestre": "2027-Q1",
+    "scoreA": 82.5,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Denise Rocha",
+    "employeeId": 14,
+    "trimestre": "2027-Q1",
+    "scoreA": 71.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Claudia Nascimento",
+    "employeeId": 15,
+    "trimestre": "2027-Q1",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Marisa Oliveira",
+    "employeeId": 16,
+    "trimestre": "2027-Q1",
+    "scoreA": 81.25,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Roberto Santos",
+    "employeeId": 17,
+    "trimestre": "2027-Q1",
+    "scoreA": 68.75,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Everton Nunes",
+    "employeeId": 18,
+    "trimestre": "2027-Q1",
+    "scoreA": 78.75,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "André Luiz Costa",
+    "employeeId": 19,
+    "trimestre": "2027-Q1",
+    "scoreA": 82.5,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Tiago Martins",
+    "employeeId": 20,
+    "trimestre": "2027-Q1",
+    "scoreA": 78.75,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Paulo Henrique Lima",
+    "employeeId": 21,
+    "trimestre": "2027-Q1",
+    "scoreA": 61.25,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 55.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Lucas Ferreira",
+    "employeeId": 23,
+    "trimestre": "2027-Q1",
+    "scoreA": 78.75,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Caio Santos",
+    "employeeId": 24,
+    "trimestre": "2027-Q1",
+    "scoreA": 72.5,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Rafael Teixeira",
+    "employeeId": 25,
+    "trimestre": "2027-Q1",
+    "scoreA": 80.0,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Gabriel Oliveira",
+    "employeeId": 26,
+    "trimestre": "2027-Q1",
+    "scoreA": 71.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "José Carlos Pereira",
+    "employeeId": 29,
+    "trimestre": "2027-Q1",
+    "scoreA": 86.25,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 95.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Cristiano Barbosa",
+    "employeeId": 51,
+    "trimestre": "2027-Q1",
+    "scoreA": 70.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Aline Prado",
+    "employeeId": 33,
+    "trimestre": "2027-Q1",
+    "scoreA": 37.5,
+    "engajamentoA": 40.0,
+    "desenvolvimentoA": 40.0,
+    "pertencimentoA": 30.0,
+    "realizacaoA": 40.0
+  },
+  {
+    "nome": "Sônia Cardoso",
+    "employeeId": 34,
+    "trimestre": "2027-Q1",
+    "scoreA": 78.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Renata Campos",
+    "employeeId": 35,
+    "trimestre": "2027-Q1",
+    "scoreA": 81.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Jéssica Moura",
+    "employeeId": 36,
+    "trimestre": "2027-Q1",
+    "scoreA": 70.0,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Paula Ribeiro",
+    "employeeId": 37,
+    "trimestre": "2027-Q1",
+    "scoreA": 66.25,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Daniel Moraes",
+    "employeeId": 39,
+    "trimestre": "2027-Q1",
+    "scoreA": 80.0,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Everton Lima",
+    "employeeId": 40,
+    "trimestre": "2027-Q1",
+    "scoreA": 72.5,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Jonas Rocha",
+    "employeeId": 42,
+    "trimestre": "2027-Q1",
+    "scoreA": 77.5,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Leonardo Pires",
+    "employeeId": 43,
+    "trimestre": "2027-Q1",
+    "scoreA": 82.5,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Fábio Henrique",
+    "employeeId": 44,
+    "trimestre": "2027-Q1",
+    "scoreA": 75.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Marina Lopes",
+    "employeeId": 46,
+    "trimestre": "2027-Q1",
+    "scoreA": 86.25,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Tatiane Freitas",
+    "employeeId": 47,
+    "trimestre": "2027-Q1",
+    "scoreA": 68.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Carlos Eduardo Mendes",
+    "employeeId": 48,
+    "trimestre": "2027-Q1",
+    "scoreA": 81.25,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "João Pedro Ramos",
+    "employeeId": 49,
+    "trimestre": "2027-Q1",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Alexandre Gouveia",
+    "employeeId": 50,
+    "trimestre": "2027-Q1",
+    "scoreA": 66.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Ademir Prado",
+    "employeeId": 52,
+    "trimestre": "2027-Q1",
+    "scoreA": 70.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Isabela Rezende",
+    "employeeId": 53,
+    "trimestre": "2027-Q1",
+    "scoreA": 85.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 95.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Wanderson Alves",
+    "employeeId": 54,
+    "trimestre": "2027-Q1",
+    "scoreA": 72.5,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Fernanda Correia",
+    "employeeId": 55,
+    "trimestre": "2027-Q1",
+    "scoreA": 72.5,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Diego Ferraz",
+    "employeeId": 56,
+    "trimestre": "2027-Q1",
+    "scoreA": 85.0,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Vitor Ramos",
+    "employeeId": 57,
+    "trimestre": "2027-Q1",
+    "scoreA": 70.0,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Cauê Fonseca",
+    "employeeId": 58,
+    "trimestre": "2027-Q1",
+    "scoreA": 75.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Beatriz Nogueira",
+    "employeeId": 59,
+    "trimestre": "2027-Q1",
+    "scoreA": 57.5,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 50.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Igor Beltrão",
+    "employeeId": 60,
+    "trimestre": "2027-Q1",
+    "scoreA": 60.0,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 55.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Rodrigo Oliveira",
+    "employeeId": 61,
+    "trimestre": "2027-Q1",
+    "scoreA": 71.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Vinicius Nogueira",
+    "employeeId": 62,
+    "trimestre": "2027-Q1",
+    "scoreA": 73.75,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Juliana Freitas",
+    "employeeId": 4,
+    "trimestre": "2027-Q2",
+    "scoreA": 80.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Fernando Salles",
+    "employeeId": 5,
+    "trimestre": "2027-Q2",
+    "scoreA": 83.75,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Camila Batista",
+    "employeeId": 6,
+    "trimestre": "2027-Q2",
+    "scoreA": 85.0,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Marcelo Vieira",
+    "employeeId": 7,
+    "trimestre": "2027-Q2",
+    "scoreA": 70.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Gustavo Almeida",
+    "employeeId": 8,
+    "trimestre": "2027-Q2",
+    "scoreA": 80.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Márcio Fernandes",
+    "employeeId": 9,
+    "trimestre": "2027-Q2",
+    "scoreA": 70.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Bianca Martins",
+    "employeeId": 10,
+    "trimestre": "2027-Q2",
+    "scoreA": 83.75,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Thiago Costa",
+    "employeeId": 11,
+    "trimestre": "2027-Q2",
+    "scoreA": 57.5,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 55.0,
+    "pertencimentoA": 55.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Renata Lima",
+    "employeeId": 12,
+    "trimestre": "2027-Q2",
+    "scoreA": 78.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Bruno Cardoso",
+    "employeeId": 13,
+    "trimestre": "2027-Q2",
+    "scoreA": 83.75,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Denise Rocha",
+    "employeeId": 14,
+    "trimestre": "2027-Q2",
+    "scoreA": 67.5,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Claudia Nascimento",
+    "employeeId": 15,
+    "trimestre": "2027-Q2",
+    "scoreA": 70.0,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Marisa Oliveira",
+    "employeeId": 16,
+    "trimestre": "2027-Q2",
+    "scoreA": 80.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Roberto Santos",
+    "employeeId": 17,
+    "trimestre": "2027-Q2",
+    "scoreA": 71.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Everton Nunes",
+    "employeeId": 18,
+    "trimestre": "2027-Q2",
+    "scoreA": 82.5,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "André Luiz Costa",
+    "employeeId": 19,
+    "trimestre": "2027-Q2",
+    "scoreA": 86.25,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Tiago Martins",
+    "employeeId": 20,
+    "trimestre": "2027-Q2",
+    "scoreA": 85.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Paulo Henrique Lima",
+    "employeeId": 21,
+    "trimestre": "2027-Q2",
+    "scoreA": 60.0,
+    "engajamentoA": 55.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Lucas Ferreira",
+    "employeeId": 23,
+    "trimestre": "2027-Q2",
+    "scoreA": 83.75,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Caio Santos",
+    "employeeId": 24,
+    "trimestre": "2027-Q2",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Rafael Teixeira",
+    "employeeId": 25,
+    "trimestre": "2027-Q2",
+    "scoreA": 80.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "José Carlos Pereira",
+    "employeeId": 29,
+    "trimestre": "2027-Q2",
+    "scoreA": 67.5,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Cristiano Barbosa",
+    "employeeId": 51,
+    "trimestre": "2027-Q2",
+    "scoreA": 72.5,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Sônia Cardoso",
+    "employeeId": 34,
+    "trimestre": "2027-Q2",
+    "scoreA": 78.75,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Renata Campos",
+    "employeeId": 35,
+    "trimestre": "2027-Q2",
+    "scoreA": 81.25,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Jéssica Moura",
+    "employeeId": 36,
+    "trimestre": "2027-Q2",
+    "scoreA": 72.5,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Paula Ribeiro",
+    "employeeId": 37,
+    "trimestre": "2027-Q2",
+    "scoreA": 68.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Daniel Moraes",
+    "employeeId": 39,
+    "trimestre": "2027-Q2",
+    "scoreA": 83.75,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Everton Lima",
+    "employeeId": 40,
+    "trimestre": "2027-Q2",
+    "scoreA": 66.25,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Jonas Rocha",
+    "employeeId": 42,
+    "trimestre": "2027-Q2",
+    "scoreA": 76.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Leonardo Pires",
+    "employeeId": 43,
+    "trimestre": "2027-Q2",
+    "scoreA": 83.75,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Fábio Henrique",
+    "employeeId": 44,
+    "trimestre": "2027-Q2",
+    "scoreA": 72.5,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Marina Lopes",
+    "employeeId": 46,
+    "trimestre": "2027-Q2",
+    "scoreA": 82.5,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Tatiane Freitas",
+    "employeeId": 47,
+    "trimestre": "2027-Q2",
+    "scoreA": 73.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Carlos Eduardo Mendes",
+    "employeeId": 48,
+    "trimestre": "2027-Q2",
+    "scoreA": 85.0,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "João Pedro Ramos",
+    "employeeId": 49,
+    "trimestre": "2027-Q2",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Alexandre Gouveia",
+    "employeeId": 50,
+    "trimestre": "2027-Q2",
+    "scoreA": 73.75,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Ademir Prado",
+    "employeeId": 52,
+    "trimestre": "2027-Q2",
+    "scoreA": 70.0,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Isabela Rezende",
+    "employeeId": 53,
+    "trimestre": "2027-Q2",
+    "scoreA": 85.0,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Wanderson Alves",
+    "employeeId": 54,
+    "trimestre": "2027-Q2",
+    "scoreA": 68.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Fernanda Correia",
+    "employeeId": 55,
+    "trimestre": "2027-Q2",
+    "scoreA": 70.0,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Diego Ferraz",
+    "employeeId": 56,
+    "trimestre": "2027-Q2",
+    "scoreA": 87.5,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Vitor Ramos",
+    "employeeId": 57,
+    "trimestre": "2027-Q2",
+    "scoreA": 72.5,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Cauê Fonseca",
+    "employeeId": 58,
+    "trimestre": "2027-Q2",
+    "scoreA": 70.0,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Beatriz Nogueira",
+    "employeeId": 59,
+    "trimestre": "2027-Q2",
+    "scoreA": 60.0,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 55.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Igor Beltrão",
+    "employeeId": 60,
+    "trimestre": "2027-Q2",
+    "scoreA": 65.0,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Rodrigo Oliveira",
+    "employeeId": 61,
+    "trimestre": "2027-Q2",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Vinicius Nogueira",
+    "employeeId": 62,
+    "trimestre": "2027-Q2",
+    "scoreA": 75.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Larissa Mendes",
+    "employeeId": 63,
+    "trimestre": "2027-Q2",
+    "scoreA": 66.25,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Márcia Silveira",
+    "employeeId": 64,
+    "trimestre": "2027-Q2",
+    "scoreA": 60.0,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 55.0,
+    "realizacaoA": 55.0
+  },
+  {
+    "nome": "Juliana Freitas",
+    "employeeId": 4,
+    "trimestre": "2027-Q3",
+    "scoreA": 86.25,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Fernando Salles",
+    "employeeId": 5,
+    "trimestre": "2027-Q3",
+    "scoreA": 85.0,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Camila Batista",
+    "employeeId": 6,
+    "trimestre": "2027-Q3",
+    "scoreA": 86.25,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 95.0
+  },
+  {
+    "nome": "Marcelo Vieira",
+    "employeeId": 7,
+    "trimestre": "2027-Q3",
+    "scoreA": 76.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Gustavo Almeida",
+    "employeeId": 8,
+    "trimestre": "2027-Q3",
+    "scoreA": 85.0,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Márcio Fernandes",
+    "employeeId": 9,
+    "trimestre": "2027-Q3",
+    "scoreA": 66.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Bianca Martins",
+    "employeeId": 10,
+    "trimestre": "2027-Q3",
+    "scoreA": 82.5,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Thiago Costa",
+    "employeeId": 11,
+    "trimestre": "2027-Q3",
+    "scoreA": 57.5,
+    "engajamentoA": 50.0,
+    "desenvolvimentoA": 55.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Renata Lima",
+    "employeeId": 12,
+    "trimestre": "2027-Q3",
+    "scoreA": 85.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Bruno Cardoso",
+    "employeeId": 13,
+    "trimestre": "2027-Q3",
+    "scoreA": 81.25,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Denise Rocha",
+    "employeeId": 14,
+    "trimestre": "2027-Q3",
+    "scoreA": 73.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Claudia Nascimento",
+    "employeeId": 15,
+    "trimestre": "2027-Q3",
+    "scoreA": 70.0,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Marisa Oliveira",
+    "employeeId": 16,
+    "trimestre": "2027-Q3",
+    "scoreA": 83.75,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Roberto Santos",
+    "employeeId": 17,
+    "trimestre": "2027-Q3",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Everton Nunes",
+    "employeeId": 18,
+    "trimestre": "2027-Q3",
+    "scoreA": 85.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 95.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "André Luiz Costa",
+    "employeeId": 19,
+    "trimestre": "2027-Q3",
+    "scoreA": 80.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Tiago Martins",
+    "employeeId": 20,
+    "trimestre": "2027-Q3",
+    "scoreA": 81.25,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Paulo Henrique Lima",
+    "employeeId": 21,
+    "trimestre": "2027-Q3",
+    "scoreA": 60.0,
+    "engajamentoA": 50.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Lucas Ferreira",
+    "employeeId": 23,
+    "trimestre": "2027-Q3",
+    "scoreA": 82.5,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Caio Santos",
+    "employeeId": 24,
+    "trimestre": "2027-Q3",
+    "scoreA": 73.75,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Rafael Teixeira",
+    "employeeId": 25,
+    "trimestre": "2027-Q3",
+    "scoreA": 83.75,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Cristiano Barbosa",
+    "employeeId": 51,
+    "trimestre": "2027-Q3",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Sônia Cardoso",
+    "employeeId": 34,
+    "trimestre": "2027-Q3",
+    "scoreA": 81.25,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Renata Campos",
+    "employeeId": 35,
+    "trimestre": "2027-Q3",
+    "scoreA": 78.75,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Jéssica Moura",
+    "employeeId": 36,
+    "trimestre": "2027-Q3",
+    "scoreA": 73.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Paula Ribeiro",
+    "employeeId": 37,
+    "trimestre": "2027-Q3",
+    "scoreA": 71.25,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Daniel Moraes",
+    "employeeId": 39,
+    "trimestre": "2027-Q3",
+    "scoreA": 82.5,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Everton Lima",
+    "employeeId": 40,
+    "trimestre": "2027-Q3",
+    "scoreA": 68.75,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Jonas Rocha",
+    "employeeId": 42,
+    "trimestre": "2027-Q3",
+    "scoreA": 77.5,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Leonardo Pires",
+    "employeeId": 43,
+    "trimestre": "2027-Q3",
+    "scoreA": 82.5,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Fábio Henrique",
+    "employeeId": 44,
+    "trimestre": "2027-Q3",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Marina Lopes",
+    "employeeId": 46,
+    "trimestre": "2027-Q3",
+    "scoreA": 81.25,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Tatiane Freitas",
+    "employeeId": 47,
+    "trimestre": "2027-Q3",
+    "scoreA": 71.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Carlos Eduardo Mendes",
+    "employeeId": 48,
+    "trimestre": "2027-Q3",
+    "scoreA": 80.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "João Pedro Ramos",
+    "employeeId": 49,
+    "trimestre": "2027-Q3",
+    "scoreA": 70.0,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Alexandre Gouveia",
+    "employeeId": 50,
+    "trimestre": "2027-Q3",
+    "scoreA": 68.75,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Ademir Prado",
+    "employeeId": 52,
+    "trimestre": "2027-Q3",
+    "scoreA": 72.5,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Isabela Rezende",
+    "employeeId": 53,
+    "trimestre": "2027-Q3",
+    "scoreA": 83.75,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Wanderson Alves",
+    "employeeId": 54,
+    "trimestre": "2027-Q3",
+    "scoreA": 73.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Fernanda Correia",
+    "employeeId": 55,
+    "trimestre": "2027-Q3",
+    "scoreA": 75.0,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Diego Ferraz",
+    "employeeId": 56,
+    "trimestre": "2027-Q3",
+    "scoreA": 87.5,
+    "engajamentoA": 90.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Vitor Ramos",
+    "employeeId": 57,
+    "trimestre": "2027-Q3",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Cauê Fonseca",
+    "employeeId": 58,
+    "trimestre": "2027-Q3",
+    "scoreA": 71.25,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Beatriz Nogueira",
+    "employeeId": 59,
+    "trimestre": "2027-Q3",
+    "scoreA": 66.25,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Igor Beltrão",
+    "employeeId": 60,
+    "trimestre": "2027-Q3",
+    "scoreA": 55.0,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 50.0,
+    "pertencimentoA": 50.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Rodrigo Oliveira",
+    "employeeId": 61,
+    "trimestre": "2027-Q3",
+    "scoreA": 83.75,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Vinicius Nogueira",
+    "employeeId": 62,
+    "trimestre": "2027-Q3",
+    "scoreA": 71.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Larissa Mendes",
+    "employeeId": 63,
+    "trimestre": "2027-Q3",
+    "scoreA": 56.25,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 55.0,
+    "pertencimentoA": 50.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Márcia Silveira",
+    "employeeId": 64,
+    "trimestre": "2027-Q3",
+    "scoreA": 77.5,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Camila Duarte",
+    "employeeId": 65,
+    "trimestre": "2027-Q3",
+    "scoreA": 61.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 55.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Wesley Duarte",
+    "employeeId": 66,
+    "trimestre": "2027-Q3",
+    "scoreA": 63.75,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Otávio Braga",
+    "employeeId": 67,
+    "trimestre": "2027-Q3",
+    "scoreA": 56.25,
+    "engajamentoA": 55.0,
+    "desenvolvimentoA": 55.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 55.0
+  },
+  {
+    "nome": "Juliana Freitas",
+    "employeeId": 4,
+    "trimestre": "2027-Q4",
+    "scoreA": 86.25,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 95.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Fernando Salles",
+    "employeeId": 5,
+    "trimestre": "2027-Q4",
+    "scoreA": 82.5,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Camila Batista",
+    "employeeId": 6,
+    "trimestre": "2027-Q4",
+    "scoreA": 82.5,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Marcelo Vieira",
+    "employeeId": 7,
+    "trimestre": "2027-Q4",
+    "scoreA": 70.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Gustavo Almeida",
+    "employeeId": 8,
+    "trimestre": "2027-Q4",
+    "scoreA": 80.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Márcio Fernandes",
+    "employeeId": 9,
+    "trimestre": "2027-Q4",
+    "scoreA": 70.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Bianca Martins",
+    "employeeId": 10,
+    "trimestre": "2027-Q4",
+    "scoreA": 80.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Thiago Costa",
+    "employeeId": 11,
+    "trimestre": "2027-Q4",
+    "scoreA": 57.5,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 60.0,
+    "pertencimentoA": 50.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Renata Lima",
+    "employeeId": 12,
+    "trimestre": "2027-Q4",
+    "scoreA": 90.0,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 100.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Bruno Cardoso",
+    "employeeId": 13,
+    "trimestre": "2027-Q4",
+    "scoreA": 86.25,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 100.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Denise Rocha",
+    "employeeId": 14,
+    "trimestre": "2027-Q4",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Claudia Nascimento",
+    "employeeId": 15,
+    "trimestre": "2027-Q4",
+    "scoreA": 70.0,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Marisa Oliveira",
+    "employeeId": 16,
+    "trimestre": "2027-Q4",
+    "scoreA": 85.0,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 95.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Roberto Santos",
+    "employeeId": 17,
+    "trimestre": "2027-Q4",
+    "scoreA": 72.5,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "André Luiz Costa",
+    "employeeId": 19,
+    "trimestre": "2027-Q4",
+    "scoreA": 83.75,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Tiago Martins",
+    "employeeId": 20,
+    "trimestre": "2027-Q4",
+    "scoreA": 81.25,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Paulo Henrique Lima",
+    "employeeId": 21,
+    "trimestre": "2027-Q4",
+    "scoreA": 63.75,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Lucas Ferreira",
+    "employeeId": 23,
+    "trimestre": "2027-Q4",
+    "scoreA": 78.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Caio Santos",
+    "employeeId": 24,
+    "trimestre": "2027-Q4",
+    "scoreA": 71.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Rafael Teixeira",
+    "employeeId": 25,
+    "trimestre": "2027-Q4",
+    "scoreA": 85.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 95.0
+  },
+  {
+    "nome": "Cristiano Barbosa",
+    "employeeId": 51,
+    "trimestre": "2027-Q4",
+    "scoreA": 70.0,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Sônia Cardoso",
+    "employeeId": 34,
+    "trimestre": "2027-Q4",
+    "scoreA": 78.75,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Renata Campos",
+    "employeeId": 35,
+    "trimestre": "2027-Q4",
+    "scoreA": 81.25,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Jéssica Moura",
+    "employeeId": 36,
+    "trimestre": "2027-Q4",
+    "scoreA": 71.25,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Paula Ribeiro",
+    "employeeId": 37,
+    "trimestre": "2027-Q4",
+    "scoreA": 70.0,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Daniel Moraes",
+    "employeeId": 39,
+    "trimestre": "2027-Q4",
+    "scoreA": 77.5,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Everton Lima",
+    "employeeId": 40,
+    "trimestre": "2027-Q4",
+    "scoreA": 73.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Jonas Rocha",
+    "employeeId": 42,
+    "trimestre": "2027-Q4",
+    "scoreA": 76.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Leonardo Pires",
+    "employeeId": 43,
+    "trimestre": "2027-Q4",
+    "scoreA": 80.0,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Fábio Henrique",
+    "employeeId": 44,
+    "trimestre": "2027-Q4",
+    "scoreA": 68.75,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Marina Lopes",
+    "employeeId": 46,
+    "trimestre": "2027-Q4",
+    "scoreA": 85.0,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Tatiane Freitas",
+    "employeeId": 47,
+    "trimestre": "2027-Q4",
+    "scoreA": 70.0,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Carlos Eduardo Mendes",
+    "employeeId": 48,
+    "trimestre": "2027-Q4",
+    "scoreA": 85.0,
+    "engajamentoA": 95.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "João Pedro Ramos",
+    "employeeId": 49,
+    "trimestre": "2027-Q4",
+    "scoreA": 71.25,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 70.0
+  },
+  {
+    "nome": "Alexandre Gouveia",
+    "employeeId": 50,
+    "trimestre": "2027-Q4",
+    "scoreA": 68.75,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Ademir Prado",
+    "employeeId": 52,
+    "trimestre": "2027-Q4",
+    "scoreA": 68.75,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Isabela Rezende",
+    "employeeId": 53,
+    "trimestre": "2027-Q4",
+    "scoreA": 85.0,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 90.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Wanderson Alves",
+    "employeeId": 54,
+    "trimestre": "2027-Q4",
+    "scoreA": 73.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Fernanda Correia",
+    "employeeId": 55,
+    "trimestre": "2027-Q4",
+    "scoreA": 73.75,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Diego Ferraz",
+    "employeeId": 56,
+    "trimestre": "2027-Q4",
+    "scoreA": 83.75,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 85.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 85.0
+  },
+  {
+    "nome": "Vitor Ramos",
+    "employeeId": 57,
+    "trimestre": "2027-Q4",
+    "scoreA": 72.5,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 70.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Cauê Fonseca",
+    "employeeId": 58,
+    "trimestre": "2027-Q4",
+    "scoreA": 67.5,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 55.0,
+    "pertencimentoA": 75.0,
+    "realizacaoA": 65.0
+  },
+  {
+    "nome": "Beatriz Nogueira",
+    "employeeId": 59,
+    "trimestre": "2027-Q4",
+    "scoreA": 60.0,
+    "engajamentoA": 50.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Igor Beltrão",
+    "employeeId": 60,
+    "trimestre": "2027-Q4",
+    "scoreA": 61.25,
+    "engajamentoA": 55.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Rodrigo Oliveira",
+    "employeeId": 61,
+    "trimestre": "2027-Q4",
+    "scoreA": 83.75,
+    "engajamentoA": 80.0,
+    "desenvolvimentoA": 90.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 80.0
+  },
+  {
+    "nome": "Vinicius Nogueira",
+    "employeeId": 62,
+    "trimestre": "2027-Q4",
+    "scoreA": 71.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Larissa Mendes",
+    "employeeId": 63,
+    "trimestre": "2027-Q4",
+    "scoreA": 60.0,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 55.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Márcia Silveira",
+    "employeeId": 64,
+    "trimestre": "2027-Q4",
+    "scoreA": 85.0,
+    "engajamentoA": 85.0,
+    "desenvolvimentoA": 80.0,
+    "pertencimentoA": 85.0,
+    "realizacaoA": 90.0
+  },
+  {
+    "nome": "Camila Duarte",
+    "employeeId": 65,
+    "trimestre": "2027-Q4",
+    "scoreA": 58.75,
+    "engajamentoA": 70.0,
+    "desenvolvimentoA": 55.0,
+    "pertencimentoA": 55.0,
+    "realizacaoA": 55.0
+  },
+  {
+    "nome": "Wesley Duarte",
+    "employeeId": 66,
+    "trimestre": "2027-Q4",
+    "scoreA": 76.25,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 75.0,
+    "pertencimentoA": 80.0,
+    "realizacaoA": 75.0
+  },
+  {
+    "nome": "Otávio Braga",
+    "employeeId": 67,
+    "trimestre": "2027-Q4",
+    "scoreA": 65.0,
+    "engajamentoA": 75.0,
+    "desenvolvimentoA": 70.0,
+    "pertencimentoA": 60.0,
+    "realizacaoA": 55.0
+  },
+  {
+    "nome": "Marina Peixoto",
+    "employeeId": 68,
+    "trimestre": "2027-Q4",
+    "scoreA": 63.75,
+    "engajamentoA": 65.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 65.0,
+    "realizacaoA": 60.0
+  },
+  {
+    "nome": "Rafaela Torres",
+    "employeeId": 69,
+    "trimestre": "2027-Q4",
+    "scoreA": 60.0,
+    "engajamentoA": 60.0,
+    "desenvolvimentoA": 65.0,
+    "pertencimentoA": 50.0,
+    "realizacaoA": 65.0
+  }
+]

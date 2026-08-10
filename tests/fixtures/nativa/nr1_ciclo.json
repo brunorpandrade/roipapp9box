@@ -1,0 +1,11 @@
+{
+  "nome": "NR1-2026-Q4",
+  "dataAbertura": "2026-10-20",
+  "dataFechamento": "2026-11-30",
+  "status": "fechado",
+  "departamentoCritico": "Logística",
+  "departamentosAmostraInsuficiente": [],
+  "adesao_pct": 78,
+  "countElegiveis": 54,
+  "countRespondentesEfetivos": 42
+}

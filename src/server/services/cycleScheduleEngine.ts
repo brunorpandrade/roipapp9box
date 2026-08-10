@@ -304,6 +304,9 @@ export async function updateCycleScheduleStatuses(
   // ---------- Passo 2: {aberto,atrasado} → fechado no dia 11 ----------
   // Buscamos apenas linhas dos 2 tipos que fecham automaticamente,
   // com status ainda nao terminal, junto com o timezone da empresa.
+  //
+  // ME-068 E-068-11 canonico: filtro `companies.isDemo = false` — motor
+  // nunca fecha ciclos de empresa-demo (Nativa e afins).
   const candidatas = await db
     .select({
       id: cycleSchedule.id,
@@ -318,6 +321,7 @@ export async function updateCycleScheduleStatuses(
       and(
         inArray(cycleSchedule.tipoCiclo, [...TIPOS_QUE_FECHAM_NO_DIA_11]),
         inArray(cycleSchedule.status, ['aberto', 'atrasado']),
+        eq(companies.isDemo, false),
       ),
     );
 
