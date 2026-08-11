@@ -44,7 +44,7 @@
 import type { RoipDatabase } from '../../../../../db/client';
 import { type Departamento, type JobFamily, type NivelHierarquico } from '../../../../../db/schema';
 import {
-  listActiveLeadersByCompany,
+  listActiveLeadersAndClevelsByCompany,
   listDistinctDepartamentosByCompany,
   listEmployeesPaginated,
   type ListEmployeesFilters,
@@ -283,7 +283,7 @@ export function resolveDatabaseUrl(): string {
 export interface TodosColaboradoresPageData {
   readonly listResult: ListEmployeesResult;
   readonly departamentos: readonly Departamento[];
-  readonly lideres: readonly { id: number; name: string }[];
+  readonly lideres: readonly { id: number; name: string; tipo: 'employee' | 'clevel' }[];
 }
 
 /**
@@ -300,7 +300,7 @@ export async function loadTodosColaboradoresPage(
   const [listResult, departamentos, lideres] = await Promise.all([
     listEmployeesPaginated(db, companyId, filters),
     listDistinctDepartamentosByCompany(db, companyId),
-    listActiveLeadersByCompany(db, companyId),
+    listActiveLeadersAndClevelsByCompany(db, companyId),
   ]);
   return { listResult, departamentos, lideres };
 }

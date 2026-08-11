@@ -83,7 +83,7 @@ export interface TodosColaboradoresClientProps {
   readonly initialResult: ListEmployeesResult;
   readonly initialFilters: ColaboradoresFilters;
   readonly initialDepartamentos: readonly Departamento[];
-  readonly initialLideres: readonly { id: number; name: string }[];
+  readonly initialLideres: readonly { id: number; name: string; tipo: 'employee' | 'clevel' }[];
 }
 
 // -----------------------------------------------------------------------
@@ -490,8 +490,8 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
   );
 
   const handleLiderChange = useCallback(
-    (novoId: number | null): void => {
-      void refetch({ ...filters, liderId: novoId, page: 1 });
+    (novoId: number | null, novoTipo: 'employee' | 'clevel' | null): void => {
+      void refetch({ ...filters, liderId: novoId, liderIdTipo: novoTipo, page: 1 });
     },
     [filters, refetch],
   );
@@ -589,6 +589,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
       busca: '',
       departamento: null,
       liderId: null,
+      liderIdTipo: null,
       nivelHierarquico: null,
       status: 'ativo',
       senioridade: null,
@@ -749,20 +750,28 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
           </select>
           <select
             style={FILTRO_SELECT}
-            value={filters.liderId === null ? '' : String(filters.liderId)}
+            value={
+              filters.liderId === null || filters.liderIdTipo === null
+                ? ''
+                : `${filters.liderIdTipo}:${filters.liderId}`
+            }
             onChange={(e): void => {
               const v = e.target.value;
-              if (v === '') return handleLiderChange(null);
-              const n = Number.parseInt(v, 10);
-              if (Number.isNaN(n) || n <= 0) return handleLiderChange(null);
-              return handleLiderChange(n);
+              if (v === '') return handleLiderChange(null, null);
+              const [tipoRaw, idRaw] = v.split(':');
+              if (tipoRaw !== 'employee' && tipoRaw !== 'clevel') {
+                return handleLiderChange(null, null);
+              }
+              const n = Number.parseInt(idRaw ?? '', 10);
+              if (Number.isNaN(n) || n <= 0) return handleLiderChange(null, null);
+              return handleLiderChange(n, tipoRaw);
             }}
             aria-label="Filtrar por líder direto"
           >
             <option value="">Líder: Todos</option>
             {initialLideres.map((l) => (
-              <option key={l.id} value={String(l.id)}>
-                {l.name}
+              <option key={`${l.tipo}:${l.id}`} value={`${l.tipo}:${l.id}`}>
+                {l.tipo === 'clevel' ? `${l.name} (C-level)` : l.name}
               </option>
             ))}
           </select>

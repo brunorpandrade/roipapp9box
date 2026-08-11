@@ -256,6 +256,7 @@ const EMPTY_FILTERS_INPUT = {
     busca: '',
     departamento: null,
     liderId: null,
+    liderIdTipo: null,
     nivelHierarquico: null,
     status: 'ativo' as const,
     senioridade: null,
@@ -786,11 +787,81 @@ describe('employees.list — LEFT JOINs canonicos bit-exact', () => {
     const res = await caller.list({
       companyId,
       ...EMPTY_FILTERS_INPUT,
-      filters: { ...EMPTY_FILTERS_INPUT.filters, liderId },
+      filters: { ...EMPTY_FILTERS_INPUT.filters, liderId, liderIdTipo: 'employee' as const },
     });
 
     expect(res.totalCount).toBe(1);
     expect(res.rows[0]?.name).toBe('Liderado A');
+  });
+
+  it('filtra por clevelId — apenas liderados do C-level (Patch 3)', async () => {
+    const companyId = await createTestCompany();
+    const clevelId = await seedCLevelMember({
+      companyId,
+      name: 'CFO Escopo',
+      cpf: '99920000001',
+    });
+    const outroClevelId = await seedCLevelMember({
+      companyId,
+      name: 'COO Outro',
+      cpf: '99920000002',
+    });
+    const liderado1 = await seedEmployee({
+      companyId,
+      name: 'Direto do CFO',
+      cpf: '12150000001',
+    });
+    const liderado2 = await seedEmployee({
+      companyId,
+      name: 'Direto do COO',
+      cpf: '12150000002',
+    });
+    await seedLeaderHistoryClevel(liderado1, clevelId);
+    await seedLeaderHistoryClevel(liderado2, outroClevelId);
+
+    const { factory, ctx } = bindRouter();
+    const caller = factory(ctx(await tokenSuperAdmin()));
+    const res = await caller.list({
+      companyId,
+      ...EMPTY_FILTERS_INPUT,
+      filters: {
+        ...EMPTY_FILTERS_INPUT.filters,
+        liderId: clevelId,
+        liderIdTipo: 'clevel' as const,
+      },
+    });
+
+    expect(res.totalCount).toBe(1);
+    expect(res.rows[0]?.name).toBe('Direto do CFO');
+  });
+
+  it('listActiveLeadersAndClevelsByCompany combina lideres+clevels (Patch 3)', async () => {
+    const companyId = await createTestCompany();
+    await seedEmployee({
+      companyId,
+      name: 'Zulmira Chefia',
+      cpf: '12160000001',
+      isLider: true,
+    });
+    await seedEmployee({
+      companyId,
+      name: 'Anderson Chefia',
+      cpf: '12160000002',
+      isLider: true,
+    });
+    await seedCLevelMember({
+      companyId,
+      name: 'Bianca C-level',
+      cpf: '99960000001',
+    });
+
+    const { listActiveLeadersAndClevelsByCompany } =
+      await import('../../src/server/services/employees');
+    const res = await listActiveLeadersAndClevelsByCompany(client.db, companyId);
+
+    expect(res.map((r) => r.name)).toEqual(['Anderson Chefia', 'Bianca C-level', 'Zulmira Chefia']);
+    expect(res.find((r) => r.name === 'Bianca C-level')?.tipo).toBe('clevel');
+    expect(res.find((r) => r.name === 'Anderson Chefia')?.tipo).toBe('employee');
   });
 
   it('resolve status canonico do Perfil Individual mais recente', async () => {
@@ -986,6 +1057,7 @@ describe('filters.ts — parser canonico bit-exact da query string', () => {
     expect(filters.pageSize).toBe(50);
     expect(filters.busca).toBe('');
     expect(filters.departamento).toBeNull();
+    expect(filters.liderIdTipo).toBeNull();
   });
 
   it('parseColaboradoresFiltersFromSearchParams parseia keys canonicas', async () => {
@@ -996,6 +1068,8 @@ describe('filters.ts — parser canonico bit-exact da query string', () => {
       dept: 'Comercial',
       status: 'todos',
       papel: 'rh',
+      lider: '42',
+      liderTipo: 'clevel',
       page: '3',
       pageSize: '25',
     });
@@ -1003,6 +1077,8 @@ describe('filters.ts — parser canonico bit-exact da query string', () => {
     expect(filters.departamento).toBe('Comercial');
     expect(filters.status).toBe('todos');
     expect(filters.papelFuncional).toBe('rh');
+    expect(filters.liderId).toBe(42);
+    expect(filters.liderIdTipo).toBe('clevel');
     expect(filters.page).toBe(3);
     expect(filters.pageSize).toBe(25);
   });

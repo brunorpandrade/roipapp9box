@@ -203,6 +203,7 @@ export interface ListEmployeesFilters {
   readonly busca: string;
   readonly departamento: Departamento | null;
   readonly liderId: number | null;
+  readonly liderIdTipo: 'employee' | 'clevel' | null;
   readonly nivelHierarquico: NivelHierarquico | null;
   readonly status: 'ativo' | 'inativo' | 'todos';
   readonly senioridade: 'junior' | 'pleno' | 'senior' | null;
@@ -419,6 +420,21 @@ export async function listEmployeesPaginated(
   // sem filtro.
   const definedWhereConds = whereConds.filter((c): c is SQL => c !== undefined);
 
+  /**
+   * §14.10 + Patch 3 canônico bit-exact — resolve o predicado canônico
+   * bit-exact do filtro "Líder". Quando `liderId=null`, sem filtro. Quando
+   * `liderIdTipo='employee'`, filtra bit-exact por `elh.liderId`. Quando
+   * `liderIdTipo='clevel'`, filtra bit-exact por `elh.clevelId`.
+   */
+  const resolveLiderIdCondition = (): SQL | undefined => {
+    if (filters.liderId === null) return undefined;
+    if (filters.liderIdTipo === 'clevel') {
+      return eq(elh.clevelId, filters.liderId);
+    }
+    return eq(elh.liderId, filters.liderId);
+  };
+  const liderIdCond = resolveLiderIdCondition();
+
   const orderCol = resolveOrderByColumn(filters.sortBy, liderEmp.name);
   const orderExpr = filters.sortOrder === 'asc' ? asc(orderCol) : desc(orderCol);
 
@@ -465,9 +481,9 @@ export async function listEmployeesPaginated(
       ),
     )
     .where(
-      filters.liderId === null
+      liderIdCond === undefined
         ? and(...definedWhereConds)
-        : and(...definedWhereConds, eq(elh.liderId, filters.liderId)),
+        : and(...definedWhereConds, liderIdCond),
     )
     .orderBy(orderExpr, asc(employees.id))
     .limit(filters.pageSize)
@@ -479,9 +495,9 @@ export async function listEmployeesPaginated(
     .from(employees)
     .leftJoin(elh, and(eq(elh.employeeId, employees.id), isNull(elh.dataFim)))
     .where(
-      filters.liderId === null
+      liderIdCond === undefined
         ? and(...definedWhereConds)
-        : and(...definedWhereConds, eq(elh.liderId, filters.liderId)),
+        : and(...definedWhereConds, liderIdCond),
     );
 
   const totalCount = Number(totalRaw[0]?.n ?? 0);
@@ -534,11 +550,20 @@ export async function listEmployeesPaginated(
  * Retorna `{ id, name }` em ordem alfabetica. Consumida pelo `page.tsx`
  * na carga inicial para injetar `initialLideres` ao client component.
  */
-export async function listActiveLeadersByCompany(
+/**
+ * §14.10 + Patch 3 canônica bit-exact — lista canônica bit-exact de
+ * líderes ativos da empresa para popular o dropdown de filtro "Líder"
+ * (§14.10 linha 2 dos filtros). Retorna employees com `isLider=true`
+ * + todos os C-levels ativos, em ordem alfabética global unificada. O
+ * campo `tipo` (`'employee' | 'clevel'`) permite ao client aplicar filtro
+ * na coluna canônica correta de `employeeLeaderHistory` (liderId vs
+ * clevelId).
+ */
+export async function listActiveLeadersAndClevelsByCompany(
   db: RoipDatabase,
   companyId: number,
-): Promise<readonly { id: number; name: string }[]> {
-  const rows = await db
+): Promise<readonly { id: number; name: string; tipo: 'employee' | 'clevel' }[]> {
+  const empRows = await db
     .select({ id: employees.id, name: employees.name })
     .from(employees)
     .where(
@@ -549,7 +574,17 @@ export async function listActiveLeadersByCompany(
       ),
     )
     .orderBy(asc(employees.name));
-  return rows.map((r) => ({ id: r.id, name: r.name }));
+  const clevelRows = await db
+    .select({ id: cLevelMembers.id, name: cLevelMembers.name })
+    .from(cLevelMembers)
+    .where(and(eq(cLevelMembers.companyId, companyId), eq(cLevelMembers.status, 'ativo')))
+    .orderBy(asc(cLevelMembers.name));
+  const combined: { id: number; name: string; tipo: 'employee' | 'clevel' }[] = [
+    ...empRows.map((r) => ({ id: r.id, name: r.name, tipo: 'employee' as const })),
+    ...clevelRows.map((r) => ({ id: r.id, name: r.name, tipo: 'clevel' as const })),
+  ];
+  combined.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  return combined;
 }
 
 /**

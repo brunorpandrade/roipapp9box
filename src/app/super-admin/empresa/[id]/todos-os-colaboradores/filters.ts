@@ -82,6 +82,7 @@ export interface ColaboradoresFilters {
   readonly busca: string;
   readonly departamento: Departamento | null;
   readonly liderId: number | null;
+  readonly liderIdTipo: 'employee' | 'clevel' | null;
   readonly nivelHierarquico: NivelHierarquico | null;
   readonly status: StatusFilterValue;
   readonly senioridade: SenioridadeFilterValue | null;
@@ -106,6 +107,7 @@ export const CANONICAL_COLABORADORES_DEFAULT_FILTERS: ColaboradoresFilters = {
   busca: '',
   departamento: null,
   liderId: null,
+  liderIdTipo: null,
   nivelHierarquico: null,
   status: 'ativo',
   senioridade: null,
@@ -202,6 +204,13 @@ function parseSortOrder(raw: string | undefined): ListEmployeesSortOrder {
   return 'asc';
 }
 
+function parseLiderTipo(raw: string | undefined): 'employee' | 'clevel' | null {
+  if (raw === undefined || raw === '') return null;
+  if (raw === 'employee') return 'employee';
+  if (raw === 'clevel') return 'clevel';
+  return null;
+}
+
 function parseIntOrNull(raw: string | undefined): number | null {
   if (raw === undefined || raw === '') return null;
   const parsed = Number.parseInt(raw, 10);
@@ -250,6 +259,7 @@ export function parseColaboradoresFiltersFromSearchParams(
     busca: normalizeBusca(pickFirst(params.q)),
     departamento: parseDepartamento(pickFirst(params.dept)),
     liderId: parseIntOrNull(pickFirst(params.lider)),
+    liderIdTipo: parseLiderTipo(pickFirst(params.liderTipo)),
     nivelHierarquico: parseNivelHierarquico(pickFirst(params.nivel)),
     status: parseStatus(pickFirst(params.status)),
     senioridade: parseSenioridade(pickFirst(params.senior)),
@@ -278,6 +288,7 @@ export function colaboradoresFiltersToServiceInput(
     busca: filters.busca,
     departamento: filters.departamento,
     liderId: filters.liderId,
+    liderIdTipo: filters.liderIdTipo,
     nivelHierarquico: filters.nivelHierarquico,
     status: filters.status,
     senioridade: filters.senioridade,
