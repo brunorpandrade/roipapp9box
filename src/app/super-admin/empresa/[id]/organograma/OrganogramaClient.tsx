@@ -1,41 +1,29 @@
 'use client';
 
 // ROIP APP 9BOX — client component /super-admin/empresa/[id]/organograma
-// (§14.9 + §2.6, ME-077). QUARTA rota de código do bloco B8.
+// (§14.9 + §2.6, ME-077 Patch 2). QUARTA rota de código do bloco B8.
+//
+// Patch 2 canônico bit-exact (absorção in-place L113 ME-077):
+//   - Refino A aprovado: linhas conectoras canônicas bit-exact ao mockup
+//     via CSS class-based com pseudo-elementos `::before/::after`
+//     (impossível via inline `CSSProperties`). Ajuste técnico canônico:
+//     pseudo-elementos do `<li>` com `top: -26px` (não `top: 0` do
+//     mockup) — sobem para o espaço vazio do `padding-top` do `<ul>`
+//     pai. Bit-exact ao visual do mockup, sem sobreposição do `.node`.
+//   - Refino B aprovado: painel resumido renderiza como DRAWER slide-in
+//     à direita, com botão fechar `×`. Oculto por default (canvas full-
+//     width); aparece ao clicar em qualquer nó; fecha via botão `×` ou
+//     clique fora.
+//   - D1 mantido (modo analítico diferido → Fase 4): toggle desabilitado.
+//   - D2 mantido (dashboards diferidos → Fase 4): todos os botões
+//     `[Abrir dashboard]` desabilitados.
 //
 // Origem canônica:
-// - CAMADA_UI §14.9 (organograma — layout árvore + modo normal +
-//   painel resumido + comportamento clique) + §2.6 (cores dos nós).
-// - Mockup canônico `organograma_v2.html` (612 linhas) — CSS canônico
-//   bit-exact reproduzido inline (linhas 79-153 do mockup): árvore
-//   HTML/CSS `<ul>/<li>` aninhada com conectores CSS puros; nó com
-//   avatar + nome + cargo + departamento; painel resumido lateral
-//   fixo 290px com foto/avatar + nome + cargo + departamento +
-//   "N liderados diretos" + botão `[Abrir dashboard]` desabilitado.
-//
-// Decisões canônicas bit-exact aprovadas ME-077:
-// - D1: modo analítico diferido para B9/Fase 4 → toggle no header
-//   renderizado desabilitado com tooltip literal *"Disponível a partir
-//   da Fase 4."*.
-// - D2 refinada: TODOS os botões `[Abrir dashboard]` (empresa, C-level,
-//   líder, colaborador) renderizados desabilitados com tooltip literal
-//   *"Disponível a partir da Fase 4."*. Motivo: rotas `/dashboard/*` de
-//   equipe/global E rota `/dashboard-individual/:id` também não
-//   existem no repo (Master §7.1 O1 — construídas em B9).
-// - D3: C-level renderiza como pai direto do colaborador (sem líder
-//   intermediário) quando `elh.clevelId` está preenchido — invariante
-//   §4.6 aplicada pelo service.
-// - D4: ordem alfabética de irmãos por nome pt-BR (padrão Patch 3
-//   ME-076) — aplicada pelo service.
-// - D5: técnica de renderização HTML/CSS `<ul>/<li>` aninhado com CSS
-//   bit-exact ao mockup (linhas 79-97).
-// - D6: raiz + primeiro nível (C-levels) expandidos por default;
-//   demais colapsados. Botão `+/−` por nó com filhos.
-// - D7: busca por nome com dropdown de resultados + zoom −/100%/+ bit-
-//   exact ao mockup (linhas 550-566 + 539-548).
-// - D8: PC1b canônica bit-exact — nós de C-level esmaecidos + sem
-//   clique + tooltip §15.7 quando `applyPC1b === true` (não aplicável
-//   ao Bruno da rota Super Admin; superfície pronta para reuso em B9).
+// - CAMADA_UI §14.9 (organograma — layout árvore + painel resumido +
+//   comportamento clique) + §2.6 (cores dos nós).
+// - Mockup canônico `organograma_v2.html` (612 linhas) — CSS bit-exact
+//   das linhas (linhas 79-97) reproduzido inline via `<style>` tag
+//   com adaptação de `top` negativo canonicamente robusta.
 //
 // **RV-13.** `OrganogramaClient` → `page.tsx` (mesma rota).
 //
@@ -64,7 +52,7 @@ export interface OrganogramaClientProps {
 }
 
 // -----------------------------------------------------------------------
-// Constantes canônicas de zoom
+// Constantes canônicas
 // -----------------------------------------------------------------------
 
 const ZOOM_MIN = 0.5;
@@ -72,14 +60,95 @@ const ZOOM_MAX = 1.5;
 const ZOOM_STEP = 0.1;
 const ZOOM_INITIAL = 1.0;
 
+const RESUMO_DRAWER_WIDTH = 300;
+
+// -----------------------------------------------------------------------
+// CSS canônico bit-exact das linhas conectoras (§14.9 + mockup 79-97)
+// -----------------------------------------------------------------------
+//
+// Injeta como `<style>` inline no componente. Pseudo-elementos
+// `::before/::after` são inacessíveis via inline `CSSProperties` — CSS
+// class-based é canônica bit-exact.
+//
+// Adaptação canônica robusta ao gap identificado no mockup: `top: -26px`
+// (não `top: 0`) posiciona o pseudo ACIMA da borda superior do `<li>`,
+// no espaço vazio do `padding-top: 26px` do `<ul>` pai. Bit-exact ao
+// visual do mockup, sem sobreposição das caixas `.node`.
+
+const ORGANOGRAMA_CSS = `
+.org-tree,
+.org-tree ul {
+  list-style: none;
+  margin: 0;
+  padding-left: 0;
+  text-align: center;
+}
+.org-tree {
+  display: inline-flex;
+}
+.org-tree ul {
+  display: flex;
+  padding-top: 26px;
+  position: relative;
+}
+.org-tree li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 14px;
+  position: relative;
+}
+.org-tree li::before,
+.org-tree li::after {
+  content: '';
+  position: absolute;
+  top: -26px;
+  right: 50%;
+  border-top: 2px solid #CBD5E1;
+  width: 50%;
+  height: 26px;
+}
+.org-tree li::after {
+  right: auto;
+  left: 50%;
+  border-left: 2px solid #CBD5E1;
+}
+.org-tree li:only-child::before,
+.org-tree li:only-child::after {
+  display: none;
+}
+.org-tree li:first-child::before {
+  border: none;
+}
+.org-tree li:last-child::after {
+  border: none;
+}
+.org-tree > li::before,
+.org-tree > li::after {
+  display: none;
+}
+.org-tree > ul {
+  padding-top: 0;
+}
+.org-tree ul::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  border-left: 2px solid #CBD5E1;
+  width: 0;
+  height: 26px;
+  margin-left: -1px;
+}
+.org-tree > ul::before {
+  display: none;
+}
+`;
+
 // -----------------------------------------------------------------------
 // Helpers puros locais
 // -----------------------------------------------------------------------
 
-/**
- * §D6 canônica bit-exact — resolve o conjunto inicial de IDs expandidos:
- * raiz (`empresa`) + todos os C-levels do primeiro nível.
- */
 function resolveInitialExpandedIds(root: OrgTreeNode): Set<string> {
   const ids = new Set<string>();
   ids.add(root.id);
@@ -89,12 +158,6 @@ function resolveInitialExpandedIds(root: OrgTreeNode): Set<string> {
   return ids;
 }
 
-/**
- * Coleta todos os ancestrais canônicos do nó alvo (indexado por id) na
- * árvore. Retorna a lista de IDs a expandir para tornar o alvo visível.
- * Consumido pelo dropdown de busca (§D7 canônica bit-exact) via callback
- * de "ir para nó".
- */
 function collectAncestorIds(root: OrgTreeNode, targetId: string): readonly string[] {
   const path: string[] = [];
   function visit(node: OrgTreeNode, trail: readonly string[]): boolean {
@@ -113,11 +176,6 @@ function collectAncestorIds(root: OrgTreeNode, targetId: string): readonly strin
   return path;
 }
 
-/**
- * Coleta canonicamente todos os nós da árvore em ordem alfabética por
- * nome (busca §D7). Retorna id + name + cargo + type para render dos
- * itens do dropdown de busca.
- */
 interface SearchIndexEntry {
   readonly id: string;
   readonly name: string;
@@ -137,10 +195,6 @@ function buildSearchIndex(root: OrgTreeNode): readonly SearchIndexEntry[] {
   return flat;
 }
 
-/**
- * Normaliza string para busca canônica (case-insensitive, sem acento).
- * Padrão consolidado ME-076 (busca em `TodosColaboradoresClient`).
- */
 function normalizeForSearch(s: string): string {
   return s
     .toLowerCase()
@@ -149,13 +203,9 @@ function normalizeForSearch(s: string): string {
 }
 
 // -----------------------------------------------------------------------
-// Estilos canônicos bit-exact do mockup
+// Estilos canônicos por tipo de nó
 // -----------------------------------------------------------------------
 
-/**
- * Cores canônicas §2.6 por tipo de nó. Bit-exact ao mockup linhas 108-
- * 111 (`.node.empresa`, `.node.clevel`, `.node.lider`, `.node.operacional`).
- */
 function nodeContainerStyle(type: OrgTreeNodeType, esmaecido: boolean): CSSProperties {
   const base: CSSProperties = {
     width: 150,
@@ -210,7 +260,7 @@ function nodeAvatarStyle(type: OrgTreeNodeType): CSSProperties {
 }
 
 // -----------------------------------------------------------------------
-// Sub-componentes internos
+// Sub-componente RenderedNode
 // -----------------------------------------------------------------------
 
 interface RenderedNodeProps {
@@ -254,16 +304,7 @@ function RenderedNode(props: RenderedNodeProps): JSX.Element {
   const nodeTitle = esmaecido ? PC1B_TOOLTIP : undefined;
 
   return (
-    <li
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        padding: '0 14px',
-        position: 'relative',
-        listStyle: 'none',
-      }}
-    >
+    <li>
       <div
         onClick={handleClick}
         title={nodeTitle}
@@ -320,16 +361,7 @@ function RenderedNode(props: RenderedNodeProps): JSX.Element {
         )}
       </div>
       {temFilhos && isExpanded && (
-        <ul
-          style={{
-            display: 'flex',
-            paddingTop: 26,
-            paddingLeft: 0,
-            margin: 0,
-            listStyle: 'none',
-            position: 'relative',
-          }}
-        >
+        <ul>
           {node.children.map((child) => (
             <RenderedNode
               key={child.id}
@@ -347,160 +379,196 @@ function RenderedNode(props: RenderedNodeProps): JSX.Element {
   );
 }
 
-interface ResumoPanelProps {
-  readonly selectedNode: OrgTreeNode | null;
+// -----------------------------------------------------------------------
+// Sub-componente ResumoDrawer — refino B aprovado ME-077 Patch 2
+// -----------------------------------------------------------------------
+
+interface ResumoDrawerProps {
+  readonly selectedNode: OrgTreeNode;
   readonly applyPC1b: boolean;
+  readonly onClose: () => void;
 }
 
-function ResumoPanel(props: ResumoPanelProps): JSX.Element {
-  const { selectedNode, applyPC1b } = props;
-  const panelStyle: CSSProperties = {
-    width: 290,
-    flexShrink: 0,
-    borderLeft: `1px solid ${COLORS.border.default}`,
-    background: COLORS.background.card,
-    padding: 18,
-    overflowY: 'auto',
-    minHeight: 400,
-  };
-  if (selectedNode === null) {
-    return (
-      <div style={panelStyle}>
-        <div
-          style={{
-            color: COLORS.text.quaternary,
-            fontSize: 12,
-            textAlign: 'center',
-            marginTop: 40,
-            lineHeight: 1.6,
-          }}
-        >
-          Selecione um colaborador ou C-level na árvore para ver os detalhes.
-        </div>
-      </div>
-    );
-  }
-
+function ResumoDrawer(props: ResumoDrawerProps): JSX.Element {
+  const { selectedNode, applyPC1b, onClose } = props;
   const tipoLabel = NODE_TYPE_LABELS[selectedNode.type];
   const isEmpresa = selectedNode.type === 'empresa';
   const showLiderados = !isEmpresa && selectedNode.numLideradosDiretos > 0;
 
   return (
-    <div style={panelStyle}>
+    <div
+      style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: RESUMO_DRAWER_WIDTH,
+        background: COLORS.background.card,
+        borderLeft: `1px solid ${COLORS.border.default}`,
+        boxShadow: '-4px 0 16px rgba(0,0,0,0.08)',
+        padding: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        zIndex: 20,
+        transform: 'translateX(0)',
+        transition: 'transform 0.2s ease',
+      }}
+    >
+      {/* Header do drawer com botão fechar */}
       <div
         style={{
-          width: 52,
-          height: 52,
-          borderRadius: '50%',
-          background: COLORS.primary.navy,
-          color: COLORS.background.card,
           display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 16,
-          fontWeight: 600,
-          marginBottom: 10,
-        }}
-      >
-        {getIniciaisFromName(selectedNode.name)}
-      </div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: COLORS.text.primary }}>
-        {selectedNode.name}
-      </div>
-      <div style={{ fontSize: 12, color: COLORS.text.tertiary, marginBottom: 10 }}>
-        {selectedNode.cargo.length > 0 ? selectedNode.cargo : tipoLabel}
-      </div>
-      {selectedNode.departamento.length > 0 && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            fontSize: 12,
-            padding: '6px 0',
-            borderBottom: `1px solid ${COLORS.border.divider}`,
-          }}
-        >
-          <span style={{ color: COLORS.text.tertiary }}>Departamento</span>
-          <span style={{ color: COLORS.text.secondary, fontWeight: 500 }}>
-            {selectedNode.departamento}
-          </span>
-        </div>
-      )}
-      {showLiderados && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            fontSize: 12,
-            padding: '6px 0',
-            borderBottom: `1px solid ${COLORS.border.divider}`,
-          }}
-        >
-          <span style={{ color: COLORS.text.tertiary }}>Liderados diretos</span>
-          <span style={{ color: COLORS.text.secondary, fontWeight: 500 }}>
-            {selectedNode.numLideradosDiretos}
-          </span>
-        </div>
-      )}
-      {isEmpresa && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            fontSize: 12,
-            padding: '6px 0',
-            borderBottom: `1px solid ${COLORS.border.divider}`,
-          }}
-        >
-          <span style={{ color: COLORS.text.tertiary }}>C-levels ativos</span>
-          <span style={{ color: COLORS.text.secondary, fontWeight: 500 }}>
-            {selectedNode.numLideradosDiretos}
-          </span>
-        </div>
-      )}
-      <button
-        type="button"
-        disabled
-        title={DASHBOARD_UNAVAILABLE_TOOLTIP}
-        style={{
-          marginTop: 14,
-          width: '100%',
-          padding: 9,
+          padding: '12px 16px',
+          borderBottom: `1px solid ${COLORS.border.default}`,
           background: COLORS.background.elevated,
-          color: COLORS.text.quaternary,
-          border: `1px solid ${COLORS.border.default}`,
-          borderRadius: 8,
-          fontSize: 12,
-          fontWeight: 600,
-          cursor: 'not-allowed',
         }}
       >
-        Abrir dashboard
-      </button>
-      <div
-        style={{
-          marginTop: 8,
-          fontSize: 11,
-          color: COLORS.text.quaternary,
-          lineHeight: 1.5,
-          fontStyle: 'italic',
-        }}
-      >
-        {DASHBOARD_UNAVAILABLE_TOOLTIP}
+        <span style={{ fontSize: 12, fontWeight: 600, color: COLORS.text.tertiary }}>
+          {tipoLabel}
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Fechar painel"
+          style={{
+            width: 26,
+            height: 26,
+            borderRadius: 6,
+            border: `1px solid ${COLORS.border.default}`,
+            background: COLORS.background.card,
+            cursor: 'pointer',
+            fontSize: 16,
+            color: COLORS.text.secondary,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 0,
+            lineHeight: 1,
+          }}
+        >
+          ×
+        </button>
       </div>
-      {applyPC1b && selectedNode.type === 'clevel' && (
+
+      {/* Conteúdo do drawer */}
+      <div style={{ padding: 18, overflowY: 'auto', flex: 1 }}>
         <div
+          style={{
+            width: 52,
+            height: 52,
+            borderRadius: '50%',
+            background: COLORS.primary.navy,
+            color: COLORS.background.card,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 16,
+            fontWeight: 600,
+            marginBottom: 10,
+          }}
+        >
+          {getIniciaisFromName(selectedNode.name)}
+        </div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: COLORS.text.primary }}>
+          {selectedNode.name}
+        </div>
+        <div style={{ fontSize: 12, color: COLORS.text.tertiary, marginBottom: 10 }}>
+          {selectedNode.cargo.length > 0 ? selectedNode.cargo : tipoLabel}
+        </div>
+        {selectedNode.departamento.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: 12,
+              padding: '6px 0',
+              borderBottom: `1px solid ${COLORS.border.divider}`,
+            }}
+          >
+            <span style={{ color: COLORS.text.tertiary }}>Departamento</span>
+            <span style={{ color: COLORS.text.secondary, fontWeight: 500 }}>
+              {selectedNode.departamento}
+            </span>
+          </div>
+        )}
+        {showLiderados && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: 12,
+              padding: '6px 0',
+              borderBottom: `1px solid ${COLORS.border.divider}`,
+            }}
+          >
+            <span style={{ color: COLORS.text.tertiary }}>Liderados diretos</span>
+            <span style={{ color: COLORS.text.secondary, fontWeight: 500 }}>
+              {selectedNode.numLideradosDiretos}
+            </span>
+          </div>
+        )}
+        {isEmpresa && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: 12,
+              padding: '6px 0',
+              borderBottom: `1px solid ${COLORS.border.divider}`,
+            }}
+          >
+            <span style={{ color: COLORS.text.tertiary }}>C-levels ativos</span>
+            <span style={{ color: COLORS.text.secondary, fontWeight: 500 }}>
+              {selectedNode.numLideradosDiretos}
+            </span>
+          </div>
+        )}
+        <button
+          type="button"
+          disabled
+          title={DASHBOARD_UNAVAILABLE_TOOLTIP}
           style={{
             marginTop: 14,
+            width: '100%',
+            padding: 9,
+            background: COLORS.background.elevated,
+            color: COLORS.text.quaternary,
+            border: `1px solid ${COLORS.border.default}`,
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: 'not-allowed',
+          }}
+        >
+          Abrir dashboard
+        </button>
+        <div
+          style={{
+            marginTop: 8,
             fontSize: 11,
             color: COLORS.text.quaternary,
             lineHeight: 1.5,
             fontStyle: 'italic',
           }}
         >
-          {PC1B_TOOLTIP}
+          {DASHBOARD_UNAVAILABLE_TOOLTIP}
         </div>
-      )}
+        {applyPC1b && selectedNode.type === 'clevel' && (
+          <div
+            style={{
+              marginTop: 14,
+              fontSize: 11,
+              color: COLORS.text.quaternary,
+              lineHeight: 1.5,
+              fontStyle: 'italic',
+            }}
+          >
+            {PC1B_TOOLTIP}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -553,6 +621,10 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
     setSelectedNodeId(id);
   }, []);
 
+  const handleCloseDrawer = useCallback(() => {
+    setSelectedNodeId(null);
+  }, []);
+
   const handleToggle = useCallback((id: string) => {
     setExpandedIds((prev) => {
       const next = new Set(prev);
@@ -579,7 +651,6 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
       setSelectedNodeId(id);
       setSearchTerm('');
       setShowSearchResults(false);
-      // Scroll canônico bit-exact ao mockup linha 584 — best effort.
       setTimeout(() => {
         const el = document.querySelector(`[data-node-id="${id}"]`);
         if (el !== null) {
@@ -601,6 +672,7 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
   }, []);
 
   const zoomLabel = `${Math.round(zoomLevel * 100)}%`;
+  const isDrawerOpen = selectedNode !== null;
 
   return (
     <div
@@ -612,9 +684,13 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
         background: COLORS.background.card,
         overflow: 'hidden',
         minHeight: 620,
+        position: 'relative',
       }}
     >
-      {/* Toolbar canônica bit-exact §14.9 (linhas 208-230 do mockup) */}
+      {/* CSS canônico bit-exact das linhas conectoras (§14.9) */}
+      <style>{ORGANOGRAMA_CSS}</style>
+
+      {/* Toolbar */}
       <div
         style={{
           display: 'flex',
@@ -626,7 +702,7 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
           background: COLORS.background.elevated,
         }}
       >
-        {/* Busca §D7 */}
+        {/* Busca */}
         <div style={{ position: 'relative' }}>
           <input
             type="text"
@@ -714,7 +790,7 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
           )}
         </div>
 
-        {/* Toggle modo analítico §D1 desabilitado */}
+        {/* Toggle modo analítico desabilitado (D1 mantida) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             type="button"
@@ -757,7 +833,7 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
           </span>
         </div>
 
-        {/* Zoom controls §D7 */}
+        {/* Zoom controls */}
         <div
           style={{
             display: 'flex',
@@ -822,9 +898,15 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
         </div>
       </div>
 
-      {/* Body canônico bit-exact §14.9 — árvore + painel resumido */}
-      <div style={{ display: 'flex', flex: 1, minHeight: 500 }}>
-        {/* Canvas da árvore */}
+      {/* Body — canvas full-width (drawer sobrepõe quando aberto) */}
+      <div
+        style={{
+          display: 'flex',
+          flex: 1,
+          minHeight: 500,
+          position: 'relative',
+        }}
+      >
         <div
           style={{
             flex: 1,
@@ -845,15 +927,7 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
               minWidth: '100%',
             }}
           >
-            <ul
-              style={{
-                display: 'inline-flex',
-                listStyle: 'none',
-                padding: 0,
-                margin: 0,
-                textAlign: 'center',
-              }}
-            >
+            <ul className="org-tree">
               <RenderedNode
                 node={initialRoot}
                 selectedNodeId={selectedNodeId}
@@ -866,8 +940,14 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
           </div>
         </div>
 
-        {/* Painel resumido lateral 290px §14.9 */}
-        <ResumoPanel selectedNode={selectedNode} applyPC1b={applyPC1b} />
+        {/* Drawer slide-in — só renderiza quando há nó selecionado */}
+        {isDrawerOpen && selectedNode !== null && (
+          <ResumoDrawer
+            selectedNode={selectedNode}
+            applyPC1b={applyPC1b}
+            onClose={handleCloseDrawer}
+          />
+        )}
       </div>
     </div>
   );
