@@ -26,6 +26,7 @@ import { inArray } from 'drizzle-orm';
 
 import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/client';
 import {
+  cLevelMembers,
   employeeLeaderHistory,
   employees,
   individualProfileAssessments,
@@ -79,6 +80,9 @@ afterAll(async () => {
         .where(inArray(employeeLeaderHistory.employeeId, employeeIds));
     }
     await client.db.delete(employees).where(inArray(employees.companyId, createdCompanyIds));
+    await client.db
+      .delete(cLevelMembers)
+      .where(inArray(cLevelMembers.companyId, createdCompanyIds));
     await client.db.delete(companies).where(inArray(companies.id, createdCompanyIds));
   }
   await closeDbClient(client);
@@ -169,6 +173,46 @@ async function seedLeaderHistory(employeeId: number, liderId: number): Promise<v
     dataInicio: new Date('2023-01-01'),
     dataFim: null,
     reason: 'Atribuição inicial no cadastro',
+    transferBatchId: crypto.randomUUID(),
+  });
+}
+
+interface CLevelSeedInput {
+  readonly companyId: number;
+  readonly name: string;
+  readonly cpf: string;
+}
+
+async function seedCLevelMember(input: CLevelSeedInput): Promise<number> {
+  const [row] = await client.db
+    .insert(cLevelMembers)
+    .values({
+      companyId: input.companyId,
+      name: input.name,
+      cpf: input.cpf,
+      email: `${input.cpf}@clevel.example.com`,
+      dataNascimento: new Date('1975-01-01'),
+      dataAdmissao: new Date('2020-01-01'),
+      cargo: 'CEO',
+      descricaoCargo: 'Chief Executive Officer',
+      departamento: 'Diretoria',
+      custoMensal: '50000.00',
+      acessoTotal: true,
+      isResponsavelFinanceiro: false,
+      status: 'ativo',
+    })
+    .$returningId();
+  return row!.id;
+}
+
+async function seedLeaderHistoryClevel(employeeId: number, clevelId: number): Promise<void> {
+  await client.db.insert(employeeLeaderHistory).values({
+    employeeId,
+    liderId: null,
+    clevelId,
+    dataInicio: new Date('2023-01-01'),
+    dataFim: null,
+    reason: 'Atribuição inicial ao C-level',
     transferBatchId: crypto.randomUUID(),
   });
 }
@@ -662,8 +706,52 @@ describe('employees.list — LEFT JOINs canonicos bit-exact', () => {
     const liderRow = res.rows.find((r) => r.name === 'Liderado');
     expect(liderRow).toBeDefined();
     expect(liderRow?.liderName).toBe('Lider Direto');
+    expect(liderRow?.liderTipo).toBe('employee');
     const liderProprio = res.rows.find((r) => r.name === 'Lider Direto');
     expect(liderProprio?.liderName).toBeNull();
+    expect(liderProprio?.liderTipo).toBeNull();
+  });
+
+  it('resolve nome do C-level como lider via elh.clevelId (Patch 2 ME-076)', async () => {
+    const companyId = await createTestCompany();
+    const clevelId = await seedCLevelMember({
+      companyId,
+      name: 'CEO Nativa',
+      cpf: '99900000001',
+    });
+    const liderado = await seedEmployee({
+      companyId,
+      name: 'Direto do CEO',
+      cpf: '12050000001',
+    });
+    await seedLeaderHistoryClevel(liderado, clevelId);
+
+    const { factory, ctx } = bindRouter();
+    const caller = factory(ctx(await tokenSuperAdmin()));
+    const res = await caller.list({ companyId, ...EMPTY_FILTERS_INPUT });
+
+    const row = res.rows.find((r) => r.name === 'Direto do CEO');
+    expect(row).toBeDefined();
+    expect(row?.liderName).toBe('CEO Nativa');
+    expect(row?.liderTipo).toBe('clevel');
+  });
+
+  it('colaborador sem vinculo ativo retorna liderName=null e liderTipo=null', async () => {
+    const companyId = await createTestCompany();
+    await seedEmployee({
+      companyId,
+      name: 'Sem Lider',
+      cpf: '12060000001',
+    });
+
+    const { factory, ctx } = bindRouter();
+    const caller = factory(ctx(await tokenSuperAdmin()));
+    const res = await caller.list({ companyId, ...EMPTY_FILTERS_INPUT });
+
+    const row = res.rows.find((r) => r.name === 'Sem Lider');
+    expect(row).toBeDefined();
+    expect(row?.liderName).toBeNull();
+    expect(row?.liderTipo).toBeNull();
   });
 
   it('filtra por liderId — apenas liderados do lider selecionado', async () => {

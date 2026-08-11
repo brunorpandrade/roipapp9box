@@ -1070,7 +1070,13 @@ function renderRow(row: EmployeeListRow): JSX.Element {
         <span style={nivelStyle}>{NIVEL_HIERARQUICO_LABELS[row.nivelHierarquico]}</span>
       </td>
       <td style={TD_STYLE}>{DEPARTAMENTO_LABELS[row.departamento]}</td>
-      <td style={TD_STYLE}>{row.liderName ?? '—'}</td>
+      <td style={TD_STYLE}>
+        {row.liderName === null
+          ? '—'
+          : row.liderTipo === 'clevel'
+            ? `${row.liderName} (C-level)`
+            : row.liderName}
+      </td>
       <td style={TD_STYLE}>
         <span style={{ color: COLORS.text.tertiary, fontSize: 11 }} title="Disponível após ME-078">
           📇

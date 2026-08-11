@@ -23,7 +23,12 @@ import type { AnyColumn, SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/mysql-core';
 
 import type { RoipDatabase } from '../../db/client';
-import { employeeLeaderHistory, employees, individualProfileAssessments } from '../../db/schema';
+import {
+  employeeLeaderHistory,
+  employees,
+  individualProfileAssessments,
+  cLevelMembers,
+} from '../../db/schema';
 import type { Departamento, JobFamily, NivelHierarquico, OnboardingEstagio } from '../../db/schema';
 
 /** Tipo derivado do schema (payload de INSERT em `employees`). */
@@ -241,6 +246,7 @@ export interface EmployeeListRow {
   readonly dataAdmissao: Date;
   readonly createdAt: Date;
   readonly liderName: string | null;
+  readonly liderTipo: 'employee' | 'clevel' | null;
   readonly profileIndividualStatus: ProfileIndividualStatus;
 }
 
@@ -440,11 +446,14 @@ export async function listEmployeesPaginated(
       createdAt: employees.createdAt,
       liderName: liderEmp.name,
       elhLiderId: elh.liderId,
+      clevelName: cLevelMembers.name,
+      elhClevelId: elh.clevelId,
       profileIndividualStatusRaw: individualProfileAssessments.status,
     })
     .from(employees)
     .leftJoin(elh, and(eq(elh.employeeId, employees.id), isNull(elh.dataFim)))
     .leftJoin(liderEmp, eq(liderEmp.id, elh.liderId))
+    .leftJoin(cLevelMembers, eq(cLevelMembers.id, elh.clevelId))
     .leftJoin(ipaLatestSub, eq(ipaLatestSub.userId, employees.id))
     .leftJoin(
       individualProfileAssessments,
@@ -477,27 +486,44 @@ export async function listEmployeesPaginated(
 
   const totalCount = Number(totalRaw[0]?.n ?? 0);
 
-  const rows: readonly EmployeeListRow[] = rowsRaw.map((r) => ({
-    id: r.id,
-    companyId: r.companyId,
-    name: r.name,
-    cpf: r.cpf,
-    email: r.email,
-    photoUrl: r.photoUrl,
-    cargo: r.cargo,
-    senioridade: r.senioridade as 'junior' | 'pleno' | 'senior',
-    jobFamily: r.jobFamily,
-    nivelHierarquico: r.nivelHierarquico,
-    departamento: r.departamento,
-    status: (r.status ?? 'ativo') as 'ativo' | 'inativo',
-    isRH: r.isRH === true,
-    isLider: r.isLider === true,
-    isResponsavelFinanceiro: r.isResponsavelFinanceiro === true,
-    dataAdmissao: r.dataAdmissao instanceof Date ? r.dataAdmissao : new Date(r.dataAdmissao),
-    createdAt: r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt ?? Date.now()),
-    liderName: r.liderName ?? null,
-    profileIndividualStatus: resolveProfileIndividualStatus(r.profileIndividualStatusRaw),
-  }));
+  const resolveLiderInfo = (
+    liderNameRaw: string | null,
+    clevelNameRaw: string | null,
+  ): { liderName: string | null; liderTipo: 'employee' | 'clevel' | null } => {
+    if (liderNameRaw !== null) {
+      return { liderName: liderNameRaw, liderTipo: 'employee' };
+    }
+    if (clevelNameRaw !== null) {
+      return { liderName: clevelNameRaw, liderTipo: 'clevel' };
+    }
+    return { liderName: null, liderTipo: null };
+  };
+
+  const rows: readonly EmployeeListRow[] = rowsRaw.map((r) => {
+    const liderInfo = resolveLiderInfo(r.liderName, r.clevelName);
+    return {
+      id: r.id,
+      companyId: r.companyId,
+      name: r.name,
+      cpf: r.cpf,
+      email: r.email,
+      photoUrl: r.photoUrl,
+      cargo: r.cargo,
+      senioridade: r.senioridade as 'junior' | 'pleno' | 'senior',
+      jobFamily: r.jobFamily,
+      nivelHierarquico: r.nivelHierarquico,
+      departamento: r.departamento,
+      status: (r.status ?? 'ativo') as 'ativo' | 'inativo',
+      isRH: r.isRH === true,
+      isLider: r.isLider === true,
+      isResponsavelFinanceiro: r.isResponsavelFinanceiro === true,
+      dataAdmissao: r.dataAdmissao instanceof Date ? r.dataAdmissao : new Date(r.dataAdmissao),
+      createdAt: r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt ?? Date.now()),
+      liderName: liderInfo.liderName,
+      liderTipo: liderInfo.liderTipo,
+      profileIndividualStatus: resolveProfileIndividualStatus(r.profileIndividualStatusRaw),
+    };
+  });
 
   return { rows, totalCount, filtersApplied: filters };
 }
