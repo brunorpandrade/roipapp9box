@@ -96,6 +96,14 @@ import {
   type Context,
 } from '../trpc';
 
+import {
+  LIST_EMPLOYEES_PAGE_SIZES,
+  LIST_EMPLOYEES_SORT_FIELDS,
+  LIST_EMPLOYEES_SORT_ORDERS,
+  listEmployeesPaginated,
+  PAPEL_FUNCIONAL_VALUES,
+} from '../services/employees';
+
 import type { LinhaErro, UploadResult } from './_shared/uploadResult';
 
 // ============================================================
@@ -1337,6 +1345,62 @@ export function upErroFacadeToLinhaErro(err: unknown, linha: number): LinhaErro 
 }
 
 // ============================================================
+// ME-076 canonica bit-exact — schema Zod da proc `list`
+// ============================================================
+
+/**
+ * §14.10 — schema canonico bit-exact do input da proc `employees.list`.
+ * Cobre 8 filtros §14.10 + §20 + busca global + ordenacao + paginacao.
+ * Todo campo com default canonico bit-exact — o consumidor pode omitir
+ * o objeto `filters` (Zod aplica o `.default({})` que resolve para os
+ * defaults por campo).
+ */
+export const LIST_EMPLOYEES_INPUT_SCHEMA = z.object({
+  companyId: z.number().int().positive(),
+  filters: z
+    .object({
+      busca: z.string().max(200).default(''),
+      departamento: z.enum(DEPARTAMENTO_VALUES).nullable().default(null),
+      liderId: z.number().int().positive().nullable().default(null),
+      nivelHierarquico: z.enum(NIVEL_HIERARQUICO_VALUES).nullable().default(null),
+      status: z.enum(['ativo', 'inativo', 'todos']).default('ativo'),
+      senioridade: z.enum(['junior', 'pleno', 'senior']).nullable().default(null),
+      jobFamily: z.enum(JOB_FAMILY_VALUES).nullable().default(null),
+      dataAdmissaoInicio: z.coerce.date().nullable().default(null),
+      dataAdmissaoFim: z.coerce.date().nullable().default(null),
+      dataCadastroInicio: z.coerce.date().nullable().default(null),
+      dataCadastroFim: z.coerce.date().nullable().default(null),
+      papelFuncional: z.enum(PAPEL_FUNCIONAL_VALUES).default('todos'),
+    })
+    .default({
+      busca: '',
+      departamento: null,
+      liderId: null,
+      nivelHierarquico: null,
+      status: 'ativo',
+      senioridade: null,
+      jobFamily: null,
+      dataAdmissaoInicio: null,
+      dataAdmissaoFim: null,
+      dataCadastroInicio: null,
+      dataCadastroFim: null,
+      papelFuncional: 'todos',
+    }),
+  sortBy: z.enum(LIST_EMPLOYEES_SORT_FIELDS).default('name'),
+  sortOrder: z.enum(LIST_EMPLOYEES_SORT_ORDERS).default('asc'),
+  page: z.number().int().positive().default(1),
+  pageSize: z
+    .number()
+    .int()
+    .refine(
+      (v): v is (typeof LIST_EMPLOYEES_PAGE_SIZES)[number] =>
+        (LIST_EMPLOYEES_PAGE_SIZES as readonly number[]).includes(v),
+      { message: 'pageSize deve ser 25, 50 ou 100' },
+    )
+    .default(50),
+});
+
+// ============================================================
 // Factory canonica do sub-router
 // ============================================================
 
@@ -1807,6 +1871,44 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           linhasErro,
           erros,
         };
+      }),
+
+    // --------------------------------------------------------
+    // employees.list — RH + Bruno (ME-076 canonica bit-exact)
+    // --------------------------------------------------------
+    // §14.10 — listagem paginada com 8 filtros + ordenacao + busca global
+    // + LEFT JOIN em `employeeLeaderHistory` (lider direto) + LEFT JOIN
+    // em `individualProfileAssessments` (status do Perfil Individual).
+    //
+    // Autorizacao canonica bit-exact §10.3 + §10.4: Bruno (via `/super-
+    // admin/empresa/[id]/…`) + RH puro + RH-Lider (via `/todos-os-
+    // colaboradores` — rota Bloco B9 futura). PC1a §11.1 aplicada para
+    // RH e RH-Lider (filtra C-levels; ausente na v1 pois `cLevelMembers`
+    // NAO participa desta ME por decisao canonica da ficha §3.3 do
+    // MASTER_ESCOPO_B8). Guard cruzado §2.4 via `assertCompanyScope`.
+    list: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+      .input(LIST_EMPLOYEES_INPUT_SCHEMA)
+      .query(async ({ ctx, input }) => {
+        assertCompanyScope(ctx.user, input.companyId);
+        const result = await listEmployeesPaginated(ctx.db, input.companyId, {
+          busca: input.filters.busca,
+          departamento: input.filters.departamento,
+          liderId: input.filters.liderId,
+          nivelHierarquico: input.filters.nivelHierarquico,
+          status: input.filters.status,
+          senioridade: input.filters.senioridade,
+          jobFamily: input.filters.jobFamily,
+          dataAdmissaoInicio: input.filters.dataAdmissaoInicio,
+          dataAdmissaoFim: input.filters.dataAdmissaoFim,
+          dataCadastroInicio: input.filters.dataCadastroInicio,
+          dataCadastroFim: input.filters.dataCadastroFim,
+          papelFuncional: input.filters.papelFuncional,
+          sortBy: input.sortBy,
+          sortOrder: input.sortOrder,
+          page: input.page,
+          pageSize: input.pageSize,
+        });
+        return result;
       }),
   });
 }
