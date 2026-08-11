@@ -692,28 +692,75 @@ export const MENU_CONFIG_BY_PROFILE: Record<ProfileKey, MenuConfig | null> = {
 
 // -----------------------------------------------------------------------
 // Resolvedor canonico com filtro condicional Responsavel financeiro (D5)
+// + substituicao canonica de placeholder `[id]` (D088, ME-074)
 // -----------------------------------------------------------------------
+
+/**
+ * Placeholder canonico usado nos hrefs de `MENU_SUPER_ADMIN_IN_COMPANY`
+ * (§3.2). Substituido pelo `companyId` real no consumidor via
+ * `resolveMenuItems(profileKey, isResponsavelFinanceiro, companyId)`.
+ *
+ * Debito canonico D088 (ME-074): o comentario da linha 194 declarava
+ * "Placeholder [id] na URL sera substituido pelo consumidor (ME-056)" —
+ * mas a substituicao nunca havia sido implementada. Consumidores atuais
+ * (`pendencias-portal/page.tsx`, `historico/page.tsx`) recebiam hrefs
+ * literais com `[id]` e a navegacao lateral do menu retornava 404.
+ * ME-074 canoniza a substituicao aqui.
+ */
+const COMPANY_ID_PLACEHOLDER = '[id]';
+
+/**
+ * Substitui bit-exact toda ocorrencia canonica do placeholder
+ * `[id]` no `href` de um item `MenuLinkItem` pelo `companyId` real,
+ * preservando bit-exact os `children` recursivamente. Puro; recebe
+ * `MenuLinkItem` e retorna novo `MenuLinkItem` estruturalmente igual
+ * exceto pelo href resolvido.
+ */
+function applyCompanyIdToLink(item: MenuLinkItem, companyId: number): MenuLinkItem {
+  const resolvedHref = item.href.split(COMPANY_ID_PLACEHOLDER).join(String(companyId));
+  if (item.children === undefined) {
+    return {
+      ...item,
+      href: resolvedHref,
+    };
+  }
+  return {
+    ...item,
+    href: resolvedHref,
+    children: item.children.map((child) => applyCompanyIdToLink(child, companyId)),
+  };
+}
 
 /**
  * Retorna a lista de itens de menu renderizavel para o perfil informado,
  * aplicando o filtro condicional "Faturamento da empresa" conforme
- * `isResponsavelFinanceiro` (DOC 02 §3.4 / S461/S463/S464/S465).
+ * `isResponsavelFinanceiro` (DOC 02 §3.4 / S461/S463/S464/S465) e, quando
+ * `companyId` presente, substituindo canonicamente o placeholder `[id]`
+ * nos hrefs (D088 — ME-074).
  *
  * Regra canonica: itens com `condition = 'isResponsavelFinanceiro'`
  * aparecem apenas quando `isResponsavelFinanceiro = true`. Itens sem
  * `condition` sao sempre incluidos. Separadores nao sao filtrados.
+ *
+ * Regra canonica D088 (ME-074): quando `companyId` presente, todo href
+ * de item de link (incluindo `children`) tem `[id]` substituido bit-exact
+ * por `String(companyId)`. Quando `companyId` ausente (undefined), os
+ * hrefs sao devolvidos literais — compatibilidade retroativa com os
+ * consumidores de `super_admin_global` (§3.1) e demais perfis que nao
+ * usam o placeholder.
  *
  * Colaborador puro (§3.10) retorna `null` — ausencia canonica de menu.
  */
 export function resolveMenuItems(
   profileKey: ProfileKey,
   isResponsavelFinanceiro: boolean,
+  companyId?: number,
 ): readonly MenuItem[] | null {
   const config = MENU_CONFIG_BY_PROFILE[profileKey];
   if (config === null) {
     return null;
   }
-  return config.filter((item) => {
+  const filtered = config.filter((item) => {
     if (item.type === 'separator') {
       return true;
     }
@@ -721,5 +768,14 @@ export function resolveMenuItems(
       return isResponsavelFinanceiro;
     }
     return true;
+  });
+  if (companyId === undefined) {
+    return filtered;
+  }
+  return filtered.map((item) => {
+    if (item.type === 'separator') {
+      return item;
+    }
+    return applyCompanyIdToLink(item, companyId);
   });
 }

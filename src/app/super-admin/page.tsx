@@ -41,6 +41,7 @@
 // `resolveProfileKey`, `resolveMenuItems` e `Layout`. Todos os quatro
 // nascem com consumidor real na propria ME-056.
 
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { JSX } from 'react';
@@ -573,8 +574,13 @@ export default async function SuperAdminGlobalPanel(
               <span>Data de cadastro</span>
             </div>
             {data.companiesList.map((c, i) => (
-              <div
+              // ME-074 §5.3 canonico bit-exact: linha inteira clicavel.
+              // "Clique em qualquer empresa (ativa ou inativa) abre
+              // diretamente a tela da empresa" (§5.3 linha 470 CAMADA_UI).
+              <Link
                 key={c.id}
+                href={`/super-admin/empresa/${c.id}`}
+                aria-label={`Abrir tela da empresa ${c.nomeFantasia}`}
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '2fr 1fr 100px 1fr 1fr',
@@ -583,6 +589,8 @@ export default async function SuperAdminGlobalPanel(
                   fontSize: 13,
                   borderTop: i === 0 ? 'none' : `1px solid ${COLORS.border.default}`,
                   color: COLORS.text.primary,
+                  textDecoration: 'none',
+                  cursor: 'pointer',
                 }}
               >
                 <span style={{ fontWeight: 500 }}>{c.nomeFantasia}</span>
@@ -597,7 +605,7 @@ export default async function SuperAdminGlobalPanel(
                 <span style={{ color: COLORS.text.tertiary, fontSize: 12 }}>
                   {c.createdAt !== null ? c.createdAt.toISOString().slice(0, 10) : '—'}
                 </span>
-              </div>
+              </Link>
             ))}
           </div>
         )}

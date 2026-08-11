@@ -108,7 +108,10 @@ export default async function HistoricoPage(props: PageProps): Promise<JSX.Eleme
       isSuperAdminInCompany: true,
     });
 
-    const menuItems = resolveMenuItems(profileKey, false);
+    // ME-074 D088: passa `companyId` para substituir placeholder canonico
+    // `[id]` nos hrefs do menu §3.2 — sem isso, cliques nos itens caem em
+    // rotas literais e retornam 404.
+    const menuItems = resolveMenuItems(profileKey, false, companyId);
     if (menuItems === null) {
       throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
     }
