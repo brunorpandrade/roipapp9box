@@ -40,6 +40,7 @@ import { createMonthlyClosureRouter } from './monthlyClosure';
 import { createMonthlyDataRouter } from './monthlyData';
 import { createNineBoxRouter } from './nineBox';
 import { createNr1Router } from './nr1';
+import { createOrgTreeRouter } from './orgTree';
 import { createPlatformLogsRouter } from './platformLogs';
 import { createPlenitudeRouter } from './plenitude';
 import { createQuarterlyCalculationRouter } from './quarterlyCalculation';
@@ -508,6 +509,24 @@ const individualProfileRouter = createIndividualProfileRouter({
  */
 const nr1Router = createNr1Router();
 
+/**
+ * Sub-router `orgTree` (ME-077, Bloco B8 quarta rota). Superfície tRPC
+ * canônica bit-exact do organograma (CAMADA_UI §14.9 + §2.6, CAMADA_AUTH
+ * §10.4 + §11.2 PC1b + §11.7, CAMADA_NEGOCIO §15.7, CAMADA_DADOS §4.4-
+ * §4.6). 2 procs canônicas: `getFullTree` (árvore completa com raiz +
+ * C-levels + descendentes) e `getEmployeeSubtree` (sub-árvore sob
+ * demanda, D6 aprovada ME-077). Ambas retornam `applyPC1b: boolean`
+ * canônico bit-exact para o client controlar esmaecimento e tooltip
+ * §15.7 dos nós de C-level para RH/RH-Líder. Autorização §10.4: todos
+ * os perfis autenticados atravessam (super_admin, rh, rh_lider, clevel,
+ * lider). Guard canônico local `assertCompanyScopeOrgTree` reusa padrão
+ * consolidado (leaderOnboarding.ts:171). Reuso canônico bit-exact da
+ * fundação Patch 2 ME-076 (LEFT JOIN em cLevelMembers) e Patch 3 ME-076
+ * (ordenação alfabética pt-BR global). Factory sem parâmetros — sem
+ * motor injetável no MVP; DI reservada para modo analítico Fase 4.
+ */
+const orgTreeRouter = createOrgTreeRouter();
+
 /** Router raiz da plataforma. */
 export const appRouter = router({
   health: healthRouter,
@@ -539,6 +558,7 @@ export const appRouter = router({
   individualProfilePlaceholders: individualProfilePlaceholdersRouter,
   individualProfile: individualProfileRouter,
   nr1: nr1Router,
+  orgTree: orgTreeRouter,
   aiChat: aiChatRouter,
   exports: exportsRouter,
 });

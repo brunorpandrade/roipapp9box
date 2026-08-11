@@ -127,7 +127,7 @@ describe('DAL filters + mappings — CC043 (mockup prevalece)', () => {
       const r = parseDALFiltersFromSearchParams({ de: '2026-01-01', ate: '2026-06-30' });
       expect(r.periodoInicio).toBeInstanceOf(Date);
       expect(r.periodoFim).toBeInstanceOf(Date);
-      expect(r.periodoInicio!.getFullYear()).toBe(2026);
+      expect(r.periodoInicio!.getUTCFullYear()).toBe(2026);
     });
 
     it('de invalido → null', () => {
