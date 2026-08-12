@@ -1,9 +1,9 @@
 // ROIP APP 9BOX — client component canônico bit-exact da rota Bruno
-// `/super-admin/empresa/[id]/clevel/[cLevelId]/editar` (§13.3, ME-078a).
+// `/super-admin/empresa/[id]/clevel/[cLevelId]/editar` (§13.3, ME-078a;
+// refatorado em ME-078b-refactor — fetch tRPC → server actions canônicas).
 //
 // Thin wrapper sobre `CLevelForm` no modo `edit`. Gerencia modais:
-// - modalInativacao (D8 canônica — sem liderados: opera; com liderados:
-//   bloqueador "transferência disponível a partir da ME-078b").
+// - modalInativacao (D8 canônica).
 // - modalDeletar (confirmação de nome — §16.4 deleção canônica).
 // - modalDirty (descartar alterações).
 // - Botão `[Reativar]` quando status='inativo'.
@@ -19,6 +19,12 @@ import { COLORS } from '../../../../../../../lib/design-tokens/colors';
 import type { GetByIdCLevelResult } from '../../../../../../../server/routers/cLevelMembers';
 
 import { CLevelForm, type CLevelFormValues } from '../../CLevelForm';
+import {
+  atualizarCLevelAction,
+  excluirCLevelAction,
+  inativarCLevelAction,
+  reativarCLevelAction,
+} from './actions';
 
 // -----------------------------------------------------------------------
 // Tooltip canônico S503
@@ -159,30 +165,20 @@ export function CLevelEditarClient(props: Props): JSX.Element {
     setSaving(true);
     setErrorMsg(null);
     try {
-      const res = await fetch('/api/trpc/cLevelMembers.update', {
-        credentials: 'include',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cLevelId: clevel.id,
-          name: v.name.trim(),
-          email: v.email.trim(),
-          photoUrl: v.photoUrl.trim().length > 0 ? v.photoUrl.trim() : undefined,
-          dataNascimento: v.dataNascimento,
-          cargo: v.cargo.trim(),
-          descricaoCargo: v.descricaoCargo.trim(),
-          departamento: v.departamento,
-          custoMensal: Number(v.custoMensal),
-          acessoTotal: v.acessoTotal,
-        }),
+      const result = await atualizarCLevelAction({
+        cLevelId: clevel.id,
+        name: v.name.trim(),
+        email: v.email.trim(),
+        photoUrl: v.photoUrl.trim().length > 0 ? v.photoUrl.trim() : undefined,
+        dataNascimento: v.dataNascimento,
+        cargo: v.cargo.trim(),
+        descricaoCargo: v.descricaoCargo.trim(),
+        departamento: v.departamento,
+        custoMensal: Number(v.custoMensal),
+        acessoTotal: v.acessoTotal,
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        const msg =
-          body && typeof body === 'object' && 'error' in body
-            ? String((body as { error?: { message?: string } }).error?.message ?? 'Erro.')
-            : 'Erro ao salvar alterações.';
-        setErrorMsg(msg);
+      if (!result.ok) {
+        setErrorMsg(result.message);
         setSaving(false);
         return;
       }
@@ -197,19 +193,11 @@ export function CLevelEditarClient(props: Props): JSX.Element {
   const handleInativar = useCallback(async () => {
     setErrorMsg(null);
     try {
-      const res = await fetch('/api/trpc/cLevelMembers.inactivate', {
-        credentials: 'include',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cLevelId: clevel.id }),
+      const result = await inativarCLevelAction({
+        cLevelId: clevel.id,
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        const msg =
-          body && typeof body === 'object' && 'error' in body
-            ? String((body as { error?: { message?: string } }).error?.message ?? 'Erro.')
-            : 'Erro ao inativar.';
-        setErrorMsg(msg);
+      if (!result.ok) {
+        setErrorMsg(result.message);
         setShowInativarModal(false);
         return;
       }
@@ -223,14 +211,11 @@ export function CLevelEditarClient(props: Props): JSX.Element {
   const handleReativar = useCallback(async () => {
     setErrorMsg(null);
     try {
-      const res = await fetch('/api/trpc/cLevelMembers.reactivate', {
-        credentials: 'include',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cLevelId: clevel.id }),
+      const result = await reativarCLevelAction({
+        cLevelId: clevel.id,
       });
-      if (!res.ok) {
-        setErrorMsg('Erro ao reativar.');
+      if (!result.ok) {
+        setErrorMsg(result.message);
         return;
       }
       router.push(`/super-admin/empresa/${companyId}/clevel-rh`);
@@ -242,19 +227,11 @@ export function CLevelEditarClient(props: Props): JSX.Element {
   const handleDeletar = useCallback(async () => {
     setErrorMsg(null);
     try {
-      const res = await fetch('/api/trpc/cLevelMembers.delete', {
-        credentials: 'include',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cLevelId: clevel.id }),
+      const result = await excluirCLevelAction({
+        cLevelId: clevel.id,
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        const msg =
-          body && typeof body === 'object' && 'error' in body
-            ? String((body as { error?: { message?: string } }).error?.message ?? 'Erro.')
-            : 'Erro ao deletar.';
-        setErrorMsg(msg);
+      if (!result.ok) {
+        setErrorMsg(result.message);
         setShowDeletarModal(false);
         return;
       }

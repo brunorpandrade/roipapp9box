@@ -31,6 +31,7 @@ import {
   type ColaboradorFormValues,
   type LiderCandidate,
 } from '../ColaboradorForm';
+import { criarColaboradorAction, definirRFAction, pesquisarLiderCandidatosAction } from './actions';
 
 interface Props {
   readonly companyId: number;
@@ -142,17 +143,12 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
 
   const handleSearchLider = useCallback(
     async (query: string): Promise<readonly LiderCandidate[]> => {
-      const params = new URLSearchParams({
-        input: JSON.stringify({ companyId, query }),
+      const result = await pesquisarLiderCandidatosAction({
+        companyId,
+        query,
       });
-      const res = await fetch(`/api/trpc/employees.searchLiderCandidates?${params.toString()}`, {
-        credentials: 'include',
-      });
-      if (!res.ok) return [];
-      const body = (await res.json()) as {
-        result?: { data?: { candidates?: readonly LiderCandidate[] } };
-      };
-      return body.result?.data?.candidates ?? [];
+      if (!result.ok) return [];
+      return result.data.candidates;
     },
     [companyId],
   );
@@ -180,7 +176,7 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
     rfJustificativa: string | null,
   ): Promise<boolean> {
     // Passo 1 — cria o colaborador via employees.create.
-    const createBody: Record<string, unknown> = {
+    const createRes = await criarColaboradorAction({
       companyId,
       name: v.name.trim(),
       cpf: v.cpf,
@@ -195,57 +191,29 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
       departamento: v.departamento,
       isRH: v.isRH,
       isLider: v.isLider,
-    };
-    if (v.email.trim().length > 0) {
-      createBody.email = v.email.trim();
-    }
-    if (v.liderInicial !== null) {
-      if (v.liderInicial.tipo === 'employee') {
-        createBody.liderInicialId = v.liderInicial.id;
-      } else {
-        createBody.liderInicialClevelId = v.liderInicial.id;
-      }
-    }
-
-    const createRes = await fetch('/api/trpc/employees.create', {
-      credentials: 'include',
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(createBody),
+      ...(v.email.trim().length > 0 ? { email: v.email.trim() } : {}),
+      ...(v.liderInicial !== null
+        ? v.liderInicial.tipo === 'employee'
+          ? { liderInicialId: v.liderInicial.id }
+          : { liderInicialClevelId: v.liderInicial.id }
+        : {}),
     });
     if (!createRes.ok) {
-      const body = (await createRes.json().catch(() => null)) as {
-        error?: { message?: string };
-      } | null;
-      setErrorMsg(body?.error?.message ?? 'Erro ao salvar colaborador.');
+      setErrorMsg(createRes.message);
       return false;
     }
-    const createJson = (await createRes.json()) as {
-      result?: { data?: { employeeId?: number } };
-    };
-    const newEmployeeId = createJson.result?.data?.employeeId;
+    const newEmployeeId = createRes.data.employeeId;
 
     // Passo 2 — se RF ativado, chama setResponsavelFinanceiro.
     if (v.isResponsavelFinanceiro && newEmployeeId !== undefined) {
-      const rfBody: Record<string, unknown> = {
+      const rfResult = await definirRFAction({
         companyId,
-        novoResponsavelTipo: 'employee',
-        novoResponsavelId: newEmployeeId,
-      };
-      if (rfJustificativa !== null) {
-        rfBody.justificativa = rfJustificativa;
-      }
-      const rfRes = await fetch('/api/trpc/company.setResponsavelFinanceiro', {
-        credentials: 'include',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(rfBody),
+        newHolderType: 'employee',
+        newHolderId: newEmployeeId,
+        ...(rfJustificativa !== null ? { justificativa: rfJustificativa } : {}),
       });
-      if (!rfRes.ok) {
-        const rfErrBody = (await rfRes.json().catch(() => null)) as {
-          error?: { message?: string };
-        } | null;
-        setRfModalError(rfErrBody?.error?.message ?? 'Erro ao atribuir Responsavel financeiro.');
+      if (!rfResult.ok) {
+        setRfModalError(rfResult.message);
         return false;
       }
     }

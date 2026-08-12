@@ -1,9 +1,10 @@
 // ROIP APP 9BOX — client component canônico bit-exact da rota Bruno
-// `/super-admin/empresa/[id]/clevel/novo` (§13.2, ME-078a).
+// `/super-admin/empresa/[id]/clevel/novo` (§13.2, ME-078a; refatorado
+// em ME-078b-refactor — fetch tRPC → server action canônica).
 //
 // Thin wrapper sobre `CLevelForm` no modo `create`. Gerencia estado do
-// form, handler de save via tRPC `cLevelMembers.create`, handler de
-// toggle RF (modal de transferência quando empresa já tem RF), modal
+// form, handler de save via server action `criarCLevelAction`, handler
+// de toggle RF (modal de transferência quando empresa já tem RF), modal
 // "Descartar alterações" (dirty), e navegação pós-sucesso.
 //
 // **RV-13.** Consumido por `page.tsx` (import + render).
@@ -16,6 +17,7 @@ import { useCallback, useRef, useState, type JSX } from 'react';
 import { COLORS } from '../../../../../../lib/design-tokens/colors';
 
 import { CLevelForm, EMPTY_CLEVEL_FORM_VALUES, type CLevelFormValues } from '../CLevelForm';
+import { criarCLevelAction } from './actions';
 
 // -----------------------------------------------------------------------
 // Tooltips canônicos bit-exact (S503)
@@ -142,32 +144,22 @@ export function CLevelNovoClient(props: Props): JSX.Element {
     setSaving(true);
     setErrorMsg(null);
     try {
-      const res = await fetch('/api/trpc/cLevelMembers.create', {
-        credentials: 'include',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          companyId,
-          name: v.name.trim(),
-          cpf: v.cpf,
-          email: v.email.trim(),
-          photoUrl: v.photoUrl.trim().length > 0 ? v.photoUrl.trim() : undefined,
-          dataNascimento: v.dataNascimento,
-          dataAdmissao: v.dataAdmissao,
-          cargo: v.cargo.trim(),
-          descricaoCargo: v.descricaoCargo.trim(),
-          departamento: v.departamento,
-          custoMensal: Number(v.custoMensal),
-          acessoTotal: isFirstCLevel ? true : v.acessoTotal,
-        }),
+      const result = await criarCLevelAction({
+        companyId,
+        name: v.name.trim(),
+        cpf: v.cpf,
+        email: v.email.trim(),
+        photoUrl: v.photoUrl.trim().length > 0 ? v.photoUrl.trim() : undefined,
+        dataNascimento: v.dataNascimento,
+        dataAdmissao: v.dataAdmissao,
+        cargo: v.cargo.trim(),
+        descricaoCargo: v.descricaoCargo.trim(),
+        departamento: v.departamento,
+        custoMensal: Number(v.custoMensal),
+        acessoTotal: isFirstCLevel ? true : v.acessoTotal,
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        const msg =
-          body && typeof body === 'object' && 'error' in body
-            ? String((body as { error?: { message?: string } }).error?.message ?? 'Erro ao salvar.')
-            : 'Erro ao salvar C-level.';
-        setErrorMsg(msg);
+      if (!result.ok) {
+        setErrorMsg(result.message);
         setSaving(false);
         return;
       }

@@ -22,15 +22,13 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useRef, useState, type JSX } from 'react';
 
 import { COLORS } from '../../../../../../../lib/design-tokens/colors';
-import type {
-  GetByIdEmployeeResult,
-  LiderCandidateRow,
-} from '../../../../../../../server/routers/employees';
+import type { GetByIdEmployeeResult } from '../../../../../../../server/routers/employees';
 
 import { ModalInativacaoMotivoSaida } from '../../../_shared/ModalInativacaoMotivoSaida';
 import {
   ModalTransferenciaLiderados,
   type CandidateOption,
+  type LideradoToTransfer,
   type TransferMapping,
 } from '../../../_shared/ModalTransferenciaLiderados';
 import { ModalTransferenciaRF } from '../../../_shared/ModalTransferenciaRF';
@@ -41,6 +39,18 @@ import {
   type JobFamilyId,
   type LiderCandidate,
 } from '../../ColaboradorForm';
+import {
+  atualizarColaboradorAction,
+  buscarCandidatosTransferenciaAction,
+  definirRFEditarAction,
+  excluirColaboradorAction,
+  executarTransferenciaAction,
+  inativarColaboradorAction,
+  listarLideradosAction,
+  pesquisarLiderCandidatosEditarAction,
+  reativarColaboradorAction,
+  verificarInativacaoAction,
+} from './actions';
 
 interface Props {
   readonly companyId: number;
@@ -206,9 +216,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
 
   const [showM2Modal, setShowM2Modal] = useState(false);
   const [m2Candidates, setM2Candidates] = useState<readonly CandidateOption[]>([]);
-  const [m2Liderados, setM2Liderados] = useState<
-    readonly { employeeId: number; name: string; cargo: string; departamento: string }[]
-  >([]);
+  const [m2Liderados, setM2Liderados] = useState<readonly LideradoToTransfer[]>([]);
   const [m2MotivoSelecionado, setM2MotivoSelecionado] = useState<
     'voluntario' | 'involuntario' | null
   >(null);
@@ -230,21 +238,13 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
 
   const handleSearchLider = useCallback(
     async (query: string): Promise<readonly LiderCandidate[]> => {
-      const params = new URLSearchParams({
-        input: JSON.stringify({
-          companyId,
-          query,
-          excludeEmployeeId: initialEmployee.id,
-        }),
+      const result = await pesquisarLiderCandidatosEditarAction({
+        companyId,
+        query,
+        excludeEmployeeId: initialEmployee.id,
       });
-      const res = await fetch(`/api/trpc/employees.searchLiderCandidates?${params.toString()}`, {
-        credentials: 'include',
-      });
-      if (!res.ok) return [];
-      const body = (await res.json()) as {
-        result?: { data?: { candidates?: readonly LiderCandidateRow[] } };
-      };
-      return body.result?.data?.candidates ?? [];
+      if (!result.ok) return [];
+      return result.data.candidates;
     },
     [companyId, initialEmployee.id],
   );
@@ -277,43 +277,39 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
     if (v.isLider !== initialEmployee.isLider) patch.isLider = v.isLider;
 
     if (Object.keys(patch).length > 1) {
-      const res = await fetch('/api/trpc/employees.update', {
-        credentials: 'include',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as {
-          error?: { message?: string };
-        } | null;
-        setErrorMsg(body?.error?.message ?? 'Erro ao salvar alteracoes.');
+      const updateResult = await atualizarColaboradorAction(
+        patch as {
+          employeeId: number;
+          name?: string;
+          email?: string;
+          dataNascimento?: string;
+          cargo?: string;
+          cbo?: string;
+          descricaoCBO?: string;
+          jobFamily?: string;
+          senioridade?: string;
+          nivelHierarquico?: string;
+          departamento?: string;
+          isRH?: boolean;
+          isLider?: boolean;
+        },
+      );
+      if (!updateResult.ok) {
+        setErrorMsg(updateResult.message);
         return false;
       }
     }
 
-    // Toggle RF alterado (ativado, desativado ou transferido).
     if (v.isResponsavelFinanceiro !== initialEmployee.isResponsavelFinanceiro) {
       if (v.isResponsavelFinanceiro) {
-        const rfBody: Record<string, unknown> = {
+        const rfResult = await definirRFEditarAction({
           companyId,
-          novoResponsavelTipo: 'employee',
-          novoResponsavelId: initialEmployee.id,
-        };
-        if (rfJustificativa !== null) {
-          rfBody.justificativa = rfJustificativa;
-        }
-        const rfRes = await fetch('/api/trpc/company.setResponsavelFinanceiro', {
-          credentials: 'include',
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(rfBody),
+          newHolderType: 'employee',
+          newHolderId: initialEmployee.id,
+          ...(rfJustificativa !== null ? { justificativa: rfJustificativa } : {}),
         });
-        if (!rfRes.ok) {
-          const rfErrBody = (await rfRes.json().catch(() => null)) as {
-            error?: { message?: string };
-          } | null;
-          setRfModalError(rfErrBody?.error?.message ?? 'Erro ao atribuir RF.');
+        if (!rfResult.ok) {
+          setRfModalError(rfResult.message);
           return false;
         }
       }
@@ -369,20 +365,14 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
       return;
     }
     if (initialEmployee.isLider && initialEmployee.countActiveLiderados > 0) {
-      const canRes = await fetch('/api/trpc/leadershipTransfer.canInactivate', {
-        credentials: 'include',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employeeId: initialEmployee.id }),
+      const canResult = await verificarInativacaoAction({
+        employeeId: initialEmployee.id,
       });
-      if (!canRes.ok) {
+      if (!canResult.ok) {
         setErrorMsg('Falha ao verificar elegibilidade da transferencia de liderados.');
         return;
       }
-      const canBody = (await canRes.json()) as {
-        result?: { data?: { canInactivate?: boolean } };
-      };
-      if (canBody.result?.data?.canInactivate !== true) {
+      if (canResult.data.canInactivate !== true) {
         setShowBlockerModal(true);
         return;
       }
@@ -392,20 +382,12 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
 
   const executeInactivate = useCallback(
     async (motivoSaida: 'voluntario' | 'involuntario') => {
-      const res = await fetch('/api/trpc/employees.inactivate', {
-        credentials: 'include',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          employeeId: initialEmployee.id,
-          motivoSaida,
-        }),
+      const result = await inativarColaboradorAction({
+        employeeId: initialEmployee.id,
+        motivoSaida,
       });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as {
-          error?: { message?: string };
-        } | null;
-        setErrorMsg(body?.error?.message ?? 'Erro ao inativar colaborador.');
+      if (!result.ok) {
+        setErrorMsg(result.message);
         return false;
       }
       return true;
@@ -419,27 +401,36 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
       justificativa: string,
       motivoSaida: 'voluntario' | 'involuntario',
     ) => {
-      const body = {
-        employeeId: initialEmployee.id,
-        mappings: mappings.map((m) => ({
-          liderado_employeeId: m.liderado_employeeId,
-          novo_lider_tipo: m.novo_lider_tipo,
-          novo_lider_id: m.novo_lider_id,
+      // Traduzir TransferMapping → formato Zod EXECUTE_INPUT_SCHEMA.
+      // Mapear 'clevel' → 'cLevel' (§14.3 polimorfismo canônico).
+      const mapeamento = mappings.map((m) => ({
+        lideradoId: m.liderado_employeeId,
+        novoLiderId: m.novo_lider_id,
+        novoLiderTipo: (m.novo_lider_tipo === 'clevel' ? 'cLevel' : 'employee') as
+          'employee' | 'cLevel',
+      }));
+      // Candidatos Grupo 4: novos líderes que são non-leaders
+      // (identificados pelo group='nao_lider' nos m2Candidates).
+      const g4Ids = new Set<number>();
+      for (const m of mappings) {
+        if (m.novo_lider_tipo === 'employee') {
+          const cand = m2Candidates.find(
+            (c) => c.id === m.novo_lider_id && c.tipo === 'employee' && c.group === 'nao_lider',
+          );
+          if (cand) g4Ids.add(cand.id);
+        }
+      }
+      const result = await executarTransferenciaAction({
+        liderOriginalId: initialEmployee.id,
+        mapeamento,
+        candidatosGrupo4: [...g4Ids].map((id) => ({
+          candidatoId: id,
         })),
         reason: justificativa,
         motivoSaida,
-      };
-      const res = await fetch('/api/trpc/leadershipTransfer.execute', {
-        credentials: 'include',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
       });
-      if (!res.ok) {
-        const errBody = (await res.json().catch(() => null)) as {
-          error?: { message?: string };
-        } | null;
-        setM2Error(errBody?.error?.message ?? 'Erro ao executar transferencia.');
+      if (!result.ok) {
+        setM2Error(result.message);
         return false;
       }
       return true;
@@ -455,39 +446,86 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
         setShowMotivoModal(false);
         setSaving(true);
         try {
-          const [candRes, liderRes] = await Promise.all([
-            fetch('/api/trpc/leadershipTransfer.getCandidates', {
-              credentials: 'include',
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ employeeId: initialEmployee.id }),
+          const [candResult, liderResult] = await Promise.all([
+            buscarCandidatosTransferenciaAction({
+              employeeId: initialEmployee.id,
+              companyId,
+              tentativaLiderados: [],
             }),
-            fetch(
-              `/api/trpc/leadershipTransfer.listLiderados?${new URLSearchParams({
-                input: JSON.stringify({ employeeId: initialEmployee.id }),
-              }).toString()}`,
-            ),
+            listarLideradosAction({
+              employeeId: initialEmployee.id,
+            }),
           ]);
-          if (candRes.ok) {
-            const candBody = (await candRes.json()) as {
-              result?: { data?: { candidates?: readonly CandidateOption[] } };
-            };
-            setM2Candidates(candBody.result?.data?.candidates ?? []);
+          if (candResult.ok) {
+            // Flatten dos 5 grupos canônicos → CandidateOption[] flat.
+            // Mapeamento tipo 'cLevel' → 'clevel' (interface do modal).
+            const g = candResult.data;
+            const flat: CandidateOption[] = [];
+            for (const item of g.grupo1_cLevelsAtivos) {
+              flat.push({
+                tipo: 'clevel',
+                id: item.id,
+                name: item.name,
+                cargo: item.cargo,
+                departamento: item.departamento,
+                group: 'clevel_ativo',
+                countLiderados: item.liderados,
+              });
+            }
+            for (const item of g.grupo2_mesmoDepartamento) {
+              flat.push({
+                tipo: 'employee',
+                id: item.id,
+                name: item.name,
+                cargo: item.cargo,
+                departamento: item.departamento,
+                group: 'mesmo_departamento',
+                countLiderados: item.liderados,
+              });
+            }
+            for (const item of g.grupo3_demaisLideres) {
+              flat.push({
+                tipo: 'employee',
+                id: item.id,
+                name: item.name,
+                cargo: item.cargo,
+                departamento: item.departamento,
+                group: 'demais_lideres',
+                countLiderados: item.liderados,
+              });
+            }
+            for (const item of g.grupo4_colaboradoresNaoLideres) {
+              flat.push({
+                tipo: 'employee',
+                id: item.id,
+                name: item.name,
+                cargo: item.cargo,
+                departamento: item.departamento,
+                group: 'nao_lider',
+                countLiderados: item.liderados,
+              });
+            }
+            for (const item of g.grupo5_liderasDestaTransferencia) {
+              flat.push({
+                tipo: 'employee',
+                id: item.id,
+                name: item.name,
+                cargo: item.cargo,
+                departamento: item.departamento,
+                group: 'condicional',
+                countLiderados: item.liderados,
+              });
+            }
+            setM2Candidates(flat);
           }
-          if (liderRes.ok) {
-            const liderBody = (await liderRes.json()) as {
-              result?: {
-                data?: {
-                  liderados?: readonly {
-                    employeeId: number;
-                    name: string;
-                    cargo: string;
-                    departamento: string;
-                  }[];
-                };
-              };
-            };
-            setM2Liderados(liderBody.result?.data?.liderados ?? []);
+          if (liderResult.ok) {
+            const liderados: LideradoToTransfer[] = liderResult.data.map((r) => ({
+              employeeId: r.employeeId,
+              name: r.name,
+              cargo: r.cargo,
+              departamento: r.departamento,
+            }));
+            setM2Liderados(liderados);
           }
           setShowM2Modal(true);
         } finally {
@@ -531,17 +569,11 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
     setSaving(true);
     setErrorMsg(null);
     try {
-      const res = await fetch('/api/trpc/employees.reactivate', {
-        credentials: 'include',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employeeId: initialEmployee.id }),
+      const result = await reativarColaboradorAction({
+        employeeId: initialEmployee.id,
       });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as {
-          error?: { message?: string };
-        } | null;
-        setErrorMsg(body?.error?.message ?? 'Erro ao reativar colaborador.');
+      if (!result.ok) {
+        setErrorMsg(result.message);
         return;
       }
       setSuccessMsg('Colaborador reativado com sucesso.');
@@ -556,17 +588,11 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
     setSaving(true);
     setErrorMsg(null);
     try {
-      const res = await fetch('/api/trpc/employees.delete', {
-        credentials: 'include',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employeeId: initialEmployee.id }),
+      const result = await excluirColaboradorAction({
+        employeeId: initialEmployee.id,
       });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as {
-          error?: { message?: string };
-        } | null;
-        setErrorMsg(body?.error?.message ?? 'Erro ao deletar colaborador.');
+      if (!result.ok) {
+        setErrorMsg(result.message);
         return;
       }
       router.push(`/super-admin/empresa/${companyId}/todos-os-colaboradores`);
