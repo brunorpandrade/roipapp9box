@@ -318,6 +318,7 @@ function baseCreatePayload(companyId: number) {
     email: 'novo@roip.local',
     dataNascimento: new Date('1995-05-05'),
     dataAdmissao: new Date('2024-01-01'),
+    cargo: 'Analista Comercial',
     cbo: '252505',
     descricaoCBO: 'Analista Comercial',
     jobFamily: 'vendas_comercial' as const,

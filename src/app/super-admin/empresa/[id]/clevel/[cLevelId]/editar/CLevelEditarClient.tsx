@@ -160,6 +160,7 @@ export function CLevelEditarClient(props: Props): JSX.Element {
     setErrorMsg(null);
     try {
       const res = await fetch('/api/trpc/cLevelMembers.update', {
+        credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -197,6 +198,7 @@ export function CLevelEditarClient(props: Props): JSX.Element {
     setErrorMsg(null);
     try {
       const res = await fetch('/api/trpc/cLevelMembers.inactivate', {
+        credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cLevelId: clevel.id }),
@@ -222,6 +224,7 @@ export function CLevelEditarClient(props: Props): JSX.Element {
     setErrorMsg(null);
     try {
       const res = await fetch('/api/trpc/cLevelMembers.reactivate', {
+        credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cLevelId: clevel.id }),
@@ -240,6 +243,7 @@ export function CLevelEditarClient(props: Props): JSX.Element {
     setErrorMsg(null);
     try {
       const res = await fetch('/api/trpc/cLevelMembers.delete', {
+        credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cLevelId: clevel.id }),

@@ -32,7 +32,8 @@
 //   - `getIniciaisFromName` → `CLevelRHClient.tsx` + testes.
 //   - `CLEVEL_RH_TABS` → `CLevelRHClient.tsx`.
 //   - `parseTabParam` → `page.tsx`.
-//   - `CADASTRAR_RH_UNAVAILABLE_TOOLTIP` → `CLevelRHClient.tsx`.
+//   - `CLEVEL_RH_TABS` → `CLevelRHClient.tsx`.
+//   - `getIniciaisFromName` → `CLevelRHClient.tsx`.
 //
 // **RV-14.** Um statement por linha, largura máxima 100 colunas.
 
@@ -53,9 +54,9 @@ export const CLEVEL_RH_TAB_DEFAULT: CLevelRHTab = 'clevels';
  * §13.9 — tooltip canônico bit-exact do botão `[+ Cadastrar novo RH]`
  * na Aba 2, renderizado DESABILITADO no MVP até ME-078b canonicamente
  * entregue (rota `/colaborador/novo?preset=rh`). Precedente canônico
- * S503.
+ * S503. ME-078b FECHADA — botão convertido em Link ativo; constante
+ * removida (RV-13).
  */
-export const CADASTRAR_RH_UNAVAILABLE_TOOLTIP = 'Disponivel apos ME-078b.' as const;
 
 // -----------------------------------------------------------------------
 // Helpers de string canônicos

@@ -76,6 +76,7 @@ import {
   JOB_FAMILY_VALUES,
   MOTIVO_TERMINATION_VALUES,
   NIVEL_HIERARQUICO_VALUES,
+  cLevelMembers,
   employeeGoals,
   employeeLeaderHistory,
   employeeTerminationEvents,
@@ -120,6 +121,9 @@ export const NAME_MAX_LENGTH = 255 as const;
 export const EMAIL_MAX_LENGTH = 255 as const;
 
 /** §4.5 — VARCHAR(10) canonico do codigo CBO. */
+/** ME-078b D1 canonico — VARCHAR(100) do `employees.cargo` (§4.5). */
+export const CARGO_MAX_LENGTH = 100 as const;
+
 export const CBO_MAX_LENGTH = 10 as const;
 
 /** §4.5 — VARCHAR(255) canonico da descricao CBO. */
@@ -403,24 +407,39 @@ const dateFieldSchema = z.union([z.date(), z.string().transform((v) => new Date(
  * esta rota (S127). `isRH` opcional (default false); a autorizacao
  * (Bruno-exclusivo para ativar) e validada no handler.
  */
-export const CREATE_EMPLOYEE_INPUT_SCHEMA = z.object({
-  companyId: z.number().int().positive(),
-  name: z.string().min(1).max(NAME_MAX_LENGTH),
-  cpf: CPF_SCHEMA_EMP,
-  email: emailSchema.optional(),
-  photoUrl: z.string().url().max(PHOTO_URL_MAX_LENGTH).optional(),
-  dataNascimento: dateFieldSchema,
-  dataAdmissao: dateFieldSchema,
-  cbo: z.string().min(1).max(CBO_MAX_LENGTH),
-  descricaoCBO: z.string().min(1).max(DESCRICAO_CBO_MAX_LENGTH),
-  jobFamily: z.enum(JOB_FAMILY_VALUES),
-  senioridade: z.enum(['junior', 'pleno', 'senior']),
-  nivelHierarquico: z.enum(NIVEL_HIERARQUICO_VALUES),
-  departamento: z.enum(DEPARTAMENTO_VALUES),
-  isRH: z.boolean().optional(),
-  isLider: z.boolean().optional(),
-  liderInicialId: z.number().int().positive().optional(),
-});
+export const CREATE_EMPLOYEE_INPUT_SCHEMA = z
+  .object({
+    companyId: z.number().int().positive(),
+    name: z.string().min(1).max(NAME_MAX_LENGTH),
+    cpf: CPF_SCHEMA_EMP,
+    email: emailSchema.optional(),
+    photoUrl: z.string().url().max(PHOTO_URL_MAX_LENGTH).optional(),
+    dataNascimento: dateFieldSchema,
+    dataAdmissao: dateFieldSchema,
+    // ME-078b D1 canonico — Cargo obrigatorio (mockup §13.4 + CAMADA_UI §13.4
+    // Secao 2 + CAMADA_DADOS §4.5 canonico documental). Semanticamente
+    // distinto de `descricaoCBO` (Cargo = titulo livre; descricaoCBO =
+    // descricao oficial da tabela CBO federal).
+    cargo: z.string().min(1).max(CARGO_MAX_LENGTH),
+    cbo: z.string().min(1).max(CBO_MAX_LENGTH),
+    descricaoCBO: z.string().min(1).max(DESCRICAO_CBO_MAX_LENGTH),
+    jobFamily: z.enum(JOB_FAMILY_VALUES),
+    senioridade: z.enum(['junior', 'pleno', 'senior']),
+    nivelHierarquico: z.enum(NIVEL_HIERARQUICO_VALUES),
+    departamento: z.enum(DEPARTAMENTO_VALUES),
+    isRH: z.boolean().optional(),
+    isLider: z.boolean().optional(),
+    // ME-078b D6 canonico — lider inicial polimorfico. Exatamente um dos dois
+    // pode ser informado (nunca ambos). `liderInicialId` aponta para
+    // `employees.id` com `isLider=true`; `liderInicialClevelId` aponta para
+    // `cLevelMembers.id` ativo. Padrao canonico do §14.3 CAMADA_NEGOCIO
+    // (autocomplete inclui C-LEVELS ATIVOS como Grupo 1).
+    liderInicialId: z.number().int().positive().optional(),
+    liderInicialClevelId: z.number().int().positive().optional(),
+  })
+  .refine((v) => !(v.liderInicialId !== undefined && v.liderInicialClevelId !== undefined), {
+    message: 'Informe apenas um entre liderInicialId e liderInicialClevelId.',
+  });
 
 /**
  * §4.5 — input canonico de `employees.update`. Campos permitidos apenas.
@@ -436,6 +455,8 @@ export const UPDATE_EMPLOYEE_INPUT_SCHEMA = z
     email: emailSchema.optional(),
     photoUrl: z.string().url().max(PHOTO_URL_MAX_LENGTH).optional(),
     dataNascimento: dateFieldSchema.optional(),
+    // ME-078b D1 canonico — Cargo editavel.
+    cargo: z.string().min(1).max(CARGO_MAX_LENGTH).optional(),
     cbo: z.string().min(1).max(CBO_MAX_LENGTH).optional(),
     descricaoCBO: z.string().min(1).max(DESCRICAO_CBO_MAX_LENGTH).optional(),
     jobFamily: z.enum(JOB_FAMILY_VALUES).optional(),
@@ -759,6 +780,38 @@ export async function assertLiderAtivoDaEmpresa(
 }
 
 /**
+ * ME-078b D6 canonico — assert equivalente para lider inicial C-level
+ * (padrao polimorfico §14.3 CAMADA_NEGOCIO Grupo 1). Retorna void ou
+ * lanca BAD_REQUEST canonico com a mesma mensagem reutilizada
+ * `MSG_LIDER_INICIAL_INVALIDO` (superficie unica de UX).
+ */
+export async function assertClevelAtivoDaEmpresa(
+  db: RoipDatabase,
+  companyId: number,
+  clevelId: number,
+): Promise<void> {
+  const rows = await db
+    .select({
+      id: cLevelMembers.id,
+      companyId: cLevelMembers.companyId,
+      status: cLevelMembers.status,
+    })
+    .from(cLevelMembers)
+    .where(eq(cLevelMembers.id, clevelId))
+    .limit(1);
+  const row = rows[0];
+  if (!row) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_LIDER_INICIAL_INVALIDO });
+  }
+  if (row.companyId !== companyId) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_LIDER_INICIAL_INVALIDO });
+  }
+  if (row.status !== 'ativo') {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_LIDER_INICIAL_INVALIDO });
+  }
+}
+
+/**
  * Salvaguarda: converte errno do mysql2 em TRPCError canonico. Cobre
  * (a) UNIQUE duplicado no INSERT (`uq_employee_cpf`) → CONFLICT
  * `MSG_CPF_DUPLICADO`; (b) ROW REFERENCED no DELETE → CONFLICT
@@ -801,6 +854,8 @@ export function buildEmployeeInsertPayload(
     photoUrl: input.photoUrl,
     dataNascimento: input.dataNascimento,
     dataAdmissao: input.dataAdmissao,
+    // ME-078b D1 canonico — cargo obrigatorio.
+    cargo: input.cargo,
     cbo: input.cbo,
     descricaoCBO: input.descricaoCBO,
     jobFamily: input.jobFamily,
@@ -1297,6 +1352,7 @@ export async function parseEmployeesUpload(
         email: emailNormalizado,
         dataNascimento: dtNasc,
         dataAdmissao: dtAdm,
+        cargo: descCBO,
         cbo,
         descricaoCBO: descCBO,
         jobFamily,
@@ -1433,8 +1489,8 @@ export interface ListRHResult {
  * §5.4 + ME-078a — listagem canonica bit-exact para Aba 2 do
  * `/clevel-rh`. Retorna colaboradores com `isRH=true`, ordenados por
  * `status='ativo'` primeiro (alfa pt-BR dentro de cada bloco).
- * "Cargo" no §5.4 canonico bit-exact do RH corresponde a
- * `descricaoCBO` do schema (nao ha coluna `cargo` em `employees`).
+ * ME-078b D1 canonizada: `Cargo` corresponde agora ao `employees.cargo`
+ * real (VARCHAR(100) NOT NULL, adicionada em migration 0002).
  */
 export async function listRHForCompany(db: RoipDatabase, companyId: number): Promise<ListRHResult> {
   const rowsRaw = await db
@@ -1442,7 +1498,7 @@ export async function listRHForCompany(db: RoipDatabase, companyId: number): Pro
       id: employees.id,
       name: employees.name,
       photoUrl: employees.photoUrl,
-      descricaoCBO: employees.descricaoCBO,
+      cargo: employees.cargo,
       departamento: employees.departamento,
       isLider: employees.isLider,
       isResponsavelFinanceiro: employees.isResponsavelFinanceiro,
@@ -1459,7 +1515,7 @@ export async function listRHForCompany(db: RoipDatabase, companyId: number): Pro
       id: row.id,
       name: row.name,
       photoUrl: row.photoUrl,
-      cargo: row.descricaoCBO,
+      cargo: row.cargo,
       departamento: row.departamento,
       isLider: row.isLider === true,
       isResponsavelFinanceiro: row.isResponsavelFinanceiro,
@@ -1480,6 +1536,266 @@ export async function listRHForCompany(db: RoipDatabase, companyId: number): Pro
     totalActive: ativos.length,
     totalInactive: inativos.length,
   };
+}
+
+// ============================================================
+// ME-078b — getById + searchLiderCandidates (D11 + D6 canonicos)
+// ============================================================
+
+/** ME-078b D11 — input canonico de `employees.getById` (pre-populacao form editar). */
+export const GET_BY_ID_EMPLOYEE_INPUT_SCHEMA = z.object({
+  employeeId: z.number().int().positive(),
+});
+
+/** ME-078b D6 — input canonico de `employees.searchLiderCandidates`. */
+export const SEARCH_LIDER_CANDIDATES_INPUT_SCHEMA = z.object({
+  companyId: z.number().int().positive(),
+  /** Termo de busca opcional; se ausente retorna ate 50 primeiros. */
+  query: z.string().max(120).optional(),
+  /** Excluir opcionalmente `employees.id` alvo (evita auto-lideranca no edit). */
+  excludeEmployeeId: z.number().int().positive().optional(),
+});
+
+/** ME-078b D11 — vinculo canonico ativo em `employeeLeaderHistory` (dataFim IS NULL). */
+export interface CurrentLiderInicial {
+  readonly tipo: 'employee' | 'clevel';
+  readonly id: number;
+  readonly name: string;
+  readonly cargo: string;
+  readonly departamento: string;
+}
+
+/** ME-078b D11 — retorno canonico completo do `employees.getById`. */
+export interface GetByIdEmployeeResult {
+  readonly id: number;
+  readonly companyId: number;
+  readonly name: string;
+  readonly cpf: string;
+  readonly email: string | null;
+  readonly photoUrl: string | null;
+  readonly dataNascimento: Date;
+  readonly dataAdmissao: Date;
+  readonly cargo: string;
+  readonly cbo: string;
+  readonly descricaoCBO: string;
+  readonly jobFamily: (typeof JOB_FAMILY_VALUES)[number];
+  readonly senioridade: 'junior' | 'pleno' | 'senior';
+  readonly nivelHierarquico: (typeof NIVEL_HIERARQUICO_VALUES)[number];
+  readonly departamento: (typeof DEPARTAMENTO_VALUES)[number];
+  readonly status: 'ativo' | 'inativo';
+  readonly isRH: boolean;
+  readonly isLider: boolean;
+  readonly isResponsavelFinanceiro: boolean;
+  readonly passwordSet: boolean;
+  readonly currentLiderInicial: CurrentLiderInicial | null;
+  /** Bloco §5.6 — nota canonica RF ativa no titular. */
+  readonly isCurrentRF: boolean;
+  /** Bloco §16.4 — sinal para exibir botao [Deletar permanentemente] Bruno. */
+  readonly hasTerminationEvents: boolean;
+  /** Bloco §14.9 — sinal para roteamento inativacao via M2 v2 (`isLider=true` E count>0). */
+  readonly countActiveLiderados: number;
+}
+
+/** ME-078b D6 — linha canonica bit-exact do autocomplete de lider inicial. */
+export interface LiderCandidateRow {
+  readonly tipo: 'employee' | 'clevel';
+  readonly id: number;
+  readonly name: string;
+  readonly cargo: string;
+  readonly departamento: string;
+}
+
+/** ME-078b D6 — retorno canonico de `searchLiderCandidates`. */
+export interface SearchLiderCandidatesResult {
+  readonly candidates: readonly LiderCandidateRow[];
+}
+
+/**
+ * ME-078b D11 — carrega colaborador por id + agrega vinculos e flags
+ * derivadas necessarias para pre-popular o formulario de edicao (§13.5)
+ * e rotear modais de inativacao / delecao / RF. Retorna `null` quando
+ * inexistente para permitir `notFound()` na page server component.
+ */
+export async function getEmployeeById(
+  db: RoipDatabase,
+  employeeId: number,
+): Promise<GetByIdEmployeeResult | null> {
+  const rows = await db.select().from(employees).where(eq(employees.id, employeeId)).limit(1);
+  const row = rows[0];
+  if (!row) {
+    return null;
+  }
+
+  // Vinculo ativo de lider direto (§14.10 dataFim IS NULL) — polimorfico.
+  const historyRows = await db
+    .select({
+      liderId: employeeLeaderHistory.liderId,
+      clevelId: employeeLeaderHistory.clevelId,
+    })
+    .from(employeeLeaderHistory)
+    .where(
+      and(eq(employeeLeaderHistory.employeeId, employeeId), isNull(employeeLeaderHistory.dataFim)),
+    )
+    .limit(1);
+
+  let currentLiderInicial: CurrentLiderInicial | null = null;
+  const hist = historyRows[0];
+  if (hist) {
+    if (hist.liderId !== null) {
+      const liderRows = await db
+        .select({
+          id: employees.id,
+          name: employees.name,
+          cargo: employees.cargo,
+          departamento: employees.departamento,
+        })
+        .from(employees)
+        .where(eq(employees.id, hist.liderId))
+        .limit(1);
+      const liderRow = liderRows[0];
+      if (liderRow) {
+        currentLiderInicial = {
+          tipo: 'employee',
+          id: liderRow.id,
+          name: liderRow.name,
+          cargo: liderRow.cargo,
+          departamento: liderRow.departamento,
+        };
+      }
+    } else if (hist.clevelId !== null) {
+      const clRows = await db
+        .select({
+          id: cLevelMembers.id,
+          name: cLevelMembers.name,
+          cargo: cLevelMembers.cargo,
+          departamento: cLevelMembers.departamento,
+        })
+        .from(cLevelMembers)
+        .where(eq(cLevelMembers.id, hist.clevelId))
+        .limit(1);
+      const clRow = clRows[0];
+      if (clRow) {
+        currentLiderInicial = {
+          tipo: 'clevel',
+          id: clRow.id,
+          name: clRow.name,
+          cargo: clRow.cargo,
+          departamento: clRow.departamento,
+        };
+      }
+    }
+  }
+
+  // Contagem canonica de liderados ativos (§14.9 Passo 0 canInactivate).
+  const countLiderados = await countActiveLiderados(db, employeeId);
+
+  // Sinal binario para botao [Deletar permanentemente] (§16.4).
+  const hasTerm = await hasHistoricoAnalitico(db, employeeId);
+
+  return {
+    id: row.id,
+    companyId: row.companyId,
+    name: row.name,
+    cpf: row.cpf,
+    email: row.email,
+    photoUrl: row.photoUrl,
+    dataNascimento: row.dataNascimento,
+    dataAdmissao: row.dataAdmissao,
+    cargo: row.cargo,
+    cbo: row.cbo,
+    descricaoCBO: row.descricaoCBO,
+    jobFamily: row.jobFamily,
+    senioridade: row.senioridade,
+    nivelHierarquico: row.nivelHierarquico,
+    departamento: row.departamento,
+    status: row.status ?? 'ativo',
+    isRH: row.isRH === true,
+    isLider: row.isLider === true,
+    isResponsavelFinanceiro: row.isResponsavelFinanceiro,
+    passwordSet: row.passwordSet === true,
+    currentLiderInicial,
+    isCurrentRF: row.isResponsavelFinanceiro,
+    hasTerminationEvents: hasTerm,
+    countActiveLiderados: countLiderados,
+  };
+}
+
+/**
+ * ME-078b D6 — busca candidatos elegiveis a serem lider direto no
+ * cadastro/edicao (§14.3 CAMADA_NEGOCIO Grupo 1 C-LEVELS + Grupo 2/3
+ * lideres). Retorna union employees.isLider=true ativos + cLevelMembers
+ * ativos, filtrados por termo de busca em `name` OU `cargo` (case-
+ * insensitive) e ordenados alfabeticamente com C-levels primeiro.
+ * Limite de 50 resultados (autocomplete UI-friendly).
+ */
+export async function searchLiderCandidatesForCompany(
+  db: RoipDatabase,
+  companyId: number,
+  query: string | undefined,
+  excludeEmployeeId: number | undefined,
+): Promise<SearchLiderCandidatesResult> {
+  const normalizedQuery = query?.trim().toLowerCase();
+  const applyFilter = (name: string, cargo: string): boolean => {
+    if (normalizedQuery === undefined || normalizedQuery.length === 0) return true;
+    return (
+      name.toLowerCase().includes(normalizedQuery) || cargo.toLowerCase().includes(normalizedQuery)
+    );
+  };
+
+  const clevels = await db
+    .select({
+      id: cLevelMembers.id,
+      name: cLevelMembers.name,
+      cargo: cLevelMembers.cargo,
+      departamento: cLevelMembers.departamento,
+    })
+    .from(cLevelMembers)
+    .where(and(eq(cLevelMembers.companyId, companyId), eq(cLevelMembers.status, 'ativo')))
+    .orderBy(asc(cLevelMembers.name));
+
+  const lideres = await db
+    .select({
+      id: employees.id,
+      name: employees.name,
+      cargo: employees.cargo,
+      departamento: employees.departamento,
+    })
+    .from(employees)
+    .where(
+      and(
+        eq(employees.companyId, companyId),
+        eq(employees.isLider, true),
+        eq(employees.status, 'ativo'),
+      ),
+    )
+    .orderBy(asc(employees.name));
+
+  const candidates: LiderCandidateRow[] = [];
+  for (const c of clevels) {
+    if (applyFilter(c.name, c.cargo)) {
+      candidates.push({
+        tipo: 'clevel',
+        id: c.id,
+        name: c.name,
+        cargo: c.cargo,
+        departamento: c.departamento,
+      });
+    }
+  }
+  for (const l of lideres) {
+    if (excludeEmployeeId !== undefined && l.id === excludeEmployeeId) continue;
+    if (applyFilter(l.name, l.cargo)) {
+      candidates.push({
+        tipo: 'employee',
+        id: l.id,
+        name: l.name,
+        cargo: l.cargo,
+        departamento: l.departamento,
+      });
+    }
+  }
+
+  return { candidates: candidates.slice(0, 50) };
 }
 
 // ============================================================
@@ -1514,6 +1830,9 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
         if (input.liderInicialId !== undefined) {
           await assertLiderAtivoDaEmpresa(ctx.db, input.companyId, input.liderInicialId);
         }
+        if (input.liderInicialClevelId !== undefined) {
+          await assertClevelAtivoDaEmpresa(ctx.db, input.companyId, input.liderInicialClevelId);
+        }
 
         try {
           return await ctx.db.transaction(async (tx) => {
@@ -1545,14 +1864,18 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
             const placeholderId = placeholderInserted.id;
 
             let leaderHistoryId: number | null = null;
-            if (input.liderInicialId !== undefined) {
+            // ME-078b D6 canonico — polimorfismo lider inicial: employee ou
+            // C-level (nunca ambos — assert do refine no zod schema).
+            const hasLiderEmployee = input.liderInicialId !== undefined;
+            const hasLiderClevel = input.liderInicialClevelId !== undefined;
+            if (hasLiderEmployee || hasLiderClevel) {
               const dataInicio = new Date(now().toISOString().slice(0, 10));
               const [historyInserted] = await tx
                 .insert(employeeLeaderHistory)
                 .values({
                   employeeId,
-                  liderId: input.liderInicialId,
-                  clevelId: null,
+                  liderId: hasLiderEmployee ? (input.liderInicialId as number) : null,
+                  clevelId: hasLiderClevel ? (input.liderInicialClevelId as number) : null,
                   dataInicio,
                   dataFim: null,
                   reason: REASON_CADASTRO_INICIAL,
@@ -1626,6 +1949,8 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
         if (input.email !== undefined) patch.email = input.email;
         if (input.photoUrl !== undefined) patch.photoUrl = input.photoUrl;
         if (input.dataNascimento !== undefined) patch.dataNascimento = input.dataNascimento;
+        // ME-078b D1 canonico — cargo editavel.
+        if (input.cargo !== undefined) patch.cargo = input.cargo;
         if (input.cbo !== undefined) patch.cbo = input.cbo;
         if (input.descricaoCBO !== undefined) patch.descricaoCBO = input.descricaoCBO;
         if (input.jobFamily !== undefined) patch.jobFamily = input.jobFamily;
@@ -2007,6 +2332,46 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
       .query(async ({ ctx, input }): Promise<ListRHResult> => {
         assertCompanyScope(ctx.user, input.companyId);
         return await listRHForCompany(ctx.db, input.companyId);
+      }),
+
+    // --------------------------------------------------------
+    // ME-078b D11 — employees.getById
+    // --------------------------------------------------------
+    // §13.5 canonico + §16 canonico — carrega colaborador por id com
+    // vinculos derivados (lider inicial ativo polimorfico, countActive-
+    // Liderados, hasTerminationEvents, isCurrentRF). Autorizacao
+    // canonica §10.9: Bruno + RH da empresa. Guard cruzado §2.4 via
+    // `assertCompanyScope` apos leitura para restringir escopo.
+    getById: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+      .input(GET_BY_ID_EMPLOYEE_INPUT_SCHEMA)
+      .query(async ({ ctx, input }): Promise<GetByIdEmployeeResult> => {
+        const result = await getEmployeeById(ctx.db, input.employeeId);
+        if (result === null) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: MSG_EMPLOYEE_NAO_ENCONTRADO });
+        }
+        assertCompanyScope(ctx.user, result.companyId);
+        return result;
+      }),
+
+    // --------------------------------------------------------
+    // ME-078b D6 — employees.searchLiderCandidates
+    // --------------------------------------------------------
+    // §14.3 CAMADA_NEGOCIO — union canonica de candidatos elegiveis a
+    // lider direto (C-LEVELS ATIVOS + LIDERES ATIVOS). Consumido pelo
+    // autocomplete de "Lider direto" no ColaboradorForm (§13.4). Nunca
+    // inclui colaboradores nao-lider (Grupo 4 exige modal secundario de
+    // promocao — canonizado em M2 v2 §13.8, nao aplicavel ao cadastro
+    // inicial). Autorizacao canonica §10.9 + §10.3.
+    searchLiderCandidates: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+      .input(SEARCH_LIDER_CANDIDATES_INPUT_SCHEMA)
+      .query(async ({ ctx, input }): Promise<SearchLiderCandidatesResult> => {
+        assertCompanyScope(ctx.user, input.companyId);
+        return await searchLiderCandidatesForCompany(
+          ctx.db,
+          input.companyId,
+          input.query,
+          input.excludeEmployeeId,
+        );
       }),
   });
 }

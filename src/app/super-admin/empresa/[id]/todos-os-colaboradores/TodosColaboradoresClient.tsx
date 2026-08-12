@@ -33,6 +33,8 @@
 
 import { useCallback, useMemo, useState, type CSSProperties, type JSX } from 'react';
 
+import Link from 'next/link';
+
 import { COLORS } from '../../../../../lib/design-tokens/colors';
 import {
   DEPARTAMENTO_VALUES,
@@ -124,27 +126,6 @@ const BTN_OUTLINE_DISABLED: CSSProperties = {
   color: COLORS.text.quaternary,
   cursor: 'not-allowed',
   background: '#F9FAFB',
-};
-
-const BTN_PRIMARY: CSSProperties = {
-  background: COLORS.accent.teal,
-  color: '#FFFFFF',
-  border: `1px solid ${COLORS.accent.teal}`,
-  padding: '7px 12px',
-  borderRadius: 8,
-  fontSize: 12,
-  fontWeight: 600,
-  cursor: 'pointer',
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 6,
-};
-
-const BTN_PRIMARY_DISABLED: CSSProperties = {
-  ...BTN_PRIMARY,
-  background: '#9CD5CB',
-  border: '1px solid #9CD5CB',
-  cursor: 'not-allowed',
 };
 
 const FILTROS_TITLE: CSSProperties = {
@@ -712,15 +693,22 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
           >
             📤 Importar em massa
           </button>
-          <button
-            type="button"
-            disabled
-            style={BTN_PRIMARY_DISABLED}
-            title="Disponível após ME-078"
-            aria-label="Cadastrar colaborador (disponível após ME-078)"
+          <Link
+            href={`/super-admin/empresa/${companyId}/colaborador/novo`}
+            style={{
+              padding: '10px 20px',
+              fontSize: 14,
+              fontWeight: 500,
+              border: `1px solid ${COLORS.accent.teal}`,
+              borderRadius: 6,
+              background: COLORS.accent.teal,
+              color: '#FFFFFF',
+              textDecoration: 'none',
+              display: 'inline-block',
+            }}
           >
             + Cadastrar colaborador
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -957,7 +945,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                     {renderSortableTh('Data de cadastro', 'createdAt', filters, handleSortClick)}
                   </tr>
                 </thead>
-                <tbody>{result.rows.map(renderRow)}</tbody>
+                <tbody>{result.rows.map((row) => renderRow(row, companyId))}</tbody>
               </table>
             </div>
             <div style={PAGINATION_BAR}>
@@ -1040,7 +1028,7 @@ function renderSortableTh(
   );
 }
 
-function renderRow(row: EmployeeListRow): JSX.Element {
+function renderRow(row: EmployeeListRow, companyId: number): JSX.Element {
   const avatarColor = hashNameToColor(row.name);
   const iniciais = getIniciaisFromName(row.name);
   const nivelStyle = getNivelBadgeStyle(row.nivelHierarquico);
@@ -1087,9 +1075,18 @@ function renderRow(row: EmployeeListRow): JSX.Element {
             : row.liderName}
       </td>
       <td style={TD_STYLE}>
-        <span style={{ color: COLORS.text.tertiary, fontSize: 11 }} title="Disponível após ME-078">
+        <Link
+          href={`/super-admin/empresa/${companyId}/colaborador/${row.id}/editar`}
+          style={{
+            color: COLORS.accent.teal,
+            fontSize: 14,
+            textDecoration: 'none',
+          }}
+          title="Ver ficha do colaborador"
+          aria-label={`Ver ficha de ${row.name}`}
+        >
           📇
-        </span>
+        </Link>
       </td>
       <td style={TD_STYLE}>
         <span style={piStyle}>{PROFILE_INDIVIDUAL_STATUS_LABELS[row.profileIndividualStatus]}</span>

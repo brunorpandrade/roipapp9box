@@ -26,12 +26,7 @@ import { COLORS } from '../../../../../lib/design-tokens/colors';
 import type { CLevelListRow, ListCLevelResult } from '../../../../../server/routers/cLevelMembers';
 import type { ListRHResult, RHListRow } from '../../../../../server/routers/employees';
 
-import {
-  CADASTRAR_RH_UNAVAILABLE_TOOLTIP,
-  CLEVEL_RH_TABS,
-  getIniciaisFromName,
-  type CLevelRHTab,
-} from './internals';
+import { CLEVEL_RH_TABS, getIniciaisFromName, type CLevelRHTab } from './internals';
 
 interface Props {
   readonly companyId: number;
@@ -104,13 +99,6 @@ const BUTTON_PRIMARY_STYLE = {
   display: 'inline-flex',
   alignItems: 'center' as const,
   gap: 6,
-};
-
-const BUTTON_DISABLED_STYLE = {
-  ...BUTTON_PRIMARY_STYLE,
-  background: COLORS.background.elevated,
-  color: COLORS.text.quaternary,
-  cursor: 'not-allowed' as const,
 };
 
 // -----------------------------------------------------------------------
@@ -266,11 +254,12 @@ function CLevelsTab(props: {
 // -----------------------------------------------------------------------
 
 function RHTab(props: {
+  readonly companyId: number;
   readonly rows: readonly RHListRow[];
   readonly totalActive: number;
   readonly totalInactive: number;
 }): JSX.Element {
-  const { rows, totalActive, totalInactive } = props;
+  const { companyId, rows, totalActive, totalInactive } = props;
   return (
     <div style={{ ...CARD_STYLE, display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div
@@ -288,14 +277,12 @@ function RHTab(props: {
             {totalActive} ativo(s) · {totalInactive} inativo(s)
           </div>
         </div>
-        <button
-          type="button"
-          disabled
-          title={CADASTRAR_RH_UNAVAILABLE_TOOLTIP}
-          style={BUTTON_DISABLED_STYLE}
+        <Link
+          href={`/super-admin/empresa/${companyId}/colaborador/novo?preset=rh`}
+          style={BUTTON_PRIMARY_STYLE}
         >
           + Cadastrar novo RH
-        </button>
+        </Link>
       </div>
 
       {rows.length === 0 ? (
@@ -324,13 +311,20 @@ function RHTab(props: {
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.id}>
+                <tr key={row.id} style={{ cursor: 'pointer' }}>
                   <td style={TD_STYLE}>{renderAvatar(row.name, row.photoUrl)}</td>
                   <td style={TD_STYLE}>
-                    <span style={{ fontWeight: 500 }}>
+                    <Link
+                      href={`/super-admin/empresa/${companyId}/colaborador/${row.id}/editar`}
+                      style={{
+                        color: COLORS.text.primary,
+                        textDecoration: 'none',
+                        fontWeight: 500,
+                      }}
+                    >
                       {row.name}
                       {renderRFBadge(row.isResponsavelFinanceiro)}
-                    </span>
+                    </Link>
                   </td>
                   <td style={TD_STYLE}>{row.cargo}</td>
                   <td style={TD_STYLE}>{row.departamento}</td>
@@ -411,6 +405,7 @@ export function CLevelRHClient(props: Props): JSX.Element {
         />
       ) : (
         <RHTab
+          companyId={companyId}
           rows={initialRHs.rows}
           totalActive={initialRHs.totalActive}
           totalInactive={initialRHs.totalInactive}

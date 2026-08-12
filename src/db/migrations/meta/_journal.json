@@ -15,6 +15,13 @@
       "when": 1754783100000,
       "tag": "0001_add_is_demo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1754960000000,
+      "tag": "0002_add_cargo_to_employees",
+      "breakpoints": true
     }
   ]
 }

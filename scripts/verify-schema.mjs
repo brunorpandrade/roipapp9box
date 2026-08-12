@@ -436,12 +436,13 @@ function main() {
   console.log(`Total de FKs na migration: ${totalSqlFks}`);
   console.log(`Total de FKs em tables.ts: ${totalTsFks}`);
 
-  // Invariantes canonicos (§20). Colunas atualizado para 693 em ME-068
-  // (adicao de `companies.isDemo` — E-068-11).
-  if (totalSqlCols !== 693) {
+  // Invariantes canonicos (§20). Colunas atualizado para 694 em ME-078b
+  // (adicao de `companies.isDemo` — E-068-11; adicao de `employees.cargo`
+  // — ME-078b D1 canonico).
+  if (totalSqlCols !== 694) {
     console.log(
       `${YELLOW}AVISO:${RESET} migration tem ${totalSqlCols} colunas; ` +
-        `canonico §20 pos-ME-068 = 693.`,
+        `canonico §20 pos-ME-078b = 694.`,
     );
   }
   if (totalSqlFks !== 107) {

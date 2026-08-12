@@ -175,6 +175,7 @@ export const employees = mysqlTable(
     photoUrl: varchar('photoUrl', { length: 500 }),
     dataNascimento: date('dataNascimento').notNull(),
     dataAdmissao: date('dataAdmissao').notNull(),
+    cargo: varchar('cargo', { length: 100 }).notNull().default(''),
     cbo: varchar('cbo', { length: 10 }).notNull(),
     descricaoCBO: varchar('descricaoCBO', { length: 255 }).notNull(),
     jobFamily: mysqlEnum('jobFamily', JOB_FAMILY_VALUES).notNull(),
