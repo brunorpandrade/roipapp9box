@@ -1,9 +1,10 @@
-// ROIP APP 9BOX — sub-router `cLevelMembers` (ME-043).
+// ROIP APP 9BOX — sub-router `cLevelMembers` (ME-043 + ME-078a).
 //
-// Segunda superficie tRPC de ESCRITA canonica sobre a tabela
-// `cLevelMembers` (DOC 01 §4.4). Cobre 5 procs do §16.7 do DOC 03,
-// todas Bruno EXCLUSIVO (DOC 02 §12):
+// Segunda superficie tRPC canonica sobre a tabela `cLevelMembers`
+// (DOC 01 §4.4). Cobre 5 procs de ESCRITA + 3 procs de LEITURA
+// (ME-078a) do §16.7 do DOC 03, todas Bruno EXCLUSIVO (DOC 02 §12):
 //
+// ESCRITA (ME-043 canonicamente preservada bit-exact):
 //   - `cLevelMembers.create`     — transacao atomica: INSERT
 //     `cLevelMembers` + INSERT `individualProfilePlaceholders`
 //     (userType='clevel', status='pendente' — §10.12).
@@ -22,6 +23,21 @@
 //     DELETE do C-level. Erros de FK residuais convertidos em CONFLICT
 //     canonico (salvaguarda).
 //
+// LEITURA (ME-078a canonizada bit-exact):
+//   - `cLevelMembers.list`        — SELECT canonico para Aba 1 do
+//     `/clevel-rh` (§5.4 + §3.5 Master). Retorna ativos + inativos
+//     com colunas Foto/Nome/Cargo/Departamento/Familia (nao existe
+//     coluna `familia` em `cLevelMembers` — canonicamente omitida ate
+//     que Bruno pinte por dedicacao — retorna null)/acessoTotal/RF/Status.
+//     Ordenacao canonica bit-exact por `status='ativo'` primeiro (alfa
+//     pt-BR dentro de cada bloco).
+//   - `cLevelMembers.getById`     — SELECT single row para pre-populacao
+//     do form de edicao (§13.3). Guard cruzado companyId + NOT_FOUND
+//     canonico.
+//   - `cLevelMembers.countActive` — COUNT canonico para deteccao do
+//     "primeiro C-level ativo" (§13.2 banner Contexto A) e "unico C-level
+//     cadastrado" (§13.3 banner Contexto A). Retorna number.
+//
 // Fora do escopo (S127):
 //   - `isResponsavelFinanceiro=true` em `create` ou `update` sobe
 //     BAD_REQUEST canonico.
@@ -35,7 +51,7 @@
 // uma statement por linha (RV-14).
 
 import { TRPCError } from '@trpc/server';
-import { and, count, eq } from 'drizzle-orm';
+import { and, asc, count, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { RoipDatabase } from '../../db/client';
@@ -205,6 +221,24 @@ export const DELETE_CLEVEL_INPUT_SCHEMA = z.object({
   cLevelId: z.number().int().positive(),
 });
 
+/** §5.4 — input canonico de `cLevelMembers.list` (Aba 1 do /clevel-rh). */
+export const LIST_CLEVEL_INPUT_SCHEMA = z.object({
+  companyId: z.number().int().positive(),
+});
+
+/** §13.3 — input canonico de `cLevelMembers.getById` (pre-populacao form). */
+export const GET_BY_ID_CLEVEL_INPUT_SCHEMA = z.object({
+  cLevelId: z.number().int().positive(),
+});
+
+/**
+ * §13.2 + §13.3 — input canonico de `cLevelMembers.countActive`
+ * (deteccao Contexto A "primeiro/unico C-level").
+ */
+export const COUNT_ACTIVE_CLEVEL_INPUT_SCHEMA = z.object({
+  companyId: z.number().int().positive(),
+});
+
 // ============================================================
 // Tipos publicos exportados (RV-13 — testados)
 // ============================================================
@@ -237,6 +271,49 @@ export interface ReactivateCLevelResult {
 export interface DeleteCLevelResult {
   cLevelId: number;
   deleted: boolean;
+}
+
+/** §5.4 — linha canonica bit-exact do retorno do `list` (Aba 1 /clevel-rh). */
+export interface CLevelListRow {
+  readonly id: number;
+  readonly name: string;
+  readonly photoUrl: string | null;
+  readonly cargo: string;
+  readonly departamento: string;
+  readonly acessoTotal: boolean;
+  readonly isResponsavelFinanceiro: boolean;
+  readonly status: 'ativo' | 'inativo';
+}
+
+/** §5.4 — retorno canonico do `list`. */
+export interface ListCLevelResult {
+  readonly rows: readonly CLevelListRow[];
+  readonly totalActive: number;
+  readonly totalInactive: number;
+}
+
+/** §13.3 — retorno canonico completo do `getById`. */
+export interface GetByIdCLevelResult {
+  readonly id: number;
+  readonly companyId: number;
+  readonly name: string;
+  readonly cpf: string;
+  readonly email: string;
+  readonly photoUrl: string | null;
+  readonly dataNascimento: Date;
+  readonly dataAdmissao: Date;
+  readonly cargo: string;
+  readonly descricaoCargo: string;
+  readonly departamento: string;
+  readonly custoMensal: string;
+  readonly acessoTotal: boolean;
+  readonly isResponsavelFinanceiro: boolean;
+  readonly status: 'ativo' | 'inativo';
+}
+
+/** §13.2 + §13.3 — retorno canonico do `countActive`. */
+export interface CountActiveCLevelResult {
+  readonly count: number;
 }
 
 // ============================================================
@@ -361,6 +438,120 @@ export function buildCLevelInsertPayload(
     acessoTotal: input.acessoTotal,
     isResponsavelFinanceiro: false,
   };
+}
+
+// ============================================================
+// Helpers de LEITURA canonicos ME-078a (RV-13 consumidos por procs)
+// ============================================================
+
+/**
+ * §5.4 + ME-078a — listagem canonica bit-exact para Aba 1 do `/clevel-rh`.
+ * Retorna todos C-levels (ativos + inativos) com ordenacao canonica:
+ * ativos primeiro (asc por name), inativos depois (asc por name).
+ * Ordem alfabetica pt-BR sensivel a acentos aplicada em cada bloco via
+ * `localeCompare('pt-BR')` na assemble.
+ */
+export async function listCLevelsForCompany(
+  db: RoipDatabase,
+  companyId: number,
+): Promise<ListCLevelResult> {
+  const rowsRaw = await db
+    .select({
+      id: cLevelMembers.id,
+      name: cLevelMembers.name,
+      photoUrl: cLevelMembers.photoUrl,
+      cargo: cLevelMembers.cargo,
+      departamento: cLevelMembers.departamento,
+      acessoTotal: cLevelMembers.acessoTotal,
+      isResponsavelFinanceiro: cLevelMembers.isResponsavelFinanceiro,
+      status: cLevelMembers.status,
+    })
+    .from(cLevelMembers)
+    .where(eq(cLevelMembers.companyId, companyId))
+    .orderBy(asc(cLevelMembers.name));
+
+  const ativos: CLevelListRow[] = [];
+  const inativos: CLevelListRow[] = [];
+  for (const row of rowsRaw) {
+    const normalized: CLevelListRow = {
+      id: row.id,
+      name: row.name,
+      photoUrl: row.photoUrl,
+      cargo: row.cargo,
+      departamento: row.departamento,
+      acessoTotal: row.acessoTotal === true,
+      isResponsavelFinanceiro: row.isResponsavelFinanceiro,
+      status: row.status ?? 'ativo',
+    };
+    if (normalized.status === 'ativo') {
+      ativos.push(normalized);
+    } else {
+      inativos.push(normalized);
+    }
+  }
+  const collator = new Intl.Collator('pt-BR', { sensitivity: 'base' });
+  ativos.sort((a, b) => collator.compare(a.name, b.name));
+  inativos.sort((a, b) => collator.compare(a.name, b.name));
+
+  return {
+    rows: [...ativos, ...inativos],
+    totalActive: ativos.length,
+    totalInactive: inativos.length,
+  };
+}
+
+/**
+ * §13.3 + ME-078a — busca C-level canonico bit-exact pelo id (para
+ * pre-populacao do form de edicao). Retorna null quando nao encontrado
+ * (o handler tRPC converte para NOT_FOUND canonico).
+ */
+export async function findCLevelById(
+  db: RoipDatabase,
+  cLevelId: number,
+): Promise<GetByIdCLevelResult | null> {
+  const rows = await db.select().from(cLevelMembers).where(eq(cLevelMembers.id, cLevelId)).limit(1);
+  const row = rows[0];
+  if (row === undefined) {
+    return null;
+  }
+  return {
+    id: row.id,
+    companyId: row.companyId,
+    name: row.name,
+    cpf: row.cpf,
+    email: row.email,
+    photoUrl: row.photoUrl,
+    dataNascimento: row.dataNascimento,
+    dataAdmissao: row.dataAdmissao,
+    cargo: row.cargo,
+    descricaoCargo: row.descricaoCargo,
+    departamento: row.departamento,
+    custoMensal: row.custoMensal,
+    acessoTotal: row.acessoTotal === true,
+    isResponsavelFinanceiro: row.isResponsavelFinanceiro,
+    status: row.status ?? 'ativo',
+  };
+}
+
+/**
+ * §13.2 + §13.3 + ME-078a — conta C-levels ativos da empresa. Consumido
+ * pelo loader server-side das rotas `/clevel/novo` e `/clevel/[id]/editar`
+ * para detectar bit-exact os banners Contexto A (primeiro C-level ativo)
+ * e Contexto A' (unico C-level cadastrado).
+ */
+export async function countActiveCLevelsForCompany(
+  db: RoipDatabase,
+  companyId: number,
+): Promise<number> {
+  const rows = await db
+    .select({ n: count() })
+    .from(cLevelMembers)
+    .where(and(eq(cLevelMembers.companyId, companyId), eq(cLevelMembers.status, 'ativo')));
+  const row = rows[0];
+  if (row === undefined) {
+    return 0;
+  }
+  return Number(row.n);
 }
 
 // ============================================================
@@ -561,6 +752,41 @@ export function createCLevelMembersRouter(deps: CLevelMembersRouterDeps = {}) {
           }
           rethrowMysqlErrorCl(err);
         }
+      }),
+
+    // --------------------------------------------------------
+    // cLevelMembers.list — Bruno EXCLUSIVO (ME-078a) — Aba 1 /clevel-rh
+    // --------------------------------------------------------
+    list: roleProcedure(['super_admin'])
+      .input(LIST_CLEVEL_INPUT_SCHEMA)
+      .query(async ({ ctx, input }): Promise<ListCLevelResult> => {
+        assertCompanyScopeCl(ctx.user, input.companyId);
+        return await listCLevelsForCompany(ctx.db, input.companyId);
+      }),
+
+    // --------------------------------------------------------
+    // cLevelMembers.getById — Bruno EXCLUSIVO (ME-078a) — /clevel/[id]/editar
+    // --------------------------------------------------------
+    getById: roleProcedure(['super_admin'])
+      .input(GET_BY_ID_CLEVEL_INPUT_SCHEMA)
+      .query(async ({ ctx, input }): Promise<GetByIdCLevelResult> => {
+        const result = await findCLevelById(ctx.db, input.cLevelId);
+        if (result === null) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: MSG_CLEVEL_NAO_ENCONTRADO });
+        }
+        assertCompanyScopeCl(ctx.user, result.companyId);
+        return result;
+      }),
+
+    // --------------------------------------------------------
+    // cLevelMembers.countActive — Bruno EXCLUSIVO (ME-078a) — banner Contexto A
+    // --------------------------------------------------------
+    countActive: roleProcedure(['super_admin'])
+      .input(COUNT_ACTIVE_CLEVEL_INPUT_SCHEMA)
+      .query(async ({ ctx, input }): Promise<CountActiveCLevelResult> => {
+        assertCompanyScopeCl(ctx.user, input.companyId);
+        const n = await countActiveCLevelsForCompany(ctx.db, input.companyId);
+        return { count: n };
       }),
   });
 }

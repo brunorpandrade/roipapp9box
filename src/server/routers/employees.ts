@@ -64,7 +64,7 @@
 //   - Uma statement por linha (RV-14).
 
 import { TRPCError } from '@trpc/server';
-import { and, count, eq, isNull } from 'drizzle-orm';
+import { and, asc, count, eq, isNull } from 'drizzle-orm';
 import ExcelJS from 'exceljs';
 import { Readable } from 'node:stream';
 import { z } from 'zod';
@@ -1402,6 +1402,86 @@ export const LIST_EMPLOYEES_INPUT_SCHEMA = z.object({
     .default(50),
 });
 
+/**
+ * §5.4 + ME-078a — input canonico de `employees.listRH` (Aba 2 do
+ * `/clevel-rh`). Retorna colaboradores com `isRH=true` da empresa.
+ */
+export const LIST_RH_INPUT_SCHEMA = z.object({
+  companyId: z.number().int().positive(),
+});
+
+/** §5.4 + ME-078a — linha canonica bit-exact do retorno do `listRH`. */
+export interface RHListRow {
+  readonly id: number;
+  readonly name: string;
+  readonly photoUrl: string | null;
+  readonly cargo: string;
+  readonly departamento: string;
+  readonly isLider: boolean;
+  readonly isResponsavelFinanceiro: boolean;
+  readonly status: 'ativo' | 'inativo';
+}
+
+/** §5.4 + ME-078a — retorno canonico do `listRH`. */
+export interface ListRHResult {
+  readonly rows: readonly RHListRow[];
+  readonly totalActive: number;
+  readonly totalInactive: number;
+}
+
+/**
+ * §5.4 + ME-078a — listagem canonica bit-exact para Aba 2 do
+ * `/clevel-rh`. Retorna colaboradores com `isRH=true`, ordenados por
+ * `status='ativo'` primeiro (alfa pt-BR dentro de cada bloco).
+ * "Cargo" no §5.4 canonico bit-exact do RH corresponde a
+ * `descricaoCBO` do schema (nao ha coluna `cargo` em `employees`).
+ */
+export async function listRHForCompany(db: RoipDatabase, companyId: number): Promise<ListRHResult> {
+  const rowsRaw = await db
+    .select({
+      id: employees.id,
+      name: employees.name,
+      photoUrl: employees.photoUrl,
+      descricaoCBO: employees.descricaoCBO,
+      departamento: employees.departamento,
+      isLider: employees.isLider,
+      isResponsavelFinanceiro: employees.isResponsavelFinanceiro,
+      status: employees.status,
+    })
+    .from(employees)
+    .where(and(eq(employees.companyId, companyId), eq(employees.isRH, true)))
+    .orderBy(asc(employees.name));
+
+  const ativos: RHListRow[] = [];
+  const inativos: RHListRow[] = [];
+  for (const row of rowsRaw) {
+    const normalized: RHListRow = {
+      id: row.id,
+      name: row.name,
+      photoUrl: row.photoUrl,
+      cargo: row.descricaoCBO,
+      departamento: row.departamento,
+      isLider: row.isLider === true,
+      isResponsavelFinanceiro: row.isResponsavelFinanceiro,
+      status: row.status ?? 'ativo',
+    };
+    if (normalized.status === 'ativo') {
+      ativos.push(normalized);
+    } else {
+      inativos.push(normalized);
+    }
+  }
+  const collator = new Intl.Collator('pt-BR', { sensitivity: 'base' });
+  ativos.sort((a, b) => collator.compare(a.name, b.name));
+  inativos.sort((a, b) => collator.compare(a.name, b.name));
+
+  return {
+    rows: [...ativos, ...inativos],
+    totalActive: ativos.length,
+    totalInactive: inativos.length,
+  };
+}
+
 // ============================================================
 // Factory canonica do sub-router
 // ============================================================
@@ -1912,6 +1992,21 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           pageSize: input.pageSize,
         });
         return result;
+      }),
+
+    // --------------------------------------------------------
+    // §5.4 + ME-078a — listagem canonica bit-exact para Aba 2 do
+    // `/clevel-rh` (retorna colaboradores com `isRH=true`). Semantica
+    // enxuta: retorna Foto/Nome/Cargo/Departamento/isLider/RF/Status
+    // sem paginacao (PMEs BR nao tem mais que ~10 RHs por empresa).
+    // Bruno EXCLUSIVO — proc dedicada bit-exact D3 aprovada ME-078a.
+    // Guard cruzado §2.4 via `assertCompanyScope`.
+    // --------------------------------------------------------
+    listRH: roleProcedure(['super_admin'])
+      .input(LIST_RH_INPUT_SCHEMA)
+      .query(async ({ ctx, input }): Promise<ListRHResult> => {
+        assertCompanyScope(ctx.user, input.companyId);
+        return await listRHForCompany(ctx.db, input.companyId);
       }),
   });
 }
