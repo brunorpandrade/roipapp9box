@@ -1,0 +1,7 @@
+# Railway nixpacks config — instala Chromium para
+# puppeteer-core (pdfRenderer.ts).
+[phases.setup]
+aptPkgs = ["chromium", "fonts-noto-color-emoji", "fonts-noto-cjk"]
+
+[variables]
+PUPPETEER_EXECUTABLE_PATH = "/usr/bin/chromium"

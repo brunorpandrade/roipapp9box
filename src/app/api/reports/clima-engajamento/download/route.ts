@@ -26,6 +26,7 @@
 // GET para conformidade Next 15 App Router.
 
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { and, desc, eq } from 'drizzle-orm';
 import { jwtVerify } from 'jose';
 
@@ -62,20 +63,38 @@ interface VerifiedIdentity {
 }
 
 async function verifyBearer(req: Request): Promise<VerifiedIdentity | null> {
+  let tokenStr: string | undefined;
   const auth = req.headers.get('authorization');
-  if (!auth || !auth.startsWith('Bearer ')) return null;
-  const token = auth.slice(7);
+  if (auth && auth.startsWith('Bearer ')) {
+    tokenStr = auth.slice(7);
+  }
+  // D098-2 fix: fallback to session cookie for window.open.
+  if (!tokenStr) {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session');
+    if (sessionCookie) {
+      tokenStr = sessionCookie.value;
+    }
+  }
+  if (!tokenStr) return null;
   const secret = process.env.JWT_SECRET;
   if (!secret) return null;
   try {
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret), {
+    const { payload } = await jwtVerify(tokenStr, new TextEncoder().encode(secret), {
       algorithms: ['HS256'],
     });
     const role = payload.role;
-    const userId = payload.userId ?? payload.sub;
-    const companyId = typeof payload.companyId === 'number' ? payload.companyId : null;
     if (typeof role !== 'string') return null;
-    if (typeof userId !== 'number') return null;
+    // Super Admin JWT carries sub as string, not userId.
+    const rawId = payload.userId ?? payload.sub;
+    const userId =
+      typeof rawId === 'number'
+        ? rawId
+        : typeof rawId === 'string'
+          ? Number.parseInt(rawId, 10)
+          : Number.NaN;
+    if (!Number.isFinite(userId)) return null;
+    const companyId = typeof payload.companyId === 'number' ? payload.companyId : null;
     return {
       role: role as VerifiedIdentity['role'],
       userId,

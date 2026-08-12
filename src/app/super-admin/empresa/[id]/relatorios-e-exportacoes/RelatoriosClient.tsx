@@ -23,6 +23,7 @@ import { COLORS } from '../../../../../lib/design-tokens/colors';
 
 import {
   generateRelatorioExecutivoAction,
+  startReportDownloadTokenAction,
   listClosedQuartersAction,
   listDepartmentsAction,
   listLeadersAction,
@@ -178,12 +179,11 @@ export function RelatoriosClient(props: Props): JSX.Element {
     [quarters],
   );
 
-  // Handler de download (redireciona para Route Handler)
+  // Handler de download (D098-2 fix: token-based auth)
   const handleDownload = useCallback(
-    (cardId: CardId) => {
+    async (cardId: CardId) => {
       const cs = getCardState(cardId);
       const params = new URLSearchParams({
-        companyId: String(companyId),
         trimestre: cs.trimestre,
         escopoTipo: cs.nivel,
       });
@@ -191,28 +191,36 @@ export function RelatoriosClient(props: Props): JSX.Element {
         params.set('escopoReferencia', cs.nivelRef);
       }
 
-      let apiPath = '';
-      switch (cardId) {
-        case 'resumo_dashboard':
-        case 'evolucao_trimestral':
-          // XLSX — mesma rota base; backend diferencia por type.
-          apiPath = `/api/reports/snapshot-9box/download`;
-          params.set('type', cardId);
-          break;
-        case 'snapshot_9box':
-          apiPath = '/api/reports/snapshot-9box/download';
-          break;
-        case 'board_deck':
-          apiPath = '/api/reports/board-deck/download';
-          break;
-        case 'clima_engajamento':
-          apiPath = '/api/reports/clima-engajamento/download';
-          break;
-        default:
-          return;
+      // Token-based routes: snapshot-9box, board-deck
+      if (
+        cardId === 'resumo_dashboard' ||
+        cardId === 'evolucao_trimestral' ||
+        cardId === 'snapshot_9box' ||
+        cardId === 'board_deck'
+      ) {
+        const scope = cardId === 'board_deck' ? 'board_deck' : 'snapshot_9box';
+        const result = await startReportDownloadTokenAction({
+          companyId,
+          scope,
+          escopoTipo: cs.nivel,
+          escopoReferencia: cs.nivel !== 'empresa' ? cs.nivelRef : undefined,
+        });
+        if (!result.ok) return;
+        const url = `${result.data.downloadUrl}${encodeURIComponent(cs.trimestre)}`;
+        if (cardId === 'resumo_dashboard' || cardId === 'evolucao_trimestral') {
+          window.open(`${url}&type=${cardId}`, '_blank');
+        } else {
+          window.open(url, '_blank');
+        }
+        return;
       }
 
-      window.open(`${apiPath}?${params.toString()}`, '_blank');
+      // Cookie-based route: clima-engajamento (D098-2)
+      if (cardId === 'clima_engajamento') {
+        params.set('companyId', String(companyId));
+        window.open(`/api/reports/clima-engajamento/download?${params.toString()}`, '_blank');
+        return;
+      }
     },
     [companyId, getCardState],
   );

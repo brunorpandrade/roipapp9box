@@ -234,3 +234,60 @@ export async function generateRelatorioExecutivoAction(input: {
     await closeDbClient(client);
   }
 }
+
+// -----------------------------------------------------------------------
+// 5. Start report download token (D098-2 fix, ME-079b L113)
+// -----------------------------------------------------------------------
+
+import { signPdfEphemeralToken } from '../../../../../server/auth/pdfEphemeralToken';
+import { deriveResourceIdCanonicoEscopo } from '../../../../../server/routers/exports';
+
+export async function startReportDownloadTokenAction(input: {
+  readonly companyId: number;
+  readonly scope: 'snapshot_9box' | 'board_deck';
+  readonly escopoTipo: 'empresa' | 'departamento' | 'equipe';
+  readonly escopoReferencia?: string;
+}): Promise<ActionResult<{ token: string; downloadUrl: string }>> {
+  const session = await getServerSession();
+  if (session === null) {
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
+  }
+  if (session.kind !== 'super_admin') {
+    return { ok: false, message: 'Acesso restrito ao Super Admin.' };
+  }
+
+  try {
+    const resourceId = deriveResourceIdCanonicoEscopo(
+      input.companyId,
+      input.escopoTipo,
+      input.escopoReferencia ?? null,
+    );
+    const now = new Date();
+    const token = await signPdfEphemeralToken(
+      {
+        scope: input.scope,
+        companyId: input.companyId,
+        resourceId,
+        userId: session.superAdminId,
+        userType: 'super_admin',
+      },
+      now,
+    );
+
+    const basePath =
+      input.scope === 'snapshot_9box'
+        ? '/api/reports/snapshot-9box/download'
+        : '/api/reports/board-deck/download';
+    const qs = [
+      `token=${encodeURIComponent(token)}`,
+      `escopoTipo=${input.escopoTipo}`,
+      'trimestre=',
+    ].join('&');
+    const downloadUrl = `${basePath}?${qs}`;
+
+    return { ok: true, data: { token, downloadUrl } };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erro ao gerar token.';
+    return { ok: false, message: msg };
+  }
+}

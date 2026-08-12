@@ -334,7 +334,11 @@ export function DadosMensaisClient(props: Props): JSX.Element {
       companyId,
       mes,
       aba: 'rh',
-      justificativa: 'Desbloqueio administrativo pelo Super Admin.',
+      justificativa:
+        'Desbloqueio administrativo realizado pelo ' +
+        'Super Admin da plataforma ROIP APP 9BOX. ' +
+        'Ação registrada para fins de auditoria e ' +
+        'rastreabilidade operacional do sistema.',
     });
     if (result.ok) {
       setToast('Mês desbloqueado — janela de 24h ativa.');
