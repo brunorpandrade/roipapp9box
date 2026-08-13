@@ -98,27 +98,41 @@ const ORGANOGRAMA_CSS = `
   padding: 0 14px;
   position: relative;
 }
+/* ME-080a-fix2 --- REFATORACAO das linhas conectoras. */
+/* Estrutura anterior misturava vertical descendente (border-left) */
+/* dentro do ::after do <li>. Remocao do ::after em :last-child / */
+/* :only-child levava junto a vertical. Resultado: filhos unicos e */
+/* ultimos filhos ficavam sem linha vertical entre tronco e card. */
+/* Nova estrutura: */
+/*   - li::before  = metade horizontal esquerda (border-top somente) */
+/*   - li::after   = metade horizontal direita  (border-top somente) */
+/*   - li > div[data-node-id]::before = vertical descendente */
+/*     (imune a :first/:last/:only-child) */
 .org-tree li::before,
 .org-tree li::after {
   content: '';
   position: absolute;
   top: -26px;
-  right: 50%;
   border-top: 2px solid #CBD5E1;
   width: 50%;
   height: 26px;
 }
+.org-tree li::before {
+  right: 50%;
+}
 .org-tree li::after {
-  right: auto;
+  left: 50%;
+}
+.org-tree li > div[data-node-id]::before {
+  content: '';
+  position: absolute;
+  top: -26px;
   left: 50%;
   border-left: 2px solid #CBD5E1;
+  height: 26px;
+  margin-left: -1px;
+  z-index: 0;
 }
-/* ME-080a-fix — regra ':only-child { display: none }' RESTAURADA. */
-/* Meu fix tentativo original (remover a regra) INJETOU o defeito:  */
-/* filhos únicos ganhavam linha em T apontando para lado vazio.    */
-/* Comportamento canônico: filho único → apenas vertical, sem T.   */
-/* O sintoma original "linhas somem nível 2→3" segue aberto como  */
-/* débito — escalado para ME-080a-bis com screenshot.              */
 .org-tree li:only-child::before,
 .org-tree li:only-child::after {
   display: none;
@@ -128,6 +142,9 @@ const ORGANOGRAMA_CSS = `
 }
 .org-tree li:last-child::after {
   border: none;
+}
+.org-tree > li > div[data-node-id]::before {
+  display: none;
 }
 .org-tree > li::before,
 .org-tree > li::after {

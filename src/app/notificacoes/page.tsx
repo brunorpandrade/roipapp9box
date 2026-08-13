@@ -56,6 +56,7 @@ import { resolveMenuItems } from '../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { getServerSession, type ServerSession } from '../../server/session/serverSession';
 
+import { ToastProvider } from '../../components/ui/Toast';
 import { NotificacoesClient } from './NotificacoesClient';
 import { parseFiltersFromSearchParams } from './filters';
 
@@ -221,24 +222,26 @@ export default async function NotificacoesPage(props: PageProps): Promise<JSX.El
 
     return (
       <Layout menuItems={menuItems} header={headerProps}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: COLORS.text.primary, margin: 0 }}>
-              Notificações
-            </h1>
-            <p
-              style={{
-                fontSize: 13,
-                color: COLORS.text.secondary,
-                margin: '4px 0 0 0',
-              }}
-              aria-live="polite"
-            >
-              {listResult.totalCount} notificações · {listResult.unreadCount} não lidas
-            </p>
+        <ToastProvider>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+              <h1 style={{ fontSize: 22, fontWeight: 700, color: COLORS.text.primary, margin: 0 }}>
+                Notificações
+              </h1>
+              <p
+                style={{
+                  fontSize: 13,
+                  color: COLORS.text.secondary,
+                  margin: '4px 0 0 0',
+                }}
+                aria-live="polite"
+              >
+                {listResult.totalCount} notificações · {listResult.unreadCount} não lidas
+              </p>
+            </div>
+            <NotificacoesClient initialResult={listResult} initialFilters={filters} />
           </div>
-          <NotificacoesClient initialResult={listResult} initialFilters={filters} />
-        </div>
+        </ToastProvider>
       </Layout>
     );
   } catch (err) {
