@@ -240,7 +240,20 @@ function ClickableIndicatorCard(props: {
       >
         {title}
       </span>
-      <span style={{ fontSize: 24, fontWeight: 700, color: COLORS.text.primary }}>{value}</span>
+      <span
+        style={{
+          // ME-080a — fontSize responsivo + overflowWrap para valores
+          // longos (ex.: "R$ 999.999,00") em cards com largura mínima
+          // via `minmax(180px,1fr)`. clamp evita overflow do card.
+          fontSize: 'clamp(16px, 3.2vw, 24px)',
+          fontWeight: 700,
+          color: COLORS.text.primary,
+          overflowWrap: 'anywhere',
+          lineHeight: 1.15,
+        }}
+      >
+        {value}
+      </span>
       {sub !== undefined ? (
         <span style={{ fontSize: 12, color: COLORS.text.secondary }}>{sub}</span>
       ) : null}
@@ -387,7 +400,7 @@ function AcoesBlock(props: {
         <Link href={`/super-admin/empresa/${companyId}/clevel-rh`} style={buttonStyle}>
           C-level
         </Link>
-        <Link href={`/super-admin/empresa/${companyId}/clevel-rh`} style={buttonStyle}>
+        <Link href={`/super-admin/empresa/${companyId}/clevel-rh?tab=rh`} style={buttonStyle}>
           RH
         </Link>
         <Link href={`/super-admin/empresa/${companyId}/dados-mensais`} style={buttonStyle}>
@@ -551,7 +564,7 @@ export function CompanyLandingClient(props: CompanyLandingClientProps): JSX.Elem
           title="Dados do mês — Líderes"
           value="Coleta de dados em andamento"
           sub={`Mês ${mesAtualClosure.mesAtual}`}
-          href={`/super-admin/empresa/${company.id}/dados-mensais`}
+          href={`/super-admin/empresa/${company.id}/dados-mensais?tab=lider`}
           ariaLabel="Abrir dados mensais de líderes"
         />
       </section>
@@ -590,7 +603,7 @@ export function CompanyLandingClient(props: CompanyLandingClientProps): JSX.Elem
                 sub="Ativos"
                 href={
                   `/super-admin/empresa/${company.id}/todos-os-colaboradores` +
-                  `?departamento=${encodeURIComponent(d.departamento)}`
+                  `?dept=${encodeURIComponent(d.departamento)}`
                 }
                 ariaLabel={`Ver colaboradores do departamento ${d.departamento}`}
               />

@@ -36,7 +36,7 @@ import { resolveProfileKey } from '../../../../../lib/session/resolveProfileKey'
 import { getServerSession } from '../../../../../server/session/serverSession';
 
 import { DadosMensaisClient } from './DadosMensaisClient';
-import { currentMes, parseCompanyIdParam, resolveDatabaseUrl } from './internals';
+import { currentMes, parseCompanyIdParam, parseTabParam, resolveDatabaseUrl } from './internals';
 
 // -----------------------------------------------------------------------
 // Loader server-side: closure status do mês atual (leitura direta)
@@ -49,6 +49,10 @@ import {
 
 interface PageProps {
   readonly params: Promise<{ id: string }>;
+  // ME-080a — `?tab=` na URL controla aba inicial (default `rh`).
+  // Consumido para linkagem canônica a partir do CompanyLandingClient
+  // (card "Dados do mês — Líderes" → `?tab=lider`).
+  readonly searchParams?: Promise<{ tab?: string }>;
 }
 
 export default async function DadosMensaisPage(props: PageProps): Promise<JSX.Element> {
@@ -79,6 +83,10 @@ export default async function DadosMensaisPage(props: PageProps): Promise<JSX.El
     const mes = currentMes();
     const closureRow = await getMonthlyClosureStatusByMonth(client.db, companyId, mes);
     const initialStatus = closureRow?.status ?? 'aberto';
+
+    // ME-080a — resolve aba inicial a partir de `?tab=` (default `rh`).
+    const rawSearch = (await props.searchParams) ?? {};
+    const initialTab = parseTabParam(rawSearch.tab);
 
     const profileKey = resolveProfileKey({
       session,
@@ -116,6 +124,7 @@ export default async function DadosMensaisPage(props: PageProps): Promise<JSX.El
           companyName={company.nomeFantasia}
           initialMes={mes}
           initialStatus={initialStatus}
+          initialTab={initialTab}
         />
       </Layout>
     );

@@ -241,6 +241,19 @@ export default async function NotificacoesPage(props: PageProps): Promise<JSX.El
         </div>
       </Layout>
     );
+  } catch (err) {
+    // ME-080a — telemetria item 12/19. `/notificacoes` reportava
+    // "erro interno" em produção sem stack. Log estruturado permite
+    // que a próxima ocorrência apareça em Railway logs com stack
+    // completo + kind da sessão. Rethrow preserva comportamento
+    // canônico (Next 15 App Router mostra error boundary).
+    console.error('[/notificacoes] erro no server component', {
+      kind: session.kind,
+      role: session.kind === 'platform' ? session.role : null,
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+    throw err;
   } finally {
     await closeDbClient(client);
   }

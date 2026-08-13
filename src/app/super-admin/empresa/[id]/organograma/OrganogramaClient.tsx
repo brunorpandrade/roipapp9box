@@ -113,10 +113,13 @@ const ORGANOGRAMA_CSS = `
   left: 50%;
   border-left: 2px solid #CBD5E1;
 }
-.org-tree li:only-child::before,
-.org-tree li:only-child::after {
-  display: none;
-}
+/* ME-080a — regra ':only-child { display: none }' REMOVIDA (fix */
+/* tentativo item 10). Hipótese: linhas somiam entre nível 2 e 3 */
+/* quando C-level tinha apenas 1 subordinado, porque o pseudo-       */
+/* elemento horizontal era ocultado. Sem essa regra, a linha em T  */
+/* aparece mesmo com filho único — visualmente equivalente ao       */
+/* organograma canônico. Se produzir efeito colateral visual, */
+/* reverter e reabrir com screenshot em ME-080a-bis.                */
 .org-tree li:first-child::before {
   border: none;
 }

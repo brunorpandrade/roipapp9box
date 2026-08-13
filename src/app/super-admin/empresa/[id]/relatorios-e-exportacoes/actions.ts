@@ -278,11 +278,18 @@ export async function startReportDownloadTokenAction(input: {
       input.scope === 'snapshot_9box'
         ? '/api/reports/snapshot-9box/download'
         : '/api/reports/board-deck/download';
-    const qs = [
-      `token=${encodeURIComponent(token)}`,
-      `escopoTipo=${input.escopoTipo}`,
-      'trimestre=',
-    ].join('&');
+    // ME-080a — inclui `escopoReferencia` na querystring quando escopo
+    // != 'empresa'. Sem isso, o handler reconstrói `expectedResourceId`
+    // com `escopoRef=null` (inexistente na qs) enquanto o token foi
+    // assinado com o escopoRef real → 401 `resource_mismatch`. Bug
+    // observado em "Evolução trimestral" e demais reports de escopo
+    // depto/equipe.
+    const qsParts = [`token=${encodeURIComponent(token)}`, `escopoTipo=${input.escopoTipo}`];
+    if (input.escopoTipo !== 'empresa' && input.escopoReferencia !== undefined) {
+      qsParts.push(`escopoReferencia=${encodeURIComponent(input.escopoReferencia)}`);
+    }
+    qsParts.push('trimestre=');
+    const qs = qsParts.join('&');
     const downloadUrl = `${basePath}?${qs}`;
 
     return { ok: true, data: { token, downloadUrl } };

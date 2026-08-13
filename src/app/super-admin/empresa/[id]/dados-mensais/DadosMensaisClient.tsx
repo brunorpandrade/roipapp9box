@@ -33,7 +33,6 @@ import {
   unlockMonthAction,
 } from './actions';
 import {
-  DADOS_MENSAIS_TAB_DEFAULT,
   DADOS_MENSAIS_TABS,
   formatMesLabel,
   nextMes,
@@ -54,6 +53,9 @@ interface Props {
   readonly companyName: string;
   readonly initialMes: string;
   readonly initialStatus: string;
+  // ME-080a — aba inicial vinda do server component (parseTabParam do
+  // `?tab=` da URL). Default `rh` quando ausente ou inválido.
+  readonly initialTab: DadosMensaisTab;
 }
 
 // -----------------------------------------------------------------------
@@ -149,10 +151,10 @@ interface RHCellEdit {
 // -----------------------------------------------------------------------
 
 export function DadosMensaisClient(props: Props): JSX.Element {
-  const { companyId, companyName, initialMes, initialStatus } = props;
+  const { companyId, companyName, initialMes, initialStatus, initialTab } = props;
 
   // Estado
-  const [activeTab, setActiveTab] = useState<DadosMensaisTab>(DADOS_MENSAIS_TAB_DEFAULT);
+  const [activeTab, setActiveTab] = useState<DadosMensaisTab>(initialTab);
   const [mes, setMes] = useState(initialMes);
   const [status, setStatus] = useState<StatusMes>((initialStatus as StatusMes) || 'aberto');
   const [loading, setLoading] = useState(true);
@@ -641,7 +643,7 @@ export function DadosMensaisClient(props: Props): JSX.Element {
                 max={31}
                 value={diasUteis}
                 onChange={(e) => setDiasUteis(e.target.value)}
-                disabled={!isEditable && status !== 'fechado'}
+                disabled={!isEditable}
                 placeholder="Ex.: 21"
                 style={{
                   ...INPUT_STYLE,
@@ -793,7 +795,7 @@ export function DadosMensaisClient(props: Props): JSX.Element {
                               onChange={(e) =>
                                 handleCellChange(row.employeeId, 'custoTotalMes', e.target.value)
                               }
-                              disabled={!isEditable && status !== 'fechado'}
+                              disabled={!isEditable}
                               style={{
                                 ...INPUT_STYLE,
                                 width: 120,
@@ -813,7 +815,7 @@ export function DadosMensaisClient(props: Props): JSX.Element {
                               onChange={(e) =>
                                 handleCellChange(row.employeeId, 'faltas', e.target.value)
                               }
-                              disabled={!isEditable && status !== 'fechado'}
+                              disabled={!isEditable}
                               style={{
                                 ...INPUT_STYLE,
                                 width: 70,

@@ -1315,8 +1315,48 @@ export function Nr1Client({
                       fator: f.fator,
                       score: Number(f.score),
                     }))}
-                    color="#DC2626"
+                    color="#1E40AF"
+                    comparisonColor="#14B8A6"
                   />
+                  {/* ME-080a — legenda identitária empresa/departamento. */}
+                  {/* Cores identitárias (teal=empresa, azul=depto) — NÃO */}
+                  {/* semafóricas. As cores semafóricas ficam apenas nos */}
+                  {/* dots da legenda de scores em `renderRadarLegend`. */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      gap: 20,
+                      marginTop: 10,
+                      fontSize: 12,
+                      color: '#374151',
+                    }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: 12,
+                          height: 12,
+                          background: '#14B8A6',
+                          borderRadius: 2,
+                        }}
+                      />
+                      Empresa
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: 12,
+                          height: 12,
+                          background: '#1E40AF',
+                          borderRadius: 2,
+                        }}
+                      />
+                      Departamento
+                    </span>
+                  </div>
                   <button
                     style={{
                       ...STYLES.btnOutline,

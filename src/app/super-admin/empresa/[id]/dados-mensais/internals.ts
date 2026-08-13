@@ -42,6 +42,17 @@ export type DadosMensaisTab = (typeof DADOS_MENSAIS_TABS)[number];
 /** Aba default canônica — sempre RH na chegada (§14.13). */
 export const DADOS_MENSAIS_TAB_DEFAULT: DadosMensaisTab = 'rh';
 
+// ME-080a — parser de `?tab=` na URL. Padrão idêntico ao `clevel-rh`
+// (parseTabParam). Aceita apenas valores canônicos; qualquer outro
+// devolve o default `rh`. Consumido por `page.tsx` para calcular
+// `initialTab` passado ao Client.
+export function parseTabParam(raw: string | undefined): DadosMensaisTab {
+  if (raw === 'lider') {
+    return 'lider';
+  }
+  return DADOS_MENSAIS_TAB_DEFAULT;
+}
+
 /** §14.13 rótulos canônicos das abas. */
 export const TAB_LABELS: Record<DadosMensaisTab, string> = {
   rh: 'Dados do RH',
