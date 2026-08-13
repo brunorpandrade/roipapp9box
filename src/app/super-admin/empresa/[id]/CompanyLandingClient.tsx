@@ -245,13 +245,14 @@ function ClickableIndicatorCard(props: {
           // ME-080a — fontSize responsivo + overflowWrap para valores
           // longos (ex.: "R$ 999.999,00") em cards com largura mínima
           // via `minmax(180px,1fr)`. clamp evita overflow do card.
-          fontSize: 'clamp(14px, 2.6vw, 22px)',
+          fontSize: 18,
           fontWeight: 700,
           color: COLORS.text.primary,
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
-          lineHeight: 1.15,
+          letterSpacing: '-0.01em',
+          lineHeight: 1.2,
         }}
       >
         {value}
