@@ -1,13 +1,15 @@
 // ROIP APP 9BOX — teste de integracao dos Route Handlers do portal
-// (ME-023, §4.3 e §7.2). Contra MySQL real (`roip_test`, S008).
+// (ME-023, §4.3 e §7.2; ME-080b Dispatch 1 — 2 fatores CPF+matricula).
+// Contra MySQL real (`roip_test`, S008).
 //
 // Cobre:
 //   - POST /api/portal/login
 //     · a) rate limit `{ip}:portal-login:{cpf}` = 10/15min (429 canonico);
-//     · b) busca CPF em employees + cLevelMembers (cross-empresa);
-//     · c) CPF inexistente/inativo → 404 anti-enumeracao;
-//     · d) empresa inativa → 403 canonico;
-//     · e) sucesso: emite portalToken + gateStep 'lgpd_consent' | 'pendencias';
+//     · b) busca (CPF, matricula) em employees + cLevelMembers cross-empresa;
+//     · c) CPF ou matricula invalidos/inexistentes → 400/404 anti-enumeracao;
+//     · d) matricula case-insensitive (armazenamento sempre uppercase);
+//     · e) empresa inativa → 403 canonico;
+//     · f) sucesso: emite portalToken + gateStep 'lgpd_consent' | 'pendencias';
 //     · precedencia canonica §2.3 regra 2 quando existem employee+clevel;
 //   - POST /api/portal/consent-lgpd
 //     · body sem token → 400; token invalido → 401 malformado;
@@ -26,8 +28,9 @@ import { POST as portalLoginPOST } from '../../src/app/api/portal/login/route';
 import {
   __setPortalLoginDbClient,
   MSG_COMPANY_INACTIVE,
-  MSG_CPF_NOT_FOUND,
   MSG_INVALID_CPF,
+  MSG_INVALID_CREDENTIALS,
+  MSG_INVALID_MATRICULA,
   MSG_RATE_LIMIT,
 } from '../../src/app/api/portal/login/internals';
 import { POST as portalConsentPOST } from '../../src/app/api/portal/consent-lgpd/route';
@@ -60,6 +63,17 @@ const CPF_INATIVO = '11122233303';
 const CPF_INEXISTENTE = '99988877701';
 const CPF_AMBIGUO = '11122233304'; // presente em 2 empresas
 
+// Matriculas canonicas de teste — formato ^[A-Z]{2}[0-9]{2}$
+// Uso deterministico: cada seed ganha uma matricula fixa e verificamos
+// que o login por (cpf, matricula) resolve o titular esperado.
+const MAT_EMPLOYEE = 'AB12';
+const MAT_CLEVEL = 'CD34';
+const MAT_INATIVO = 'EF56';
+const MAT_CLEVEL_INATIVA = 'GH78';
+const MAT_AMBIGUO_A = 'JK90';
+const MAT_AMBIGUO_B = 'LM01';
+const MAT_INEXISTENTE = 'ZZ99';
+
 function makeCompany(cnpj: string, overrides: Partial<Parameters<typeof createCompany>[1]> = {}) {
   return {
     razaoSocial: `Empresa ${cnpj}`,
@@ -87,6 +101,7 @@ interface EmployeeSeed {
   cpf: string;
   name: string;
   status?: 'ativo' | 'inativo';
+  matricula?: string;
 }
 
 async function seedEmployee(
@@ -111,6 +126,7 @@ async function seedEmployee(
     isRH: false,
     isLider: false,
     isResponsavelFinanceiro: false,
+    matricula: seed.matricula ?? null,
   });
 }
 
@@ -133,6 +149,7 @@ async function seedClevel(
     acessoTotal: true,
     status: seed.status ?? 'ativo',
     isResponsavelFinanceiro: false,
+    matricula: seed.matricula ?? null,
   });
 }
 
@@ -198,24 +215,37 @@ describe('portal endpoints — /api/portal/login + /consent-lgpd (ME-023)', () =
     employeeId = await seedEmployee(client, companyAId, {
       cpf: CPF_EMPLOYEE,
       name: 'Fulano Colaborador',
+      matricula: MAT_EMPLOYEE,
     });
     employeeInativoId = await seedEmployee(client, companyAId, {
       cpf: CPF_INATIVO,
       name: 'Fulano Inativo',
       status: 'inativo',
+      matricula: MAT_INATIVO,
     });
     clevelId = await seedClevel(client, companyAId, {
       cpf: CPF_CLEVEL,
       name: 'Ceo Fulana',
+      matricula: MAT_CLEVEL,
     });
     // C-level em empresa inativa para o caso de empresa inativa
     clevelInativaId = await seedClevel(client, companyInativaId, {
       cpf: '11122233305',
       name: 'Ceo Empresa Inativa',
+      matricula: MAT_CLEVEL_INATIVA,
     });
-    // Mesmo CPF em duas empresas → ambiguidade
-    await seedEmployee(client, companyAId, { cpf: CPF_AMBIGUO, name: 'Ambiguo A' });
-    await seedEmployee(client, companyBId, { cpf: CPF_AMBIGUO, name: 'Ambiguo B' });
+    // Mesmo CPF em duas empresas com matriculas diferentes → cada par
+    // (cpf, matricula) resolve titular unico (nao ha mais ambiguidade).
+    await seedEmployee(client, companyAId, {
+      cpf: CPF_AMBIGUO,
+      name: 'Ambiguo A',
+      matricula: MAT_AMBIGUO_A,
+    });
+    await seedEmployee(client, companyBId, {
+      cpf: CPF_AMBIGUO,
+      name: 'Ambiguo B',
+      matricula: MAT_AMBIGUO_B,
+    });
   });
 
   afterAll(async () => {
@@ -242,42 +272,101 @@ describe('portal endpoints — /api/portal/login + /consent-lgpd (ME-023)', () =
   // -------------------------------------------------------- POST /login
 
   it('CPF invalido (nao 11 digitos) → 400', async () => {
-    const res = await callPortalLogin({ cpf: '123' }, '203.0.113.11');
+    const res = await callPortalLogin({ cpf: '123', matricula: MAT_EMPLOYEE }, '203.0.113.11');
     expect(res.status).toBe(400);
     const body = (await res.json()) as { msg: string };
     expect(body.msg).toBe(MSG_INVALID_CPF);
   });
 
-  it('CPF inexistente → 404 anti-enumeracao', async () => {
-    const res = await callPortalLogin({ cpf: CPF_INEXISTENTE }, '203.0.113.12');
+  it('matricula invalida (formato fora do canonico AA00) → 400', async () => {
+    const res = await callPortalLogin({ cpf: CPF_EMPLOYEE, matricula: 'AB1' }, '203.0.113.11');
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { msg: string };
+    expect(body.msg).toBe(MSG_INVALID_MATRICULA);
+  });
+
+  it('matricula ausente do body → 400', async () => {
+    const res = await callPortalLogin({ cpf: CPF_EMPLOYEE }, '203.0.113.11');
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { msg: string };
+    expect(body.msg).toBe(MSG_INVALID_MATRICULA);
+  });
+
+  it('CPF inexistente → 404 anti-enumeracao (mesma msg)', async () => {
+    const res = await callPortalLogin(
+      { cpf: CPF_INEXISTENTE, matricula: MAT_INEXISTENTE },
+      '203.0.113.12',
+    );
     expect(res.status).toBe(404);
     const body = (await res.json()) as { msg: string };
-    expect(body.msg).toBe(MSG_CPF_NOT_FOUND);
+    expect(body.msg).toBe(MSG_INVALID_CREDENTIALS);
+  });
+
+  it('CPF valido + matricula errada → 404 mesma msg (anti-enumeracao S515)', async () => {
+    const res = await callPortalLogin(
+      { cpf: CPF_EMPLOYEE, matricula: MAT_INEXISTENTE },
+      '203.0.113.12',
+    );
+    expect(res.status).toBe(404);
+    const body = (await res.json()) as { msg: string };
+    expect(body.msg).toBe(MSG_INVALID_CREDENTIALS);
   });
 
   it('CPF de colaborador inativo → 404 mesma msg (§4.3 passo d)', async () => {
-    const res = await callPortalLogin({ cpf: CPF_INATIVO }, '203.0.113.13');
+    const res = await callPortalLogin({ cpf: CPF_INATIVO, matricula: MAT_INATIVO }, '203.0.113.13');
     expect(res.status).toBe(404);
     const body = (await res.json()) as { msg: string };
-    expect(body.msg).toBe(MSG_CPF_NOT_FOUND);
+    expect(body.msg).toBe(MSG_INVALID_CREDENTIALS);
     expect(employeeInativoId).toBeGreaterThan(0);
   });
 
   it('CPF em empresa inativa → 403 (§4.3 passo e)', async () => {
-    const res = await callPortalLogin({ cpf: '11122233305' }, '203.0.113.14');
+    const res = await callPortalLogin(
+      { cpf: '11122233305', matricula: MAT_CLEVEL_INATIVA },
+      '203.0.113.14',
+    );
     expect(res.status).toBe(403);
     const body = (await res.json()) as { msg: string };
     expect(body.msg).toBe(MSG_COMPANY_INACTIVE);
     expect(clevelInativaId).toBeGreaterThan(0);
   });
 
-  it('CPF ambiguo (2 empresas) → 404 (D003 analogo — anti-enumeracao)', async () => {
-    const res = await callPortalLogin({ cpf: CPF_AMBIGUO }, '203.0.113.15');
-    expect(res.status).toBe(404);
+  it('CPF ambiguo (2 empresas, matriculas distintas): par (cpf,mat) resolve unico', async () => {
+    // Empresa A: (CPF_AMBIGUO, MAT_AMBIGUO_A) → titular em A
+    const rA = await callPortalLogin(
+      { cpf: CPF_AMBIGUO, matricula: MAT_AMBIGUO_A },
+      '203.0.113.15',
+    );
+    expect(rA.status).toBe(200);
+    const bodyA = (await rA.json()) as { user: { name: string } };
+    expect(bodyA.user.name).toBe('Ambiguo A');
+
+    // Empresa B: (CPF_AMBIGUO, MAT_AMBIGUO_B) → titular em B
+    const rB = await callPortalLogin(
+      { cpf: CPF_AMBIGUO, matricula: MAT_AMBIGUO_B },
+      '203.0.113.15',
+    );
+    expect(rB.status).toBe(200);
+    const bodyB = (await rB.json()) as { user: { name: string } };
+    expect(bodyB.user.name).toBe('Ambiguo B');
+  });
+
+  it('matricula case-insensitive: lowercase no input resolve o titular', async () => {
+    const res = await callPortalLogin(
+      { cpf: CPF_EMPLOYEE, matricula: MAT_EMPLOYEE.toLowerCase() },
+      '203.0.113.20',
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { user: { id: number; type: string } };
+    expect(body.user.id).toBe(employeeId);
+    expect(body.user.type).toBe('employee');
   });
 
   it('sucesso employee sem consentimento → gateStep=lgpd_consent + portalToken', async () => {
-    const res = await callPortalLogin({ cpf: CPF_EMPLOYEE }, '203.0.113.16');
+    const res = await callPortalLogin(
+      { cpf: CPF_EMPLOYEE, matricula: MAT_EMPLOYEE },
+      '203.0.113.16',
+    );
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
       portalToken: string;
@@ -292,7 +381,7 @@ describe('portal endpoints — /api/portal/login + /consent-lgpd (ME-023)', () =
   });
 
   it('sucesso clevel sem consentimento → gateStep=lgpd_consent', async () => {
-    const res = await callPortalLogin({ cpf: CPF_CLEVEL }, '203.0.113.17');
+    const res = await callPortalLogin({ cpf: CPF_CLEVEL, matricula: MAT_CLEVEL }, '203.0.113.17');
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
       user: { id: number; type: string };
@@ -311,7 +400,10 @@ describe('portal endpoints — /api/portal/login + /consent-lgpd (ME-023)', () =
       clevelId: null,
       versaoTermoAceita: LGPD_TERM_VERSION,
     });
-    const res = await callPortalLogin({ cpf: CPF_EMPLOYEE }, '203.0.113.18');
+    const res = await callPortalLogin(
+      { cpf: CPF_EMPLOYEE, matricula: MAT_EMPLOYEE },
+      '203.0.113.18',
+    );
     expect(res.status).toBe(200);
     const body = (await res.json()) as { gateStep: string };
     expect(body.gateStep).toBe('pendencias');
@@ -319,13 +411,16 @@ describe('portal endpoints — /api/portal/login + /consent-lgpd (ME-023)', () =
 
   it('rate limit portal-login = 10/15min → 429 no 11o failure', async () => {
     const ip = '203.0.113.99';
-    // 10 falhas (CPF inexistente)
+    // 10 falhas (par (CPF, matricula) inexistente)
     for (let i = 0; i < 10; i += 1) {
-      const r = await callPortalLogin({ cpf: CPF_INEXISTENTE }, ip);
+      const r = await callPortalLogin({ cpf: CPF_INEXISTENTE, matricula: MAT_INEXISTENTE }, ip);
       expect(r.status).toBe(404);
     }
     // 11a → 429 com retryAfterSeconds
-    const rBlocked = await callPortalLogin({ cpf: CPF_INEXISTENTE }, ip);
+    const rBlocked = await callPortalLogin(
+      { cpf: CPF_INEXISTENTE, matricula: MAT_INEXISTENTE },
+      ip,
+    );
     expect(rBlocked.status).toBe(429);
     const bodyBlocked = (await rBlocked.json()) as { msg: string; retryAfterSeconds: number };
     expect(bodyBlocked.msg).toBe(MSG_RATE_LIMIT);

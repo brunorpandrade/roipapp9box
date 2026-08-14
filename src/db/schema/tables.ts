@@ -153,12 +153,14 @@ export const cLevelMembers = mysqlTable(
     status: mysqlEnum('status', ['ativo', 'inativo']).default('ativo'),
     passwordHash: varchar('passwordHash', { length: 255 }),
     passwordSet: boolean('passwordSet').default(false),
+    matricula: varchar('matricula', { length: 4 }),
     lastActivity: timestamp('lastActivity'),
     createdAt: timestamp('createdAt').defaultNow(),
     updatedAt: timestamp('updatedAt').defaultNow().onUpdateNow(),
   },
   (t) => ({
     uqClevelCpf: uniqueIndex('uq_clevel_cpf').on(t.companyId, t.cpf),
+    uqClevelMatricula: uniqueIndex('uq_clevel_matricula').on(t.companyId, t.matricula),
   }),
 );
 
@@ -190,12 +192,14 @@ export const employees = mysqlTable(
     onboardingUltimoEstagio: mysqlEnum('onboardingUltimoEstagio', ONBOARDING_ESTAGIO_VALUES),
     passwordHash: varchar('passwordHash', { length: 255 }),
     passwordSet: boolean('passwordSet').default(false),
+    matricula: varchar('matricula', { length: 4 }),
     lastActivity: timestamp('lastActivity'),
     createdAt: timestamp('createdAt').defaultNow(),
     updatedAt: timestamp('updatedAt').defaultNow().onUpdateNow(),
   },
   (t) => ({
     uqEmployeeCpf: uniqueIndex('uq_employee_cpf').on(t.companyId, t.cpf),
+    uqEmployeeMatricula: uniqueIndex('uq_employee_matricula').on(t.companyId, t.matricula),
   }),
 );
 

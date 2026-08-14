@@ -90,10 +90,12 @@ CREATE TABLE `cLevelMembers` (
   `status` ENUM('ativo','inativo') DEFAULT 'ativo',
   `passwordHash` VARCHAR(255) DEFAULT NULL,
   `passwordSet` BOOLEAN DEFAULT false,
+  `matricula` VARCHAR(4) DEFAULT NULL,
   `lastActivity` TIMESTAMP DEFAULT NULL,
   `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updatedAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY `uq_clevel_cpf` (`companyId`, `cpf`),
+  UNIQUE KEY `uq_clevel_matricula` (`companyId`, `matricula`),
   FOREIGN KEY (`companyId`) REFERENCES `companies`(`id`) ON DELETE RESTRICT
 );
 
@@ -121,10 +123,12 @@ CREATE TABLE `employees` (
   `onboardingUltimoEstagio` ENUM('treinar','em_treinamento','treinado','reciclagem') DEFAULT NULL,
   `passwordHash` VARCHAR(255) DEFAULT NULL,
   `passwordSet` BOOLEAN DEFAULT false,
+  `matricula` VARCHAR(4) DEFAULT NULL,
   `lastActivity` TIMESTAMP DEFAULT NULL,
   `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updatedAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY `uq_employee_cpf` (`companyId`, `cpf`),
+  UNIQUE KEY `uq_employee_matricula` (`companyId`, `matricula`),
   FOREIGN KEY (`companyId`) REFERENCES `companies`(`id`) ON DELETE RESTRICT
 );
 

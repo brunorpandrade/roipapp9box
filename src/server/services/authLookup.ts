@@ -28,8 +28,13 @@
 // (ME-022a) e, na ME-022b, `auth.forgotPassword` (branch CPF). O teste de
 // integracao desta ME (`authLookup.test.ts`) tambem consta como chamador —
 // convencao do repositorio herdada do Bloco B1.
+//
+// ME-080b Dispatch 1: adicionada `findPlatformUserByCpfAndMatricula` para
+// suportar o novo login do portal do colaborador com 2 fatores
+// (CPF + matricula). Consumido exclusivamente pelo Route Handler
+// `POST /api/portal/login` e por `tests/integration/portal-endpoints.test.ts`.
 
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../db/client';
 import { cLevelMembers, employees } from '../../db/schema';
@@ -70,6 +75,64 @@ export async function findPlatformUserByCpf(
   const [employeeRows, clevelRows] = await Promise.all([
     db.select().from(employees).where(eq(employees.cpf, cpf)),
     db.select().from(cLevelMembers).where(eq(cLevelMembers.cpf, cpf)),
+  ]);
+
+  const byCompanyId = new Map<number, PlatformUserCandidate>();
+
+  for (const row of employeeRows) {
+    byCompanyId.set(row.companyId, {
+      companyId: row.companyId,
+      employee: row,
+      clevel: undefined,
+    });
+  }
+
+  for (const row of clevelRows) {
+    const existing = byCompanyId.get(row.companyId);
+    if (existing === undefined) {
+      byCompanyId.set(row.companyId, {
+        companyId: row.companyId,
+        employee: undefined,
+        clevel: row,
+      });
+    } else {
+      existing.clevel = row;
+    }
+  }
+
+  return Array.from(byCompanyId.values()).sort((a, b) => a.companyId - b.companyId);
+}
+
+/**
+ * Busca cross-company do par (CPF, matricula) em `employees` e
+ * `cLevelMembers` — segundo fator do portal do colaborador (ME-080b).
+ *
+ * A matricula ja deve chegar normalizada em uppercase (o Route Handler
+ * de `/api/portal/login` faz a normalizacao). O UNIQUE canonico
+ * `(companyId, matricula)` garante que em uma mesma empresa cada
+ * matricula aponta para no maximo 1 employee e no maximo 1 clevel — a
+ * agregacao por `companyId` mantem a mesma semantica de
+ * `findPlatformUserByCpf`.
+ *
+ * A funcao NAO filtra por `status`, NAO aplica §2.3 e NAO decide
+ * bloqueio: entrega os candidatos que casam (CPF, matricula) e o
+ * handler aplica anti-enumeracao (mesma mensagem para nenhum candidato,
+ * multiplos candidatos ou usuario inativo).
+ */
+export async function findPlatformUserByCpfAndMatricula(
+  db: RoipDatabase,
+  cpf: string,
+  matriculaUpper: string,
+): Promise<PlatformUserCandidate[]> {
+  const [employeeRows, clevelRows] = await Promise.all([
+    db
+      .select()
+      .from(employees)
+      .where(and(eq(employees.cpf, cpf), eq(employees.matricula, matriculaUpper))),
+    db
+      .select()
+      .from(cLevelMembers)
+      .where(and(eq(cLevelMembers.cpf, cpf), eq(cLevelMembers.matricula, matriculaUpper))),
   ]);
 
   const byCompanyId = new Map<number, PlatformUserCandidate>();

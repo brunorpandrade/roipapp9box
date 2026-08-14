@@ -1,26 +1,33 @@
 // ROIP APP 9BOX — Route Handler `POST /api/portal/login` (ME-023, §4.3;
-// ME-070 refactor S366).
+// ME-070 refactor S366; ME-080b Dispatch 1 refactor 2 fatores).
 //
 // Endpoint canonico do portal do colaborador. REST literal (S036).
 // Procedure canonica implementada: `collaboratorPortal.identify` (§4.3).
 //
-// Ordem canonica (§4.3 passo 4):
-//   a) Rate limit `{ip}:portal-login:{cpf}` = 10/15min (§5.8).
-//   b) Busca em `employees` (todas as empresas); se nada, tambem em
-//      `cLevelMembers`. Reuso do service `findPlatformUserByCpf`.
-//   c) Nao encontrado ou usuario `status='inativo'`: 404 com mensagem
-//      canonica anti-enumeracao "CPF nao encontrado. Verifique e tente
-//      novamente." + incrementa rate limit.
-//   d) `companies.status = 'inativa'`: 403 com mensagem canonica
-//      "Empresa inativa no sistema. Entre em contato com o suporte."
-//   e) Emite `portalToken` (S042); verifica gate LGPD (§7.2 f/g).
+// ME-080b Dispatch 1: introducao de segundo fator canonico (matricula).
+// Fluxo canonico revisado (§4.3 passo 4 revisado):
+//   a) Valida payload: `cpf` (11 digitos) + `matricula` (formato canonico
+//      AA00, case-insensitive na entrada — normalizada uppercase antes
+//      da busca).
+//   b) Rate limit `{ip}:portal-login:{cpf}` = 10/15min (§5.8, chave
+//      permanece por CPF para nao facilitar enumeracao de matricula).
+//   c) Busca em `employees` + `cLevelMembers` pelo par (cpf,
+//      matriculaUpper) via `findPlatformUserByCpfAndMatricula`.
+//   d) Nenhum candidato, multiplos candidatos, usuario inativo:
+//      MSG_INVALID_CREDENTIALS (mesma mensagem — anti-enumeracao S515).
+//   e) `companies.status = 'inativa'`: 403 MSG_COMPANY_INACTIVE.
+//   f) Emite `portalToken` (S042); verifica gate LGPD (§7.2 f/g).
 //      - gate pendente: `gateStep: 'lgpd_consent'`
 //      - gate vigente: `gateStep: 'pendencias'`
 //
-// Ambiguidade cross-empresa (S019 analogo — sem canonico regulando o
-// portal): tratamos como "nao encontrado" para preservar anti-enumeracao.
-// Registrado como D003 (mesma divida do login unificado — consolidacao
-// futura via UNIQUE global). Nao ha bloqueio de operacao por conta disto.
+// Case-insensitivity canonica (ME-080b): matricula sempre armazenada em
+// uppercase; usuario pode digitar em qualquer caixa; normalizacao para
+// uppercase acontece aqui antes de qualquer busca.
+//
+// Ambiguidade cross-empresa (S019 analogo): tratamos como
+// MSG_INVALID_CREDENTIALS para preservar anti-enumeracao. Registrado
+// como D003 (mesma divida do login unificado — consolidacao futura via
+// UNIQUE global).
 //
 // S041: RateLimiter tem instancia propria neste handler (module-level
 // const em `./internals.ts` sob S366). Chave canonica `portal-login` e
@@ -35,15 +42,17 @@ import { NextResponse } from 'next/server';
 
 import { buildRateLimitKey, RATE_LIMITS } from '../../../../server/auth/rateLimit';
 import { signPortalToken } from '../../../../server/auth/portalToken';
-import { findPlatformUserByCpf } from '../../../../server/services/authLookup';
+import { findPlatformUserByCpfAndMatricula } from '../../../../server/services/authLookup';
 import { getCompanyById } from '../../../../server/services/companies';
 import { hasValidLGPDConsent } from '../../../../server/services/lgpdConsents';
 import { LGPD_TERM_VERSION } from '../../../../lib/env';
+import { MATRICULA_REGEX } from '../../../../lib/auth/matriculaGenerator';
 
 import {
   MSG_COMPANY_INACTIVE,
-  MSG_CPF_NOT_FOUND,
   MSG_INVALID_CPF,
+  MSG_INVALID_CREDENTIALS,
+  MSG_INVALID_MATRICULA,
   MSG_RATE_LIMIT,
   getDbClient,
   getRateLimiter,
@@ -53,6 +62,7 @@ const RATE_LIMIT_IP_UNKNOWN = 'unknown';
 
 interface RequestBody {
   cpf: unknown;
+  matricula: unknown;
 }
 
 interface PortalLoginSuccess {
@@ -78,6 +88,14 @@ function normalizeCpf(raw: unknown): string | null {
   return digits.length === 11 ? digits : null;
 }
 
+function normalizeMatricula(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (trimmed.length !== 4) return null;
+  const upper = trimmed.toUpperCase();
+  return MATRICULA_REGEX.test(upper) ? upper : null;
+}
+
 export async function POST(req: Request): Promise<NextResponse> {
   let body: RequestBody;
   try {
@@ -91,12 +109,17 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ msg: MSG_INVALID_CPF }, { status: 400 });
   }
 
+  const matriculaUpper = normalizeMatricula(body.matricula);
+  if (matriculaUpper === null) {
+    return NextResponse.json({ msg: MSG_INVALID_MATRICULA }, { status: 400 });
+  }
+
   const ip = extractClientIp(req.headers);
   const rule = RATE_LIMITS.portalLogin;
   const key = buildRateLimitKey(ip, rule.op, cpf);
   const rateLimiter = getRateLimiter();
 
-  // a) Rate limit
+  // b) Rate limit
   const status = rateLimiter.check(key, rule);
   if (status.blocked) {
     return NextResponse.json(
@@ -107,14 +130,14 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   const { db } = getDbClient();
 
-  // b) Busca CPF
-  const candidates = await findPlatformUserByCpf(db, cpf);
+  // c) Busca par (cpf, matricula)
+  const candidates = await findPlatformUserByCpfAndMatricula(db, cpf, matriculaUpper);
 
-  // Ambiguidade cross-empresa: >1 candidato → trata como "nao encontrado"
-  // (D003 analogo — anti-enumeracao preservada).
+  // Ambiguidade cross-empresa OU nenhum candidato: mesma mensagem
+  // anti-enumeracao (D003 analogo — S515 preserva anti-enumeracao).
   if (candidates.length !== 1) {
     rateLimiter.registerFailure(key, rule);
-    return NextResponse.json({ msg: MSG_CPF_NOT_FOUND }, { status: 404 });
+    return NextResponse.json({ msg: MSG_INVALID_CREDENTIALS }, { status: 404 });
   }
 
   const candidate = candidates[0]!;
@@ -142,22 +165,22 @@ export async function POST(req: Request): Promise<NextResponse> {
     // Nunca deve ocorrer (candidato agregado exige um dos dois preenchido),
     // mas guard defensivo para o narrowing do TS.
     rateLimiter.registerFailure(key, rule);
-    return NextResponse.json({ msg: MSG_CPF_NOT_FOUND }, { status: 404 });
+    return NextResponse.json({ msg: MSG_INVALID_CREDENTIALS }, { status: 404 });
   }
 
-  // c) usuario inativo → mesma mensagem anti-enumeracao
+  // d) usuario inativo → mesma mensagem anti-enumeracao
   if (userStatus === 'inativo') {
     rateLimiter.registerFailure(key, rule);
-    return NextResponse.json({ msg: MSG_CPF_NOT_FOUND }, { status: 404 });
+    return NextResponse.json({ msg: MSG_INVALID_CREDENTIALS }, { status: 404 });
   }
 
-  // d) empresa inativa
+  // e) empresa inativa
   const company = await getCompanyById(db, candidate.companyId);
   if (company === undefined || company.status === 'inativa') {
     return NextResponse.json({ msg: MSG_COMPANY_INACTIVE }, { status: 403 });
   }
 
-  // e) emite portalToken + gate LGPD
+  // f) emite portalToken + gate LGPD
   const portalToken = await signPortalToken({
     companyId: candidate.companyId,
     titularType,

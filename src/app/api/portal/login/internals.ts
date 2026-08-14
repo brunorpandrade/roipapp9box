@@ -24,10 +24,15 @@ import {
   type RateLimiter,
 } from '../../../../server/auth/rateLimit';
 
-// Mensagens canonicas literais (§4.3 e §5.6).
-export const MSG_CPF_NOT_FOUND = 'CPF não encontrado. Verifique e tente novamente.';
+// Mensagens canonicas literais (§4.3 e §5.6 + ME-080b Dispatch 1).
+// MSG_CPF_NOT_FOUND revogada nesta ME: a introducao do 2o fator
+// (matricula) unifica a mensagem anti-enumeracao em MSG_INVALID_CREDENTIALS
+// para nao vazar se o CPF existe mas a matricula errou vs se o CPF nao
+// existe. S515 canonizada.
 export const MSG_COMPANY_INACTIVE = 'Empresa inativa no sistema. Entre em contato com o suporte.';
 export const MSG_INVALID_CPF = 'Informe um CPF com 11 dígitos.';
+export const MSG_INVALID_MATRICULA = 'Informe uma matrícula com 2 letras seguidas de 2 números.';
+export const MSG_INVALID_CREDENTIALS = 'CPF ou matrícula incorretos. Verifique e tente novamente.';
 export const MSG_RATE_LIMIT = 'Muitas tentativas. Tente novamente em alguns minutos.';
 
 // Instancia propria (S041). Reutilizada entre requests dentro do mesmo
