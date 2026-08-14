@@ -33,6 +33,7 @@ function platformSession(role: 'rh' | 'rh_lider' | 'clevel' | 'lider'): ServerSe
     displayName: 'Fulano de Tal',
     companyDisplayName: 'Empresa Exemplo',
     companyLogoUrl: null,
+    passwordSet: true,
   };
 }
 

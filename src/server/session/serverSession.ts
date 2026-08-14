@@ -97,6 +97,14 @@ export type ServerSession =
       readonly displayName: string;
       readonly companyDisplayName: string;
       readonly companyLogoUrl: string | null;
+      /**
+       * ME-080b Dispatch 3 — flag canonica do gate "primeiro acesso ao
+       * painel". `false` quando o titular ainda usa a senha inicial
+       * provisionada (nunca fez `auth.changePassword`). Painéis
+       * server-side redirecionam para `/alterar-senha` quando `false`.
+       * Alterado para `true` no primeiro `auth.changePassword` bem-sucedido.
+       */
+      readonly passwordSet: boolean;
     };
 
 // -----------------------------------------------------------------------
@@ -175,6 +183,7 @@ export async function resolveServerSession(
     const rows = await db
       .select({
         name: cLevelMembers.name,
+        passwordSet: cLevelMembers.passwordSet,
         nomeFantasia: companies.nomeFantasia,
         logoUrl: companies.logoUrl,
       })
@@ -194,6 +203,7 @@ export async function resolveServerSession(
       displayName: clevelRow.name,
       companyDisplayName: clevelRow.nomeFantasia,
       companyLogoUrl: clevelRow.logoUrl,
+      passwordSet: clevelRow.passwordSet === true,
     };
   }
 
@@ -201,6 +211,7 @@ export async function resolveServerSession(
   const rows = await db
     .select({
       name: employees.name,
+      passwordSet: employees.passwordSet,
       nomeFantasia: companies.nomeFantasia,
       logoUrl: companies.logoUrl,
     })
@@ -220,6 +231,7 @@ export async function resolveServerSession(
     displayName: empRow.name,
     companyDisplayName: empRow.nomeFantasia,
     companyLogoUrl: empRow.logoUrl,
+    passwordSet: empRow.passwordSet === true,
   };
 }
 

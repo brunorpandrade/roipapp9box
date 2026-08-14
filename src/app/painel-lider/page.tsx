@@ -205,6 +205,10 @@ export default async function PainelLiderPage(): Promise<JSX.Element> {
   if (session.kind !== 'platform') {
     redirect('/super-admin');
   }
+  // ME-080b Dispatch 3 — gate canonico "primeiro acesso".
+  if (session.passwordSet === false) {
+    redirect('/alterar-senha');
+  }
   if (session.role !== 'lider') {
     // rh_lider → §2.3 precedencia canonica → /painel-rh (middleware
     // ja resolve; defense-in-depth aqui).

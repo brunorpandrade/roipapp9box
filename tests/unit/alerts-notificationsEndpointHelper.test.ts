@@ -29,6 +29,7 @@ describe('resolveDestClauseFromSession — narrowing canonico §10.1', () => {
       displayName: 'RH da empresa',
       companyDisplayName: 'Empresa X',
       companyLogoUrl: null,
+      passwordSet: true,
     };
     const res = resolveDestClauseFromSession(session);
     expect(res).toEqual({
@@ -46,6 +47,7 @@ describe('resolveDestClauseFromSession — narrowing canonico §10.1', () => {
       displayName: 'RH+Lider',
       companyDisplayName: 'Empresa X',
       companyLogoUrl: null,
+      passwordSet: true,
     };
     const res = resolveDestClauseFromSession(session);
     expect(res).toEqual({
@@ -63,6 +65,7 @@ describe('resolveDestClauseFromSession — narrowing canonico §10.1', () => {
       displayName: 'C-level',
       companyDisplayName: 'Empresa X',
       companyLogoUrl: null,
+      passwordSet: true,
     };
     const res = resolveDestClauseFromSession(session);
     expect(res).toEqual({ kind: 'forbidden', motivo: 'perfil_sem_sino_clevel' });
@@ -77,6 +80,7 @@ describe('resolveDestClauseFromSession — narrowing canonico §10.1', () => {
       displayName: 'Lider',
       companyDisplayName: 'Empresa X',
       companyLogoUrl: null,
+      passwordSet: true,
     };
     const res = resolveDestClauseFromSession(session);
     expect(res).toEqual({ kind: 'forbidden', motivo: 'perfil_sem_sino_lider' });

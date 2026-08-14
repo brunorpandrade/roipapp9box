@@ -1296,15 +1296,25 @@ export const authRouter = router({
       }
 
       // (g) — Hash canonico bcrypt custo 12 (S010) e UPDATE por role. RV-12:
-      //       via Drizzle tipado nos services. Reset NAO altera passwordSet
-      //       (assume-se ja true — o titular esta autenticado).
+      //       via Drizzle tipado nos services. ME-080b Dispatch 3: para
+      //       titulares platform (employee/clevel), a troca de senha sempre
+      //       marca `passwordSet: true` — encerra o gate "primeiro acesso"
+      //       (Dispatch 3) quando a senha inicial provisionada e trocada,
+      //       e mantem `passwordSet: true` nas trocas subsequentes.
+      //       Super Admin nao possui `passwordSet` no schema — sempre setado.
       const newHash = await hashPassword(input.novaSenha);
       if (ctx.user.role === 'super_admin') {
         await updateSuperAdminPassword(ctx.db, ctx.user.superAdminId, newHash);
       } else if (ctx.user.role === 'clevel') {
-        await updateCLevelMemberCredential(ctx.db, ctx.user.userId, { passwordHash: newHash });
+        await updateCLevelMemberCredential(ctx.db, ctx.user.userId, {
+          passwordHash: newHash,
+          passwordSet: true,
+        });
       } else {
-        await updateEmployeeCredential(ctx.db, ctx.user.userId, { passwordHash: newHash });
+        await updateEmployeeCredential(ctx.db, ctx.user.userId, {
+          passwordHash: newHash,
+          passwordSet: true,
+        });
       }
 
       // (h) — §5.7 "exceto a sessao atual" (S029): reemite JWT com pwv

@@ -147,6 +147,7 @@ describe('/api/notifications — GET + PATCH canonicos §10.2/§10.4', () => {
         displayName: 'C',
         companyDisplayName: 'X',
         companyLogoUrl: null,
+        passwordSet: true,
       };
       const res = await GET(new Request('http://localhost/api/notifications?mode=count'));
       expect(res.status).toBe(403);
@@ -163,6 +164,7 @@ describe('/api/notifications — GET + PATCH canonicos §10.2/§10.4', () => {
         displayName: 'L',
         companyDisplayName: 'X',
         companyLogoUrl: null,
+        passwordSet: true,
       };
       const res = await GET(new Request('http://localhost/api/notifications?mode=count'));
       expect(res.status).toBe(403);
@@ -206,6 +208,7 @@ describe('/api/notifications — GET + PATCH canonicos §10.2/§10.4', () => {
         displayName: 'RH',
         companyDisplayName: 'X',
         companyLogoUrl: null,
+        passwordSet: true,
       };
       const res = await GET(new Request('http://localhost/api/notifications?mode=count'));
       expect(res.status).toBe(200);
@@ -243,6 +246,7 @@ describe('/api/notifications — GET + PATCH canonicos §10.2/§10.4', () => {
         displayName: 'RH',
         companyDisplayName: 'X',
         companyLogoUrl: null,
+        passwordSet: true,
       };
       const res = await GET(new Request('http://localhost/api/notifications?mode=count'));
       const body = (await res.json()) as {
@@ -271,6 +275,7 @@ describe('/api/notifications — GET + PATCH canonicos §10.2/§10.4', () => {
         displayName: 'RH',
         companyDisplayName: 'X',
         companyLogoUrl: null,
+        passwordSet: true,
       };
       const res = await GET(new Request('http://localhost/api/notifications?mode=unread'));
       const body = (await res.json()) as unknown[];
@@ -290,6 +295,7 @@ describe('/api/notifications — GET + PATCH canonicos §10.2/§10.4', () => {
         displayName: 'RH',
         companyDisplayName: 'X',
         companyLogoUrl: null,
+        passwordSet: true,
       };
       const res = await GET(new Request('http://localhost/api/notifications?mode=unread'));
       const body = (await res.json()) as Array<{ id: number }>;
@@ -309,6 +315,7 @@ describe('/api/notifications — GET + PATCH canonicos §10.2/§10.4', () => {
         displayName: 'RH',
         companyDisplayName: 'X',
         companyLogoUrl: null,
+        passwordSet: true,
       };
       const res = await PATCH(
         new Request(`http://localhost/api/notifications?action=read&id=${nid}`),
@@ -346,6 +353,7 @@ describe('/api/notifications — GET + PATCH canonicos §10.2/§10.4', () => {
         displayName: 'RH',
         companyDisplayName: 'X',
         companyLogoUrl: null,
+        passwordSet: true,
       };
       const res = await PATCH(
         new Request(`http://localhost/api/notifications?action=archive&id=${nid}`),

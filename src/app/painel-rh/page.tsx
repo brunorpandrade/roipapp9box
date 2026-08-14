@@ -280,6 +280,11 @@ export default async function PainelRhPage(): Promise<JSX.Element> {
   if (session.kind !== 'platform') {
     redirect('/super-admin');
   }
+  // ME-080b Dispatch 3 — gate canonico "primeiro acesso": se a senha
+  // inicial ainda nao foi trocada, redireciona para `/alterar-senha`.
+  if (session.passwordSet === false) {
+    redirect('/alterar-senha');
+  }
   // Middleware §10.3 ja bloqueia C-level/Lider aqui — defense-in-depth.
   if (session.role !== 'rh' && session.role !== 'rh_lider') {
     redirect('/');

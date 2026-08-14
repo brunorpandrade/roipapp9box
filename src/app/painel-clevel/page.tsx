@@ -218,6 +218,10 @@ export default async function PainelCLevelPage(): Promise<JSX.Element> {
   if (session.kind !== 'platform') {
     redirect('/super-admin');
   }
+  // ME-080b Dispatch 3 — gate canonico "primeiro acesso".
+  if (session.passwordSet === false) {
+    redirect('/alterar-senha');
+  }
   if (session.role !== 'clevel') {
     if (session.role === 'rh' || session.role === 'rh_lider') {
       redirect('/painel-rh');
