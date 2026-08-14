@@ -153,24 +153,20 @@ const ORGANOGRAMA_CSS = `
 .org-tree > ul {
   padding-top: 0;
 }
-/* ME-080a-fix3 --- ul::before REMOVIDO. */
-/* Antes, ul::before desenhava vertical no meio do <ul> filho. */
-/* Quando filhos tinham larguras diferentes, o meio do ul nao */
-/* coincidia com o meio do filho central --- resultado: linha */
-/* orfa entre pai e tronco horizontal (marcada em amarelo por */
-/* Bruno nos prints). Substituido por uma vertical descendente */
-/* do CARD do pai (via :has(> ul)) que sempre alinha com o */
-/* centro do card. */
-.org-tree li:has(> ul) > div[data-node-id]::after {
-  content: '';
-  position: absolute;
-  bottom: -26px;
-  left: 50%;
-  border-left: 2px solid #CBD5E1;
-  height: 26px;
-  margin-left: -1px;
-  z-index: 0;
-}
+/* ME-080a-fix4 --- vertical descendente do pai REMOVIDA. */
+/* Geometria: tronco horizontal (li::before/::after em top:-26px) */
+/* fica em top do ul filho = bottom do card do pai (adjacentes, */
+/* zero gap). Portanto vertical descendo do card do pai era */
+/* REDUNDANTE e apontava para o meio horizontal do card do pai, */
+/* que raramente coincide com o centro dos filhos quando ha 2+ */
+/* filhos --- sobrava linha entre os filhos (marcado por Bruno). */
+/* Estrutura final: */
+/*   - pai conecta ao tronco por adjacencia (sem vertical extra) */
+/*   - tronco horizontal cobre a largura dos filhos */
+/*   - vertical de cada card do filho (::before) sobe 26px ate */
+/*     tronco */
+/*   - filho unico: sem tronco, so vertical do card do filho sobe */
+/*     26px = conecta direto ao card do pai */
 `;
 
 // -----------------------------------------------------------------------
