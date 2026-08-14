@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useRef, useState, type JSX } from 'react';
 
 import { COLORS } from '../../../../../../lib/design-tokens/colors';
+import { CredentialsDisplayModal } from '@/components/credentials/CredentialsDisplayModal';
 
 import { CLevelForm, EMPTY_CLEVEL_FORM_VALUES, type CLevelFormValues } from '../CLevelForm';
 import { criarCLevelAction } from './actions';
@@ -104,6 +105,12 @@ export function CLevelNovoClient(props: Props): JSX.Element {
   const [showDirtyModal, setShowDirtyModal] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // ME-080b Dispatch 2b — credenciais devolvidas pelo backend apos create.
+  const [pendingCredentials, setPendingCredentials] = useState<{
+    nome: string;
+    matricula: string;
+    senhaInicial: string;
+  } | null>(null);
 
   const valuesRef = useRef(values);
   valuesRef.current = values;
@@ -164,6 +171,12 @@ export function CLevelNovoClient(props: Props): JSX.Element {
         return;
       }
       setDirty(false);
+      // ME-080b Dispatch 2b — C-level SEMPRE recebe as duas credenciais.
+      setPendingCredentials({
+        nome: v.name.trim(),
+        matricula: result.data.credentials.matricula,
+        senhaInicial: result.data.credentials.senhaInicial,
+      });
       setSaveSuccess(true);
     } catch {
       setErrorMsg('Falha de rede ao salvar. Tente novamente.');
@@ -182,40 +195,51 @@ export function CLevelNovoClient(props: Props): JSX.Element {
   // Pós-sucesso
   if (saveSuccess) {
     return (
-      <div
-        style={{
-          background: COLORS.background.card,
-          border: `1px solid ${COLORS.border.default}`,
-          borderRadius: 10,
-          padding: 32,
-          textAlign: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 16,
-          alignItems: 'center',
-        }}
-      >
-        <div style={{ fontSize: 16, fontWeight: 600, color: COLORS.text.primary }}>
-          C-level cadastrado com sucesso
+      <>
+        {pendingCredentials !== null ? (
+          <CredentialsDisplayModal
+            open={true}
+            nomeTitular={pendingCredentials.nome}
+            matricula={pendingCredentials.matricula}
+            senhaInicial={pendingCredentials.senhaInicial}
+            onClose={() => setPendingCredentials(null)}
+          />
+        ) : null}
+        <div
+          style={{
+            background: COLORS.background.card,
+            border: `1px solid ${COLORS.border.default}`,
+            borderRadius: 10,
+            padding: 32,
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+            alignItems: 'center',
+          }}
+        >
+          <div style={{ fontSize: 16, fontWeight: 600, color: COLORS.text.primary }}>
+            C-level cadastrado com sucesso
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button
+              type="button"
+              onClick={() => router.push(`/super-admin/empresa/${companyId}/clevel-rh`)}
+              style={BTN_PRIMARY_STYLE}
+            >
+              Voltar para C-level e RH
+            </button>
+            <button
+              type="button"
+              disabled
+              title={ENVIAR_PRIMEIRO_ACESSO_TOOLTIP}
+              style={BTN_DISABLED_STYLE}
+            >
+              Enviar primeiro acesso
+            </button>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            type="button"
-            onClick={() => router.push(`/super-admin/empresa/${companyId}/clevel-rh`)}
-            style={BTN_PRIMARY_STYLE}
-          >
-            Voltar para C-level e RH
-          </button>
-          <button
-            type="button"
-            disabled
-            title={ENVIAR_PRIMEIRO_ACESSO_TOOLTIP}
-            style={BTN_DISABLED_STYLE}
-          >
-            Enviar primeiro acesso
-          </button>
-        </div>
-      </div>
+      </>
     );
   }
 

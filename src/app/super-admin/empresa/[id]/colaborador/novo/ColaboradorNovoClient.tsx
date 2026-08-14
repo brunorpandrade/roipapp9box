@@ -22,6 +22,8 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useRef, useState, type JSX } from 'react';
 
+import { CredentialsDisplayModal } from '@/components/credentials/CredentialsDisplayModal';
+
 import { COLORS } from '../../../../../../lib/design-tokens/colors';
 
 import { ModalTransferenciaRF } from '../../_shared/ModalTransferenciaRF';
@@ -127,6 +129,14 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
   const [rfModalError, setRfModalError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // ME-080b Dispatch 2b — credenciais devolvidas pelo backend apos create.
+  // Guardadas em estado para exibir no CredentialsDisplayModal ANTES da
+  // navegacao para a lista (plain text NAO reaparece).
+  const [pendingCredentials, setPendingCredentials] = useState<{
+    nome: string;
+    matricula: string;
+    senhaInicial: string | null;
+  } | null>(null);
 
   const valuesRef = useRef(values);
   valuesRef.current = values;
@@ -203,6 +213,8 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
       return false;
     }
     const newEmployeeId = createRes.data.employeeId;
+    const createdCredentials = createRes.data.credentials;
+    let rfSenhaInicial: string | null = null;
 
     // Passo 2 — se RF ativado, chama setResponsavelFinanceiro.
     if (v.isResponsavelFinanceiro && newEmployeeId !== undefined) {
@@ -216,7 +228,20 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
         setRfModalError(rfResult.message);
         return false;
       }
+      // ME-080b Dispatch 2b — setResponsavelFinanceiro pode provisionar
+      // senha se o employee nao tinha (caso raro no fluxo Novo: RH marca
+      // RF de colaborador comum sem Lider/RH; sem senha vinda do create).
+      rfSenhaInicial = rfResult.data.senhaInicial;
     }
+
+    // ME-080b Dispatch 2b — precedencia canonica: senha do create tem
+    // prioridade; senha do setRF so entra se o create nao proviu.
+    const senhaFinal = createdCredentials.senhaInicial ?? rfSenhaInicial;
+    setPendingCredentials({
+      nome: v.name.trim(),
+      matricula: createdCredentials.matricula,
+      senhaInicial: senhaFinal,
+    });
 
     return true;
   }
@@ -285,16 +310,27 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
       : `/super-admin/empresa/${companyId}/todos-os-colaboradores`;
     const backLabel = presetIsRH ? 'Voltar para C-level e RH' : 'Voltar para lista';
     return (
-      <div style={SUCCESS_CARD_STYLE}>
-        <div style={{ fontSize: 16, fontWeight: 600, color: COLORS.text.primary }}>
-          Colaborador cadastrado com sucesso
+      <>
+        {pendingCredentials !== null ? (
+          <CredentialsDisplayModal
+            open={true}
+            nomeTitular={pendingCredentials.nome}
+            matricula={pendingCredentials.matricula}
+            senhaInicial={pendingCredentials.senhaInicial}
+            onClose={() => setPendingCredentials(null)}
+          />
+        ) : null}
+        <div style={SUCCESS_CARD_STYLE}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: COLORS.text.primary }}>
+            Colaborador cadastrado com sucesso
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button type="button" onClick={() => router.push(backHref)} style={BTN_PRIMARY_STYLE}>
+              {backLabel}
+            </button>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button type="button" onClick={() => router.push(backHref)} style={BTN_PRIMARY_STYLE}>
-            {backLabel}
-          </button>
-        </div>
-      </div>
+      </>
     );
   }
 

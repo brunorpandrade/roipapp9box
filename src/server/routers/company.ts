@@ -88,6 +88,7 @@ import {
   type JobFamilyVariableInput,
 } from '../services/companyJobFamilies';
 import { insertTransferLogEntry } from '../services/responsavelFinanceiroTransferLog';
+import { provisionInitialPassword } from '../services/credentialProvisioning';
 
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
 
@@ -227,6 +228,13 @@ export interface SetResponsavelFinanceiroResult {
     type: 'employee' | 'cLevel';
     id: number;
   };
+  /**
+   * ME-080b Dispatch 2b — senha inicial provisionada quando o novo
+   * titular RF e um employee sem `passwordHash` (RF exige acesso ao
+   * painel). C-level ja tem senha desde o create; presente aqui apenas
+   * no cenario employee-sem-senha. `null` nos demais casos.
+   */
+  senhaInicial: string | null;
 }
 
 // ============================================================
@@ -602,11 +610,31 @@ export function createCompanyRouter(deps: CompanyRouterDeps = {}) {
             }
 
             // (4.g) UPDATE flag=true do novo titular.
+            // ME-080b Dispatch 2b — se novo titular e employee e nao tem
+            // passwordHash, provisiona senha inicial no mesmo UPDATE
+            // (RF exige acesso ao painel; e-mail+senha canonica).
+            // C-level ja tem senha desde o create (cLevelMembers.create
+            // Dispatch 2b sempre provisiona). Se employee ja tem senha
+            // (foi Lider ou RH antes), preserva a senha atual.
+            let senhaInicialProvisionada: string | null = null;
             if (input.newHolderType === 'employee') {
-              await tx
-                .update(employees)
-                .set({ isResponsavelFinanceiro: true })
-                .where(eq(employees.id, input.newHolderId));
+              const employeeRow = await tx
+                .select({ passwordHash: employees.passwordHash })
+                .from(employees)
+                .where(eq(employees.id, input.newHolderId))
+                .limit(1);
+              const naoTemSenha =
+                employeeRow[0]?.passwordHash === null || employeeRow[0]?.passwordHash === '';
+              const patchEmp: Partial<typeof employees.$inferInsert> = {
+                isResponsavelFinanceiro: true,
+              };
+              if (naoTemSenha) {
+                const { plain, hash } = await provisionInitialPassword();
+                patchEmp.passwordHash = hash;
+                patchEmp.passwordSet = false;
+                senhaInicialProvisionada = plain;
+              }
+              await tx.update(employees).set(patchEmp).where(eq(employees.id, input.newHolderId));
             } else {
               await tx
                 .update(cLevelMembers)
@@ -634,6 +662,7 @@ export function createCompanyRouter(deps: CompanyRouterDeps = {}) {
                 type: input.newHolderType,
                 id: input.newHolderId,
               },
+              senhaInicial: senhaInicialProvisionada,
             };
           });
         } catch (err) {

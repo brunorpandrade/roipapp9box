@@ -140,6 +140,11 @@ export async function criarColaboradorAction(input: {
   readonly isLider?: boolean;
   readonly liderInicialId?: number;
   readonly liderInicialClevelId?: number;
+  /**
+   * ME-080b Dispatch 2b — matricula opcional. Se ausente: gerada
+   * automaticamente. Se presente: validada (formato AA00 + unicidade).
+   */
+  readonly matricula?: string;
 }): Promise<ActionResult<CreateEmployeeResult>> {
   const token = await resolveRawToken();
   if (token === null) {

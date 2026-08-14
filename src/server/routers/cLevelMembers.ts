@@ -66,6 +66,11 @@ import {
 } from '../../db/schema';
 
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import {
+  provisionInitialPassword,
+  provisionUniqueMatricula,
+  validateProvidedMatricula,
+} from '../services/credentialProvisioning';
 
 // ============================================================
 // Constantes canonicas (§4.4)
@@ -123,6 +128,19 @@ export const MSG_JA_INATIVO_CL = 'C-level ja esta inativo.' as const;
 /** §4.4 — C-level ja esta ativo. */
 export const MSG_JA_ATIVO_CL = 'C-level ja esta ativo.' as const;
 
+/**
+ * ME-080b Dispatch 2b (S515) — matricula em formato invalido.
+ * Formato canonico: AA00 (2 letras + 2 digitos, uppercase).
+ */
+export const MSG_MATRICULA_FORMATO_INVALIDO_CL =
+  'Matricula deve ter 2 letras seguidas de 2 numeros (formato AA00).' as const;
+
+/**
+ * ME-080b Dispatch 2b (S515) — matricula duplicada na empresa.
+ */
+export const MSG_MATRICULA_DUPLICADA_CL =
+  'Matricula ja em uso nesta empresa. Escolha outra ou clique em Gerar.' as const;
+
 /** S127 — toggle RF fora da ME-043. */
 export const MSG_TOGGLE_RF_FORA_ESCOPO_CL =
   'Alteracao de Responsavel financeiro nao e permitida por esta rota; ' +
@@ -178,6 +196,13 @@ export const CREATE_CLEVEL_INPUT_SCHEMA = z.object({
   departamento: z.enum(DEPARTAMENTO_VALUES),
   custoMensal: custoMensalSchema,
   acessoTotal: z.boolean(),
+  /**
+   * ME-080b Dispatch 2b — matricula opcional. Se ausente: gerada
+   * automaticamente. Se presente: validada (formato AA00 uppercase +
+   * unicidade). C-level acessa portal (Perfil Individual, Instrumento C
+   * como lider, IQL) — exige matricula igual ao employee.
+   */
+  matricula: z.string().min(1).max(10).optional(),
 });
 
 /**
@@ -247,12 +272,32 @@ export const COUNT_ACTIVE_CLEVEL_INPUT_SCHEMA = z.object({
 export interface CreateCLevelResult {
   cLevelId: number;
   placeholderId: number;
+  /**
+   * ME-080b Dispatch 2b — credenciais geradas no cadastro. C-level SEMPRE
+   * recebe as duas: matricula (para portal, preenche Perfil Individual,
+   * Instrumento C, IQL) e senhaInicial (para painel, e-mail+senha).
+   * Plain text NUNCA persistido — devolvido uma unica vez.
+   */
+  credentials: {
+    matricula: string;
+    senhaInicial: string;
+  };
 }
 
 /** Retorno canonico do `update`. */
 export interface UpdateCLevelResult {
   cLevelId: number;
   affected: number;
+}
+
+/** ME-080b Dispatch 2b — retornos das novas mutations de regeneracao. */
+export interface RegenerateCLevelMatriculaResult {
+  cLevelId: number;
+  matricula: string;
+}
+export interface RegenerateCLevelPasswordResult {
+  cLevelId: number;
+  senhaInicial: string;
 }
 
 /** Retorno canonico do `inactivate`. */
@@ -577,9 +622,38 @@ export function createCLevelMembersRouter(deps: CLevelMembersRouterDeps = {}) {
       .input(CREATE_CLEVEL_INPUT_SCHEMA)
       .mutation(async ({ ctx, input }): Promise<CreateCLevelResult> => {
         assertCompanyScopeCl(ctx.user, input.companyId);
+
+        // ME-080b Dispatch 2b — resolucao canonica da matricula ANTES
+        // da transacao. Se input trouxe: valida formato + unicidade
+        // cross-tabela (employees + cLevelMembers). Se ausente: gera
+        // unica automaticamente.
+        let matriculaResolvida: string;
+        if (input.matricula !== undefined) {
+          const check = await validateProvidedMatricula(ctx.db, input.companyId, input.matricula);
+          if (!check.ok) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message:
+                check.reason === 'formato'
+                  ? MSG_MATRICULA_FORMATO_INVALIDO_CL
+                  : MSG_MATRICULA_DUPLICADA_CL,
+            });
+          }
+          matriculaResolvida = check.matricula;
+        } else {
+          matriculaResolvida = await provisionUniqueMatricula(ctx.db, input.companyId);
+        }
+
+        // ME-080b Dispatch 2b — C-level SEMPRE recebe senha inicial
+        // (acessa painel executivo por email+senha).
+        const senhaProvisionada = await provisionInitialPassword();
+
         try {
           return await ctx.db.transaction(async (tx) => {
             const payload = buildCLevelInsertPayload(input);
+            payload.matricula = matriculaResolvida;
+            payload.passwordHash = senhaProvisionada.hash;
+            payload.passwordSet = false;
             const [inserted] = await tx.insert(cLevelMembers).values(payload).$returningId();
             if (!inserted) {
               throw new TRPCError({
@@ -604,7 +678,14 @@ export function createCLevelMembersRouter(deps: CLevelMembersRouterDeps = {}) {
                 message: 'INSERT em individualProfilePlaceholders nao retornou id.',
               });
             }
-            return { cLevelId, placeholderId: placeholderInserted.id };
+            return {
+              cLevelId,
+              placeholderId: placeholderInserted.id,
+              credentials: {
+                matricula: matriculaResolvida,
+                senhaInicial: senhaProvisionada.plain,
+              },
+            };
           });
         } catch (err) {
           if (err instanceof TRPCError) {
@@ -787,6 +868,65 @@ export function createCLevelMembersRouter(deps: CLevelMembersRouterDeps = {}) {
         assertCompanyScopeCl(ctx.user, input.companyId);
         const n = await countActiveCLevelsForCompany(ctx.db, input.companyId);
         return { count: n };
+      }),
+
+    // --------------------------------------------------------
+    // ME-080b Dispatch 2b — cLevelMembers.regenerateMatricula
+    // --------------------------------------------------------
+    // Gera uma nova matricula unica para o C-level. A matricula atual
+    // deixa de funcionar imediatamente no portal (CPF+matricula).
+    // Autorizacao canonica: super_admin exclusivo (padrao clevel).
+    regenerateMatricula: roleProcedure(['super_admin'])
+      .input(z.object({ cLevelId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }): Promise<RegenerateCLevelMatriculaResult> => {
+        const target = await ctx.db
+          .select({ id: cLevelMembers.id, companyId: cLevelMembers.companyId })
+          .from(cLevelMembers)
+          .where(eq(cLevelMembers.id, input.cLevelId))
+          .limit(1);
+        const row = target[0];
+        if (!row) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: MSG_CLEVEL_NAO_ENCONTRADO });
+        }
+        assertCompanyScopeCl(ctx.user, row.companyId);
+
+        const novaMatricula = await provisionUniqueMatricula(ctx.db, row.companyId);
+        await ctx.db
+          .update(cLevelMembers)
+          .set({ matricula: novaMatricula })
+          .where(eq(cLevelMembers.id, input.cLevelId));
+
+        return { cLevelId: input.cLevelId, matricula: novaMatricula };
+      }),
+
+    // --------------------------------------------------------
+    // ME-080b Dispatch 2b — cLevelMembers.regeneratePassword
+    // --------------------------------------------------------
+    // Gera uma nova senha inicial para o C-level. Senha atual deixa de
+    // funcionar imediatamente. `passwordSet=false` reobrigatoria troca
+    // no proximo login (Dispatch 3). C-level sempre tem acesso ao
+    // painel — nao ha guard de "sem acesso ao painel" como no employee.
+    regeneratePassword: roleProcedure(['super_admin'])
+      .input(z.object({ cLevelId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }): Promise<RegenerateCLevelPasswordResult> => {
+        const target = await ctx.db
+          .select({ id: cLevelMembers.id, companyId: cLevelMembers.companyId })
+          .from(cLevelMembers)
+          .where(eq(cLevelMembers.id, input.cLevelId))
+          .limit(1);
+        const row = target[0];
+        if (!row) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: MSG_CLEVEL_NAO_ENCONTRADO });
+        }
+        assertCompanyScopeCl(ctx.user, row.companyId);
+
+        const { plain, hash } = await provisionInitialPassword();
+        await ctx.db
+          .update(cLevelMembers)
+          .set({ passwordHash: hash, passwordSet: false })
+          .where(eq(cLevelMembers.id, input.cLevelId));
+
+        return { cLevelId: input.cLevelId, senhaInicial: plain };
       }),
   });
 }
