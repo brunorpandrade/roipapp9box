@@ -930,7 +930,12 @@ describe('employees.uploadCSV — facade mockavel (S194)', () => {
     const facade: EmployeesFacade = {
       async create(_ctx, input) {
         chamadas.push(input.cpf.length);
-        return { employeeId: 99999, placeholderId: 99998, leaderHistoryId: null };
+        return {
+          employeeId: 99999,
+          placeholderId: 99998,
+          leaderHistoryId: null,
+          credentials: { matricula: 'ZZ99', senhaInicial: null },
+        };
       },
     };
     const { factory, ctx } = bindRouter(facade);

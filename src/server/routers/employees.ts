@@ -104,6 +104,11 @@ import {
   listEmployeesPaginated,
   PAPEL_FUNCIONAL_VALUES,
 } from '../services/employees';
+import {
+  provisionInitialPassword,
+  provisionUniqueMatricula,
+  validateProvidedMatricula,
+} from '../services/credentialProvisioning';
 
 import type { LinhaErro, UploadResult } from './_shared/uploadResult';
 
@@ -294,6 +299,30 @@ export const MSG_TOGGLE_RF_FORA_ESCOPO =
 export const MSG_ISRH_APENAS_BRUNO = 'Apenas o Super Admin pode alterar o acesso como RH.' as const;
 
 /**
+ * ME-080b Dispatch 2 (S515) — email obrigatorio quando o colaborador
+ * recebe acesso ao painel (Lider ou RH). C-level ja tem email notNull
+ * no schema — regra aplica-se apenas a employees.
+ */
+export const MSG_EMAIL_OBRIGATORIO_PAINEL: string =
+  'E-mail obrigatorio para colaborador com acesso ao painel ' +
+  '(Lider, RH ou Responsavel financeiro).';
+
+/**
+ * ME-080b Dispatch 2 (S515) — matricula duplicada no escopo da empresa.
+ * Ocorre quando o input externo colide com matricula ja em uso por outro
+ * employee/C-level da mesma empresa (UNIQUE canonico `(companyId, matricula)`).
+ */
+export const MSG_MATRICULA_DUPLICADA =
+  'Matricula ja em uso nesta empresa. Escolha outra ou clique em Gerar.' as const;
+
+/**
+ * ME-080b Dispatch 2 (S515) — matricula em formato invalido. Formato
+ * canonico: exatamente 2 letras maiusculas seguidas de 2 digitos (AA00).
+ */
+export const MSG_MATRICULA_FORMATO_INVALIDO =
+  'Matricula deve ter 2 letras seguidas de 2 numeros (formato AA00).' as const;
+
+/**
  * §4.5 — colaborador ja esta inativo (pre-condicao violada em `inactivate`
  * ou `delete`).
  */
@@ -429,6 +458,13 @@ export const CREATE_EMPLOYEE_INPUT_SCHEMA = z
     departamento: z.enum(DEPARTAMENTO_VALUES),
     isRH: z.boolean().optional(),
     isLider: z.boolean().optional(),
+    /**
+     * ME-080b Dispatch 2 — matricula opcional no input. Se ausente:
+     * gerada automaticamente pelo backend (formato AA00 unico na empresa).
+     * Se presente: validada (formato canonico + unicidade). Uppercase
+     * canonico — normalizacao aplicada no handler.
+     */
+    matricula: z.string().min(1).max(10).optional(),
     // ME-078b D6 canonico — lider inicial polimorfico. Exatamente um dos dois
     // pode ser informado (nunca ambos). `liderInicialId` aponta para
     // `employees.id` com `isLider=true`; `liderInicialClevelId` aponta para
@@ -513,12 +549,40 @@ export interface CreateEmployeeResult {
   employeeId: number;
   placeholderId: number;
   leaderHistoryId: number | null;
+  /**
+   * ME-080b Dispatch 2 — credenciais geradas no cadastro. `matricula`
+   * sempre presente (2 letras + 2 digitos, uppercase). `senhaInicial`
+   * presente APENAS quando o colaborador recebe acesso ao painel
+   * (isLider|isRH=true no input). Plain text NUNCA persistido — devolvido
+   * uma unica vez para a UI exibir ao RH copiar e transmitir manualmente.
+   */
+  credentials: {
+    matricula: string;
+    senhaInicial: string | null;
+  };
 }
 
 /** Retorno canonico do `update` — quantas linhas foram afetadas. */
 export interface UpdateEmployeeResult {
   employeeId: number;
   affected: number;
+  /**
+   * ME-080b Dispatch 2 — senha inicial gerada quando o UPDATE liga
+   * `isLider=true` ou `isRH=true` em colaborador que ainda nao tinha
+   * `passwordHash` setado. `null` quando nenhuma senha foi provisionada
+   * nesta chamada (caso comum de update). Plain text NUNCA persistido.
+   */
+  senhaInicial: string | null;
+}
+
+/** ME-080b Dispatch 2 — retorno das novas mutations de regeneracao. */
+export interface RegenerateMatriculaResult {
+  employeeId: number;
+  matricula: string;
+}
+export interface RegeneratePasswordResult {
+  employeeId: number;
+  senhaInicial: string;
 }
 
 /** Retorno canonico do `inactivate` — id do evento append-only. */
@@ -1824,6 +1888,21 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
         if (input.isRH === true) {
           assertCanChangeIsRH(ctx.user);
         }
+
+        // ME-080b Dispatch 2 (S515) — validacao email condicional.
+        // Se colaborador vai receber acesso ao painel (Lider ou RH),
+        // email e obrigatorio. Bloqueia ANTES de qualquer INSERT.
+        const requerAcessoPainel = input.isLider === true || input.isRH === true;
+        if (requerAcessoPainel) {
+          const emailInput = (input.email ?? '').trim();
+          if (emailInput.length === 0) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: MSG_EMAIL_OBRIGATORIO_PAINEL,
+            });
+          }
+        }
+
         // §4.5 lider inicial: se informado, precisa ser lider ativo
         // da mesma empresa. Verifica ANTES da transacao para dar
         // BAD_REQUEST canonico sem consumir INSERTs.
@@ -1834,9 +1913,43 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           await assertClevelAtivoDaEmpresa(ctx.db, input.companyId, input.liderInicialClevelId);
         }
 
+        // ME-080b Dispatch 2 — resolucao canonica da matricula ANTES da
+        // transacao para dar mensagens canonicas de validacao/duplicacao
+        // sem consumir INSERTs. Se input nao trouxe matricula, gera uma
+        // unica; se trouxe, valida formato + unicidade.
+        let matriculaResolvida: string;
+        if (input.matricula !== undefined) {
+          const check = await validateProvidedMatricula(ctx.db, input.companyId, input.matricula);
+          if (!check.ok) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message:
+                check.reason === 'formato'
+                  ? MSG_MATRICULA_FORMATO_INVALIDO
+                  : MSG_MATRICULA_DUPLICADA,
+            });
+          }
+          matriculaResolvida = check.matricula;
+        } else {
+          matriculaResolvida = await provisionUniqueMatricula(ctx.db, input.companyId);
+        }
+
+        // ME-080b Dispatch 2 — provisiona senha inicial APENAS se acesso
+        // ao painel. Plain text devolvido ao final; hash entra no INSERT.
+        let senhaProvisionada: { plain: string; hash: string } | null = null;
+        if (requerAcessoPainel) {
+          senhaProvisionada = await provisionInitialPassword();
+        }
+
         try {
           return await ctx.db.transaction(async (tx) => {
             const payload = buildEmployeeInsertPayload(input);
+            // ME-080b Dispatch 2 — anexa credenciais ao payload de INSERT.
+            payload.matricula = matriculaResolvida;
+            if (senhaProvisionada !== null) {
+              payload.passwordHash = senhaProvisionada.hash;
+              payload.passwordSet = false;
+            }
             const [inserted] = await tx.insert(employees).values(payload).$returningId();
             if (!inserted) {
               throw new TRPCError({
@@ -1913,7 +2026,15 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
               });
             }
 
-            return { employeeId, placeholderId, leaderHistoryId };
+            return {
+              employeeId,
+              placeholderId,
+              leaderHistoryId,
+              credentials: {
+                matricula: matriculaResolvida,
+                senhaInicial: senhaProvisionada?.plain ?? null,
+              },
+            };
           });
         } catch (err) {
           if (err instanceof TRPCError) {
@@ -1944,6 +2065,38 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           assertCanChangeIsRH(ctx.user);
         }
 
+        // ME-080b Dispatch 2 (S515) — validacao email condicional. Se o
+        // UPDATE resulta em colaborador com acesso ao painel (Lider ou
+        // RH), email precisa estar presente (no input OU ja no registro).
+        const nextIsRH = input.isRH !== undefined ? input.isRH : row.isRH === true;
+        const nextIsLiderPreview =
+          input.isLider !== undefined ? input.isLider : row.isLider === true;
+        const nextIsResponsavelFinanceiro = row.isResponsavelFinanceiro === true;
+        const proximoAcessoPainel =
+          nextIsRH === true || nextIsLiderPreview === true || nextIsResponsavelFinanceiro;
+        if (proximoAcessoPainel) {
+          const emailNovoRaw = input.email !== undefined ? input.email : row.email;
+          const emailNovo = (emailNovoRaw ?? '').trim();
+          if (emailNovo.length === 0) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: MSG_EMAIL_OBRIGATORIO_PAINEL,
+            });
+          }
+        }
+
+        // ME-080b Dispatch 2 — provisiona senha inicial APENAS se o
+        // UPDATE liga acesso ao painel (Lider ou RH) para colaborador
+        // que ainda nao tinha `passwordHash` setado. Update que so
+        // altera outros campos NUNCA gera senha.
+        let senhaProvisionada: { plain: string; hash: string } | null = null;
+        const ativaAcessoPainelAgora =
+          (input.isLider === true && row.isLider !== true) ||
+          (input.isRH === true && row.isRH !== true);
+        if (ativaAcessoPainelAgora && (row.passwordHash === null || row.passwordHash === '')) {
+          senhaProvisionada = await provisionInitialPassword();
+        }
+
         const patch: Partial<typeof employees.$inferInsert> = {};
         if (input.name !== undefined) patch.name = input.name;
         if (input.email !== undefined) patch.email = input.email;
@@ -1961,6 +2114,11 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
         if (input.departamento !== undefined) patch.departamento = input.departamento;
         if (input.isRH !== undefined) patch.isRH = input.isRH;
         if (input.isLider !== undefined) patch.isLider = input.isLider;
+        // ME-080b Dispatch 2 — senha provisionada entra no patch atomico.
+        if (senhaProvisionada !== null) {
+          patch.passwordHash = senhaProvisionada.hash;
+          patch.passwordSet = false;
+        }
 
         // ------------------------------------------------------
         // ME-062 (DOC 06 §21.1) — hooks canonicos de onboarding
@@ -2009,7 +2167,11 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
             .update(employees)
             .set(patch)
             .where(eq(employees.id, input.employeeId));
-          return { employeeId: input.employeeId, affected: result.affectedRows };
+          return {
+            employeeId: input.employeeId,
+            affected: result.affectedRows,
+            senhaInicial: senhaProvisionada?.plain ?? null,
+          };
         });
       }),
 
@@ -2372,6 +2534,81 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           input.query,
           input.excludeEmployeeId,
         );
+      }),
+
+    // --------------------------------------------------------
+    // ME-080b Dispatch 2 — employees.regenerateMatricula
+    // --------------------------------------------------------
+    // Gera uma nova matricula unica para o colaborador. A matricula
+    // atual deixa de funcionar imediatamente (login por CPF+matricula
+    // no portal falhara com a antiga). Autorizacao canonica §10.9:
+    // Bruno + RH da empresa. Retorna a nova matricula em plain text
+    // para exibicao unica na UI (RH copia e transmite manualmente).
+    regenerateMatricula: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+      .input(z.object({ employeeId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }): Promise<RegenerateMatriculaResult> => {
+        const target = await ctx.db
+          .select({ id: employees.id, companyId: employees.companyId })
+          .from(employees)
+          .where(eq(employees.id, input.employeeId))
+          .limit(1);
+        const row = target[0];
+        if (!row) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: MSG_EMPLOYEE_NAO_ENCONTRADO });
+        }
+        assertCompanyScope(ctx.user, row.companyId);
+
+        const novaMatricula = await provisionUniqueMatricula(ctx.db, row.companyId);
+        await ctx.db
+          .update(employees)
+          .set({ matricula: novaMatricula })
+          .where(eq(employees.id, input.employeeId));
+
+        return { employeeId: input.employeeId, matricula: novaMatricula };
+      }),
+
+    // --------------------------------------------------------
+    // ME-080b Dispatch 2 — employees.regeneratePassword
+    // --------------------------------------------------------
+    // Gera uma nova senha inicial para o colaborador (Lider, RH ou
+    // Responsavel financeiro). A senha atual deixa de funcionar
+    // imediatamente. `passwordSet=false` reobrigatoria troca no proximo
+    // login (Dispatch 3). Se o colaborador nao tem acesso ao painel,
+    // a operacao retorna BAD_REQUEST — nao faz sentido gerar senha para
+    // quem so acessa o portal (segundo fator do portal e matricula, nao
+    // senha). Autorizacao canonica §10.9: Bruno + RH da empresa.
+    regeneratePassword: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+      .input(z.object({ employeeId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }): Promise<RegeneratePasswordResult> => {
+        const target = await ctx.db
+          .select()
+          .from(employees)
+          .where(eq(employees.id, input.employeeId))
+          .limit(1);
+        const row = target[0];
+        if (!row) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: MSG_EMPLOYEE_NAO_ENCONTRADO });
+        }
+        assertCompanyScope(ctx.user, row.companyId);
+
+        const temAcessoPainel =
+          row.isLider === true || row.isRH === true || row.isResponsavelFinanceiro === true;
+        if (!temAcessoPainel) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message:
+              'Colaborador sem acesso ao painel nao possui senha. ' +
+              'Marque como Lider, RH ou Responsavel financeiro antes de regenerar senha.',
+          });
+        }
+
+        const { plain, hash } = await provisionInitialPassword();
+        await ctx.db
+          .update(employees)
+          .set({ passwordHash: hash, passwordSet: false })
+          .where(eq(employees.id, input.employeeId));
+
+        return { employeeId: input.employeeId, senhaInicial: plain };
       }),
   });
 }
