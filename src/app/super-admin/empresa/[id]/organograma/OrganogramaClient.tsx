@@ -153,18 +153,23 @@ const ORGANOGRAMA_CSS = `
 .org-tree > ul {
   padding-top: 0;
 }
-.org-tree ul::before {
+/* ME-080a-fix3 --- ul::before REMOVIDO. */
+/* Antes, ul::before desenhava vertical no meio do <ul> filho. */
+/* Quando filhos tinham larguras diferentes, o meio do ul nao */
+/* coincidia com o meio do filho central --- resultado: linha */
+/* orfa entre pai e tronco horizontal (marcada em amarelo por */
+/* Bruno nos prints). Substituido por uma vertical descendente */
+/* do CARD do pai (via :has(> ul)) que sempre alinha com o */
+/* centro do card. */
+.org-tree li:has(> ul) > div[data-node-id]::after {
   content: '';
   position: absolute;
-  top: 0;
+  bottom: -26px;
   left: 50%;
   border-left: 2px solid #CBD5E1;
-  width: 0;
   height: 26px;
   margin-left: -1px;
-}
-.org-tree > ul::before {
-  display: none;
+  z-index: 0;
 }
 `;
 
