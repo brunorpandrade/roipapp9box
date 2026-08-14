@@ -354,6 +354,12 @@ export interface GetByIdCLevelResult {
   readonly acessoTotal: boolean;
   readonly isResponsavelFinanceiro: boolean;
   readonly status: 'ativo' | 'inativo';
+  /**
+   * ME-080b Dispatch 2c — matricula atual (formato AA00 uppercase) ou
+   * null quando o registro ainda nao foi provisionado (C-levels
+   * pre-existentes ao Dispatch 1 na Nativa).
+   */
+  readonly matricula: string | null;
 }
 
 /** §13.2 + §13.3 — retorno canonico do `countActive`. */
@@ -575,6 +581,7 @@ export async function findCLevelById(
     acessoTotal: row.acessoTotal === true,
     isResponsavelFinanceiro: row.isResponsavelFinanceiro,
     status: row.status ?? 'ativo',
+    matricula: row.matricula ?? null,
   };
 }
 

@@ -1651,6 +1651,13 @@ export interface GetByIdEmployeeResult {
   readonly isLider: boolean;
   readonly isResponsavelFinanceiro: boolean;
   readonly passwordSet: boolean;
+  /**
+   * ME-080b Dispatch 2c — matricula atual (formato AA00 uppercase) ou
+   * null quando o registro ainda nao foi provisionado (colaboradores
+   * pre-existentes ao Dispatch 1 na Nativa). A UI de edicao exibe e
+   * permite regerar via `employees.regenerateMatricula`.
+   */
+  readonly matricula: string | null;
   readonly currentLiderInicial: CurrentLiderInicial | null;
   /** Bloco §5.6 — nota canonica RF ativa no titular. */
   readonly isCurrentRF: boolean;
@@ -1777,6 +1784,7 @@ export async function getEmployeeById(
     isLider: row.isLider === true,
     isResponsavelFinanceiro: row.isResponsavelFinanceiro,
     passwordSet: row.passwordSet === true,
+    matricula: row.matricula ?? null,
     currentLiderInicial,
     isCurrentRF: row.isResponsavelFinanceiro,
     hasTerminationEvents: hasTerm,

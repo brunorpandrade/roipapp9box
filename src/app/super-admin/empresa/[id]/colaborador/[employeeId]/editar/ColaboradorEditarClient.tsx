@@ -49,8 +49,13 @@ import {
   listarLideradosAction,
   pesquisarLiderCandidatosEditarAction,
   reativarColaboradorAction,
+  regenerarMatriculaColaboradorAction,
+  regenerarSenhaColaboradorAction,
   verificarInativacaoAction,
 } from './actions';
+
+import { CredentialsDisplayModal } from '@/components/credentials/CredentialsDisplayModal';
+import { RegenerateConfirmModal } from '@/components/credentials/RegenerateConfirmModal';
 
 interface Props {
   readonly companyId: number;
@@ -140,6 +145,54 @@ const SUCCESS_TOAST_STYLE = {
   fontSize: 13,
 };
 
+// ME-080b Dispatch 2c — estilos da secao Credenciais.
+const CREDENTIALS_SECTION_STYLE = {
+  background: COLORS.background.card,
+  border: `1px solid ${COLORS.border.default}`,
+  borderRadius: 10,
+  padding: 20,
+  marginTop: 16,
+};
+
+const CREDENTIALS_TITLE_STYLE = {
+  margin: '0 0 16px 0',
+  fontSize: 15,
+  fontWeight: 600 as const,
+  color: COLORS.text.primary,
+};
+
+const CREDENTIALS_LABEL_STYLE = {
+  fontSize: 12,
+  color: COLORS.text.secondary,
+  marginBottom: 4,
+};
+
+const CREDENTIALS_VALUE_STYLE = {
+  fontSize: 15,
+  fontWeight: 600 as const,
+  color: COLORS.text.primary,
+  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' as const,
+  letterSpacing: '0.03em',
+};
+
+const BTN_REGEN_STYLE = {
+  padding: '9px 16px',
+  background: COLORS.background.card,
+  color: COLORS.text.primary,
+  border: `1px solid ${COLORS.border.default}`,
+  borderRadius: 8,
+  fontSize: 13,
+  fontWeight: 500 as const,
+  cursor: 'pointer' as const,
+};
+
+const BTN_REGEN_DISABLED_STYLE = {
+  ...BTN_REGEN_STYLE,
+  color: COLORS.text.secondary,
+  cursor: 'not-allowed' as const,
+  opacity: 0.6,
+};
+
 const BLOCKER_MODAL_OVERLAY_STYLE = {
   position: 'fixed' as const,
   inset: 0,
@@ -223,6 +276,18 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
   const [m2Error, setM2Error] = useState<string | null>(null);
 
   const [showDeletarModal, setShowDeletarModal] = useState(false);
+
+  // ME-080b Dispatch 2c — estado da secao Credenciais.
+  const [currentMatricula, setCurrentMatricula] = useState<string | null>(
+    initialEmployee.matricula,
+  );
+  const [regenConfirmOpen, setRegenConfirmOpen] = useState<null | 'matricula' | 'senha'>(null);
+  const [regenLoading, setRegenLoading] = useState(false);
+  const [regenError, setRegenError] = useState<string | null>(null);
+  const [postRegenCreds, setPostRegenCreds] = useState<{
+    matricula: string;
+    senhaInicial: string | null;
+  } | null>(null);
 
   const valuesRef = useRef(values);
   valuesRef.current = values;
@@ -608,8 +673,70 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
   const canDelete =
     isInativo && !initialEmployee.hasTerminationEvents && !initialEmployee.isCurrentRF;
 
+  // ME-080b Dispatch 2c — handlers de regeneracao de credencial.
+  const handleConfirmRegen = useCallback(async () => {
+    if (regenConfirmOpen === null) return;
+    setRegenLoading(true);
+    setRegenError(null);
+    try {
+      if (regenConfirmOpen === 'matricula') {
+        const res = await regenerarMatriculaColaboradorAction({
+          employeeId: initialEmployee.id,
+        });
+        if (!res.ok) {
+          setRegenError(res.message);
+          return;
+        }
+        setCurrentMatricula(res.data.matricula);
+        setPostRegenCreds({ matricula: res.data.matricula, senhaInicial: null });
+      } else {
+        const res = await regenerarSenhaColaboradorAction({
+          employeeId: initialEmployee.id,
+        });
+        if (!res.ok) {
+          setRegenError(res.message);
+          return;
+        }
+        setPostRegenCreds({
+          matricula: currentMatricula ?? '',
+          senhaInicial: res.data.senhaInicial,
+        });
+      }
+      setRegenConfirmOpen(null);
+    } catch {
+      setRegenError('Falha de rede ao regenerar.');
+    } finally {
+      setRegenLoading(false);
+    }
+  }, [regenConfirmOpen, initialEmployee.id, currentMatricula]);
+
+  const podeRegenerarSenha =
+    initialEmployee.isLider === true ||
+    initialEmployee.isRH === true ||
+    initialEmployee.isResponsavelFinanceiro === true;
+
   return (
     <>
+      <RegenerateConfirmModal
+        open={regenConfirmOpen !== null}
+        kind={regenConfirmOpen ?? 'matricula'}
+        nomeTitular={initialEmployee.name}
+        loading={regenLoading}
+        onConfirm={() => void handleConfirmRegen()}
+        onCancel={() => {
+          setRegenConfirmOpen(null);
+          setRegenError(null);
+        }}
+      />
+      {postRegenCreds !== null ? (
+        <CredentialsDisplayModal
+          open={true}
+          nomeTitular={initialEmployee.name}
+          matricula={postRegenCreds.matricula}
+          senhaInicial={postRegenCreds.senhaInicial}
+          onClose={() => setPostRegenCreds(null)}
+        />
+      ) : null}
       <ColaboradorForm
         mode="editar"
         initialValues={values}
@@ -619,6 +746,46 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
         cpfReadonly={true}
         searchLiderCandidates={handleSearchLider}
       />
+      <div style={CREDENTIALS_SECTION_STYLE}>
+        <h3 style={CREDENTIALS_TITLE_STYLE}>Credenciais de acesso</h3>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12 }}>
+          <div style={{ flex: 1 }}>
+            <div style={CREDENTIALS_LABEL_STYLE}>Matricula (portal do colaborador)</div>
+            <div style={CREDENTIALS_VALUE_STYLE}>{currentMatricula ?? '— nao provisionada —'}</div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setRegenConfirmOpen('matricula')}
+            style={BTN_REGEN_STYLE}
+            disabled={saving || regenLoading}
+          >
+            Regenerar matricula
+          </button>
+        </div>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+          <div style={{ flex: 1 }}>
+            <div style={CREDENTIALS_LABEL_STYLE}>Senha do painel</div>
+            <div style={CREDENTIALS_VALUE_STYLE}>
+              {podeRegenerarSenha
+                ? initialEmployee.passwordSet
+                  ? 'Configurada pelo colaborador'
+                  : 'Aguardando primeiro acesso (senha inicial pendente)'
+                : 'Sem acesso ao painel (marque Lider, RH ou RF)'}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setRegenConfirmOpen('senha')}
+            style={podeRegenerarSenha ? BTN_REGEN_STYLE : BTN_REGEN_DISABLED_STYLE}
+            disabled={!podeRegenerarSenha || saving || regenLoading}
+          >
+            Regenerar senha
+          </button>
+        </div>
+        {regenError !== null ? (
+          <div style={{ ...ERROR_STYLE, marginTop: 12 }}>{regenError}</div>
+        ) : null}
+      </div>
       {errorMsg !== null ? <div style={ERROR_STYLE}>{errorMsg}</div> : null}
       {successMsg !== null ? <div style={SUCCESS_TOAST_STYLE}>{successMsg}</div> : null}
       <div style={FOOTER_STYLE}>

@@ -199,3 +199,79 @@ export async function excluirCLevelAction(input: {
     await closeDbClient(client);
   }
 }
+
+// -----------------------------------------------------------------------
+// ME-080b Dispatch 2c — actions canonicas de regeneracao de credencial
+// -----------------------------------------------------------------------
+
+/**
+ * ME-080b Dispatch 2c — regenera matricula do C-level. A matricula atual
+ * deixa de funcionar imediatamente no portal (CPF+matricula). O cliente
+ * confirma via `RegenerateConfirmModal` antes de invocar.
+ * Delega a `cLevelMembers.regenerateMatricula` via createCallerFactory (S511).
+ */
+export async function regenerarMatriculaCLevelAction(input: {
+  readonly cLevelId: number;
+}): Promise<ActionResult<{ matricula: string }>> {
+  const token = await resolveRawToken();
+  if (token === null) {
+    return { ok: false, message: 'Sessao ausente ou expirada.' };
+  }
+
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const caller = createCLevelCaller(
+      createContextInner({
+        db: client.db,
+        rateLimiter: actionRateLimiter,
+        bearerToken: token,
+        ip: null,
+      }),
+    );
+    const result = await caller.regenerateMatricula({ cLevelId: input.cLevelId });
+    return { ok: true, data: { matricula: result.matricula } };
+  } catch (err) {
+    if (err instanceof TRPCError) {
+      return { ok: false, message: err.message };
+    }
+    throw err;
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+/**
+ * ME-080b Dispatch 2c — regenera senha inicial do C-level. C-level sempre
+ * tem acesso ao painel — sem guard "sem acesso ao painel". A senha atual
+ * deixa de funcionar imediatamente.
+ * Delega a `cLevelMembers.regeneratePassword` via createCallerFactory (S511).
+ */
+export async function regenerarSenhaCLevelAction(input: {
+  readonly cLevelId: number;
+}): Promise<ActionResult<{ senhaInicial: string }>> {
+  const token = await resolveRawToken();
+  if (token === null) {
+    return { ok: false, message: 'Sessao ausente ou expirada.' };
+  }
+
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const caller = createCLevelCaller(
+      createContextInner({
+        db: client.db,
+        rateLimiter: actionRateLimiter,
+        bearerToken: token,
+        ip: null,
+      }),
+    );
+    const result = await caller.regeneratePassword({ cLevelId: input.cLevelId });
+    return { ok: true, data: { senhaInicial: result.senhaInicial } };
+  } catch (err) {
+    if (err instanceof TRPCError) {
+      return { ok: false, message: err.message };
+    }
+    throw err;
+  } finally {
+    await closeDbClient(client);
+  }
+}

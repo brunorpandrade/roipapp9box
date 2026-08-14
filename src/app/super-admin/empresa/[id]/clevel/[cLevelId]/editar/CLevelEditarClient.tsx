@@ -24,7 +24,12 @@ import {
   excluirCLevelAction,
   inativarCLevelAction,
   reativarCLevelAction,
+  regenerarMatriculaCLevelAction,
+  regenerarSenhaCLevelAction,
 } from './actions';
+
+import { CredentialsDisplayModal } from '@/components/credentials/CredentialsDisplayModal';
+import { RegenerateConfirmModal } from '@/components/credentials/RegenerateConfirmModal';
 
 // -----------------------------------------------------------------------
 // Tooltip canônico S503
@@ -147,6 +152,16 @@ export function CLevelEditarClient(props: Props): JSX.Element {
   const [showDeletarModal, setShowDeletarModal] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
 
+  // ME-080b Dispatch 2c — estado da secao Credenciais.
+  const [currentMatricula, setCurrentMatricula] = useState<string | null>(clevel.matricula);
+  const [regenConfirmOpen, setRegenConfirmOpen] = useState<null | 'matricula' | 'senha'>(null);
+  const [regenLoading, setRegenLoading] = useState(false);
+  const [regenError, setRegenError] = useState<string | null>(null);
+  const [postRegenCreds, setPostRegenCreds] = useState<{
+    matricula: string;
+    senhaInicial: string | null;
+  } | null>(null);
+
   const valuesRef = useRef(values);
   valuesRef.current = values;
 
@@ -252,8 +267,61 @@ export function CLevelEditarClient(props: Props): JSX.Element {
 
   const isAtivo = clevel.status === 'ativo';
 
+  // ME-080b Dispatch 2c — handler unico de confirmacao (matricula OU senha).
+  const handleConfirmRegen = useCallback(async () => {
+    if (regenConfirmOpen === null) return;
+    setRegenLoading(true);
+    setRegenError(null);
+    try {
+      if (regenConfirmOpen === 'matricula') {
+        const res = await regenerarMatriculaCLevelAction({ cLevelId: clevel.id });
+        if (!res.ok) {
+          setRegenError(res.message);
+          return;
+        }
+        setCurrentMatricula(res.data.matricula);
+        setPostRegenCreds({ matricula: res.data.matricula, senhaInicial: null });
+      } else {
+        const res = await regenerarSenhaCLevelAction({ cLevelId: clevel.id });
+        if (!res.ok) {
+          setRegenError(res.message);
+          return;
+        }
+        setPostRegenCreds({
+          matricula: currentMatricula ?? '',
+          senhaInicial: res.data.senhaInicial,
+        });
+      }
+      setRegenConfirmOpen(null);
+    } catch {
+      setRegenError('Falha de rede ao regenerar.');
+    } finally {
+      setRegenLoading(false);
+    }
+  }, [regenConfirmOpen, clevel.id, currentMatricula]);
+
   return (
     <>
+      <RegenerateConfirmModal
+        open={regenConfirmOpen !== null}
+        kind={regenConfirmOpen ?? 'matricula'}
+        nomeTitular={clevel.name}
+        loading={regenLoading}
+        onConfirm={() => void handleConfirmRegen()}
+        onCancel={() => {
+          setRegenConfirmOpen(null);
+          setRegenError(null);
+        }}
+      />
+      {postRegenCreds !== null ? (
+        <CredentialsDisplayModal
+          open={true}
+          nomeTitular={clevel.name}
+          matricula={postRegenCreds.matricula}
+          senhaInicial={postRegenCreds.senhaInicial}
+          onClose={() => setPostRegenCreds(null)}
+        />
+      ) : null}
       <CLevelForm
         mode="edit"
         initialValues={initialValues}
@@ -264,6 +332,103 @@ export function CLevelEditarClient(props: Props): JSX.Element {
         onToggleRFAttempt={handleToggleRFAttempt}
         cpfReadonly
       />
+
+      <div
+        style={{
+          background: COLORS.background.card,
+          border: `1px solid ${COLORS.border.default}`,
+          borderRadius: 10,
+          padding: 20,
+          marginTop: 16,
+        }}
+      >
+        <h3
+          style={{
+            margin: '0 0 16px 0',
+            fontSize: 15,
+            fontWeight: 600,
+            color: COLORS.text.primary,
+          }}
+        >
+          Credenciais de acesso
+        </h3>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, color: COLORS.text.secondary, marginBottom: 4 }}>
+              Matricula (portal do colaborador)
+            </div>
+            <div
+              style={{
+                fontSize: 15,
+                fontWeight: 600,
+                color: COLORS.text.primary,
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                letterSpacing: '0.03em',
+              }}
+            >
+              {currentMatricula ?? '— nao provisionada —'}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setRegenConfirmOpen('matricula')}
+            disabled={regenLoading}
+            style={{
+              padding: '9px 16px',
+              background: COLORS.background.card,
+              color: COLORS.text.primary,
+              border: `1px solid ${COLORS.border.default}`,
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: regenLoading ? 'not-allowed' : 'pointer',
+            }}
+          >
+            Regenerar matricula
+          </button>
+        </div>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, color: COLORS.text.secondary, marginBottom: 4 }}>
+              Senha do painel
+            </div>
+            <div style={{ fontSize: 13, color: COLORS.text.primary }}>
+              C-level acessa painel executivo por e-mail e senha.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setRegenConfirmOpen('senha')}
+            disabled={regenLoading}
+            style={{
+              padding: '9px 16px',
+              background: COLORS.background.card,
+              color: COLORS.text.primary,
+              border: `1px solid ${COLORS.border.default}`,
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: regenLoading ? 'not-allowed' : 'pointer',
+            }}
+          >
+            Regenerar senha
+          </button>
+        </div>
+        {regenError !== null ? (
+          <div
+            style={{
+              marginTop: 12,
+              padding: '10px 14px',
+              background: COLORS.badge.dangerBg,
+              color: COLORS.badge.dangerText,
+              borderRadius: 8,
+              fontSize: 12,
+            }}
+          >
+            {regenError}
+          </div>
+        ) : null}
+      </div>
 
       {errorMsg !== null ? (
         <div
