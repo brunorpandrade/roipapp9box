@@ -105,7 +105,7 @@ describe('integration ME-055c shell (RV-11) — resolveMenuItems x MySQL real', 
     expect(hasFaturamento).toBe(false);
   });
 
-  it('rh + isRF=true: 15 itens §3.2 (inclui Faturamento da empresa)', async () => {
+  it('rh + isRF=true: 16 itens §3.3 (Faturamento + Alterar senha D3.1)', async () => {
     // Semeia employee canonico com isRH=true e isResponsavelFinanceiro=true.
     // A resolucao flags → ProfileKey e canonizada em ME-056; aqui provamos
     // apenas a leitura MySQL real da flag RF e sua integracao com
@@ -137,15 +137,16 @@ describe('integration ME-055c shell (RV-11) — resolveMenuItems x MySQL real', 
 
     const items = resolveMenuItems('rh', isRF);
     expect(items).not.toBeNull();
-    // Contagem canonica §3.3 com RF=true: 15 itens totais (14 links + 1 separador).
-    expect(items!.length).toBe(15);
+    // Contagem canonica §3.3 com RF=true: 16 itens totais (15 links + 1 separador).
+    // ME-080b D3.1: +1 'Alterar senha' apos SEPARATOR.
+    expect(items!.length).toBe(16);
     const hasFaturamento = items!.some(
       (i) => i.type === 'link' && i.label === 'Faturamento da empresa',
     );
     expect(hasFaturamento).toBe(true);
   });
 
-  it('lider_c1 + isRF=false: 7 itens totais §3.6 (sem Faturamento)', async () => {
+  it('lider_c1 + isRF=false: 8 itens §3.6 (sem Faturamento, com Alterar senha D3.1)', async () => {
     // Semeia employee canonico com isLider=true e isRF=false.
     const [row] = await client.db
       .insert(employees)
@@ -174,15 +175,16 @@ describe('integration ME-055c shell (RV-11) — resolveMenuItems x MySQL real', 
 
     const items = resolveMenuItems('lider_c1', isRF);
     expect(items).not.toBeNull();
-    // Contagem canonica §3.6 com RF=false: 7 itens totais (6 links + 1 separador).
-    expect(items!.length).toBe(7);
+    // Contagem canonica §3.6 com RF=false: 8 itens totais (7 links + 1 separador).
+    // ME-080b D3.1: +1 'Alterar senha'.
+    expect(items!.length).toBe(8);
     const hasFaturamento = items!.some(
       (i) => i.type === 'link' && i.label === 'Faturamento da empresa',
     );
     expect(hasFaturamento).toBe(false);
   });
 
-  it('clevel_full + isRF=true: 10 itens totais §3.8 (inclui Faturamento)', async () => {
+  it('clevel_full + isRF=true: 11 itens §3.8 (Faturamento + Alterar senha D3.1)', async () => {
     // Semeia cLevelMember canonico com acessoTotal=true e isRF=true.
     const [row] = await client.db
       .insert(cLevelMembers)
@@ -209,8 +211,9 @@ describe('integration ME-055c shell (RV-11) — resolveMenuItems x MySQL real', 
 
     const items = resolveMenuItems('clevel_full', isRF);
     expect(items).not.toBeNull();
-    // Contagem canonica §3.8 com RF=true: 10 itens totais (9 links + 1 separador).
-    expect(items!.length).toBe(10);
+    // Contagem canonica §3.8 com RF=true: 11 itens totais (10 links + 1 separador).
+    // ME-080b D3.1: +1 'Alterar senha'.
+    expect(items!.length).toBe(11);
     const hasFaturamento = items!.some(
       (i) => i.type === 'link' && i.label === 'Faturamento da empresa',
     );

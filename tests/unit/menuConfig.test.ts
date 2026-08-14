@@ -112,6 +112,7 @@ describe('MENU_CONFIG_BY_PROFILE — composicao canonica DOC 05 §3.1-§3.10', (
       ['Log de acesso individual', '/logs/acesso-individual'],
       ['Onboarding de líderes', '/onboarding-lideres'],
       ['(separator)', ''],
+      ['Alterar senha', '/alterar-senha'],
       ['Meus dados', '/meus-dados'],
       ['Sair', '/logout'],
     ]);
@@ -135,6 +136,7 @@ describe('MENU_CONFIG_BY_PROFILE — composicao canonica DOC 05 §3.1-§3.10', (
       ['Log de acesso individual', '/logs/acesso-individual'],
       ['Onboarding de líderes', '/onboarding-lideres'],
       ['(separator)', ''],
+      ['Alterar senha', '/alterar-senha'],
       ['Meus dados', '/meus-dados'],
       ['Sair', '/logout'],
     ]);
@@ -159,6 +161,7 @@ describe('MENU_CONFIG_BY_PROFILE — composicao canonica DOC 05 §3.1-§3.10', (
       ['Log de acesso individual', '/logs/acesso-individual'],
       ['Onboarding de líderes', '/onboarding-lideres'],
       ['(separator)', ''],
+      ['Alterar senha', '/alterar-senha'],
       ['Meus dados', '/meus-dados'],
       ['Sair', '/logout'],
     ]);
@@ -174,6 +177,7 @@ describe('MENU_CONFIG_BY_PROFILE — composicao canonica DOC 05 §3.1-§3.10', (
       ['Dados mensais', '/dados-mensais/meus-liderados'],
       ['Organograma', '/organograma'],
       ['(separator)', ''],
+      ['Alterar senha', '/alterar-senha'],
       ['Meus dados', '/meus-dados'],
       ['Sair', '/logout'],
     ]);
@@ -190,6 +194,7 @@ describe('MENU_CONFIG_BY_PROFILE — composicao canonica DOC 05 §3.1-§3.10', (
       ['Dados mensais', '/dados-mensais/meus-liderados'],
       ['Organograma', '/organograma'],
       ['(separator)', ''],
+      ['Alterar senha', '/alterar-senha'],
       ['Meus dados', '/meus-dados'],
       ['Sair', '/logout'],
     ]);
@@ -207,6 +212,7 @@ describe('MENU_CONFIG_BY_PROFILE — composicao canonica DOC 05 §3.1-§3.10', (
       ['Dados mensais', '/dados-mensais/meus-liderados'],
       ['Organograma', '/organograma'],
       ['(separator)', ''],
+      ['Alterar senha', '/alterar-senha'],
       ['Meus dados', '/meus-dados'],
       ['Sair', '/logout'],
     ]);
@@ -223,6 +229,7 @@ describe('MENU_CONFIG_BY_PROFILE — composicao canonica DOC 05 §3.1-§3.10', (
       ['Dados mensais', '/dados-mensais/meus-liderados'],
       ['Organograma', '/organograma'],
       ['(separator)', ''],
+      ['Alterar senha', '/alterar-senha'],
       ['Meus dados', '/meus-dados'],
       ['Sair', '/logout'],
     ]);
@@ -271,8 +278,9 @@ describe('resolveMenuItems — filtro condicional Responsavel financeiro', () =>
     const labels = (items as readonly MenuItem[])
       .filter((item): item is Extract<MenuItem, { type: 'link' }> => item.type === 'link')
       .map((item) => item.label);
-    // §3.3 RH puro sem RF: 14 itens link (15 no total menos 1 condicional
-    // filtrado; separador nao entra no filter link).
+    // §3.3 RH puro sem RF: 15 itens link (16 no total menos 1 condicional
+    // filtrado; separador nao entra no filter link). ME-080b D3.1: +1 item
+    // 'Alterar senha' apos ME-057b canonizado.
     expect(labels).not.toContain('Faturamento da empresa');
     expect(labels).toEqual([
       'Painel',
@@ -286,6 +294,7 @@ describe('resolveMenuItems — filtro condicional Responsavel financeiro', () =>
       'Notificações',
       'Log de acesso individual',
       'Onboarding de líderes',
+      'Alterar senha',
       'Meus dados',
       'Sair',
     ]);

@@ -37,6 +37,7 @@ import {
   GitFork,
   GraduationCap,
   Home,
+  KeyRound,
   LayoutDashboard,
   LifeBuoy,
   LogOut,
@@ -80,6 +81,7 @@ export const MENU_ITEM_LABELS = [
   'Onboarding de líderes',
   'Instrumentos (placeholder Fase 1)',
   'Suporte e logs (placeholder Fase 1)',
+  'Alterar senha',
   'Meus dados',
   'Sair',
 ] as const;
@@ -113,6 +115,7 @@ export const LUCIDE_ICON_BY_MENU_ITEM: Record<MenuItemLabel, LucideIcon> = {
   'Onboarding de líderes': GraduationCap,
   'Instrumentos (placeholder Fase 1)': ClipboardList,
   'Suporte e logs (placeholder Fase 1)': LifeBuoy,
+  'Alterar senha': KeyRound,
   'Meus dados': UserCircle,
   Sair: LogOut,
 };

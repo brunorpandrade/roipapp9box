@@ -789,7 +789,17 @@ export function ColaboradorForm(props: ColaboradorFormProps): JSX.Element {
           <div
             onClick={() => {
               if (!(values.isRH || values.isLider)) return;
-              onToggleRFAttempt(!values.isResponsavelFinanceiro);
+              // ME-080b Dispatch 3.1 — fix bug de sincronizacao (S517).
+              // `ColaboradorForm` mantem `values` local (useState) e o
+              // toggle RF antes chamava apenas `onToggleRFAttempt`, que
+              // atualizava state do pai mas nao do form — visual do
+              // toggle nao mudava. `applyChange` sincroniza atomicamente
+              // state local + pai (via `onValuesChange`). `onToggleRFAttempt`
+              // segue sendo chamado para preservar semantica (dirty flag,
+              // etc — o pai pode reagir alem do estado).
+              const nextValue = !values.isResponsavelFinanceiro;
+              applyChange({ ...values, isResponsavelFinanceiro: nextValue });
+              onToggleRFAttempt(nextValue);
             }}
             style={{
               ...TOGGLE_TRACK_STYLE(values.isResponsavelFinanceiro),

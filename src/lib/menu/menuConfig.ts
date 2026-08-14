@@ -108,6 +108,22 @@ const ITEM_MEUS_DADOS: MenuLinkItem = {
   iconKey: 'Meus dados',
 };
 
+/**
+ * ME-080b Dispatch 3.1 — item canonico "Alterar senha" (§9.6 DOC 05).
+ * Inserido no rodape logico apos o separador e antes de "Meus dados"
+ * em todos os menus platform (rh, rh_lider, lider, clevel). Rota
+ * `/alterar-senha` autoriza qualquer platform role via matrix (§10.2).
+ * Nao aparece nos menus de super admin porque `superAdmins` nao possui
+ * o campo `passwordSet` no schema — troca de senha do Bruno segue
+ * outro fluxo canonico.
+ */
+const ITEM_ALTERAR_SENHA: MenuLinkItem = {
+  type: 'link',
+  label: 'Alterar senha',
+  href: '/alterar-senha',
+  iconKey: 'Alterar senha',
+};
+
 const ITEM_SAIR: MenuLinkItem = {
   type: 'link',
   label: 'Sair',
@@ -342,6 +358,7 @@ const MENU_RH: MenuConfig = [
     iconKey: 'Onboarding de líderes',
   },
   SEPARATOR,
+  ITEM_ALTERAR_SENHA,
   ITEM_MEUS_DADOS,
   ITEM_SAIR,
 ];
@@ -423,6 +440,7 @@ const MENU_RH_LIDER_C1: MenuConfig = [
     iconKey: 'Onboarding de líderes',
   },
   SEPARATOR,
+  ITEM_ALTERAR_SENHA,
   ITEM_MEUS_DADOS,
   ITEM_SAIR,
 ];
@@ -510,6 +528,7 @@ const MENU_RH_LIDER_C2: MenuConfig = [
     iconKey: 'Onboarding de líderes',
   },
   SEPARATOR,
+  ITEM_ALTERAR_SENHA,
   ITEM_MEUS_DADOS,
   ITEM_SAIR,
 ];
@@ -542,6 +561,7 @@ const MENU_LIDER_C1: MenuConfig = [
     iconKey: 'Organograma',
   },
   SEPARATOR,
+  ITEM_ALTERAR_SENHA,
   ITEM_MEUS_DADOS,
   ITEM_SAIR,
 ];
@@ -581,6 +601,7 @@ const MENU_LIDER_C2: MenuConfig = [
     iconKey: 'Organograma',
   },
   SEPARATOR,
+  ITEM_ALTERAR_SENHA,
   ITEM_MEUS_DADOS,
   ITEM_SAIR,
 ];
@@ -626,6 +647,7 @@ const MENU_CLEVEL_FULL: MenuConfig = [
     iconKey: 'Organograma',
   },
   SEPARATOR,
+  ITEM_ALTERAR_SENHA,
   ITEM_MEUS_DADOS,
   ITEM_SAIR,
 ];
@@ -664,6 +686,7 @@ const MENU_CLEVEL_RESTRICTED: MenuConfig = [
     iconKey: 'Organograma',
   },
   SEPARATOR,
+  ITEM_ALTERAR_SENHA,
   ITEM_MEUS_DADOS,
   ITEM_SAIR,
 ];

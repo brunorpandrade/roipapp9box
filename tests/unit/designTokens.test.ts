@@ -42,12 +42,12 @@ import {
 import { SPACING } from '../../src/lib/design-tokens/spacing';
 import { TYPOGRAPHY } from '../../src/lib/design-tokens/typography';
 
-describe('MENU_ITEM_LABELS — 26 itens canonicos DOC 05 §2.7 (pos-CC039 + ME-057b)', () => {
-  it('contem exatamente 26 entradas', () => {
-    expect(MENU_ITEM_LABELS).toHaveLength(26);
+describe('MENU_ITEM_LABELS — 27 itens canonicos §2.7 (pos-CC039 + ME-057b + ME-080b D3.1)', () => {
+  it('contem exatamente 27 entradas', () => {
+    expect(MENU_ITEM_LABELS).toHaveLength(27);
   });
 
-  it('preserva a ordem canonica bit-exact do DOC 05 §2.7 (pos-CC039 + ME-057b)', () => {
+  it('preserva ordem canonica bit-exact §2.7 (pos-CC039 + ME-057b + ME-080b D3.1)', () => {
     expect([...MENU_ITEM_LABELS]).toEqual([
       'Painel',
       'Início',
@@ -73,6 +73,7 @@ describe('MENU_ITEM_LABELS — 26 itens canonicos DOC 05 §2.7 (pos-CC039 + ME-0
       'Onboarding de líderes',
       'Instrumentos (placeholder Fase 1)',
       'Suporte e logs (placeholder Fase 1)',
+      'Alterar senha',
       'Meus dados',
       'Sair',
     ]);
@@ -84,10 +85,10 @@ describe('MENU_ITEM_LABELS — 26 itens canonicos DOC 05 §2.7 (pos-CC039 + ME-0
   });
 });
 
-describe('LUCIDE_ICON_BY_MENU_ITEM — mapeamento canonico S466 Opcao A + CC039 + ME-057b', () => {
-  it('cobre todos os 26 itens canonicos', () => {
+describe('LUCIDE_ICON_BY_MENU_ITEM — mapeamento S466A + CC039 + ME-057b + ME-080b D3.1', () => {
+  it('cobre todos os 27 itens canonicos', () => {
     const keys = Object.keys(LUCIDE_ICON_BY_MENU_ITEM) as MenuItemLabel[];
-    expect(keys).toHaveLength(26);
+    expect(keys).toHaveLength(27);
     for (const label of MENU_ITEM_LABELS) {
       expect(LUCIDE_ICON_BY_MENU_ITEM[label]).toBeDefined();
     }

@@ -24,6 +24,10 @@ import {
   type ReactivateCLevelResult,
   type UpdateCLevelResult,
 } from '../../../../../../../server/routers/cLevelMembers';
+import {
+  createCompanyRouter,
+  type SetResponsavelFinanceiroResult,
+} from '../../../../../../../server/routers/company';
 import { createCallerFactory, createContextInner } from '../../../../../../../server/trpc';
 
 import { resolveDatabaseUrl } from './internals';
@@ -34,6 +38,8 @@ import { resolveDatabaseUrl } from './internals';
 
 const cLevelRouter = createCLevelMembersRouter();
 const createCLevelCaller = createCallerFactory(cLevelRouter);
+const companyRouter = createCompanyRouter();
+const createCompanyCaller = createCallerFactory(companyRouter);
 const actionRateLimiter = createRateLimiter();
 
 // -----------------------------------------------------------------------
@@ -266,6 +272,52 @@ export async function regenerarSenhaCLevelAction(input: {
     );
     const result = await caller.regeneratePassword({ cLevelId: input.cLevelId });
     return { ok: true, data: { senhaInicial: result.senhaInicial } };
+  } catch (err) {
+    if (err instanceof TRPCError) {
+      return { ok: false, message: err.message };
+    }
+    throw err;
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+// -----------------------------------------------------------------------
+// ME-080b Dispatch 3.1 (S517) — action canonica para ativar C-level como
+// Responsavel financeiro. Necessaria porque `atualizarCLevelAction` NAO
+// aceita `isResponsavelFinanceiro` no payload — RF muda por endpoint
+// dedicado `company.setResponsavelFinanceiro`. Antes deste dispatch, a
+// tela de edicao do C-level montava o toggle mas silenciosamente o
+// ignorava no save.
+// -----------------------------------------------------------------------
+
+export async function definirRFCLevelEditarAction(input: {
+  readonly companyId: number;
+  readonly cLevelId: number;
+  readonly justificativa?: string;
+}): Promise<ActionResult<SetResponsavelFinanceiroResult>> {
+  const token = await resolveRawToken();
+  if (token === null) {
+    return { ok: false, message: 'Sessao ausente ou expirada.' };
+  }
+
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const caller = createCompanyCaller(
+      createContextInner({
+        db: client.db,
+        rateLimiter: actionRateLimiter,
+        bearerToken: token,
+        ip: null,
+      }),
+    );
+    const result = await caller.setResponsavelFinanceiro({
+      companyId: input.companyId,
+      newHolderType: 'cLevel',
+      newHolderId: input.cLevelId,
+      ...(input.justificativa !== undefined ? { justificativa: input.justificativa } : {}),
+    });
+    return { ok: true, data: result };
   } catch (err) {
     if (err instanceof TRPCError) {
       return { ok: false, message: err.message };

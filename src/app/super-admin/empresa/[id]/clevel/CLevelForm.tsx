@@ -669,7 +669,19 @@ export function CLevelForm(props: CLevelFormProps): JSX.Element {
           </div>
           <button
             type="button"
-            onClick={() => onToggleRFAttempt(!values.isResponsavelFinanceiro)}
+            onClick={() => {
+              // ME-080b Dispatch 3.1 — fix bug de sincronizacao (S517).
+              // `CLevelForm` mantem `values` local (useState) e o toggle RF
+              // antes chamava apenas `onToggleRFAttempt`, que atualizava
+              // state do pai mas nao do form — visual do toggle nao mudava.
+              // `updateField` sincroniza atomicamente state local + pai (via
+              // `onValuesChange`). `onToggleRFAttempt` segue sendo chamado
+              // para preservar semantica (dirty flag, etc — o pai pode
+              // reagir alem do estado).
+              const nextValue = !values.isResponsavelFinanceiro;
+              updateField('isResponsavelFinanceiro', nextValue);
+              onToggleRFAttempt(nextValue);
+            }}
             style={TOGGLE_TRACK_STYLE(values.isResponsavelFinanceiro)}
             aria-label="Ativar como Responsável financeiro"
           >

@@ -21,6 +21,7 @@ import type { GetByIdCLevelResult } from '../../../../../../../server/routers/cL
 import { CLevelForm, type CLevelFormValues } from '../../CLevelForm';
 import {
   atualizarCLevelAction,
+  definirRFCLevelEditarAction,
   excluirCLevelAction,
   inativarCLevelAction,
   reativarCLevelAction,
@@ -30,6 +31,7 @@ import {
 
 import { CredentialsDisplayModal } from '@/components/credentials/CredentialsDisplayModal';
 import { RegenerateConfirmModal } from '@/components/credentials/RegenerateConfirmModal';
+import { ModalTransferenciaRF } from '../../../_shared/ModalTransferenciaRF';
 
 // -----------------------------------------------------------------------
 // Tooltip canônico S503
@@ -162,6 +164,11 @@ export function CLevelEditarClient(props: Props): JSX.Element {
     senhaInicial: string | null;
   } | null>(null);
 
+  // ME-080b Dispatch 3.1 (S517) — estados do modal de transferencia RF.
+  const [showRFModal, setShowRFModal] = useState(false);
+  const [rfModalError, setRfModalError] = useState<string | null>(null);
+  const [rfSubmitting, setRfSubmitting] = useState(false);
+
   const valuesRef = useRef(values);
   valuesRef.current = values;
 
@@ -175,12 +182,13 @@ export function CLevelEditarClient(props: Props): JSX.Element {
     setDirty(true);
   }, []);
 
-  const handleSave = useCallback(async () => {
-    const v = valuesRef.current;
-    setSaving(true);
-    setErrorMsg(null);
-    try {
-      const result = await atualizarCLevelAction({
+  // ME-080b Dispatch 3.1 (S517) — fluxo canonico de save com RF.
+  // Extrai o UPDATE canonico de dados basicos para poder combinar com
+  // ativacao de RF sem duplicar codigo (com ou sem justificativa).
+  const performUpdate = useCallback(
+    async (rfJustificativa: string | null): Promise<boolean> => {
+      const v = valuesRef.current;
+      const updResult = await atualizarCLevelAction({
         cLevelId: clevel.id,
         name: v.name.trim(),
         email: v.email.trim(),
@@ -192,18 +200,71 @@ export function CLevelEditarClient(props: Props): JSX.Element {
         custoMensal: Number(v.custoMensal),
         acessoTotal: v.acessoTotal,
       });
-      if (!result.ok) {
-        setErrorMsg(result.message);
-        setSaving(false);
-        return;
+      if (!updResult.ok) {
+        setErrorMsg(updResult.message);
+        return false;
       }
-      setDirty(false);
-      router.push(`/super-admin/empresa/${companyId}/clevel-rh`);
+      // Se o toggle RF foi ligado neste save, chamar setResponsavelFinanceiro.
+      if (v.isResponsavelFinanceiro && !clevel.isResponsavelFinanceiro) {
+        const rfResult = await definirRFCLevelEditarAction({
+          companyId,
+          cLevelId: clevel.id,
+          ...(rfJustificativa !== null ? { justificativa: rfJustificativa } : {}),
+        });
+        if (!rfResult.ok) {
+          setRfModalError(rfResult.message);
+          return false;
+        }
+      }
+      return true;
+    },
+    [clevel.id, clevel.isResponsavelFinanceiro, companyId],
+  );
+
+  const handleSave = useCallback(async () => {
+    const v = valuesRef.current;
+    setErrorMsg(null);
+    // Se o RF esta sendo ligado E ja existe titular vigente, abrir modal
+    // canonico de transferencia (justificativa 100-500 chars).
+    const rfChangedToTrue = v.isResponsavelFinanceiro && !clevel.isResponsavelFinanceiro;
+    if (rfChangedToTrue && currentRFName !== null) {
+      setShowRFModal(true);
+      return;
+    }
+    setSaving(true);
+    try {
+      const ok = await performUpdate(null);
+      if (ok) {
+        setDirty(false);
+        router.push(`/super-admin/empresa/${companyId}/clevel-rh`);
+      }
     } catch {
       setErrorMsg('Falha de rede ao salvar. Tente novamente.');
+    } finally {
       setSaving(false);
     }
-  }, [clevel.id, companyId, router]);
+  }, [clevel.isResponsavelFinanceiro, currentRFName, performUpdate, router, companyId]);
+
+  // Handler do modal de transferencia — recebe justificativa validada.
+  const handleConfirmRFTransfer = useCallback(
+    async (justificativa: string): Promise<void> => {
+      setRfSubmitting(true);
+      setRfModalError(null);
+      try {
+        const ok = await performUpdate(justificativa);
+        if (ok) {
+          setShowRFModal(false);
+          setDirty(false);
+          router.push(`/super-admin/empresa/${companyId}/clevel-rh`);
+        }
+      } catch {
+        setRfModalError('Falha de rede ao transferir RF.');
+      } finally {
+        setRfSubmitting(false);
+      }
+    },
+    [performUpdate, router, companyId],
+  );
 
   const handleInativar = useCallback(async () => {
     setErrorMsg(null);
@@ -320,6 +381,19 @@ export function CLevelEditarClient(props: Props): JSX.Element {
           matricula={postRegenCreds.matricula}
           senhaInicial={postRegenCreds.senhaInicial}
           onClose={() => setPostRegenCreds(null)}
+        />
+      ) : null}
+      {showRFModal && currentRFName !== null ? (
+        <ModalTransferenciaRF
+          currentRFName={currentRFName}
+          nextRFName={valuesRef.current.name}
+          onCancel={() => {
+            setShowRFModal(false);
+            setRfModalError(null);
+          }}
+          onConfirm={handleConfirmRFTransfer}
+          submitting={rfSubmitting}
+          errorMessage={rfModalError}
         />
       ) : null}
       <CLevelForm
