@@ -650,8 +650,64 @@ export interface DeleteEmployeeResult {
  * Retorno canonico do `uploadCSV` (S186, alias direto — o contrato
  * `UploadResult` e canonizado no modulo compartilhado `_shared/
  * uploadResult.ts`; S193).
+ *
+ * ME-080b Dispatch 4: estende com `credenciaisXlsxBase64` (opcional).
+ * Presente quando ao menos 1 credencial (matricula ou senha) foi
+ * gerada durante o upload; contem workbook XLSX serializado em base64
+ * pronto para download pelo RH. Ausente quando nenhum colaborador do
+ * lote recebeu credencial (upload so de colaboradores comuns).
  */
-export type UploadCSVResult = UploadResult;
+export interface UploadCSVResult extends UploadResult {
+  readonly credenciaisXlsxBase64?: string;
+}
+
+// ============================================================
+// ME-080b Dispatch 4 — geracao canonica do XLSX de credenciais
+// ============================================================
+
+/**
+ * Registro por-colaborador agregado durante o `uploadCSV` para compor
+ * o arquivo `credenciais_iniciais_{data}_{hora}.xlsx` (RH baixa e
+ * distribui manualmente — S516: zero envio automatico de e-mail).
+ * `senhaInicial` e `null` para colaboradores comuns (sem acesso ao
+ * painel); a matricula sempre existe.
+ */
+interface CredencialGerada {
+  readonly nome: string;
+  readonly email: string;
+  readonly matricula: string;
+  readonly senhaInicial: string | null;
+}
+
+/**
+ * ME-080b Dispatch 4 — gera workbook XLSX contendo as credenciais
+ * geradas no upload em lote. Uma unica aba "Credenciais" com cabecalho
+ * canonico. Nome do arquivo canonico:
+ *   `credenciais_iniciais_{yyyyMMdd}_{HHmmss}.xlsx`
+ * (o nome e responsabilidade do consumidor — este helper devolve
+ * apenas o buffer serializado em base64).
+ */
+async function buildCredenciaisXLSX(credenciais: readonly CredencialGerada[]): Promise<string> {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Credenciais');
+  ws.columns = [
+    { header: 'Matricula', key: 'matricula', width: 12 },
+    { header: 'Nome', key: 'nome', width: 42 },
+    { header: 'E-mail', key: 'email', width: 36 },
+    { header: 'Senha inicial', key: 'senhaInicial', width: 16 },
+  ];
+  ws.getRow(1).font = { bold: true };
+  for (const c of credenciais) {
+    ws.addRow({
+      matricula: c.matricula,
+      nome: c.nome,
+      email: c.email,
+      senhaInicial: c.senhaInicial ?? '',
+    });
+  }
+  const buffer = await wb.xlsx.writeBuffer();
+  return Buffer.from(buffer).toString('base64');
+}
 
 // ============================================================
 // Facade canonica de reuso via caller tRPC interno (S185, S194)
@@ -1141,30 +1197,63 @@ export function upParseSimNao(raw: string): boolean | undefined {
  * caracterizar ambiguidade (>= 2 = ambiguo; a terceira ocorrencia nao
  * altera o veredito canonico).
  */
+/**
+ * ME-080b Dispatch 4 (S520) — resolve nome de lider no upload em batch,
+ * buscando em AMBAS as tabelas (employees ativos com isLider=true +
+ * cLevelMembers ativos), conforme "Opcao A" canonizada por Bruno na
+ * abertura do ME-080b.
+ *
+ * Regras canonicas de ambiguidade:
+ *   - `not_found`: zero matches em ambas as tabelas.
+ *   - `ambiguous`: >1 match TOTAL (employees + cLevelMembers somados).
+ *     Um employee e um cLevel com mesmo nome tambem gera `ambiguous`.
+ *   - `ok`: exatamente 1 match total; retorna tipo + id polimorfico.
+ *
+ * A prioridade "employees primeiro" nao existe: se ha match em
+ * cLevelMembers e nao em employees, retorna clevel; se ha em ambos
+ * (mesmo que so 1 em cada), e `ambiguous`.
+ */
 export async function upResolveLiderPorNome(
   db: RoipDatabase,
   companyId: number,
   nome: string,
-): Promise<{ tipo: 'ok'; liderId: number } | { tipo: 'not_found' | 'ambiguous' }> {
-  const rows = await db
-    .select({ id: employees.id })
-    .from(employees)
-    .where(
-      and(
-        eq(employees.companyId, companyId),
-        eq(employees.name, nome),
-        eq(employees.isLider, true),
-        eq(employees.status, 'ativo'),
-      ),
-    )
-    .limit(2);
-  if (rows.length === 0) {
-    return { tipo: 'not_found' };
+): Promise<
+  | { tipo: 'ok'; liderTipo: 'employee'; liderId: number }
+  | { tipo: 'ok'; liderTipo: 'clevel'; clevelId: number }
+  | { tipo: 'not_found' | 'ambiguous' }
+> {
+  const [empRows, clevelRows] = await Promise.all([
+    db
+      .select({ id: employees.id })
+      .from(employees)
+      .where(
+        and(
+          eq(employees.companyId, companyId),
+          eq(employees.name, nome),
+          eq(employees.isLider, true),
+          eq(employees.status, 'ativo'),
+        ),
+      )
+      .limit(2),
+    db
+      .select({ id: cLevelMembers.id })
+      .from(cLevelMembers)
+      .where(
+        and(
+          eq(cLevelMembers.companyId, companyId),
+          eq(cLevelMembers.name, nome),
+          eq(cLevelMembers.status, 'ativo'),
+        ),
+      )
+      .limit(2),
+  ]);
+  const total = empRows.length + clevelRows.length;
+  if (total === 0) return { tipo: 'not_found' };
+  if (total > 1) return { tipo: 'ambiguous' };
+  if (empRows.length === 1) {
+    return { tipo: 'ok', liderTipo: 'employee', liderId: empRows[0]!.id };
   }
-  if (rows.length > 1) {
-    return { tipo: 'ambiguous' };
-  }
-  return { tipo: 'ok', liderId: rows[0]!.id };
+  return { tipo: 'ok', liderTipo: 'clevel', clevelId: clevelRows[0]!.id };
 }
 
 /**
@@ -1396,7 +1485,12 @@ export async function parseEmployeesUpload(
       continue;
     }
 
+    // ME-080b Dispatch 4 (S520) — resolver polimorfico cross-tabela:
+    // pode retornar `liderTipo: 'employee' | 'clevel'`. Ambos variantes
+    // sao propagados ao `create` via campos distintos do schema
+    // (`liderInicialId` XOR `liderInicialClevelId`).
     let liderInicialId: number | undefined = undefined;
+    let liderInicialClevelId: number | undefined = undefined;
     if (nomeLider !== '') {
       const res = await upResolveLiderPorNome(db, companyId, nomeLider);
       if (res.tipo === 'not_found') {
@@ -1415,14 +1509,17 @@ export async function parseEmployeesUpload(
         });
         continue;
       }
+      // res.tipo === 'ok' (narrow explicito para o TypeScript entender
+      // que o union `not_found | ambiguous` ja foi eliminado nos
+      // branches acima).
       if (res.tipo !== 'ok') {
-        // Unreachable — os dois branches acima cobrem 'not_found' e
-        // 'ambiguous'; salvaguarda para o TS narrowing (o union do
-        // retorno inclui `{tipo: 'not_found'|'ambiguous'}` sem
-        // `liderId`).
         continue;
       }
-      liderInicialId = res.liderId;
+      if (res.liderTipo === 'employee') {
+        liderInicialId = res.liderId;
+      } else {
+        liderInicialClevelId = res.clevelId;
+      }
     }
 
     // E-mail e opcional para colaborador puro; obrigatorio se
@@ -1467,7 +1564,10 @@ export async function parseEmployeesUpload(
         departamento: departamentoRaw as (typeof DEPARTAMENTO_VALUES)[number],
         isRH,
         isLider,
-        liderInicialId,
+        // ME-080b Dispatch 4 (S520): polimorfismo cross-tabela — exatamente
+        // um dos dois estara definido; o resolver garante a invariante.
+        ...(liderInicialId !== undefined ? { liderInicialId } : {}),
+        ...(liderInicialClevelId !== undefined ? { liderInicialClevelId } : {}),
       },
     });
   }
@@ -2471,11 +2571,22 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
         // canonicos de negocio (`CPF duplicado`, `isRH apenas Bruno`,
         // etc.) sao capturados por linha para preservar semantica
         // §16.6 "processa todas".
+        //
+        // ME-080b Dispatch 4: agrega credenciais geradas (matricula
+        // sempre; senha inicial quando aplicavel) para gerar XLSX
+        // canonico `credenciais_iniciais_{data}_{hora}.xlsx` ao final.
         const sucessos: number[] = [];
+        const credenciaisGeradas: CredencialGerada[] = [];
         for (const linha of linhas) {
           try {
-            await employeesFacade.create(ctx, linha.input);
+            const result = await employeesFacade.create(ctx, linha.input);
             sucessos.push(linha.linha);
+            credenciaisGeradas.push({
+              nome: linha.input.name,
+              email: linha.input.email ?? '',
+              matricula: result.credentials.matricula,
+              senhaInicial: result.credentials.senhaInicial,
+            });
           } catch (err) {
             erros.push(upErroFacadeToLinhaErro(err, linha.linha));
           }
@@ -2483,12 +2594,23 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
 
         const linhasSucesso = sucessos.length;
         const linhasErro = erros.length;
+
+        // ME-080b Dispatch 4: gera XLSX de credenciais quando ao menos
+        // 1 cadastro bem-sucedido. Sempre incluir todos os cadastrados
+        // (mesmo colaboradores sem senha inicial — matricula e sempre
+        // gerada e util para o RH).
+        let credenciaisXlsxBase64: string | undefined = undefined;
+        if (credenciaisGeradas.length > 0) {
+          credenciaisXlsxBase64 = await buildCredenciaisXLSX(credenciaisGeradas);
+        }
+
         return {
           ok: linhasErro === 0 && linhasSucesso > 0,
           linhasProcessadas: linhasSucesso + linhasErro,
           linhasSucesso,
           linhasErro,
           erros,
+          ...(credenciaisXlsxBase64 !== undefined ? { credenciaisXlsxBase64 } : {}),
         };
       }),
 
