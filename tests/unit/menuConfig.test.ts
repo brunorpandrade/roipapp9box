@@ -58,6 +58,7 @@ describe('MENU_CONFIG_BY_PROFILE — composicao canonica DOC 05 §3.1-§3.10', (
       ['Notificações', '/notificacoes'],
       ['Desbloqueios', '/super-admin/desbloqueios'],
       ['(separator)', ''],
+      ['Alterar senha', '/alterar-senha'],
       ['Meus dados', '/meus-dados'],
       ['Sair', '/logout'],
     ]);
@@ -80,6 +81,7 @@ describe('MENU_CONFIG_BY_PROFILE — composicao canonica DOC 05 §3.1-§3.10', (
       ['Histórico da empresa', '/super-admin/empresa/[id]/historico'],
       ['Onboarding de líderes', '/super-admin/empresa/[id]/onboarding-lideres'],
       ['(separator)', ''],
+      ['Alterar senha', '/alterar-senha'],
       ['Meus dados', '/meus-dados'],
       ['Sair', '/logout'],
     ]);

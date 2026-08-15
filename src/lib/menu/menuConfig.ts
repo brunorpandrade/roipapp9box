@@ -109,13 +109,17 @@ const ITEM_MEUS_DADOS: MenuLinkItem = {
 };
 
 /**
- * ME-080b Dispatch 3.1 — item canonico "Alterar senha" (§9.6 DOC 05).
+ * ME-080b Dispatch 3.1 + 3.2 — item canonico "Alterar senha" (§9.6 DOC 05).
  * Inserido no rodape logico apos o separador e antes de "Meus dados"
- * em todos os menus platform (rh, rh_lider, lider, clevel). Rota
- * `/alterar-senha` autoriza qualquer platform role via matrix (§10.2).
- * Nao aparece nos menus de super admin porque `superAdmins` nao possui
- * o campo `passwordSet` no schema — troca de senha do Bruno segue
- * outro fluxo canonico.
+ * em todos os menus: Super Admin (global + in-company) e platform
+ * (rh, rh_lider, lider, clevel). Rota `/alterar-senha` autoriza qualquer
+ * sessao autenticada.
+ *
+ * D3.1 original excluia Super Admin argumentando ausencia de `passwordSet`
+ * no schema `superAdmins` — decisao errada. `passwordSet` govern apenas
+ * o gate obrigatorio de primeiro acesso (nao aplicavel a Super Admin,
+ * cadastro manual seguro), mas a troca voluntaria de senha via §9.6
+ * canonico aplica-se a TODOS os perfis. D3.2 (S518) corrige.
  */
 const ITEM_ALTERAR_SENHA: MenuLinkItem = {
   type: 'link',
@@ -202,6 +206,7 @@ const MENU_SUPER_ADMIN_GLOBAL: MenuConfig = [
     iconKey: 'Desbloqueios',
   },
   SEPARATOR,
+  ITEM_ALTERAR_SENHA,
   ITEM_MEUS_DADOS,
   ITEM_SAIR,
 ];
@@ -284,6 +289,7 @@ const MENU_SUPER_ADMIN_IN_COMPANY: MenuConfig = [
     iconKey: 'Onboarding de líderes',
   },
   SEPARATOR,
+  ITEM_ALTERAR_SENHA,
   ITEM_MEUS_DADOS,
   ITEM_SAIR,
 ];
