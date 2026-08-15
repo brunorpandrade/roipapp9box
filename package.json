@@ -19,6 +19,7 @@
     "seed:ubatuba": "node scripts/seed-ubatuba.mjs",
     "seed:ubatuba:op-d1": "node scripts/seed-ubatuba-operacional-d1.mjs",
     "seed:ubatuba:op-d2": "node scripts/seed-ubatuba-operacional-d2.mjs",
+    "seed:ubatuba:op-d3": "node scripts/seed-ubatuba-operacional-d3.mjs",
     "reset-reseed:ubatuba": "node scripts/reset-reseed-ubatuba.mjs"
   },
   "dependencies": {
