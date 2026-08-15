@@ -15,7 +15,9 @@
     "test": "vitest run",
     "validate": "bash scripts/validate.sh",
     "seed:super-admin": "node scripts/seed-super-admin.mjs",
-    "seed:nativa": "node scripts/seed-nativa.mjs"
+    "seed:nativa": "node scripts/seed-nativa.mjs",
+    "seed:ubatuba": "node scripts/seed-ubatuba.mjs",
+    "reset-reseed:ubatuba": "node scripts/reset-reseed-ubatuba.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "5.101.2",
