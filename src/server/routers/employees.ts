@@ -109,6 +109,11 @@ import {
   provisionUniqueMatricula,
   validateProvidedMatricula,
 } from '../services/credentialProvisioning';
+import {
+  closeLeaderHistoryEntry,
+  getActiveLeaderHistoryByEmployee,
+  insertLeaderHistoryEntry,
+} from '../services/employeeLeaderHistory';
 
 import type { LinhaErro, UploadResult } from './_shared/uploadResult';
 
@@ -150,6 +155,15 @@ export const REASON_CADASTRO_INICIAL = 'Cadastro inicial do colaborador' as cons
  * Analogo ao `REASON_CADASTRO_INICIAL`; distinto do padrao 100-500.
  */
 export const REASON_REATIVACAO = 'Reativacao do colaborador' as const;
+
+/**
+ * ME-080b Dispatch 3.3 (S519) — motivo canonico para reatribuicao
+ * individual de lider via UI de edicao do colaborador. Troca silenciosa
+ * (sem justificativa livre); grava fechamento da historia ativa +
+ * INSERT nova. Distinto do REASON_CADASTRO_INICIAL e do padrao de
+ * transferencia coletiva 100-500 chars (leadershipTransfer.execute).
+ */
+export const REASON_REATRIBUICAO_INDIVIDUAL = 'Reatribuicao individual de lider' as const;
 
 // ============================================================
 // Constantes canonicas do uploadCSV (§16.6 — S190, S191)
@@ -339,6 +353,20 @@ export const MSG_JA_ATIVO = 'Colaborador ja esta ativo.' as const;
  */
 export const MSG_LIDER_INICIAL_INVALIDO =
   'Lider informado nao existe, nao pertence a esta empresa ou nao esta ativo.' as const;
+
+/**
+ * ME-080b Dispatch 3.3 (S519) — retorno canonico quando o handler
+ * `reassignLider` recebe o mesmo lider ja vigente. No-op: nao fecha
+ * historia nem insere linha. UI trata como sucesso silencioso.
+ */
+export const MSG_LIDER_IGUAL_AO_ATUAL = 'Lider informado ja e o vigente.' as const;
+
+/**
+ * ME-080b Dispatch 3.3 (S519) — colaborador nao pode ser lider de si
+ * mesmo. Guard adicional canonico (o assert de "lider ativo" cobriria
+ * pelo `isLider`, mas este guard e explicito para UX clara).
+ */
+export const MSG_LIDER_MESMO_COLABORADOR = 'Colaborador nao pode ser lider de si mesmo.' as const;
 
 // ============================================================
 // Mensagens canonicas do uploadCSV (§16.6 — S073/S091 replicado; S196)
@@ -583,6 +611,20 @@ export interface RegenerateMatriculaResult {
 export interface RegeneratePasswordResult {
   employeeId: number;
   senhaInicial: string;
+}
+
+/**
+ * ME-080b Dispatch 3.3 (S519) — retorno canonico da reatribuicao
+ * individual de lider. `changed=true` quando novo lider difere do
+ * atual e a operacao aplicou fechamento+INSERT. `changed=false` no
+ * cenario no-op (lider igual ao vigente ou colaborador sem historia
+ * ativa com novoLiderId=null).
+ */
+export interface ReassignLiderResult {
+  employeeId: number;
+  changed: boolean;
+  newHistoryId: number | null;
+  closedHistoryId: number | null;
 }
 
 /** Retorno canonico do `inactivate` — id do evento append-only. */
@@ -2617,6 +2659,123 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           .where(eq(employees.id, input.employeeId));
 
         return { employeeId: input.employeeId, senhaInicial: plain };
+      }),
+
+    // --------------------------------------------------------
+    // ME-080b Dispatch 3.3 (S519) — employees.reassignLider
+    // --------------------------------------------------------
+    // Reatribuicao individual de lider via UI de edicao do colaborador.
+    // Semantica canonica (Bruno D3.3): troca silenciosa. Nao exige
+    // justificativa livre. Grava REASON_REATRIBUICAO_INDIVIDUAL como
+    // motivo canonico em ambas as linhas afetadas (fechamento + novo).
+    // Autorizacao canonica: Bruno + RH da empresa.
+    //
+    // Input polimorfico (identico ao create §14.3): exatamente um de
+    // { newLiderEmployeeId, newLiderClevelId }; nunca ambos, nunca ambos
+    // ausentes. Guard `refine` do zod schema.
+    //
+    // Fluxo:
+    //   1. Carrega colaborador; valida `assertCompanyScope`.
+    //   2. Guard: colaborador nao pode ser lider de si mesmo.
+    //   3. Valida novo lider (assertLider/ClevelAtivoDaEmpresa canonico).
+    //   4. Carrega historia ativa via `getActiveLeaderHistoryByEmployee`.
+    //   5. Se ja existe e aponta para o mesmo alvo → no-op canonico
+    //      (changed=false). Nao lanca; retorna sucesso silencioso.
+    //   6. Transacao atomica: `closeLeaderHistoryEntry(historiaAtiva.id)`
+    //      + `insertLeaderHistoryEntry` com `transferBatchId` novo UUID.
+    reassignLider: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+      .input(
+        z
+          .object({
+            employeeId: z.number().int().positive(),
+            newLiderEmployeeId: z.number().int().positive().optional(),
+            newLiderClevelId: z.number().int().positive().optional(),
+          })
+          .refine(
+            (v) => (v.newLiderEmployeeId !== undefined) !== (v.newLiderClevelId !== undefined),
+            {
+              message: 'Informe exatamente um: newLiderEmployeeId ou newLiderClevelId.',
+            },
+          ),
+      )
+      .mutation(async ({ ctx, input }): Promise<ReassignLiderResult> => {
+        const target = await ctx.db
+          .select({
+            id: employees.id,
+            companyId: employees.companyId,
+          })
+          .from(employees)
+          .where(eq(employees.id, input.employeeId))
+          .limit(1);
+        const row = target[0];
+        if (!row) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: MSG_EMPLOYEE_NAO_ENCONTRADO });
+        }
+        assertCompanyScope(ctx.user, row.companyId);
+
+        // Guard: colaborador nao pode ser lider de si mesmo.
+        if (
+          input.newLiderEmployeeId !== undefined &&
+          input.newLiderEmployeeId === input.employeeId
+        ) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: MSG_LIDER_MESMO_COLABORADOR,
+          });
+        }
+
+        // Valida existencia/elegibilidade do novo lider (canonico D6).
+        if (input.newLiderEmployeeId !== undefined) {
+          await assertLiderAtivoDaEmpresa(ctx.db, row.companyId, input.newLiderEmployeeId);
+        } else if (input.newLiderClevelId !== undefined) {
+          await assertClevelAtivoDaEmpresa(ctx.db, row.companyId, input.newLiderClevelId);
+        }
+
+        // No-op canonico: se historia ativa aponta para o mesmo alvo,
+        // retornar sucesso silencioso (changed=false) sem tocar em nada.
+        const historiaAtiva = await getActiveLeaderHistoryByEmployee(ctx.db, input.employeeId);
+        if (historiaAtiva !== undefined) {
+          const mesmoEmployee =
+            input.newLiderEmployeeId !== undefined &&
+            historiaAtiva.liderId === input.newLiderEmployeeId;
+          const mesmoClevel =
+            input.newLiderClevelId !== undefined &&
+            historiaAtiva.clevelId === input.newLiderClevelId;
+          if (mesmoEmployee || mesmoClevel) {
+            return {
+              employeeId: input.employeeId,
+              changed: false,
+              newHistoryId: null,
+              closedHistoryId: null,
+            };
+          }
+        }
+
+        // Transacao atomica: fecha ativa (se existir) + INSERT nova.
+        const dataInicio = new Date(now().toISOString().slice(0, 10));
+        const transferBatchId = crypto.randomUUID();
+        return await ctx.db.transaction(async (tx) => {
+          let closedHistoryId: number | null = null;
+          if (historiaAtiva !== undefined) {
+            await closeLeaderHistoryEntry(tx, historiaAtiva.id, dataInicio);
+            closedHistoryId = historiaAtiva.id;
+          }
+          const newHistoryId = await insertLeaderHistoryEntry(tx, {
+            employeeId: input.employeeId,
+            liderId: input.newLiderEmployeeId ?? null,
+            clevelId: input.newLiderClevelId ?? null,
+            dataInicio,
+            dataFim: null,
+            reason: REASON_REATRIBUICAO_INDIVIDUAL,
+            transferBatchId,
+          });
+          return {
+            employeeId: input.employeeId,
+            changed: true,
+            newHistoryId,
+            closedHistoryId,
+          };
+        });
       }),
   });
 }

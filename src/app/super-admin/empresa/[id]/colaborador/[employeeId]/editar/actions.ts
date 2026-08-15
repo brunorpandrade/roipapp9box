@@ -574,3 +574,57 @@ export async function regenerarSenhaColaboradorAction(input: {
     await closeDbClient(client);
   }
 }
+
+// -----------------------------------------------------------------------
+// ME-080b Dispatch 3.3 (S519) — reatribuicao individual de lider.
+// -----------------------------------------------------------------------
+
+/**
+ * ME-080b Dispatch 3.3 (S519) — chama `employees.reassignLider` via
+ * createCallerFactory (S511). Troca silenciosa: nao exige justificativa
+ * livre; fecha historia ativa + INSERT nova com REASON canonico
+ * `REASON_REATRIBUICAO_INDIVIDUAL`.
+ *
+ * Input polimorfico: exatamente um de {newLiderEmployeeId, newLiderClevelId}.
+ * Cliente e responsavel por passar apenas o campo aplicavel.
+ */
+export async function reatribuirLiderColaboradorAction(input: {
+  readonly employeeId: number;
+  readonly newLiderEmployeeId?: number;
+  readonly newLiderClevelId?: number;
+}): Promise<ActionResult<{ changed: boolean; newHistoryId: number | null }>> {
+  const token = await resolveRawToken();
+  if (token === null) {
+    return { ok: false, message: 'Sessao ausente ou expirada.' };
+  }
+
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const caller = createEmployeesCaller(
+      createContextInner({
+        db: client.db,
+        rateLimiter: actionRateLimiter,
+        bearerToken: token,
+        ip: null,
+      }),
+    );
+    const result = await caller.reassignLider({
+      employeeId: input.employeeId,
+      ...(input.newLiderEmployeeId !== undefined
+        ? { newLiderEmployeeId: input.newLiderEmployeeId }
+        : {}),
+      ...(input.newLiderClevelId !== undefined ? { newLiderClevelId: input.newLiderClevelId } : {}),
+    });
+    return {
+      ok: true,
+      data: { changed: result.changed, newHistoryId: result.newHistoryId },
+    };
+  } catch (err) {
+    if (err instanceof TRPCError) {
+      return { ok: false, message: err.message };
+    }
+    throw err;
+  } finally {
+    await closeDbClient(client);
+  }
+}

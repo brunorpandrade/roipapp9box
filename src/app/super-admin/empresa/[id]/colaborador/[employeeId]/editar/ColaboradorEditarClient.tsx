@@ -49,6 +49,7 @@ import {
   listarLideradosAction,
   pesquisarLiderCandidatosEditarAction,
   reativarColaboradorAction,
+  reatribuirLiderColaboradorAction,
   regenerarMatriculaColaboradorAction,
   regenerarSenhaColaboradorAction,
   verificarInativacaoAction,
@@ -361,6 +362,31 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
       );
       if (!updateResult.ok) {
         setErrorMsg(updateResult.message);
+        return false;
+      }
+    }
+
+    // ME-080b Dispatch 3.3 (S519) — reatribuicao individual do lider.
+    // Se o lider selecionado difere do vigente, chama endpoint canonico
+    // dedicado (fluxo silencioso). Comparacao por (tipo, id) preserva
+    // polimorfismo employee vs cLevel.
+    const currentLider = initialEmployee.currentLiderInicial;
+    const nextLider = v.liderInicial;
+    const liderMudou =
+      (currentLider === null && nextLider !== null) ||
+      (currentLider !== null && nextLider === null) ||
+      (currentLider !== null &&
+        nextLider !== null &&
+        (currentLider.tipo !== nextLider.tipo || currentLider.id !== nextLider.id));
+    if (liderMudou && nextLider !== null) {
+      const reassignResult = await reatribuirLiderColaboradorAction({
+        employeeId: initialEmployee.id,
+        ...(nextLider.tipo === 'employee'
+          ? { newLiderEmployeeId: nextLider.id }
+          : { newLiderClevelId: nextLider.id }),
+      });
+      if (!reassignResult.ok) {
+        setErrorMsg(reassignResult.message);
         return false;
       }
     }
