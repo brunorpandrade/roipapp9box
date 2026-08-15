@@ -139,6 +139,17 @@ export const UBATUBA_NOTIF_SEED = UBATUBA_RESEED_BASE_SEED + 6;
 /** Semente do derivador de alerts (Dispatch 5). */
 export const UBATUBA_ALERTS_SEED = UBATUBA_RESEED_BASE_SEED + 7;
 
+/**
+ * Namespace canonico para UUID v5 determinista dos transferBatchId de
+ * employeeLeaderHistory Ubatuba (ME-080e D1, D1.2 aprovado). String
+ * literal em vez de numero para casar semanticamente com o consumidor
+ * `derivarUuidV5Deterministico(namespaceSeed, name)` — o namespace vira
+ * input de SHA-1 e a estabilidade textual e o que garante bit-exact
+ * cross-rebuild.
+ */
+export const UBATUBA_ELH_UUID_NAMESPACE_SEED =
+  'roipapp9box:ubatuba:employeeLeaderHistory:v1' as const;
+
 // ---------------------------------------------------------------------
 // Deslocamentos canonicos de ID (D5.9 aprovado — faixa alta reservada)
 // ---------------------------------------------------------------------

@@ -17,6 +17,7 @@
     "seed:super-admin": "node scripts/seed-super-admin.mjs",
     "seed:nativa": "node scripts/seed-nativa.mjs",
     "seed:ubatuba": "node scripts/seed-ubatuba.mjs",
+    "seed:ubatuba:op-d1": "node scripts/seed-ubatuba-operacional-d1.mjs",
     "reset-reseed:ubatuba": "node scripts/reset-reseed-ubatuba.mjs"
   },
   "dependencies": {
