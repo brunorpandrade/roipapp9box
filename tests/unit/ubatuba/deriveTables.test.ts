@@ -54,9 +54,9 @@ describe('deriveUbatubaCLevels — 3 canonicos bit-exact', () => {
     expect(cLevels.length).toBe(3);
   });
 
-  it('IDs canonicamente 4, 5, 6 (shift +NATIVA_CLEVEL_COUNT sobre 1,2,3)', () => {
-    expect(cLevels.map((c) => c.id).sort((a, b) => a - b)).toEqual([4, 5, 6]);
-    expect(UBATUBA_CLEVEL_ID_SHIFT).toBe(3);
+  it('IDs canonicamente 1001, 1002, 1003 (shift +1000 sobre 1,2,3) — D5.9', () => {
+    expect(cLevels.map((c) => c.id).sort((a, b) => a - b)).toEqual([1001, 1002, 1003]);
+    expect(UBATUBA_CLEVEL_ID_SHIFT).toBe(1000);
   });
 
   it('companyId sempre UBATUBA_COMPANY_ID', () => {
@@ -100,12 +100,12 @@ describe('deriveUbatubaEmployees — 66 canonicos bit-exact', () => {
     expect(employees.length).toBe(66);
   });
 
-  it('IDs canonicamente 70..135 (shift +NATIVA_EMPLOYEE_COUNT sobre 4..69)', async () => {
+  it('IDs canonicamente 1004..1069 (shift +1000 sobre 4..69) — D5.9', async () => {
     employees = await deriveUbatubaEmployees({ hashPassword: HASHER_STUB });
     const ids = employees.map((e) => e.id).sort((a, b) => a - b);
-    expect(ids[0]).toBe(70);
-    expect(ids[ids.length - 1]).toBe(135);
-    expect(UBATUBA_EMPLOYEE_ID_SHIFT).toBe(66);
+    expect(ids[0]).toBe(1004);
+    expect(ids[ids.length - 1]).toBe(1069);
+    expect(UBATUBA_EMPLOYEE_ID_SHIFT).toBe(1000);
   });
 
   it('companyId sempre UBATUBA_COMPANY_ID', async () => {

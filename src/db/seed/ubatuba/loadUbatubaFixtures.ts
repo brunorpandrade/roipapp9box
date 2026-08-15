@@ -10,8 +10,8 @@
 // Escopo do Dispatch 5 (canonizado por Bruno em 15/08/2026):
 // TABELAS POPULADAS (14):
 //   1. companies (1) — UBATUBA_COMPANY_ROW
-//   2. cLevelMembers (3) — IDs 4-6, senha individual, matricula
-//   3. employees (66) — IDs 70-135, senha individual condicional, matricula
+//   2. cLevelMembers (3) — IDs 1001-1003, senha individual, matricula (D5.9 shift +1000)
+//   3. employees (66) — IDs 1004-1069, senha individual condicional, matricula
 //   4. companyJobFamilies (20) — reuso deriveCompanyJobFamilies(2, 1)
 //   5. companyMonthlyData (24) — reuso deriveCompanyMonthlyData(2)
 //   6. monthlyClosureStatus (24) — reuso deriveMonthlyClosureStatus(2)
@@ -181,7 +181,7 @@ export async function seedUbatuba(
   counts.companies = 1;
 
   // ---------------------------------------------------------------------
-  // 2. cLevelMembers (3, IDs 4-6)
+  // 2. cLevelMembers (3, IDs 1001-1003)
   // ---------------------------------------------------------------------
   const cLevelsDerived = deriveUbatubaCLevels();
   const cLevelRows = cLevelsDerived.map((cl) => ({
@@ -228,7 +228,7 @@ export async function seedUbatuba(
   counts.cLevelMembers = cLevelRows.length;
 
   // ---------------------------------------------------------------------
-  // 3. employees (66, IDs 70-135)
+  // 3. employees (66, IDs 1004-1069)
   // ---------------------------------------------------------------------
   const employeesDerived = await deriveUbatubaEmployees({
     hashPassword: opts.hashPassword,

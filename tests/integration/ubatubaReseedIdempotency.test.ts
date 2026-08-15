@@ -161,10 +161,27 @@ async function captureTableHash(
   const [rows] = await client.pool.query<mysql.RowDataPacket[]>(query);
 
   // Sanitize: remove campos com nao-determinismo esperado.
+  //
+  // Colunas removidas antes do hash:
+  //   - id: autoincrement variavel entre rodadas.
+  //   - passwordHash: bcrypt tem salt aleatorio (RV-13 documentado no
+  //     derivador — plain text canonico, hash e).
+  //   - createdAt, updatedAt: varias tabelas do schema usam .defaultNow()
+  //     e/ou .onUpdateNow(); o INSERT do orquestrador nao passa esses
+  //     campos explicitos em toda tabela (padrao canonico do repo), entao
+  //     o banco preenche com NOW() do momento — timestamp divergente entre
+  //     rodadas, sem impacto semantico no bit-exact dos dados canonicos.
+  //   - calculadoEm, aceitoEm: idem (defaults do banco em algumas tabelas).
+  //
+  // O que resta (colunas materiais) e o que deve ser bit-exact reproduzivel.
   const sanitized = rows.map((r) => {
     const c = { ...r };
     delete c.passwordHash;
     delete c.id;
+    delete c.createdAt;
+    delete c.updatedAt;
+    delete c.calculadoEm;
+    delete c.aceitoEm;
     // Datas sao serializadas via toISOString para consistencia (Buffer em
     // MySQL pode variar por driver).
     for (const k of Object.keys(c)) {

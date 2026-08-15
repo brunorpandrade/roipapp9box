@@ -140,30 +140,49 @@ export const UBATUBA_NOTIF_SEED = UBATUBA_RESEED_BASE_SEED + 6;
 export const UBATUBA_ALERTS_SEED = UBATUBA_RESEED_BASE_SEED + 7;
 
 // ---------------------------------------------------------------------
-// Deslocamentos canonicos de ID (T1 aprovado — IDs explicitos bit-exact)
+// Deslocamentos canonicos de ID (D5.9 aprovado — faixa alta reservada)
 // ---------------------------------------------------------------------
 //
-// A fixture Nativa Alimentos usa IDs 1..3 em cLevelMembers e 4..69 em
-// employees (69 IDs contiguos herdados do gerador Python original). Ubatuba
-// desloca cada tabela pelo count da Nativa:
-//   - cLevelMembers Ubatuba: IDs 4, 5, 6 (shift +3 sobre 1,2,3).
-//   - employees Ubatuba: IDs 70..135 (shift +66 sobre 4..69).
+// D5.9 substitui T1 original (shift = count fixture Nativa: +3 / +66).
+// Motivo canonico da revisao: prod real da Nativa cresce organicamente
+// pela UI (novos C-levels, novos employees) e os IDs 4-6 / 70-135 que
+// T1 assumia livres podem ser ocupados a qualquer momento. Diagnostico
+// em 15/08/2026: prod tinha id=4 em cLevelMembers (Bento Goncalves CTO)
+// e id=70 em employees, colidindo com o shift original.
+//
+// Faixa reservada canonica:
+//   - Ubatuba cLevelMembers: IDs 1001, 1002, 1003 (shift +1000 sobre 1,2,3).
+//   - Ubatuba employees: IDs 1004..1069 (shift +1000 sobre 4..69).
+//   - Nativa pode crescer livre ate id=999 em cada tabela antes de qualquer
+//     risco de colisao (~330x a capacidade tipica de PME).
+//   - Faixa 1xxx sinaliza semanticamente "empresa 2"; empresa 3 (futura)
+//     reservaria 2000, etc — padrao canonico extensivel.
+//
+// Preservacao bit-exact: shift constante mantido, apenas o valor muda.
+// Testes de idempotencia SHA-256 permanecem validos.
+//
 // Nos JSONs pinados de resposta (SHA-256), userType='clevel' referencia
 // userId 1..3; userType='employee' referencia userId 4..69. Os mappers
-// aplicam o shift constante por tipo — os JSONs NAO sao editados nem
-// duplicados (T2 aprovado).
+// aplicam o shift +1000 constante por tipo — os JSONs NAO sao editados
+// nem duplicados (T2 aprovado, preservado).
 
-/** Numero de C-levels na Nativa Alimentos (fonte do shift para cLevelMembers). */
+/**
+ * Numero de C-levels na Nativa Alimentos (referencia estrutural — nao
+ * usado como shift em D5.9).
+ */
 export const NATIVA_CLEVEL_COUNT = 3 as const;
 
-/** Numero de employees na Nativa Alimentos (fonte do shift para employees). */
+/**
+ * Numero de employees na Nativa Alimentos (referencia estrutural — nao
+ * usado como shift em D5.9).
+ */
 export const NATIVA_EMPLOYEE_COUNT = 66 as const;
 
-/** Shift aplicado a userId com userType='clevel' na Ubatuba. */
-export const UBATUBA_CLEVEL_ID_SHIFT = NATIVA_CLEVEL_COUNT;
+/** Shift canonico aplicado a IDs de C-level Ubatuba (D5.9). */
+export const UBATUBA_CLEVEL_ID_SHIFT = 1000 as const;
 
-/** Shift aplicado a userId com userType='employee' e a employeeId na Ubatuba. */
-export const UBATUBA_EMPLOYEE_ID_SHIFT = NATIVA_EMPLOYEE_COUNT;
+/** Shift canonico aplicado a IDs de employee Ubatuba (D5.9). */
+export const UBATUBA_EMPLOYEE_ID_SHIFT = 1000 as const;
 
 // ---------------------------------------------------------------------
 // Dominios canonicos (T3 aprovado — clone estrutural com identidade propria)

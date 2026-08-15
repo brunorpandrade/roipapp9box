@@ -173,13 +173,13 @@ describe('seedUbatuba — invariantes canonicas bit-exact (ME-080b Dispatch 5)',
     expect(Number(rows[0]!.isDemo)).toBe(1);
   });
 
-  it('cLevelMembers: 3, IDs 4-6, matricula preenchida, dominio email', async () => {
+  it('cLevelMembers: 3, IDs 1001-1003 (D5.9), matricula preenchida, dominio email', async () => {
     expect(await countTable(client, 'cLevelMembers')).toBe(UBATUBA_CLEVEL_COUNT);
     const [rows] = await client.pool.query<mysql.RowDataPacket[]>(
       `SELECT id, email, matricula, passwordHash FROM cLevelMembers ` +
         `WHERE companyId = ${UBATUBA_COMPANY_ID} ORDER BY id`,
     );
-    expect(rows.map((r) => Number(r.id))).toEqual([4, 5, 6]);
+    expect(rows.map((r) => Number(r.id))).toEqual([1001, 1002, 1003]);
     for (const r of rows) {
       expect(String(r.email).endsWith(`@${UBATUBA_EMAIL_DOMAIN}`)).toBe(true);
       expect(r.matricula).not.toBeNull();
@@ -188,7 +188,7 @@ describe('seedUbatuba — invariantes canonicas bit-exact (ME-080b Dispatch 5)',
     }
   });
 
-  it('employees: 66, IDs 70-135, matricula sempre, senha condicional', async () => {
+  it('employees: 66, IDs 1004-1069 (D5.9), matricula sempre, senha condicional', async () => {
     expect(await countTable(client, 'employees')).toBe(UBATUBA_EMPLOYEE_COUNT);
     const [rows] = await client.pool.query<mysql.RowDataPacket[]>(
       `SELECT id, matricula, passwordHash, isLider, isRH, ` +
@@ -196,8 +196,8 @@ describe('seedUbatuba — invariantes canonicas bit-exact (ME-080b Dispatch 5)',
         `WHERE companyId = ${UBATUBA_COMPANY_ID} ORDER BY id`,
     );
     const ids = rows.map((r) => Number(r.id));
-    expect(ids[0]).toBe(70);
-    expect(ids[ids.length - 1]).toBe(135);
+    expect(ids[0]).toBe(1004);
+    expect(ids[ids.length - 1]).toBe(1069);
     let comSenha = 0;
     let semSenha = 0;
     for (const r of rows) {
