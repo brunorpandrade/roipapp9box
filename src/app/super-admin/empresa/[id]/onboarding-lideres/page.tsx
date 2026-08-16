@@ -41,8 +41,11 @@ import { createLeaderOnboardingRouter } from '../../../../../server/routers/lead
 import { getServerSession } from '../../../../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../../../../server/trpc';
 
-import { OnboardingLideresClient, type OnboardingCardInitial } from './OnboardingLideresClient';
-import { parseCompanyIdParam, resolveDatabaseUrl } from './internals';
+import {
+  OnboardingLideresClient,
+  type OnboardingCardInitial,
+} from '../../../../onboarding-lideres/OnboardingLideresClient';
+import { parseCompanyIdParam, resolveDatabaseUrl } from '../../../../onboarding-lideres/internals';
 
 // -----------------------------------------------------------------------
 // Instâncias module-level canônicas bit-exact (padrão S366)

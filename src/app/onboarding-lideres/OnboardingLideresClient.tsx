@@ -22,12 +22,17 @@
 
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, JSX } from 'react';
 
-import { COLORS } from '../../../../../lib/design-tokens/colors';
+import { COLORS } from '../../lib/design-tokens/colors';
 
-import { listOnboardingCardsAction, updateOnboardingStageAction } from './actions';
+import {
+  getLeaderDetailAction,
+  listOnboardingCardsAction,
+  type OnboardingNoteWire,
+  updateOnboardingStageAction,
+} from './actions';
 import {
   ANOTACAO_MAX_CHARS_CLIENT,
   ANOTACAO_MIN_CHARS_CLIENT,
@@ -38,6 +43,7 @@ import {
   type EstagioOnb,
   computeDiasNoEstagio,
   formatDiasNoEstagio,
+  formatTimestampBR,
   iniciaisDoNome,
 } from './internals';
 
@@ -98,6 +104,22 @@ export function OnboardingLideresClient(props: OnboardingLideresClientProps): JS
   const [modalSaving, setModalSaving] = useState<boolean>(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
+  // ME-080c-patch1 — refs para eliminar closure stale no handler
+  // `salvarEstagio`. React 19 pode batchar keystrokes/clicks de formas
+  // que o setState mais recente ainda não tenha propagado no render em
+  // que o click do Salvar é despachado. Lendo do ref garantimos leitura
+  // do valor MAIS RECENTE independente do timing de render.
+  const modalTextoRef = useRef<string>('');
+  const modalEstagioRef = useRef<EstagioOnb>('treinar');
+  const modalCardRef = useRef<OnboardingCardInitial | null>(null);
+
+  // ME-080c-patch1 — histórico canônico exibido no modal §21.2 (via
+  // getLeaderDetailAction ao abrir). Cronológico descendente (nota mais
+  // recente no topo).
+  const [modalHistory, setModalHistory] = useState<readonly OnboardingNoteWire[]>([]);
+  const [modalHistoryLoading, setModalHistoryLoading] = useState<boolean>(false);
+  const [modalHistoryError, setModalHistoryError] = useState<string | null>(null);
+
   // Toast local (padrão B8 — sem ToastProvider).
   const [toast, setToast] = useState<string>('');
 
@@ -153,29 +175,77 @@ export function OnboardingLideresClient(props: OnboardingLideresClientProps): JS
   }, [cardsFiltrados]);
 
   // -----------------------------------------------------------------------
-  // Handlers de modal
+  // Handlers de modal — ME-080c-patch1 blindados contra closure stale
   // -----------------------------------------------------------------------
 
-  const abrirModal = useCallback((card: OnboardingCardInitial): void => {
+  // Setters wrappers: cada mudança de estado propaga IMEDIATAMENTE para
+  // o ref (síncrono), enquanto o setState dispara o re-render (assíncrono).
+  const setModalTextoSync = useCallback((v: string): void => {
+    modalTextoRef.current = v;
+    setModalTexto(v);
+  }, []);
+
+  const setModalEstagioSync = useCallback((v: EstagioOnb): void => {
+    modalEstagioRef.current = v;
+    setModalEstagio(v);
+  }, []);
+
+  const abrirModal = useCallback(async (card: OnboardingCardInitial): Promise<void> => {
+    modalCardRef.current = card;
+    modalEstagioRef.current = card.onboardingEstagio;
+    modalTextoRef.current = '';
     setModalCard(card);
     setModalEstagio(card.onboardingEstagio);
     setModalTexto('');
     setModalError(null);
+    setModalHistory([]);
+    setModalHistoryError(null);
     setModalOpen(true);
+
+    // Fetch canônico §21.2 do histórico.
+    setModalHistoryLoading(true);
+    try {
+      const result = await getLeaderDetailAction({ employeeId: card.employeeId });
+      // Guarda contra modal ter sido fechado entre o abrir e o resultado.
+      if (modalCardRef.current?.employeeId !== card.employeeId) {
+        return;
+      }
+      if (result.ok) {
+        setModalHistory(result.data.notes);
+      } else {
+        setModalHistoryError(result.message);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao carregar histórico.';
+      setModalHistoryError(msg);
+    } finally {
+      setModalHistoryLoading(false);
+    }
   }, []);
 
   const fecharModal = useCallback((): void => {
+    modalCardRef.current = null;
+    modalTextoRef.current = '';
     setModalOpen(false);
     setModalCard(null);
     setModalError(null);
     setModalTexto('');
+    setModalHistory([]);
+    setModalHistoryError(null);
   }, []);
 
   const salvarEstagio = useCallback(async (): Promise<void> => {
-    if (modalCard === null) {
+    // ME-080c-patch1 — lê SEMPRE dos refs, não das variáveis de estado.
+    // Isso elimina a race condition que causava "salvar sem efeito" na
+    // 1ª tentativa quando o usuário clicava na coluna e digitava texto
+    // em sequência rápida (bug reportado em produção).
+    const card = modalCardRef.current;
+    if (card === null) {
       return;
     }
-    const texto = modalTexto.trim();
+    const texto = modalTextoRef.current.trim();
+    const estagio = modalEstagioRef.current;
+
     if (texto.length < ANOTACAO_MIN_CHARS_CLIENT) {
       setModalError(`A anotação deve ter no mínimo ${ANOTACAO_MIN_CHARS_CLIENT} caracteres.`);
       return;
@@ -189,8 +259,8 @@ export function OnboardingLideresClient(props: OnboardingLideresClientProps): JS
     setModalError(null);
     try {
       const result = await updateOnboardingStageAction({
-        employeeId: modalCard.employeeId,
-        novoEstagio: modalEstagio,
+        employeeId: card.employeeId,
+        novoEstagio: estagio,
         texto,
       });
       if (!result.ok) {
@@ -198,12 +268,18 @@ export function OnboardingLideresClient(props: OnboardingLideresClientProps): JS
         setModalSaving(false);
         return;
       }
-      // Refetch canônico pós-mutação.
+      // ME-080c-patch1 — refetch canônico AWAITED antes de fechar o
+      // modal. Se refetch falhar, mantém modal aberto com erro; se
+      // suceder, aplica os novos cards ANTES do close/toast — garante
+      // que o kanban re-renderiza com dado fresco.
       const refetch = await listOnboardingCardsAction({ companyId });
-      if (refetch.ok) {
-        setCards(refetch.data);
-        setNowIso(new Date().toISOString());
+      if (!refetch.ok) {
+        setModalError(`Salvamento efetivado, mas falhou recarregar: ${refetch.message}`);
+        setModalSaving(false);
+        return;
       }
+      setCards(refetch.data);
+      setNowIso(new Date().toISOString());
       setToast('Estágio de onboarding atualizado com sucesso.');
       setModalSaving(false);
       fecharModal();
@@ -212,7 +288,7 @@ export function OnboardingLideresClient(props: OnboardingLideresClientProps): JS
       setModalError(msg);
       setModalSaving(false);
     }
-  }, [modalCard, modalTexto, modalEstagio, companyId, fecharModal]);
+  }, [companyId, fecharModal]);
 
   // -----------------------------------------------------------------------
   // Estilos inline canônicos
@@ -322,8 +398,11 @@ export function OnboardingLideresClient(props: OnboardingLideresClientProps): JS
           texto={modalTexto}
           saving={modalSaving}
           error={modalError}
-          onChangeEstagio={setModalEstagio}
-          onChangeTexto={setModalTexto}
+          history={modalHistory}
+          historyLoading={modalHistoryLoading}
+          historyError={modalHistoryError}
+          onChangeEstagio={setModalEstagioSync}
+          onChangeTexto={setModalTextoSync}
           onCancelar={fecharModal}
           onSalvar={salvarEstagio}
         />
@@ -478,6 +557,9 @@ interface ModalEdicaoProps {
   readonly texto: string;
   readonly saving: boolean;
   readonly error: string | null;
+  readonly history: readonly OnboardingNoteWire[];
+  readonly historyLoading: boolean;
+  readonly historyError: string | null;
   readonly onChangeEstagio: (e: EstagioOnb) => void;
   readonly onChangeTexto: (t: string) => void;
   readonly onCancelar: () => void;
@@ -491,6 +573,9 @@ function ModalEdicao(props: ModalEdicaoProps): JSX.Element {
     texto,
     saving,
     error,
+    history,
+    historyLoading,
+    historyError,
     onChangeEstagio,
     onChangeTexto,
     onCancelar,
@@ -691,7 +776,9 @@ function ModalEdicao(props: ModalEdicaoProps): JSX.Element {
               );
             })}
           </div>
-          <div style={sectionLabelStyle}>Nova anotação</div>
+          <div style={sectionLabelStyle}>Histórico de anotações</div>
+          <HistoricoAnotacoes history={history} loading={historyLoading} error={historyError} />
+          <div style={{ ...sectionLabelStyle, marginTop: 18 }}>Nova anotação</div>
           <textarea
             value={texto}
             onChange={(e) => onChangeTexto(e.target.value)}
@@ -740,4 +827,82 @@ function ToastBanner(props: ToastBannerProps): JSX.Element {
     zIndex: 300,
   };
   return <div style={toastStyle}>{props.message}</div>;
+}
+
+// -----------------------------------------------------------------------
+// HistoricoAnotacoes — cronológico descendente (§14.27 + §21.2)
+// -----------------------------------------------------------------------
+
+interface HistoricoAnotacoesProps {
+  readonly history: readonly OnboardingNoteWire[];
+  readonly loading: boolean;
+  readonly error: string | null;
+}
+
+function autorTipoLabel(t: 'super_admin' | 'rh'): string {
+  return t === 'super_admin' ? 'Super Admin' : 'RH';
+}
+
+function HistoricoAnotacoes(props: HistoricoAnotacoesProps): JSX.Element {
+  const { history, loading, error } = props;
+
+  const listStyle: CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+    maxHeight: 180,
+    overflowY: 'auto',
+    marginBottom: 4,
+  };
+  const emptyStyle: CSSProperties = {
+    fontSize: 12,
+    color: COLORS.text.quaternary,
+    fontStyle: 'italic',
+    padding: '8px 0',
+  };
+  const itemStyle: CSSProperties = {
+    background: '#F9FAFB',
+    border: `1px solid ${COLORS.border.default}`,
+    borderRadius: 8,
+    padding: '10px 12px',
+  };
+  const metaStyle: CSSProperties = {
+    fontSize: 10.5,
+    color: COLORS.text.quaternary,
+    marginBottom: 4,
+    fontWeight: 600,
+  };
+  const textStyle: CSSProperties = {
+    fontSize: 12.5,
+    color: COLORS.text.secondary,
+    lineHeight: 1.5,
+    whiteSpace: 'pre-wrap',
+  };
+  const errStyle: CSSProperties = {
+    ...emptyStyle,
+    color: COLORS.badge.dangerText,
+    fontStyle: 'normal',
+  };
+
+  if (loading) {
+    return <div style={emptyStyle}>Carregando histórico...</div>;
+  }
+  if (error !== null) {
+    return <div style={errStyle}>Erro ao carregar histórico: {error}</div>;
+  }
+  if (history.length === 0) {
+    return <div style={emptyStyle}>Nenhuma anotação anterior — este será o primeiro registro.</div>;
+  }
+  return (
+    <div style={listStyle}>
+      {history.map((n) => (
+        <div key={n.id} style={itemStyle}>
+          <div style={metaStyle}>
+            {autorTipoLabel(n.autorTipo)} · {formatTimestampBR(new Date(n.createdAtIso))}
+          </div>
+          <div style={textStyle}>{n.texto}</div>
+        </div>
+      ))}
+    </div>
+  );
 }

@@ -1,5 +1,5 @@
 // ROIP APP 9BOX — teste de integração ME-080c helpers + smoke test
-// da rota `/super-admin/empresa/[id]/onboarding-lideres`.
+// da rota `/onboarding-lideres`.
 //
 // Cobre:
 //   1. Helpers puros de `internals.ts` (daysBetween,
@@ -25,7 +25,7 @@ import {
   formatTimestampBR,
   iniciaisDoNome,
   parseCompanyIdParam,
-} from '../../src/app/super-admin/empresa/[id]/onboarding-lideres/internals';
+} from '../../src/app/onboarding-lideres/internals';
 
 // -----------------------------------------------------------------------
 // 1. Constantes canônicas
@@ -210,13 +210,18 @@ describe('parseCompanyIdParam', () => {
 
 describe('onboarding-lideres actions smoke', () => {
   it('listOnboardingCardsAction é importável', async () => {
-    const mod = await import('../../src/app/super-admin/empresa/[id]/onboarding-lideres/actions');
+    const mod = await import('../../src/app/onboarding-lideres/actions');
     expect(typeof mod.listOnboardingCardsAction).toBe('function');
   });
 
   it('updateOnboardingStageAction é importável', async () => {
-    const mod = await import('../../src/app/super-admin/empresa/[id]/onboarding-lideres/actions');
+    const mod = await import('../../src/app/onboarding-lideres/actions');
     expect(typeof mod.updateOnboardingStageAction).toBe('function');
+  });
+
+  it('getLeaderDetailAction é importável (ME-080c-patch1)', async () => {
+    const mod = await import('../../src/app/onboarding-lideres/actions');
+    expect(typeof mod.getLeaderDetailAction).toBe('function');
   });
 });
 
@@ -226,9 +231,25 @@ describe('onboarding-lideres actions smoke', () => {
 
 describe('OnboardingLideresClient smoke', () => {
   it('componente é importável', async () => {
-    const path =
-      '../../src/app/super-admin/empresa/[id]/onboarding-lideres/OnboardingLideresClient';
+    const path = '../../src/app/onboarding-lideres/OnboardingLideresClient';
     const mod = await import(path);
     expect(typeof mod.OnboardingLideresClient).toBe('function');
+  });
+});
+
+// -----------------------------------------------------------------------
+// 7. Smoke: pages (RH + super-admin) importáveis (ME-080c-patch1)
+// -----------------------------------------------------------------------
+
+describe('onboarding-lideres pages smoke', () => {
+  it('page RH `/onboarding-lideres` é importável', async () => {
+    const mod = await import('../../src/app/onboarding-lideres/page');
+    expect(typeof mod.default).toBe('function');
+  });
+
+  it('page super-admin `/super-admin/empresa/[id]/onboarding-lideres` é importável', async () => {
+    const path = '../../src/app/super-admin/empresa/[id]/onboarding-lideres/page';
+    const mod = await import(path);
+    expect(typeof mod.default).toBe('function');
   });
 });
