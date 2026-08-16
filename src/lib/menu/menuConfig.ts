@@ -64,6 +64,15 @@ export interface MenuLinkItem {
   readonly showBackArrow?: boolean;
   readonly condition?: 'isResponsavelFinanceiro';
   readonly children?: readonly MenuLinkItem[];
+  /**
+   * ME-080d Onda 1a — quando `false`, o Sidebar renderiza o Link com
+   * `prefetch={false}`, suprimindo o prefetch RSC automatico do Next 15
+   * para itens que apontam a rotas ainda nao implementadas (evita 404
+   * no console e economiza requisicoes). Aplicado em `MENU_SUPER_ADMIN_GLOBAL`
+   * para os itens placeholder de Fase 1 e para debitos derivados
+   * (D-CYCLE-B8, D-FATURAMENTO-B8, D-RH-B8 no que tange a `/meus-dados`).
+   */
+  readonly prefetch?: false;
 }
 
 /**
@@ -92,20 +101,30 @@ export type MenuConfig = readonly MenuItem[];
 // DOC 02 §3.4: posicionamento canonico imediatamente acima de "Dados mensais".
 // Rota canonica: `/faturamento-mensal`. Icone: `DollarSign` §2.7.
 const ITEM_FATURAMENTO: MenuLinkItem = {
+  // ME-080d Onda 1a — D8: prefetch: false (rota /faturamento-mensal ainda
+  // nao implementada, D-FATURAMENTO-B8 registrado para bloco futuro
+  // dedicado).
   type: 'link',
   label: 'Faturamento da empresa',
   href: '/faturamento-mensal',
   iconKey: 'Faturamento da empresa',
   condition: 'isResponsavelFinanceiro',
+  prefetch: false,
 };
 
 const SEPARATOR: MenuSeparatorItem = { type: 'separator' };
 
 const ITEM_MEUS_DADOS: MenuLinkItem = {
+  // ME-080d Onda 1a — D8: prefetch: false (rota /meus-dados ainda nao
+  // implementada, faz parte de D-RH-B8 endereçada por B9). Como
+  // ITEM_MEUS_DADOS aparece em 6 menus (super_admin_global,
+  // super_admin_in_company, rh, rh_lider_c1/c2, clevel_full), a supressao
+  // do prefetch aqui vale para todos os perfis.
   type: 'link',
   label: 'Meus dados',
   href: '/meus-dados',
   iconKey: 'Meus dados',
+  prefetch: false,
 };
 
 /**
@@ -150,22 +169,30 @@ const MENU_SUPER_ADMIN_GLOBAL: MenuConfig = [
     iconKey: 'Painel',
   },
   {
+    // ME-080d Onda 1a — D2=C: rota `/super-admin/empresas` nao existe
+    // (debito D-EMPRESAS-B1 aberto para bloco B1). Aponta ao painel geral
+    // que ja lista as empresas ativas na tabela inferior. Evita 404 puro.
     type: 'link',
     label: 'Empresas',
-    href: '/super-admin/empresas',
+    href: '/super-admin',
     iconKey: 'Empresas',
   },
   {
+    // ME-080d Onda 1a — D8: prefetch: false suprime prefetch RSC 404
+    // (rota placeholder Fase 1 nao implementada).
     type: 'link',
     label: 'Instrumentos (placeholder Fase 1)',
     href: '/super-admin/instrumentos',
     iconKey: 'Instrumentos (placeholder Fase 1)',
+    prefetch: false,
   },
   {
+    // ME-080d Onda 1a — D8: prefetch: false (rota placeholder Fase 1).
     type: 'link',
     label: 'Suporte e logs (placeholder Fase 1)',
     href: '/super-admin/suporte-logs',
     iconKey: 'Suporte e logs (placeholder Fase 1)',
+    prefetch: false,
   },
   {
     type: 'link',
@@ -188,10 +215,13 @@ const MENU_SUPER_ADMIN_GLOBAL: MenuConfig = [
     ],
   },
   {
+    // ME-080d Onda 1a — D8: prefetch: false (D-CYCLE-B8 debito canonico
+    // registrado para bloco futuro dedicado).
     type: 'link',
     label: 'Gestão de ciclos',
     href: '/cycle-management',
     iconKey: 'Gestão de ciclos',
+    prefetch: false,
   },
   {
     type: 'link',
@@ -200,10 +230,12 @@ const MENU_SUPER_ADMIN_GLOBAL: MenuConfig = [
     iconKey: 'Notificações',
   },
   {
+    // ME-080d Onda 1a — D8: prefetch: false (rota nao implementada).
     type: 'link',
     label: 'Desbloqueios',
     href: '/super-admin/desbloqueios',
     iconKey: 'Desbloqueios',
+    prefetch: false,
   },
   SEPARATOR,
   ITEM_ALTERAR_SENHA,

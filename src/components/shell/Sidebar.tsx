@@ -112,9 +112,9 @@ export function Sidebar(props: SidebarProps): JSX.Element {
         }}
       >
         <Image
-          src="/logo-roip-app.svg"
-          alt="ROIP APP"
-          width={104}
+          src="/brand/roipeople-horizontal.png"
+          alt="ROIPeople"
+          width={133}
           height={48}
           priority
           style={{ height: 48, width: 'auto' }}
@@ -182,7 +182,11 @@ function SidebarItemRow(props: {
     <>
       <Link
         href={item.href}
-        prefetch={item.href === '/logout' ? false : undefined}
+        // ME-080d Onda 1a — respeita `prefetch: false` explicito declarado
+        // no MenuLinkItem (D8: suprime prefetch RSC 404 para rotas ainda
+        // nao implementadas). Mantem `false` para /logout (comportamento
+        // canonico pre-existente).
+        prefetch={item.href === '/logout' || item.prefetch === false ? false : undefined}
         aria-current={isActive ? 'page' : undefined}
         style={{
           display: 'flex',
@@ -230,7 +234,10 @@ function SidebarItemRow(props: {
               <li key={`${child.label}-${child.href}`}>
                 <Link
                   href={child.href}
-                  prefetch={child.href === '/logout' ? false : undefined}
+                  // ME-080d Onda 1a — mesmo tratamento canonico do item raiz.
+                  prefetch={
+                    child.href === '/logout' || child.prefetch === false ? false : undefined
+                  }
                   aria-current={childActive ? 'page' : undefined}
                   style={{
                     display: 'flex',

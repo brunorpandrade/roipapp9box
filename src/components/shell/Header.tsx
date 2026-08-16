@@ -123,9 +123,9 @@ export function Header(props: HeaderProps): JSX.Element {
         {leftMode === 'super_admin_global' ? (
           <>
             <Image
-              src="/logo-roip-app.svg"
-              alt="ROIP APP"
-              width={72}
+              src="/brand/roipeople-horizontal.png"
+              alt="ROIPeople"
+              width={91}
               height={32}
               priority
               style={{ height: 32, width: 'auto' }}
