@@ -195,15 +195,28 @@ export async function listLeadersAction(input: {
 }
 
 // -----------------------------------------------------------------------
-// 4. Gerar relatório executivo (§11 + §13.11 — enfileira job assíncrono)
+// 4. Gerar relatório executivo (§11 + §13.11)
 // -----------------------------------------------------------------------
+// ME-080d Onda 2: o motor `generateExecutiveReport` e SINCRONO (nao ha
+// job assincrono nem worker). Quando `status === 'ok'`, o PDF ja esta
+// gerado + gravado + cacheado. Tipo de retorno canonicamente ampliado
+// para propagar `cacheId` + `filename` + `message` — permite ao Client
+// disparar download imediato via `startExecutiveReportDownloadTokenAction`
+// em vez da promessa antiga (falsa) de "notificar no sino".
+
+export interface GenerateRelatorioExecutivoResult {
+  readonly status: 'ok' | 'limit_reached' | 'failed';
+  readonly cacheId?: number;
+  readonly filename?: string;
+  readonly message?: string;
+}
 
 export async function generateRelatorioExecutivoAction(input: {
   readonly companyId: number;
   readonly trimestre: string;
   readonly escopoTipo: 'empresa' | 'departamento' | 'equipe';
   readonly escopoReferencia?: string;
-}): Promise<ActionResult<{ status: string }>> {
+}): Promise<ActionResult<GenerateRelatorioExecutivoResult>> {
   const token = await resolveRawToken();
   if (token === null) {
     return { ok: false, message: 'Sessão ausente ou expirada.' };
@@ -292,6 +305,76 @@ export async function startReportDownloadTokenAction(input: {
     const qs = qsParts.join('&');
     const downloadUrl = `${basePath}?${qs}`;
 
+    return { ok: true, data: { token, downloadUrl } };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erro ao gerar token.';
+    return { ok: false, message: msg };
+  }
+}
+
+// -----------------------------------------------------------------------
+// 6. Start executive report download token (ME-080d Onda 2 — bug D5 fix)
+// -----------------------------------------------------------------------
+//
+// Contexto canonico (descoberta S502 desta ME): o motor
+// `generateExecutiveReport` e 100% SINCRONO — quando retorna
+// `{ kind: 'ok', cacheId, filename }` o PDF ja esta renderizado, gravado
+// em disco (`ExecutiveReportStorageFacade.writePdf`) e cacheado em
+// `executiveReportCache`. Nao ha job assincrono nem worker background.
+//
+// Bug pre-ME-080d observado por Bruno em producao: o Client mostrava
+// toast "Relatorio em geracao. Voce sera notificado no sino quando
+// estiver pronto." apos sucesso — promessa canonicamente FALSA.
+// Nenhuma notificacao chegava, nenhum download acontecia. PDF existia
+// mas era inalcancavel pelo usuario.
+//
+// Fix canonico: apos a proc `generateRelatorioExecutivo` retornar `ok`
+// com `cacheId`, o Client chama esta action para obter um
+// `pdfEphemeralToken` com scope=`executive_report` e resourceId=cacheId.
+// O Route Handler `GET /api/reports/executive/download` valida o token
+// + companyId e serve o PDF.
+//
+// Diferenca canonica vs `startReportDownloadTokenAction`:
+// - snapshot_9box/board_deck: `resourceId` derivado deterministicamente
+//   de (companyId, escopoTipo, escopoReferencia).
+// - executive_report: `resourceId` = `executiveReportCache.id` (INT
+//   autoincrement) — precisa ser passado pelo consumidor. Isso reflete
+//   que executive_report tem cache persistente unico por (empresa,
+//   escopo, trimestre) enquanto snap/board sao renderizados on-the-fly.
+
+export async function startExecutiveReportDownloadTokenAction(input: {
+  readonly companyId: number;
+  readonly cacheId: number;
+}): Promise<ActionResult<{ token: string; downloadUrl: string }>> {
+  const session = await getServerSession();
+  if (session === null) {
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
+  }
+  if (session.kind !== 'super_admin') {
+    // Nota canonica: a proc `generateRelatorioExecutivo` autoriza
+    // super_admin + rh + clevel. Esta action, por enquanto, cobre
+    // apenas o Super Admin (rota `/super-admin/empresa/[id]/...`).
+    // Cobertura RH/C-level entra quando os paineis RH/C-level forem
+    // implementados (B9 e blocos futuros).
+    return { ok: false, message: 'Acesso restrito ao Super Admin.' };
+  }
+
+  try {
+    const now = new Date();
+    const token = await signPdfEphemeralToken(
+      {
+        scope: 'executive_report',
+        companyId: input.companyId,
+        resourceId: input.cacheId,
+        userId: session.superAdminId,
+        userType: 'super_admin',
+      },
+      now,
+    );
+    // O Route Handler `/api/reports/executive/download` valida claims
+    // via token (companyId + resourceId + scope). NAO exige nenhum outro
+    // query param — token e a fonte unica de verdade.
+    const downloadUrl = `/api/reports/executive/download?token=${encodeURIComponent(token)}`;
     return { ok: true, data: { token, downloadUrl } };
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Erro ao gerar token.';

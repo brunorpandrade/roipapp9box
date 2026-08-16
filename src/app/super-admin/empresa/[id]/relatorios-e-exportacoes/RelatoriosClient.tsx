@@ -23,6 +23,7 @@ import { COLORS } from '../../../../../lib/design-tokens/colors';
 
 import {
   generateRelatorioExecutivoAction,
+  startExecutiveReportDownloadTokenAction,
   startReportDownloadTokenAction,
   listClosedQuartersAction,
   listDepartmentsAction,
@@ -247,11 +248,38 @@ export function RelatoriosClient(props: Props): JSX.Element {
     });
 
     updateCardState('relatorio_executivo', { loading: false });
-    if (result.ok) {
-      setToast('Relatório em geração. Você será notificado no ' + 'sino quando estiver pronto.');
-    } else {
+    if (!result.ok) {
       setToast(result.message);
+      return;
     }
+
+    // ME-080d Onda 2 — bug D5 fix:
+    // O motor `generateExecutiveReport` e SINCRONO. Quando `result.ok === true`,
+    // o PDF ja esta gerado, salvo em disco e cacheado. A promessa antiga
+    // "voce sera notificado no sino" era canonicamente falsa (nenhuma
+    // notificacao chegava, download nunca era disparado). Fluxo canonico
+    // correto: pedir token efemero + abrir download em nova aba.
+
+    // Casos onde a proc retorna sucesso mas sem cacheId (ex: limite diario
+    // atingido, ver `MSG_EXEC_REPORT_LIMIT_REACHED`). Mensagem canonica
+    // segue vindo do backend (`result.data.message` quando `status !== 'ok'`).
+    if (result.data.status !== 'ok' || result.data.cacheId === undefined) {
+      setToast(result.data.message ?? 'Relatório não pôde ser gerado.');
+      return;
+    }
+
+    const tokenResult = await startExecutiveReportDownloadTokenAction({
+      companyId,
+      cacheId: result.data.cacheId,
+    });
+
+    if (!tokenResult.ok) {
+      setToast(`Relatório gerado, mas falha ao obter link de download: ${tokenResult.message}`);
+      return;
+    }
+
+    window.open(tokenResult.data.downloadUrl, '_blank');
+    setToast('Relatório pronto. Download iniciado em nova aba.');
   }, [companyId, getCardState, updateCardState]);
 
   // Trimestre mais recente
