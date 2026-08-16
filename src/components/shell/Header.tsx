@@ -14,9 +14,9 @@
 
 import type { JSX } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 
 import { NotificationBell, type NotificationItem } from './NotificationBell';
+import { UserMenuDropdown } from './UserMenuDropdown';
 import { initialsFromName } from '../../lib/avatar/initials';
 import { COLORS } from '../../lib/design-tokens/colors';
 
@@ -197,72 +197,16 @@ export function Header(props: HeaderProps): JSX.Element {
           <NotificationBell notifications={notifications} unreadCount={unreadNotificationCount} />
         ) : null}
 
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          {user.avatarUrl !== undefined && user.avatarUrl !== '' ? (
-            <Image
-              src={user.avatarUrl}
-              alt={user.displayName}
-              width={32}
-              height={32}
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 9999,
-                objectFit: 'cover',
-              }}
-            />
-          ) : (
-            <span
-              aria-hidden="true"
-              style={{
-                display: 'inline-flex',
-                width: 32,
-                height: 32,
-                borderRadius: 9999,
-                background: COLORS.background.elevated,
-                border: `1px solid ${COLORS.border.default}`,
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 11,
-                fontWeight: 600,
-                color: COLORS.text.secondary,
-              }}
-            >
-              {initialsFromName(user.displayName)}
-            </span>
-          )}
-          <span
-            style={{
-              fontSize: 13,
-              fontWeight: 500,
-              color: COLORS.text.primary,
-            }}
-          >
-            {user.displayName}
-          </span>
-        </div>
-
-        <Link
-          href="/logout"
-          prefetch={false}
-          style={{
-            fontSize: 13,
-            fontWeight: 500,
-            color: COLORS.text.secondary,
-            textDecoration: 'none',
-            padding: '6px 12px',
-            border: `1px solid ${COLORS.border.default}`,
-            borderRadius: 8,
-          }}
-        >
-          Sair
-        </Link>
+        {/*
+          ME-080d Onda 1c — D8: substitui o `<span>{user.displayName}</span>` inerte
+          + o botao `[Sair]` separado por um `<UserMenuDropdown>` unificado que
+          expoe 3 itens canonicos ao clicar no avatar+nome:
+            1. Meus dados      → /meus-dados     (D-RH-B8, prefetch:false)
+            2. Alterar senha   → /alterar-senha
+            3. Sair            → /logout          (prefetch:false)
+          Padrao web app canonico (Gmail/Notion/GitHub/Linear).
+        */}
+        <UserMenuDropdown displayName={user.displayName} avatarUrl={user.avatarUrl} />
       </div>
     </header>
   );

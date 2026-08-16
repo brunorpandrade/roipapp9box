@@ -22,6 +22,7 @@
 // **RV-13.** Cada export tem chamador na propria ME:
 //   - `LoginSuperAdminClient` → `src/app/login-super-admin/page.tsx`.
 
+import Image from 'next/image';
 import { useCallback, useState, type CSSProperties, type FormEvent, type JSX } from 'react';
 
 import { COLORS } from '../../lib/design-tokens/colors';
@@ -40,18 +41,19 @@ const PAGE_STYLE: CSSProperties = {
 };
 
 const HEADER_STYLE: CSSProperties = {
-  padding: '20px 24px',
+  // ME-080d Onda 1c — D14=Y: mesmo tratamento canonico do
+  // LoginUnifiedClient (padding-top 80 desloca a logo para o meio
+  // do espaco entre topo da pagina e topo do card).
+  padding: '80px 24px 40px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
 };
 
-const BRAND_STYLE: CSSProperties = {
-  fontSize: 18,
-  fontWeight: 700,
-  color: COLORS.primary.navy,
-  letterSpacing: '0.02em',
-};
+// ME-080d Onda 1c — D13=A: logo oficial ROIPeople no lugar do texto
+// placeholder "ROIP APP".
+const LOGO_HEIGHT = 60;
+const LOGO_WIDTH = 170;
 
 const MAIN_STYLE: CSSProperties = {
   flex: 1,
@@ -254,7 +256,14 @@ export function LoginSuperAdminClient(): JSX.Element {
   return (
     <div style={PAGE_STYLE}>
       <header style={HEADER_STYLE}>
-        <span style={BRAND_STYLE}>ROIP APP</span>
+        <Image
+          src="/brand/roipeople-horizontal.png"
+          alt="ROIPeople"
+          width={LOGO_WIDTH}
+          height={LOGO_HEIGHT}
+          priority
+          style={{ height: LOGO_HEIGHT, width: 'auto' }}
+        />
       </header>
       <main style={MAIN_STYLE}>
         <div style={CARD_STYLE}>

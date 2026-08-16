@@ -22,6 +22,7 @@
 // **RV-13.** Cada export tem chamador na propria ME:
 //   - `LoginUnifiedClient` → `src/app/page.tsx` (mesma rota).
 
+import Image from 'next/image';
 import {
   useCallback,
   useMemo,
@@ -63,18 +64,23 @@ const PAGE_STYLE: CSSProperties = {
 };
 
 const HEADER_STYLE: CSSProperties = {
-  padding: '20px 24px',
+  // ME-080d Onda 1c — D14=Y: padding-top maior desloca a logo para baixo
+  // do topo da pagina, centralizando visualmente no espaco entre o
+  // topo e o topo do card de login (que fica centralizado verticalmente
+  // no MAIN_STYLE). 80px top + 40px bottom = ~120px de altura do header,
+  // logo aparece a ~110px do topo (80 + 30 para o centro vertical da
+  // logo de 60px).
+  padding: '80px 24px 40px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
 };
 
-const BRAND_STYLE: CSSProperties = {
-  fontSize: 18,
-  fontWeight: 700,
-  color: COLORS.primary.navy,
-  letterSpacing: '0.02em',
-};
+// ME-080d Onda 1c — D13=A: logo oficial ROIPeople no lugar do texto
+// placeholder "ROIP APP". Altura 60px preserva legibilidade e proporcao
+// visual entre header e card. `priority` para LCP.
+const LOGO_HEIGHT = 60;
+const LOGO_WIDTH = 170; // ratio ~2.83 do PNG oficial (1822x658).
 
 const MAIN_STYLE: CSSProperties = {
   flex: 1,
@@ -275,7 +281,14 @@ export function LoginUnifiedClient(): JSX.Element {
   return (
     <div style={PAGE_STYLE}>
       <header style={HEADER_STYLE}>
-        <span style={BRAND_STYLE}>ROIP APP</span>
+        <Image
+          src="/brand/roipeople-horizontal.png"
+          alt="ROIPeople"
+          width={LOGO_WIDTH}
+          height={LOGO_HEIGHT}
+          priority
+          style={{ height: LOGO_HEIGHT, width: 'auto' }}
+        />
       </header>
       <main style={MAIN_STYLE}>
         <div style={CARD_STYLE}>
