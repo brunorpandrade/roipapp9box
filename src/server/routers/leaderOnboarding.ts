@@ -43,11 +43,16 @@
 //     via `ReturnType`.
 //   - Constantes canonicas de mensagem exportadas para reuso em testes.
 
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { ONBOARDING_ESTAGIO_VALUES, type OnboardingEstagio } from '../../db/schema/enums';
-import { employees, leaderOnboardingNotes, leaderOnboardingStageLog } from '../../db/schema';
+import {
+  employeeLeaderHistory,
+  employees,
+  leaderOnboardingNotes,
+  leaderOnboardingStageLog,
+} from '../../db/schema';
 import { TRPCError } from '@trpc/server';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
 
@@ -119,8 +124,19 @@ export const GET_SUMMARY_COUNTS_INPUT_SCHEMA = z.object({
 export interface ListCardEntry {
   employeeId: number;
   nome: string;
+  cargo: string;
   departamento: string;
   onboardingEstagio: OnboardingEstagio;
+  // ME-080c — 2 campos aditivos canônicos §14.27 (rota
+  // `/onboarding-lideres`): número de liderados diretos ativos +
+  // instante de entrada no estágio atual (para badge tempo permanência
+  // e ordenação canônica descendente). `entradaEstagioAtual` é o
+  // `MAX(createdAt)` do `leaderOnboardingStageLog` filtrado por
+  // `estagioNovo = onboardingEstagio` do próprio líder; quando o líder
+  // nunca teve mudança registrada (kanban recém-criado), fallback
+  // canônico = `employees.createdAt`.
+  countLiderados: number;
+  entradaEstagioAtual: Date;
 }
 
 export interface GetDetailResult {
@@ -241,12 +257,19 @@ export function createLeaderOnboardingRouter(deps: LeaderOnboardingRouterDeps = 
       .query(async ({ ctx, input }): Promise<ListCardEntry[]> => {
         assertCompanyScopeOnb(ctx.user, input.companyId);
 
+        // ME-080c — SELECT estendido para §14.27: cargo + createdAt
+        // (fallback de `entradaEstagioAtual`). Query base restrita a
+        // lideres ativos da empresa; ordenacao final DESC por dias no
+        // estagio (mais antigo no topo) e resolvida em pos-processamento
+        // por ser calculada.
         const rows = await ctx.db
           .select({
             employeeId: employees.id,
             nome: employees.name,
+            cargo: employees.cargo,
             departamento: employees.departamento,
             onboardingEstagio: employees.onboardingEstagio,
+            createdAt: employees.createdAt,
           })
           .from(employees)
           .where(
@@ -269,11 +292,110 @@ export function createLeaderOnboardingRouter(deps: LeaderOnboardingRouterDeps = 
           return !isSelfEmployee(ctx.user, r.employeeId);
         });
 
-        return filtered.map((r) => ({
+        if (filtered.length === 0) {
+          return [];
+        }
+
+        const empIds = filtered.map((r) => r.employeeId);
+
+        // ME-080c — count canonico de liderados diretos ATIVOS por
+        // lider `employee` (§14.6 padrao consolidado
+        // leadershipTransfer). Usa employeeLeaderHistory com dataFim
+        // IS NULL + employees.status='ativo' + companyId escopado.
+        const liderCountRows = await ctx.db
+          .select({
+            liderId: employeeLeaderHistory.liderId,
+            n: count(),
+          })
+          .from(employeeLeaderHistory)
+          .innerJoin(employees, eq(employeeLeaderHistory.employeeId, employees.id))
+          .where(
+            and(
+              inArray(employeeLeaderHistory.liderId, empIds),
+              isNull(employeeLeaderHistory.dataFim),
+              eq(employees.status, 'ativo'),
+              eq(employees.companyId, input.companyId),
+            ),
+          )
+          .groupBy(employeeLeaderHistory.liderId);
+        const countByLider = new Map<number, number>();
+        for (const r of liderCountRows) {
+          if (r.liderId !== null) {
+            countByLider.set(r.liderId, Number(r.n));
+          }
+        }
+
+        // ME-080c — entrada canonica no estagio atual: MAX(createdAt)
+        // do stageLog onde estagioNovo == estagio corrente do lider.
+        // Fallback (nunca teve stageLog OU estagio atual nunca foi
+        // inserido no log) = employees.createdAt (assume-se que o
+        // lider entrou em 'treinar' na criacao — §21.1 ciclo de vida).
+        const stageLogRows = await ctx.db
+          .select({
+            employeeId: leaderOnboardingStageLog.employeeId,
+            estagioNovo: leaderOnboardingStageLog.estagioNovo,
+            createdAt: leaderOnboardingStageLog.createdAt,
+          })
+          .from(leaderOnboardingStageLog)
+          .where(inArray(leaderOnboardingStageLog.employeeId, empIds))
+          .orderBy(desc(leaderOnboardingStageLog.createdAt));
+        // Map: employeeId -> entradaEstagioAtual (mais recente com
+        // estagioNovo == estagio corrente). Ordenacao desc do SELECT
+        // garante que o primeiro match encontrado eh o mais recente.
+        const estagioByEmp = new Map<number, OnboardingEstagio>();
+        for (const r of filtered) {
+          estagioByEmp.set(r.employeeId, r.onboardingEstagio as OnboardingEstagio);
+        }
+        const entradaByEmp = new Map<number, Date>();
+        for (const row of stageLogRows) {
+          const estagioAtual = estagioByEmp.get(row.employeeId);
+          if (estagioAtual === undefined) {
+            continue;
+          }
+          if (row.estagioNovo !== estagioAtual) {
+            continue;
+          }
+          if (entradaByEmp.has(row.employeeId)) {
+            continue;
+          }
+          entradaByEmp.set(row.employeeId, row.createdAt ?? new Date(0));
+        }
+
+        const nowInstant = effectiveDeps.now();
+        const enriched = filtered.map((r) => {
+          const entrada = entradaByEmp.get(r.employeeId) ?? r.createdAt ?? new Date(0);
+          const dias = Math.floor(
+            (nowInstant.getTime() - entrada.getTime()) / (24 * 60 * 60 * 1000),
+          );
+          return {
+            employeeId: r.employeeId,
+            nome: r.nome,
+            cargo: r.cargo,
+            departamento: r.departamento,
+            onboardingEstagio: r.onboardingEstagio as OnboardingEstagio,
+            countLiderados: countByLider.get(r.employeeId) ?? 0,
+            entradaEstagioAtual: entrada,
+            _dias: dias,
+          };
+        });
+
+        // §14.27 ordenacao canonica: dias no estagio DESC (mais antigo
+        // no topo). Empate → asc por nome (determinismo).
+        enriched.sort((a, b) => {
+          if (b._dias !== a._dias) {
+            return b._dias - a._dias;
+          }
+          return a.nome.localeCompare(b.nome, 'pt-BR');
+        });
+
+        return enriched.map((r) => ({
           employeeId: r.employeeId,
           nome: r.nome,
+          cargo: r.cargo,
           departamento: r.departamento,
-          onboardingEstagio: r.onboardingEstagio as OnboardingEstagio,
+          onboardingEstagio: r.onboardingEstagio,
+          countLiderados: r.countLiderados,
+          entradaEstagioAtual: r.entradaEstagioAtual,
         }));
       }),
 
