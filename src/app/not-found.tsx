@@ -49,6 +49,7 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '../server/auth/jwt';
 import { panelPathForRole } from '../lib/routes/redirectByRole';
 import { COLORS } from '../lib/design-tokens/colors';
+import { NotFoundBackButton, NOT_FOUND_BACK_LABEL } from './NotFoundBackButton';
 
 const SESSION_COOKIE = 'session';
 
@@ -64,8 +65,13 @@ export const NOT_FOUND_BODY = 'A página que você tentou acessar não existe ou
 
 /**
  * Label canonico do CTA outline §16.2.
+ *
+ * ME-080d Onda 1b — o label agora vive em `NotFoundBackButton.tsx`
+ * (client component canonico do botao). Este alias exportado preserva
+ * o contrato bit-exact de importacao existente para consumidores em
+ * `tests/` (`me055c-not-found-page.test.tsx` etc) sem quebrar API.
  */
-export const NOT_FOUND_CTA_BACK_LABEL = 'Voltar';
+export const NOT_FOUND_CTA_BACK_LABEL = NOT_FOUND_BACK_LABEL;
 
 /**
  * Labels canonicos do CTA primario contextual §13.9.
@@ -195,23 +201,7 @@ export default async function NotFound(): Promise<React.JSX.Element> {
             flexWrap: 'wrap',
           }}
         >
-          <a
-            data-testid="not-found-cta-back"
-            href="javascript:history.back()"
-            style={{
-              display: 'inline-block',
-              padding: '12px 24px',
-              background: 'transparent',
-              color: COLORS.primary.navy,
-              borderRadius: 6,
-              border: `1px solid ${COLORS.primary.navy}`,
-              textDecoration: 'none',
-              fontSize: 15,
-              fontWeight: 600,
-            }}
-          >
-            {NOT_FOUND_CTA_BACK_LABEL}
-          </a>
+          <NotFoundBackButton />
           <a
             data-testid="not-found-cta-primary"
             href={cta.href}

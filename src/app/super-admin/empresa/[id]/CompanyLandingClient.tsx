@@ -231,6 +231,11 @@ function ClickableIndicatorCard(props: {
     <>
       <span
         style={{
+          // ME-080d Onda 1b — display:block. Sem isso, span inline colava
+          // no `sub` seguinte (produzia "—Disponivel a partir..." grudado
+          // no card ROI global). O gap:6 do container ja separava visualmente
+          // outros elementos mas nao spans inline consecutivos.
+          display: 'block',
           fontSize: 11,
           fontWeight: 600,
           letterSpacing: '0.06em',
@@ -245,6 +250,8 @@ function ClickableIndicatorCard(props: {
           // ME-080a — fontSize responsivo + overflowWrap para valores
           // longos (ex.: "R$ 999.999,00") em cards com largura mínima
           // via `minmax(180px,1fr)`. clamp evita overflow do card.
+          // ME-080d Onda 1b — display:block (fix bug card ROI global).
+          display: 'block',
           fontSize: 18,
           fontWeight: 700,
           color: COLORS.text.primary,
@@ -258,7 +265,16 @@ function ClickableIndicatorCard(props: {
         {value}
       </span>
       {sub !== undefined ? (
-        <span style={{ fontSize: 12, color: COLORS.text.secondary }}>{sub}</span>
+        <span
+          style={{
+            // ME-080d Onda 1b — display:block (fix bug card ROI global).
+            display: 'block',
+            fontSize: 12,
+            color: COLORS.text.secondary,
+          }}
+        >
+          {sub}
+        </span>
       ) : null}
     </>
   );
@@ -397,9 +413,15 @@ function AcoesBlock(props: {
         Ações
       </h2>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        <Link href="/painel-rh" style={buttonStyle}>
-          Painel de controle do RH
-        </Link>
+        {/*
+          ME-080d Onda 1b — D12=A: botao "Painel de controle do RH" removido.
+          A rota `/painel-rh` le `session.companyId` da sessao do usuario
+          logado. Como Super Admin nao tem `companyId` em sessao, era
+          expulso ao clicar (matriz DOC 02 §10.3). Rota preview canonica
+          `/super-admin/empresa/[id]/painel-rh-preview` (impersonation)
+          endereçada por debito D-RH-IMPERSONATION em ME futura dedicada
+          — decisao arquitetural nao trivial (LGPD + telemetria + auth).
+        */}
         <Link href={`/super-admin/empresa/${companyId}/clevel-rh`} style={buttonStyle}>
           C-level
         </Link>
