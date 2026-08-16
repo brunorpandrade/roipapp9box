@@ -22,24 +22,35 @@
 /** §12.3 — 6 cards canônicos em 2 subseções. */
 export const CARD_DEFS = [
   {
+    // ME-080d Onda 1d — D11=B: card mantem visivel mas rotulado como
+    // "Em desenvolvimento". Descoberta em auditoria S502: os botoes
+    // deste card e do `evolucao_trimestral` reusavam a rota de download
+    // do `snapshot_9box` com um parametro `type=` que o backend ignora
+    // — na pratica os 3 cards baixavam o mesmo PDF (bug funcional
+    // grave). Sem template PDF dedicado, esconder e a decisao honesta.
+    // Debito D-REL-RESUMO-EVOLUCAO nomeado para bloco B2/B3 futuro.
     id: 'resumo_dashboard',
     title: 'Resumo dashboard',
-    subtitle: 'Planilha xlsx · 1 trimestre',
+    subtitle: 'Em desenvolvimento — disponível em fase futura',
     section: 'planilhas',
     iconType: 'xlsx' as const,
     hasCascade: true,
     hasEquipe: true,
-    buttonLabel: '📥 Exportar planilha',
+    buttonLabel: 'Em breve',
+    disabled: true,
   },
   {
+    // ME-080d Onda 1d — D11=B: mesmo tratamento canonico do
+    // resumo_dashboard (D-REL-RESUMO-EVOLUCAO).
     id: 'evolucao_trimestral',
     title: 'Evolução trimestral',
-    subtitle: 'Planilha xlsx · até 4 trimestres',
+    subtitle: 'Em desenvolvimento — disponível em fase futura',
     section: 'planilhas',
     iconType: 'xlsx' as const,
     hasCascade: true,
     hasEquipe: true,
-    buttonLabel: '📥 Exportar planilha',
+    buttonLabel: 'Em breve',
+    disabled: true,
   },
   {
     id: 'relatorio_executivo',
@@ -50,6 +61,7 @@ export const CARD_DEFS = [
     hasCascade: true,
     hasEquipe: true,
     buttonLabel: 'Gerar relatório',
+    disabled: false,
   },
   {
     id: 'snapshot_9box',
@@ -60,6 +72,7 @@ export const CARD_DEFS = [
     hasCascade: true,
     hasEquipe: true,
     buttonLabel: 'Baixar PDF',
+    disabled: false,
   },
   {
     id: 'board_deck',
@@ -70,6 +83,7 @@ export const CARD_DEFS = [
     hasCascade: true,
     hasEquipe: false, // §12.5 omite "Equipe" silenciosamente.
     buttonLabel: 'Baixar PDF',
+    disabled: false,
   },
   {
     id: 'clima_engajamento',
@@ -80,6 +94,7 @@ export const CARD_DEFS = [
     hasCascade: false, // §12.7 dropdown único de Ciclo.
     hasEquipe: false,
     buttonLabel: 'Baixar PDF',
+    disabled: false,
   },
 ] as const;
 

@@ -182,6 +182,15 @@ export function RelatoriosClient(props: Props): JSX.Element {
   // Handler de download (D098-2 fix: token-based auth)
   const handleDownload = useCallback(
     async (cardId: CardId) => {
+      // ME-080d Onda 1d — D11=B: guarda defensiva. Se por alguma razao
+      // o handler for chamado com um card `disabled: true` (bypass do
+      // botao desabilitado da UI), aborta silenciosamente sem disparar
+      // download que resultaria em bug (baixaria snapshot 9-Box no
+      // lugar do relatorio esperado, ver descoberta S502 desta ME).
+      const cardDef = CARD_DEFS.find((c) => c.id === cardId);
+      if (cardDef?.disabled === true) {
+        return;
+      }
       const cs = getCardState(cardId);
       const params = new URLSearchParams({
         trimestre: cs.trimestre,
@@ -485,7 +494,12 @@ function ExportCard(props: ExportCardProps): JSX.Element {
   const iconColor = ICON_COLORS[card.iconType];
   const isExecutivo = card.id === 'relatorio_executivo';
   const isClima = card.id === 'clima_engajamento';
-  const disabled = !hasQuarters;
+  // ME-080d Onda 1d — D11=B: `card.disabled` (declarado em CARD_DEFS)
+  // desabilita o card por politica (Resumo dashboard + Evolucao trimestral
+  // sem template PDF dedicado, D-REL-RESUMO-EVOLUCAO). Combina com o
+  // `!hasQuarters` pre-existente (desabilita quando nao ha trimestres
+  // fechados para escopo `empresa`).
+  const disabled = card.disabled === true || !hasQuarters;
 
   // Determinar opções de nível disponíveis
   const nivelOpts = card.hasEquipe
@@ -525,9 +539,34 @@ function ExportCard(props: ExportCardProps): JSX.Element {
               fontSize: 13,
               fontWeight: 600,
               color: COLORS.text.primary,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              flexWrap: 'wrap',
             }}
           >
             {card.title}
+            {card.disabled === true ? (
+              // ME-080d Onda 1d — D11=B: badge "Em desenvolvimento"
+              // canonizado. Visual alinhado aos badges de status ja
+              // usados em outros pontos do produto (padrao S503).
+              <span
+                data-testid={`card-em-desenvolvimento-${card.id}`}
+                style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  padding: '2px 8px',
+                  borderRadius: 10,
+                  background: COLORS.background.elevated,
+                  color: COLORS.text.secondary,
+                  border: `1px solid ${COLORS.border.default}`,
+                }}
+              >
+                Em desenvolvimento
+              </span>
+            ) : null}
           </div>
           <div
             style={{
