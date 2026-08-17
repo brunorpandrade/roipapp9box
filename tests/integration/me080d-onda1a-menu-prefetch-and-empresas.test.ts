@@ -1,15 +1,16 @@
-// ROIP APP 9BOX — teste de integração ME-080d Onda 1a.
+// ROIP APP 9BOX — teste de integração ME-080d Onda 1a + Onda 1e.
 //
-// Cobre bit-exact as duas mutacoes canonicas do `MENU_SUPER_ADMIN_GLOBAL`:
+// Cobre bit-exact as mutacoes canonicas do `MENU_SUPER_ADMIN_GLOBAL`:
 //
-// 1. D2=C — item "Empresas" aponta a `/super-admin` (a rota
-//    `/super-admin/empresas` nunca existiu; ate implementarmos a lista
-//    dedicada — debito nomeado D-EMPRESAS-B1 — o item redireciona ao
-//    painel geral que ja lista as empresas ativas na tabela inferior).
+// 1. Onda 1e (revisao de D2=C) — item "Empresas" REMOVIDO do menu.
+//    Racional: apontar para `/super-admin` (mesma rota de "Painel")
+//    causava destaque visual duplicado. Debito D-EMPRESAS-B1 continua
+//    aberto; item volta quando a rota `/super-admin/empresas` dedicada
+//    for implementada.
 //
-// 2. D8 — 5 itens sem rota implementada declaram `prefetch: false`
-//    explicito para suprimir o prefetch RSC automatico do Next 15
-//    (elimina 404 no console):
+// 2. Onda 1a — D8: 5 itens sem rota implementada declaram
+//    `prefetch: false` explicito para suprimir o prefetch RSC automatico
+//    do Next 15 (elimina 404 no console):
 //      - Instrumentos (placeholder Fase 1)
 //      - Suporte e logs (placeholder Fase 1)
 //      - Gestao de ciclos  (D-CYCLE-B8)
@@ -38,13 +39,18 @@ function findLinkByLabel(items: readonly MenuItem[], label: string): MenuLinkIte
   return found;
 }
 
-describe('ME-080d Onda 1a — MENU_SUPER_ADMIN_GLOBAL (D2 + D8)', () => {
+describe('ME-080d — MENU_SUPER_ADMIN_GLOBAL (Onda 1e revisão de D2 + Onda 1a D8)', () => {
   const items = requireItems(resolveMenuItems('super_admin_global', false), 'super_admin_global');
 
-  it('D2=C — item "Empresas" aponta a /super-admin (rota /super-admin/empresas nao existe)', () => {
+  it('Onda 1e — item "Empresas" removido do menu (era duplicado com "Painel")', () => {
     const empresas = findLinkByLabel(items, 'Empresas');
-    expect(empresas).toBeDefined();
-    expect(empresas?.href).toBe('/super-admin');
+    expect(empresas).toBeUndefined();
+  });
+
+  it('Onda 1e — item "Painel" preservado bit-exact', () => {
+    const painel = findLinkByLabel(items, 'Painel');
+    expect(painel).toBeDefined();
+    expect(painel?.href).toBe('/super-admin');
   });
 
   it('D8 — "Instrumentos (placeholder Fase 1)" declara prefetch: false', () => {

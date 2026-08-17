@@ -122,13 +122,19 @@ export function Header(props: HeaderProps): JSX.Element {
       >
         {leftMode === 'super_admin_global' ? (
           <>
+            {/*
+              ME-080d Onda 1e — substituida a logo horizontal ROIPeople
+              (que ja aparece no topo do Sidebar canonico) pelo icone
+              quadrado do brand. Evita duplicacao visual e libera espaco
+              horizontal no header.
+            */}
             <Image
-              src="/brand/roipeople-horizontal.png"
+              src="/brand/roipeople-icon.png"
               alt="ROIPeople"
-              width={91}
+              width={32}
               height={32}
               priority
-              style={{ height: 32, width: 'auto' }}
+              style={{ height: 32, width: 32, borderRadius: 6 }}
             />
             <span
               style={{
@@ -143,7 +149,19 @@ export function Header(props: HeaderProps): JSX.Element {
         ) : (
           <>
             {companyLogoUrl !== undefined && companyLogoUrl !== '' ? (
-              <Image
+              /*
+                ME-080d Onda 1e — trocado `<Image>` do next/image por
+                `<img>` nativo. Racional: `<Image>` bloqueia URLs de
+                hostnames nao listados em `next.config.ts > images.
+                remotePatterns` por seguranca. Como o `companies.logoUrl`
+                pode apontar para qualquer CDN publico ate a implementacao
+                do upload interno (debito D-LOGO-UPLOAD), `<img>` nativo
+                evita configurar hostname-a-hostname. Padrao ja adotado
+                em `CompanyLandingClient` (consistencia). Perda de
+                otimizacao Next Image (lazy load + resize) e marginal
+                para thumbnail 32px.
+              */
+              <img
                 src={companyLogoUrl}
                 alt={companyDisplayName ?? 'Logo da empresa'}
                 width={32}

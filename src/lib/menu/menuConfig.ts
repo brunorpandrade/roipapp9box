@@ -169,17 +169,10 @@ const MENU_SUPER_ADMIN_GLOBAL: MenuConfig = [
     iconKey: 'Painel',
   },
   {
-    // ME-080d Onda 1a — D2=C: rota `/super-admin/empresas` nao existe
-    // (debito D-EMPRESAS-B1 aberto para bloco B1). Aponta ao painel geral
-    // que ja lista as empresas ativas na tabela inferior. Evita 404 puro.
-    type: 'link',
-    label: 'Empresas',
-    href: '/super-admin',
-    iconKey: 'Empresas',
-  },
-  {
     // ME-080d Onda 1a — D8: prefetch: false suprime prefetch RSC 404
     // (rota placeholder Fase 1 nao implementada).
+    // ME-080d Onda 1e — item "Empresas" removido acima (era vizinho aqui),
+    // ver commit `fix me-080d-onda1e` para racional.
     type: 'link',
     label: 'Instrumentos (placeholder Fase 1)',
     href: '/super-admin/instrumentos',

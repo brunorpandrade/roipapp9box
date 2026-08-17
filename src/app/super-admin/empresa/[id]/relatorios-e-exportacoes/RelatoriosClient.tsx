@@ -278,8 +278,18 @@ export function RelatoriosClient(props: Props): JSX.Element {
       return;
     }
 
-    window.open(tokenResult.data.downloadUrl, '_blank');
-    setToast('Relatório pronto. Download iniciado em nova aba.');
+    // ME-080d Onda 1e — correcao mecanica canonica do fix da Onda 2:
+    // `window.open(url, '_blank')` chamado apos `await` perde o
+    // "user gesture" original do clique. Chrome/Safari bloqueiam como
+    // pop-up nesse cenario (comportamento canonico de seguranca
+    // http://google.com/pop-ups). Como o Route Handler
+    // `/api/reports/executive/download` responde com
+    // `Content-Disposition: attachment; filename=...`, atribuir a URL
+    // a `window.location.href` dispara download **sem trocar a pagina
+    // atual** — o browser detecta `attachment` antes de renderizar e
+    // baixa o binario, preservando a rota corrente.
+    window.location.href = tokenResult.data.downloadUrl;
+    setToast('Relatório pronto. Download iniciando…');
   }, [companyId, getCardState, updateCardState]);
 
   // Trimestre mais recente

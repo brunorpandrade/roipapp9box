@@ -61,12 +61,20 @@ describe('ME-080d Onda 2 — RelatoriosClient.tsx (D5=A client fix)', () => {
     expect(source).not.toMatch(/setToast\([^)]*quando estiver pronto/);
   });
 
-  it('toast novo "Download iniciado em nova aba" presente', () => {
-    expect(source).toContain('Download iniciado em nova aba');
+  it('toast novo "Download iniciando" presente (Onda 1e revisou o texto)', () => {
+    // Onda 2 original: "Download iniciado em nova aba" + window.open.
+    // Onda 1e revisao: "Download iniciando…" + window.location.href
+    // (fix bloqueio pop-up apos await).
+    expect(source).toContain('Download iniciando');
   });
 
-  it('window.open(downloadUrl) presente para disparar download', () => {
-    expect(source).toMatch(/window\.open\(tokenResult\.data\.downloadUrl/);
+  it('download via window.location.href (Onda 1e — evita bloqueio pop-up)', () => {
+    // Onda 2 usava window.open(url, '_blank') mas Chrome/Safari bloqueiam
+    // pop-ups apos await (perda de user gesture). Como o Route Handler
+    // responde com Content-Disposition: attachment, atribuir location.href
+    // dispara download sem trocar a pagina atual.
+    expect(source).toMatch(/window\.location\.href\s*=\s*tokenResult\.data\.downloadUrl/);
+    expect(source).not.toMatch(/window\.open\(tokenResult\.data\.downloadUrl/);
   });
 
   it('guarda para status != ok / cacheId ausente presente', () => {

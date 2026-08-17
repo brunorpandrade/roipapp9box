@@ -19,7 +19,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'ROIP APP 9BOX',
+  // ME-080d Onda 1e — rename brand canonico: "ROIP APP 9BOX" era nome
+  // interno de repositorio. O brand publico e "ROIPeople" (identidade
+  // visual + logo). Titulo da aba do navegador agora reflete o brand.
+  title: 'ROIPeople',
   description: 'Plataforma de people analytics para PMEs brasileiras',
 };
 

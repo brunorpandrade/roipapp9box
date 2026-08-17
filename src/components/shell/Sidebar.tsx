@@ -108,7 +108,10 @@ export function Sidebar(props: SidebarProps): JSX.Element {
           padding: 16,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'flex-start',
+          // ME-080d Onda 1e — centralizar horizontalmente. Antes era
+          // `flex-start` (alinhado a esquerda), o que deixava a logo
+          // colada na borda esquerda com espaco vazio a direita.
+          justifyContent: 'center',
         }}
       >
         <Image
