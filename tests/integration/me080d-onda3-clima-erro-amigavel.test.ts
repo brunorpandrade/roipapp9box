@@ -66,4 +66,9 @@ describe('ME-080d Onda 3 — RelatoriosClient.tsx (D6=A: clima erro amigavel)', 
     expect(source).toMatch(/filename="\(\[\^"\]\+\)"/);
     expect(source).toContain("'clima-engajamento.pdf'");
   });
+
+  it('D15=A patch1 — toast de sucesso no clima (paridade com executivo)', () => {
+    expect(source).toContain('Relatório de clima e engajamento pronto');
+    expect(source).toContain('Download iniciando');
+  });
 });

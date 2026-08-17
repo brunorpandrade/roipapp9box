@@ -279,6 +279,11 @@ export function RelatoriosClient(props: Props): JSX.Element {
           link.click();
           document.body.removeChild(link);
           URL.revokeObjectURL(blobUrl);
+          // ME-080d Onda 3 patch1 — D15=A: toast de sucesso para paridade
+          // com `handleGenerateExecutivo` (Onda 2). Sem feedback visual o
+          // usuario tende a clicar de novo achando que "nao aconteceu
+          // nada" e baixa o PDF em duplicidade.
+          setToast('Relatório de clima e engajamento pronto. Download iniciando…');
         } catch {
           setToast('Falha de rede ao baixar relatório de clima e engajamento.');
         }
