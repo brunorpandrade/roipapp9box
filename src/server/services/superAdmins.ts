@@ -106,3 +106,30 @@ export async function updateSuperAdminEmail(
   const [result] = await db.update(superAdmins).set({ email }).where(eq(superAdmins.id, id));
   return result.affectedRows;
 }
+
+/**
+ * Atualiza o `name` (displayName) de um Super Admin. Consumidor canonico
+ * exclusivo: `myData.updateName` (ME-082), invocado apenas quando a
+ * sessao pertence a um Super Admin (H1a de /meus-dados — DOC 05 §14.5).
+ *
+ * A validacao canonica `trim().length > 0 && length <= 100` fica no zod
+ * da procedure (DOC 05 §14.5 H1a fluxo edicao itens 3-4). Este helper
+ * apenas persiste — nao valida.
+ *
+ * Efeitos colaterais canonicos: nenhum. O `pwv` do Super Admin e
+ * derivado de `passwordHash + email` (nao inclui `name`), portanto a
+ * troca de nome NAO invalida sessoes. Comportamento canonico esperado:
+ * usuario continua logado, apenas o cache client-side do
+ * displayName precisa ser propagado pelo cliente (retornado no payload
+ * da procedure para evitar re-fetch).
+ *
+ * Retorna o numero de linhas afetadas.
+ */
+export async function updateSuperAdminName(
+  db: RoipDatabase,
+  id: number,
+  name: string,
+): Promise<number> {
+  const [result] = await db.update(superAdmins).set({ name }).where(eq(superAdmins.id, id));
+  return result.affectedRows;
+}

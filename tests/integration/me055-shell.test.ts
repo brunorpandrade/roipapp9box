@@ -91,14 +91,16 @@ describe('integration ME-055c shell (RV-11) — resolveMenuItems x MySQL real', 
     companyId = companyRow.id;
   });
 
-  it('super_admin_global: 12 itens §3.1 (sem Faturamento; D3.2 +Alterar senha)', async () => {
+  it('super_admin_global: 11 itens §3.1 (ME-082 sem Empresas; D3.2 +Alterar senha)', async () => {
     // Super Admin nao ha registro por empresa — testa via ProfileKey
     // direto (a resolucao super_admin_global independe de flag RF).
     const items = resolveMenuItems('super_admin_global', true);
     expect(items).not.toBeNull();
-    // Contagem canonica §3.1: 12 itens totais (11 links + 1 separador).
+    // Contagem canonica §3.1 pos-ME-082: 11 itens totais (10 links + 1 separador).
     // ME-080b D3.2: +1 'Alterar senha' apos SEPARATOR.
-    expect(items!.length).toBe(12);
+    // ME-080d Onda 1e: -1 'Empresas' (removida por duplicidade com 'Painel');
+    // este teste foi atualizado em ME-082 (patch de debito canonico).
+    expect(items!.length).toBe(11);
     // Nunca inclui Faturamento da empresa (S466: super admin nao ve esse item).
     const hasFaturamento = items!.some(
       (i) => i.type === 'link' && i.label === 'Faturamento da empresa',

@@ -45,12 +45,16 @@ function summarizeAll(
 // -----------------------------------------------------------------------
 
 describe('MENU_CONFIG_BY_PROFILE — composicao canonica DOC 05 §3.1-§3.10', () => {
-  it('§3.1 super_admin_global — 11 itens canonicos bit-exact', () => {
+  it('§3.1 super_admin_global — 11 itens bit-exact (ME-082: sem Empresas apos Onda 1e)', () => {
     const config = MENU_CONFIG_BY_PROFILE.super_admin_global;
     expect(config).not.toBeNull();
+    // ME-082 patch canonico: item ITEM_EMPRESAS foi removido de
+    // MENU_SUPER_ADMIN_GLOBAL em ME-080d Onda 1e (duplicata de "Painel"
+    // - ver comentario canonico em src/lib/menu/menuConfig.ts). Os
+    // testes de contagem/composicao nao foram atualizados junto, criando
+    // debito canonico consertado nesta ME.
     expect(summarizeAll(config as MenuConfig)).toEqual([
       ['Painel', '/super-admin'],
-      ['Empresas', '/super-admin/empresas'],
       ['Instrumentos (placeholder Fase 1)', '/super-admin/instrumentos'],
       ['Suporte e logs (placeholder Fase 1)', '/super-admin/suporte-logs'],
       ['Logs administrativos', '/super-admin/logs'],

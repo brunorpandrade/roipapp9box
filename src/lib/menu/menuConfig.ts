@@ -115,16 +115,17 @@ const ITEM_FATURAMENTO: MenuLinkItem = {
 const SEPARATOR: MenuSeparatorItem = { type: 'separator' };
 
 const ITEM_MEUS_DADOS: MenuLinkItem = {
-  // ME-080d Onda 1a — D8: prefetch: false (rota /meus-dados ainda nao
-  // implementada, faz parte de D-RH-B8 endereçada por B9). Como
-  // ITEM_MEUS_DADOS aparece em 6 menus (super_admin_global,
-  // super_admin_in_company, rh, rh_lider_c1/c2, clevel_full), a supressao
-  // do prefetch aqui vale para todos os perfis.
+  // ME-082 — rota /meus-dados canonicamente implementada (DOC 05 §14.5
+  // H1a/H1b). O prefetch: false canonizado em ME-080d Onda 1a D8 foi
+  // removido: o Sidebar agora prefetcha normalmente via Link do Next 15.
+  // O item aparece nos 9 menus autenticados (super_admin_global,
+  // super_admin_in_company, rh, rh_lider_c1/c2, lider_c1/c2, clevel_full,
+  // clevel_restricted) — colaborador puro nao tem sidebar administrativa
+  // (§3.10).
   type: 'link',
   label: 'Meus dados',
   href: '/meus-dados',
   iconKey: 'Meus dados',
-  prefetch: false,
 };
 
 /**

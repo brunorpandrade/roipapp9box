@@ -77,10 +77,15 @@ describe('ME-080d — MENU_SUPER_ADMIN_GLOBAL (Onda 1e revisão de D2 + Onda 1a 
     expect(item?.prefetch).toBe(false);
   });
 
-  it('D8 — "Meus dados" declara prefetch: false (D-RH-B8)', () => {
+  it('D8 — "Meus dados" NAO tem prefetch: false (rota /meus-dados implementada em ME-082)', () => {
+    // ME-082 patch canonico: rota /meus-dados foi implementada (DOC 05
+    // §14.5 H1a/H1b), portanto ITEM_MEUS_DADOS teve o `prefetch: false`
+    // canonicamente removido. Este teste foi invertido: agora asserta
+    // ausencia da flag (padrao das rotas existentes como Painel e
+    // Notificacoes). Ver src/lib/menu/menuConfig.ts comentario canonico.
     const item = findLinkByLabel(items, 'Meus dados');
     expect(item).toBeDefined();
-    expect(item?.prefetch).toBe(false);
+    expect(item?.prefetch).toBeUndefined();
   });
 
   it('D8 — "Notificações" NAO tem prefetch: false (rota /notificacoes existe)', () => {

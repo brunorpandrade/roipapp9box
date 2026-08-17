@@ -17,6 +17,7 @@
 import { createAdminUnlockAlertHook } from '../../lib/alerts/hooks';
 import { protectedProcedure, publicProcedure, roleProcedure, router } from '../trpc';
 import { authRouter } from './auth';
+import { myDataRouter } from './myData';
 import { createCLevelMembersRouter } from './cLevelMembers';
 import { createClimateRouter } from './climate';
 import { createCompanyRouter } from './company';
@@ -533,6 +534,7 @@ export const appRouter = router({
   session: sessionRouter,
   admin: adminRouter,
   auth: authRouter,
+  myData: myDataRouter,
   cycleUnlockRequests: cycleUnlockRequestsRouter,
   quarterlyCalculation: quarterlyCalculationRouter,
   economicDiagnosis: economicDiagnosisRouter,
