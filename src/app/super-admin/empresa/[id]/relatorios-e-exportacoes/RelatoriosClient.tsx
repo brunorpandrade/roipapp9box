@@ -226,13 +226,66 @@ export function RelatoriosClient(props: Props): JSX.Element {
       }
 
       // Cookie-based route: clima-engajamento (D098-2)
+      // ME-080d Onda 3 — bug D6=A fix:
+      // Antes: `window.open(url, '_blank')` abria nova aba. Se o backend
+      // retornasse `{error: "sem_agregados_clima"}` (esperado hoje —
+      // debito D-CLIMA-B3, motor de agregados nao implementado ate
+      // Bloco B3), a nova aba mostrava JSON cru feio para o usuario.
+      // Fix canonico: fetch primeiro para inspecionar resposta.
+      // - Se 200: extrai PDF como blob + `<a download>` invisivel
+      //   dispara download local (bypass bloqueio pop-up apos await).
+      // - Se erro: setToast com mensagem canonica amigavel.
       if (cardId === 'clima_engajamento') {
         params.set('companyId', String(companyId));
-        window.open(`/api/reports/clima-engajamento/download?${params.toString()}`, '_blank');
+        const url = `/api/reports/clima-engajamento/download?${params.toString()}`;
+        try {
+          const response = await fetch(url);
+          if (!response.ok) {
+            let errorMessage = 'Erro ao gerar relatório de clima e engajamento.';
+            try {
+              const body = (await response.json()) as { error?: string };
+              if (body?.error === 'sem_agregados_clima') {
+                errorMessage =
+                  'Dados de clima e engajamento ainda não estão disponíveis ' +
+                  'para esta empresa. Este relatório será gerado a partir do ' +
+                  'Bloco B3 do sistema (implementação de agregados de clima).';
+              } else if (body?.error === 'empresa_nao_encontrada') {
+                errorMessage = 'Empresa não encontrada.';
+              } else if (body?.error === 'perfil_sem_permissao') {
+                errorMessage = 'Sem permissão para gerar este relatório.';
+              } else if (body?.error === 'nao_autenticado') {
+                errorMessage = 'Sessão expirada. Faça login novamente.';
+              } else if (body?.error === 'acesso_limitado') {
+                errorMessage = 'Seu perfil C-level não tem acesso total.';
+              } else if (body?.error === 'company_mismatch') {
+                errorMessage = 'Você não tem acesso a esta empresa.';
+              }
+            } catch {
+              // Fallback silencioso: body nao e JSON valido.
+            }
+            setToast(errorMessage);
+            return;
+          }
+          // Sucesso — extrai PDF como blob + trigger download programatico.
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          const contentDisp = response.headers.get('content-disposition') ?? '';
+          const filenameMatch = contentDisp.match(/filename="([^"]+)"/);
+          const filename = filenameMatch?.[1] ?? 'clima-engajamento.pdf';
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(blobUrl);
+        } catch {
+          setToast('Falha de rede ao baixar relatório de clima e engajamento.');
+        }
         return;
       }
     },
-    [companyId, getCardState],
+    [companyId, getCardState, setToast],
   );
 
   // Handler do relatório executivo (§11 — enfileira job assíncrono)
