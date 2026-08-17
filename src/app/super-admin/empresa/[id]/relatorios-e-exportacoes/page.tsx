@@ -76,6 +76,7 @@ export default async function RelatoriosPage(props: PageProps): Promise<JSX.Elem
         header={{
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
+          companyLogoUrl: company.logoUrl ?? undefined,
           // CompanyDisplayInfo nao inclui logoUrl.
           user: { displayName: session.displayName },
           showNotificationBell: true,

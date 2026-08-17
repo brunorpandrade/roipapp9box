@@ -95,3 +95,47 @@ describe('ME-080d Onda 1e — layout.tsx (rename brand ROIPeople)', () => {
     expect(layoutSource).not.toMatch(/title:\s*['"]ROIP APP 9BOX['"]/);
   });
 });
+
+describe('ME-080d Onda 1e — CompanyDisplayInfo ampliado com logoUrl', () => {
+  const source = readFileSync(join(process.cwd(), 'src/lib/logs/companyHistoryLog.ts'), 'utf8');
+
+  it('interface CompanyDisplayInfo declara logoUrl: string | null', () => {
+    expect(source).toMatch(/interface CompanyDisplayInfo\s*\{[^}]*logoUrl:\s*string\s*\|\s*null/);
+  });
+
+  it('findCompanyDisplayInfo seleciona logoUrl no query', () => {
+    expect(source).toMatch(/logoUrl:\s*companies\.logoUrl/);
+  });
+
+  it('findCompanyDisplayInfo retorna logoUrl no shape final', () => {
+    expect(source).toMatch(/logoUrl:\s*row\.logoUrl\s*\?\?\s*null/);
+  });
+});
+
+describe('ME-080d Onda 1e — pages in-company propagam companyLogoUrl ao Header', () => {
+  const AFFECTED_PAGES = [
+    'src/app/super-admin/empresa/[id]/todos-os-colaboradores/page.tsx',
+    'src/app/super-admin/empresa/[id]/nr1/page.tsx',
+    'src/app/super-admin/empresa/[id]/relatorios-e-exportacoes/page.tsx',
+    'src/app/super-admin/empresa/[id]/dados-mensais/page.tsx',
+    'src/app/super-admin/empresa/[id]/colaborador/[employeeId]/editar/page.tsx',
+    'src/app/super-admin/empresa/[id]/colaborador/novo/page.tsx',
+    'src/app/super-admin/empresa/[id]/onboarding-lideres/page.tsx',
+    'src/app/super-admin/empresa/[id]/organograma/page.tsx',
+    'src/app/super-admin/empresa/[id]/clevel/novo/page.tsx',
+    'src/app/super-admin/empresa/[id]/clevel/[cLevelId]/editar/page.tsx',
+    'src/app/super-admin/empresa/[id]/pendencias-portal/page.tsx',
+    'src/app/super-admin/empresa/[id]/historico/page.tsx',
+    'src/app/super-admin/empresa/[id]/clevel-rh/page.tsx',
+  ];
+
+  for (const relPath of AFFECTED_PAGES) {
+    it(`${relPath}: passa companyLogoUrl no header prop`, () => {
+      const source = readFileSync(join(process.cwd(), relPath), 'utf8');
+      // Deve conter exatamente 1 ocorrência de `companyLogoUrl:` (no
+      // header prop, NAO no superAdminContext que nao aceita o campo).
+      const occurrences = (source.match(/companyLogoUrl:\s*company\.logoUrl/g) ?? []).length;
+      expect(occurrences).toBe(1);
+    });
+  }
+});

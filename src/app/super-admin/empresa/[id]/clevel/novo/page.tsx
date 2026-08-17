@@ -79,6 +79,7 @@ export default async function CLevelNovoPage(props: PageProps): Promise<JSX.Elem
         header={{
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
+          companyLogoUrl: company.logoUrl ?? undefined,
           user: { displayName: session.displayName },
           showNotificationBell: true,
         }}

@@ -194,6 +194,7 @@ export default async function Nr1Page(props: PageProps): Promise<JSX.Element> {
         header={{
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
+          companyLogoUrl: company.logoUrl ?? undefined,
           user: { displayName: session.displayName },
           showNotificationBell: true,
         }}

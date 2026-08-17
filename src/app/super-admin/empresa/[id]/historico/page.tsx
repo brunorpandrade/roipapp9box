@@ -124,6 +124,7 @@ export default async function HistoricoPage(props: PageProps): Promise<JSX.Eleme
         header={{
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
+          companyLogoUrl: company.logoUrl ?? undefined,
           user: { displayName: session.displayName },
           showNotificationBell: true,
         }}

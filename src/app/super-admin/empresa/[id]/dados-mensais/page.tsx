@@ -111,6 +111,7 @@ export default async function DadosMensaisPage(props: PageProps): Promise<JSX.El
         header={{
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
+          companyLogoUrl: company.logoUrl ?? undefined,
           // CompanyDisplayInfo nao inclui logoUrl.
           user: { displayName: session.displayName },
           showNotificationBell: true,

@@ -89,6 +89,7 @@ export default async function CLevelEditarPage(props: PageProps): Promise<JSX.El
         header={{
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
+          companyLogoUrl: company.logoUrl ?? undefined,
           user: { displayName: session.displayName },
           showNotificationBell: true,
         }}

@@ -135,6 +135,7 @@ export default async function OnboardingLideresPage(props: PageProps): Promise<J
         header={{
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
+          companyLogoUrl: company.logoUrl ?? undefined,
           user: { displayName: session.displayName },
           showNotificationBell: true,
         }}

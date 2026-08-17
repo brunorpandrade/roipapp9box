@@ -107,6 +107,7 @@ export default async function CLevelRHPage(props: PageProps): Promise<JSX.Elemen
         header={{
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
+          companyLogoUrl: company.logoUrl ?? undefined,
           user: { displayName: session.displayName },
           showNotificationBell: true,
         }}

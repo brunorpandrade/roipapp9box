@@ -673,6 +673,12 @@ export async function loadCompanyHistoryPage(
 export interface CompanyDisplayInfo {
   readonly id: number;
   readonly nomeFantasia: string;
+  // ME-080d Onda 1f — Header canonico `in_company` renderiza a logo
+  // via `companyLogoUrl`. Sem este campo, todas as 13 subpages que
+  // usam `findCompanyDisplayInfo` passavam apenas `nomeFantasia` para
+  // o Header, forçando o fallback de iniciais mesmo com `companies.
+  // logoUrl` populada. Bug observado por Bruno em ME-080d validacao e2e.
+  readonly logoUrl: string | null;
 }
 
 export async function findCompanyDisplayInfo(
@@ -683,6 +689,7 @@ export async function findCompanyDisplayInfo(
     .select({
       id: companies.id,
       nomeFantasia: companies.nomeFantasia,
+      logoUrl: companies.logoUrl,
     })
     .from(companies)
     .where(eq(companies.id, companyId))
@@ -691,7 +698,7 @@ export async function findCompanyDisplayInfo(
   if (rows.length === 0) return null;
   const row = rows[0];
   if (row === undefined) return null;
-  return { id: row.id, nomeFantasia: row.nomeFantasia };
+  return { id: row.id, nomeFantasia: row.nomeFantasia, logoUrl: row.logoUrl ?? null };
 }
 
 // -----------------------------------------------------------------------

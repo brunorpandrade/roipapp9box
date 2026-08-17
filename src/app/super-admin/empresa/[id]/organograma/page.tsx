@@ -95,6 +95,7 @@ export default async function OrganogramaPage(props: PageProps): Promise<JSX.Ele
         header={{
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
+          companyLogoUrl: company.logoUrl ?? undefined,
           user: { displayName: session.displayName },
           showNotificationBell: true,
         }}
