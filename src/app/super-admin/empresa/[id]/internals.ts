@@ -114,6 +114,22 @@ export interface MesAtualClosureStatus {
   readonly dataLimiteRh: string;
   readonly rhPreenchido: boolean;
   readonly closureStatus: 'aberto' | 'fechado' | 'desbloqueado' | null;
+  /**
+   * ME-083 D-ME083-9 aprovado — expansao canonica bit-exact para cobrir
+   * card §5.5 "Status dados do mes — Lideres". Contagens canonicas:
+   * - `lideresTotal`: total de employees ativos com `isLider=true` na
+   *   empresa (base do denominador do card).
+   * - `lideresPreenchidos`: `null` no B9 (definicao canonica de "lider
+   *   preencheu dados do mes" ainda nao esta canonizada — a semantica
+   *   depende do modelo de expectativa mensal por lider, que so nasce
+   *   em ME futura). Consumidor deve renderizar estado §5.2 "Coleta de
+   *   dados em andamento" quando `lideresPreenchidos === null`.
+   * Painel §5.4 pre-existente NAO consome estes campos (renderiza card
+   * proprio com literal "Coleta de dados em andamento"); expansao e
+   * aditiva e nao quebra bit-exact do §5.4.
+   */
+  readonly lideresTotal: number;
+  readonly lideresPreenchidos: number | null;
 }
 
 // -----------------------------------------------------------------------
@@ -426,7 +442,7 @@ export async function loadMesAtualClosureStatus(
 ): Promise<MesAtualClosureStatus> {
   const mesAtual = deriveMesAtual(reference);
   const dataLimiteRh = deriveDataLimiteRh(reference);
-  const [monthlyRows, closureRows] = await Promise.all([
+  const [monthlyRows, closureRows, lideresRows] = await Promise.all([
     db
       .select({
         faturamentoBruto: companyMonthlyData.faturamentoBruto,
@@ -443,6 +459,18 @@ export async function loadMesAtualClosureStatus(
         and(eq(monthlyClosureStatus.companyId, companyId), eq(monthlyClosureStatus.mes, mesAtual)),
       )
       .limit(1),
+    // ME-083 D-ME083-9 — total canonico de lideres ativos da empresa para
+    // o denominador do card §5.5 "Status dados do mes — Lideres".
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(employees)
+      .where(
+        and(
+          eq(employees.companyId, companyId),
+          eq(employees.isLider, true),
+          eq(employees.status, 'ativo'),
+        ),
+      ),
   ]);
   const monthlyRow = monthlyRows[0];
   const closureRow = closureRows[0];
@@ -451,6 +479,12 @@ export async function loadMesAtualClosureStatus(
     dataLimiteRh,
     rhPreenchido: monthlyRow !== undefined && monthlyRow.faturamentoBruto !== null,
     closureStatus: closureRow?.status ?? null,
+    lideresTotal: Number(lideresRows[0]?.count ?? 0),
+    // ME-083 D-ME083-9 — `null` no B9. Definicao canonica de "lider
+    // preencheu dados do mes" pendente (modelo de expectativa mensal
+    // por lider nascera em ME futura). Consumidor renderiza estado
+    // §5.2 "Coleta de dados em andamento" enquanto for `null`.
+    lideresPreenchidos: null,
   };
 }
 

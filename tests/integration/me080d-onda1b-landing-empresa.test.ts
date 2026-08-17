@@ -27,9 +27,18 @@ const LANDING_PATH = join(
   process.cwd(),
   'src/app/super-admin/empresa/[id]/CompanyLandingClient.tsx',
 );
+// ME-083 D-ME083-7 — ClickableIndicatorCard extraido para componente
+// canonico compartilhado `src/components/painel/ClickableIndicatorCard.
+// tsx`. Fix ROI card §5.4 preservado bit-exact no novo arquivo. O teste
+// bit-exact continua valido — apenas a origem do source mudou.
+const CLICKABLE_CARD_PATH = join(process.cwd(), 'src/components/painel/ClickableIndicatorCard.tsx');
 
 describe('ME-080d Onda 1b — CompanyLandingClient (D12 + fix ROI card)', () => {
   const source = readFileSync(LANDING_PATH, 'utf8');
+  // ME-083 D-ME083-7 — source do ClickableIndicatorCard agora vem do
+  // arquivo extraido (componente canonico compartilhado). Fix ROI card
+  // bit-exact preservado.
+  const clickableCardSource = readFileSync(CLICKABLE_CARD_PATH, 'utf8');
 
   it('D12=A — botao "Painel de controle do RH" removido do JSX renderizado', () => {
     // O botao original renderizava exatamente:
@@ -54,7 +63,8 @@ describe('ME-080d Onda 1b — CompanyLandingClient (D12 + fix ROI card)', () => 
     // `display: 'block'` no seu inline style.
     // Contamos as ocorrencias exatas dentro do bloco `const body = (`
     // ate o proximo `);` para escopo estreito.
-    const bodyMatch = source.match(/const body = \(\s*<>([\s\S]*?)<\/>\s*\);/);
+    // ME-083 D-ME083-7 — leitura do componente canonico compartilhado.
+    const bodyMatch = clickableCardSource.match(/const body = \(\s*<>([\s\S]*?)<\/>\s*\);/);
     expect(bodyMatch).not.toBeNull();
     const bodyBlock = bodyMatch?.[1] ?? '';
     expect(bodyBlock.length).toBeGreaterThan(0);

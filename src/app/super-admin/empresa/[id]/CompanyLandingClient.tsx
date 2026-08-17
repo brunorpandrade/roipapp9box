@@ -20,6 +20,9 @@
 import Link from 'next/link';
 import type { JSX } from 'react';
 
+import { ClickableIndicatorCard } from '../../../../components/painel/ClickableIndicatorCard';
+import { OnboardingKanbanMini } from '../../../../components/painel/OnboardingKanbanMini';
+import { ZonaPlaceholder } from '../../../../components/painel/ZonaPlaceholder';
 import { COLORS } from '../../../../lib/design-tokens/colors';
 
 import type {
@@ -208,169 +211,16 @@ function AvisoSemRfBanner(): JSX.Element {
   );
 }
 
-function ClickableIndicatorCard(props: {
-  readonly title: string;
-  readonly value: string;
-  readonly sub?: string;
-  readonly href?: string;
-  readonly ariaLabel?: string;
-}): JSX.Element {
-  const { title, value, sub, href, ariaLabel } = props;
-  const cardStyle = {
-    background: COLORS.background.card,
-    border: `1px solid ${COLORS.border.default}`,
-    borderRadius: 8,
-    padding: '18px 20px',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: 6,
-    textDecoration: 'none',
-    color: 'inherit',
-  };
-  const body = (
-    <>
-      <span
-        style={{
-          // ME-080d Onda 1b — display:block. Sem isso, span inline colava
-          // no `sub` seguinte (produzia "—Disponivel a partir..." grudado
-          // no card ROI global). O gap:6 do container ja separava visualmente
-          // outros elementos mas nao spans inline consecutivos.
-          display: 'block',
-          fontSize: 11,
-          fontWeight: 600,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
-          color: COLORS.text.tertiary,
-        }}
-      >
-        {title}
-      </span>
-      <span
-        style={{
-          // ME-080a — fontSize responsivo + overflowWrap para valores
-          // longos (ex.: "R$ 999.999,00") em cards com largura mínima
-          // via `minmax(180px,1fr)`. clamp evita overflow do card.
-          // ME-080d Onda 1b — display:block (fix bug card ROI global).
-          display: 'block',
-          fontSize: 18,
-          fontWeight: 700,
-          color: COLORS.text.primary,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          letterSpacing: '-0.01em',
-          lineHeight: 1.2,
-        }}
-      >
-        {value}
-      </span>
-      {sub !== undefined ? (
-        <span
-          style={{
-            // ME-080d Onda 1b — display:block (fix bug card ROI global).
-            display: 'block',
-            fontSize: 12,
-            color: COLORS.text.secondary,
-          }}
-        >
-          {sub}
-        </span>
-      ) : null}
-    </>
-  );
-  if (href === undefined) {
-    return <div style={cardStyle}>{body}</div>;
-  }
-  return (
-    <Link href={href} style={cardStyle} aria-label={ariaLabel ?? title}>
-      {body}
-    </Link>
-  );
-}
-
-function OnboardingKanbanMini(props: {
-  readonly companyId: number;
-  readonly summary: LandingOnboardingSummary;
-}): JSX.Element {
-  const { companyId, summary } = props;
-  const columns: readonly {
-    readonly key: keyof LandingOnboardingSummary;
-    readonly label: string;
-    readonly color: string;
-  }[] = [
-    { key: 'treinar', label: 'Treinar', color: COLORS.semantic.danger },
-    { key: 'em_treinamento', label: 'Em treinamento', color: COLORS.semantic.warning },
-    { key: 'treinado', label: 'Treinado', color: COLORS.semantic.success },
-    { key: 'reciclagem', label: 'Reciclagem', color: COLORS.primary.navy },
-  ];
-  return (
-    <Link
-      href={`/super-admin/empresa/${companyId}/onboarding-lideres`}
-      aria-label="Abrir kanban de onboarding de líderes"
-      style={{
-        display: 'block',
-        background: COLORS.background.card,
-        border: `1px solid ${COLORS.border.default}`,
-        borderRadius: 8,
-        padding: '16px 20px',
-        textDecoration: 'none',
-        color: 'inherit',
-      }}
-    >
-      <h2
-        style={{
-          fontSize: 12,
-          fontWeight: 700,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
-          color: COLORS.text.tertiary,
-          margin: '0 0 12px 0',
-        }}
-      >
-        Onboarding de líderes
-      </h2>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-          gap: 8,
-        }}
-      >
-        {columns.map((col) => (
-          <div
-            key={col.key}
-            style={{
-              padding: '10px 8px',
-              borderRadius: 6,
-              border: `1px solid ${COLORS.border.default}`,
-              borderTop: `3px solid ${col.color}`,
-              background: COLORS.background.elevated,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 4,
-            }}
-          >
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
-                color: COLORS.text.tertiary,
-              }}
-            >
-              {col.label}
-            </span>
-            <span style={{ fontSize: 22, fontWeight: 700, color: COLORS.text.primary }}>
-              {summary[col.key]}
-            </span>
-          </div>
-        ))}
-      </div>
-    </Link>
-  );
-}
+// ME-083 D-ME083-6 + D-ME083-7 — 3 componentes internos extraidos
+// para `src/components/painel/`:
+// - `ClickableIndicatorCard.tsx` (§5.4 + §5.5 — D-ME083-7).
+// - `OnboardingKanbanMini.tsx` (§5.4 + §5.5 — D-ME083-6, com href
+//   parametrizado por prop `href` ao inves do link hardcoded).
+// - `ZonaPlaceholder.tsx` (§5.4 + §5.5 — D-ME083-7).
+// Reuso canonico bit-exact entre paineis Super Admin dentro-de-
+// empresa e RH. Callsites internos a este arquivo continuam
+// consumindo os componentes via imports do barrel `../../../../
+// components/painel/`.
 
 function AcoesBlock(props: {
   readonly companyId: number;
@@ -475,45 +325,6 @@ function AcoesBlock(props: {
         </span>
       </div>
     </section>
-  );
-}
-
-function ZonaPlaceholder(props: { readonly title: string; readonly texto: string }): JSX.Element {
-  return (
-    <div
-      style={{
-        background: COLORS.background.card,
-        border: `1px dashed ${COLORS.border.default}`,
-        borderRadius: 8,
-        padding: '20px 24px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-      }}
-    >
-      <h2
-        style={{
-          fontSize: 12,
-          fontWeight: 700,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
-          color: COLORS.text.tertiary,
-          margin: 0,
-        }}
-      >
-        {props.title}
-      </h2>
-      <p
-        style={{
-          fontSize: 13,
-          color: COLORS.text.secondary,
-          margin: 0,
-          lineHeight: 1.5,
-        }}
-      >
-        {props.texto}
-      </p>
-    </div>
   );
 }
 
@@ -637,7 +448,10 @@ export function CompanyLandingClient(props: CompanyLandingClientProps): JSX.Elem
         </section>
       ) : null}
 
-      <OnboardingKanbanMini companyId={company.id} summary={onboardingSummary} />
+      <OnboardingKanbanMini
+        summary={onboardingSummary}
+        href={`/super-admin/empresa/${company.id}/onboarding-lideres`}
+      />
 
       <AcoesBlock companyId={company.id} status={company.status} />
 
