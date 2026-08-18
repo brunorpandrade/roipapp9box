@@ -54,7 +54,7 @@ import type {
   ProfileIndividualStatus,
 } from '../../../../../server/services/employees';
 
-import { listarColaboradoresAction } from './actions';
+import type { listarColaboradoresAction } from './actions';
 import {
   BUSCA_MAX_LEN,
   SENIORIDADE_FILTER_VALUES,
@@ -86,6 +86,36 @@ export interface TodosColaboradoresClientProps {
   readonly initialFilters: ColaboradoresFilters;
   readonly initialDepartamentos: readonly Departamento[];
   readonly initialLideres: readonly { id: number; name: string; tipo: 'employee' | 'clevel' }[];
+  /**
+   * ME-084 D-ME084-1/2 — variante da tabela por perfil do autenticado.
+   * `'super_admin'` (default preserva callsite pre-ME-084) usa hrefs Bruno
+   * `/super-admin/empresa/{id}/…`. `'rh'` usa hrefs base RH `/colaborador/
+   * novo` e `/colaborador/{id}/editar`.
+   */
+  readonly variant?: 'super_admin' | 'rh';
+  /**
+   * ME-084 — href canonico do botao `[+ Cadastrar colaborador]` no header
+   * da tabela (§14.10 linha 2108). Bruno: `/super-admin/empresa/{id}/
+   * colaborador/novo`. RH: `/colaborador/novo`.
+   */
+  readonly novoColaboradorHref: string;
+  /**
+   * ME-084 — builder do href canonico da acao "Editar" por linha da
+   * tabela (§14.10 linha 2184 popup + botao dedicado). Bruno: `/super-
+   * admin/empresa/{id}/colaborador/{employeeId}/editar`. RH: `/colabora-
+   * dor/{employeeId}/editar`.
+   */
+  readonly editarColaboradorHrefBuilder: (employeeId: number) => string;
+  /**
+   * ME-084 D-ME084-1/2 — action injetada de refetch server-side (§14.10
+   * refetch em cada mudanca de filtro / paginacao / ordenacao / busca).
+   * Bruno passa a action com guard `requireSuperAdmin`; RH passa a action
+   * com guard `requireRHOrSuperAdmin`. Ambas delegam bit-exact a
+   * `listEmployeesPaginated` do service (backend PC1a automatica —
+   * `cLevelMembers` nunca participa da listagem por decisao canonica
+   * MASTER_ESCOPO_B8 §3.3 preservada bit-exact).
+   */
+  readonly refetchAction: typeof listarColaboradoresAction;
 }
 
 // -----------------------------------------------------------------------
@@ -438,7 +468,22 @@ function inputValueToDate(v: string): Date | null {
 // -----------------------------------------------------------------------
 
 export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): JSX.Element {
-  const { companyId, initialResult, initialFilters, initialDepartamentos, initialLideres } = props;
+  const {
+    companyId,
+    initialResult,
+    initialFilters,
+    initialDepartamentos,
+    initialLideres,
+    variant = 'super_admin',
+    novoColaboradorHref,
+    editarColaboradorHrefBuilder,
+    refetchAction,
+  } = props;
+  // ME-084 D-ME084-1/2 — `variant` retido para eventual telemetria por
+  // perfil / testes de analise estatica. Nao afeta comportamento atual
+  // pois hrefs/actions ja sao injetados. Referencia mantida via cast
+  // opaco para evitar warning `no-unused-vars` sem eslint-disable.
+  void variant;
 
   const [result, setResult] = useState<ListEmployeesResult>(initialResult);
   const [filters, setFilters] = useState<ColaboradoresFilters>(initialFilters);
@@ -449,14 +494,14 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
     async (nextFilters: ColaboradoresFilters): Promise<void> => {
       setIsLoading(true);
       try {
-        const next = await listarColaboradoresAction(companyId, nextFilters);
+        const next = await refetchAction(companyId, nextFilters);
         setResult(next);
         setFilters(nextFilters);
       } finally {
         setIsLoading(false);
       }
     },
-    [companyId],
+    [companyId, refetchAction],
   );
 
   const handleBuscaSubmit = useCallback((): void => {
@@ -694,7 +739,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
             📤 Importar em massa
           </button>
           <Link
-            href={`/super-admin/empresa/${companyId}/colaborador/novo`}
+            href={novoColaboradorHref}
             style={{
               padding: '10px 20px',
               fontSize: 14,
@@ -945,7 +990,11 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                     {renderSortableTh('Data de cadastro', 'createdAt', filters, handleSortClick)}
                   </tr>
                 </thead>
-                <tbody>{result.rows.map((row) => renderRow(row, companyId))}</tbody>
+                <tbody>
+                  {result.rows.map((row) =>
+                    renderRow(row, companyId, editarColaboradorHrefBuilder),
+                  )}
+                </tbody>
               </table>
             </div>
             <div style={PAGINATION_BAR}>
@@ -1028,7 +1077,15 @@ function renderSortableTh(
   );
 }
 
-function renderRow(row: EmployeeListRow, companyId: number): JSX.Element {
+function renderRow(
+  row: EmployeeListRow,
+  companyId: number,
+  editarColaboradorHrefBuilder: (employeeId: number) => string,
+): JSX.Element {
+  // ME-084 — `companyId` mantido na assinatura para compatibilidade com
+  // callsites e para eventual uso em telemetria. Href de edicao vem do
+  // builder injetado (variant-agnostic).
+  void companyId;
   const avatarColor = hashNameToColor(row.name);
   const iniciais = getIniciaisFromName(row.name);
   const nivelStyle = getNivelBadgeStyle(row.nivelHierarquico);
@@ -1076,7 +1133,7 @@ function renderRow(row: EmployeeListRow, companyId: number): JSX.Element {
       </td>
       <td style={TD_STYLE}>
         <Link
-          href={`/super-admin/empresa/${companyId}/colaborador/${row.id}/editar`}
+          href={editarColaboradorHrefBuilder(row.id)}
           style={{
             color: COLORS.accent.teal,
             fontSize: 14,

@@ -39,7 +39,7 @@ import {
   type JobFamilyId,
   type LiderCandidate,
 } from '../../ColaboradorForm';
-import {
+import type {
   atualizarColaboradorAction,
   buscarCandidatosTransferenciaAction,
   definirRFEditarAction,
@@ -58,10 +58,51 @@ import {
 import { CredentialsDisplayModal } from '@/components/credentials/CredentialsDisplayModal';
 import { RegenerateConfirmModal } from '@/components/credentials/RegenerateConfirmModal';
 
+/**
+ * ME-084 D-ME084-1/2/3 — contrato agnostico de rota. `ColaboradorEditar-
+ * Client` e compartilhado bit-exact entre Bruno (super-admin) e RH (rh-
+ * facing rota). O caller `page.tsx` de cada rota injeta as 13 actions do
+ * respectivo diretorio `actions.ts` — actions Bruno tem guard `require-
+ * SuperAdmin`; actions RH tem guard `requireRHOrSuperAdmin` — mas todas
+ * delegam bit-exact aos mesmos callers do router `employees`, que aplica
+ * `assertCompanyScope` + `assertCanChangeIsRH` para cross-tenant + priv-
+ * elevacao. Contrato tipado com `typeof` das actions Bruno para preservar
+ * assinatura bit-exact (actions RH sao `typeof` das mesmas exports por
+ * design canonico L123 dual-route).
+ */
+export interface ColaboradorEditarActions {
+  readonly atualizarColaborador: typeof atualizarColaboradorAction;
+  readonly buscarCandidatosTransferencia: typeof buscarCandidatosTransferenciaAction;
+  readonly definirRFEditar: typeof definirRFEditarAction;
+  readonly excluirColaborador: typeof excluirColaboradorAction;
+  readonly executarTransferencia: typeof executarTransferenciaAction;
+  readonly inativarColaborador: typeof inativarColaboradorAction;
+  readonly listarLiderados: typeof listarLideradosAction;
+  readonly pesquisarLiderCandidatosEditar: typeof pesquisarLiderCandidatosEditarAction;
+  readonly reativarColaborador: typeof reativarColaboradorAction;
+  readonly reatribuirLiderColaborador: typeof reatribuirLiderColaboradorAction;
+  readonly regenerarMatriculaColaborador: typeof regenerarMatriculaColaboradorAction;
+  readonly regenerarSenhaColaborador: typeof regenerarSenhaColaboradorAction;
+  readonly verificarInativacao: typeof verificarInativacaoAction;
+}
+
 interface Props {
   readonly companyId: number;
   readonly initialEmployee: GetByIdEmployeeResult;
   readonly currentRFName: string | null;
+  /**
+   * ME-084 — variante do formulario. `'super_admin'` (default) mostra
+   * todos os toggles. `'rh'` oculta toggles Bruno-exclusive via
+   * ColaboradorForm.
+   */
+  readonly variant?: 'super_admin' | 'rh';
+  /**
+   * ME-084 — href de retorno canonico. Bruno: `/super-admin/empresa/{id}/
+   * todos-os-colaboradores`. RH: `/todos-os-colaboradores`.
+   */
+  readonly todosColaboradoresHref: string;
+  /** ME-084 — bag de actions injetada conforme rota. */
+  readonly actions: ColaboradorEditarActions;
 }
 
 const FOOTER_STYLE = {
@@ -253,7 +294,14 @@ function toFormValues(e: GetByIdEmployeeResult): ColaboradorFormValues {
 }
 
 export function ColaboradorEditarClient(props: Props): JSX.Element {
-  const { companyId, initialEmployee, currentRFName } = props;
+  const {
+    companyId,
+    initialEmployee,
+    currentRFName,
+    variant = 'super_admin',
+    todosColaboradoresHref,
+    actions,
+  } = props;
   const router = useRouter();
 
   const initialFormValues = useMemo(() => toFormValues(initialEmployee), [initialEmployee]);
@@ -304,7 +352,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
 
   const handleSearchLider = useCallback(
     async (query: string): Promise<readonly LiderCandidate[]> => {
-      const result = await pesquisarLiderCandidatosEditarAction({
+      const result = await actions.pesquisarLiderCandidatosEditar({
         companyId,
         query,
         excludeEmployeeId: initialEmployee.id,
@@ -343,7 +391,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
     if (v.isLider !== initialEmployee.isLider) patch.isLider = v.isLider;
 
     if (Object.keys(patch).length > 1) {
-      const updateResult = await atualizarColaboradorAction(
+      const updateResult = await actions.atualizarColaborador(
         patch as {
           employeeId: number;
           name?: string;
@@ -379,7 +427,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
         nextLider !== null &&
         (currentLider.tipo !== nextLider.tipo || currentLider.id !== nextLider.id));
     if (liderMudou && nextLider !== null) {
-      const reassignResult = await reatribuirLiderColaboradorAction({
+      const reassignResult = await actions.reatribuirLiderColaborador({
         employeeId: initialEmployee.id,
         ...(nextLider.tipo === 'employee'
           ? { newLiderEmployeeId: nextLider.id }
@@ -393,7 +441,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
 
     if (v.isResponsavelFinanceiro !== initialEmployee.isResponsavelFinanceiro) {
       if (v.isResponsavelFinanceiro) {
-        const rfResult = await definirRFEditarAction({
+        const rfResult = await actions.definirRFEditar({
           companyId,
           newHolderType: 'employee',
           newHolderId: initialEmployee.id,
@@ -456,7 +504,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
       return;
     }
     if (initialEmployee.isLider && initialEmployee.countActiveLiderados > 0) {
-      const canResult = await verificarInativacaoAction({
+      const canResult = await actions.verificarInativacao({
         employeeId: initialEmployee.id,
       });
       if (!canResult.ok) {
@@ -473,7 +521,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
 
   const executeInactivate = useCallback(
     async (motivoSaida: 'voluntario' | 'involuntario') => {
-      const result = await inativarColaboradorAction({
+      const result = await actions.inativarColaborador({
         employeeId: initialEmployee.id,
         motivoSaida,
       });
@@ -511,7 +559,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
           if (cand) g4Ids.add(cand.id);
         }
       }
-      const result = await executarTransferenciaAction({
+      const result = await actions.executarTransferencia({
         liderOriginalId: initialEmployee.id,
         mapeamento,
         candidatosGrupo4: [...g4Ids].map((id) => ({
@@ -538,12 +586,12 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
         setSaving(true);
         try {
           const [candResult, liderResult] = await Promise.all([
-            buscarCandidatosTransferenciaAction({
+            actions.buscarCandidatosTransferencia({
               employeeId: initialEmployee.id,
               companyId,
               tentativaLiderados: [],
             }),
-            listarLideradosAction({
+            actions.listarLiderados({
               employeeId: initialEmployee.id,
             }),
           ]);
@@ -629,7 +677,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
         const ok = await executeInactivate(motivoSaida);
         if (ok) {
           setShowMotivoModal(false);
-          router.push(`/super-admin/empresa/${companyId}/todos-os-colaboradores`);
+          router.push(todosColaboradoresHref);
         }
       } finally {
         setSaving(false);
@@ -647,7 +695,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
         const ok = await executeM2Transfer(mappings, justificativa, m2MotivoSelecionado);
         if (ok) {
           setShowM2Modal(false);
-          router.push(`/super-admin/empresa/${companyId}/todos-os-colaboradores`);
+          router.push(todosColaboradoresHref);
         }
       } finally {
         setSaving(false);
@@ -660,7 +708,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
     setSaving(true);
     setErrorMsg(null);
     try {
-      const result = await reativarColaboradorAction({
+      const result = await actions.reativarColaborador({
         employeeId: initialEmployee.id,
       });
       if (!result.ok) {
@@ -679,14 +727,14 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
     setSaving(true);
     setErrorMsg(null);
     try {
-      const result = await excluirColaboradorAction({
+      const result = await actions.excluirColaborador({
         employeeId: initialEmployee.id,
       });
       if (!result.ok) {
         setErrorMsg(result.message);
         return;
       }
-      router.push(`/super-admin/empresa/${companyId}/todos-os-colaboradores`);
+      router.push(todosColaboradoresHref);
     } catch {
       setErrorMsg('Falha de rede ao deletar.');
     } finally {
@@ -706,7 +754,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
     setRegenError(null);
     try {
       if (regenConfirmOpen === 'matricula') {
-        const res = await regenerarMatriculaColaboradorAction({
+        const res = await actions.regenerarMatriculaColaborador({
           employeeId: initialEmployee.id,
         });
         if (!res.ok) {
@@ -716,7 +764,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
         setCurrentMatricula(res.data.matricula);
         setPostRegenCreds({ matricula: res.data.matricula, senhaInicial: null });
       } else {
-        const res = await regenerarSenhaColaboradorAction({
+        const res = await actions.regenerarSenhaColaborador({
           employeeId: initialEmployee.id,
         });
         if (!res.ok) {
@@ -771,6 +819,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
         onToggleRFAttempt={handleToggleRFAttempt}
         cpfReadonly={true}
         searchLiderCandidates={handleSearchLider}
+        variant={variant}
       />
       <div style={CREDENTIALS_SECTION_STYLE}>
         <h3 style={CREDENTIALS_TITLE_STYLE}>Credenciais de acesso</h3>
@@ -849,7 +898,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
         <div style={FOOTER_RIGHT_STYLE}>
           <button
             type="button"
-            onClick={() => router.push(`/super-admin/empresa/${companyId}/todos-os-colaboradores`)}
+            onClick={() => router.push(todosColaboradoresHref)}
             style={BTN_OUTLINE_STYLE}
             disabled={saving}
           >

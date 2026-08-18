@@ -19,6 +19,21 @@ import { getServerSession } from '../../../../../../../server/session/serverSess
 
 import { ColaboradorEditarClient } from './ColaboradorEditarClient';
 import {
+  atualizarColaboradorAction,
+  buscarCandidatosTransferenciaAction,
+  definirRFEditarAction,
+  excluirColaboradorAction,
+  executarTransferenciaAction,
+  inativarColaboradorAction,
+  listarLideradosAction,
+  pesquisarLiderCandidatosEditarAction,
+  reativarColaboradorAction,
+  reatribuirLiderColaboradorAction,
+  regenerarMatriculaColaboradorAction,
+  regenerarSenhaColaboradorAction,
+  verificarInativacaoAction,
+} from './actions';
+import {
   loadColaboradorEditarPage,
   parseCompanyIdParam,
   parseEmployeeIdParam,
@@ -113,6 +128,23 @@ export default async function ColaboradorEditarPage(props: PageProps): Promise<J
             companyId={companyId}
             initialEmployee={pageData.employee}
             currentRFName={pageData.currentRF !== null ? pageData.currentRF.name : null}
+            variant="super_admin"
+            todosColaboradoresHref={`/super-admin/empresa/${companyId}/todos-os-colaboradores`}
+            actions={{
+              atualizarColaborador: atualizarColaboradorAction,
+              buscarCandidatosTransferencia: buscarCandidatosTransferenciaAction,
+              definirRFEditar: definirRFEditarAction,
+              excluirColaborador: excluirColaboradorAction,
+              executarTransferencia: executarTransferenciaAction,
+              inativarColaborador: inativarColaboradorAction,
+              listarLiderados: listarLideradosAction,
+              pesquisarLiderCandidatosEditar: pesquisarLiderCandidatosEditarAction,
+              reativarColaborador: reativarColaboradorAction,
+              reatribuirLiderColaborador: reatribuirLiderColaboradorAction,
+              regenerarMatriculaColaborador: regenerarMatriculaColaboradorAction,
+              regenerarSenhaColaborador: regenerarSenhaColaboradorAction,
+              verificarInativacao: verificarInativacaoAction,
+            }}
           />
         </div>
       </Layout>

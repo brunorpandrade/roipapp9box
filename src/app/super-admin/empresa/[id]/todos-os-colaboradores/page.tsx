@@ -42,6 +42,7 @@ import { resolveProfileKey } from '../../../../../lib/session/resolveProfileKey'
 import { getServerSession } from '../../../../../server/session/serverSession';
 
 import { TodosColaboradoresClient } from './TodosColaboradoresClient';
+import { listarColaboradoresAction } from './actions';
 import {
   colaboradoresFiltersToServiceInput,
   parseColaboradoresFiltersFromSearchParams,
@@ -149,6 +150,12 @@ export default async function TodosColaboradoresPage(props: PageProps): Promise<
             initialFilters={filters}
             initialDepartamentos={pageData.departamentos}
             initialLideres={pageData.lideres}
+            variant="super_admin"
+            novoColaboradorHref={`/super-admin/empresa/${companyId}/colaborador/novo`}
+            editarColaboradorHrefBuilder={(employeeId) =>
+              `/super-admin/empresa/${companyId}/colaborador/${employeeId}/editar`
+            }
+            refetchAction={listarColaboradoresAction}
           />
         </div>
       </Layout>

@@ -23,6 +23,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useRef, useState, type JSX } from 'react';
 
 import { CredentialsDisplayModal } from '@/components/credentials/CredentialsDisplayModal';
+import { ModalDirtyState } from '@/components/ui/ModalDirtyState';
 
 import { COLORS } from '../../../../../../lib/design-tokens/colors';
 
@@ -33,12 +34,95 @@ import {
   type ColaboradorFormValues,
   type LiderCandidate,
 } from '../ColaboradorForm';
-import { criarColaboradorAction, definirRFAction, pesquisarLiderCandidatosAction } from './actions';
+
+/**
+ * ME-084 D-ME084-1/2/3/6 — contrato agnostico de rota compartilhado por
+ * Bruno (super_admin) e RH (rh/rh_lider). Actions e hrefs sao injetados
+ * pelo caller do respectivo `page.tsx`:
+ *   - Bruno passa `criarColaboradorAction` + `definirRFAction` +
+ *     `pesquisarLiderCandidatosAction` da rota super-admin + variant
+ *     'super_admin' + hrefs `/super-admin/empresa/{id}/…`.
+ *   - RH passa as actions RH-facing + variant 'rh' + hrefs base
+ *     `/todos-os-colaboradores`.
+ */
+export type CriarColaboradorActionType = (input: {
+  readonly companyId: number;
+  readonly name: string;
+  readonly cpf: string;
+  readonly email?: string;
+  readonly dataNascimento: string;
+  readonly dataAdmissao: string;
+  readonly cargo: string;
+  readonly cbo: string;
+  readonly descricaoCBO: string;
+  readonly jobFamily: string;
+  readonly senioridade: string;
+  readonly nivelHierarquico: string;
+  readonly departamento: string;
+  readonly isRH?: boolean;
+  readonly isLider?: boolean;
+  readonly liderInicialId?: number;
+  readonly liderInicialClevelId?: number;
+  readonly matricula?: string;
+}) => Promise<
+  | {
+      readonly ok: true;
+      readonly data: {
+        readonly employeeId: number;
+        readonly credentials: {
+          readonly matricula: string;
+          readonly senhaInicial: string | null;
+        };
+      };
+    }
+  | { readonly ok: false; readonly message: string }
+>;
+
+export type DefinirRFActionType = (input: {
+  readonly companyId: number;
+  readonly newHolderType: 'employee' | 'cLevel';
+  readonly newHolderId: number;
+  readonly justificativa?: string;
+}) => Promise<
+  | { readonly ok: true; readonly data: { readonly senhaInicial: string | null } }
+  | { readonly ok: false; readonly message: string }
+>;
+
+export type PesquisarLiderCandidatosActionType = (input: {
+  readonly companyId: number;
+  readonly query: string;
+  readonly excludeEmployeeId?: number;
+}) => Promise<
+  | { readonly ok: true; readonly data: { readonly candidates: readonly LiderCandidate[] } }
+  | { readonly ok: false; readonly message: string }
+>;
 
 interface Props {
   readonly companyId: number;
   readonly currentRFName: string | null;
   readonly presetIsRH: boolean;
+  /**
+   * ME-084 — variante do formulario. `'super_admin'` = default (Bruno)
+   * mostra todos os toggles. `'rh'` (nova rota RH) oculta toggles Bruno-
+   * exclusive via ColaboradorForm.
+   */
+  readonly variant?: 'super_admin' | 'rh';
+  /**
+   * ME-084 — href de retorno canonico. Bruno: `/super-admin/empresa/{id}/
+   * todos-os-colaboradores`. RH: `/todos-os-colaboradores`.
+   */
+  readonly todosColaboradoresHref: string;
+  /**
+   * ME-084 — href alternativo pos-save quando `presetIsRH=true`. Bruno:
+   * `/super-admin/empresa/{id}/clevel-rh`. RH nunca usa preset RH (cadastro
+   * RH e Bruno-exclusivo — DOC 02 §10.9 linha 864); passar mesmo valor de
+   * `todosColaboradoresHref` para RH.
+   */
+  readonly presetRHBackHref: string;
+  /** ME-084 — actions injetadas conforme rota (Bruno super-admin ou RH-facing). */
+  readonly criarColaborador: CriarColaboradorActionType;
+  readonly definirRF: DefinirRFActionType;
+  readonly pesquisarLiderCandidatos: PesquisarLiderCandidatosActionType;
 }
 
 const FOOTER_STYLE = {
@@ -91,31 +175,23 @@ const SUCCESS_CARD_STYLE = {
   alignItems: 'center' as const,
 };
 
-const MODAL_OVERLAY_STYLE = {
-  position: 'fixed' as const,
-  inset: 0,
-  background: 'rgba(15,23,42,0.55)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 60,
-  padding: 16,
-};
-
-const MODAL_BOX_STYLE = {
-  background: COLORS.background.card,
-  border: `1px solid ${COLORS.border.default}`,
-  borderRadius: 10,
-  width: '100%',
-  maxWidth: 480,
-  padding: 24,
-  display: 'flex',
-  flexDirection: 'column' as const,
-  gap: 16,
-};
+// ME-084 D-ME084-6 — constantes MODAL_OVERLAY_STYLE / MODAL_BOX_STYLE
+// removidas: dirty modal ad-hoc substituido por ModalDirtyState canonico
+// reutilizavel (ME-082). Overlay/box vive dentro do proprio componente
+// canonico (`src/components/ui/Modal.tsx`).
 
 export function ColaboradorNovoClient(props: Props): JSX.Element {
-  const { companyId, currentRFName, presetIsRH } = props;
+  const {
+    companyId,
+    currentRFName,
+    presetIsRH,
+    variant = 'super_admin',
+    todosColaboradoresHref,
+    presetRHBackHref,
+    criarColaborador,
+    definirRF,
+    pesquisarLiderCandidatos,
+  } = props;
   const router = useRouter();
 
   const [values, setValues] = useState<ColaboradorFormValues>({
@@ -153,14 +229,14 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
 
   const handleSearchLider = useCallback(
     async (query: string): Promise<readonly LiderCandidate[]> => {
-      const result = await pesquisarLiderCandidatosAction({
+      const result = await pesquisarLiderCandidatos({
         companyId,
         query,
       });
       if (!result.ok) return [];
       return result.data.candidates;
     },
-    [companyId],
+    [companyId, pesquisarLiderCandidatos],
   );
 
   function validateForm(v: ColaboradorFormValues): string | null {
@@ -185,8 +261,8 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
     v: ColaboradorFormValues,
     rfJustificativa: string | null,
   ): Promise<boolean> {
-    // Passo 1 — cria o colaborador via employees.create.
-    const createRes = await criarColaboradorAction({
+    // Passo 1 — cria o colaborador via employees.create (action injetada).
+    const createRes = await criarColaborador({
       companyId,
       name: v.name.trim(),
       cpf: v.cpf,
@@ -216,9 +292,13 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
     const createdCredentials = createRes.data.credentials;
     let rfSenhaInicial: string | null = null;
 
-    // Passo 2 — se RF ativado, chama setResponsavelFinanceiro.
+    // Passo 2 — se RF ativado, chama setResponsavelFinanceiro (action
+    // injetada). Guard canonico: variant 'rh' nunca envia RF (toggle
+    // oculto no ColaboradorForm), mas mesmo se `values.isResponsavel-
+    // Financeiro` chegar true de forma anomala, o backend rejeita:
+    // `company.setResponsavelFinanceiro` e Bruno-exclusivo (DOC 02 §5).
     if (v.isResponsavelFinanceiro && newEmployeeId !== undefined) {
-      const rfResult = await definirRFAction({
+      const rfResult = await definirRF({
         companyId,
         newHolderType: 'employee',
         newHolderId: newEmployeeId,
@@ -300,14 +380,15 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
     if (dirty) {
       setShowDirtyModal(true);
     } else {
-      router.push(`/super-admin/empresa/${companyId}/todos-os-colaboradores`);
+      router.push(todosColaboradoresHref);
     }
-  }, [dirty, router, companyId]);
+  }, [dirty, router, todosColaboradoresHref]);
 
   if (saveSuccess) {
-    const backHref = presetIsRH
-      ? `/super-admin/empresa/${companyId}/clevel-rh`
-      : `/super-admin/empresa/${companyId}/todos-os-colaboradores`;
+    // ME-084 — presetIsRH so ocorre no fluxo Bruno (variant='super_admin');
+    // RH nunca ativa preset RH (DOC 02 §10.9 linha 864). presetRHBackHref
+    // e o mesmo que todosColaboradoresHref para variant='rh' (contrato).
+    const backHref = presetIsRH ? presetRHBackHref : todosColaboradoresHref;
     const backLabel = presetIsRH ? 'Voltar para C-level e RH' : 'Voltar para lista';
     return (
       <>
@@ -345,6 +426,7 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
         cpfReadonly={false}
         searchLiderCandidates={handleSearchLider}
         presetIsRH={presetIsRH}
+        variant={variant}
       />
       {errorMsg !== null ? <div style={ERROR_STYLE}>{errorMsg}</div> : null}
       <div style={FOOTER_STYLE}>
@@ -370,36 +452,21 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
         />
       ) : null}
 
-      {showDirtyModal ? (
-        <div style={MODAL_OVERLAY_STYLE} role="dialog" aria-modal="true">
-          <div style={MODAL_BOX_STYLE}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: COLORS.text.primary }}>
-              Descartar alterações?
-            </div>
-            <div style={{ fontSize: 13, color: COLORS.text.secondary }}>
-              Você tem alterações não salvas. Tem certeza que deseja sair sem salvar?
-            </div>
-            <div style={FOOTER_STYLE}>
-              <button
-                type="button"
-                onClick={() => setShowDirtyModal(false)}
-                style={BTN_OUTLINE_STYLE}
-              >
-                Continuar editando
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  router.push(`/super-admin/empresa/${companyId}/todos-os-colaboradores`)
-                }
-                style={{ ...BTN_PRIMARY_STYLE, background: COLORS.semantic.danger }}
-              >
-                Descartar
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {/* ME-084 D-ME084-6 — consolidacao canonica do modal dirty state
+       * bit-exact via componente reutilizavel `ModalDirtyState` (ME-082).
+       * Substitui modal ad-hoc inline que existia neste client desde ME-
+       * 078b. Racional: L125 aplicada (extracao/consolidacao durante ME
+       * grande que ja toca o arquivo). Ganho arquitetural: 1 unica fonte
+       * de verdade para textos canonicos §4.10 do DOC 02 + comportamento
+       * ESC/click-fora unificado + reducao ~28 LOC.
+       * Endereca parcialmente D-DIRTY-CONSOLIDACAO herdado da ME-082
+       * (2/3 clients migrados; CLevelNovoClient e CLevelEditarClient
+       * ficam para bloco C-level pos-B10). */}
+      <ModalDirtyState
+        open={showDirtyModal}
+        onKeepEditing={() => setShowDirtyModal(false)}
+        onDiscard={() => router.push(todosColaboradoresHref)}
+      />
     </>
   );
 }

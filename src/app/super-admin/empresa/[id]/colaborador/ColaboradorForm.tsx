@@ -148,6 +148,20 @@ export interface ColaboradorFormProps {
   readonly searchLiderCandidates: (query: string) => Promise<readonly LiderCandidate[]>;
   /** Preset canonico §13.9 — cadastro de RH pre-ativa isRH. */
   readonly presetIsRH?: boolean;
+  /**
+   * ME-084 D-ME084-1/2 canonizada — variante do formulario por perfil do
+   * autenticado. `'super_admin'` (default, preserva comportamento pre-ME-
+   * 084) renderiza todos os toggles. `'rh'` OCULTA os 2 toggles exclusivos
+   * do Bruno (§13.4 canonico):
+   *   - Secao 4 Perfis de acesso: toggle "Permitir acesso como RH" (DOC 02
+   *     §10.9 linha 864 — cadastro/edicao de C-level e privilegios elevados
+   *     exclusivos Bruno + assertCanChangeIsRH em `employees.create/update`).
+   *   - Secao 5 Papeis funcionais: toggle "Ativar como Responsavel financeiro"
+   *     (DOC 02 §5 — RF exclusivo Bruno).
+   * Toggle "Permitir acesso como Lider" da Secao 4 permanece VISIVEL a RH
+   * (§13.4 canonico + roleProcedure 'rh'/'rh_lider' em employees.update).
+   */
+  readonly variant?: 'super_admin' | 'rh';
 }
 
 // ============================================================
@@ -348,7 +362,14 @@ export function ColaboradorForm(props: ColaboradorFormProps): JSX.Element {
     cpfReadonly,
     searchLiderCandidates,
     presetIsRH,
+    variant = 'super_admin',
   } = props;
+  // ME-084 D-ME084-1/2 — flags derivadas bit-exact de `variant`. RH nao
+  // ve toggles Bruno-exclusive; alem disso `isRH` e `isResponsavelFinanceiro`
+  // do payload permanecem inalteraveis pela UI RH (guarded backend via
+  // assertCanChangeIsRH + guard §5 setResponsavelFinanceiro).
+  const showToggleIsRH = variant === 'super_admin';
+  const showToggleRF = variant === 'super_admin';
 
   const [values, setValues] = useState<ColaboradorFormValues>(() => {
     if (presetIsRH === true && mode === 'novo') {
@@ -711,25 +732,27 @@ export function ColaboradorForm(props: ColaboradorFormProps): JSX.Element {
       {/* Seção 4 — Perfis de acesso */}
       <section style={SECTION_CARD_STYLE}>
         <h2 style={SECTION_TITLE_STYLE}>Perfis de acesso</h2>
-        <div style={TOGGLE_ROW_STYLE}>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 500, color: COLORS.text.primary }}>
-              Permitir acesso como RH
+        {showToggleIsRH ? (
+          <div style={TOGGLE_ROW_STYLE}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: COLORS.text.primary }}>
+                Permitir acesso como RH
+              </div>
+              <div style={{ fontSize: 12, color: COLORS.text.tertiary }}>
+                Toggle exclusivo do Super Admin — habilita acesso ao painel RH.
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: COLORS.text.tertiary }}>
-              Toggle exclusivo do Super Admin — habilita acesso ao painel RH.
+            <div
+              onClick={() => updateField('isRH', !values.isRH)}
+              style={TOGGLE_TRACK_STYLE(values.isRH)}
+              role="switch"
+              aria-checked={values.isRH}
+              aria-label="Permitir acesso como RH"
+            >
+              <div style={TOGGLE_KNOB_STYLE(values.isRH)} />
             </div>
           </div>
-          <div
-            onClick={() => updateField('isRH', !values.isRH)}
-            style={TOGGLE_TRACK_STYLE(values.isRH)}
-            role="switch"
-            aria-checked={values.isRH}
-            aria-label="Permitir acesso como RH"
-          >
-            <div style={TOGGLE_KNOB_STYLE(values.isRH)} />
-          </div>
-        </div>
+        ) : null}
         <div style={TOGGLE_ROW_STYLE}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 500, color: COLORS.text.primary }}>
@@ -764,56 +787,58 @@ export function ColaboradorForm(props: ColaboradorFormProps): JSX.Element {
         ) : null}
       </section>
 
-      {/* Seção 5 — Papéis funcionais (Toggle RF) */}
-      <section style={SECTION_CARD_STYLE}>
-        <h2 style={SECTION_TITLE_STYLE}>Papéis funcionais</h2>
-        <div style={TOGGLE_ROW_STYLE}>
-          <div style={{ maxWidth: '80%' }}>
-            <div style={{ fontSize: 14, fontWeight: 500, color: COLORS.text.primary }}>
-              Ativar como Responsável financeiro
-            </div>
-            <div style={{ fontSize: 12, color: COLORS.text.tertiary }}>
-              Este colaborador poderá acessar <code>/faturamento-mensal</code> da empresa se o
-              toggle estiver ativo.
-            </div>
-            {!(values.isRH || values.isLider) ? (
-              <div style={NOTA_STYLE}>Este toggle exige que o colaborador seja RH ou Líder.</div>
-            ) : null}
-            {currentRFName !== null && !values.isResponsavelFinanceiro ? (
-              <div style={NOTA_STYLE}>
-                Titular vigente: <strong>{currentRFName}</strong>. Ativar aqui abre modal de
-                transferência com justificativa obrigatória de 100 a 500 caracteres.
+      {/* Seção 5 — Papéis funcionais (Toggle RF) — Bruno-exclusive (ME-084) */}
+      {showToggleRF ? (
+        <section style={SECTION_CARD_STYLE}>
+          <h2 style={SECTION_TITLE_STYLE}>Papéis funcionais</h2>
+          <div style={TOGGLE_ROW_STYLE}>
+            <div style={{ maxWidth: '80%' }}>
+              <div style={{ fontSize: 14, fontWeight: 500, color: COLORS.text.primary }}>
+                Ativar como Responsável financeiro
               </div>
-            ) : null}
+              <div style={{ fontSize: 12, color: COLORS.text.tertiary }}>
+                Este colaborador poderá acessar <code>/faturamento-mensal</code> da empresa se o
+                toggle estiver ativo.
+              </div>
+              {!(values.isRH || values.isLider) ? (
+                <div style={NOTA_STYLE}>Este toggle exige que o colaborador seja RH ou Líder.</div>
+              ) : null}
+              {currentRFName !== null && !values.isResponsavelFinanceiro ? (
+                <div style={NOTA_STYLE}>
+                  Titular vigente: <strong>{currentRFName}</strong>. Ativar aqui abre modal de
+                  transferência com justificativa obrigatória de 100 a 500 caracteres.
+                </div>
+              ) : null}
+            </div>
+            <div
+              onClick={() => {
+                if (!(values.isRH || values.isLider)) return;
+                // ME-080b Dispatch 3.1 — fix bug de sincronizacao (S517).
+                // `ColaboradorForm` mantem `values` local (useState) e o
+                // toggle RF antes chamava apenas `onToggleRFAttempt`, que
+                // atualizava state do pai mas nao do form — visual do
+                // toggle nao mudava. `applyChange` sincroniza atomicamente
+                // state local + pai (via `onValuesChange`). `onToggleRFAttempt`
+                // segue sendo chamado para preservar semantica (dirty flag,
+                // etc — o pai pode reagir alem do estado).
+                const nextValue = !values.isResponsavelFinanceiro;
+                applyChange({ ...values, isResponsavelFinanceiro: nextValue });
+                onToggleRFAttempt(nextValue);
+              }}
+              style={{
+                ...TOGGLE_TRACK_STYLE(values.isResponsavelFinanceiro),
+                opacity: values.isRH || values.isLider ? 1 : 0.5,
+                cursor: values.isRH || values.isLider ? 'pointer' : 'not-allowed',
+              }}
+              role="switch"
+              aria-checked={values.isResponsavelFinanceiro}
+              aria-label="Ativar como Responsável financeiro"
+            >
+              <div style={TOGGLE_KNOB_STYLE(values.isResponsavelFinanceiro)} />
+            </div>
           </div>
-          <div
-            onClick={() => {
-              if (!(values.isRH || values.isLider)) return;
-              // ME-080b Dispatch 3.1 — fix bug de sincronizacao (S517).
-              // `ColaboradorForm` mantem `values` local (useState) e o
-              // toggle RF antes chamava apenas `onToggleRFAttempt`, que
-              // atualizava state do pai mas nao do form — visual do
-              // toggle nao mudava. `applyChange` sincroniza atomicamente
-              // state local + pai (via `onValuesChange`). `onToggleRFAttempt`
-              // segue sendo chamado para preservar semantica (dirty flag,
-              // etc — o pai pode reagir alem do estado).
-              const nextValue = !values.isResponsavelFinanceiro;
-              applyChange({ ...values, isResponsavelFinanceiro: nextValue });
-              onToggleRFAttempt(nextValue);
-            }}
-            style={{
-              ...TOGGLE_TRACK_STYLE(values.isResponsavelFinanceiro),
-              opacity: values.isRH || values.isLider ? 1 : 0.5,
-              cursor: values.isRH || values.isLider ? 'pointer' : 'not-allowed',
-            }}
-            role="switch"
-            aria-checked={values.isResponsavelFinanceiro}
-            aria-label="Ativar como Responsável financeiro"
-          >
-            <div style={TOGGLE_KNOB_STYLE(values.isResponsavelFinanceiro)} />
-          </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {/* Seção 6 — Metas (M1 disabled S503) */}
       <section style={SECTION_CARD_STYLE}>

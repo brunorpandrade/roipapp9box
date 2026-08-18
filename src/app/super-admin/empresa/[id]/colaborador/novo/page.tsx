@@ -28,6 +28,7 @@ import { resolveProfileKey } from '../../../../../../lib/session/resolveProfileK
 import { getServerSession } from '../../../../../../server/session/serverSession';
 
 import { ColaboradorNovoClient } from './ColaboradorNovoClient';
+import { criarColaboradorAction, definirRFAction, pesquisarLiderCandidatosAction } from './actions';
 import {
   loadColaboradorNovoPage,
   parseCompanyIdParam,
@@ -123,6 +124,12 @@ export default async function ColaboradorNovoPage(props: PageProps): Promise<JSX
             companyId={companyId}
             currentRFName={pageData.currentRF !== null ? pageData.currentRF.name : null}
             presetIsRH={pageData.presetIsRH}
+            variant="super_admin"
+            todosColaboradoresHref={`/super-admin/empresa/${companyId}/todos-os-colaboradores`}
+            presetRHBackHref={`/super-admin/empresa/${companyId}/clevel-rh`}
+            criarColaborador={criarColaboradorAction}
+            definirRF={definirRFAction}
+            pesquisarLiderCandidatos={pesquisarLiderCandidatosAction}
           />
         </div>
       </Layout>
