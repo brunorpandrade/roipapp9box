@@ -130,6 +130,37 @@ export interface TodosColaboradoresClientProps {
    * MASTER_ESCOPO_B8 §3.3 preservada bit-exact).
    */
   readonly refetchAction: typeof listarColaboradoresAction;
+  /**
+   * ME-085 D-ME085-3 B — 4 booleanas + 2 textos opcionais para adaptar
+   * bit-exact §14.11 (`/minha-equipe`) sem introduzir nova `variant`.
+   * Defaults preservam callsites pre-ME-085 (`/todos-os-colaboradores`
+   * variantes Bruno e RH) bit-exact.
+   *
+   * - `hideActionsButtons` (§14.11): oculta os 4 botoes do cabecalho
+   *   ([Exportar], [Baixar modelo], [Importar], [Cadastrar]). Input
+   *   de busca e botao dedicado `[RH]` permanecem — sao filtros, nao
+   *   acoes de gestao.
+   * - `hideLiderFilter` (§14.11): oculta o `<select>` do filtro Lider
+   *   (canonicamente e sempre o proprio usuario logado; o server
+   *   forca `liderId=session.userId` via `enforceRHLiderScope`).
+   * - `hideRfBadgeAndFilter` (§14.10.1 + §16.2): oculta o badge RF
+   *   inline no Nome + a opcao `respfin` do dropdown "Papel funcional".
+   * - `hideLiderColumn` (§14.11 D-ME085-2 B): oculta a coluna "Lider
+   *   direto" (TH + TD) — redundancia canonica quando o filtro Lider
+   *   ja escopa para o proprio usuario.
+   * - `emptyStateGlobalText` (§14.11 D-ME085-4 B): substitui a
+   *   mensagem canonica bit-exact de empty global. Default preserva
+   *   §14.10.
+   * - `emptyStateFilteredText` (§14.11 D-ME085-4 B): substitui a
+   *   mensagem canonica bit-exact de empty por filtro. Default
+   *   preserva §14.10.
+   */
+  readonly hideActionsButtons?: boolean;
+  readonly hideLiderFilter?: boolean;
+  readonly hideRfBadgeAndFilter?: boolean;
+  readonly hideLiderColumn?: boolean;
+  readonly emptyStateGlobalText?: string;
+  readonly emptyStateFilteredText?: string;
 }
 
 // -----------------------------------------------------------------------
@@ -492,6 +523,12 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
     novoColaboradorHref,
     editarColaboradorHrefBase,
     refetchAction,
+    hideActionsButtons = false,
+    hideLiderFilter = false,
+    hideRfBadgeAndFilter = false,
+    hideLiderColumn = false,
+    emptyStateGlobalText = 'Nenhum colaborador cadastrado ainda.',
+    emptyStateFilteredText = 'Nenhum colaborador atende aos filtros aplicados.',
   } = props;
   // ME-084 D-ME084-1/2 — `variant` retido para eventual telemetria por
   // perfil / testes de analise estatica. Nao afeta comportamento atual
@@ -725,49 +762,53 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
           >
             RH
           </button>
-          <button
-            type="button"
-            disabled
-            style={BTN_OUTLINE_DISABLED}
-            title="Disponível após ME-080"
-            aria-label="Exportar planilha (disponível após ME-080)"
-          >
-            📥 Exportar planilha
-          </button>
-          <button
-            type="button"
-            disabled
-            style={BTN_OUTLINE_DISABLED}
-            title="Disponível após ME-080"
-            aria-label="Baixar planilha modelo (disponível após ME-080)"
-          >
-            📄 Baixar modelo
-          </button>
-          <button
-            type="button"
-            disabled
-            style={BTN_OUTLINE_DISABLED}
-            title="Disponível após ME-080"
-            aria-label="Importar em massa (disponível após ME-080)"
-          >
-            📤 Importar em massa
-          </button>
-          <Link
-            href={novoColaboradorHref}
-            style={{
-              padding: '10px 20px',
-              fontSize: 14,
-              fontWeight: 500,
-              border: `1px solid ${COLORS.accent.teal}`,
-              borderRadius: 6,
-              background: COLORS.accent.teal,
-              color: '#FFFFFF',
-              textDecoration: 'none',
-              display: 'inline-block',
-            }}
-          >
-            + Cadastrar colaborador
-          </Link>
+          {hideActionsButtons ? null : (
+            <>
+              <button
+                type="button"
+                disabled
+                style={BTN_OUTLINE_DISABLED}
+                title="Disponível após ME-080"
+                aria-label="Exportar planilha (disponível após ME-080)"
+              >
+                📥 Exportar planilha
+              </button>
+              <button
+                type="button"
+                disabled
+                style={BTN_OUTLINE_DISABLED}
+                title="Disponível após ME-080"
+                aria-label="Baixar planilha modelo (disponível após ME-080)"
+              >
+                📄 Baixar modelo
+              </button>
+              <button
+                type="button"
+                disabled
+                style={BTN_OUTLINE_DISABLED}
+                title="Disponível após ME-080"
+                aria-label="Importar em massa (disponível após ME-080)"
+              >
+                📤 Importar em massa
+              </button>
+              <Link
+                href={novoColaboradorHref}
+                style={{
+                  padding: '10px 20px',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  border: `1px solid ${COLORS.accent.teal}`,
+                  borderRadius: 6,
+                  background: COLORS.accent.teal,
+                  color: '#FFFFFF',
+                  textDecoration: 'none',
+                  display: 'inline-block',
+                }}
+              >
+                + Cadastrar colaborador
+              </Link>
+            </>
+          )}
         </div>
       </div>
 
@@ -795,33 +836,35 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
               </option>
             ))}
           </select>
-          <select
-            style={FILTRO_SELECT}
-            value={
-              filters.liderId === null || filters.liderIdTipo === null
-                ? ''
-                : `${filters.liderIdTipo}:${filters.liderId}`
-            }
-            onChange={(e): void => {
-              const v = e.target.value;
-              if (v === '') return handleLiderChange(null, null);
-              const [tipoRaw, idRaw] = v.split(':');
-              if (tipoRaw !== 'employee' && tipoRaw !== 'clevel') {
-                return handleLiderChange(null, null);
+          {hideLiderFilter ? null : (
+            <select
+              style={FILTRO_SELECT}
+              value={
+                filters.liderId === null || filters.liderIdTipo === null
+                  ? ''
+                  : `${filters.liderIdTipo}:${filters.liderId}`
               }
-              const n = Number.parseInt(idRaw ?? '', 10);
-              if (Number.isNaN(n) || n <= 0) return handleLiderChange(null, null);
-              return handleLiderChange(n, tipoRaw);
-            }}
-            aria-label="Filtrar por líder direto"
-          >
-            <option value="">Líder: Todos</option>
-            {initialLideres.map((l) => (
-              <option key={`${l.tipo}:${l.id}`} value={`${l.tipo}:${l.id}`}>
-                {l.tipo === 'clevel' ? `${l.name} (C-level)` : l.name}
-              </option>
-            ))}
-          </select>
+              onChange={(e): void => {
+                const v = e.target.value;
+                if (v === '') return handleLiderChange(null, null);
+                const [tipoRaw, idRaw] = v.split(':');
+                if (tipoRaw !== 'employee' && tipoRaw !== 'clevel') {
+                  return handleLiderChange(null, null);
+                }
+                const n = Number.parseInt(idRaw ?? '', 10);
+                if (Number.isNaN(n) || n <= 0) return handleLiderChange(null, null);
+                return handleLiderChange(n, tipoRaw);
+              }}
+              aria-label="Filtrar por líder direto"
+            >
+              <option value="">Líder: Todos</option>
+              {initialLideres.map((l) => (
+                <option key={`${l.tipo}:${l.id}`} value={`${l.tipo}:${l.id}`}>
+                  {l.tipo === 'clevel' ? `${l.name} (C-level)` : l.name}
+                </option>
+              ))}
+            </select>
+          )}
           <select
             style={FILTRO_SELECT}
             value={filters.nivelHierarquico ?? ''}
@@ -909,7 +952,9 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
             <option value="todos">Papel funcional: Todos</option>
             <option value="lider">Papel funcional: Líder</option>
             <option value="rh">Papel funcional: RH</option>
-            <option value="respfin">Papel funcional: Responsável financeiro</option>
+            {hideRfBadgeAndFilter ? null : (
+              <option value="respfin">Papel funcional: Responsável financeiro</option>
+            )}
             <option value="sem_papel">Papel funcional: Sem papel</option>
           </select>
           <input
@@ -971,9 +1016,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
       <div style={CARD_STYLE}>
         {isEmpty ? (
           <div style={EMPTY_STATE} role="status" aria-live="polite">
-            {hasNoRegistrosInicial
-              ? 'Nenhum colaborador cadastrado ainda.'
-              : 'Nenhum colaborador atende aos filtros aplicados.'}
+            {hasNoRegistrosInicial ? emptyStateGlobalText : emptyStateFilteredText}
           </div>
         ) : (
           <>
@@ -996,7 +1039,9 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                       handleSortClick,
                     )}
                     {renderSortableTh('Departamento', 'departamento', filters, handleSortClick)}
-                    {renderSortableTh('Líder direto', 'liderName', filters, handleSortClick)}
+                    {hideLiderColumn
+                      ? null
+                      : renderSortableTh('Líder direto', 'liderName', filters, handleSortClick)}
                     <th style={TH_STYLE}>Dados cadastrais</th>
                     <th style={TH_STYLE}>Perfil individual</th>
                     {renderSortableTh('Data de admissão', 'dataAdmissao', filters, handleSortClick)}
@@ -1005,7 +1050,15 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                   </tr>
                 </thead>
                 <tbody>
-                  {result.rows.map((row) => renderRow(row, companyId, editarColaboradorHrefBase))}
+                  {result.rows.map((row) =>
+                    renderRow(
+                      row,
+                      companyId,
+                      editarColaboradorHrefBase,
+                      hideLiderColumn,
+                      hideRfBadgeAndFilter,
+                    ),
+                  )}
                 </tbody>
               </table>
             </div>
@@ -1093,6 +1146,8 @@ function renderRow(
   row: EmployeeListRow,
   companyId: number,
   editarColaboradorHrefBase: string,
+  hideLiderColumn: boolean,
+  hideRfBadgeAndFilter: boolean,
 ): JSX.Element {
   // ME-084 — `companyId` mantido na assinatura para compatibilidade com
   // callsites e para eventual uso em telemetria. Href de edicao vem da
@@ -1124,7 +1179,7 @@ function renderRow(
             RH
           </span>
         ) : null}
-        {row.isResponsavelFinanceiro ? (
+        {!hideRfBadgeAndFilter && row.isResponsavelFinanceiro ? (
           <span style={BADGE_RF} title="Responsável financeiro">
             RF
           </span>
@@ -1138,13 +1193,15 @@ function renderRow(
         <span style={nivelStyle}>{NIVEL_HIERARQUICO_LABELS[row.nivelHierarquico]}</span>
       </td>
       <td style={TD_STYLE}>{DEPARTAMENTO_LABELS[row.departamento]}</td>
-      <td style={TD_STYLE}>
-        {row.liderName === null
-          ? '—'
-          : row.liderTipo === 'clevel'
-            ? `${row.liderName} (C-level)`
-            : row.liderName}
-      </td>
+      {hideLiderColumn ? null : (
+        <td style={TD_STYLE}>
+          {row.liderName === null
+            ? '—'
+            : row.liderTipo === 'clevel'
+              ? `${row.liderName} (C-level)`
+              : row.liderName}
+        </td>
+      )}
       <td style={TD_STYLE}>
         <Link
           href={`${editarColaboradorHrefBase}/${row.id}/editar`}
