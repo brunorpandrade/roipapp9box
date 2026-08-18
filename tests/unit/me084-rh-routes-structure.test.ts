@@ -124,9 +124,7 @@ describe('ME-084 rota RH 1 — `/todos-os-colaboradores`', () => {
     );
     expect(src).toMatch(/variant="rh"/);
     expect(src).toContain('novoColaboradorHref="/colaborador/novo"');
-    expect(src).toContain(
-      'editarColaboradorHrefBuilder={(employeeId) => `/colaborador/${employeeId}/editar`}',
-    );
+    expect(src).toContain('editarColaboradorHrefBase="/colaborador"');
     expect(src).toContain('refetchAction={listarColaboradoresRHAction}');
   });
 

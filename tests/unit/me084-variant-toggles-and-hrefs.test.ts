@@ -203,10 +203,12 @@ describe('ME-084 D-ME084-1/2 — TodosColaboradoresClient (variant + hrefs + ref
     );
   });
 
-  it('recebe 4 props injetadas (variant, novoHref, editarBuilder, refetchAction)', () => {
+  it('recebe 4 props injetadas (variant, novoHref, editarBase, refetchAction)', () => {
+    // ME-084 patch1 canonizado: builder trocado por base string (declarativa)
+    // porque Next 15 rejeita passar funcoes de Server->Client Component.
     expect(src).toMatch(/readonly variant\?:\s*'super_admin'\s*\|\s*'rh'/);
     expect(src).toContain('readonly novoColaboradorHref: string;');
-    expect(src).toContain('readonly editarColaboradorHrefBuilder:');
+    expect(src).toContain('readonly editarColaboradorHrefBase: string;');
     expect(src).toContain('readonly refetchAction: typeof listarColaboradoresAction;');
   });
 
@@ -223,13 +225,16 @@ describe('ME-084 D-ME084-1/2 — TodosColaboradoresClient (variant + hrefs + ref
       /href=\{`\/super-admin\/empresa\/\$\{companyId\}\/colaborador\/\$\{row\.id\}\/editar`\}/,
     );
     expect(src).toContain('href={novoColaboradorHref}');
-    expect(src).toContain('href={editarColaboradorHrefBuilder(row.id)}');
+    // ME-084 patch1: href de editar e concat inline `${base}/${row.id}/editar`.
+    expect(src).toContain('href={`${editarColaboradorHrefBase}/${row.id}/editar`}');
   });
 
-  it('renderRow recebe editarColaboradorHrefBuilder', () => {
-    // Padrao canonico do refactor L125 — signature ampliada aceita 3 args.
+  it('renderRow recebe editarColaboradorHrefBase (nao mais builder)', () => {
+    // ME-084 patch1: signature ampliada aceita 3 args, terceiro e base string.
     expect(src).toContain('function renderRow(');
-    expect(src).toContain('editarColaboradorHrefBuilder:');
-    expect(src).toContain('editarColaboradorHrefBuilder(row.id)');
+    expect(src).toContain('editarColaboradorHrefBase: string');
+    expect(src).toContain('${editarColaboradorHrefBase}/${row.id}/editar');
+    // Nao deve mais existir builder callable
+    expect(src).not.toContain('editarColaboradorHrefBuilder');
   });
 });

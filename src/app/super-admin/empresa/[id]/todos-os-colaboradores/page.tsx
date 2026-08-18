@@ -152,9 +152,7 @@ export default async function TodosColaboradoresPage(props: PageProps): Promise<
             initialLideres={pageData.lideres}
             variant="super_admin"
             novoColaboradorHref={`/super-admin/empresa/${companyId}/colaborador/novo`}
-            editarColaboradorHrefBuilder={(employeeId) =>
-              `/super-admin/empresa/${companyId}/colaborador/${employeeId}/editar`
-            }
+            editarColaboradorHrefBase={`/super-admin/empresa/${companyId}/colaborador`}
             refetchAction={listarColaboradoresAction}
           />
         </div>

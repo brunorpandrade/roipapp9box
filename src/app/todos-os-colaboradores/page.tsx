@@ -215,7 +215,7 @@ export default async function TodosColaboradoresRHPage(props: PageProps): Promis
             initialLideres={pageData.lideres}
             variant="rh"
             novoColaboradorHref="/colaborador/novo"
-            editarColaboradorHrefBuilder={(employeeId) => `/colaborador/${employeeId}/editar`}
+            editarColaboradorHrefBase="/colaborador"
             refetchAction={listarColaboradoresRHAction}
           />
         </div>

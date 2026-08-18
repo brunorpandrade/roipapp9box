@@ -105,7 +105,21 @@ export interface TodosColaboradoresClientProps {
    * admin/empresa/{id}/colaborador/{employeeId}/editar`. RH: `/colabora-
    * dor/{employeeId}/editar`.
    */
-  readonly editarColaboradorHrefBuilder: (employeeId: number) => string;
+  /**
+   * ME-084 patch1 (hotfix bug canonico N15 Server->Client fronteira) —
+   * builder foi trocado por base string declarativa. Next 15 rejeita
+   * passar funcoes inline de Server Component para Client Component
+   * (apenas server actions marcadas com `'use server'` atravessam a
+   * fronteira canonicamente). Base string e concatenada inline no
+   * `renderRow` para construir href por linha.
+   *
+   * Bruno: `/super-admin/empresa/{id}/colaborador`.
+   * RH: `/colaborador`.
+   *
+   * Href final canonico bit-exact: `${base}/${row.id}/editar` (§14.10
+   * linha 2184).
+   */
+  readonly editarColaboradorHrefBase: string;
   /**
    * ME-084 D-ME084-1/2 — action injetada de refetch server-side (§14.10
    * refetch em cada mudanca de filtro / paginacao / ordenacao / busca).
@@ -476,7 +490,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
     initialLideres,
     variant = 'super_admin',
     novoColaboradorHref,
-    editarColaboradorHrefBuilder,
+    editarColaboradorHrefBase,
     refetchAction,
   } = props;
   // ME-084 D-ME084-1/2 — `variant` retido para eventual telemetria por
@@ -991,9 +1005,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                   </tr>
                 </thead>
                 <tbody>
-                  {result.rows.map((row) =>
-                    renderRow(row, companyId, editarColaboradorHrefBuilder),
-                  )}
+                  {result.rows.map((row) => renderRow(row, companyId, editarColaboradorHrefBase))}
                 </tbody>
               </table>
             </div>
@@ -1080,11 +1092,13 @@ function renderSortableTh(
 function renderRow(
   row: EmployeeListRow,
   companyId: number,
-  editarColaboradorHrefBuilder: (employeeId: number) => string,
+  editarColaboradorHrefBase: string,
 ): JSX.Element {
   // ME-084 — `companyId` mantido na assinatura para compatibilidade com
-  // callsites e para eventual uso em telemetria. Href de edicao vem do
-  // builder injetado (variant-agnostic).
+  // callsites e para eventual uso em telemetria. Href de edicao vem da
+  // base string injetada (variant-agnostic), concatenada inline com
+  // `row.id` — evita passar funcao pela fronteira Server->Client (Next
+  // 15 canonico N15).
   void companyId;
   const avatarColor = hashNameToColor(row.name);
   const iniciais = getIniciaisFromName(row.name);
@@ -1133,7 +1147,7 @@ function renderRow(
       </td>
       <td style={TD_STYLE}>
         <Link
-          href={editarColaboradorHrefBuilder(row.id)}
+          href={`${editarColaboradorHrefBase}/${row.id}/editar`}
           style={{
             color: COLORS.accent.teal,
             fontSize: 14,
