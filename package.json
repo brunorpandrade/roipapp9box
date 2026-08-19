@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "dev": "next dev",
@@ -38,7 +38,7 @@
     "mysql2": "3.22.6",
     "next": "15.5.23",
     "nodemailer": "^9.0.3",
-    "puppeteer-core": "24.30.0",
+    "puppeteer-core": "25.8.0",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "zod": "4.4.3"
