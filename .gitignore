@@ -2,7 +2,6 @@
 node_modules/
 
 # S001 — lockfile não versionado; versões pinadas sem ^ no package.json
-package-lock.json
 
 # Next.js
 .next/
