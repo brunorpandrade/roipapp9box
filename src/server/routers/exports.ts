@@ -86,6 +86,14 @@ export const MSG_EXPORTS_CACHE_AUSENTE =
   // eslint-disable-next-line @stylistic/max-len -- mensagem canonica literal
   'Relatorio executivo para este escopo e trimestre ainda nao foi gerado. Dispare `generateRelatorioExecutivo`.';
 
+/**
+ * Mensagem canonica de mismatch de empresa (DOC 02 §2.4 — isolamento
+ * por empresa). Bit-exact ao padrao dos routers de escopo empresa
+ * (`MSG_COMPANY_MISMATCH_RF` em company.ts, `MSG_COMPANY_MISMATCH_REV`
+ * em revenue.ts). ME-B9-SEC (achado A1).
+ */
+export const MSG_COMPANY_MISMATCH_EXP = 'Empresa nao pertence ao seu escopo.' as const;
+
 // ============================================================
 // Facade DI canonica (S258)
 // ============================================================
@@ -301,6 +309,22 @@ function deriveGeradoPor(user: AuthenticatedUser): {
  * Factory canonica do sub-router. Consumida em `routers/index.ts`
  * com as deps default; testes podem injetar `serviceFactory` para stub.
  */
+/**
+ * §2.4 — guard canonico de isolamento por empresa (ME-B9-SEC, achado A1).
+ * Super_admin atravessa; demais roles restritos ao proprio `companyId`
+ * do JWT. Padrao bit-exact ao `assertCompanyScopeRf` (company.ts) e
+ * `assertCompanyScopeRev` (revenue.ts) — helper local com sufixo do
+ * router, precedente majoritario entre os 4 routers de escopo empresa.
+ */
+export function assertCompanyScopeExports(user: AuthenticatedUser, companyId: number): void {
+  if (user.role === 'super_admin') {
+    return;
+  }
+  if (user.companyId !== companyId) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: MSG_COMPANY_MISMATCH_EXP });
+  }
+}
+
 export function createExportsRouter(deps: ExportsRouterDeps = {}) {
   const effectiveDeps = { ...DEFAULT_EXPORTS_ROUTER_DEPS, ...deps };
 
@@ -311,6 +335,7 @@ export function createExportsRouter(deps: ExportsRouterDeps = {}) {
     getResumoDashboard: roleProcedure(['super_admin', 'rh'])
       .input(commonScopedInput)
       .mutation(async ({ ctx, input }): Promise<{ filename: string; contentBase64: string }> => {
+        assertCompanyScopeExports(ctx.user, input.companyId);
         await assertTrimestreFechado(ctx.db, input.companyId, input.trimestre);
         const info = await getCompanyInfo(ctx.db, input.companyId);
         const rows = await buildResumoDashboardRows(
@@ -333,6 +358,7 @@ export function createExportsRouter(deps: ExportsRouterDeps = {}) {
     getEvolucaoTrimestral: roleProcedure(['super_admin', 'rh'])
       .input(evolucaoTrimestralInput)
       .mutation(async ({ ctx, input }): Promise<{ filename: string; contentBase64: string }> => {
+        assertCompanyScopeExports(ctx.user, input.companyId);
         // Nao valida "trimestre fechado" — o §13.4 permite trimestres
         // parciais com nota canonica no cabecalho.
         const info = await getCompanyInfo(ctx.db, input.companyId);
@@ -365,6 +391,7 @@ export function createExportsRouter(deps: ExportsRouterDeps = {}) {
           pdfPath: string | null;
           message?: string;
         }> => {
+          assertCompanyScopeExports(ctx.user, input.companyId);
           await assertAcessoTotalIfClevel(ctx.db, ctx.user);
           // Resolve o ultimo trimestre com agregados em climateEngagementData.
           const trimestreRow = await ctx.db
@@ -411,6 +438,7 @@ export function createExportsRouter(deps: ExportsRouterDeps = {}) {
           filename?: string;
           message?: string;
         }> => {
+          assertCompanyScopeExports(ctx.user, input.companyId);
           await assertAcessoTotalIfClevel(ctx.db, ctx.user);
           await assertTrimestreFechado(ctx.db, input.companyId, input.trimestre);
           const info = await getCompanyInfo(ctx.db, input.companyId);
@@ -453,6 +481,7 @@ export function createExportsRouter(deps: ExportsRouterDeps = {}) {
     getSnapshot9Box: roleProcedure(['super_admin', 'rh', 'clevel'])
       .input(commonScopedInput)
       .mutation(async ({ ctx, input }): Promise<{ token: string; filename: string }> => {
+        assertCompanyScopeExports(ctx.user, input.companyId);
         await assertAcessoTotalIfClevel(ctx.db, ctx.user);
         await assertTrimestreFechado(ctx.db, input.companyId, input.trimestre);
         const info = await getCompanyInfo(ctx.db, input.companyId);
@@ -485,6 +514,7 @@ export function createExportsRouter(deps: ExportsRouterDeps = {}) {
     getBoardDeck: roleProcedure(['super_admin', 'clevel'])
       .input(boardDeckInput)
       .mutation(async ({ ctx, input }): Promise<{ token: string; filename: string }> => {
+        assertCompanyScopeExports(ctx.user, input.companyId);
         await assertAcessoTotalIfClevel(ctx.db, ctx.user);
         await assertTrimestreFechado(ctx.db, input.companyId, input.trimestre);
         const info = await getCompanyInfo(ctx.db, input.companyId);

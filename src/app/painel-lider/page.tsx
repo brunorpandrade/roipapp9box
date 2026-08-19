@@ -15,7 +15,7 @@
 //   IQL nem Clima — regra canonica FASE_3B §10.2/§10.3 revisada).
 
 import { redirect } from 'next/navigation';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { JSX } from 'react';
 
 import { Layout } from '../../components/shell/Layout';
@@ -73,7 +73,7 @@ async function loadLiderFlagsAndData(
       .where(
         and(
           eq(employeeLeaderHistory.liderId, userId),
-          sql`${employeeLeaderHistory.dataFim} IS NULL`,
+          isNull(employeeLeaderHistory.dataFim),
           eq(employees.status, 'ativo'),
         ),
       );
@@ -87,7 +87,7 @@ async function loadLiderFlagsAndData(
       .where(
         and(
           eq(employeeLeaderHistory.liderId, userId),
-          sql`${employeeLeaderHistory.dataFim} IS NULL`,
+          isNull(employeeLeaderHistory.dataFim),
           eq(employees.isLider, true),
           eq(employees.status, 'ativo'),
         ),

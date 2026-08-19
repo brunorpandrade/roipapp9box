@@ -38,7 +38,7 @@
 // `COLORS.*`.
 
 import { redirect } from 'next/navigation';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { JSX } from 'react';
 
 import { Layout } from '../../components/shell/Layout';
@@ -168,7 +168,7 @@ async function loadFlagsForSession(session: ServerSession): Promise<AccessDenied
       .where(
         and(
           eq(employeeLeaderHistory.liderId, session.userId),
-          sql`${employeeLeaderHistory.dataFim} IS NULL`,
+          isNull(employeeLeaderHistory.dataFim),
           eq(employees.isLider, true),
           eq(employees.status, 'ativo'),
         ),

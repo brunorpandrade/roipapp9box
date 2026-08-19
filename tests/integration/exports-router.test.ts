@@ -306,3 +306,54 @@ describe('exports.getSnapshot9Box + getBoardDeck — tokens efemeros', () => {
     ).rejects.toThrow();
   });
 });
+
+// ============================================================
+// ME-B9-SEC — guard cruzado §2.4 (isolamento por empresa)
+// ============================================================
+//
+// Achado A1: RH da empresa A tentando extrair relatorios da empresa B
+// deve receber FORBIDDEN antes de qualquer leitura. Cobertura canonica
+// bit-exact D-SEC-3 Opcao C (aprovada): 2 cenarios representativos das
+// duas superficies de risco distintas descritas no achado —
+//   (1) payload direto (xlsx base64) via `getResumoDashboard`;
+//   (2) `pdfEphemeralToken` via `getSnapshot9Box` (que propagaria o
+//       vazamento aos handlers de download).
+// O mesmo guard `assertCompanyScopeExports` cobre bit-exact as demais 4
+// procedures (`getEvolucaoTrimestral`, `getClimaEngajamento`,
+// `generateRelatorioExecutivo`, `getBoardDeck`).
+
+describe('exports — guard cruzado §2.4 (ME-B9-SEC)', () => {
+  it('getResumoDashboard: RH da empresa A com companyId=B -> FORBIDDEN', async () => {
+    const companyA = await seedCompany('10042000000007', 'EmpresaA LTDA');
+    const companyB = await seedCompany('10042000000008', 'EmpresaB LTDA');
+    const rhA = await seedEmployee(companyA, 'RH A');
+    await seedTrimestreFechado(companyB, '2026-Q1');
+    const { factory, ctx } = mkRouter();
+    const caller = factory(await ctx(await tokenPlatform(rhA, 'rh', companyA)));
+    await expect(
+      caller.getResumoDashboard({
+        companyId: companyB,
+        escopoTipo: 'empresa',
+        escopoReferencia: null,
+        trimestre: '2026-Q1',
+      }),
+    ).rejects.toThrow(/Empresa nao pertence ao seu escopo/);
+  });
+
+  it('getSnapshot9Box: RH da empresa A com companyId=B -> FORBIDDEN', async () => {
+    const companyA = await seedCompany('10042000000009', 'EmpresaA9 LTDA');
+    const companyB = await seedCompany('10042000000010', 'EmpresaB9 LTDA');
+    const rhA = await seedEmployee(companyA, 'RH A9');
+    await seedTrimestreFechado(companyB, '2026-Q1');
+    const { factory, ctx } = mkRouter();
+    const caller = factory(await ctx(await tokenPlatform(rhA, 'rh', companyA)));
+    await expect(
+      caller.getSnapshot9Box({
+        companyId: companyB,
+        escopoTipo: 'empresa',
+        escopoReferencia: null,
+        trimestre: '2026-Q1',
+      }),
+    ).rejects.toThrow(/Empresa nao pertence ao seu escopo/);
+  });
+});
