@@ -12,12 +12,18 @@
 
 import { describe, expect, it } from 'vitest';
 
+// ME-B9-CR (L125): CARD_DEFS/ICON_COLORS/NIVEL_OPTIONS migrados para o
+// local compartilhado `src/components/central-relatorios/internals`
+// (dual-route L123 SA + RH). DESKTOP_ONLY_MESSAGE, formatTrimestreLabel
+// e parseCompanyIdParam permanecem no internals SA (nao compartilhados).
 import {
   CARD_DEFS,
-  DESKTOP_ONLY_MESSAGE,
-  formatTrimestreLabel,
   ICON_COLORS,
   NIVEL_OPTIONS,
+} from '../../src/components/central-relatorios/internals';
+import {
+  DESKTOP_ONLY_MESSAGE,
+  formatTrimestreLabel,
   parseCompanyIdParam,
 } from '../../src/app/super-admin/empresa/[id]/relatorios-e-exportacoes/internals';
 

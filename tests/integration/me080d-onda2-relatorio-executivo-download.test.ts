@@ -28,10 +28,8 @@ import { describe, expect, it } from 'vitest';
 
 import * as actions from '../../src/app/super-admin/empresa/[id]/relatorios-e-exportacoes/actions';
 
-const CLIENT_PATH = join(
-  process.cwd(),
-  'src/app/super-admin/empresa/[id]/relatorios-e-exportacoes/RelatoriosClient.tsx',
-);
+// ME-B9-CR (L125): RelatoriosClient extraido para local compartilhado.
+const CLIENT_PATH = join(process.cwd(), 'src/components/central-relatorios/RelatoriosClient.tsx');
 
 describe('ME-080d Onda 2 — actions.ts (D5=A backend)', () => {
   it('exporta startExecutiveReportDownloadTokenAction', () => {
@@ -50,8 +48,11 @@ describe('ME-080d Onda 2 — actions.ts (D5=A backend)', () => {
 describe('ME-080d Onda 2 — RelatoriosClient.tsx (D5=A client fix)', () => {
   const source = readFileSync(CLIENT_PATH, 'utf8');
 
-  it('importa startExecutiveReportDownloadTokenAction', () => {
-    expect(source).toContain('startExecutiveReportDownloadTokenAction');
+  it('consome startExecutiveReportDownloadToken via prop actions injetada (ME-B9-CR)', () => {
+    // ME-B9-CR (D-CR-5): Client compartilhado nunca importa actions
+    // diretamente — consome via `actions.startExecutiveReportDownloadToken`
+    // (sem sufixo `Action`) injetada por prop pela rota concreta.
+    expect(source).toContain('actions.startExecutiveReportDownloadToken');
   });
 
   it('toast falso "notificado no sino" removido do JSX', () => {

@@ -14,8 +14,8 @@
 
 import { describe, expect, it } from 'vitest';
 
-// eslint-disable-next-line @stylistic/max-len -- path longo por App Router
-import { CARD_DEFS } from '../../src/app/super-admin/empresa/[id]/relatorios-e-exportacoes/internals';
+// ME-B9-CR (L125): CARD_DEFS migrado para o local compartilhado.
+import { CARD_DEFS } from '../../src/components/central-relatorios/internals';
 
 describe('ME-080d Onda 1d — CARD_DEFS D11=B (Resumo + Evolucao "Em desenvolvimento")', () => {
   it('resumo_dashboard tem disabled=true', () => {

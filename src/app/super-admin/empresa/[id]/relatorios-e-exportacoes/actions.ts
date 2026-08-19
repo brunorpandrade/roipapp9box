@@ -23,6 +23,12 @@ import { getServerSession } from '../../../../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../../../../server/trpc';
 
 import { resolveDatabaseUrl } from './internals';
+import type {
+  ActionResult,
+  ClosedQuarter,
+  GenerateRelatorioExecutivoResult,
+  LeaderOption,
+} from '../../../../../components/central-relatorios/internals';
 
 // -----------------------------------------------------------------------
 // Instâncias module-level (S366)
@@ -55,20 +61,21 @@ async function requireSuperAdmin(actionName: string): Promise<void> {
 }
 
 // -----------------------------------------------------------------------
-// Contrato
+// Contrato (types canonicos vem de components/central-relatorios/internals)
 // -----------------------------------------------------------------------
+//
+// **ME-B9-CR (L125):** os types canonicos (`ActionResult`, `ClosedQuarter`,
+// `LeaderOption`, `GenerateRelatorioExecutivoResult`) foram consolidados em
+// `src/components/central-relatorios/internals.ts` para compartilhamento
+// bit-exact com a rota base RH `/central-relatorios`. Este arquivo importa
+// os types dali e reexporta para preservar consumidores externos (se
+// houver) — assinaturas das actions preservadas bit-exact.
 
-export type ActionResult<T = null> =
-  { readonly ok: true; readonly data: T } | { readonly ok: false; readonly message: string };
+export type { ActionResult, ClosedQuarter, GenerateRelatorioExecutivoResult, LeaderOption };
 
 // -----------------------------------------------------------------------
 // 1. Listar trimestres fechados (§12.6)
 // -----------------------------------------------------------------------
-
-export interface ClosedQuarter {
-  readonly trimestre: string;
-  readonly label: string;
-}
 
 export async function listClosedQuartersAction(input: {
   readonly companyId: number;
@@ -152,13 +159,6 @@ export async function listDepartmentsAction(input: {
 // 3. Listar líderes ativos (§12.5 dropdown 2 quando Nível=Equipe)
 // -----------------------------------------------------------------------
 
-export interface LeaderOption {
-  readonly id: number;
-  readonly tipo: 'employee' | 'clevel';
-  readonly name: string;
-  readonly departamento: string;
-}
-
 export async function listLeadersAction(input: {
   readonly companyId: number;
 }): Promise<ActionResult<LeaderOption[]>> {
@@ -203,13 +203,6 @@ export async function listLeadersAction(input: {
 // para propagar `cacheId` + `filename` + `message` — permite ao Client
 // disparar download imediato via `startExecutiveReportDownloadTokenAction`
 // em vez da promessa antiga (falsa) de "notificar no sino".
-
-export interface GenerateRelatorioExecutivoResult {
-  readonly status: 'ok' | 'limit_reached' | 'failed';
-  readonly cacheId?: number;
-  readonly filename?: string;
-  readonly message?: string;
-}
 
 export async function generateRelatorioExecutivoAction(input: {
   readonly companyId: number;

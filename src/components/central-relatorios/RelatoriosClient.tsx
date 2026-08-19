@@ -1,45 +1,63 @@
-// ROIP APP 9BOX — client component canônico da rota Bruno
-// `/super-admin/empresa/[id]/relatorios-e-exportacoes` (§12, ME-079a).
+// ROIP APP 9BOX — client component canonico compartilhado da Central de
+// Relatorios (ME-B9-CR). Extraido de
+// `src/app/super-admin/empresa/[id]/relatorios-e-exportacoes/RelatoriosClient.tsx`
+// (ME-079a) e centralizado em `src/components/central-relatorios/` em
+// L125 canonico. Renderizado bit-exact pelas duas rotas do dual-route
+// L123:
+//   - `/super-admin/empresa/[id]/relatorios-e-exportacoes` (Bruno,
+//     `variant='super_admin'`).
+//   - `/central-relatorios` (RH puro / RH-Lider, `variant='rh'`).
 //
 // Componentiza canonicamente:
-// - Cabeçalho + linha de contexto do trimestre mais recente fechado.
-// - 2 subseções: "Planilhas operacionais" (2 cards) +
-//   "Relatórios executivos" (4 cards).
-// - Bruno vê todos os 6 cards (nenhuma ocultação — §12.3).
-// - Seletor em cascata (Nível → Dropdown 2) para 4 artefatos.
-// - Card Clima usa dropdown único de Ciclo (§12.7).
-// - Relatório executivo com rodapé de uso diário (§11.4).
+// - Cabecalho + linha de contexto do trimestre mais recente fechado.
+// - 2 subsecoes: "Planilhas operacionais" (2 cards) +
+//   "Relatorios executivos" (4 cards para Super Admin, 3 para RH — sem
+//   Board deck one-pager, D-CR-3 aprovada).
+// - Seletor em cascata (Nivel -> Dropdown 2) para 4 artefatos.
+// - Card Clima usa dropdown unico de Ciclo (§12.7).
+// - Relatorio executivo com rodape de uso diario (§11.4).
 // - Desktop-only (§12.11).
 //
-// **RV-13.** Imports de internals.ts + actions consumidos aqui.
-// **RV-14.** Um statement por linha, largura máxima 100 colunas.
+// Actions vem via props (D-CR-5). Componente nunca importa `actions`
+// diretamente — cada rota concreta injeta a sua implementacao. Padrao
+// bit-exact ME-084 (`ColaboradorForm`, `TodosColaboradoresClient`).
+//
+// **RV-13.** Imports de internals.ts + design-tokens consumidos aqui;
+// actions consumidas via `props.actions`.
+// **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import type { JSX } from 'react';
 
-import { COLORS } from '../../../../../lib/design-tokens/colors';
+import { COLORS } from '../../lib/design-tokens/colors';
 
 import {
-  generateRelatorioExecutivoAction,
-  startExecutiveReportDownloadTokenAction,
-  startReportDownloadTokenAction,
-  listClosedQuartersAction,
-  listDepartmentsAction,
-  listLeadersAction,
+  CARD_DEFS,
+  ICON_COLORS,
+  NIVEL_OPTIONS,
+  type CardId,
   type ClosedQuarter,
   type LeaderOption,
-} from './actions';
-import { CARD_DEFS, ICON_COLORS, NIVEL_OPTIONS, type CardId, type NivelEscopo } from './internals';
+  type NivelEscopo,
+  type RelatoriosClientActions,
+} from './internals';
 
 // -----------------------------------------------------------------------
 // Props
 // -----------------------------------------------------------------------
 
+/**
+ * §12 canonica. `variant='super_admin'` renderiza os 6 cards; `variant='rh'`
+ * esconde `board_deck` (procedure `getBoardDeck` restrita a super_admin +
+ * clevel — D-CR-3 aprovada).
+ */
 interface Props {
   readonly companyId: number;
   readonly companyName: string;
+  readonly variant: 'super_admin' | 'rh';
+  readonly actions: RelatoriosClientActions;
 }
 
 // -----------------------------------------------------------------------
@@ -98,7 +116,7 @@ interface CardState {
 // -----------------------------------------------------------------------
 
 export function RelatoriosClient(props: Props): JSX.Element {
-  const { companyId } = props;
+  const { companyId, variant, actions } = props;
 
   // Dados globais
   const [quarters, setQuarters] = useState<ClosedQuarter[]>([]);
@@ -118,9 +136,9 @@ export function RelatoriosClient(props: Props): JSX.Element {
       setError(null);
       try {
         const [qResult, dResult, lResult] = await Promise.all([
-          listClosedQuartersAction({ companyId }),
-          listDepartmentsAction({ companyId }),
-          listLeadersAction({ companyId }),
+          actions.listClosedQuarters({ companyId }),
+          actions.listDepartments({ companyId }),
+          actions.listLeaders({ companyId }),
         ]);
         if (qResult.ok) {
           setQuarters(qResult.data);
@@ -138,7 +156,7 @@ export function RelatoriosClient(props: Props): JSX.Element {
       }
     }
     void load();
-  }, [companyId]);
+  }, [companyId, actions]);
 
   // Toast auto-dismiss
   useEffect(() => {
@@ -209,7 +227,7 @@ export function RelatoriosClient(props: Props): JSX.Element {
         cardId === 'board_deck'
       ) {
         const scope = cardId === 'board_deck' ? 'board_deck' : 'snapshot_9box';
-        const result = await startReportDownloadTokenAction({
+        const result = await actions.startReportDownloadToken({
           companyId,
           scope,
           escopoTipo: cs.nivel,
@@ -290,7 +308,7 @@ export function RelatoriosClient(props: Props): JSX.Element {
         return;
       }
     },
-    [companyId, getCardState, setToast],
+    [companyId, getCardState, setToast, actions],
   );
 
   // Handler do relatório executivo (§11 — enfileira job assíncrono)
@@ -298,7 +316,7 @@ export function RelatoriosClient(props: Props): JSX.Element {
     const cs = getCardState('relatorio_executivo');
     updateCardState('relatorio_executivo', { loading: true });
 
-    const result = await generateRelatorioExecutivoAction({
+    const result = await actions.generateRelatorioExecutivo({
       companyId,
       trimestre: cs.trimestre,
       escopoTipo: cs.nivel,
@@ -326,7 +344,7 @@ export function RelatoriosClient(props: Props): JSX.Element {
       return;
     }
 
-    const tokenResult = await startExecutiveReportDownloadTokenAction({
+    const tokenResult = await actions.startExecutiveReportDownloadToken({
       companyId,
       cacheId: result.data.cacheId,
     });
@@ -348,7 +366,7 @@ export function RelatoriosClient(props: Props): JSX.Element {
     // baixa o binario, preservando a rota corrente.
     window.location.href = tokenResult.data.downloadUrl;
     setToast('Relatório pronto. Download iniciando…');
-  }, [companyId, getCardState, updateCardState]);
+  }, [companyId, getCardState, updateCardState, actions]);
 
   // Trimestre mais recente
   const latestQuarter = quarters[0] ?? null;
@@ -487,7 +505,7 @@ export function RelatoriosClient(props: Props): JSX.Element {
         ))}
       </div>
 
-      {/* Subseção: Relatórios executivos */}
+      {/* Subsecao: Relatorios executivos */}
       <SectionTitle title="Relatórios executivos" />
       <div
         style={{
@@ -497,20 +515,25 @@ export function RelatoriosClient(props: Props): JSX.Element {
           marginBottom: 24,
         }}
       >
-        {CARD_DEFS.filter((c) => c.section === 'relatorios').map((card) => (
-          <ExportCard
-            key={card.id}
-            card={card}
-            state={getCardState(card.id)}
-            quarters={quarters}
-            departments={departments}
-            leaders={leaders}
-            hasQuarters={hasQuarters}
-            onStateChange={(patch) => updateCardState(card.id, patch)}
-            onDownload={() => handleDownload(card.id)}
-            onGenerate={card.id === 'relatorio_executivo' ? handleGenerateExecutivo : undefined}
-          />
-        ))}
+        {CARD_DEFS.filter((c) => c.section === 'relatorios')
+          // D-CR-3: `getBoardDeck` e `roleProcedure(['super_admin','clevel'])`
+          // — RH nao tem permissao. Esconde o card no variant='rh' em vez
+          // de renderizar botao que dispararia FORBIDDEN no backend.
+          .filter((c) => !(variant === 'rh' && c.id === 'board_deck'))
+          .map((card) => (
+            <ExportCard
+              key={card.id}
+              card={card}
+              state={getCardState(card.id)}
+              quarters={quarters}
+              departments={departments}
+              leaders={leaders}
+              hasQuarters={hasQuarters}
+              onStateChange={(patch) => updateCardState(card.id, patch)}
+              onDownload={() => handleDownload(card.id)}
+              onGenerate={card.id === 'relatorio_executivo' ? handleGenerateExecutivo : undefined}
+            />
+          ))}
       </div>
 
       {/* Toast */}

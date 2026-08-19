@@ -26,7 +26,15 @@ import { resolveMenuItems } from '../../../../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../../../../lib/session/resolveProfileKey';
 import { getServerSession } from '../../../../../server/session/serverSession';
 
-import { RelatoriosClient } from './RelatoriosClient';
+import { RelatoriosClient } from '../../../../../components/central-relatorios/RelatoriosClient';
+import {
+  generateRelatorioExecutivoAction,
+  listClosedQuartersAction,
+  listDepartmentsAction,
+  listLeadersAction,
+  startExecutiveReportDownloadTokenAction,
+  startReportDownloadTokenAction,
+} from './actions';
 import { parseCompanyIdParam, resolveDatabaseUrl } from './internals';
 
 interface PageProps {
@@ -85,7 +93,19 @@ export default async function RelatoriosPage(props: PageProps): Promise<JSX.Elem
           companyDisplayName: company.nomeFantasia,
         }}
       >
-        <RelatoriosClient companyId={companyId} companyName={company.nomeFantasia} />
+        <RelatoriosClient
+          companyId={companyId}
+          companyName={company.nomeFantasia}
+          variant="super_admin"
+          actions={{
+            listClosedQuarters: listClosedQuartersAction,
+            listDepartments: listDepartmentsAction,
+            listLeaders: listLeadersAction,
+            generateRelatorioExecutivo: generateRelatorioExecutivoAction,
+            startReportDownloadToken: startReportDownloadTokenAction,
+            startExecutiveReportDownloadToken: startExecutiveReportDownloadTokenAction,
+          }}
+        />
       </Layout>
     );
   } finally {

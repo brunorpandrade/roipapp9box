@@ -19,10 +19,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-const CLIENT_PATH = join(
-  process.cwd(),
-  'src/app/super-admin/empresa/[id]/relatorios-e-exportacoes/RelatoriosClient.tsx',
-);
+// ME-B9-CR (L125): RelatoriosClient extraido para local compartilhado.
+const CLIENT_PATH = join(process.cwd(), 'src/components/central-relatorios/RelatoriosClient.tsx');
 
 describe('ME-080d Onda 3 — RelatoriosClient.tsx (D6=A: clima erro amigavel)', () => {
   const source = readFileSync(CLIENT_PATH, 'utf8');
