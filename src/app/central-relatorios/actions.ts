@@ -36,7 +36,8 @@ import { and, asc, eq } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 
 import { closeDbClient, createDbClient } from '../../db/client';
-import { employees, monthlyClosureStatus } from '../../db/schema';
+import { cLevelMembers, employees, monthlyClosureStatus } from '../../db/schema';
+import { requireClevelOrSuperAdmin } from '../../lib/routes/requireClevelOrSuperAdmin';
 import { requireRHOrSuperAdmin } from '../../lib/routes/requireRHOrSuperAdmin';
 import { signPdfEphemeralToken } from '../../server/auth/pdfEphemeralToken';
 import { createRateLimiter } from '../../server/auth/rateLimit';
@@ -356,5 +357,355 @@ export async function startExecutiveReportDownloadTokenRHAction(input: {
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Erro ao gerar token.';
     return { ok: false, message: msg };
+  }
+}
+
+// ============================================================
+// ME-B9-CR3 (D-CENTRAL-CLEVEL) — 6 actions clevel-facing
+// ============================================================
+//
+// Bit-exact ao padrao das 6 actions RH-facing acima, com 3 diferencas
+// canonicas:
+//   (1) Guard: `requireClevelOrSuperAdmin` no lugar de `requireRHOrSuperAdmin`.
+//   (2) Filtro canonico `acessoTotal=true` (§12.2 CAMADA_UI: CF nao
+//       acessa) via helper local `assertAcessoTotal` que faz query a
+//       `cLevelMembers` e lanca canonicamente se `acessoTotal=false`.
+//   (3) `resolveTokenUserId`/`resolveTokenUserType`: C-level cai em
+//       `'employee'` (bit-exact ao pattern RH — token efemero nao
+//       diferencia subtipo).
+//
+// Defense-in-depth §2.4: as procedures tRPC do router `exports` ja
+// aceitam `clevel` desde ME-B9-CR2 (5 procedures + `getBoardDeck`
+// exclusivo `['super_admin','clevel']`); `assertCompanyScope` continua
+// aplicado. Filtro `acessoTotal` fica no page.tsx (guard de rota) e
+// aqui nas actions (defense-in-depth).
+
+/**
+ * Valida `acessoTotal=true` para C-level (§12.2 CAMADA_UI: CF nao
+ * acessa a Central). Consultado apenas quando `session.kind='platform'`
+ * (Bruno super_admin passa direto). Retorna `companyId` efetivo bit-
+ * exact ao pattern `resolveEffectiveCompanyId`.
+ *
+ * Racional canonico: mantem o guard `requireClevelOrSuperAdmin` sem
+ * I/O (pattern bit-exact de `requireRHOrSuperAdmin`), delegando a
+ * validacao de negocio para actions/page — evita I/O em edge runtime
+ * do middleware.
+ */
+async function assertAcessoTotalAndResolveCompanyId(
+  session: ReturnType<typeof requireClevelOrSuperAdmin>,
+  inputCompanyId: number,
+  db: ReturnType<typeof createDbClient>['db'],
+  actionName: string,
+): Promise<number> {
+  if (session.kind === 'super_admin') {
+    return inputCompanyId;
+  }
+  const rows = await db
+    .select({ acessoTotal: cLevelMembers.acessoTotal })
+    .from(cLevelMembers)
+    .where(eq(cLevelMembers.id, session.userId))
+    .limit(1);
+  const member = rows[0];
+  if (member === undefined) {
+    throw new Error(`${actionName}: perfil C-level nao encontrado.`);
+  }
+  // Coluna canonica com `.default(true)`; Drizzle infere `boolean | null`.
+  // Fallback bit-exact: null equivale a `true` (default do schema).
+  const acessoTotal = member.acessoTotal ?? true;
+  if (!acessoTotal) {
+    throw new Error(`${actionName}: acesso restrito.`);
+  }
+  return session.companyId;
+}
+
+function resolveTokenUserIdClevel(session: ReturnType<typeof requireClevelOrSuperAdmin>): number {
+  return session.kind === 'super_admin' ? session.superAdminId : session.userId;
+}
+
+function resolveTokenUserTypeClevel(
+  session: ReturnType<typeof requireClevelOrSuperAdmin>,
+): 'super_admin' | 'employee' {
+  return session.kind === 'super_admin' ? 'super_admin' : 'employee';
+}
+
+// -----------------------------------------------------------------------
+// 1. Listar trimestres fechados (clevel)
+// -----------------------------------------------------------------------
+
+export async function listClosedQuartersClevelAction(input: {
+  readonly companyId: number;
+}): Promise<ActionResult<ClosedQuarter[]>> {
+  const session = requireClevelOrSuperAdmin(
+    await getServerSession(),
+    'listClosedQuartersClevelAction',
+  );
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const companyId = await assertAcessoTotalAndResolveCompanyId(
+      session,
+      input.companyId,
+      client.db,
+      'listClosedQuartersClevelAction',
+    );
+    const rows = await client.db
+      .select({ mes: monthlyClosureStatus.mes })
+      .from(monthlyClosureStatus)
+      .where(
+        and(
+          eq(monthlyClosureStatus.companyId, companyId),
+          eq(monthlyClosureStatus.status, 'fechado'),
+        ),
+      )
+      .orderBy(asc(monthlyClosureStatus.mes));
+
+    const mesSet = new Set(rows.map((r) => r.mes));
+    const trimestreMap = new Map<string, number>();
+    for (const m of mesSet) {
+      const [yearStr, monthStr] = m.split('-');
+      const year = Number(yearStr);
+      const month = Number(monthStr);
+      const q = Math.ceil(month / 3);
+      const tri = `${year}-Q${q}`;
+      trimestreMap.set(tri, (trimestreMap.get(tri) ?? 0) + 1);
+    }
+
+    const closed: ClosedQuarter[] = [];
+    for (const [tri, count] of trimestreMap.entries()) {
+      if (count >= 3) {
+        const match = /^(\d{4})-Q(\d)$/.exec(tri);
+        const label = match !== null ? `${match[2]}º trimestre de ${match[1]}` : tri;
+        closed.push({ trimestre: tri, label });
+      }
+    }
+    closed.sort((a, b) => b.trimestre.localeCompare(a.trimestre));
+    return { ok: true, data: closed };
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+// -----------------------------------------------------------------------
+// 2. Listar departamentos (clevel)
+// -----------------------------------------------------------------------
+
+export async function listDepartmentsClevelAction(input: {
+  readonly companyId: number;
+}): Promise<ActionResult<string[]>> {
+  const session = requireClevelOrSuperAdmin(
+    await getServerSession(),
+    'listDepartmentsClevelAction',
+  );
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const companyId = await assertAcessoTotalAndResolveCompanyId(
+      session,
+      input.companyId,
+      client.db,
+      'listDepartmentsClevelAction',
+    );
+    const rows = await client.db
+      .selectDistinct({ departamento: employees.departamento })
+      .from(employees)
+      .where(and(eq(employees.companyId, companyId), eq(employees.status, 'ativo')))
+      .orderBy(asc(employees.departamento));
+    return { ok: true, data: rows.map((r) => r.departamento) };
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+// -----------------------------------------------------------------------
+// 3. Listar lideres ativos (clevel)
+// -----------------------------------------------------------------------
+
+export async function listLeadersClevelAction(input: {
+  readonly companyId: number;
+}): Promise<ActionResult<LeaderOption[]>> {
+  const session = requireClevelOrSuperAdmin(await getServerSession(), 'listLeadersClevelAction');
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const companyId = await assertAcessoTotalAndResolveCompanyId(
+      session,
+      input.companyId,
+      client.db,
+      'listLeadersClevelAction',
+    );
+    const rows = await client.db
+      .select({
+        id: employees.id,
+        name: employees.name,
+        departamento: employees.departamento,
+      })
+      .from(employees)
+      .where(
+        and(
+          eq(employees.companyId, companyId),
+          eq(employees.status, 'ativo'),
+          eq(employees.isLider, true),
+        ),
+      )
+      .orderBy(asc(employees.name));
+
+    const leaders: LeaderOption[] = rows.map((r) => ({
+      id: r.id,
+      tipo: 'employee' as const,
+      name: r.name,
+      departamento: r.departamento,
+    }));
+    return { ok: true, data: leaders };
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+// -----------------------------------------------------------------------
+// 4. Gerar relatorio executivo (clevel)
+// -----------------------------------------------------------------------
+
+export async function generateRelatorioExecutivoClevelAction(input: {
+  readonly companyId: number;
+  readonly trimestre: string;
+  readonly escopoTipo: NivelEscopo;
+  readonly escopoReferencia?: string;
+}): Promise<ActionResult<GenerateRelatorioExecutivoResult>> {
+  const session = requireClevelOrSuperAdmin(
+    await getServerSession(),
+    'generateRelatorioExecutivoClevelAction',
+  );
+  const token = await resolveRawToken();
+  if (token === null) {
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
+  }
+
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const companyId = await assertAcessoTotalAndResolveCompanyId(
+      session,
+      input.companyId,
+      client.db,
+      'generateRelatorioExecutivoClevelAction',
+    );
+    const caller = createExportsCaller(
+      createContextInner({
+        db: client.db,
+        rateLimiter: actionRateLimiter,
+        bearerToken: token,
+      }),
+    );
+    const result = await caller.generateRelatorioExecutivo({
+      companyId,
+      trimestre: input.trimestre,
+      escopoTipo: input.escopoTipo,
+      escopoReferencia: input.escopoReferencia,
+    });
+    return { ok: true, data: result };
+  } catch (err) {
+    if (err instanceof TRPCError) {
+      return { ok: false, message: err.message };
+    }
+    throw err;
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+// -----------------------------------------------------------------------
+// 5. Start report download token — clevel (snapshot_9box / board_deck)
+// -----------------------------------------------------------------------
+
+export async function startReportDownloadTokenClevelAction(input: {
+  readonly companyId: number;
+  readonly scope: 'snapshot_9box' | 'board_deck';
+  readonly escopoTipo: NivelEscopo;
+  readonly escopoReferencia?: string;
+}): Promise<ActionResult<{ token: string; downloadUrl: string }>> {
+  const session = requireClevelOrSuperAdmin(
+    await getServerSession(),
+    'startReportDownloadTokenClevelAction',
+  );
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const companyId = await assertAcessoTotalAndResolveCompanyId(
+      session,
+      input.companyId,
+      client.db,
+      'startReportDownloadTokenClevelAction',
+    );
+    const resourceId = deriveResourceIdCanonicoEscopo(
+      companyId,
+      input.escopoTipo,
+      input.escopoReferencia ?? null,
+    );
+    const now = new Date();
+    const token = await signPdfEphemeralToken(
+      {
+        scope: input.scope,
+        companyId,
+        resourceId,
+        userId: resolveTokenUserIdClevel(session),
+        userType: resolveTokenUserTypeClevel(session),
+      },
+      now,
+    );
+
+    const basePath =
+      input.scope === 'snapshot_9box'
+        ? '/api/reports/snapshot-9box/download'
+        : '/api/reports/board-deck/download';
+    const qsParts = [`token=${encodeURIComponent(token)}`, `escopoTipo=${input.escopoTipo}`];
+    if (input.escopoTipo !== 'empresa' && input.escopoReferencia !== undefined) {
+      qsParts.push(`escopoReferencia=${encodeURIComponent(input.escopoReferencia)}`);
+    }
+    qsParts.push('trimestre=');
+    const qs = qsParts.join('&');
+    const downloadUrl = `${basePath}?${qs}`;
+
+    return { ok: true, data: { token, downloadUrl } };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erro ao gerar token.';
+    return { ok: false, message: msg };
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+// -----------------------------------------------------------------------
+// 6. Start executive report download token — clevel
+// -----------------------------------------------------------------------
+
+export async function startExecutiveReportDownloadTokenClevelAction(input: {
+  readonly companyId: number;
+  readonly cacheId: number;
+}): Promise<ActionResult<{ token: string; downloadUrl: string }>> {
+  const session = requireClevelOrSuperAdmin(
+    await getServerSession(),
+    'startExecutiveReportDownloadTokenClevelAction',
+  );
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const companyId = await assertAcessoTotalAndResolveCompanyId(
+      session,
+      input.companyId,
+      client.db,
+      'startExecutiveReportDownloadTokenClevelAction',
+    );
+    const now = new Date();
+    const token = await signPdfEphemeralToken(
+      {
+        scope: 'executive_report',
+        companyId,
+        resourceId: input.cacheId,
+        userId: resolveTokenUserIdClevel(session),
+        userType: resolveTokenUserTypeClevel(session),
+      },
+      now,
+    );
+    const downloadUrl = `/api/reports/executive/download?token=${encodeURIComponent(token)}`;
+    return { ok: true, data: { token, downloadUrl } };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erro ao gerar token.';
+    return { ok: false, message: msg };
+  } finally {
+    await closeDbClient(client);
   }
 }

@@ -195,3 +195,50 @@ export interface RelatoriosClientActions {
     readonly cacheId: number;
   }) => Promise<ActionResult<{ token: string; downloadUrl: string }>>;
 }
+
+// -----------------------------------------------------------------------
+// ME-B9-CR3 (D-CENTRAL-CLEVEL) — tipo canonico + matriz de visibilidade
+// -----------------------------------------------------------------------
+
+/**
+ * Variant canonica de renderizacao do `RelatoriosClient`. Definida
+ * server-side no `page.tsx` conforme perfil autenticado:
+ *   - `'super_admin'`: Bruno navegando dentro de empresa via
+ *     `/super-admin/empresa/[id]/relatorios-e-exportacoes`.
+ *   - `'rh'`: RH puro / RH-Lider (Cenarios 1 e 2) via `/central-relatorios`.
+ *   - `'clevel'`: C-level `acessoTotal=true` (CU + CT) via
+ *     `/central-relatorios` (ME-B9-CR3).
+ */
+export type RelatoriosVariant = 'super_admin' | 'rh' | 'clevel';
+
+/**
+ * Matriz canonica de visibilidade de cards por variant (CAMADA_UI
+ * §12.3). Bit-exact ao documento canonico:
+ *
+ *   | Card                          | super_admin | rh | clevel |
+ *   |-------------------------------|-------------|----|--------|
+ *   | resumo_dashboard              |     yes     | yes|   no   |
+ *   | evolucao_trimestral           |     yes     | yes|   no   |
+ *   | relatorio_executivo           |     yes     | yes|   yes  |
+ *   | snapshot_9box                 |     yes     | yes|   yes  |
+ *   | board_deck                    |     yes     | no |   yes  |
+ *   | clima_engajamento             |     yes     | yes|   yes  |
+ *
+ * §12.3 (regra de subsecao vazia): se, para um perfil, nenhum card de
+ * uma subsecao for visivel, a subsecao inteira (incluindo o titulo) e
+ * ocultada. Para `clevel`, a subsecao "Planilhas operacionais" fica
+ * vazia e deve ser ocultada.
+ */
+export function isCardVisibleForVariant(cardId: CardId, variant: RelatoriosVariant): boolean {
+  if (variant === 'super_admin') {
+    return true;
+  }
+  if (variant === 'rh') {
+    return cardId !== 'board_deck';
+  }
+  // variant === 'clevel'
+  if (cardId === 'resumo_dashboard' || cardId === 'evolucao_trimestral') {
+    return false;
+  }
+  return true;
+}

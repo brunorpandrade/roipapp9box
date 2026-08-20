@@ -38,6 +38,8 @@ import {
   ICON_COLORS,
   NIVEL_OPTIONS,
   type CardId,
+  type RelatoriosVariant,
+  isCardVisibleForVariant,
   type ClosedQuarter,
   type LeaderOption,
   type NivelEscopo,
@@ -56,7 +58,7 @@ import {
 interface Props {
   readonly companyId: number;
   readonly companyName: string;
-  readonly variant: 'super_admin' | 'rh';
+  readonly variant: RelatoriosVariant;
   readonly actions: RelatoriosClientActions;
 }
 
@@ -479,31 +481,41 @@ export function RelatoriosClient(props: Props): JSX.Element {
         </div>
       )}
 
-      {/* Subseção: Planilhas operacionais */}
-      <SectionTitle title="Planilhas operacionais" />
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 16,
-          marginBottom: 24,
-        }}
-      >
-        {CARD_DEFS.filter((c) => c.section === 'planilhas').map((card) => (
-          <ExportCard
-            key={card.id}
-            card={card}
-            state={getCardState(card.id)}
-            quarters={quarters}
-            departments={departments}
-            leaders={leaders}
-            hasQuarters={hasQuarters}
-            onStateChange={(patch) => updateCardState(card.id, patch)}
-            onDownload={() => handleDownload(card.id)}
-            onGenerate={undefined}
-          />
-        ))}
-      </div>
+      {/* Subsecao: Planilhas operacionais — CAMADA_UI §12.3 regra de
+          subsecao vazia: para variant='clevel' nenhum card fica visivel,
+          entao subsecao inteira (incluindo titulo) e ocultada. */}
+      {CARD_DEFS.filter((c) => c.section === 'planilhas').some((c) =>
+        isCardVisibleForVariant(c.id, variant),
+      ) && (
+        <>
+          <SectionTitle title="Planilhas operacionais" />
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 16,
+              marginBottom: 24,
+            }}
+          >
+            {CARD_DEFS.filter((c) => c.section === 'planilhas')
+              .filter((c) => isCardVisibleForVariant(c.id, variant))
+              .map((card) => (
+                <ExportCard
+                  key={card.id}
+                  card={card}
+                  state={getCardState(card.id)}
+                  quarters={quarters}
+                  departments={departments}
+                  leaders={leaders}
+                  hasQuarters={hasQuarters}
+                  onStateChange={(patch) => updateCardState(card.id, patch)}
+                  onDownload={() => handleDownload(card.id)}
+                  onGenerate={undefined}
+                />
+              ))}
+          </div>
+        </>
+      )}
 
       {/* Subsecao: Relatorios executivos */}
       <SectionTitle title="Relatórios executivos" />
@@ -516,10 +528,10 @@ export function RelatoriosClient(props: Props): JSX.Element {
         }}
       >
         {CARD_DEFS.filter((c) => c.section === 'relatorios')
-          // D-CR-3: `getBoardDeck` e `roleProcedure(['super_admin','clevel'])`
-          // — RH nao tem permissao. Esconde o card no variant='rh' em vez
-          // de renderizar botao que dispararia FORBIDDEN no backend.
-          .filter((c) => !(variant === 'rh' && c.id === 'board_deck'))
+          // ME-B9-CR3 (D-CENTRAL-CLEVEL): substitui filtro ad-hoc D-CR-3
+          // pela matriz canonica isCardVisibleForVariant (CAMADA_UI §12.3).
+          // Bit-exact: RH esconde board_deck; clevel mantem board_deck.
+          .filter((c) => isCardVisibleForVariant(c.id, variant))
           .map((card) => (
             <ExportCard
               key={card.id}

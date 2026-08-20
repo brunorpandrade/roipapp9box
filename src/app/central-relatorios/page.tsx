@@ -42,17 +42,23 @@ import type { JSX } from 'react';
 import { RelatoriosClient } from '../../components/central-relatorios/RelatoriosClient';
 import { Layout } from '../../components/shell/Layout';
 import { closeDbClient, createDbClient } from '../../db/client';
-import { employeeLeaderHistory, employees } from '../../db/schema';
+import { cLevelMembers, employeeLeaderHistory, employees } from '../../db/schema';
 import { resolveMenuItems } from '../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { getServerSession } from '../../server/session/serverSession';
 
 import {
+  generateRelatorioExecutivoClevelAction,
   generateRelatorioExecutivoRHAction,
+  listClosedQuartersClevelAction,
   listClosedQuartersRHAction,
+  listDepartmentsClevelAction,
   listDepartmentsRHAction,
+  listLeadersClevelAction,
   listLeadersRHAction,
+  startExecutiveReportDownloadTokenClevelAction,
   startExecutiveReportDownloadTokenRHAction,
+  startReportDownloadTokenClevelAction,
   startReportDownloadTokenRHAction,
 } from './actions';
 import { resolveDatabaseUrl } from './internals';
@@ -100,12 +106,46 @@ async function resolveMenuFlagsForRH(
 }
 
 /**
- * Flags default canonicas para C-level — nao consumidas na rota RH
- * (matrix.ts §9.15 nega C-level puro nesta v1 do B9-CR). Guard defensivo
- * apenas para satisfazer contrato de `resolveProfileKey`.
+ * Flags default canonicas para C-level — usadas apenas quando o guard
+ * resolve para branch RH/RH-Lider (nao ha C-level na sessao para
+ * carregar). Bit-exact ao padrao ME-084.
  */
 function defaultCLevelFlags(): { readonly cLevelCount: number; readonly acessoTotal: boolean } {
   return { cLevelCount: 0, acessoTotal: false };
+}
+
+/**
+ * ME-B9-CR3 (D-CENTRAL-CLEVEL) — resolve flags reais de C-level (§12.2:
+ * `acessoTotal=true` obrigatorio; CF nega). Bit-exact ao padrao usado em
+ * `/painel-clevel/page.tsx`.
+ */
+async function resolveCLevelFlags(
+  db: ReturnType<typeof createDbClient>['db'],
+  userId: number,
+  companyId: number,
+): Promise<{
+  readonly acessoTotal: boolean;
+  readonly cLevelCount: number;
+} | null> {
+  const memberRows = await db
+    .select({ acessoTotal: cLevelMembers.acessoTotal })
+    .from(cLevelMembers)
+    .where(eq(cLevelMembers.id, userId))
+    .limit(1);
+  const member = memberRows[0];
+  if (member === undefined) {
+    return null;
+  }
+  const countRows = await db
+    .select({ id: cLevelMembers.id })
+    .from(cLevelMembers)
+    .where(and(eq(cLevelMembers.companyId, companyId), eq(cLevelMembers.status, 'ativo')));
+  return {
+    // Coluna canonica com `.default(true)`; Drizzle infere `boolean | null`.
+    // Fallback bit-exact ao pattern usado em `/painel-clevel/page.tsx`.
+    acessoTotal: member.acessoTotal ?? true,
+    cLevelCount: countRows.length,
+  };
 }
 
 export default async function CentralRelatoriosRHPage(): Promise<JSX.Element> {
@@ -120,14 +160,66 @@ export default async function CentralRelatoriosRHPage(): Promise<JSX.Element> {
   if (session.kind === 'super_admin') {
     redirect('/super-admin');
   }
-  // Guard defense-in-depth ao middleware `matrix.ts` §9.15 (matriz
-  // canonica linha 403 — super_admin/rh/rh_lider allow; clevel/lider deny).
-  if (session.role !== 'rh' && session.role !== 'rh_lider') {
+  // Guard defense-in-depth ao middleware `matrix.ts` §10.7 (matriz
+  // canonica ampliada pela ME-B9-CR3 — super_admin/rh/rh_lider/clevel
+  // allow; lider deny). C-level requer `acessoTotal=true` (§12.2 CAMADA_UI
+  // — CF nao acessa) — filtro delegado ao guard interno abaixo.
+  if (session.role !== 'rh' && session.role !== 'rh_lider' && session.role !== 'clevel') {
     redirect('/access-denied?rota=/central-relatorios');
   }
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    // Branch canonico ME-B9-CR3: role='clevel' segue caminho dedicado
+    // (§12.2 CAMADA_UI: exige acessoTotal=true; CF cai em access-denied).
+    if (session.role === 'clevel') {
+      const cFlags = await resolveCLevelFlags(client.db, session.userId, session.companyId);
+      if (cFlags === null || !cFlags.acessoTotal) {
+        redirect('/access-denied?rota=/central-relatorios');
+      }
+      const menuFlagsClevel = { isRH: false, isLider: false, hasDescendingChain: false };
+      const profileKeyClevel = resolveProfileKey({
+        session,
+        isRH: menuFlagsClevel.isRH,
+        isLider: menuFlagsClevel.isLider,
+        acessoTotal: cFlags.acessoTotal,
+        hasDescendingChain: menuFlagsClevel.hasDescendingChain,
+        cLevelCount: cFlags.cLevelCount,
+        isSuperAdminInCompany: false,
+      });
+      const menuItemsClevel = resolveMenuItems(profileKeyClevel, false);
+      if (menuItemsClevel === null) {
+        throw new Error(`Menu canonico ausente para ${profileKeyClevel} — inconsistencia §3`);
+      }
+      return (
+        <Layout
+          menuItems={menuItemsClevel}
+          header={{
+            leftMode: 'in_company',
+            companyDisplayName: session.companyDisplayName,
+            companyLogoUrl: session.companyLogoUrl ?? undefined,
+            user: { displayName: session.displayName },
+            showNotificationBell: false,
+          }}
+        >
+          <RelatoriosClient
+            companyId={session.companyId}
+            companyName={session.companyDisplayName}
+            variant="clevel"
+            actions={{
+              listClosedQuarters: listClosedQuartersClevelAction,
+              listDepartments: listDepartmentsClevelAction,
+              listLeaders: listLeadersClevelAction,
+              generateRelatorioExecutivo: generateRelatorioExecutivoClevelAction,
+              startReportDownloadToken: startReportDownloadTokenClevelAction,
+              startExecutiveReportDownloadToken: startExecutiveReportDownloadTokenClevelAction,
+            }}
+          />
+        </Layout>
+      );
+    }
+
+    // Branch canonico RH puro / RH-Lider (bit-exact ao pre-CR3).
     const menuFlags = await resolveMenuFlagsForRH(client.db, session.userId);
     const cFlags = defaultCLevelFlags();
     const profileKey = resolveProfileKey({

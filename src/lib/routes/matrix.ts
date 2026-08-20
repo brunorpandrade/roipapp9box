@@ -399,6 +399,15 @@ export const ROUTE_MATRIX: readonly RouteRule[] = [
   },
 
   // §10.7 Exportaveis ----------------------------------------------------
+  //
+  // ME-B9-CR3 (D-CENTRAL-CLEVEL): amplia `clevel: 'allow'` alinhando
+  // canonicamente a CAMADA_UI §12.1/§12.2/§12.3 + §3.8 (menu clevel_full
+  // ja inclui "Relatorios e exportacoes"). Filtro `acessoTotal=true`
+  // (§12.2: CF nao acessa) fica delegado ao guard do page.tsx via query
+  // a `cLevelMembers`. Matrix libera role bruto — page filtra por
+  // negocio (defense-in-depth §2.4). Racional canonico: middleware
+  // (edge runtime) nao faz I/O ao banco; `acessoTotal` e resolvido
+  // server-side no page e nas actions.
   {
     pattern: '/central-relatorios',
     canonicalRef: '§10.7 + §9.15',
@@ -406,7 +415,7 @@ export const ROUTE_MATRIX: readonly RouteRule[] = [
       super_admin: 'allow',
       rh: 'allow',
       rh_lider: 'allow',
-      clevel: 'deny',
+      clevel: 'allow',
       lider: 'deny',
     },
   },

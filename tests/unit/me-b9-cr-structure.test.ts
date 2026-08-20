@@ -88,7 +88,9 @@ describe('ME-B9-CR — componente compartilhado extraido (L125)', () => {
 
   it('Client recebe variant + actions via props (D-CR-3 + D-CR-5)', () => {
     const src = readSrc(CLIENT);
-    expect(src).toContain("readonly variant: 'super_admin' | 'rh'");
+    // ME-B9-CR3 ampliou a variant para o tipo canonico RelatoriosVariant
+    // (super_admin | rh | clevel). Literal do union inline foi substituido.
+    expect(src).toContain('readonly variant: RelatoriosVariant');
     expect(src).toContain('readonly actions: RelatoriosClientActions');
     expect(src).toContain('const { companyId, variant, actions } = props');
   });
@@ -108,7 +110,10 @@ describe('ME-B9-CR — componente compartilhado extraido (L125)', () => {
 
   it('Client esconde board_deck em variant="rh" (D-CR-3)', () => {
     const src = readSrc(CLIENT);
-    expect(src).toContain("!(variant === 'rh' && c.id === 'board_deck')");
+    // ME-B9-CR3 substituiu o filtro ad-hoc pela matriz canonica
+    // isCardVisibleForVariant (CAMADA_UI §12.3). Bit-exact: RH esconde
+    // board_deck; clevel mostra board_deck; super_admin mostra tudo.
+    expect(src).toContain('isCardVisibleForVariant(c.id, variant)');
   });
 });
 

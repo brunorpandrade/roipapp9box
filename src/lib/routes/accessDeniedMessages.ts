@@ -196,12 +196,14 @@ export const MSG_SUPER_ADMIN_LOGS_ACESSO_INDIVIDUAL: AccessDeniedMessage = {
 
 /**
  * §9.15 `/central-relatorios` (Central de Relatorios e Exportacoes —
- * Fase Exportaveis). Perfis que recebem: C-level, Lider.
+ * Fase Exportaveis). Perfis que recebem: C-level `acessoTotal=false`
+ * (CF), Lider. RH + RH-Lider + Super Admin + C-level `acessoTotal=true`
+ * (CU + CT) acessam canonicamente (§10.7 ampliada pela ME-B9-CR3).
  */
 export const MSG_CENTRAL_RELATORIOS: AccessDeniedMessage = {
   key: '/central-relatorios',
   message:
-    'Você não tem permissão para acessar Relatórios e exportações. Este espaço é restrito ao RH e ao Super Admin. Se acredita que isso é um erro, contate o Super Admin.',
+    'Você não tem permissão para acessar Relatórios e exportações. Este espaço é restrito ao RH, ao C-level com acesso total e ao Super Admin. Se acredita que isso é um erro, contate o Super Admin.',
   canonicalRef: 'DOC 02 §9.15',
 };
 

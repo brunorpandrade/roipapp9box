@@ -135,8 +135,10 @@ describe('accessDeniedMessages — literais canonicas (ME-023)', () => {
   });
 
   it('§9.15 /central-relatorios', () => {
+    // ME-B9-CR3 (D-CENTRAL-CLEVEL): mensagem canonica reformulada para
+    // citar C-level com acesso total (CU + CT canonicamente autorizados).
     expect(MSG_CENTRAL_RELATORIOS.message).toBe(
-      'Você não tem permissão para acessar Relatórios e exportações. Este espaço é restrito ao RH e ao Super Admin. Se acredita que isso é um erro, contate o Super Admin.',
+      'Você não tem permissão para acessar Relatórios e exportações. Este espaço é restrito ao RH, ao C-level com acesso total e ao Super Admin. Se acredita que isso é um erro, contate o Super Admin.',
     );
   });
 
