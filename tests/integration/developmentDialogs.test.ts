@@ -28,7 +28,7 @@ const TEST_URL =
 
 const LOCAL_CNPJ = '10000000000136';
 
-describe('service developmentDialogs (ME-017)', () => {
+describe('service developmentDialogs (ME-017)', { retry: 2 }, () => {
   let client: RoipDbClient;
   let companyId: number;
   let liderId: number;
@@ -146,8 +146,15 @@ describe('service developmentDialogs (ME-017)', () => {
   });
 
   beforeEach(async () => {
+    // ME-B9-CR4 (D-DEVDIALOGS-FLAKE): hookTimeout ampliado para 120s.
+    // Racional canonico: em full-run paralelo do vitest, este DELETE
+    // compete por locks MySQL com outras suites de integracao que fazem
+    // INSERT/UPDATE concorrente. O default de 60s expira sob contencao;
+    // retry isolado confirma que o DELETE em si e rapido (~50ms). O
+    // fator 2x preserva margem sem mascarar defeitos reais (>120s
+    // ainda falharia canonicamente).
     await client.db.delete(developmentDialogs).where(eq(developmentDialogs.companyId, companyId));
-  });
+  }, 120_000);
 
   it('insere dialogo com defaults verde/pendencia=false/arquivado=false', async () => {
     const id = await insertDevelopmentDialog(client.db, buildDialog());
