@@ -124,7 +124,7 @@ export async function GET(req: Request): Promise<NextResponse> {
   if (!identity) {
     return NextResponse.json({ error: 'nao_autenticado' }, { status: 401 });
   }
-  const rolesPermitidos: VerifiedIdentity['role'][] = ['super_admin', 'rh', 'clevel'];
+  const rolesPermitidos: VerifiedIdentity['role'][] = ['super_admin', 'rh', 'rh_lider', 'clevel'];
   if (!rolesPermitidos.includes(identity.role)) {
     return NextResponse.json({ error: 'perfil_sem_permissao' }, { status: 403 });
   }

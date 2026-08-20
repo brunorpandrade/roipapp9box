@@ -332,7 +332,7 @@ export function createExportsRouter(deps: ExportsRouterDeps = {}) {
     // ==============================================================
     // §13.3 — Resumo dashboard (xlsx)
     // ==============================================================
-    getResumoDashboard: roleProcedure(['super_admin', 'rh'])
+    getResumoDashboard: roleProcedure(['super_admin', 'rh', 'rh_lider'])
       .input(commonScopedInput)
       .mutation(async ({ ctx, input }): Promise<{ filename: string; contentBase64: string }> => {
         assertCompanyScopeExports(ctx.user, input.companyId);
@@ -355,7 +355,7 @@ export function createExportsRouter(deps: ExportsRouterDeps = {}) {
     // ==============================================================
     // §13.4 — Evolucao trimestral (xlsx)
     // ==============================================================
-    getEvolucaoTrimestral: roleProcedure(['super_admin', 'rh'])
+    getEvolucaoTrimestral: roleProcedure(['super_admin', 'rh', 'rh_lider'])
       .input(evolucaoTrimestralInput)
       .mutation(async ({ ctx, input }): Promise<{ filename: string; contentBase64: string }> => {
         assertCompanyScopeExports(ctx.user, input.companyId);
@@ -380,7 +380,7 @@ export function createExportsRouter(deps: ExportsRouterDeps = {}) {
     // ==============================================================
     // §13.6 — Clima e engajamento (PDF sem token)
     // ==============================================================
-    getClimaEngajamento: roleProcedure(['super_admin', 'rh', 'clevel'])
+    getClimaEngajamento: roleProcedure(['super_admin', 'rh', 'rh_lider', 'clevel'])
       .input(z.object({ companyId: z.number().int().positive() }))
       .mutation(
         async ({
@@ -426,7 +426,7 @@ export function createExportsRouter(deps: ExportsRouterDeps = {}) {
     // ==============================================================
     // §13.5 — Relatorio executivo trimestral (PDF com IA)
     // ==============================================================
-    generateRelatorioExecutivo: roleProcedure(['super_admin', 'rh', 'clevel'])
+    generateRelatorioExecutivo: roleProcedure(['super_admin', 'rh', 'rh_lider', 'clevel'])
       .input(commonScopedInput)
       .mutation(
         async ({
@@ -478,7 +478,7 @@ export function createExportsRouter(deps: ExportsRouterDeps = {}) {
     // ==============================================================
     // §13.7 — Snapshot 9-Box (PDF + token efemero)
     // ==============================================================
-    getSnapshot9Box: roleProcedure(['super_admin', 'rh', 'clevel'])
+    getSnapshot9Box: roleProcedure(['super_admin', 'rh', 'rh_lider', 'clevel'])
       .input(commonScopedInput)
       .mutation(async ({ ctx, input }): Promise<{ token: string; filename: string }> => {
         assertCompanyScopeExports(ctx.user, input.companyId);
