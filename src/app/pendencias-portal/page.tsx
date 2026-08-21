@@ -16,15 +16,14 @@
 
 import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
-import { and, eq, isNull } from 'drizzle-orm';
 
 import { Layout } from '../../components/shell/Layout';
 import { closeDbClient, createDbClient } from '../../db/client';
-import { employeeLeaderHistory, employees } from '../../db/schema';
 import { COLORS } from '../../lib/design-tokens/colors';
 import { resolveMenuItems } from '../../lib/menu/menuConfig';
 import { loadPendenciasPage } from '../../lib/pendencias/pendenciasEngine';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
+import { loadRhSessionFlags } from '../../lib/session/rhSessionFlags';
 import { getServerSession } from '../../server/session/serverSession';
 
 import { PendenciasClient } from './PendenciasClient';
@@ -36,48 +35,6 @@ function resolveDatabaseUrl(): string {
     throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
   }
   return url;
-}
-
-/**
- * Resolve flags canonicas de perfil para o menu (ME-056 pattern). Para
- * `/pendencias-portal` o unico interesse do menu e distinguir RH puro
- * (§3.5) de RH-Lider (§3.6 ou §3.7 conforme hasDescendingChain).
- */
-async function resolveMenuFlagsForRH(
-  db: ReturnType<typeof createDbClient>['db'],
-  userId: number,
-): Promise<{
-  readonly isRH: boolean;
-  readonly isLider: boolean;
-  readonly hasDescendingChain: boolean;
-}> {
-  const rows = await db
-    .select({ isRH: employees.isRH, isLider: employees.isLider })
-    .from(employees)
-    .where(eq(employees.id, userId))
-    .limit(1);
-  const emp = rows[0];
-  const isRH = emp?.isRH ?? false;
-  const isLider = emp?.isLider ?? false;
-
-  // hasDescendingChain: existe pelo menos 1 liderado direto ativo que
-  // tambem e lider?
-  if (!isLider) {
-    return { isRH, isLider, hasDescendingChain: false };
-  }
-  const chainRows = await db
-    .select({ id: employees.id })
-    .from(employeeLeaderHistory)
-    .innerJoin(employees, eq(employees.id, employeeLeaderHistory.employeeId))
-    .where(
-      and(
-        eq(employeeLeaderHistory.liderId, userId),
-        isNull(employeeLeaderHistory.dataFim),
-        eq(employees.isLider, true),
-      ),
-    )
-    .limit(1);
-  return { isRH, isLider, hasDescendingChain: chainRows.length > 0 };
 }
 
 /**
@@ -117,7 +74,16 @@ export default async function PendenciasPortalPage(props: PageProps): Promise<JS
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    const menuFlags = await resolveMenuFlagsForRH(client.db, session.userId);
+    // ME-086 D-086-10: helper canonico consolidado — inclui
+    // `isResponsavelFinanceiro` e filtra `employees.status='ativo'` na
+    // cadeia (bugs latentes das 6 copias antigas de
+    // `resolveMenuFlagsForRH` corrigidos).
+    const menuFlags = await loadRhSessionFlags(client.db, session.userId);
+    if (menuFlags === null) {
+      // Registro deletado entre emissao do JWT e verificacao — sessao
+      // invalida (padrao canonico bit-exact ao painel-rh).
+      redirect('/');
+    }
     const cFlags = defaultCLevelFlags();
     const profileKey = resolveProfileKey({
       session,
@@ -128,7 +94,7 @@ export default async function PendenciasPortalPage(props: PageProps): Promise<JS
       cLevelCount: cFlags.cLevelCount,
       isSuperAdminInCompany: false,
     });
-    const menuItems = resolveMenuItems(profileKey, false);
+    const menuItems = resolveMenuItems(profileKey, menuFlags.isResponsavelFinanceiro);
     if (menuItems === null) {
       throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
     }

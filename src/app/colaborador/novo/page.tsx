@@ -24,15 +24,14 @@
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
 import { redirect } from 'next/navigation';
-import { and, eq, isNull } from 'drizzle-orm';
 import type { JSX } from 'react';
 
 import { Layout } from '../../../components/shell/Layout';
 import { closeDbClient, createDbClient } from '../../../db/client';
-import { employeeLeaderHistory, employees } from '../../../db/schema';
 import { COLORS } from '../../../lib/design-tokens/colors';
 import { resolveMenuItems } from '../../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../../lib/session/resolveProfileKey';
+import { loadRhSessionFlags } from '../../../lib/session/rhSessionFlags';
 import { getServerSession } from '../../../server/session/serverSession';
 
 import { ColaboradorNovoClient } from './_client';
@@ -44,48 +43,6 @@ import {
   pesquisarLiderCandidatosRHAction,
 } from './actions';
 import { resolveDatabaseUrl } from '../../todos-os-colaboradores/internals';
-
-/**
- * §5.4 / §5.5 — resolve flags canonicas de perfil para o menu §3.3-§3.5.
- * Bit-exact ao helper reutilizado em `/todos-os-colaboradores/page.tsx`
- * e `/pendencias-portal/page.tsx`. Extracao para helper compartilhado
- * ficara para bloco futuro (padrao S366 preserva localizacao com page
- * enquanto <=3 rotas consomem).
- */
-async function resolveMenuFlagsForRH(
-  db: ReturnType<typeof createDbClient>['db'],
-  userId: number,
-): Promise<{
-  readonly isRH: boolean;
-  readonly isLider: boolean;
-  readonly hasDescendingChain: boolean;
-}> {
-  const rows = await db
-    .select({ isRH: employees.isRH, isLider: employees.isLider })
-    .from(employees)
-    .where(eq(employees.id, userId))
-    .limit(1);
-  const emp = rows[0];
-  const isRH = emp?.isRH ?? false;
-  const isLider = emp?.isLider ?? false;
-
-  if (!isLider) {
-    return { isRH, isLider, hasDescendingChain: false };
-  }
-  const chainRows = await db
-    .select({ id: employees.id })
-    .from(employeeLeaderHistory)
-    .innerJoin(employees, eq(employees.id, employeeLeaderHistory.employeeId))
-    .where(
-      and(
-        eq(employeeLeaderHistory.liderId, userId),
-        isNull(employeeLeaderHistory.dataFim),
-        eq(employees.isLider, true),
-      ),
-    )
-    .limit(1);
-  return { isRH, isLider, hasDescendingChain: chainRows.length > 0 };
-}
 
 export default async function ColaboradorNovoRHPage(): Promise<JSX.Element> {
   const session = await getServerSession();
@@ -102,7 +59,11 @@ export default async function ColaboradorNovoRHPage(): Promise<JSX.Element> {
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    const menuFlags = await resolveMenuFlagsForRH(client.db, session.userId);
+    // ME-086 D-086-10: helper canonico consolidado.
+    const menuFlags = await loadRhSessionFlags(client.db, session.userId);
+    if (menuFlags === null) {
+      redirect('/');
+    }
     const profileKey = resolveProfileKey({
       session,
       isRH: menuFlags.isRH,
@@ -112,7 +73,7 @@ export default async function ColaboradorNovoRHPage(): Promise<JSX.Element> {
       cLevelCount: 0,
       isSuperAdminInCompany: false,
     });
-    const menuItems = resolveMenuItems(profileKey, false);
+    const menuItems = resolveMenuItems(profileKey, menuFlags.isResponsavelFinanceiro);
     if (menuItems === null) {
       throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
     }

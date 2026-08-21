@@ -39,9 +39,9 @@ import {
   loadCompanyForRhPanel,
   loadMeuPortalData,
   loadMinhaEquipeData,
-  loadRhSessionFlags,
 } from '../../src/app/painel-rh/internals';
 import { loadMesAtualClosureStatus } from '../../src/app/super-admin/empresa/[id]/internals';
+import { loadRhSessionFlags } from '../../src/lib/session/rhSessionFlags';
 
 const TEST_URL =
   process.env.DATABASE_URL_TEST ?? 'mysql://root:roip_local_root@127.0.0.1:3306/roip_test';

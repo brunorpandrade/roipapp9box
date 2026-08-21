@@ -26,12 +26,9 @@ import { closeDbClient, createDbClient } from '../../db/client';
 import { COLORS } from '../../lib/design-tokens/colors';
 import { resolveMenuItems } from '../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
+import { loadRhSessionFlags } from '../../lib/session/rhSessionFlags';
 import { getServerSession } from '../../server/session/serverSession';
-import {
-  loadCompanyForRhPanel,
-  loadRhSessionFlags,
-  resolveDatabaseUrl,
-} from '../painel-rh/internals';
+import { loadCompanyForRhPanel, resolveDatabaseUrl } from '../painel-rh/internals';
 
 export default async function CadeiaIndiretaPage(): Promise<JSX.Element> {
   const session = await getServerSession();

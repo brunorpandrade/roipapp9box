@@ -43,13 +43,14 @@ import {
   loadOnboardingSummaryCounts,
 } from '../super-admin/empresa/[id]/internals';
 
+import { loadRhSessionFlags } from '../../lib/session/rhSessionFlags';
+
 import { PainelRHClient } from './PainelRHClient';
 import {
   loadCadeiaIndiretaData,
   loadCompanyForRhPanel,
   loadMeuPortalData,
   loadMinhaEquipeData,
-  loadRhSessionFlags,
   resolveDatabaseUrl,
 } from './internals';
 

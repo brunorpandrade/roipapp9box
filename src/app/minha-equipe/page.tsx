@@ -75,7 +75,9 @@ import { COLORS } from '../../lib/design-tokens/colors';
 import { resolveMenuItems } from '../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { getServerSession } from '../../server/session/serverSession';
-import { loadCompanyForRhPanel, loadRhSessionFlags } from '../painel-rh/internals';
+import { loadRhSessionFlags } from '../../lib/session/rhSessionFlags';
+
+import { loadCompanyForRhPanel } from '../painel-rh/internals';
 
 import { TodosColaboradoresClient } from './_client';
 

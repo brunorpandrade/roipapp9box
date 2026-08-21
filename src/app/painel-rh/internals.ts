@@ -30,7 +30,6 @@
 //
 // **RV-13 canonica.** Todo export tem consumidor real:
 // - `resolveDatabaseUrl` → chamado por `page.tsx` (default export).
-// - `loadRhSessionFlags` → chamado por `page.tsx`.
 // - `loadCompanyForRhPanel` → chamado por `page.tsx`.
 // - `loadPainelRhVisaoGeral` → chamado por `page.tsx`.
 // - `loadMinhaEquipeData` → chamado por `page.tsx`.
@@ -38,6 +37,10 @@
 // - `loadMeuPortalData` → chamado por `page.tsx`.
 // - Tipos exportados consumidos por `PainelRHClient.tsx` e testes
 //   `me083-painel-rh-loaders.test.ts`.
+//
+// ME-086 D-086-10: `RhSessionFlags` + `loadRhSessionFlags` movidos
+// para `src/lib/session/rhSessionFlags.ts` (helper canonico unico).
+// `page.tsx` consome direto do lib compartilhado.
 //
 // **RV-12 canonica.** Zero SQL cru. Toda persistencia via API tipada
 // do Drizzle.
@@ -48,22 +51,6 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../db/client';
 import { companies, employees, employeeLeaderHistory } from '../../db/schema';
-
-// -----------------------------------------------------------------------
-// Tipos canonicos
-// -----------------------------------------------------------------------
-
-/**
- * Flags canonicas resolvidas do titular RH autenticado. Consumidas pelo
- * `page.tsx` para calcular `ProfileKey` via `resolveProfileKey`, filtrar
- * secoes 2/3 do painel e passar RF condicional ao menu.
- */
-export interface RhSessionFlags {
-  readonly isRH: boolean;
-  readonly isLider: boolean;
-  readonly isResponsavelFinanceiro: boolean;
-  readonly hasDescendingChain: boolean;
-}
 
 /**
  * Dados canonicos do cabecalho do painel: logo + nome fantasia da
@@ -162,55 +149,6 @@ export function resolveDatabaseUrl(): string {
 // -----------------------------------------------------------------------
 // Loaders canonicos server-side (Drizzle tipado — RV-12)
 // -----------------------------------------------------------------------
-
-/**
- * Carrega canonicamente as 4 flags de perfil do titular RH autenticado.
- * Retorna `null` quando o registro nao existe (registro deletado entre
- * emissao do JWT e verificacao — sessao invalida; consumidor redireciona
- * ao login).
- *
- * `hasDescendingChain`: TRUE quando existe ao menos 1 liderado direto
- * ativo (via `employeeLeaderHistory` com `dataFim IS NULL`) que tambem
- * e lider (`employees.isLider = true` AND `status = 'ativo'`). Regra
- * canonica de RH-Lider Cenario 2 §5.5.
- */
-export async function loadRhSessionFlags(
-  db: RoipDatabase,
-  userId: number,
-): Promise<RhSessionFlags | null> {
-  const rows = await db
-    .select({
-      isRH: employees.isRH,
-      isLider: employees.isLider,
-      isResponsavelFinanceiro: employees.isResponsavelFinanceiro,
-    })
-    .from(employees)
-    .where(eq(employees.id, userId))
-    .limit(1);
-  const row = rows[0];
-  if (row === undefined) {
-    return null;
-  }
-  const chainRows = await db
-    .select({ id: employees.id })
-    .from(employeeLeaderHistory)
-    .innerJoin(employees, eq(employees.id, employeeLeaderHistory.employeeId))
-    .where(
-      and(
-        eq(employeeLeaderHistory.liderId, userId),
-        isNull(employeeLeaderHistory.dataFim),
-        eq(employees.isLider, true),
-        eq(employees.status, 'ativo'),
-      ),
-    )
-    .limit(1);
-  return {
-    isRH: row.isRH === true,
-    isLider: row.isLider === true,
-    isResponsavelFinanceiro: row.isResponsavelFinanceiro === true,
-    hasDescendingChain: chainRows.length > 0,
-  };
-}
 
 /**
  * Carrega dados canonicos da empresa do RH autenticado para o cabecalho
