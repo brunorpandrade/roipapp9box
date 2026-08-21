@@ -1,37 +1,45 @@
-// ROIP APP 9BOX — client component canônico da rota Bruno
-// `/super-admin/empresa/[id]/dados-mensais` (§14.13, ME-079a).
-//
-// Componentiza canonicamente:
-// - 2 abas horizontais (Dados do RH + Dados dos líderes).
-// - Navegação por mês `<< [Mês/Ano] >>` + badge status.
-// - Aba RH: card diasUteis + tabela de colaboradores editável
-//   (Nome/CPF/Cargo/Líder/Custo/Faltas) + barra de salvamento.
-// - Aba Líderes: lista de líderes com status de preenchimento.
-// - Para Bruno: sempre editável em meses abertos/desbloqueados;
-//   botão [Desbloquear mês] para meses fechados (§14.17);
-//   nunca renderiza [Solicitar desbloqueio] (§14.13).
-//
-// **RV-13.** Imports de internals.ts + actions consumidos aqui.
-// **RV-14.** Um statement por linha, largura máxima 100 colunas.
-
 'use client';
+
+// ROIP APP 9BOX — client component canonico compartilhado da rota
+// `/dados-mensais` (RH) e `/super-admin/empresa/[id]/dados-mensais`
+// (Bruno). Extracao canonica bit-exact do original super-admin
+// (ME-079a, 1052 linhas) com prop `variant` + `actions` injetadas
+// (D-086b-2 B aprovada — padrao bit-exact `RelatoriosClient` ME-B9-CR).
+//
+// Origem canonica:
+// - CAMADA_UI §14.13 (dados mensais RH — abas + navegacao por mes +
+//   comportamento por status + botao `[Solicitar desbloqueio]` D051/
+//   D052/D053).
+// - CAMADA_UI §14.16 (modal integral).
+// - CAMADA_UI §14.17 (botao `[Desbloquear mes]` exclusivo Bruno).
+// - CAMADA_AUTH §10.4 (matriz).
+// - CAMADA_NEGOCIO §11.
+//
+// Variantes canonicas bit-exact (D-086b-2 B):
+//   - `variant='super_admin'`: Bruno. Botao `[Desbloquear mes]` visivel
+//     em meses fechados; NUNCA renderiza `[Solicitar desbloqueio]`.
+//     Aba Lideres editavel via `saveMonthlyLeaderData` (nao implementada
+//     ainda neste componente — MASTER §3.5 canoniza status-only visao).
+//   - `variant='rh'`: RH puro / RH-Lider. NUNCA renderiza `[Desbloquear
+//     mes]`; renderiza `[Solicitar desbloqueio]` conforme comportamento
+//     canonico D051/D052/D053 (§14.13). Aba Lideres READ-ONLY (D-086b-5
+//     A aprovada — status-only). Modal `[Solicitar desbloqueio]` §14.16
+//     integral aberto ao clicar.
+//
+// **RV-13.** Imports consumidos:
+//   - Types e helpers de `./internals`.
+//   - `ModalSolicitarDesbloqueio` de `./ModalSolicitarDesbloqueio`.
+//   - Actions via prop.
+//
+// **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
 
-import { COLORS } from '../../../../../lib/design-tokens/colors';
-import type {
-  MonthlyInputFormRHRow,
-  LeaderStatusRow,
-} from '../../../../../server/routers/monthlyData';
+import { COLORS } from '../../lib/design-tokens/colors';
+import type { MonthlyInputFormRHRow, LeaderStatusRow } from '../../server/routers/monthlyData';
 
-import {
-  getClosureStatusAction,
-  getLeadersStatusAction,
-  loadMonthlyFormAction,
-  saveMonthlyRHDataAction,
-  unlockMonthAction,
-} from './actions';
+import { ModalSolicitarDesbloqueio } from './ModalSolicitarDesbloqueio';
 import {
   DADOS_MENSAIS_TABS,
   formatMesLabel,
@@ -40,26 +48,13 @@ import {
   STATUS_COLORS,
   STATUS_LABELS,
   TAB_LABELS,
+  type DadosMensaisClientProps,
   type DadosMensaisTab,
   type StatusMes,
 } from './internals';
 
 // -----------------------------------------------------------------------
-// Props
-// -----------------------------------------------------------------------
-
-interface Props {
-  readonly companyId: number;
-  readonly companyName: string;
-  readonly initialMes: string;
-  readonly initialStatus: string;
-  // ME-080a — aba inicial vinda do server component (parseTabParam do
-  // `?tab=` da URL). Default `rh` quando ausente ou inválido.
-  readonly initialTab: DadosMensaisTab;
-}
-
-// -----------------------------------------------------------------------
-// Estilos canônicos bit-exact (mockup dados_mensais_rh_v2.html)
+// Estilos canonicos bit-exact (mockup dados_mensais_rh_v2.html)
 // -----------------------------------------------------------------------
 
 const CARD_STYLE = {
@@ -138,7 +133,7 @@ const TAB_ACTIVE = {
 } as const;
 
 // -----------------------------------------------------------------------
-// Tipo local para tracking de edições por célula
+// Tipo local para tracking de edicoes por celula
 // -----------------------------------------------------------------------
 
 interface RHCellEdit {
@@ -150,8 +145,8 @@ interface RHCellEdit {
 // Componente principal
 // -----------------------------------------------------------------------
 
-export function DadosMensaisClient(props: Props): JSX.Element {
-  const { companyId, companyName, initialMes, initialStatus, initialTab } = props;
+export function DadosMensaisClient(props: DadosMensaisClientProps): JSX.Element {
+  const { companyId, companyName, initialMes, initialStatus, initialTab, variant, actions } = props;
 
   // Estado
   const [activeTab, setActiveTab] = useState<DadosMensaisTab>(initialTab);
@@ -168,17 +163,23 @@ export function DadosMensaisClient(props: Props): JSX.Element {
   const [edits, setEdits] = useState<Map<number, RHCellEdit>>(new Map());
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Aba Líderes
+  // Aba Lideres
   const [leaders, setLeaders] = useState<LeaderStatusRow[]>([]);
 
-  // Flag de dirty (alterações não salvas)
+  // Estado canonico variant='rh': solicitacao pendente + modal
+  const [hasPending, setHasPending] = useState<boolean>(false);
+  const [pendingRequestedAt, setPendingRequestedAt] = useState<string | null>(null);
+  const [showUnlockModal, setShowUnlockModal] = useState<boolean>(false);
+
+  // Flag de dirty (alteracoes nao salvas)
   const isDirty = edits.size > 0;
 
-  // É editável? Bruno sempre pode editar em aberto/desbloqueado.
+  // E editavel? Bruno sempre pode editar em aberto/desbloqueado; RH so
+  // em aberto/desbloqueado (mesma regra — bloqueio server-side).
   const isEditable = status !== 'fechado';
 
   // -------------------------------------------------------------------
-  // Fetch dados ao trocar mês ou aba
+  // Fetch dados ao trocar mes ou aba
   // -------------------------------------------------------------------
 
   const fetchData = useCallback(async () => {
@@ -189,7 +190,7 @@ export function DadosMensaisClient(props: Props): JSX.Element {
 
     try {
       // Closure status
-      const csResult = await getClosureStatusAction({
+      const csResult = await actions.getClosureStatus({
         companyId,
         mes,
       });
@@ -198,7 +199,7 @@ export function DadosMensaisClient(props: Props): JSX.Element {
       }
 
       if (activeTab === 'rh') {
-        const result = await loadMonthlyFormAction({
+        const result = await actions.loadMonthlyForm({
           companyId,
           mes,
           aba: 'rh',
@@ -212,7 +213,7 @@ export function DadosMensaisClient(props: Props): JSX.Element {
           setDiasUteis(result.data.diasUteis !== null ? String(result.data.diasUteis) : '');
         }
       } else {
-        const result = await getLeadersStatusAction({
+        const result = await actions.getLeadersStatus({
           companyId,
           mes,
         });
@@ -227,11 +228,45 @@ export function DadosMensaisClient(props: Props): JSX.Element {
     } finally {
       setLoading(false);
     }
-  }, [companyId, mes, activeTab]);
+  }, [companyId, mes, activeTab, actions]);
 
   useEffect(() => {
     void fetchData();
   }, [fetchData]);
+
+  // -------------------------------------------------------------------
+  // Fetch hasPending canonico bit-exact (variant='rh' + status='fechado')
+  // -------------------------------------------------------------------
+
+  useEffect(() => {
+    if (variant !== 'rh' || status !== 'fechado') {
+      setHasPending(false);
+      setPendingRequestedAt(null);
+      return;
+    }
+    if (actions.hasPendingRequest === undefined) {
+      return;
+    }
+    let cancelled = false;
+    const check = async (): Promise<void> => {
+      const result = await actions.hasPendingRequest!({
+        companyId,
+        mes,
+        aba: activeTab === 'rh' ? 'rh' : 'lider',
+      });
+      if (cancelled) {
+        return;
+      }
+      if (result.ok) {
+        setHasPending(result.data.hasPending);
+        setPendingRequestedAt(result.data.requestedAt);
+      }
+    };
+    void check();
+    return (): void => {
+      cancelled = true;
+    };
+  }, [variant, status, companyId, mes, activeTab, actions]);
 
   // -------------------------------------------------------------------
   // Toast auto-dismiss
@@ -245,7 +280,7 @@ export function DadosMensaisClient(props: Props): JSX.Element {
   }, [toast]);
 
   // -------------------------------------------------------------------
-  // Handlers de navegação
+  // Handlers de navegacao
   // -------------------------------------------------------------------
 
   const handlePrevMes = useCallback(() => {
@@ -261,7 +296,7 @@ export function DadosMensaisClient(props: Props): JSX.Element {
   }, []);
 
   // -------------------------------------------------------------------
-  // Handlers de edição aba RH
+  // Handlers de edicao aba RH
   // -------------------------------------------------------------------
 
   const handleCellChange = useCallback(
@@ -306,7 +341,7 @@ export function DadosMensaisClient(props: Props): JSX.Element {
         };
       });
 
-      const result = await saveMonthlyRHDataAction({
+      const result = await actions.saveMonthlyRHData({
         companyId,
         mes,
         diasUteis: du,
@@ -325,14 +360,17 @@ export function DadosMensaisClient(props: Props): JSX.Element {
     } finally {
       setSaving(false);
     }
-  }, [companyId, mes, diasUteis, rhData, edits, isDirty, fetchData]);
+  }, [companyId, mes, diasUteis, rhData, edits, isDirty, fetchData, actions]);
 
   // -------------------------------------------------------------------
-  // Desbloquear mês (Bruno direto — §14.17)
+  // Desbloquear mes (variant='super_admin' apenas — §14.17)
   // -------------------------------------------------------------------
 
   const handleUnlock = useCallback(async () => {
-    const result = await unlockMonthAction({
+    if (variant !== 'super_admin' || actions.unlockMonth === undefined) {
+      return;
+    }
+    const result = await actions.unlockMonth({
       companyId,
       mes,
       aba: 'rh',
@@ -348,7 +386,41 @@ export function DadosMensaisClient(props: Props): JSX.Element {
     } else {
       setToast(result.message);
     }
-  }, [companyId, mes, fetchData]);
+  }, [variant, companyId, mes, fetchData, actions]);
+
+  // -------------------------------------------------------------------
+  // Handlers do modal Solicitar desbloqueio (variant='rh')
+  // -------------------------------------------------------------------
+
+  const handleOpenUnlockModal = useCallback((): void => {
+    setShowUnlockModal(true);
+  }, []);
+
+  const handleCloseUnlockModal = useCallback((): void => {
+    setShowUnlockModal(false);
+  }, []);
+
+  const handleUnlockRequestSuccess = useCallback(
+    (message: string): void => {
+      setToast(message);
+      // Re-check hasPending para atualizar o botao/badge canonico
+      if (variant === 'rh' && actions.hasPendingRequest !== undefined && status === 'fechado') {
+        void actions
+          .hasPendingRequest({
+            companyId,
+            mes,
+            aba: activeTab === 'rh' ? 'rh' : 'lider',
+          })
+          .then((result) => {
+            if (result.ok) {
+              setHasPending(result.data.hasPending);
+              setPendingRequestedAt(result.data.requestedAt);
+            }
+          });
+      }
+    },
+    [variant, actions, status, companyId, mes, activeTab],
+  );
 
   // -------------------------------------------------------------------
   // Filtro de busca
@@ -375,12 +447,36 @@ export function DadosMensaisClient(props: Props): JSX.Element {
   const statusLabel = STATUS_LABELS[status] ?? 'Aberto';
 
   // -------------------------------------------------------------------
+  // Format do timestamp canonico da badge "Solicitacao em analise"
+  // -------------------------------------------------------------------
+
+  const pendingRequestedAtLabel = useMemo((): string | null => {
+    if (pendingRequestedAt === null) {
+      return null;
+    }
+    try {
+      const d = new Date(pendingRequestedAt);
+      if (!Number.isFinite(d.getTime())) {
+        return null;
+      }
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mi = String(d.getMinutes()).padStart(2, '0');
+      return `${dd}/${mm}/${yyyy} às ${hh}:${mi}`;
+    } catch {
+      return null;
+    }
+  }, [pendingRequestedAt]);
+
+  // -------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-      {/* Cabeçalho + navegação de mês */}
+      {/* Cabecalho + navegacao de mes */}
       <div
         style={{
           display: 'flex',
@@ -413,7 +509,7 @@ export function DadosMensaisClient(props: Props): JSX.Element {
           </p>
         </div>
 
-        {/* Seletor de mês + badge status */}
+        {/* Seletor de mes + badge status */}
         <div
           style={{
             display: 'flex',
@@ -476,7 +572,8 @@ export function DadosMensaisClient(props: Props): JSX.Element {
             {statusLabel}
           </span>
 
-          {status === 'fechado' && (
+          {/* Botao [Desbloquear mes] — SOMENTE variant='super_admin' */}
+          {variant === 'super_admin' && status === 'fechado' && (
             <button
               type="button"
               onClick={handleUnlock}
@@ -496,11 +593,55 @@ export function DadosMensaisClient(props: Props): JSX.Element {
               🔓 Desbloquear mês
             </button>
           )}
+
+          {/* Botao [Solicitar desbloqueio] — SOMENTE variant='rh' */}
+          {variant === 'rh' && status === 'fechado' && !hasPending && (
+            <button
+              type="button"
+              onClick={handleOpenUnlockModal}
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                padding: '6px 14px',
+                borderRadius: 8,
+                border: `1px solid ${COLORS.border.default}`,
+                background: 'white',
+                cursor: 'pointer',
+                color: COLORS.text.primary,
+                fontFamily: 'inherit',
+              }}
+              title="Solicitar desbloqueio de mês fechado (§14.13)"
+            >
+              🔓 Solicitar desbloqueio
+            </button>
+          )}
+
+          {/* Badge canonico D051/D052/D053: solicitacao em analise */}
+          {variant === 'rh' && status === 'fechado' && hasPending && (
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                padding: '4px 10px',
+                borderRadius: 10,
+                background: '#FEF3C7',
+                color: '#92400E',
+              }}
+              title={
+                pendingRequestedAtLabel !== null
+                  ? `Solicitação criada em ${pendingRequestedAtLabel}.` +
+                    ' Aguardando decisão do Super Admin.'
+                  : 'Aguardando decisão do Super Admin.'
+              }
+            >
+              ⏳ Solicitação em análise
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Alerta contextual por status (Bruno view) */}
-      {status === 'fechado' && (
+      {/* Alerta contextual por status (variant='super_admin' — Bruno view) */}
+      {variant === 'super_admin' && status === 'fechado' && (
         <div
           style={{
             padding: '12px 16px',
@@ -515,6 +656,25 @@ export function DadosMensaisClient(props: Props): JSX.Element {
         >
           <strong>Mês fechado — edição de Super Admin permitida.</strong> Você tem edição direta ou
           pode conceder desbloqueio de 24h ao RH via botão acima.
+        </div>
+      )}
+
+      {/* Alerta contextual por status (variant='rh' §14.13) */}
+      {variant === 'rh' && status === 'fechado' && (
+        <div
+          style={{
+            padding: '12px 16px',
+            background: '#FEF3C7',
+            borderLeft: '3px solid #D97706',
+            borderRadius: 8,
+            fontSize: 12,
+            color: '#92400E',
+            marginBottom: 16,
+            lineHeight: 1.5,
+          }}
+        >
+          <strong>Mês fechado — dados não editáveis.</strong> Para editar, solicite desbloqueio ao
+          Super Admin.
         </div>
       )}
 
@@ -832,68 +992,70 @@ export function DadosMensaisClient(props: Props): JSX.Element {
           </div>
 
           {/* Barra de salvamento (§14.13) */}
-          <div
-            style={{
-              position: 'sticky',
-              bottom: 20,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '12px 20px',
-              background: 'white',
-              border: `1px solid ${COLORS.border.default}`,
-              borderRadius: 10,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-            }}
-          >
+          {isEditable && (
             <div
               style={{
+                position: 'sticky',
+                bottom: 20,
                 display: 'flex',
+                justifyContent: 'space-between',
                 alignItems: 'center',
-                gap: 8,
-                fontSize: 12,
-                color: COLORS.text.secondary,
+                padding: '12px 20px',
+                background: 'white',
+                border: `1px solid ${COLORS.border.default}`,
+                borderRadius: 10,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
               }}
             >
-              {isDirty && (
-                <>
-                  <span
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      background: '#D97706',
-                      display: 'inline-block',
-                    }}
-                  />
-                  Alterações não salvas
-                </>
-              )}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: 12,
+                  color: COLORS.text.secondary,
+                }}
+              >
+                {isDirty && (
+                  <>
+                    <span
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        background: '#D97706',
+                        display: 'inline-block',
+                      }}
+                    />
+                    Alterações não salvas
+                  </>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                style={{
+                  padding: '8px 20px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: '#1F3A5F',
+                  color: 'white',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: saving ? 'not-allowed' : 'pointer',
+                  fontFamily: 'inherit',
+                  opacity: saving ? 0.6 : 1,
+                }}
+              >
+                {saving ? 'Salvando...' : 'Salvar'}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving}
-              style={{
-                padding: '8px 20px',
-                borderRadius: 8,
-                border: 'none',
-                background: '#1F3A5F',
-                color: 'white',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: saving ? 'not-allowed' : 'pointer',
-                fontFamily: 'inherit',
-                opacity: saving ? 0.6 : 1,
-              }}
-            >
-              {saving ? 'Salvando...' : 'Salvar'}
-            </button>
-          </div>
+          )}
         </>
       )}
 
-      {/* Aba Líderes */}
+      {/* Aba Lideres — read-only para variant='rh' (D-086b-5 A) */}
       {!loading && error === null && activeTab === 'lider' && (
         <div style={CARD_STYLE}>
           <div
@@ -913,7 +1075,9 @@ export function DadosMensaisClient(props: Props): JSX.Element {
               marginBottom: 16,
             }}
           >
-            Visão consolidada — clique no líder para ver/editar os lançamentos dos liderados.
+            {variant === 'rh'
+              ? 'Visão consolidada — apenas leitura.'
+              : 'Visão consolidada — clique no líder para ver/editar os lançamentos dos liderados.'}
           </div>
 
           {leaders.length === 0 ? (
@@ -1016,6 +1180,24 @@ export function DadosMensaisClient(props: Props): JSX.Element {
           {toast}
         </div>
       )}
+
+      {/* Modal canonico Solicitar desbloqueio (variant='rh' apenas) */}
+      {variant === 'rh' &&
+        showUnlockModal &&
+        actions.createUnlockRequest !== undefined &&
+        actions.listMesesFechados !== undefined &&
+        actions.listCompanyLeaders !== undefined && (
+          <ModalSolicitarDesbloqueio
+            companyId={companyId}
+            initialMes={mes}
+            initialAba={activeTab === 'rh' ? 'rh' : 'lider'}
+            onClose={handleCloseUnlockModal}
+            onSuccess={handleUnlockRequestSuccess}
+            listMesesFechados={actions.listMesesFechados}
+            listCompanyLeaders={actions.listCompanyLeaders}
+            createUnlockRequest={actions.createUnlockRequest}
+          />
+        )}
     </div>
   );
 }

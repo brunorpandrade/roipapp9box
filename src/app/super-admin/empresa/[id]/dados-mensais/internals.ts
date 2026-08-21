@@ -1,160 +1,53 @@
-// ROIP APP 9BOX — helpers internos canônicos da rota Bruno
-// `/super-admin/empresa/[id]/dados-mensais` (§14.13, ME-079a).
+// ROIP APP 9BOX — helpers internos canonicos da rota Bruno
+// `/super-admin/empresa/[id]/dados-mensais` (§14.13, ME-079a +
+// refactor ME-086b).
 //
-// Padrão S366 CC068 canonizado desde ME-070: `page.tsx` do App Router
-// Next 15 exporta APENAS o default. Todo helper, tipo, função auxiliar
-// e loader vive neste `internals.ts` irmão.
+// Refactor canonico ME-086b (D-086b-2 B aprovada): helpers puros de
+// UI (constantes, tipos, formatadores de mes) foram MIGRADOS
+// canonicamente para `src/components/dados-mensais/internals.ts` para
+// consumo compartilhado pelo `DadosMensaisClient.tsx` compartilhado.
+// Este arquivo passa a conter apenas o que e canonicamente exclusivo
+// da rota Bruno server-side: `parseCompanyIdParam`, `resolveDatabaseUrl`,
+// + reexport de `parseTabParam` e `currentMes` (consumidos pela
+// `page.tsx`).
 //
-// IMPORTANTE (CC071): este módulo é importado por `DadosMensaisClient.
-// tsx` (client component — `'use client'`). Portanto, NÃO pode importar
-// VALUE-LEVEL de routers, services, db/client ou qualquer módulo que
-// transite por `mysql2`, `node:crypto` ou `node:buffer`. Apenas
-// constantes puras, tipos (import type) e funções sem side-effects.
-//
-// Origem canônica:
-// - CAMADA_UI §14.13 (dados mensais RH — abas + navegação por mês +
-//   comportamento por status).
-// - CAMADA_AUTH §10.4 (Bruno via `/super-admin/empresa/[id]/…`).
-// - CAMADA_NEGOCIO §3.11 + §3.12 (validações canônicas de campo).
-// - MASTER_ESCOPO_B8.md §2.1 (pattern canônico) + §3.6.1 (ficha).
+// Padrao S366 CC068 preservado bit-exact: `page.tsx` importa daqui.
 //
 // **RV-13.** Todo export tem consumidor real:
-//   - `parseCompanyIdParam`, `resolveDatabaseUrl` → `page.tsx` +
-//     `actions.ts`.
-//   - `DADOS_MENSAIS_TABS`, `DadosMensaisTab`,
-//     `DADOS_MENSAIS_TAB_DEFAULT` → `DadosMensaisClient.tsx`.
-//   - `formatMesLabel`, `prevMes`, `nextMes`, `currentMes` →
-//     `DadosMensaisClient.tsx`.
-//   - `STATUS_LABELS` → `DadosMensaisClient.tsx`.
+//   - `parseCompanyIdParam` → `page.tsx`.
+//   - `resolveDatabaseUrl` → `page.tsx` + `actions.ts`.
+//   - `parseTabParam` (reexport) → `page.tsx`.
+//   - `currentMes` (reexport) → `page.tsx`.
 //
-// **RV-14.** Um statement por linha, largura máxima 100 colunas.
+// **RV-14.** Um statement por linha, largura maxima 100 colunas.
+
+// Reexport bit-exact do modulo canonico compartilhado ME-086b.
+// Preserva assinaturas do consumo pela `page.tsx` + pelo teste legado
+// `tests/integration/me079a-dados-mensais-page.test.ts` sem alteracao
+// bit-exact (RV-13 preservado — todo consumidor real anterior ao
+// refactor continua funcionando).
+export {
+  currentMes,
+  DADOS_MENSAIS_TAB_DEFAULT,
+  DADOS_MENSAIS_TABS,
+  formatMesLabel,
+  nextMes,
+  parseTabParam,
+  prevMes,
+  STATUS_COLORS,
+  STATUS_LABELS,
+  TAB_LABELS,
+  type DadosMensaisTab,
+  type StatusMes,
+} from '../../../../../components/dados-mensais/internals';
 
 // -----------------------------------------------------------------------
-// Constantes canônicas bit-exact
-// -----------------------------------------------------------------------
-
-/** §14.13 — 2 abas horizontais da rota `/dados-mensais`. */
-export const DADOS_MENSAIS_TABS = ['rh', 'lider'] as const;
-
-/** Tipo canônico das abas. */
-export type DadosMensaisTab = (typeof DADOS_MENSAIS_TABS)[number];
-
-/** Aba default canônica — sempre RH na chegada (§14.13). */
-export const DADOS_MENSAIS_TAB_DEFAULT: DadosMensaisTab = 'rh';
-
-// ME-080a — parser de `?tab=` na URL. Padrão idêntico ao `clevel-rh`
-// (parseTabParam). Aceita apenas valores canônicos; qualquer outro
-// devolve o default `rh`. Consumido por `page.tsx` para calcular
-// `initialTab` passado ao Client.
-export function parseTabParam(raw: string | undefined): DadosMensaisTab {
-  if (raw === 'lider') {
-    return 'lider';
-  }
-  return DADOS_MENSAIS_TAB_DEFAULT;
-}
-
-/** §14.13 rótulos canônicos das abas. */
-export const TAB_LABELS: Record<DadosMensaisTab, string> = {
-  rh: 'Dados do RH',
-  lider: 'Dados dos líderes',
-};
-
-/** §14.13 rótulos canônicos de status do mês. */
-export const STATUS_LABELS = {
-  aberto: 'Aberto',
-  fechado: 'Fechado',
-  desbloqueado: 'Desbloqueado',
-} as const;
-
-/** §14.13 cores canônicas de status do mês. */
-export const STATUS_COLORS = {
-  aberto: { bg: '#DCFCE7', text: '#166534' },
-  fechado: { bg: '#F3F4F6', text: '#374151' },
-  desbloqueado: { bg: '#FEF3C7', text: '#92400E' },
-} as const;
-
-/** Status possíveis do mês. */
-export type StatusMes = 'aberto' | 'fechado' | 'desbloqueado';
-
-// -----------------------------------------------------------------------
-// Helpers de mês (puras, sem side-effects)
-// -----------------------------------------------------------------------
-
-const MESES_PT = [
-  'Janeiro',
-  'Fevereiro',
-  'Março',
-  'Abril',
-  'Maio',
-  'Junho',
-  'Julho',
-  'Agosto',
-  'Setembro',
-  'Outubro',
-  'Novembro',
-  'Dezembro',
-] as const;
-
-/**
- * Retorna o mês atual no formato canônico `YYYY-MM`.
- */
-export function currentMes(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  return `${y}-${m}`;
-}
-
-/**
- * Formata `YYYY-MM` para rótulo em português (ex: "Junho 2026").
- */
-export function formatMesLabel(mes: string): string {
-  const [yearStr, monthStr] = mes.split('-');
-  const year = Number(yearStr);
-  const monthIdx = Number(monthStr) - 1;
-  if (!Number.isFinite(year) || monthIdx < 0 || monthIdx > 11) {
-    return mes;
-  }
-  return `${MESES_PT[monthIdx]} ${year}`;
-}
-
-/**
- * Navega para o mês anterior de `YYYY-MM`.
- */
-export function prevMes(mes: string): string {
-  const [yearStr, monthStr] = mes.split('-');
-  let y = Number(yearStr);
-  let m = Number(monthStr);
-  m -= 1;
-  if (m < 1) {
-    m = 12;
-    y -= 1;
-  }
-  return `${y}-${String(m).padStart(2, '0')}`;
-}
-
-/**
- * Navega para o mês seguinte de `YYYY-MM`.
- */
-export function nextMes(mes: string): string {
-  const [yearStr, monthStr] = mes.split('-');
-  let y = Number(yearStr);
-  let m = Number(monthStr);
-  m += 1;
-  if (m > 12) {
-    m = 1;
-    y += 1;
-  }
-  return `${y}-${String(m).padStart(2, '0')}`;
-}
-
-// -----------------------------------------------------------------------
-// Parse canônico de params
+// Parse canonico de params (exclusivo desta rota — [id] dinamico)
 // -----------------------------------------------------------------------
 
 /**
- * Parse canônico de `params.id` — aceita apenas inteiros positivos.
- * Padrão consolidado ME-074 a ME-078b.
+ * Parse canonico de `params.id` — aceita apenas inteiros positivos.
+ * Padrao consolidado ME-074 a ME-078b.
  */
 export function parseCompanyIdParam(raw: string): number | null {
   if (raw.length === 0) {
@@ -171,7 +64,7 @@ export function parseCompanyIdParam(raw: string): number | null {
 }
 
 /**
- * Resolve DATABASE_URL do ambiente. Padrão consolidado ME-074+.
+ * Resolve DATABASE_URL do ambiente. Padrao consolidado ME-074+.
  */
 export function resolveDatabaseUrl(): string {
   const url = process.env.DATABASE_URL;

@@ -1,59 +1,69 @@
-// ROIP APP 9BOX — rota canônica Bruno `/super-admin/empresa/[id]/
-// dados-mensais` (§14.13, ME-079a). DÉCIMA rota de código do bloco B8.
+// ROIP APP 9BOX — rota canonica Bruno `/super-admin/empresa/[id]/
+// dados-mensais` (§14.13, ME-079a + refactor ME-086b).
 //
-// Origem canônica:
-// - CAMADA_UI §14.13 (integral: header + abas + navegação por mês +
-//   comportamento por status + tabela editável).
+// Refactor canonico ME-086b: componente `DadosMensaisClient` foi
+// canonicamente extraido para `src/components/dados-mensais/`
+// (D-086b-2 B aprovada — padrao bit-exact `RelatoriosClient` ME-B9-CR).
+// Esta rota agora consome o compartilhado com `variant='super_admin'`
+// + injecao canonica das actions super-admin (bit-exact ao original
+// pre-ME-086b).
+//
+// Origem canonica:
+// - CAMADA_UI §14.13 (integral).
 // - CAMADA_AUTH §10.4 (Bruno via `/super-admin/empresa/[id]/…`).
-// - CAMADA_NEGOCIO §3.11 (routers `monthlyData.*` +
-//   `monthlyClosure.*`) + §3.12 (validações canônicas de campo) + §4
-//   (fechamento mensal, desbloqueio e recálculo).
-// - CAMADA_DADOS §4.3 (`companyMonthlyData`) + §7.1-§7.2
-//   (`performanceData/Variable`) + §7.6-§7.7 (closure + unlock).
-// - MASTER_ESCOPO_B8.md §2.1 (pattern canônico) + §3.6.1 (ficha).
+// - CAMADA_NEGOCIO §11.
+// - CAMADA_DADOS §4.3 + §7.
 //
-// Pattern §2.1 canônico preservado via consumo dos helpers
-// `getServerSession`, `resolveProfileKey`, `resolveMenuItems`,
-// `Layout`, `superAdminContext`.
+// **RV-13.** Todo import consumido: `parseCompanyIdParam`,
+// `resolveDatabaseUrl`, `currentMes`, `parseTabParam` → `page.tsx`.
+// `DadosMensaisClient` compartilhado renderizado abaixo do Layout.
+// Actions super-admin injetadas via prop `actions` (D-086b-2 B).
 //
-// **RV-13.** Todo import consumido: `parseCompanyIdParam` (parse [id]),
-// `resolveDatabaseUrl` → `page.tsx`. `DadosMensaisClient` renderizado
-// abaixo do Layout.
-//
-// **RV-08.** Nenhuma decisão aqui — loaders inline no server component
-// (padrão §2.1 B8).
-//
-// **RV-14.** Um statement por linha, largura máxima 100 colunas.
+// **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
 import { notFound, redirect } from 'next/navigation';
 import type { JSX } from 'react';
 
+import { DadosMensaisClient } from '../../../../../components/dados-mensais/DadosMensaisClient';
+import type { DadosMensaisClientActions } from '../../../../../components/dados-mensais/internals';
 import { Layout } from '../../../../../components/shell/Layout';
 import { closeDbClient, createDbClient } from '../../../../../db/client';
 import { findCompanyDisplayInfo } from '../../../../../lib/logs/companyHistoryLog';
 import { resolveMenuItems } from '../../../../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../../../../lib/session/resolveProfileKey';
 import { getServerSession } from '../../../../../server/session/serverSession';
-
-import { DadosMensaisClient } from './DadosMensaisClient';
-import { currentMes, parseCompanyIdParam, parseTabParam, resolveDatabaseUrl } from './internals';
-
-// -----------------------------------------------------------------------
-// Loader server-side: closure status do mês atual (leitura direta)
-// -----------------------------------------------------------------------
-
 // prettier-ignore
 import {
   getMonthlyClosureStatusByMonth,
 } from '../../../../../server/services/monthlyClosureStatus';
 
+import {
+  getClosureStatusAction,
+  getLeadersStatusAction,
+  loadMonthlyFormAction,
+  saveMonthlyRHDataAction,
+  unlockMonthAction,
+} from './actions';
+import { currentMes, parseCompanyIdParam, parseTabParam, resolveDatabaseUrl } from './internals';
+
 interface PageProps {
   readonly params: Promise<{ id: string }>;
   // ME-080a — `?tab=` na URL controla aba inicial (default `rh`).
-  // Consumido para linkagem canônica a partir do CompanyLandingClient
-  // (card "Dados do mês — Líderes" → `?tab=lider`).
   readonly searchParams?: Promise<{ tab?: string }>;
 }
+
+// -----------------------------------------------------------------------
+// Actions canonicas super-admin injetadas via prop (D-086b-2 B)
+// -----------------------------------------------------------------------
+
+const SUPER_ADMIN_ACTIONS: DadosMensaisClientActions = {
+  loadMonthlyForm: loadMonthlyFormAction,
+  saveMonthlyRHData: saveMonthlyRHDataAction,
+  getClosureStatus: getClosureStatusAction,
+  getLeadersStatus: getLeadersStatusAction,
+  unlockMonth: unlockMonthAction,
+  // Actions especificas de variant='rh' NAO injetadas (RH-only).
+};
 
 export default async function DadosMensaisPage(props: PageProps): Promise<JSX.Element> {
   const session = await getServerSession();
@@ -79,7 +89,7 @@ export default async function DadosMensaisPage(props: PageProps): Promise<JSX.El
       notFound();
     }
 
-    // Status inicial do mês atual para SSR.
+    // Status inicial do mes atual para SSR.
     const mes = currentMes();
     const closureRow = await getMonthlyClosureStatusByMonth(client.db, companyId, mes);
     const initialStatus = closureRow?.status ?? 'aberto';
@@ -112,7 +122,6 @@ export default async function DadosMensaisPage(props: PageProps): Promise<JSX.El
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
           companyLogoUrl: company.logoUrl ?? undefined,
-          // CompanyDisplayInfo nao inclui logoUrl.
           user: { displayName: session.displayName },
           showNotificationBell: true,
         }}
@@ -126,6 +135,8 @@ export default async function DadosMensaisPage(props: PageProps): Promise<JSX.El
           initialMes={mes}
           initialStatus={initialStatus}
           initialTab={initialTab}
+          variant="super_admin"
+          actions={SUPER_ADMIN_ACTIONS}
         />
       </Layout>
     );
