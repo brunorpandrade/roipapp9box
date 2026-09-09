@@ -126,12 +126,102 @@ export function assertCompanyScopeOrgTree(user: AuthenticatedUser, companyId: nu
  * client sobre esmaecimento e tooltip *"Detalhes restritos ao Super
  * Admin"* nos nós de C-level. Retorna `true` para `rh` e `rh_lider`;
  * `false` para `super_admin`, `clevel`, `lider`.
+ *
+ * NOTA canônica bit-exact (ME-086b RETOMADA): esta função ORIGINAL
+ * permanece intocada bit-exact para preservar consumidores canônicos
+ * pre-existentes (testes ME-077, `orgTree` procedures internas). Para
+ * aplicação canônica AMPLIADA da PC1b conforme PC1g §11.8 (ME-086b
+ * RETOMADA), consumir `resolveApplyPC1b` — helper canônico novo bit-
+ * exact abaixo que envolve este canonicamente sem quebrar bit-exact
+ * assinatura antiga.
  */
 export function shouldApplyPC1b(user: AuthenticatedUser): boolean {
   if (user.role === 'super_admin') {
     return false;
   }
   return user.role === 'rh' || user.role === 'rh_lider';
+}
+
+/**
+ * Contexto canônico bit-exact adicional para `resolveApplyPC1b` — só
+ * relevante quando `user.role === 'clevel'`. Para as demais roles
+ * canônicas os campos são canonicamente ignorados.
+ */
+export interface CLevelPC1Context {
+  readonly cLevelCount: number;
+  readonly acessoTotal: boolean;
+}
+
+/**
+ * §11.8 PC1g canônica bit-exact (ME-086b RETOMADA): resolve a flag
+ * AMPLIADA canonicamente de esmaecimento + tooltip literal *"Detalhes
+ * restritos ao Super Admin"* nos nós de C-level do organograma
+ * (§14.9 CAMADA_UI).
+ *
+ * Envolve canonicamente `shouldApplyPC1b` original bit-exact preservando
+ * o comportamento canônico bit-exact para `super_admin`, `rh` e
+ * `rh_lider`. Adiciona canonicamente:
+ *   - `lider`: sempre `true` (líder puro canonicamente não vê detalhes
+ *     de C-levels — §11.8).
+ *   - `clevel`: `true` quando `cLevelCount > 1 && acessoTotal === false`
+ *     (CF — C-level Filtrado canonicamente não vê detalhes de outros
+ *     C-levels). Para CU (`cLevelCount === 1`) e CT (`cLevelCount > 1
+ *     && acessoTotal === true`), retorna `false` bit-exact.
+ *
+ * Consumido canonicamente por:
+ *   - `src/app/organograma/page.tsx` (rota RH-facing bit-exact).
+ *   - `src/app/super-admin/empresa/[id]/organograma/page.tsx` (Bruno
+ *     — sempre `false` bit-exact pela primeira guarda).
+ *
+ * Testado canonicamente bit-exact em `me086b-organograma-rh.test.ts`
+ * (RETOMADA — 4 novos casos canônicos: CU, CT, CF, L1/L2).
+ */
+export function resolveApplyPC1b(
+  user: AuthenticatedUser,
+  cLevelContext?: CLevelPC1Context,
+): boolean {
+  // Bruno canonicamente nunca sofre PC1b bit-exact.
+  if (user.role === 'super_admin') {
+    return false;
+  }
+
+  // RH + RH-Líder: canonicamente sempre PC1b bit-exact (regra canônica
+  // §11.2 original preservada bit-exact via `shouldApplyPC1b`).
+  if (shouldApplyPC1b(user)) {
+    return true;
+  }
+
+  // §11.8 PC1g canônica bit-exact — Líder puro: sempre PC1b bit-exact.
+  if (user.role === 'lider') {
+    return true;
+  }
+
+  // §11.8 PC1g canônica bit-exact — C-level:
+  //   - CU (único): sem PC1b bit-exact (contexto empresa 1-CEO).
+  //   - CT (múltiplo, acessoTotal=true): sem PC1b bit-exact.
+  //   - CF (múltiplo, acessoTotal=false): com PC1b bit-exact.
+  if (user.role === 'clevel') {
+    if (cLevelContext === undefined) {
+      // Contexto canonicamente ausente — cai canonicamente para
+      // canonical safe default bit-exact: aplicar PC1b (defesa em
+      // profundidade — nunca vazar bit-exact detalhes de C-level por
+      // erro de resolução de contexto).
+      return true;
+    }
+    if (cLevelContext.cLevelCount <= 1) {
+      // CU canonicamente — único C-level da empresa; sem outros a
+      // proteger canonicamente.
+      return false;
+    }
+    // Múltiplos C-levels canonicamente: acessoTotal=true nega PC1b
+    // (CT), acessoTotal=false aplica PC1b (CF).
+    return !cLevelContext.acessoTotal;
+  }
+
+  // Roles canônicas não cobertas explicitamente bit-exact (colaborador
+  // — ainda não chega ao organograma pela matriz §10.4) recebem safe
+  // default `true`.
+  return true;
 }
 
 // ============================================================

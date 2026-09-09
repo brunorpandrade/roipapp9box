@@ -26,7 +26,8 @@
 // **RV-13.** Todo import consumido bit-exact:
 //   - `OrganogramaClient` via `_client.ts` shim (RV-14 canonica).
 //   - `loadRhSessionFlags` (helper canonico consolidado ME-086 D-086-10).
-//   - `shouldApplyPC1b` (helper canonico router `orgTree`).
+//   - `resolveApplyPC1b` (helper canonico ampliado ME-086b RETOMADA
+//     §11.8 PC1g — cobre RH/RH-Lider/Lider/CF).
 //   - Loader `loadFullOrgTree` (service `orgTree`).
 //
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
@@ -42,7 +43,7 @@ import { COLORS } from '../../lib/design-tokens/colors';
 import { resolveMenuItems } from '../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { loadRhSessionFlags } from '../../lib/session/rhSessionFlags';
-import { shouldApplyPC1b } from '../../server/routers/orgTree';
+import { resolveApplyPC1b } from '../../server/routers/orgTree';
 import { getServerSession } from '../../server/session/serverSession';
 import { loadFullOrgTree } from '../../server/services/orgTree';
 
@@ -123,21 +124,31 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
       redirect('/');
     }
 
-    // §11.2 PC1b canonica bit-exact: retorna `true` para rh/rh_lider,
-    // `false` para clevel/lider (que veem C-level clicaveis).
-    const applyPC1b = shouldApplyPC1b({
-      role: session.role,
-      userId: session.userId,
-      companyId: session.companyId,
-    });
-
     // Branch canonico bit-exact por perfil para resolver menu.
-    // C-level: consulta acessoTotal (§12.2 CAMADA_UI — CF nega).
+    // C-level: consulta canonica flags (§12.2 CAMADA_UI). CF entra
+    // canonicamente bit-exact — fix D-086b-CF-ORGANOGRAMA RETOMADA:
+    // matriz §10.4 nao rejeita CF em /organograma; a rejeicao ocorre
+    // canonicamente em /todos-os-colaboradores e /central-relatorios.
     if (session.role === 'clevel') {
       const cFlags = await resolveCLevelFlags(client.db, session.userId, session.companyId);
-      if (cFlags === null || !cFlags.acessoTotal) {
+      if (cFlags === null) {
+        // Session bate C-level mas nao existe registro correspondente
+        // em cLevelMembers — inconsistencia canonica de sessao/dados.
         redirect('/access-denied?rota=/organograma');
       }
+      // §11.8 PC1g canonica bit-exact — resolve PC1b com contexto
+      // ampliado: CU=false, CT=false, CF=true.
+      const applyPC1b = resolveApplyPC1b(
+        {
+          role: session.role,
+          userId: session.userId,
+          companyId: session.companyId,
+        },
+        {
+          cLevelCount: cFlags.cLevelCount,
+          acessoTotal: cFlags.acessoTotal,
+        },
+      );
       const menuFlagsClevel = { isRH: false, isLider: false, hasDescendingChain: false };
       const profileKeyClevel = resolveProfileKey({
         session,
@@ -181,6 +192,12 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
       if (menuFlags === null) {
         redirect('/');
       }
+      // §11.8 PC1g canonica bit-exact — Lider sempre com PC1b.
+      const applyPC1bLider = resolveApplyPC1b({
+        role: session.role,
+        userId: session.userId,
+        companyId: session.companyId,
+      });
       const cFlags = defaultCLevelFlags();
       const profileKey = resolveProfileKey({
         session,
@@ -210,7 +227,7 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
             companyId={session.companyId}
             companyName={session.companyDisplayName}
             root={root}
-            applyPC1b={applyPC1b}
+            applyPC1b={applyPC1bLider}
           />
         </Layout>
       );
@@ -223,6 +240,13 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
     if (menuFlags === null) {
       redirect('/');
     }
+    // §11.8 PC1g canonica bit-exact — RH e RH-Lider sempre com PC1b
+    // (comportamento bit-exact ao original §11.2, preservado).
+    const applyPC1bRh = resolveApplyPC1b({
+      role: session.role,
+      userId: session.userId,
+      companyId: session.companyId,
+    });
     const cFlags = defaultCLevelFlags();
     const profileKey = resolveProfileKey({
       session,
@@ -253,7 +277,7 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
           companyId={session.companyId}
           companyName={session.companyDisplayName}
           root={root}
-          applyPC1b={applyPC1b}
+          applyPC1b={applyPC1bRh}
         />
       </Layout>
     );

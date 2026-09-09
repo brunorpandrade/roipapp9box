@@ -624,13 +624,16 @@ describe('ME-057c — historico consolidado da empresa (MySQL real, §14.21)', (
     });
 
     it('filtro periodo=30 exclui eventos antigos (createdAt < now-30d)', async () => {
+      // Fix L113 ME-086b RETOMADA: datas relativas ao NOW para
+      // evitar envelhecimento do teste (D-ME057C-DATA-HARDCODED).
+      const dayMs = 86400000;
       await seedRespfin(
         companyIdA,
         'atribuido',
         { type: 'none', id: null },
         { type: 'employee', id: colabIdA },
         'RF antigo',
-        new Date('2026-05-01T00:00:00.000Z'), // ~90d antes de NOW
+        new Date(NOW.getTime() - 90 * dayMs), // 90d antes de NOW
       );
       await seedRespfin(
         companyIdA,
@@ -638,7 +641,7 @@ describe('ME-057c — historico consolidado da empresa (MySQL real, §14.21)', (
         { type: 'none', id: null },
         { type: 'employee', id: colabIdA },
         'RF recente',
-        new Date('2026-07-25T00:00:00.000Z'), // ~5d antes de NOW
+        new Date(NOW.getTime() - 5 * dayMs), // 5d antes de NOW
       );
       const r30 = await loadCompanyHistoryPage(
         client.db,

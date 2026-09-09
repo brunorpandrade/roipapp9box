@@ -18,7 +18,11 @@ import { inArray } from 'drizzle-orm';
 import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/client';
 import { cLevelMembers, companies, employees } from '../../src/db/schema';
 import { createRateLimiter } from '../../src/server/auth/rateLimit';
-import { createOrgTreeRouter, shouldApplyPC1b } from '../../src/server/routers/orgTree';
+import {
+  createOrgTreeRouter,
+  resolveApplyPC1b,
+  shouldApplyPC1b,
+} from '../../src/server/routers/orgTree';
 import { createCallerFactory, createContextInner, type Context } from '../../src/server/trpc';
 import { deriveCredentialVersion, signPlatformToken } from '../../src/server/auth/jwt';
 
@@ -258,5 +262,72 @@ describe('ME-086b · /organograma RH — cross-company isolation', () => {
     const result = await caller.getFullTree({ companyId: companyB });
     expect(result.applyPC1b).toBe(true);
     expect(result.root).not.toBeNull();
+  });
+});
+
+// -----------------------------------------------------------------------
+// PC1g §11.8 canonica bit-exact (ME-086b RETOMADA) — resolveApplyPC1b
+// helper ampliado bit-exact que envolve shouldApplyPC1b original.
+// -----------------------------------------------------------------------
+
+describe('ME-086b RETOMADA · resolveApplyPC1b — regra canonica PC1g §11.8', () => {
+  const dummySession = {
+    userId: 1,
+    companyId: 100,
+  } as const;
+
+  it('super_admin: sempre false (bit-exact ao shouldApplyPC1b original)', () => {
+    expect(resolveApplyPC1b({ role: 'super_admin', superAdminId: 1 })).toBe(false);
+  });
+
+  it('rh: sempre true (bit-exact ao shouldApplyPC1b original)', () => {
+    expect(resolveApplyPC1b({ role: 'rh', ...dummySession })).toBe(true);
+  });
+
+  it('rh_lider: sempre true (bit-exact ao shouldApplyPC1b original)', () => {
+    expect(resolveApplyPC1b({ role: 'rh_lider', ...dummySession })).toBe(true);
+  });
+
+  it('lider: sempre true (PC1g nova — lider nao ve C-level)', () => {
+    expect(resolveApplyPC1b({ role: 'lider', ...dummySession })).toBe(true);
+  });
+
+  it('clevel unico (CU, cLevelCount=1): false (nao ha outros a proteger)', () => {
+    expect(
+      resolveApplyPC1b({ role: 'clevel', ...dummySession }, { cLevelCount: 1, acessoTotal: true }),
+    ).toBe(false);
+    // cLevelCount=1 ignora acessoTotal — nao ha outros C-level.
+    expect(
+      resolveApplyPC1b({ role: 'clevel', ...dummySession }, { cLevelCount: 1, acessoTotal: false }),
+    ).toBe(false);
+  });
+
+  it('clevel Total (CT, cLevelCount>1, acessoTotal=true): false', () => {
+    expect(
+      resolveApplyPC1b({ role: 'clevel', ...dummySession }, { cLevelCount: 3, acessoTotal: true }),
+    ).toBe(false);
+  });
+
+  it('clevel Filtrado (CF, cLevelCount>1, acessoTotal=false): true (PC1g nova)', () => {
+    expect(
+      resolveApplyPC1b({ role: 'clevel', ...dummySession }, { cLevelCount: 3, acessoTotal: false }),
+    ).toBe(true);
+    // Empresa com 2 C-levels canonicos + este e filtrado tambem aplica.
+    expect(
+      resolveApplyPC1b({ role: 'clevel', ...dummySession }, { cLevelCount: 2, acessoTotal: false }),
+    ).toBe(true);
+  });
+
+  it('clevel sem contexto canonico: safe default true (defense in depth)', () => {
+    expect(resolveApplyPC1b({ role: 'clevel', ...dummySession })).toBe(true);
+  });
+
+  it('shouldApplyPC1b original preservado bit-exact — comportamento canonico intocado', () => {
+    // Regressao canonica bit-exact: os 4 casos originais ME-077 mantem.
+    expect(shouldApplyPC1b({ role: 'super_admin', superAdminId: 1 })).toBe(false);
+    expect(shouldApplyPC1b({ role: 'rh', ...dummySession })).toBe(true);
+    expect(shouldApplyPC1b({ role: 'rh_lider', ...dummySession })).toBe(true);
+    expect(shouldApplyPC1b({ role: 'clevel', ...dummySession })).toBe(false);
+    expect(shouldApplyPC1b({ role: 'lider', ...dummySession })).toBe(false);
   });
 });
