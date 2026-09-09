@@ -25,6 +25,8 @@
 //   - `NODE_TYPE_LABELS` → `OrganogramaClient.tsx` + testes.
 //   - `DASHBOARD_UNAVAILABLE_TOOLTIP` → `OrganogramaClient.tsx`.
 //   - `PC1B_TOOLTIP` → `OrganogramaClient.tsx`.
+//   - `PC1H_TOOLTIP` → `OrganogramaClient.tsx` (§11.9 PC1h ME-086b
+//     RETOMADA v2 — nós fora da cadeia hierárquica).
 //   - `getIniciaisFromName` → `OrganogramaClient.tsx` + testes.
 //   - Tipo `OrganogramaPageData` → `page.tsx` + `OrganogramaClient.tsx`.
 //
@@ -58,6 +60,15 @@ export const NODE_TYPE_LABELS = {
  * `type === 'clevel'`.
  */
 export const PC1B_TOOLTIP = 'Detalhes restritos ao Super Admin.' as const;
+
+/**
+ * §11.9 PC1h (ME-086b RETOMADA v2). Tooltip literal exibido em nós
+ * fora da cadeia hierárquica do usuário logado. Aplicado a Líder puro
+ * (todos os nós fora da cadeia de liderança) e a C-level Filtrado
+ * (todos os nós fora da própria cadeia descendente). Renderizado pelo
+ * `OrganogramaClient` via atributo HTML `title` no nó esmaecido.
+ */
+export const PC1H_TOOLTIP = 'Detalhes restritos à sua cadeia hierárquica.' as const;
 
 /**
  * Tooltip canônico bit-exact D2 aprovada ME-077 — botão `[Abrir

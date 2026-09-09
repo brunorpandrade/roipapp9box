@@ -44,6 +44,7 @@ import { resolveMenuItems } from '../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { loadRhSessionFlags } from '../../lib/session/rhSessionFlags';
 import { resolveApplyPC1b } from '../../server/routers/orgTree';
+import { resolveHierarchicalScope } from '../../server/services/hierarchicalScope';
 import { getServerSession } from '../../server/session/serverSession';
 import { loadFullOrgTree } from '../../server/services/orgTree';
 
@@ -149,6 +150,22 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
           acessoTotal: cFlags.acessoTotal,
         },
       );
+      // §11.9 PC1h — resolve escopo canônico hierárquico. Para CU/CT
+      // retorna null (sem restrição). Para CF retorna Set com IDs da
+      // cadeia própria + próprio nó.
+      const scope = await resolveHierarchicalScope(
+        client.db,
+        {
+          role: session.role,
+          userId: session.userId,
+          companyId: session.companyId,
+        },
+        {
+          cLevelCount: cFlags.cLevelCount,
+          acessoTotal: cFlags.acessoTotal,
+        },
+      );
+      const restrictedNodeIds = scope === null ? undefined : Array.from(scope);
       const menuFlagsClevel = { isRH: false, isLider: false, hasDescendingChain: false };
       const profileKeyClevel = resolveProfileKey({
         session,
@@ -179,6 +196,7 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
             companyName={session.companyDisplayName}
             root={root}
             applyPC1b={applyPC1b}
+            restrictedNodeIds={restrictedNodeIds}
           />
         </Layout>
       );
@@ -198,6 +216,14 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
         userId: session.userId,
         companyId: session.companyId,
       });
+      // §11.9 PC1h — resolve escopo canônico. Líder puro sempre com
+      // restrição: cadeia = liderados diretos + descendentes + próprio.
+      const scopeLider = await resolveHierarchicalScope(client.db, {
+        role: session.role,
+        userId: session.userId,
+        companyId: session.companyId,
+      });
+      const restrictedNodeIdsLider = scopeLider === null ? undefined : Array.from(scopeLider);
       const cFlags = defaultCLevelFlags();
       const profileKey = resolveProfileKey({
         session,
@@ -228,6 +254,7 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
             companyName={session.companyDisplayName}
             root={root}
             applyPC1b={applyPC1bLider}
+            restrictedNodeIds={restrictedNodeIdsLider}
           />
         </Layout>
       );
@@ -296,6 +323,7 @@ interface OrganogramaPageInnerProps {
   readonly companyName: string;
   readonly root: Parameters<typeof OrganogramaClient>[0]['initialRoot'];
   readonly applyPC1b: boolean;
+  readonly restrictedNodeIds?: ReadonlyArray<string>;
 }
 
 function OrganogramaPageInner(props: OrganogramaPageInnerProps): JSX.Element {
@@ -326,6 +354,7 @@ function OrganogramaPageInner(props: OrganogramaPageInnerProps): JSX.Element {
         companyId={props.companyId}
         initialRoot={props.root}
         applyPC1b={props.applyPC1b}
+        restrictedNodeIds={props.restrictedNodeIds}
       />
     </div>
   );

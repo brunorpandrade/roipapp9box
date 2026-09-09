@@ -38,6 +38,7 @@ import {
   DASHBOARD_UNAVAILABLE_TOOLTIP,
   NODE_TYPE_LABELS,
   PC1B_TOOLTIP,
+  PC1H_TOOLTIP,
   getIniciaisFromName,
 } from './internals';
 
@@ -49,6 +50,14 @@ export interface OrganogramaClientProps {
   readonly companyId: number;
   readonly initialRoot: OrgTreeNode;
   readonly applyPC1b: boolean;
+  /**
+   * §11.9 PC1h (ME-086b RETOMADA v2). Set opcional de IDs de nó
+   * (formato `employee-N` ou `clevel-N`) que constituem a cadeia
+   * hierárquica do usuário. Nós CUJO id NÃO está no Set são
+   * renderizados esmaecidos + tooltip PC1h. `undefined` = sem
+   * restrição PC1h (Bruno, RH, RH-Líder, CU, CT).
+   */
+  readonly restrictedNodeIds?: ReadonlyArray<string>;
 }
 
 // -----------------------------------------------------------------------
@@ -200,6 +209,31 @@ function collectAncestorIds(root: OrgTreeNode, targetId: string): readonly strin
   return path;
 }
 
+/**
+ * §11.2 PC1b + §11.9 PC1h — resolve se o nó de `nodeId` está esmaecido
+ * (não-clicável, com tooltip literal). Espelha bit-exact a lógica de
+ * `RenderedNode` para garantir consistência canônica entre clique
+ * direto na árvore e seleção via busca (fix D-086b-PC1B-BUSCA).
+ * Busca o nó recursivamente para descobrir seu `type`.
+ */
+function isNodeRestricted(
+  nodeId: string,
+  root: OrgTreeNode,
+  applyPC1b: boolean,
+  restrictedNodeIds: ReadonlySet<string> | null,
+): boolean {
+  // Descoberta rápida canônica do type via id — evita traversal em
+  // 99% dos casos (id encapsula o tipo).
+  const isCLevelId = nodeId.startsWith('clevel-');
+  if (applyPC1b && isCLevelId) {
+    return true;
+  }
+  if (restrictedNodeIds !== null && !restrictedNodeIds.has(nodeId)) {
+    return true;
+  }
+  return false;
+}
+
 interface SearchIndexEntry {
   readonly id: string;
   readonly name: string;
@@ -292,16 +326,24 @@ interface RenderedNodeProps {
   readonly selectedNodeId: string | null;
   readonly expandedIds: ReadonlySet<string>;
   readonly applyPC1b: boolean;
+  readonly restrictedNodeIds: ReadonlySet<string> | null;
   readonly onSelect: (id: string) => void;
   readonly onToggle: (id: string) => void;
 }
 
 function RenderedNode(props: RenderedNodeProps): JSX.Element {
-  const { node, selectedNodeId, expandedIds, applyPC1b, onSelect, onToggle } = props;
+  const { node, selectedNodeId, expandedIds, applyPC1b, restrictedNodeIds, onSelect, onToggle } =
+    props;
   const isSelected = selectedNodeId === node.id;
   const isExpanded = expandedIds.has(node.id);
   const temFilhos = node.children.length > 0;
-  const esmaecido = applyPC1b && node.type === 'clevel';
+  // §11.2 PC1b — C-level esmaecido para RH/RH-Líder.
+  const pc1bMask = applyPC1b && node.type === 'clevel';
+  // §11.9 PC1h — nó fora da cadeia hierárquica esmaecido para
+  // Líder puro e CF. `restrictedNodeIds !== null` significa que PC1h
+  // está ativa: nós CUJO id NÃO está no set ficam esmaecidos.
+  const pc1hMask = restrictedNodeIds !== null && !restrictedNodeIds.has(node.id);
+  const esmaecido = pc1bMask || pc1hMask;
   const containerStyle = nodeContainerStyle(node.type, esmaecido);
   const shadowStyle: CSSProperties = isSelected
     ? {
@@ -325,7 +367,11 @@ function RenderedNode(props: RenderedNodeProps): JSX.Element {
     [node.id, onToggle],
   );
 
-  const nodeTitle = esmaecido ? PC1B_TOOLTIP : undefined;
+  // Precedência canônica: PC1b (C-level restrito ao Super Admin)
+  // prevalece bit-exact sobre PC1h (nó fora da cadeia). Isso garante
+  // que RH-Líder vendo um C-level fora da cadeia sempre exibe o
+  // tooltip PC1b (mais específico) — nunca PC1h.
+  const nodeTitle = pc1bMask ? PC1B_TOOLTIP : pc1hMask ? PC1H_TOOLTIP : undefined;
 
   return (
     <li>
@@ -393,6 +439,7 @@ function RenderedNode(props: RenderedNodeProps): JSX.Element {
               selectedNodeId={selectedNodeId}
               expandedIds={expandedIds}
               applyPC1b={applyPC1b}
+              restrictedNodeIds={restrictedNodeIds}
               onSelect={onSelect}
               onToggle={onToggle}
             />
@@ -602,7 +649,19 @@ function ResumoDrawer(props: ResumoDrawerProps): JSX.Element {
 // -----------------------------------------------------------------------
 
 export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
-  const { initialRoot, applyPC1b } = props;
+  const { initialRoot, applyPC1b, restrictedNodeIds } = props;
+
+  // §11.9 PC1h — converte a lista canônica de IDs permitidos em Set
+  // para consulta O(1) durante render de cada nó. Memoizado por
+  // referência bit-exact do array para evitar recomputação a cada
+  // re-render. `null` sinaliza "sem restrição PC1h" (Bruno, RH,
+  // RH-Líder, CU, CT).
+  const restrictedNodeIdsSet = useMemo<ReadonlySet<string> | null>(() => {
+    if (restrictedNodeIds === undefined) {
+      return null;
+    }
+    return new Set(restrictedNodeIds);
+  }, [restrictedNodeIds]);
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() =>
@@ -641,9 +700,19 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
     return searchIndex.filter((entry) => normalizeForSearch(entry.name).includes(term));
   }, [searchIndex, searchTerm]);
 
-  const handleSelect = useCallback((id: string) => {
-    setSelectedNodeId(id);
-  }, []);
+  const handleSelect = useCallback(
+    (id: string) => {
+      // §11.9 PC1h + §11.2 PC1b — impede seleção de nó esmaecido
+      // (defense in depth: RenderedNode.handleClick já bloqueia,
+      // mas handleSelect também é chamada por handleGoToNode via
+      // busca; sem esta guarda, D-086b-PC1B-BUSCA reabriria).
+      if (isNodeRestricted(id, initialRoot, applyPC1b, restrictedNodeIdsSet)) {
+        return;
+      }
+      setSelectedNodeId(id);
+    },
+    [applyPC1b, initialRoot, restrictedNodeIdsSet],
+  );
 
   const handleCloseDrawer = useCallback(() => {
     setSelectedNodeId(null);
@@ -663,6 +732,10 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
 
   const handleGoToNode = useCallback(
     (id: string) => {
+      // §11.9 PC1h + §11.2 PC1b — fix D-086b-PC1B-BUSCA: se o
+      // resultado da busca é um nó esmaecido, apenas expande a
+      // hierarquia até ele mas não seleciona (não abre drawer).
+      const restricted = isNodeRestricted(id, initialRoot, applyPC1b, restrictedNodeIdsSet);
       const ancestors = collectAncestorIds(initialRoot, id);
       setExpandedIds((prev) => {
         const next = new Set(prev);
@@ -672,7 +745,9 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
         next.add(id);
         return next;
       });
-      setSelectedNodeId(id);
+      if (!restricted) {
+        setSelectedNodeId(id);
+      }
       setSearchTerm('');
       setShowSearchResults(false);
       setTimeout(() => {
@@ -682,7 +757,7 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
         }
       }, 50);
     },
-    [initialRoot],
+    [applyPC1b, initialRoot, restrictedNodeIdsSet],
   );
 
   const handleZoomIn = useCallback(() => {
@@ -957,6 +1032,7 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
                 selectedNodeId={selectedNodeId}
                 expandedIds={expandedIds}
                 applyPC1b={applyPC1b}
+                restrictedNodeIds={restrictedNodeIdsSet}
                 onSelect={handleSelect}
                 onToggle={handleToggle}
               />
