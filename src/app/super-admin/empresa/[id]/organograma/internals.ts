@@ -27,6 +27,8 @@
 //   - `PC1B_TOOLTIP` → `OrganogramaClient.tsx`.
 //   - `PC1H_TOOLTIP` → `OrganogramaClient.tsx` (§11.9 PC1h ME-086b
 //     RETOMADA v2 — nós fora da cadeia hierárquica).
+//   - `PC1I_TOOLTIP` → `OrganogramaClient.tsx` (§11.10 PC1i ME-086b
+//     RETOMADA v2 — auto-referência vedada).
 //   - `getIniciaisFromName` → `OrganogramaClient.tsx` + testes.
 //   - Tipo `OrganogramaPageData` → `page.tsx` + `OrganogramaClient.tsx`.
 //
@@ -69,6 +71,16 @@ export const PC1B_TOOLTIP = 'Detalhes restritos ao Super Admin.' as const;
  * `OrganogramaClient` via atributo HTML `title` no nó esmaecido.
  */
 export const PC1H_TOOLTIP = 'Detalhes restritos à sua cadeia hierárquica.' as const;
+
+/**
+ * §11.10 PC1i (ME-086b RETOMADA v2). Tooltip literal exibido no
+ * próprio nó do usuário logado (auto-referência). Aplica a todos os
+ * perfis operacionais (rh, rh_lider, clevel, lider, colaborador) —
+ * nenhum usuário acessa o próprio Perfil Individual ou Dashboard
+ * Individual pela topologia. Bruno (super_admin) é isento — a
+ * plataforma não é a empresa dele.
+ */
+export const PC1I_TOOLTIP = 'Acesso ao próprio perfil não permitido.' as const;
 
 /**
  * Tooltip canônico bit-exact D2 aprovada ME-077 — botão `[Abrir

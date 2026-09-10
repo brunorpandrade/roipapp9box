@@ -197,6 +197,7 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
             root={root}
             applyPC1b={applyPC1b}
             restrictedNodeIds={restrictedNodeIds}
+            selfNodeId={`clevel-${session.userId}`}
           />
         </Layout>
       );
@@ -255,6 +256,7 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
             root={root}
             applyPC1b={applyPC1bLider}
             restrictedNodeIds={restrictedNodeIdsLider}
+            selfNodeId={`employee-${session.userId}`}
           />
         </Layout>
       );
@@ -305,6 +307,7 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
           companyName={session.companyDisplayName}
           root={root}
           applyPC1b={applyPC1bRh}
+          selfNodeId={`employee-${session.userId}`}
         />
       </Layout>
     );
@@ -324,6 +327,7 @@ interface OrganogramaPageInnerProps {
   readonly root: Parameters<typeof OrganogramaClient>[0]['initialRoot'];
   readonly applyPC1b: boolean;
   readonly restrictedNodeIds?: ReadonlyArray<string>;
+  readonly selfNodeId?: string | null;
 }
 
 function OrganogramaPageInner(props: OrganogramaPageInnerProps): JSX.Element {
@@ -355,6 +359,7 @@ function OrganogramaPageInner(props: OrganogramaPageInnerProps): JSX.Element {
         initialRoot={props.root}
         applyPC1b={props.applyPC1b}
         restrictedNodeIds={props.restrictedNodeIds}
+        selfNodeId={props.selfNodeId}
       />
     </div>
   );

@@ -111,9 +111,10 @@ export async function resolveHierarchicalScope(
     // por privilégio canônico).
     if (cLevelContext === undefined) {
       // Safe default canônico: aplicar restrição maximamente
-      // conservadora — retornar Set vazio adicionado apenas do próprio
-      // nó (defense in depth). Nunca vazar acesso sem contexto.
-      return new Set<string>([`clevel-${session.userId}`]);
+      // conservadora — retornar Set vazio (PC1i cobre próprio nó via
+      // mecanismo separado; sem contexto, ninguém canonicamente é
+      // acessível).
+      return new Set<string>();
     }
     if (cLevelContext.cLevelCount <= 1 || cLevelContext.acessoTotal) {
       return null;
@@ -168,8 +169,10 @@ async function resolveCLevelScope(
   }
 
   // Recursão sobre liderId — descendentes de cada subordinado direto.
+  // §11.10 PC1i: o próprio nó do CF NÃO entra no scope — auto-acesso
+  // ao próprio perfil individual é vedado. O próprio C-level ficará
+  // esmaecido pelo mecanismo PC1i no client.
   const scope = new Set<string>();
-  scope.add(`clevel-${clevelId}`);
   for (const empId of directIds) {
     // O próprio subordinado direto entra no escopo (fix ME-086b
     // RETOMADA v2 — collectDescendants não adiciona o root).
@@ -199,9 +202,9 @@ async function resolveLiderScope(
     .where(and(eq(employees.companyId, companyId), isNull(employeeLeaderHistory.dataFim)));
 
   const scope = new Set<string>();
-  // Próprio nó do líder é clicável (acesso ao próprio Dashboard
-  // Individual autorizado pela matriz §10.4).
-  scope.add(`employee-${liderUserId}`);
+  // §11.10 PC1i: o próprio nó do líder NÃO entra no scope — auto-
+  // acesso ao próprio perfil individual é vedado. O próprio nó ficará
+  // esmaecido pelo mecanismo PC1i no client.
   collectDescendants(liderUserId, links, scope);
   return scope;
 }

@@ -271,7 +271,7 @@ describe('resolveHierarchicalScope — perfis sem restrição PC1h', () => {
 });
 
 describe('resolveHierarchicalScope — CF (§11.9 PC1h)', () => {
-  it('CF ceo: escopo com liderMid + liderFolha + colabFolha + proprio clevel', async () => {
+  it('CF ceo: escopo liderMid + liderFolha + colabFolha (PC1i exclui proprio)', async () => {
     const scope = await resolveHierarchicalScope(
       db,
       { role: 'clevel', userId: ceo, companyId },
@@ -279,7 +279,9 @@ describe('resolveHierarchicalScope — CF (§11.9 PC1h)', () => {
     );
     expect(scope).not.toBeNull();
     const set = scope as ReadonlySet<string>;
-    expect(set.has(`clevel-${ceo}`)).toBe(true);
+    // §11.10 PC1i: proprio nao entra no scope (auto-referencia
+    // bloqueada por mecanismo separado no client).
+    expect(set.has(`clevel-${ceo}`)).toBe(false);
     expect(set.has(`employee-${liderMid}`)).toBe(true);
     expect(set.has(`employee-${liderFolha}`)).toBe(true);
     expect(set.has(`employee-${colabFolha}`)).toBe(true);
@@ -289,7 +291,7 @@ describe('resolveHierarchicalScope — CF (§11.9 PC1h)', () => {
     expect(set.has(`employee-${colabOutro}`)).toBe(false);
   });
 
-  it('CF cfo: escopo com liderOutro + colabOutro + proprio', async () => {
+  it('CF cfo: escopo com liderOutro + colabOutro (proprio nao entra — PC1i)', async () => {
     const scope = await resolveHierarchicalScope(
       db,
       { role: 'clevel', userId: cfo, companyId },
@@ -297,7 +299,7 @@ describe('resolveHierarchicalScope — CF (§11.9 PC1h)', () => {
     );
     expect(scope).not.toBeNull();
     const set = scope as ReadonlySet<string>;
-    expect(set.has(`clevel-${cfo}`)).toBe(true);
+    expect(set.has(`clevel-${cfo}`)).toBe(false);
     expect(set.has(`employee-${liderOutro}`)).toBe(true);
     expect(set.has(`employee-${colabOutro}`)).toBe(true);
     // Outro CEO nao entra
@@ -307,7 +309,7 @@ describe('resolveHierarchicalScope — CF (§11.9 PC1h)', () => {
 });
 
 describe('resolveHierarchicalScope — Lider (§11.9 PC1h)', () => {
-  it('Lider L2 (liderMid) com cadeia descendente: liderFolha + colabFolha + proprio', async () => {
+  it('Lider L2 (liderMid): liderFolha + colabFolha (PC1i exclui proprio)', async () => {
     const scope = await resolveHierarchicalScope(db, {
       role: 'lider',
       userId: liderMid,
@@ -315,7 +317,8 @@ describe('resolveHierarchicalScope — Lider (§11.9 PC1h)', () => {
     });
     expect(scope).not.toBeNull();
     const set = scope as ReadonlySet<string>;
-    expect(set.has(`employee-${liderMid}`)).toBe(true);
+    // §11.10 PC1i: proprio nao entra no scope.
+    expect(set.has(`employee-${liderMid}`)).toBe(false);
     expect(set.has(`employee-${liderFolha}`)).toBe(true);
     expect(set.has(`employee-${colabFolha}`)).toBe(true);
     // C-levels e outra cadeia fora do escopo
@@ -325,7 +328,7 @@ describe('resolveHierarchicalScope — Lider (§11.9 PC1h)', () => {
     expect(set.has(`employee-${colabOutro}`)).toBe(false);
   });
 
-  it('Lider L1 (liderFolha) sem descendente: apenas colabFolha + proprio', async () => {
+  it('Lider L1 (liderFolha) sem descendente: apenas colabFolha (proprio nao entra)', async () => {
     const scope = await resolveHierarchicalScope(db, {
       role: 'lider',
       userId: liderFolha,
@@ -333,13 +336,13 @@ describe('resolveHierarchicalScope — Lider (§11.9 PC1h)', () => {
     });
     expect(scope).not.toBeNull();
     const set = scope as ReadonlySet<string>;
-    expect(set.has(`employee-${liderFolha}`)).toBe(true);
+    expect(set.has(`employee-${liderFolha}`)).toBe(false);
     expect(set.has(`employee-${colabFolha}`)).toBe(true);
     // liderMid (o proprio lider dele) esta ACIMA — nao entra
     expect(set.has(`employee-${liderMid}`)).toBe(false);
   });
 
-  it('Lider L1 outra cadeia (liderOutro): apenas colabOutro + proprio', async () => {
+  it('Lider L1 outra cadeia (liderOutro): apenas colabOutro (proprio nao entra)', async () => {
     const scope = await resolveHierarchicalScope(db, {
       role: 'lider',
       userId: liderOutro,
@@ -347,14 +350,14 @@ describe('resolveHierarchicalScope — Lider (§11.9 PC1h)', () => {
     });
     expect(scope).not.toBeNull();
     const set = scope as ReadonlySet<string>;
-    expect(set.has(`employee-${liderOutro}`)).toBe(true);
+    expect(set.has(`employee-${liderOutro}`)).toBe(false);
     expect(set.has(`employee-${colabOutro}`)).toBe(true);
     expect(set.has(`employee-${liderMid}`)).toBe(false);
   });
 });
 
 describe('resolveHierarchicalScope — safe defaults', () => {
-  it('clevel sem contexto: Set apenas com proprio', async () => {
+  it('clevel sem contexto: Set vazio (proprio nao entra — PC1i via client)', async () => {
     const scope = await resolveHierarchicalScope(db, {
       role: 'clevel',
       userId: 12345,
@@ -362,7 +365,6 @@ describe('resolveHierarchicalScope — safe defaults', () => {
     });
     expect(scope).not.toBeNull();
     const set = scope as ReadonlySet<string>;
-    expect(set.size).toBe(1);
-    expect(set.has('clevel-12345')).toBe(true);
+    expect(set.size).toBe(0);
   });
 });
