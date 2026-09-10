@@ -21,3 +21,9 @@ out/
 # Auxiliares de despacho (não fazem parte do repositório)
 artefatos.sha256
 verificar_me001.sh
+
+# Dispatch artifacts
+apply.sh
+verify.sh
+MANIFEST.sha256.*
+ME*_PATCH_INSTRUCTIONS.md
