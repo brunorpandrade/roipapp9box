@@ -51,6 +51,10 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../db/client';
 import { companies, employees, employeeLeaderHistory } from '../../db/schema';
+import type { PortalInstrumentType } from '../../db/schema/enums';
+import { loadPendenciasPage } from '../../lib/pendencias/pendenciasEngine';
+import { CANONICAL_PENDENCIAS_DEFAULT_FILTERS } from '../pendencias-portal/filters';
+import type { PendenciaStatus } from '../pendencias-portal/mappings';
 
 /**
  * Dados canonicos do cabecalho do painel: logo + nome fantasia da
@@ -109,14 +113,22 @@ export interface CadeiaIndiretaData {
 
 /**
  * Item canonico da lista de pendencias do proprio usuario logado
- * (Secao 4 "Meu portal"). Cada linha: nome instrumento + badge status
- * + prazo original. Ordenado por diasEmAtraso descendente.
+ * (Secao 4 "Meu portal"). Alinhado bit-a-bit aos enums canonicos do
+ * repositorio: `instrumento` usa `PortalInstrumentType` (§15.3
+ * CAMADA_DADOS), `status` usa `PendenciaStatus` do mappings canonico
+ * do `/pendencias-portal` (§14.23). Ordenado por `diasEmAtraso`
+ * descendente (mantido do engine — ME-B9-fechamento herda a ordenacao
+ * canonica sem re-sortear).
+ *
+ * ME-B9-fechamento (D-B9-MEU-PORTAL-PENDENCIAS ENCERRADO): o Client
+ * consome `INSTRUMENT_LABEL[item.instrumento]` do mappings canonico
+ * do `/pendencias-portal` para renderizar o texto — evita duplicacao
+ * L125.
  */
 export interface MeuPortalPendenciaItem {
   readonly key: string;
-  readonly instrumento: 'perfil_individual' | 'instrumentoA' | 'instrumentoD' | 'nr1';
-  readonly instrumentoLabel: string;
-  readonly status: 'pendente' | 'atrasado';
+  readonly instrumento: PortalInstrumentType;
+  readonly status: PendenciaStatus;
   readonly prazoOriginal: Date | null;
   readonly diasEmAtraso: number;
 }
@@ -309,36 +321,57 @@ export async function loadCadeiaIndiretaData(
  * PROPRIO usuario logado no portal, ordenadas por dias em atraso
  * descendente.
  *
- * Regra canonica de derivacao B9 (D-ME083-11 aprovado):
- * - Fonte primaria: `performanceData` (existencia de linha canonica
- *   para `(employeeId=userId, mes=mesCorrente)` indica preenchimento
- *   do proprio colaborador nos instrumentos que ele mesmo responde).
- * - No B9 esta funcao retorna a lista bit-exact vazia por padrao — o
- *   RH-titular tem responsabilidades operacionais (nao instrumento
- *   proprio recorrente); a definicao canonica de "pendencias no portal
- *   do proprio RH" nasce quando os instrumentos individuais A/C/D/NR-1
- *   forem canonizados como devidos ao proprio titular. Debito
- *   D-B9-MEU-PORTAL-PENDENCIAS canonizado.
+ * ME-B9-fechamento (D-B9-MEU-PORTAL-PENDENCIAS ENCERRADO): substitui
+ * bit-a-bit o stub §5.2 da ME-083 por implementacao canonica funcional
+ * apoiada no `pendenciasEngine` (mesma pipeline canonica ja consumida
+ * por `/pendencias-portal` §14.23 + card resumo §5.8). Estrategia:
+ * (1) chama `loadPendenciasPage` em loop paginado sobre a empresa toda
+ *     ate esgotar `totalRows` (empresa demo tipica <100 pendencias — 1
+ *     iteracao; empresa grande >100 — poucas iteracoes; RV-11 preservada);
+ * (2) filtra em memoria por `userType === 'employee' && userId ===
+ *     session.userId` — usuarios do painel RH sao sempre employees (RH
+ *     puro, RHL1, RHL2), nunca clevel;
+ * (3) mapeia `PendenciaRow[]` para `MeuPortalPendenciaItem[]` bit-a-bit
+ *     preservando ordenacao canonica (`diasEmAtraso` desc) da engine.
  *
- * A funcao existe canonicamente com forma futura preservada — o dia em
- * que a definicao existir, o corpo canonico eh substituido bit-exact
- * sem alterar assinatura ou consumidor. Ver `PainelRHClient` que ja
- * renderiza estado vazio canonico literal "Voce nao tem pendencias no
- * portal." bit-exact §5.5.
+ * `companyId` foi adicionado a assinatura para permitir escopo bit-a-bit
+ * da empresa autenticada (defense-in-depth §2.4 — nao confia so em
+ * `employees.id` sem cross-check da empresa).
  */
-export async function loadMeuPortalData(db: RoipDatabase, userId: number): Promise<MeuPortalData> {
-  // ME-083 D-ME083-11 — implementacao canonica B9 retorna vazio
-  // determinista. Query defensiva de sanity (evita import morto e
-  // preserva forma futura da funcao — quando a definicao canonica de
-  // "pendencia no portal do proprio RH" existir, a query se expande
-  // aqui sem quebrar assinatura).
-  const _existencia = await db
-    .select({ id: employees.id })
-    .from(employees)
-    .where(eq(employees.id, userId))
-    .limit(1);
-  if (_existencia.length === 0) {
-    return { pendencias: [] };
-  }
-  return { pendencias: [] };
+export async function loadMeuPortalData(
+  db: RoipDatabase,
+  companyId: number,
+  userId: number,
+): Promise<MeuPortalData> {
+  const pageSize = 100 as const;
+  const acumulado: MeuPortalPendenciaItem[] = [];
+  let page = 1;
+  let totalPages = 1;
+  do {
+    const result = await loadPendenciasPage({
+      db,
+      companyId,
+      filters: CANONICAL_PENDENCIAS_DEFAULT_FILTERS,
+      page,
+      pageSize,
+    });
+    totalPages = result.totalPages;
+    for (const row of result.rows) {
+      if (row.userType !== 'employee') {
+        continue;
+      }
+      if (row.userId !== userId) {
+        continue;
+      }
+      acumulado.push({
+        key: row.key,
+        instrumento: row.instrumento,
+        status: row.status,
+        prazoOriginal: row.prazoOriginal,
+        diasEmAtraso: row.diasEmAtraso,
+      });
+    }
+    page += 1;
+  } while (page <= totalPages);
+  return { pendencias: acumulado };
 }

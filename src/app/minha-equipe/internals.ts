@@ -1,10 +1,11 @@
-// ROIP APP 9BOX — helpers internos canonicos rota RH-Lider
-// `/minha-equipe` (§14.11 + §5.5, ME-085). Rota RH-Lider-only (Cenario
-// 1 + Cenario 2) que herda ~90% da estrutura de §14.10 com 4 ajustes:
-// (a) 4 botoes de acao ocultos; (b) filtro "Lider" omitido (sempre e o
-// proprio usuario logado); (c) coluna "Lider direto" omitida por
-// redundancia (D-ME085-2 B aprovada); (d) badge RF + opcao "Responsavel
-// financeiro" no filtro "Papel funcional" nao aparecem (§14.10.1 + §20).
+// ROIP APP 9BOX — helpers internos canonicos rota `/minha-equipe`
+// (§14.11 + §5.5, ME-085; escopo ampliado na ME-B9-fechamento para
+// cobrir Lider Cenario 1 e Lider Cenario 2 alem de RH-Lider). Rota
+// herda ~90% da estrutura de §14.10 com 4 ajustes: (a) 4 botoes de
+// acao ocultos; (b) filtro "Lider" omitido (sempre e o proprio usuario
+// logado); (c) coluna "Lider direto" omitida por redundancia
+// (D-ME085-2 B aprovada); (d) badge RF + opcao "Responsavel financeiro"
+// no filtro "Papel funcional" nao aparecem (§14.10.1 + §20).
 //
 // Padrao S366 CC068 canonizado: `page.tsx` exporta apenas o default;
 // helpers, tipos e loaders vivem aqui em `internals.ts` irmao para
@@ -14,39 +15,42 @@
 // - CAMADA_UI §14.11 (ajustes vs §14.10) + §14.10 (base herdada) +
 //   §14.10.1 (badges L/RH/RF — RF suprimido nesta rota) + §5.5 (empty
 //   canonico "Voce nao tem liderados diretos ativos.") + §3.4/§3.5
-//   (menu RH-Lider C1/C2).
-// - CAMADA_AUTH §10.4 linha 817 (matriz — RH puro=deny; RH-Lider=allow;
-//   escopo ME-085 canonico apenas RH-Lider — D-ME085-1 A aprovada;
-//   demais roles autorizados na matriz caem em access-denied ate
-//   canonizacao futura).
+//   (menu RH-Lider C1/C2) + §3.6/§3.7 (menu Lider C1/C2).
+// - CAMADA_AUTH §10.4 (matriz — RH puro=deny; RH-Lider=allow;
+//   Lider=allow; C-level=allow bloqueado por escopo de infra ate
+//   D-CU-EMPIRICO). ME-B9-fechamento S230-B: guard passa a aceitar
+//   `rh_lider` e `lider`; `clevel` (CU/CT/CF) fica deny ate primeira
+//   empresa cliente com C-level unico ser onboarded (dependencia
+//   estrutural: `liderIdTipo='clevel'` no scoper — canonizado em ME
+//   dedicada quando validacao empirica for possivel).
 // - CAMADA_NEGOCIO §13.2 (liderado direto ativo = employeeLeaderHistory
 //   com `dataFim IS NULL`) + §16.2 (regra canonica de escopo dos badges
 //   e do filtro "Papel funcional" nas rotas P20).
 // - CAMADA_DADOS §4.5 (`employees`) + §4.6 (`employeeLeaderHistory`).
-// - MASTER_ESCOPO_B9 §3.4 (ficha canonica ME-085 — referencia a
-//   corrigir em ME-B9-fechamento via D-MASTER-B9-FICHA085).
+// - MASTER_ESCOPO_B9 §3.4 (ficha ME-085 — corrigida em MASTER v3.0 pela
+//   ME-B9-fechamento).
 //
 // Nota canonica sobre PC1a: `listEmployeesPaginated` do service ja
 // opera APENAS sobre `employees` (nunca faz UNION com `cLevelMembers`).
-// C-levels nao podem ser liderados de RH-Lider por decisao canonica
-// arquitetural — o filtro por `elh.liderId=session.userId` no service
-// escopa exatamente os employees diretos. Comentario bit-exact
-// preservado.
+// C-levels nao podem ser liderados de RH-Lider ou Lider por decisao
+// canonica arquitetural — o filtro por `elh.liderId=session.userId` no
+// service escopa exatamente os employees diretos.
 //
-// Escopo canonico bit-exact do RH-Lider (§14.11 + D-ME085-2 B):
+// Escopo canonico do employee-leader (RH-Lider OU Lider — §14.11 +
+// D-ME085-2 B + S230-B):
 // - liderId = session.userId (forcado server-side via
-//   `enforceRHLiderScope`; sobrescreve qualquer input do cliente).
-// - liderIdTipo = 'employee' (RH-Lider e sempre employee, nunca
-//   clevel).
+//   `enforceEmployeeLeaderScope`; sobrescreve qualquer input do cliente).
+// - liderIdTipo = 'employee' (tanto RH-Lider quanto Lider sao sempre
+//   employees, nunca clevel; C-level fora do escopo desta rota).
 // - papelFuncional: se cliente enviar 'respfin' via URL manipulada,
 //   reseta para 'todos' (defense-in-depth §14.10.1 + §16.2 — opcao RF
 //   nao existe nesta rota).
 //
 // **RV-13 canonica.** Todo export tem consumidor real:
 // - `resolveDatabaseUrl` → `page.tsx` + `actions.ts`.
-// - `enforceRHLiderScope` → `page.tsx` + `actions.ts` + testes.
-// - `loadMinhaEquipePageForRHLider` → `page.tsx` + testes.
-// - `MinhaEquipeRHLiderPageData` (tipo) → `page.tsx` + testes.
+// - `enforceEmployeeLeaderScope` → `page.tsx` + `actions.ts` + testes.
+// - `loadMinhaEquipePageForEmployeeLeader` → `page.tsx` + testes.
+// - `MinhaEquipeEmployeeLeaderPageData` (tipo) → `page.tsx` + testes.
 //
 // **RV-12 canonica.** Zero SQL cru — reutiliza service tipado Drizzle.
 // **RV-14 canonica.** Um statement por linha, largura maxima 100 cols.
@@ -77,16 +81,16 @@ export function resolveDatabaseUrl(): string {
 }
 
 /**
- * §14.11 + §16.2 — override canonico bit-exact de escopo RH-Lider.
- * Aplicado SEMPRE (server-side, tanto na carga inicial quanto em cada
- * refetch) para garantir defense-in-depth: cliente nao pode escapar
- * do escopo canonico via URL manipulada nem via replay de payload de
- * server action.
+ * §14.11 + §16.2 — override canonico bit-exact de escopo do employee-
+ * leader (RH-Lider OU Lider). Aplicado SEMPRE (server-side, tanto na
+ * carga inicial quanto em cada refetch) para garantir defense-in-depth:
+ * cliente nao pode escapar do escopo canonico via URL manipulada nem
+ * via replay de payload de server action.
  *
  * Regras canonicas aplicadas:
- * (1) `liderId = leaderId` (session.userId do RH-Lider autenticado).
- * (2) `liderIdTipo = 'employee'` (RH-Lider e sempre employee, nunca
- *     clevel).
+ * (1) `liderId = leaderId` (session.userId do usuario autenticado).
+ * (2) `liderIdTipo = 'employee'` (tanto RH-Lider quanto Lider sao
+ *     sempre employees, nunca clevel).
  * (3) `papelFuncional = 'respfin' → 'todos'` (§16.2 — opcao RF
  *     canonicamente ausente nesta rota).
  *
@@ -94,7 +98,7 @@ export function resolveDatabaseUrl(): string {
  * senioridade, jobFamily, datas, sortBy, sortOrder, page, pageSize)
  * passam bit-exact do input.
  */
-export function enforceRHLiderScope(
+export function enforceEmployeeLeaderScope(
   filters: ColaboradoresFilters,
   leaderId: number,
 ): ColaboradoresFilters {
@@ -108,8 +112,8 @@ export function enforceRHLiderScope(
 
 /**
  * §14.11 — dados iniciais canonicos bit-exact carregados server-side
- * para a variante RH-Lider `/minha-equipe`. Estrutura identica a
- * `TodosColaboradoresRHPageData` do ME-084 (preserva contrato do
+ * para `/minha-equipe` (variante RH-Lider ou Lider). Estrutura identica
+ * a `TodosColaboradoresRHPageData` do ME-084 (preserva contrato do
  * `TodosColaboradoresClient` compartilhado — D-ME085-3 B aprovada).
  *
  * `departamentos` e `lideres` sao carregados por consistencia com o
@@ -118,30 +122,30 @@ export function enforceRHLiderScope(
  * pequenos) preserva simetria com o Client — evita bifurcacao de
  * contrato + serializa como array vazio-ou-nao sem penalidade.
  */
-export interface MinhaEquipeRHLiderPageData {
+export interface MinhaEquipeEmployeeLeaderPageData {
   readonly listResult: ListEmployeesResult;
   readonly departamentos: readonly Departamento[];
   readonly lideres: readonly { id: number; name: string; tipo: 'employee' | 'clevel' }[];
 }
 
 /**
- * §14.11 — loader canonico bit-exact da rota RH-Lider `/minha-equipe`.
- * Escopa por `companyId` derivado da `session.companyId` + `leaderId`
- * derivado da `session.userId`. Aplica `enforceRHLiderScope` antes de
- * chamar o service para blindar contra qualquer entrada manipulada do
- * cliente.
+ * §14.11 — loader canonico bit-exact da rota `/minha-equipe` (variante
+ * RH-Lider ou Lider). Escopa por `companyId` derivado da
+ * `session.companyId` + `leaderId` derivado da `session.userId`.
+ * Aplica `enforceEmployeeLeaderScope` antes de chamar o service para
+ * blindar contra qualquer entrada manipulada do cliente.
  *
  * Tres queries paralelas: listagem paginada + departamentos (dropdown
  * canonico) + lideres (carregado por simetria contratual com o Client
  * — nao renderizado quando `hideLiderFilter=true`).
  */
-export async function loadMinhaEquipePageForRHLider(
+export async function loadMinhaEquipePageForEmployeeLeader(
   db: RoipDatabase,
   companyId: number,
   leaderId: number,
   filters: ColaboradoresFilters,
-): Promise<MinhaEquipeRHLiderPageData> {
-  const scopedFilters = enforceRHLiderScope(filters, leaderId);
+): Promise<MinhaEquipeEmployeeLeaderPageData> {
+  const scopedFilters = enforceEmployeeLeaderScope(filters, leaderId);
   const serviceInput = colaboradoresFiltersToServiceInput(scopedFilters);
   const [listResult, departamentos, lideres] = await Promise.all([
     listEmployeesPaginated(db, companyId, serviceInput),

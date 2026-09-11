@@ -122,7 +122,7 @@ export default async function PainelRHPage(): Promise<JSX.Element> {
       showsCadeiaIndireta
         ? loadCadeiaIndiretaData(client.db, session.userId)
         : Promise.resolve(null),
-      loadMeuPortalData(client.db, session.userId),
+      loadMeuPortalData(client.db, session.companyId, session.userId),
     ]);
 
     return (

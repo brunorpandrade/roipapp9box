@@ -37,6 +37,7 @@ import {
   CARD_58_SUB_ZERO,
   CARD_58_TITLE,
   CARD_COLOR_PENDENCIAS,
+  INSTRUMENT_LABEL,
 } from '../pendencias-portal/mappings';
 import type {
   DepartmentCount,
@@ -56,6 +57,19 @@ import type {
 // Props canonicas bit-exact
 // -----------------------------------------------------------------------
 
+/**
+ * ME-B9-fechamento (S232-A + D-ME083-D-RH-IMPERSONATION-PAINEL-RH):
+ * variante canonica do PainelRH.
+ * - `'rh'` (default): comportamento canonico atual — RH puro, RHL1, RHL2
+ *   autenticados renderizam painel padrao com Secao 4 "Meu portal".
+ * - `'super_admin_preview'`: Super Admin renderiza previa do painel do RH
+ *   da empresa X. Banner canonico no topo identifica o modo; Secao 4
+ *   "Meu portal" e omitida (Bruno nao tem pendencias no portal da empresa
+ *   X — nao ha usuario RH da empresa X para acumular pendencias no
+ *   fluxo preview canonico bit-a-bit).
+ */
+export type PainelRHVariant = 'rh' | 'super_admin_preview';
+
 export interface PainelRHClientProps {
   readonly company: RhCompanyInfo;
   readonly counts: LandingCounts;
@@ -67,7 +81,13 @@ export interface PainelRHClientProps {
   readonly showsCadeiaIndireta: boolean;
   readonly minhaEquipe: MinhaEquipeData | null;
   readonly cadeiaIndireta: CadeiaIndiretaData | null;
-  readonly meuPortal: MeuPortalData;
+  /**
+   * `null` apenas quando `variant === 'super_admin_preview'` — Secao 4
+   * suprimida canonicamente. Todo cenario RH real (`variant === 'rh'`)
+   * traz `meuPortal` obrigatoriamente (mesmo vazio).
+   */
+  readonly meuPortal: MeuPortalData | null;
+  readonly variant?: PainelRHVariant;
 }
 
 // -----------------------------------------------------------------------
@@ -286,6 +306,7 @@ function EmptyState(props: { readonly texto: string }): JSX.Element {
 
 export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
   const {
+    company,
     counts,
     departmentCounts,
     onboardingSummary,
@@ -296,30 +317,61 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
     minhaEquipe,
     cadeiaIndireta,
     meuPortal,
+    variant = 'rh',
   } = props;
+
+  const isPreview = variant === 'super_admin_preview';
 
   const rhCardSub = mesAtualClosure.rhPreenchido
     ? `Preenchido (limite ${mesAtualClosure.dataLimiteRh})`
     : `Pendente (limite ${mesAtualClosure.dataLimiteRh})`;
 
-  // ME-083 D-ME083-9 — card §5.5 "Status dados do mes — Lideres" renderiza
-  // placeholder §5.2 enquanto `lideresPreenchidos` for `null` (definicao
-  // canonica pendente). Contudo `lideresTotal` ja e exibivel como sub.
+  // ME-B9-fechamento (S231-B' + S231.1) — card §5.5 "Status dados do mes
+  // — Lideres" renderiza N/M com semantica canonica: N = lideres onde
+  // TODOS os liderados diretos ativos tem `performanceVariableData` do
+  // mes com `demanda` E `executado` preenchidos; M = lideres com >=1
+  // liderado direto ativo. Estado vazio canonico quando M === 0 (nenhum
+  // lider com liderados na empresa) renderiza literal §5.2.
   const lideresCardValue =
-    mesAtualClosure.lideresPreenchidos === null
+    mesAtualClosure.lideresComLiderados === 0
       ? 'Coleta de dados em andamento'
-      : `${mesAtualClosure.lideresPreenchidos}/${mesAtualClosure.lideresTotal}`;
+      : `${mesAtualClosure.lideresPreenchidos}/${mesAtualClosure.lideresComLiderados}`;
   const lideresCardSub = (() => {
-    if (mesAtualClosure.lideresPreenchidos === null) {
+    if (mesAtualClosure.lideresComLiderados === 0) {
       return `Mês ${mesAtualClosure.mesAtual}`;
     }
-    const denom = Math.max(mesAtualClosure.lideresTotal, 1);
+    const denom = mesAtualClosure.lideresComLiderados;
     const pct = Math.round((mesAtualClosure.lideresPreenchidos / denom) * 100);
-    return `${pct}% dos ${mesAtualClosure.lideresTotal} líderes`;
+    return `${pct}% dos ${denom} líderes`;
   })();
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      {isPreview ? (
+        <div
+          role="alert"
+          aria-label="Modo preview do Super Admin"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '12px 16px',
+            marginBottom: 16,
+            borderRadius: 8,
+            background: '#FEF3C7',
+            border: `1px solid ${COLORS.border.default}`,
+            color: COLORS.primary.navy,
+            fontSize: 13,
+            fontWeight: 500,
+            lineHeight: 1.4,
+          }}
+        >
+          <span aria-hidden="true">🔍</span>
+          <span>
+            Preview do painel RH — {company.nomeFantasia}. Você está navegando como Super Admin.
+          </span>
+        </div>
+      ) : null}
       <h1
         style={{
           fontSize: 22,
@@ -576,98 +628,105 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
         </section>
       ) : null}
 
-      {/* Secao 4 — Meu portal §5.5 (todos os cenarios RH) */}
-      <section aria-label="Meu portal" style={{ marginTop: 32 }}>
-        <SectionTitle>Meu portal</SectionTitle>
-        {meuPortal.pendencias.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <EmptyState texto={MEU_PORTAL_VAZIO_TEXTO} />
-            <a
-              href="/colaborador"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                alignSelf: 'flex-start',
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: '10px 16px',
-                borderRadius: 6,
-                fontSize: 13,
-                fontWeight: 600,
-                color: '#FFFFFF',
-                background: COLORS.primary.navy,
-                textDecoration: 'none',
-              }}
-            >
-              {MEU_PORTAL_BOTAO_LABEL}
-            </a>
-          </div>
-        ) : (
-          <div
-            style={{
-              background: COLORS.background.card,
-              border: `1px solid ${COLORS.border.default}`,
-              borderRadius: 8,
-              padding: '16px 20px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-            }}
-          >
-            {meuPortal.pendencias.map((p) => (
-              <div
-                key={p.key}
+      {/* Secao 4 — Meu portal §5.5 (todos os cenarios RH). ME-B9-fechamento
+          (S232-A): oculta no `super_admin_preview` — Bruno nao tem
+          pendencias no portal da empresa X; loader e pulado pelo page.tsx
+          e `meuPortal` chega como `null` bit-a-bit. */}
+      {!isPreview && meuPortal !== null ? (
+        <section aria-label="Meu portal" style={{ marginTop: 32 }}>
+          <SectionTitle>Meu portal</SectionTitle>
+          {meuPortal.pendencias.length === 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <EmptyState texto={MEU_PORTAL_VAZIO_TEXTO} />
+              <a
+                href="/colaborador"
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
-                  display: 'flex',
+                  alignSelf: 'flex-start',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '10px 12px',
+                  padding: '10px 16px',
                   borderRadius: 6,
-                  background: COLORS.background.elevated,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: '#FFFFFF',
+                  background: COLORS.primary.navy,
+                  textDecoration: 'none',
                 }}
               >
-                <span style={{ fontSize: 13, color: COLORS.text.primary }}>
-                  {p.instrumentoLabel}
-                </span>
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: 12,
-                    color:
-                      p.status === 'atrasado' ? COLORS.badge.dangerText : COLORS.badge.warningText,
-                    background:
-                      p.status === 'atrasado' ? COLORS.badge.dangerBg : COLORS.badge.warningBg,
-                  }}
-                >
-                  {p.status === 'atrasado' ? 'Atrasado' : 'Pendente'}
-                </span>
-              </div>
-            ))}
-            <a
-              href="/colaborador"
-              target="_blank"
-              rel="noopener noreferrer"
+                {MEU_PORTAL_BOTAO_LABEL}
+              </a>
+            </div>
+          ) : (
+            <div
               style={{
-                alignSelf: 'flex-start',
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: '10px 16px',
-                borderRadius: 6,
-                fontSize: 13,
-                fontWeight: 600,
-                color: '#FFFFFF',
-                background: COLORS.primary.navy,
-                textDecoration: 'none',
-                marginTop: 4,
+                background: COLORS.background.card,
+                border: `1px solid ${COLORS.border.default}`,
+                borderRadius: 8,
+                padding: '16px 20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
               }}
             >
-              {MEU_PORTAL_BOTAO_LABEL}
-            </a>
-          </div>
-        )}
-      </section>
+              {meuPortal.pendencias.map((p) => (
+                <div
+                  key={p.key}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 12px',
+                    borderRadius: 6,
+                    background: COLORS.background.elevated,
+                  }}
+                >
+                  <span style={{ fontSize: 13, color: COLORS.text.primary }}>
+                    {INSTRUMENT_LABEL[p.instrumento]}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: 12,
+                      color:
+                        p.status === 'Atrasado'
+                          ? COLORS.badge.dangerText
+                          : COLORS.badge.warningText,
+                      background:
+                        p.status === 'Atrasado' ? COLORS.badge.dangerBg : COLORS.badge.warningBg,
+                    }}
+                  >
+                    {p.status}
+                  </span>
+                </div>
+              ))}
+              <a
+                href="/colaborador"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  alignSelf: 'flex-start',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '10px 16px',
+                  borderRadius: 6,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: '#FFFFFF',
+                  background: COLORS.primary.navy,
+                  textDecoration: 'none',
+                  marginTop: 4,
+                }}
+              >
+                {MEU_PORTAL_BOTAO_LABEL}
+              </a>
+            </div>
+          )}
+        </section>
+      ) : null}
 
       {/* Secao 5 — Radar da empresa §5.5 (Tabela IQL + Clima) — placeholder */}
       <section aria-label="Radar da empresa" style={{ marginTop: 32 }}>

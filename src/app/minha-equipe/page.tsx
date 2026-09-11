@@ -1,6 +1,7 @@
-// ROIP APP 9BOX — rota RH-Lider `/minha-equipe` (§14.11 + §5.5,
-// ME-085). Substitui bit-exact o stub §5.2 ME-083 por implementacao
-// funcional canonica.
+// ROIP APP 9BOX — rota employee-leader `/minha-equipe` (§14.11 + §5.5,
+// ME-085; escopo ampliado na ME-B9-fechamento — S230-B — para cobrir
+// Lider Cenario 1 e Cenario 2 alem de RH-Lider). Substitui bit-exact o
+// stub §5.2 ME-083 por implementacao funcional canonica.
 //
 // Origem canonica:
 // - CAMADA_UI §14.11 (ajustes vs §14.10 — 4 botoes ocultos, filtro
@@ -84,8 +85,8 @@ import { TodosColaboradoresClient } from './_client';
 import { listarMinhaEquipeAction } from './actions';
 import { parseColaboradoresFiltersFromSearchParams } from './filters';
 import {
-  enforceRHLiderScope,
-  loadMinhaEquipePageForRHLider,
+  enforceEmployeeLeaderScope,
+  loadMinhaEquipePageForEmployeeLeader,
   resolveDatabaseUrl,
 } from './internals';
 
@@ -110,11 +111,19 @@ export default async function MinhaEquipePage(props: PageProps): Promise<JSX.Ele
   if (session.passwordSet === false) {
     redirect('/alterar-senha');
   }
-  // D-ME085-1 A: escopo canonico ME-085 restrito a RH-Lider (C1 + C2).
-  // RH puro: deny canonico §10.4 (middleware ja bloqueia; defense-in-
-  // depth aqui). Lider/C-level: autorizados na matriz mas fora do
-  // escopo v1 — access-denied ate canonizacao futura.
-  if (session.role !== 'rh_lider') {
+  // ME-B9-fechamento S230-B: escopo canonico ampliado — aceita
+  // `rh_lider` (D-ME085-1 A original, C1 + C2) E `lider` (Lider Cenario
+  // 1 + Cenario 2). Alinha guard com matriz §10.4 (RHL1/RHL2/L1/L2 =
+  // allow). RH puro: deny canonico §10.4 (middleware ja bloqueia;
+  // defense-in-depth aqui). C-level (CU/CT/CF): autorizado na matriz
+  // mas dependente estruturalmente de `liderIdTipo='clevel'` no scoper
+  // — canonizado quando primeira empresa cliente com C-level unico for
+  // onboarded (D-CU-EMPIRICO). Loader compartilhado
+  // `loadMinhaEquipePageForEmployeeLeader` opera bit-a-bit para
+  // employee-leaders (RH-Lider ou Lider); nenhum branch por role
+  // dentro do loader — sao equivalentes canonicamente para escopo de
+  // liderados diretos ativos.
+  if (session.role !== 'rh_lider' && session.role !== 'lider') {
     redirect('/access-denied?rota=/minha-equipe');
   }
 
@@ -152,8 +161,8 @@ export default async function MinhaEquipePage(props: PageProps): Promise<JSX.Ele
     // Parse tolerante Next 15 → aplica override RH-Lider (defense-in-
     // depth: cliente nao pode escapar do escopo via URL manipulada).
     const parsedFilters = parseColaboradoresFiltersFromSearchParams(rawParams);
-    const scopedFilters = enforceRHLiderScope(parsedFilters, session.userId);
-    const pageData = await loadMinhaEquipePageForRHLider(
+    const scopedFilters = enforceEmployeeLeaderScope(parsedFilters, session.userId);
+    const pageData = await loadMinhaEquipePageForEmployeeLeader(
       client.db,
       companyId,
       session.userId,

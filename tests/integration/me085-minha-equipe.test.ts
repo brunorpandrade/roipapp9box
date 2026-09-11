@@ -2,12 +2,12 @@
 // `/minha-equipe` (§14.11 + §5.5).
 //
 // Cobre canonicamente bit-exact contra MySQL real (RV-11):
-//   1. `enforceRHLiderScope` (funcao pura):
+//   1. `enforceEmployeeLeaderScope` (funcao pura):
 //      - Aplica `liderId = leaderId` + `liderIdTipo = 'employee'` bit-
 //        exact independentemente do input.
 //      - Reseta `papelFuncional = 'respfin' → 'todos'`.
 //      - Preserva todos os demais filtros bit-exact.
-//   2. `loadMinhaEquipePageForRHLider`:
+//   2. `loadMinhaEquipePageForEmployeeLeader`:
 //      - Retorna apenas liderados diretos ativos do RH-Lider (via
 //        `elh.liderId = leaderId AND elh.dataFim IS NULL`).
 //      - Ignora liderados diretos de outros lideres (defense-in-depth).
@@ -28,8 +28,8 @@ import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/c
 import { cLevelMembers, companies, employees, employeeLeaderHistory } from '../../src/db/schema';
 import { createCompany } from '../../src/server/services/companies';
 import {
-  enforceRHLiderScope,
-  loadMinhaEquipePageForRHLider,
+  enforceEmployeeLeaderScope,
+  loadMinhaEquipePageForEmployeeLeader,
 } from '../../src/app/minha-equipe/internals';
 import { CANONICAL_COLABORADORES_DEFAULT_FILTERS } from '../../src/app/minha-equipe/filters';
 
@@ -98,17 +98,17 @@ describe('ME-085 — rota RH-Lider `/minha-equipe` §14.11 (MySQL real)', () => 
   });
 
   // ---------------------------------------------------------------------
-  // enforceRHLiderScope — funcao pura
+  // enforceEmployeeLeaderScope — funcao pura
   // ---------------------------------------------------------------------
 
-  describe('enforceRHLiderScope', () => {
+  describe('enforceEmployeeLeaderScope', () => {
     it('forca liderId e liderIdTipo canonica bit-exact', () => {
       const input = {
         ...CANONICAL_COLABORADORES_DEFAULT_FILTERS,
         liderId: 999, // cliente tenta injetar liderId aleatorio
         liderIdTipo: 'clevel' as const, // e tipo aleatorio
       };
-      const out = enforceRHLiderScope(input, 42);
+      const out = enforceEmployeeLeaderScope(input, 42);
       expect(out.liderId).toBe(42);
       expect(out.liderIdTipo).toBe('employee');
     });
@@ -118,14 +118,14 @@ describe('ME-085 — rota RH-Lider `/minha-equipe` §14.11 (MySQL real)', () => 
         ...CANONICAL_COLABORADORES_DEFAULT_FILTERS,
         papelFuncional: 'respfin' as const,
       };
-      const out = enforceRHLiderScope(input, 42);
+      const out = enforceEmployeeLeaderScope(input, 42);
       expect(out.papelFuncional).toBe('todos');
     });
 
     it('preserva bit-exact papelFuncional em valores nao-respfin', () => {
       const cases = ['todos', 'lider', 'rh', 'sem_papel'] as const;
       for (const p of cases) {
-        const out = enforceRHLiderScope(
+        const out = enforceEmployeeLeaderScope(
           { ...CANONICAL_COLABORADORES_DEFAULT_FILTERS, papelFuncional: p },
           42,
         );
@@ -142,7 +142,7 @@ describe('ME-085 — rota RH-Lider `/minha-equipe` §14.11 (MySQL real)', () => 
         page: 3,
         pageSize: 100 as const,
       };
-      const out = enforceRHLiderScope(input, 42);
+      const out = enforceEmployeeLeaderScope(input, 42);
       expect(out.busca).toBe('ana');
       expect(out.status).toBe('todos');
       expect(out.senioridade).toBe('senior');
@@ -152,10 +152,10 @@ describe('ME-085 — rota RH-Lider `/minha-equipe` §14.11 (MySQL real)', () => 
   });
 
   // ---------------------------------------------------------------------
-  // loadMinhaEquipePageForRHLider — 3 queries paralelas
+  // loadMinhaEquipePageForEmployeeLeader — 3 queries paralelas
   // ---------------------------------------------------------------------
 
-  describe('loadMinhaEquipePageForRHLider', () => {
+  describe('loadMinhaEquipePageForEmployeeLeader', () => {
     it('retorna apenas liderados diretos ativos do RH-Lider autenticado', async () => {
       const rhlId = await seedEmployee({
         companyId: companyIdA,
@@ -178,7 +178,7 @@ describe('ME-085 — rota RH-Lider `/minha-equipe` §14.11 (MySQL real)', () => 
       await seedLeaderHistoryOpen({ employeeId: liderado1, liderId: rhlId });
       await seedLeaderHistoryOpen({ employeeId: liderado2, liderId: rhlId });
 
-      const data = await loadMinhaEquipePageForRHLider(
+      const data = await loadMinhaEquipePageForEmployeeLeader(
         client.db,
         companyIdA,
         rhlId,
@@ -216,7 +216,7 @@ describe('ME-085 — rota RH-Lider `/minha-equipe` §14.11 (MySQL real)', () => 
       await seedLeaderHistoryOpen({ employeeId: meuLiderado, liderId: rhlId });
       await seedLeaderHistoryOpen({ employeeId: naoMeuLiderado, liderId: outroLiderId });
 
-      const data = await loadMinhaEquipePageForRHLider(
+      const data = await loadMinhaEquipePageForEmployeeLeader(
         client.db,
         companyIdA,
         rhlId,
@@ -249,7 +249,7 @@ describe('ME-085 — rota RH-Lider `/minha-equipe` §14.11 (MySQL real)', () => 
         transferBatchId: '00000000-0000-0000-0000-000000000085',
       });
 
-      const data = await loadMinhaEquipePageForRHLider(
+      const data = await loadMinhaEquipePageForEmployeeLeader(
         client.db,
         companyIdA,
         rhlId,
@@ -286,13 +286,13 @@ describe('ME-085 — rota RH-Lider `/minha-equipe` §14.11 (MySQL real)', () => 
       await seedLeaderHistoryOpen({ employeeId: alvoDoOutroLider, liderId: outroLiderId });
 
       // Cliente injeta liderId do outro lider — deve ser sobrescrito
-      // por `enforceRHLiderScope` para `rhlId`.
+      // por `enforceEmployeeLeaderScope` para `rhlId`.
       const filtrosManipulados = {
         ...CANONICAL_COLABORADORES_DEFAULT_FILTERS,
         liderId: outroLiderId,
         liderIdTipo: 'employee' as const,
       };
-      const data = await loadMinhaEquipePageForRHLider(
+      const data = await loadMinhaEquipePageForEmployeeLeader(
         client.db,
         companyIdA,
         rhlId,
@@ -327,7 +327,12 @@ describe('ME-085 — rota RH-Lider `/minha-equipe` §14.11 (MySQL real)', () => 
         ...CANONICAL_COLABORADORES_DEFAULT_FILTERS,
         busca: 'ana',
       };
-      const data = await loadMinhaEquipePageForRHLider(client.db, companyIdA, rhlId, filtroBusca);
+      const data = await loadMinhaEquipePageForEmployeeLeader(
+        client.db,
+        companyIdA,
+        rhlId,
+        filtroBusca,
+      );
       expect(data.listResult.totalCount).toBe(1);
       expect(data.listResult.rows[0]?.name).toBe('Ana Silva');
     });
@@ -341,7 +346,7 @@ describe('ME-085 — rota RH-Lider `/minha-equipe` §14.11 (MySQL real)', () => 
         isLider: true,
       });
 
-      const data = await loadMinhaEquipePageForRHLider(
+      const data = await loadMinhaEquipePageForEmployeeLeader(
         client.db,
         companyIdA,
         rhlId,
@@ -367,7 +372,7 @@ describe('ME-085 — rota RH-Lider `/minha-equipe` §14.11 (MySQL real)', () => 
       // Vinculo tecnicamente possivel via id (nao valida FK cross-company)
       await seedLeaderHistoryOpen({ employeeId: liderado, liderId: rhlId });
 
-      const data = await loadMinhaEquipePageForRHLider(
+      const data = await loadMinhaEquipePageForEmployeeLeader(
         client.db,
         companyIdA,
         rhlId,

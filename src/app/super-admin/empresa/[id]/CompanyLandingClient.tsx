@@ -264,13 +264,14 @@ function AcoesBlock(props: {
       </h2>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         {/*
-          ME-080d Onda 1b — D12=A: botao "Painel de controle do RH" removido.
-          A rota `/painel-rh` le `session.companyId` da sessao do usuario
-          logado. Como Super Admin nao tem `companyId` em sessao, era
-          expulso ao clicar (matriz DOC 02 §10.3). Rota preview canonica
-          `/super-admin/empresa/[id]/painel-rh-preview` (impersonation)
-          endereçada por debito D-RH-IMPERSONATION em ME futura dedicada
-          — decisao arquitetural nao trivial (LGPD + telemetria + auth).
+          ME-B9-fechamento (S233-B + D-ME083-D-RH-IMPERSONATION-PAINEL-RH
+          ENCERRADO): botao "Painel RH (preview)" materializado como
+          entry point contextual canonico da rota
+          `/super-admin/empresa/[id]/painel-rh-preview` (S234-B). Rota
+          herda cobertura do prefixo `/super-admin/empresa/` no matrix
+          (Super Admin=allow, todos os outros=deny). Substitui bit-a-bit
+          o comentario ME-080d Onda 1b — D12=A que reservava a decisao
+          arquitetural.
         */}
         <Link href={`/super-admin/empresa/${companyId}/clevel-rh`} style={buttonStyle}>
           C-level
@@ -283,6 +284,9 @@ function AcoesBlock(props: {
         </Link>
         <Link href={`/super-admin/empresa/${companyId}/organograma`} style={buttonStyle}>
           Organograma
+        </Link>
+        <Link href={`/super-admin/empresa/${companyId}/painel-rh-preview`} style={buttonStyle}>
+          Painel RH (preview)
         </Link>
       </div>
       <div

@@ -313,19 +313,19 @@ describe('ME-083 — loaders `/painel-rh` §5.5 (MySQL real)', () => {
   // loadMeuPortalData
   // ---------------------------------------------------------------------
 
-  describe('loadMeuPortalData', () => {
-    it('retorna vazio canonico bit-exact no B9 (D-B9-MEU-PORTAL-PENDENCIAS)', async () => {
+  describe('loadMeuPortalData — semantica ME-B9-fechamento (D-B9-MEU-PORTAL-PENDENCIAS)', () => {
+    it('retorna vazio quando o usuario nao tem pendencias no portal', async () => {
       const rhId = await seedEmployee({
         companyId: companyIdA,
         cpf: '20000000080',
         isRH: true,
       });
-      const data = await loadMeuPortalData(client.db, rhId);
+      const data = await loadMeuPortalData(client.db, companyIdA, rhId);
       expect(data.pendencias).toEqual([]);
     });
 
-    it('retorna vazio canonico bit-exact para userId inexistente', async () => {
-      const data = await loadMeuPortalData(client.db, 999999);
+    it('retorna vazio para userId inexistente na empresa (defense-in-depth)', async () => {
+      const data = await loadMeuPortalData(client.db, companyIdA, 999999);
       expect(data.pendencias).toEqual([]);
     });
   });
@@ -334,26 +334,34 @@ describe('ME-083 — loaders `/painel-rh` §5.5 (MySQL real)', () => {
   // Expansao ME-083 D-ME083-9 do loadMesAtualClosureStatus
   // ---------------------------------------------------------------------
 
-  describe('loadMesAtualClosureStatus — expansao ME-083 D-ME083-9', () => {
-    it('lideresTotal conta employees ativos com isLider=true', async () => {
+  describe('loadMesAtualClosureStatus — semantica S231-B` + S231.1 (ME-B9-fechamento)', () => {
+    // Testes originais D-ME083-9 (lideresTotal = todos lideres ativos +
+    // lideresPreenchidos=null) foram substituidos pela semantica canonica
+    // final: lideresComLiderados (denominador) conta apenas lideres com
+    // >=1 liderado direto ativo; lideresPreenchidos (numerador) e sempre
+    // number (>=0). Cobertura rica com goals + performanceVariableData
+    // vive em `me-b9-fechamento-lideres-preenchidos.test.ts`.
+
+    it('lider ativo sem liderados nao entra em lideresComLiderados', async () => {
       await seedEmployee({ companyId: companyIdA, cpf: '20000000090', isLider: true });
       await seedEmployee({ companyId: companyIdA, cpf: '20000000091', isLider: true });
       await seedEmployee({ companyId: companyIdA, cpf: '20000000092', isLider: false });
       const status = await loadMesAtualClosureStatus(client.db, companyIdA, new Date('2026-08-17'));
-      expect(status.lideresTotal).toBe(2);
+      expect(status.lideresComLiderados).toBe(0);
     });
 
-    it('lideresPreenchidos = null bit-exact no B9', async () => {
+    it('lideresPreenchidos e number (nao null) quando denominador e 0', async () => {
       await seedEmployee({ companyId: companyIdA, cpf: '20000000095', isLider: true });
       const status = await loadMesAtualClosureStatus(client.db, companyIdA, new Date('2026-08-17'));
-      expect(status.lideresPreenchidos).toBe(null);
+      expect(status.lideresPreenchidos).toBe(0);
+      expect(status.lideresComLiderados).toBe(0);
     });
 
-    it('lideresTotal ignora lideres de outra empresa', async () => {
+    it('lideresComLiderados ignora lideres de outra empresa', async () => {
       await seedEmployee({ companyId: companyIdA, cpf: '20000000100', isLider: true });
       await seedEmployee({ companyId: companyIdB, cpf: '20000000101', isLider: true });
       const status = await loadMesAtualClosureStatus(client.db, companyIdA, new Date('2026-08-17'));
-      expect(status.lideresTotal).toBe(1);
+      expect(status.lideresComLiderados).toBe(0);
     });
   });
 

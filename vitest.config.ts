@@ -23,9 +23,15 @@ import { defineConfig } from 'vitest/config';
 //   worker sequencial para isolar corridas concorrentes sobre a mesma base
 //   MySQL. Determinismo sobre paralelismo — condiz com a natureza da base
 //   compartilhada.
-// - `testTimeout: 30000` / `hookTimeout: 60000`: primeira execucao inclui
+// - `testTimeout: 60000` / `hookTimeout: 120000`: primeira execucao inclui
 //   aplicacao da migration (1147 linhas de DDL) e pode extrapolar defaults
-//   em runners lentos.
+//   em runners lentos. ME-B9-fechamento amplia para 2x os valores anteriores
+//   (30000/60000) para saneamento canonico do debito D-VITEST-FORK-TIMEOUT —
+//   timeouts falsos observados empiricamente em `alerts.test.ts` e
+//   `seedSuperAdmin.test.ts` em full-run com `pool: 'forks'` + `maxWorkers: 1`
+//   sob contencao MySQL. Ambos os testes PASSam em isolamento; a margem 2x
+//   absorve o overhead extra de setup entre suites sem alterar o pool
+//   sequencial (determinismo preservado — RV-11).
 export default defineConfig({
   oxc: {
     jsx: { runtime: 'automatic' },
@@ -36,7 +42,7 @@ export default defineConfig({
     pool: 'forks',
     fileParallelism: false,
     maxWorkers: 1,
-    testTimeout: 30000,
-    hookTimeout: 60000,
+    testTimeout: 60000,
+    hookTimeout: 120000,
   },
 });
