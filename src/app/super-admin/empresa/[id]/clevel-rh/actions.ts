@@ -22,8 +22,7 @@ import {
 } from '../../../../../server/routers/cLevelMembers';
 import { listRHForCompany, type ListRHResult } from '../../../../../server/routers/employees';
 import { getServerSession } from '../../../../../server/session/serverSession';
-
-import { resolveDatabaseUrl } from './internals';
+import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 
 // -----------------------------------------------------------------------
 // Guard canonico bit-exact

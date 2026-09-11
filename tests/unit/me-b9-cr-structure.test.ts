@@ -137,10 +137,11 @@ describe('ME-B9-CR — rota Super Admin refatorada', () => {
     expect(src).not.toContain('export type NivelEscopo');
   });
 
-  it('internals.ts mantem parseCompanyIdParam + resolveDatabaseUrl (SA-specific)', () => {
+  it('internals.ts mantem parseCompanyIdParam (SA-specific; rdb migrada ME-D101)', () => {
     const src = readSrc(`${SA_DIR}/internals.ts`);
     expect(src).toContain('export function parseCompanyIdParam');
-    expect(src).toContain('export function resolveDatabaseUrl');
+    // resolveDatabaseUrl migrada para src/lib/db/resolveDatabaseUrl.ts (ME-D101)
+    expect(src).not.toContain('export function resolveDatabaseUrl');
   });
 
   it('page.tsx importa RelatoriosClient do local compartilhado', () => {

@@ -38,12 +38,13 @@ import { resolveProfileKey } from '../../../../../lib/session/resolveProfileKey'
 import { getServerSession } from '../../../../../server/session/serverSession';
 
 import { CLevelRHClient } from './CLevelRHClient';
-import { parseCompanyIdParam, parseTabParam, resolveDatabaseUrl } from './internals';
+import { parseCompanyIdParam, parseTabParam } from './internals';
 
 // Imports server-only: loaders dos routers (seguros em server component,
 // proibidos em client component via internals.ts).
 import { listCLevelsForCompany } from '../../../../../server/routers/cLevelMembers';
 import { listRHForCompany } from '../../../../../server/routers/employees';
+import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 
 interface PageProps {
   readonly params: Promise<{ id: string }>;

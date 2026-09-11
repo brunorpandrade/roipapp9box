@@ -37,7 +37,8 @@ import { resolveProfileKey } from '../../../../../lib/session/resolveProfileKey'
 import { getServerSession } from '../../../../../server/session/serverSession';
 
 import { OrganogramaClient } from './OrganogramaClient';
-import { loadOrganogramaPage, parseCompanyIdParam, resolveDatabaseUrl } from './internals';
+import { loadOrganogramaPage, parseCompanyIdParam } from './internals';
+import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 
 interface PageProps {
   readonly params: Promise<{ id: string }>;

@@ -49,7 +49,7 @@ import { getServerSession } from '../../server/session/serverSession';
 import { loadFullOrgTree } from '../../server/services/orgTree';
 
 import { OrganogramaClient } from './_client';
-import { resolveDatabaseUrl } from './internals';
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 /**
  * Flags default canonicas para C-level — usadas quando o guard

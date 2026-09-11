@@ -49,8 +49,7 @@ import {
 } from '../../../../server/routers/leadershipTransfer';
 import { getServerSession } from '../../../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../../../server/trpc';
-
-import { resolveDatabaseUrl } from '../../../todos-os-colaboradores/internals';
+import { resolveDatabaseUrl } from '../../../../lib/db/resolveDatabaseUrl';
 
 // -----------------------------------------------------------------------
 // Instancias module-level canonicas bit-exact (padrao S366)

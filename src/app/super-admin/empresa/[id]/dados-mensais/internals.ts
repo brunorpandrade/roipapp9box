@@ -15,7 +15,6 @@
 //
 // **RV-13.** Todo export tem consumidor real:
 //   - `parseCompanyIdParam` → `page.tsx`.
-//   - `resolveDatabaseUrl` → `page.tsx` + `actions.ts`.
 //   - `parseTabParam` (reexport) → `page.tsx`.
 //   - `currentMes` (reexport) → `page.tsx`.
 //
@@ -66,10 +65,3 @@ export function parseCompanyIdParam(raw: string): number | null {
 /**
  * Resolve DATABASE_URL do ambiente. Padrao consolidado ME-074+.
  */
-export function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env');
-  }
-  return url;
-}

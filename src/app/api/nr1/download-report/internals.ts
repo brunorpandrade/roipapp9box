@@ -27,9 +27,9 @@
 // - `__setNr1DownloadReportDbClient` + `__setNr1DownloadReportPdfRenderer`
 //   + `__setNr1DownloadReportNow` consumidos por
 //   `tests/integration/me050-integration.test.ts`.
-// - `resolveDatabaseUrl` consumido por `getDbClient` (mesmo modulo).
 
 import { createDbClient, type RoipDbClient } from '../../../../db/client';
+import { resolveDatabaseUrl } from '../../../../lib/db/resolveDatabaseUrl';
 import {
   DEFAULT_PDF_RENDERER_FACADE,
   type PdfRendererFacade,
@@ -40,14 +40,6 @@ import {
 // ============================================================
 
 let dbClient: RoipDbClient | null = null;
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (!url || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
 
 export function getDbClient(): RoipDbClient {
   if (dbClient === null) {

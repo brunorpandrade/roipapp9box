@@ -32,6 +32,7 @@ import { findCompanyDisplayInfo } from '../../../../../lib/logs/companyHistoryLo
 import { resolveMenuItems } from '../../../../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../../../../lib/session/resolveProfileKey';
 import { getServerSession } from '../../../../../server/session/serverSession';
+import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 // prettier-ignore
 import {
   getMonthlyClosureStatusByMonth,
@@ -44,7 +45,7 @@ import {
   saveMonthlyRHDataAction,
   unlockMonthAction,
 } from './actions';
-import { currentMes, parseCompanyIdParam, parseTabParam, resolveDatabaseUrl } from './internals';
+import { currentMes, parseCompanyIdParam, parseTabParam } from './internals';
 
 interface PageProps {
   readonly params: Promise<{ id: string }>;

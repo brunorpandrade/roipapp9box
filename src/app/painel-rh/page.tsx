@@ -46,12 +46,12 @@ import {
 import { loadRhSessionFlags } from '../../lib/session/rhSessionFlags';
 
 import { PainelRHClient } from './PainelRHClient';
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 import {
   loadCadeiaIndiretaData,
   loadCompanyForRhPanel,
   loadMeuPortalData,
   loadMinhaEquipeData,
-  resolveDatabaseUrl,
 } from './internals';
 
 export default async function PainelRHPage(): Promise<JSX.Element> {

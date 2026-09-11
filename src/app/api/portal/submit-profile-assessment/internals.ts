@@ -23,9 +23,9 @@
 //   `__setPortalSubmitProfileAssessmentNow` +
 //   `__setPortalSubmitProfileAssessmentEngine` consumidos por
 //   `tests/integration/portal-submit-profile-assessment.test.ts`.
-// - `resolveDatabaseUrl` consumido por `getDbClient` (mesmo modulo).
 
 import { createDbClient, type RoipDbClient } from '../../../../db/client';
+import { resolveDatabaseUrl } from '../../../../lib/db/resolveDatabaseUrl';
 import {
   DEFAULT_INDIVIDUAL_PROFILE_ENGINE,
   itemKey,
@@ -55,14 +55,6 @@ export const MSG_UNEXPECTED = 'Erro ao processar o envio do questionário.';
 // ============================================================
 
 let dbClient: RoipDbClient | null = null;
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (typeof url !== 'string' || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
 
 export function getDbClient(): RoipDbClient {
   if (dbClient === null) {

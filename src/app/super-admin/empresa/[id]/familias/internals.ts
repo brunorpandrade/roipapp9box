@@ -194,13 +194,6 @@ export function parseCompanyIdParam(raw: string | null | undefined): number | nu
 }
 
 /** §pattern §2.1 canonico bit-exact — URL do banco. */
-export function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url !== undefined && url.trim() !== '') {
-    return url;
-  }
-  return 'mysql://root:roip_local_root@127.0.0.1:3306/roip_test';
-}
 
 /**
  * Carrega todas as variaveis de `companyJobFamilies` para uma empresa,

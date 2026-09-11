@@ -27,8 +27,7 @@ import {
   type CreateCLevelResult,
 } from '../../../../../../server/routers/cLevelMembers';
 import { createCallerFactory, createContextInner } from '../../../../../../server/trpc';
-
-import { resolveDatabaseUrl } from './internals';
+import { resolveDatabaseUrl } from '../../../../../../lib/db/resolveDatabaseUrl';
 
 // -----------------------------------------------------------------------
 // Instâncias module-level canônicas bit-exact (padrão S366)

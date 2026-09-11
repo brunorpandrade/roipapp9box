@@ -43,18 +43,11 @@ import { getServerSession } from '../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../server/trpc';
 
 import { MeusDadosClient } from './MeusDadosClient';
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 const SESSION_COOKIE = 'session';
 const createMyDataCaller = createCallerFactory(myDataRouter);
 const loaderRateLimiter = createRateLimiter();
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
 
 export default async function MeusDadosPage(): Promise<JSX.Element> {
   const session = await getServerSession();

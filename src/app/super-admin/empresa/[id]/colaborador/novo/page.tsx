@@ -29,12 +29,8 @@ import { getServerSession } from '../../../../../../server/session/serverSession
 
 import { ColaboradorNovoClient } from './ColaboradorNovoClient';
 import { criarColaboradorAction, definirRFAction, pesquisarLiderCandidatosAction } from './actions';
-import {
-  loadColaboradorNovoPage,
-  parseCompanyIdParam,
-  parsePresetParam,
-  resolveDatabaseUrl,
-} from './internals';
+import { resolveDatabaseUrl } from '../../../../../../lib/db/resolveDatabaseUrl';
+import { loadColaboradorNovoPage, parseCompanyIdParam, parsePresetParam } from './internals';
 
 interface PageProps {
   readonly params: Promise<{ id: string }>;

@@ -61,14 +61,7 @@ import { NotificacoesClient } from './NotificacoesClient';
 import { parseFiltersFromSearchParams } from './filters';
 
 import { loadNotificacoesPage } from './internals';
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 // -----------------------------------------------------------------------
 // Flags do RH (reutiliza pattern ME-056 painel-rh)

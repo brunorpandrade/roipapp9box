@@ -47,7 +47,8 @@ import {
   colaboradoresFiltersToServiceInput,
   parseColaboradoresFiltersFromSearchParams,
 } from './filters';
-import { loadTodosColaboradoresPage, parseCompanyIdParam, resolveDatabaseUrl } from './internals';
+import { loadTodosColaboradoresPage, parseCompanyIdParam } from './internals';
+import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 
 interface PageProps {
   readonly params: Promise<{ id: string }>;

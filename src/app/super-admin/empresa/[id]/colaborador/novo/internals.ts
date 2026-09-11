@@ -44,14 +44,6 @@ export function parseCompanyIdParam(raw: string): number | null {
   return n;
 }
 
-export function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
 /** ME-078b §13.9 canonico — validador do preset=rh na query string. */
 export function parsePresetParam(raw: string | undefined): 'rh' | null {
   if (raw === undefined) return null;

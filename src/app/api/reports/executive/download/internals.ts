@@ -14,9 +14,9 @@
 // - `__setExecutiveDownloadDbClient` + `__setExecutiveDownloadStorage`
 //   + `__setExecutiveDownloadNow` consumidos por
 //   `tests/integration/executive-report-download-handler.test.ts`.
-// - `resolveDatabaseUrl` consumido por `getDbClient` (mesmo modulo).
 
 import { createDbClient, type RoipDbClient } from '../../../../../db/client';
+import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 import {
   DEFAULT_EXECUTIVE_REPORT_STORAGE,
   type ExecutiveReportStorageFacade,
@@ -25,14 +25,6 @@ import {
 // ============================================================
 // Cliente de banco (S036)
 // ============================================================
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (!url || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
 
 let dbClient: RoipDbClient | null = null;
 

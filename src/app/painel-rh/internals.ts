@@ -29,7 +29,6 @@
 // router tRPC novo (evita RV-13 code morto).
 //
 // **RV-13 canonica.** Todo export tem consumidor real:
-// - `resolveDatabaseUrl` → chamado por `page.tsx` (default export).
 // - `loadCompanyForRhPanel` → chamado por `page.tsx`.
 // - `loadPainelRhVisaoGeral` → chamado por `page.tsx`.
 // - `loadMinhaEquipeData` → chamado por `page.tsx`.
@@ -150,14 +149,6 @@ export interface MeuPortalData {
  * Resolve URL canonica do banco a partir do ambiente. Falha explicita
  * quando ausente para nao gerar tela em branco no cliente.
  */
-export function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
 // -----------------------------------------------------------------------
 // Loaders canonicos server-side (Drizzle tipado — RV-12)
 // -----------------------------------------------------------------------

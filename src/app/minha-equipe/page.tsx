@@ -84,11 +84,8 @@ import { TodosColaboradoresClient } from './_client';
 
 import { listarMinhaEquipeAction } from './actions';
 import { parseColaboradoresFiltersFromSearchParams } from './filters';
-import {
-  enforceEmployeeLeaderScope,
-  loadMinhaEquipePageForEmployeeLeader,
-  resolveDatabaseUrl,
-} from './internals';
+import { enforceEmployeeLeaderScope, loadMinhaEquipePageForEmployeeLeader } from './internals';
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 interface PageProps {
   readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;

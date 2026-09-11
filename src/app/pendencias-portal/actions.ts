@@ -42,14 +42,7 @@ import { getServerSession } from '../../server/session/serverSession';
 
 import { type PendenciasFilters } from './filters';
 import { COOLDOWN_LEMBRETE_MS } from './mappings';
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 /**
  * Guard canonico (S317 defense-in-depth). Retorna a sessao autenticada

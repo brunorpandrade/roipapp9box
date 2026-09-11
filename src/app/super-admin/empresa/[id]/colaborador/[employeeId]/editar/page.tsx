@@ -18,6 +18,7 @@ import { resolveProfileKey } from '../../../../../../../lib/session/resolveProfi
 import { getServerSession } from '../../../../../../../server/session/serverSession';
 
 import { ColaboradorEditarClient } from './ColaboradorEditarClient';
+import { resolveDatabaseUrl } from '../../../../../../../lib/db/resolveDatabaseUrl';
 import {
   atualizarColaboradorAction,
   buscarCandidatosTransferenciaAction,
@@ -33,12 +34,7 @@ import {
   regenerarSenhaColaboradorAction,
   verificarInativacaoAction,
 } from './actions';
-import {
-  loadColaboradorEditarPage,
-  parseCompanyIdParam,
-  parseEmployeeIdParam,
-  resolveDatabaseUrl,
-} from './internals';
+import { loadColaboradorEditarPage, parseCompanyIdParam, parseEmployeeIdParam } from './internals';
 
 interface PageProps {
   readonly params: Promise<{ id: string; employeeId: string }>;

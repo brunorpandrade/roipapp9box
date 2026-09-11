@@ -16,9 +16,9 @@
 // - `getDbClient` + `getNowFn` consumidos por `./route.ts`.
 // - `__setPortalNr1FormStateDbClient` + `__setPortalNr1FormStateNow`
 //   consumidos por `tests/integration/portal-nr1-form-state.test.ts`.
-// - `resolveDatabaseUrl` consumido por `getDbClient` (mesmo modulo).
 
 import { createDbClient, type RoipDbClient } from '../../../../db/client';
+import { resolveDatabaseUrl } from '../../../../lib/db/resolveDatabaseUrl';
 import {
   FATORES_NR1,
   NUM_ITENS_POR_FATOR_NR1,
@@ -68,14 +68,6 @@ export const MSG_AVISO_INICIO_NR1 =
 // ============================================================
 
 let dbClient: RoipDbClient | null = null;
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (typeof url !== 'string' || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
 
 export function getDbClient(): RoipDbClient {
   if (dbClient === null) {

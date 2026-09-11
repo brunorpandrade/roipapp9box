@@ -22,7 +22,6 @@ import { createExportsRouter } from '../../../../../server/routers/exports';
 import { getServerSession } from '../../../../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../../../../server/trpc';
 
-import { resolveDatabaseUrl } from './internals';
 import type {
   ActionResult,
   ClosedQuarter,
@@ -247,6 +246,7 @@ export async function generateRelatorioExecutivoAction(input: {
 
 import { signPdfEphemeralToken } from '../../../../../server/auth/pdfEphemeralToken';
 import { deriveResourceIdCanonicoEscopo } from '../../../../../server/routers/exports';
+import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 
 export async function startReportDownloadTokenAction(input: {
   readonly companyId: number;

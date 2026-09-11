@@ -54,6 +54,7 @@ import { ALL_GUARD_ROLES, type GuardRole } from '../../lib/routes/matrix';
 import { panelPathForRole } from '../../lib/routes/redirectByRole';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { getServerSession, type ServerSession } from '../../server/session/serverSession';
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 interface AccessDeniedPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -68,14 +69,6 @@ function normalizeRoleParam(raw: string | string[] | undefined): GuardRole | nul
 function normalizeRotaParam(raw: string | string[] | undefined): string | null {
   const value = Array.isArray(raw) ? raw[0] : raw;
   return typeof value === 'string' && value.length > 0 ? value : null;
-}
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
 }
 
 // -----------------------------------------------------------------------

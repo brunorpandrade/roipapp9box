@@ -54,7 +54,8 @@ import {
   loadMonthlyFormAction,
   saveMonthlyRHDataAction,
 } from './actions';
-import { currentMes, parseTabParam, resolveDatabaseUrl } from './internals';
+import { currentMes, parseTabParam } from './internals';
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 interface PageProps {
   // ME-080a — `?tab=` na URL controla aba inicial (default `rh`).

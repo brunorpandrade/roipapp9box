@@ -45,7 +45,8 @@ import {
   OnboardingLideresClient,
   type OnboardingCardInitial,
 } from '../../../../onboarding-lideres/OnboardingLideresClient';
-import { parseCompanyIdParam, resolveDatabaseUrl } from '../../../../onboarding-lideres/internals';
+import { parseCompanyIdParam } from '../../../../onboarding-lideres/internals';
+import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 
 // -----------------------------------------------------------------------
 // Instâncias module-level canônicas bit-exact (padrão S366)

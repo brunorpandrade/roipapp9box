@@ -25,7 +25,6 @@
 //
 // **RV-13 canonica.** Todo export tem consumidor real:
 // - `parseCompanyIdParam` → `page.tsx`.
-// - `resolveDatabaseUrl` → `page.tsx`.
 // - `loadTodosColaboradoresPage` → `page.tsx`.
 // - `DEPARTAMENTO_LABELS`, `JOB_FAMILY_LABELS`, `NIVEL_HIERARQUICO_LABELS`,
 //   `SENIORIDADE_LABELS`, `STATUS_LABELS`, `PROFILE_INDIVIDUAL_STATUS_LABELS`
@@ -262,14 +261,6 @@ export function parseCompanyIdParam(raw: string): number | null {
  * §14.10 — resolve URL do banco a partir de `process.env.DATABASE_URL`.
  * Erro claro se ausente — evita cair em `undefined` no mysql2.
  */
-export function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
 // -----------------------------------------------------------------------
 // Tipos canonicos bit-exact do carregamento da pagina
 // -----------------------------------------------------------------------

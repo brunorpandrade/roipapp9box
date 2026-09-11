@@ -51,14 +51,6 @@ export function parseCompanyIdParam(raw: string): number | null {
   return n;
 }
 
-export function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env');
-  }
-  return url;
-}
-
 /**
  * Formata trimestre canônico `YYYY-QN` para rótulo pt-BR.
  * Ex: "2025-Q4" → "4º trimestre de 2025".

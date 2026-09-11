@@ -18,14 +18,7 @@ import {
   type DALListResult,
 } from '../../../../lib/logs/dataAccessLog';
 import { getServerSession } from '../../../../server/session/serverSession';
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
+import { resolveDatabaseUrl } from '../../../../lib/db/resolveDatabaseUrl';
 
 /**
  * Re-fetch canonico dos logs DAL para Bruno. Escopo canonico:

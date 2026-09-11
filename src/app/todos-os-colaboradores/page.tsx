@@ -61,7 +61,8 @@ import {
   colaboradoresFiltersToServiceInput,
   parseColaboradoresFiltersFromSearchParams,
 } from './filters';
-import { loadTodosColaboradoresPageForRH, resolveDatabaseUrl } from './internals';
+import { loadTodosColaboradoresPageForRH } from './internals';
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 /**
  * Flags default canonicas para C-level — nao consumidas na rota RH

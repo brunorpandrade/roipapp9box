@@ -38,11 +38,11 @@ import { getServerSession } from '../../../../../server/session/serverSession';
 import { hasFirstQuarterCalculated } from '../../../../../server/services/companies';
 
 import { ParametrosClient } from './ParametrosClient';
+import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 import {
   loadCompanyForParametros,
   mapCompanyRowToFormValues,
   parseCompanyIdParam,
-  resolveDatabaseUrl,
 } from './internals';
 
 interface PageProps {

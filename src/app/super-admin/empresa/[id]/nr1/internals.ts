@@ -313,10 +313,3 @@ export function parseCompanyIdParam(raw: string): number | null {
 /**
  * Resolve DATABASE_URL do ambiente. Padrão consolidado ME-074+.
  */
-export function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env');
-  }
-  return url;
-}

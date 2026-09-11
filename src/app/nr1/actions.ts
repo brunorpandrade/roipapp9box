@@ -7,7 +7,7 @@ import { getServerSession } from '../../server/session/serverSession';
 import { createNr1Router } from '../../server/routers/nr1';
 import { createCallerFactory, createContextInner } from '../../server/trpc';
 import { createRateLimiter } from '../../server/auth/rateLimit';
-import { resolveDatabaseUrl } from './internals';
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 const SESSION_COOKIE = 'session';
 

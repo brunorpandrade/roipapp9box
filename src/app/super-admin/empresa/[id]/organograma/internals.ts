@@ -20,7 +20,6 @@
 //
 // **RV-13.** Todo export tem consumidor real:
 //   - `parseCompanyIdParam` → `page.tsx`.
-//   - `resolveDatabaseUrl` → `page.tsx`.
 //   - `loadOrganogramaPage` → `page.tsx`.
 //   - `NODE_TYPE_LABELS` → `OrganogramaClient.tsx` + testes.
 //   - `DASHBOARD_UNAVAILABLE_TOOLTIP` → `OrganogramaClient.tsx`.
@@ -140,14 +139,6 @@ export function parseCompanyIdParam(raw: string): number | null {
  * Resolve a URL canônica do banco a partir do ambiente. Padrão
  * consolidado bit-exact ME-057c + ME-076.
  */
-export function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
 // -----------------------------------------------------------------------
 // Tipo canônico do page data
 // -----------------------------------------------------------------------

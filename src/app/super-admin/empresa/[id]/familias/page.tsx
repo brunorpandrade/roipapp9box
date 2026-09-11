@@ -22,11 +22,11 @@ import { resolveProfileKey } from '../../../../../lib/session/resolveProfileKey'
 import { getServerSession } from '../../../../../server/session/serverSession';
 
 import { FamiliasClient } from './FamiliasClient';
+import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 import {
   buildInitialFamiliesState,
   loadJobFamiliesForCompany,
   parseCompanyIdParam,
-  resolveDatabaseUrl,
 } from './internals';
 
 interface PageProps {

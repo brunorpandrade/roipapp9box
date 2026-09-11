@@ -26,14 +26,7 @@ import { getServerSession } from '../../../../../server/session/serverSession';
 
 import { PendenciasClient } from '../../../../pendencias-portal/PendenciasClient';
 import { parsePendenciasFilters } from '../../../../pendencias-portal/filters';
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
+import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 
 function parseCompanyIdParam(raw: string): number | null {
   if (raw === '') return null;

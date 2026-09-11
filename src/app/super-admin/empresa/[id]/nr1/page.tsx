@@ -37,12 +37,8 @@ import { createCallerFactory, createContextInner } from '../../../../../server/t
 import { createRateLimiter } from '../../../../../server/auth/rateLimit';
 
 import { Nr1Client } from './Nr1Client';
-import {
-  parseCompanyIdParam,
-  resolveDatabaseUrl,
-  type HistoricalCycleRow,
-  type AlertRow,
-} from './internals';
+import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
+import { parseCompanyIdParam, type HistoricalCycleRow, type AlertRow } from './internals';
 
 // -----------------------------------------------------------------------
 // tRPC caller para getCycleDetails (loader)

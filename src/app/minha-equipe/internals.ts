@@ -72,14 +72,6 @@ import { colaboradoresFiltersToServiceInput } from './filters';
  * `process.env.DATABASE_URL` sem fallback. Erro claro se ausente.
  * Padrao bit-exact ao `/todos-os-colaboradores/internals.ts` ME-084.
  */
-export function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
 /**
  * §14.11 + §16.2 — override canonico bit-exact de escopo do employee-
  * leader (RH-Lider OU Lider). Aplicado SEMPRE (server-side, tanto na

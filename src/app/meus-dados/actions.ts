@@ -18,19 +18,12 @@ import { closeDbClient, createDbClient } from '../../db/client';
 import { createRateLimiter } from '../../server/auth/rateLimit';
 import { myDataRouter } from '../../server/routers/myData';
 import { createCallerFactory, createContextInner } from '../../server/trpc';
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 const SESSION_COOKIE = 'session';
 
 const createMyDataCaller = createCallerFactory(myDataRouter);
 const actionRateLimiter = createRateLimiter();
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
 
 async function resolveRawToken(): Promise<string | null> {
   const cookieStore = await cookies();

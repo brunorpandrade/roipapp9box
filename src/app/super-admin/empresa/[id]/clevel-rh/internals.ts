@@ -28,7 +28,6 @@
 // **RV-13.** Todo export tem consumidor real (`page.tsx` +
 // `CLevelRHClient.tsx` + testes):
 //   - `parseCompanyIdParam` → `page.tsx`.
-//   - `resolveDatabaseUrl` → `page.tsx` + `actions.ts`.
 //   - `getIniciaisFromName` → `CLevelRHClient.tsx` + testes.
 //   - `CLEVEL_RH_TABS` → `CLevelRHClient.tsx`.
 //   - `parseTabParam` → `page.tsx`.
@@ -111,16 +110,4 @@ export function parseCompanyIdParam(raw: string): number | null {
     return null;
   }
   return n;
-}
-
-/**
- * Resolve a URL canônica do banco a partir do ambiente. Padrão
- * consolidado ME-074/075/076/077.
- */
-export function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
 }

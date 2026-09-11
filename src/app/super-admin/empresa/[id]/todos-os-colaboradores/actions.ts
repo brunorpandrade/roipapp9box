@@ -22,7 +22,7 @@ import {
 import { getServerSession } from '../../../../../server/session/serverSession';
 
 import { colaboradoresFiltersToServiceInput, type ColaboradoresFilters } from './filters';
-import { resolveDatabaseUrl } from './internals';
+import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 
 // -----------------------------------------------------------------------
 // Guard canonico bit-exact

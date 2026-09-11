@@ -29,9 +29,9 @@
 //   consumidos por `./route.ts` (GET/PATCH) e/ou
 //   `tests/integration/alerts-notifications-endpoint.test.ts`.
 // - `getDbClient` consumido por `./route.ts`.
-// - `resolveDatabaseUrl` consumido por `getDbClient` (mesmo modulo).
 
 import { createDbClient, type RoipDbClient } from '../../../db/client';
+import { resolveDatabaseUrl } from '../../../lib/db/resolveDatabaseUrl';
 
 export const MSG_UNAUTHORIZED = 'Sessao ausente.';
 export const MSG_FORBIDDEN = 'Perfil sem sino canonico (§10.1).';
@@ -81,14 +81,6 @@ export interface UnreadListItem {
  * afete a instancia consumida por GET/PATCH.
  */
 let dbClient: RoipDbClient | null = null;
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (typeof url !== 'string' || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
 
 export function getDbClient(): RoipDbClient {
   if (dbClient === null) {

@@ -41,6 +41,7 @@ import { resolveProfileKey } from '../../../../lib/session/resolveProfileKey';
 import { getServerSession } from '../../../../server/session/serverSession';
 
 import { CompanyLandingClient } from './CompanyLandingClient';
+import { resolveDatabaseUrl } from '../../../../lib/db/resolveDatabaseUrl';
 import {
   loadCompanyForLanding,
   loadDepartmentCounts,
@@ -50,7 +51,6 @@ import {
   loadMesAtualClosureStatus,
   loadOnboardingSummaryCounts,
   parseCompanyIdParam,
-  resolveDatabaseUrl,
 } from './internals';
 
 interface PageProps {

@@ -44,8 +44,7 @@ import { createRateLimiter } from '../../server/auth/rateLimit';
 import { createExportsRouter, deriveResourceIdCanonicoEscopo } from '../../server/routers/exports';
 import { getServerSession } from '../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../server/trpc';
-
-import { resolveDatabaseUrl } from './internals';
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 import type {
   ActionResult,

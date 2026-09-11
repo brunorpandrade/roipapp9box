@@ -40,8 +40,6 @@ import {
 } from '../../../../../server/services/companies';
 import { getServerSession } from '../../../../../server/session/serverSession';
 
-import { resolveDatabaseUrl } from './internals';
-
 // -----------------------------------------------------------------------
 // Resultado canonico bit-exact das actions
 // -----------------------------------------------------------------------
@@ -257,6 +255,7 @@ export async function setCompanyStatusAction(input: {
 
 import { eq } from 'drizzle-orm';
 import { companies } from '../../../../../db/schema';
+import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 
 const currentCompanyStatusColumns = {
   status: companies.status,

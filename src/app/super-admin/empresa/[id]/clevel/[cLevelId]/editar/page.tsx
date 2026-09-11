@@ -26,12 +26,8 @@ import { resolveProfileKey } from '../../../../../../../lib/session/resolveProfi
 import { getServerSession } from '../../../../../../../server/session/serverSession';
 
 import { CLevelEditarClient } from './CLevelEditarClient';
-import {
-  loadCLevelEditarPage,
-  parseCLevelIdParam,
-  parseCompanyIdParam,
-  resolveDatabaseUrl,
-} from './internals';
+import { resolveDatabaseUrl } from '../../../../../../../lib/db/resolveDatabaseUrl';
+import { loadCLevelEditarPage, parseCLevelIdParam, parseCompanyIdParam } from './internals';
 
 interface PageProps {
   readonly params: Promise<{ id: string; cLevelId: string }>;

@@ -33,8 +33,7 @@ import {
 } from '../../../../../../server/routers/employees';
 import { getServerSession } from '../../../../../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../../../../../server/trpc';
-
-import { resolveDatabaseUrl } from './internals';
+import { resolveDatabaseUrl } from '../../../../../../lib/db/resolveDatabaseUrl';
 
 // -----------------------------------------------------------------------
 // Instâncias module-level canônicas bit-exact (padrão S366)

@@ -38,6 +38,7 @@ import { loadRhSessionFlags } from '../../../../lib/session/rhSessionFlags';
 import { getServerSession } from '../../../../server/session/serverSession';
 
 import { ColaboradorEditarClient } from './_client';
+import { resolveDatabaseUrl } from '../../../../lib/db/resolveDatabaseUrl';
 import {
   loadColaboradorEditarPage,
   parseEmployeeIdParam,
@@ -58,7 +59,6 @@ import {
   regenerarSenhaColaboradorRHAction,
   verificarInativacaoRHAction,
 } from './actions';
-import { resolveDatabaseUrl } from '../../../todos-os-colaboradores/internals';
 
 interface PageProps {
   readonly params: Promise<{ readonly employeeId: string }>;

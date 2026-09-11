@@ -37,7 +37,8 @@ import { listEmployeesPaginated, type ListEmployeesResult } from '../../server/s
 import { getServerSession } from '../../server/session/serverSession';
 
 import { colaboradoresFiltersToServiceInput, type ColaboradoresFilters } from './filters';
-import { enforceEmployeeLeaderScope, resolveDatabaseUrl } from './internals';
+import { enforceEmployeeLeaderScope } from './internals';
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 /**
  * §14.11 — refetch server-side canonica bit-exact da listagem dos

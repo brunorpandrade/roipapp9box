@@ -35,7 +35,8 @@ import {
   startExecutiveReportDownloadTokenAction,
   startReportDownloadTokenAction,
 } from './actions';
-import { parseCompanyIdParam, resolveDatabaseUrl } from './internals';
+import { parseCompanyIdParam } from './internals';
+import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 
 interface PageProps {
   readonly params: Promise<{ id: string }>;

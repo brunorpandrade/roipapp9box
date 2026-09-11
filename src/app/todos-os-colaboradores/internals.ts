@@ -43,14 +43,6 @@ import {
  * §14.10 — resolve URL do banco canonica bit-exact. Reutiliza
  * `process.env.DATABASE_URL` sem fallback. Erro claro se ausente.
  */
-export function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
 /**
  * §14.10 — dados iniciais canonicos bit-exact carregados server-side
  * pela variante RH. Estrutura identica a `TodosColaboradoresPageData`

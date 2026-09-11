@@ -37,7 +37,7 @@ import { getServerSession } from '../../server/session/serverSession';
 import { loadCompanyForRhPanel, loadMeuPortalData } from '../painel-rh/internals';
 
 import { MeuPortalClient } from './MeuPortalClient';
-import { resolveDatabaseUrl } from './internals';
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 export default async function MeuPortalPage(): Promise<JSX.Element> {
   const session = await getServerSession();

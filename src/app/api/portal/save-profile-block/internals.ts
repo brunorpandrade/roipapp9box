@@ -19,10 +19,10 @@
 // - `__setPortalSaveProfileBlockDbClient` +
 //   `__setPortalSaveProfileBlockNow` consumidos por
 //   `tests/integration/portal-save-profile-block.test.ts`.
-// - `resolveDatabaseUrl` consumido por `getDbClient` (mesmo modulo).
 
 import { createDbClient, type RoipDbClient } from '../../../../db/client';
 import { itemKey, NUM_ITENS_POR_BLOCO } from '../../../../server/services/individualProfileEngine';
+import { resolveDatabaseUrl } from '../../../../lib/db/resolveDatabaseUrl';
 
 // ============================================================
 // Mensagens canonicas
@@ -47,14 +47,6 @@ export const MSG_UNEXPECTED = 'Erro ao gravar o progresso do bloco.';
 // ============================================================
 
 let dbClient: RoipDbClient | null = null;
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (typeof url !== 'string' || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
 
 export function getDbClient(): RoipDbClient {
   if (dbClient === null) {

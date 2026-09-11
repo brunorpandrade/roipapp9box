@@ -18,7 +18,6 @@
 //   `SUM(onboardingEstagio=?) WHERE isLider=true AND status='ativo'`).
 //
 // **RV-13 canonica.** Todo export tem consumidor real:
-// - `resolveDatabaseUrl` → chamado por `page.tsx` (default export).
 // - `parseCompanyIdParam` → chamado por `page.tsx`.
 // - `loadCompanyForLanding` → chamado por `page.tsx`.
 // - `loadLandingCounts` → chamado por `page.tsx`.
@@ -149,14 +148,6 @@ export interface MesAtualClosureStatus {
  * Resolve URL canonica do banco a partir do ambiente. Falha explicita
  * quando ausente para nao gerar tela em branco no cliente.
  */
-export function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
 /**
  * Parseia canonicamente `params.id` da rota `/super-admin/empresa/[id]`.
  * Retorna `null` para qualquer input invalido (nao-inteiro, negativo,

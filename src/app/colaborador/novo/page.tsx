@@ -36,13 +36,13 @@ import { getServerSession } from '../../../server/session/serverSession';
 
 import { ColaboradorNovoClient } from './_client';
 import { loadColaboradorNovoPage } from '../../super-admin/empresa/[id]/colaborador/novo/internals';
+import { resolveDatabaseUrl } from '../../../lib/db/resolveDatabaseUrl';
 
 import {
   criarColaboradorRHAction,
   definirRFRHAction,
   pesquisarLiderCandidatosRHAction,
 } from './actions';
-import { resolveDatabaseUrl } from '../../todos-os-colaboradores/internals';
 
 export default async function ColaboradorNovoRHPage(): Promise<JSX.Element> {
   const session = await getServerSession();

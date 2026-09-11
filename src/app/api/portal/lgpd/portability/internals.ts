@@ -15,9 +15,9 @@
 // - `__setLgpdPortabilityDbClient` + `__setLgpdPortabilityPdfRenderer`
 //   + `__setLgpdPortabilityNow` consumidos por
 //   `tests/integration/lgpd-portability-route.test.ts`.
-// - `resolveDatabaseUrl` consumido por `getDbClient` (mesmo modulo).
 
 import { createDbClient, type RoipDbClient } from '../../../../../db/client';
+import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 import {
   DEFAULT_PDF_RENDERER_FACADE,
   type PdfRendererFacade,
@@ -38,14 +38,6 @@ export const MSG_COMPANY_NOT_FOUND_LGPD_PORTABILITY = 'Empresa não encontrada.'
 // ============================================================
 // Cliente de banco injetavel (S036)
 // ============================================================
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (typeof url !== 'string' || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
 
 let dbClient: RoipDbClient | null = null;
 

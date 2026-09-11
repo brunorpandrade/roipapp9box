@@ -13,7 +13,7 @@ import { getServerSession } from '../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../server/trpc';
 
 import { Nr1Client, type Nr1ClientProps } from './Nr1Client';
-import { resolveDatabaseUrl } from './internals';
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 const nr1Router = createNr1Router();
 const createNr1Caller = createCallerFactory(nr1Router);

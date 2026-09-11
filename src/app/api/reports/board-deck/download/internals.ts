@@ -14,9 +14,9 @@
 // - `__setBoardDeckDbClient` + `__setBoardDeckPdfRenderer` +
 //   `__setBoardDeckNow` consumidos por
 //   `tests/integration/me054-board-deck-radar.test.ts`.
-// - `resolveDatabaseUrl` consumido por `getDbClient` (mesmo modulo).
 
 import { createDbClient, type RoipDbClient } from '../../../../../db/client';
+import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 import {
   DEFAULT_PDF_RENDERER_FACADE,
   type PdfRendererFacade,
@@ -25,14 +25,6 @@ import {
 // ============================================================
 // Cliente injetavel
 // ============================================================
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (!url || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
 
 let dbClient: RoipDbClient | null = null;
 

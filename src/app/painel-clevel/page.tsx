@@ -26,14 +26,7 @@ import { COLORS } from '../../lib/design-tokens/colors';
 import { resolveMenuItems } from '../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { getServerSession } from '../../server/session/serverSession';
-
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 interface CLevelFlags {
   readonly acessoTotal: boolean;

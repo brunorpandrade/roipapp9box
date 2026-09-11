@@ -47,6 +47,7 @@ import { resolveMenuItems } from '../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { loadRhSessionFlags } from '../../lib/session/rhSessionFlags';
 import { getServerSession } from '../../server/session/serverSession';
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 import {
   generateRelatorioExecutivoClevelAction,
@@ -62,7 +63,6 @@ import {
   startReportDownloadTokenClevelAction,
   startReportDownloadTokenRHAction,
 } from './actions';
-import { resolveDatabaseUrl } from './internals';
 
 /**
  * Flags default canonicas para C-level — usadas apenas quando o guard

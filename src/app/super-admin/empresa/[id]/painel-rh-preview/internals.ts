@@ -32,7 +32,6 @@
 //
 // **RV-12 canonica.** Zero SQL cru — reutiliza loaders existentes.
 // **RV-13 canonica.** Todo export tem consumidor real:
-// - `resolveDatabaseUrl` → `page.tsx`.
 // - `parseCompanyIdParam` → `page.tsx`.
 // **RV-14 canonica.** Um statement por linha, largura maxima 100 cols.
 
@@ -41,14 +40,6 @@
  * quando ausente para nao gerar tela em branco no cliente. Bit-a-bit
  * ao helper preservado em `/super-admin/empresa/[id]/internals.ts`.
  */
-export function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
-
 /**
  * Parseia `companyId` do path param `[id]` canonicamente. Retorna
  * `null` para valores nao inteiros positivos — page.tsx aciona

@@ -207,13 +207,6 @@ export function parseCompanyIdParam(raw: string | null | undefined): number | nu
  * URL do banco. Precedencia canonica: DATABASE_URL > default `roip_test`
  * (para tests). Replicado bit-exact do pattern da landing ME-074.
  */
-export function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url !== undefined && url.trim() !== '') {
-    return url;
-  }
-  return 'mysql://root:roip_local_root@127.0.0.1:3306/roip_test';
-}
 
 /**
  * Carrega os dados da empresa alvo para popular o form §13.1. Consulta

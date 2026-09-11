@@ -28,8 +28,7 @@ import {
   type JobFamilyVariableInput,
 } from '../../../../../server/services/companyJobFamilies';
 import { getServerSession } from '../../../../../server/session/serverSession';
-
-import { resolveDatabaseUrl } from './internals';
+import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 
 export type ActionResult<T = null> =
   { readonly ok: true; readonly data: T } | { readonly ok: false; readonly message: string };

@@ -86,7 +86,8 @@ describe('ME-084 rota RH 1 — `/todos-os-colaboradores`', () => {
 
   it('internals.ts exporta loadTodosColaboradoresPageForRH', () => {
     const src = readSrc(`${dir}/internals.ts`);
-    expect(src).toContain('export function resolveDatabaseUrl');
+    // resolveDatabaseUrl migrada para src/lib/db/resolveDatabaseUrl.ts (ME-D101)
+    expect(src).not.toContain('export function resolveDatabaseUrl');
     expect(src).toContain('export interface TodosColaboradoresRHPageData');
     expect(src).toContain('export async function loadTodosColaboradoresPageForRH');
   });

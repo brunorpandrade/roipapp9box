@@ -28,7 +28,8 @@ import { resolveProfileKey } from '../../../../../../lib/session/resolveProfileK
 import { getServerSession } from '../../../../../../server/session/serverSession';
 
 import { CLevelNovoClient } from './CLevelNovoClient';
-import { loadCLevelNovoPage, parseCompanyIdParam, resolveDatabaseUrl } from './internals';
+import { loadCLevelNovoPage, parseCompanyIdParam } from './internals';
+import { resolveDatabaseUrl } from '../../../../../../lib/db/resolveDatabaseUrl';
 
 interface PageProps {
   readonly params: Promise<{ id: string }>;
