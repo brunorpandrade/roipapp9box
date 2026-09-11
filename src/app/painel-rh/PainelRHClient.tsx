@@ -156,7 +156,10 @@ function SectionTitle(props: { readonly children: string }): JSX.Element {
  * 648-649: verde `#16A34A` quando zero + sub-texto "Empresa em dia..."
  * (sem link); laranja `#D97706` quando > 0 + link "Ver detalhamento →".
  */
-function PendenciasPortalCard(props: { readonly totalPendencias: number }): JSX.Element {
+function PendenciasPortalCard(props: {
+  readonly totalPendencias: number;
+  readonly hrefPrefix: string;
+}): JSX.Element {
   const isZero = props.totalPendencias === 0;
   const cor = isZero ? CARD_COLOR_PENDENCIAS.zero : CARD_COLOR_PENDENCIAS.positive;
   return (
@@ -192,7 +195,7 @@ function PendenciasPortalCard(props: { readonly totalPendencias: number }): JSX.
       </span>
       {!isZero ? (
         <a
-          href="/pendencias-portal"
+          href={`${props.hrefPrefix}/pendencias-portal`}
           style={{
             fontSize: 13,
             color: COLORS.accent.teal,
@@ -326,12 +329,13 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
     ? `Preenchido (limite ${mesAtualClosure.dataLimiteRh})`
     : `Pendente (limite ${mesAtualClosure.dataLimiteRh})`;
 
-  // ME-B9-fechamento (S231-B' + S231.1) — card §5.5 "Status dados do mes
-  // — Lideres" renderiza N/M com semantica canonica: N = lideres onde
-  // TODOS os liderados diretos ativos tem `performanceVariableData` do
-  // mes com `demanda` E `executado` preenchidos; M = lideres com >=1
-  // liderado direto ativo. Estado vazio canonico quando M === 0 (nenhum
-  // lider com liderados na empresa) renderiza literal §5.2.
+  // ME-B9-fechamento CORR1 (S235-A) — card §5.5 "Status dados do mes —
+  // Lideres" renderiza N/M canonicamente reusando o service
+  // `leaderMonthlyStatus` (mesmo do drill-down `getLeadersStatus`
+  // §3.11): N = lideres com status='Preenchido' no mes; M = lideres
+  // com >=1 liderado direto no mes (semantica temporal canonica —
+  // cobre mes inteiro, inclui C-levels que sao lider de employees).
+  // Estado vazio quando M === 0 renderiza literal §5.2.
   const lideresCardValue =
     mesAtualClosure.lideresComLiderados === 0
       ? 'Coleta de dados em andamento'
@@ -344,6 +348,17 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
     const pct = Math.round((mesAtualClosure.lideresPreenchidos / denom) * 100);
     return `${pct}% dos ${denom} líderes`;
   })();
+
+  // ME-B9-fechamento CORR2 (S240-C) — no modo `super_admin_preview`,
+  // hrefs canonicos de cards e links do painel apontam para as
+  // sub-rotas espelho em `/super-admin/empresa/[id]/*` (canonicamente
+  // acessiveis a Super Admin). No modo `rh` (default), hrefs seguem
+  // literais RH-facing bit-a-bit ao pre-existente. Zero prop nova —
+  // deriva de `company.id` que ja vem em `RhCompanyInfo`. Mesmo
+  // padrao canonico do `CompanyLandingClient` que usa
+  // `/super-admin/empresa/${companyId}/<subrota>` como convencao do
+  // repo.
+  const hrefPrefix = isPreview ? `/super-admin/empresa/${company.id}` : '';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -400,28 +415,28 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
               `Inclui ${counts.totalCLevelsAtivos} ` +
               `C-level${counts.totalCLevelsAtivos === 1 ? '' : 's'} (PC1c)`
             }
-            href="/todos-os-colaboradores"
+            href={`${hrefPrefix}/todos-os-colaboradores`}
             ariaLabel="Ver todos os colaboradores ativos"
           />
           <ClickableIndicatorCard
             title="Status dados do mês — RH"
             value={mesAtualClosure.rhPreenchido ? 'Preenchido' : 'Pendente'}
             sub={rhCardSub}
-            href="/dados-mensais"
+            href={`${hrefPrefix}/dados-mensais`}
             ariaLabel="Abrir dados mensais RH"
           />
           <ClickableIndicatorCard
             title="Status dados do mês — Líderes"
             value={lideresCardValue}
             sub={lideresCardSub}
-            href="/dados-mensais?tab=lider"
+            href={`${hrefPrefix}/dados-mensais?tab=lider`}
             ariaLabel="Abrir dados mensais de líderes"
           />
-          <PendenciasPortalCard totalPendencias={totalPendenciasPortal} />
+          <PendenciasPortalCard totalPendencias={totalPendenciasPortal} hrefPrefix={hrefPrefix} />
           <ClickableIndicatorCard
             title="Radar NR-1"
             value="Ver módulo"
-            href="/nr1"
+            href={`${hrefPrefix}/nr1`}
             ariaLabel="Abrir módulo Radar NR-1"
           />
         </div>
@@ -453,7 +468,10 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
 
       {/* Miniatura canonica Onboarding de lideres §5.5 (3 cenarios RH) */}
       <section aria-label="Onboarding de líderes" style={{ marginTop: 20 }}>
-        <OnboardingKanbanMini summary={onboardingSummary} href="/onboarding-lideres" />
+        <OnboardingKanbanMini
+          summary={onboardingSummary}
+          href={`${hrefPrefix}/onboarding-lideres`}
+        />
       </section>
 
       {/* Zonas placeholder §5.9 (9-Box) + §5.10 (Status da plataforma) */}
@@ -639,7 +657,7 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <EmptyState texto={MEU_PORTAL_VAZIO_TEXTO} />
               <a
-                href="/colaborador"
+                href="/meu-portal"
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
@@ -704,7 +722,7 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
                 </div>
               ))}
               <a
-                href="/colaborador"
+                href="/meu-portal"
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{

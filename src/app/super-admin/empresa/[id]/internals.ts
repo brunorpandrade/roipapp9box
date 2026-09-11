@@ -35,22 +35,21 @@
 //
 // **RV-14 canonica.** Um statement por linha, largura maxima 100 cols.
 
-import { alias } from 'drizzle-orm/mysql-core';
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../../../db/client';
 import {
   cLevelMembers,
   companies,
   companyMonthlyData,
-  employeeGoals,
-  employeeLeaderHistory,
   employees,
   monthlyClosureStatus,
-  performanceData,
   performanceQuarterlyData,
-  performanceVariableData,
 } from '../../../../db/schema';
+import {
+  computeStatusForLeader,
+  listDirectLedInMonth,
+} from '../../../../server/services/leaderMonthlyStatus';
 
 // -----------------------------------------------------------------------
 // Tipos canonicos
@@ -453,14 +452,7 @@ export async function loadMesAtualClosureStatus(
   const mesAtual = deriveMesAtual(reference);
   const dataLimiteRh = deriveDataLimiteRh(reference);
 
-  // ME-B9-fechamento (S231-B' + S231.1) — alias canonicos para os dois
-  // employees no JOIN cruzado (lider + liderado) via
-  // `employeeLeaderHistory`. Alias impede colisao de nome de coluna do
-  // Drizzle na mesma tabela `employees`.
-  const liderE = alias(employees, 'liderE');
-  const liderado = alias(employees, 'liderado');
-
-  const [monthlyRows, closureRows, lideresRows] = await Promise.all([
+  const [monthlyRows, closureRows, empLeaders, clevelLeaders] = await Promise.all([
     db
       .select({
         faturamentoBruto: companyMonthlyData.faturamentoBruto,
@@ -477,109 +469,56 @@ export async function loadMesAtualClosureStatus(
         and(eq(monthlyClosureStatus.companyId, companyId), eq(monthlyClosureStatus.mes, mesAtual)),
       )
       .limit(1),
-    // ME-B9-fechamento (S231-B' + S231.1) — fonte de dados canonica para
-    // agregacao em memoria de `lideresComLiderados` (denominador) e
-    // `lideresPreenchidos` (numerador). Uma linha por (lider, liderado,
-    // goal) via LEFT JOIN em `employeeGoals`; liderado sem goals gera
-    // 1 linha com `goalId=null` (vaziosamente completo). LEFT JOIN
-    // adicional em `performanceData(mes)` + `performanceVariableData`
-    // (match por `variableIndex`) traz `demanda`/`executado` do mes
-    // corrente quando existirem.
+    // ME-B9-fechamento CORR1 (S235-A + RV-16) — canonizacao bit-a-bit
+    // com o drill-down `/dados-mensais?tab=lider` via reuso do service
+    // `leaderMonthlyStatus`. Lideres candidatos: employees ativos com
+    // `isLider=true` da empresa + cLevelMembers ativos da empresa.
+    // Filtragem final ("tem >=1 liderado direto no mes") + calculo do
+    // status feita via helpers do service — semantica temporal
+    // canonica §3.11 (cobre mes inteiro, nao apenas ativo agora).
     db
-      .select({
-        liderId: employeeLeaderHistory.liderId,
-        liderado: liderado.id,
-        goalId: employeeGoals.id,
-        demanda: performanceVariableData.demanda,
-        executado: performanceVariableData.executado,
-      })
-      .from(employeeLeaderHistory)
-      .innerJoin(liderE, eq(liderE.id, employeeLeaderHistory.liderId))
-      .innerJoin(liderado, eq(liderado.id, employeeLeaderHistory.employeeId))
-      .leftJoin(employeeGoals, eq(employeeGoals.employeeId, liderado.id))
-      .leftJoin(
-        performanceData,
-        and(
-          eq(performanceData.employeeId, liderado.id),
-          eq(performanceData.companyId, companyId),
-          eq(performanceData.mes, mesAtual),
-        ),
-      )
-      .leftJoin(
-        performanceVariableData,
-        and(
-          eq(performanceVariableData.performanceDataId, performanceData.id),
-          eq(performanceVariableData.variableIndex, employeeGoals.variableIndex),
-        ),
-      )
+      .select({ id: employees.id })
+      .from(employees)
       .where(
         and(
-          eq(liderE.companyId, companyId),
-          eq(liderE.isLider, true),
-          eq(liderE.status, 'ativo'),
-          eq(liderado.status, 'ativo'),
-          isNull(employeeLeaderHistory.dataFim),
+          eq(employees.companyId, companyId),
+          eq(employees.isLider, true),
+          eq(employees.status, 'ativo'),
         ),
       ),
+    db
+      .select({ id: cLevelMembers.id })
+      .from(cLevelMembers)
+      .where(and(eq(cLevelMembers.companyId, companyId), eq(cLevelMembers.status, 'ativo'))),
   ]);
 
   const monthlyRow = monthlyRows[0];
   const closureRow = closureRows[0];
 
-  // ME-B9-fechamento (S231-B' + S231.1) — agregacao canonica em memoria.
-  // Estrutura: liderId → liderado_id → array<{goalId, demanda, executado}>.
-  // Regras: (a) liderado com goals.length === 0 conta como "completo
-  // vaziosamente" (nada a preencher); (b) liderado com goals.length > 0
-  // conta como "completo" se TODAS as linhas tem demanda !== null E
-  // executado !== null (LEFT JOIN em `performanceVariableData` retorna
-  // null quando linha nao existe — cobre tanto "sem performanceData do
-  // mes" quanto "com performanceData mas sem variableData da variavel");
-  // (c) lider conta como "preenchido" se TODOS seus liderados estao
-  // "completos".
-  interface LideradoGoalRow {
-    readonly goalId: number | null;
-    readonly demanda: string | null;
-    readonly executado: string | null;
-  }
-  const porLider = new Map<number, Map<number, LideradoGoalRow[]>>();
-  for (const row of lideresRows) {
-    if (row.liderId === null) {
-      continue;
-    }
-    let porLiderado = porLider.get(row.liderId);
-    if (porLiderado === undefined) {
-      porLiderado = new Map<number, LideradoGoalRow[]>();
-      porLider.set(row.liderId, porLiderado);
-    }
-    let goals = porLiderado.get(row.liderado);
-    if (goals === undefined) {
-      goals = [];
-      porLiderado.set(row.liderado, goals);
-    }
-    goals.push({
-      goalId: row.goalId,
-      demanda: row.demanda,
-      executado: row.executado,
-    });
-  }
-
-  const lideresComLiderados = porLider.size;
+  // ME-B9-fechamento CORR1 (S235-A) — agregacao canonica reutilizando
+  // service compartilhado. Para cada lider candidato: pega liderados
+  // diretos ativos no mes via `listDirectLedInMonth`; se lista vazia,
+  // exclui do denominador (nao tem o que preencher); senao, calcula
+  // `statusPreenchimento` via `computeStatusForLeader` e agrega:
+  // `lideresComLiderados` = count de lideres com >=1 liderado no mes;
+  // `lideresPreenchidos` = count onde status === 'Preenchido'.
+  let lideresComLiderados = 0;
   let lideresPreenchidos = 0;
-  for (const porLiderado of porLider.values()) {
-    let liderCompleto = true;
-    for (const goals of porLiderado.values()) {
-      const goalsReais = goals.filter((g) => g.goalId !== null);
-      if (goalsReais.length === 0) {
-        // Liderado sem goals — vaziosamente completo, nao bloqueia.
-        continue;
-      }
-      const todasPreenchidas = goalsReais.every((g) => g.demanda !== null && g.executado !== null);
-      if (!todasPreenchidas) {
-        liderCompleto = false;
-        break;
-      }
+  for (const l of empLeaders) {
+    const liderados = await listDirectLedInMonth(db, companyId, l.id, 'employee', mesAtual);
+    if (liderados.length === 0) continue;
+    lideresComLiderados += 1;
+    const status = await computeStatusForLeader(db, companyId, mesAtual, liderados);
+    if (status === 'Preenchido') {
+      lideresPreenchidos += 1;
     }
-    if (liderCompleto) {
+  }
+  for (const l of clevelLeaders) {
+    const liderados = await listDirectLedInMonth(db, companyId, l.id, 'clevel', mesAtual);
+    if (liderados.length === 0) continue;
+    lideresComLiderados += 1;
+    const status = await computeStatusForLeader(db, companyId, mesAtual, liderados);
+    if (status === 'Preenchido') {
       lideresPreenchidos += 1;
     }
   }

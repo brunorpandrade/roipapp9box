@@ -342,6 +342,7 @@ export async function loadMeuPortalData(
   db: RoipDatabase,
   companyId: number,
   userId: number,
+  userType: 'employee' | 'clevel' = 'employee',
 ): Promise<MeuPortalData> {
   const pageSize = 100 as const;
   const acumulado: MeuPortalPendenciaItem[] = [];
@@ -357,7 +358,7 @@ export async function loadMeuPortalData(
     });
     totalPages = result.totalPages;
     for (const row of result.rows) {
-      if (row.userType !== 'employee') {
+      if (row.userType !== userType) {
         continue;
       }
       if (row.userId !== userId) {

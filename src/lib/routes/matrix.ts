@@ -327,6 +327,23 @@ export const ROUTE_MATRIX: readonly RouteRule[] = [
       lider: 'deny',
     },
   },
+  // ME-B9-fechamento CORR2 (S238-B + S239-C) — rota canonica autenticada
+  // para o proprio usuario logado ver suas pendencias nos instrumentos
+  // do portal. Super Admin canonicamente redireciona para seu painel
+  // (§2.3 precedencia — Bruno nao tem pendencias em instrumentos de
+  // empresa). Colaborador puro autentica via link por token separado
+  // (S037 preservado). §10.7 nova — canonizar em MASTER pos-CORR2.
+  {
+    pattern: '/meu-portal',
+    canonicalRef: '§10.7',
+    byRole: {
+      super_admin: 'redirect_painel',
+      rh: 'allow',
+      rh_lider: 'allow',
+      clevel: 'allow',
+      lider: 'allow',
+    },
+  },
 
   // §10.5 Fase 8 ---------------------------------------------------------
   {

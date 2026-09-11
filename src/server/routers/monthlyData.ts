@@ -70,7 +70,7 @@
 // Testes: `tests/integration/monthlyData-router.test.ts`.
 
 import { TRPCError } from '@trpc/server';
-import { and, asc, eq, inArray, isNull, or } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { RoipDatabase } from '../../db/client';
@@ -79,7 +79,6 @@ import {
   companyJobFamilies,
   companyMonthlyData,
   employees,
-  employeeLeaderHistory,
   monthlyClosureStatus,
   performanceData,
   performanceVariableData,
@@ -139,8 +138,24 @@ export const LIDER_TIPO_INPUT_SCHEMA_MONTHLY = z.enum(['employee', 'clevel']);
 /** Enum canonico de status do mes. */
 export const STATUS_MES_VALUES = ['aberto', 'fechado', 'desbloqueado'] as const;
 
-/** Enum canonico de statusPreenchimento (§3.11 — 3 estados). */
-export const STATUS_PREENCHIMENTO_VALUES = ['Não preenchido', 'Parcial', 'Preenchido'] as const;
+/**
+ * Enum canonico de statusPreenchimento (§3.11 — 3 estados).
+ * ME-B9-fechamento CORR1: reexportado do service compartilhado
+ * `src/server/services/leaderMonthlyStatus.ts` para permitir consumo
+ * canonico pelo painel RH (`loadMesAtualClosureStatus` §5.5). Zero
+ * mudanca de superficie publica — `STATUS_PREENCHIMENTO_VALUES` e
+ * `StatusPreenchimento` continuam sendo importados desta location
+ * pelos callers pre-existentes (RV-13).
+ */
+export {
+  STATUS_PREENCHIMENTO_VALUES,
+  type StatusPreenchimento,
+} from '../services/leaderMonthlyStatus';
+
+// Import interno para uso local no arquivo — o `export {}` acima re-
+// exporta para consumidores externos, mas as referencias internas
+// deste arquivo precisam de import direto (constraint TypeScript).
+import type { StatusPreenchimento } from '../services/leaderMonthlyStatus';
 
 /** Enum canonico de escopo de `getPendentLeaders` (§3.11). */
 export const ESCOPO_PENDENT_LEADERS_VALUES = ['empresa', 'minha_cadeia'] as const;
@@ -164,9 +179,6 @@ export const FAMILIA_6_JOB_FAMILY = 'lideranca_gestao' as const;
 
 /** Estado de status do mes (§4.1). */
 export type StatusMes = (typeof STATUS_MES_VALUES)[number];
-
-/** Estado de preenchimento canonico (§3.11). */
-export type StatusPreenchimento = (typeof STATUS_PREENCHIMENTO_VALUES)[number];
 
 /**
  * Linha do colaborador no retorno da aba RH de `getMonthlyInputForm`.
@@ -349,6 +361,22 @@ async function listVariablesForFamily(db: RoipDatabase, companyId: number, jobFa
  * `employees` no momento — inativos nao aparecem na lista de
  * preenchimento (§3.13; UI so mostra ativos no formulario).
  */
+// ============================================================
+// Helpers canonicos §3.11 — ME-B9-fechamento CORR1
+// ============================================================
+//
+// `listDirectLedInMonth` e `computeStatusForLeader` foram extraidas
+// para service compartilhado `src/server/services/leaderMonthlyStatus.ts`
+// (RV-14) para permitir reuso canonico pelo painel RH
+// (`loadMesAtualClosureStatus` §5.5 — D-B9F-CARD-LIDERES-DIVERGENTE
+// ENCERRADO). Wrappers locais preservados abaixo mantem a superficie
+// interna do router intacta bit-a-bit — zero mudanca nos callsites.
+
+import {
+  computeStatusForLeader as computeStatusForLeaderService,
+  listDirectLedInMonth as listDirectLedInMonthService,
+} from '../services/leaderMonthlyStatus';
+
 async function listDirectLedInMonth(
   db: RoipDatabase,
   companyId: number,
@@ -356,65 +384,7 @@ async function listDirectLedInMonth(
   liderTipo: 'employee' | 'clevel',
   mes: string,
 ): Promise<number[]> {
-  const [anoStr, mesStr] = mes.split('-');
-  const ano = Number(anoStr);
-  const mesNum = Number(mesStr);
-  const firstDay = new Date(Date.UTC(ano, mesNum - 1, 1));
-  const lastDay = new Date(Date.UTC(ano, mesNum, 0));
-
-  const liderColumn =
-    liderTipo === 'employee' ? employeeLeaderHistory.liderId : employeeLeaderHistory.clevelId;
-
-  const links = await db
-    .select({ employeeId: employeeLeaderHistory.employeeId })
-    .from(employeeLeaderHistory)
-    .innerJoin(employees, eq(employees.id, employeeLeaderHistory.employeeId))
-    .where(
-      and(
-        eq(liderColumn, liderId),
-        eq(employees.companyId, companyId),
-        eq(employees.status, 'ativo'),
-        or(
-          isNull(employeeLeaderHistory.dataFim),
-          // dataFim >= firstDay
-          // Encoded via not-null and inline predicate:
-          // Drizzle inspects .gte on Date columns.
-        ),
-      ),
-    );
-  // Filtramos por cobertura de mes em memoria (o predicado composto de
-  // date range e complexo o suficiente para justificar a decisao
-  // canonica de resolver no lado do processo — mesma familia de
-  // decisoes de S066 do dashboard).
-  const linksInRange: number[] = [];
-  const rows = await db
-    .select({
-      employeeId: employeeLeaderHistory.employeeId,
-      dataInicio: employeeLeaderHistory.dataInicio,
-      dataFim: employeeLeaderHistory.dataFim,
-    })
-    .from(employeeLeaderHistory)
-    .innerJoin(employees, eq(employees.id, employeeLeaderHistory.employeeId))
-    .where(
-      and(
-        eq(liderColumn, liderId),
-        eq(employees.companyId, companyId),
-        eq(employees.status, 'ativo'),
-      ),
-    );
-  const seen = new Set<number>();
-  for (const r of rows) {
-    if (r.dataInicio.getTime() > lastDay.getTime()) continue;
-    if (r.dataFim !== null && r.dataFim.getTime() < firstDay.getTime()) continue;
-    if (!seen.has(r.employeeId)) {
-      seen.add(r.employeeId);
-      linksInRange.push(r.employeeId);
-    }
-  }
-  // `links` acima e apenas de tipagem — o resultado real vem de
-  // `linksInRange`. Marcamos `links` como usado para o linter.
-  void links;
-  return linksInRange;
+  return listDirectLedInMonthService(db, companyId, liderId, liderTipo, mes);
 }
 
 /**
@@ -1522,97 +1492,5 @@ async function computeStatusForLeader(
   mes: string,
   liderados: number[],
 ): Promise<StatusPreenchimento> {
-  if (liderados.length === 0) {
-    return 'Não preenchido';
-  }
-
-  const empRows = await db
-    .select({ id: employees.id, jobFamily: employees.jobFamily })
-    .from(employees)
-    .where(inArray(employees.id, liderados));
-
-  const familyCache = new Map<string, Array<{ variableIndex: number; weight: string }>>();
-  async function getVars(family: string) {
-    const cached = familyCache.get(family);
-    if (cached) return cached;
-    const rows = await db
-      .select({
-        variableIndex: companyJobFamilies.variableIndex,
-        weight: companyJobFamilies.weight,
-      })
-      .from(companyJobFamilies)
-      .where(
-        and(
-          eq(companyJobFamilies.companyId, companyId),
-          eq(
-            companyJobFamilies.jobFamily,
-            family as (typeof companyJobFamilies.jobFamily.enumValues)[number],
-          ),
-        ),
-      );
-    const list = rows.map((r) => ({
-      variableIndex: r.variableIndex,
-      weight: r.weight,
-    }));
-    familyCache.set(family, list);
-    return list;
-  }
-
-  const perfRows = await db
-    .select({ id: performanceData.id, employeeId: performanceData.employeeId })
-    .from(performanceData)
-    .where(
-      and(
-        eq(performanceData.companyId, companyId),
-        eq(performanceData.mes, mes),
-        inArray(performanceData.employeeId, liderados),
-      ),
-    );
-  const perfByEmp = new Map<number, number>();
-  for (const p of perfRows) {
-    perfByEmp.set(p.employeeId, p.id);
-  }
-  const perfIds = Array.from(perfByEmp.values());
-  const filledByPerf = new Map<number, Set<number>>();
-  if (perfIds.length > 0) {
-    const varRows = await db
-      .select({
-        performanceDataId: performanceVariableData.performanceDataId,
-        variableIndex: performanceVariableData.variableIndex,
-        demanda: performanceVariableData.demanda,
-        executado: performanceVariableData.executado,
-      })
-      .from(performanceVariableData)
-      .where(inArray(performanceVariableData.performanceDataId, perfIds));
-    for (const v of varRows) {
-      if (v.demanda === null || v.executado === null) continue;
-      let inner = filledByPerf.get(v.performanceDataId);
-      if (!inner) {
-        inner = new Set();
-        filledByPerf.set(v.performanceDataId, inner);
-      }
-      inner.add(v.variableIndex);
-    }
-  }
-
-  let totalRequired = 0;
-  let totalFilled = 0;
-  for (const emp of empRows) {
-    const vars = await getVars(emp.jobFamily);
-    const perfId = perfByEmp.get(emp.id);
-    const filled: Set<number> =
-      perfId !== undefined ? (filledByPerf.get(perfId) ?? new Set<number>()) : new Set<number>();
-    for (const v of vars) {
-      if (Number(v.weight) === 0) continue;
-      totalRequired += 1;
-      if (filled.has(v.variableIndex)) {
-        totalFilled += 1;
-      }
-    }
-  }
-
-  if (totalRequired === 0) return 'Não preenchido';
-  if (totalFilled === 0) return 'Não preenchido';
-  if (totalFilled === totalRequired) return 'Preenchido';
-  return 'Parcial';
+  return computeStatusForLeaderService(db, companyId, mes, liderados);
 }
