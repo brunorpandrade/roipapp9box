@@ -385,10 +385,52 @@ export default async function PainelLiderPage(): Promise<JSX.Element> {
         >
           Meu portal
         </h2>
-        <ComingSoonBlock
-          title="Pendências do portal"
-          canonicalText="Coleta de dados em andamento"
-        />
+        {/*
+          ME-B9-fechamento CORR4 (D-B9F-PAINEL-LIDER-CARD-MEU-PORTAL-
+          NAO-CLICAVEL ENCERRADO): card canonico clicavel para a rota
+          `/meu-portal` (S238-B). Substitui bit-a-bit o ComingSoonBlock
+          estatico que nao expunha entry point navegacional para o
+          Lider acessar suas proprias pendencias.
+        */}
+        <a
+          href="/meu-portal"
+          aria-label="Acessar meu portal"
+          style={{
+            display: 'block',
+            padding: '20px 24px',
+            border: `1px solid ${COLORS.border.default}`,
+            borderRadius: 8,
+            background: COLORS.background.card,
+            textDecoration: 'none',
+            transition: 'border-color 120ms ease',
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              color: COLORS.text.tertiary,
+              marginBottom: 8,
+            }}
+          >
+            Pendências do portal
+          </div>
+          <div
+            style={{
+              fontSize: 15,
+              fontWeight: 600,
+              color: COLORS.text.primary,
+              marginBottom: 4,
+            }}
+          >
+            Acessar meu portal →
+          </div>
+          <div style={{ fontSize: 13, color: COLORS.text.secondary }}>
+            Veja suas pendências nos instrumentos do portal.
+          </div>
+        </a>
       </section>
 
       {/* Secao 5 — Radar da empresa §5.6: Cenario 1 AUSENTE; Cenario

@@ -458,7 +458,10 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
                 title={d.departamento}
                 value={String(d.total)}
                 sub="Ativos"
-                href={`/todos-os-colaboradores?dept=${encodeURIComponent(d.departamento)}`}
+                href={
+                  `${hrefPrefix}/todos-os-colaboradores` +
+                  `?dept=${encodeURIComponent(d.departamento)}`
+                }
                 ariaLabel={`Ver colaboradores do departamento ${d.departamento}`}
               />
             ))}
