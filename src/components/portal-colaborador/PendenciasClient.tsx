@@ -12,7 +12,8 @@
 //
 // Nesta ME, o botão [Responder →] renderiza DESABILITADO com tooltip
 // "Formulário em breve" — os hrefs habilitados chegam nas ME-B10-02
-// (Instrumento A e D), ME-B10-03 (Radar NR-1) e ME-B10-04 (Perfil
+// (Instrumento A e D — habilitados), ME-B10-03 (Radar NR-1 —
+// habilitado nesta ME) e ME-B10-04 (Perfil
 // Individual).
 //
 // Guard client-side: se sessionStorage não tem `portalToken`, redirect
@@ -247,6 +248,7 @@ function CardRadarNr1(props: CardPendenciaProps): JSX.Element {
       badge={{ label: card.status === 'Atrasado' ? 'Atrasado' : 'Pendente', kind: card.status }}
       buttonLabel="Responder →"
       buttonKind="teal"
+      href="/colaborador/responder/radar-nr1"
     />
   );
 }

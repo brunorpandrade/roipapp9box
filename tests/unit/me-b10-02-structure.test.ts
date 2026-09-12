@@ -114,8 +114,7 @@ describe('ME-B10-02 — estrutura canonica dos formularios A/D + endpoint sessio
     expect(content).toContain("import Link from 'next/link'");
     expect(content).toContain('/meu-portal/auto-avaliacao');
     expect(content).toContain('/meu-portal/lideranca-direta');
-    // Perfil e NR-1 permanecem inativos nesta ME
-    expect(content).toContain('radarNR1: null');
+    // ME-B10-03 (S254) habilitou radarNR1; Perfil permanece inativo ate ME-B10-04.
     expect(content).toContain('meuPerfil: null');
   });
 

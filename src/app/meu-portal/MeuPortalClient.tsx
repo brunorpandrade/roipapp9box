@@ -16,6 +16,9 @@
 // cursor `not-allowed` e title canonico "Formulário em breve" ate as
 // ME-B10-04 e ME-B10-03 respectivamente.
 //
+// **ME-B10-03 S254:** habilita href do Radar NR-1 (`/meu-portal/radar-nr1`).
+// Perfil Individual permanece inativo ate a ME-B10-04.
+//
 // **RV-14.** Um statement por linha, largura maxima 100 cols.
 
 'use client';
@@ -40,14 +43,20 @@ const SUBTITLE = 'Suas pendências nos instrumentos do portal.';
 const TOOLTIP_EM_BREVE = 'Formulário em breve';
 
 /**
- * Mapa canonico ME-B10-02 S253: instrumentos habilitados nesta ME
- * apontam para a rota `/meu-portal/*` correspondente; instrumentos
- * ainda pendentes ficam explicitamente `null` (renderizacao inativa).
+ * Mapa canonico dos instrumentos habilitados. Cada ME do Bloco B10
+ * ativa o(s) href(s) correspondente(s) ao seu escopo material.
+ *
+ * - ME-B10-02 S253: `autoAvaliacao` + `avaliacaoLiderancaDireta`.
+ * - ME-B10-03 S254: `radarNR1`.
+ * - ME-B10-04 (planejado): `meuPerfil`.
+ *
+ * Instrumentos ainda nao entregues ficam explicitamente `null` —
+ * renderizacao inativa com tooltip canonico "Formulário em breve".
  */
 const HREF_POR_INSTRUMENTO: Readonly<Record<string, string | null>> = Object.freeze({
   autoAvaliacao: '/meu-portal/auto-avaliacao',
   avaliacaoLiderancaDireta: '/meu-portal/lideranca-direta',
-  radarNR1: null,
+  radarNR1: '/meu-portal/radar-nr1',
   meuPerfil: null,
 });
 
