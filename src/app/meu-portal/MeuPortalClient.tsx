@@ -19,6 +19,11 @@
 // **ME-B10-03 S254:** habilita href do Radar NR-1 (`/meu-portal/radar-nr1`).
 // Perfil Individual permanece inativo ate a ME-B10-04.
 //
+// **ME-B10-04 S255:** habilita href do Perfil Individual
+// (`/meu-portal/perfil-individual`). Quarto e ultimo instrumento do
+// Bloco B10 ativado — a partir desta ME todos os 4 instrumentos tem
+// rota resposta acessivel pelo canal platform.
+//
 // **RV-14.** Um statement por linha, largura maxima 100 cols.
 
 'use client';
@@ -48,16 +53,14 @@ const TOOLTIP_EM_BREVE = 'Formulário em breve';
  *
  * - ME-B10-02 S253: `autoAvaliacao` + `avaliacaoLiderancaDireta`.
  * - ME-B10-03 S254: `radarNR1`.
- * - ME-B10-04 (planejado): `meuPerfil`.
- *
- * Instrumentos ainda nao entregues ficam explicitamente `null` —
- * renderizacao inativa com tooltip canonico "Formulário em breve".
+ * - ME-B10-04 S255: `meuPerfil` — Bloco B10 fecha superficie de
+ *   escrita canal platform para os 4 instrumentos individuais.
  */
-const HREF_POR_INSTRUMENTO: Readonly<Record<string, string | null>> = Object.freeze({
+const HREF_POR_INSTRUMENTO: Readonly<Record<string, string>> = Object.freeze({
   autoAvaliacao: '/meu-portal/auto-avaliacao',
   avaliacaoLiderancaDireta: '/meu-portal/lideranca-direta',
   radarNR1: '/meu-portal/radar-nr1',
-  meuPerfil: null,
+  meuPerfil: '/meu-portal/perfil-individual',
 });
 
 export function MeuPortalClient(props: MeuPortalClientProps): JSX.Element {

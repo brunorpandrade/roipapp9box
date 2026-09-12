@@ -114,8 +114,9 @@ describe('ME-B10-02 — estrutura canonica dos formularios A/D + endpoint sessio
     expect(content).toContain("import Link from 'next/link'");
     expect(content).toContain('/meu-portal/auto-avaliacao');
     expect(content).toContain('/meu-portal/lideranca-direta');
-    // ME-B10-03 (S254) habilitou radarNR1; Perfil permanece inativo ate ME-B10-04.
-    expect(content).toContain('meuPerfil: null');
+    // ME-B10-03 (S254) habilitou radarNR1; ME-B10-04 (S255) habilitou
+    // meuPerfil — assert `meuPerfil: null` removido nesta ME
+    // (L113 acumulativo CC079 dentro da ME-B10-04).
   });
 
   it('PendenciasClient habilita hrefs para A e D via Link', () => {
@@ -123,9 +124,10 @@ describe('ME-B10-02 — estrutura canonica dos formularios A/D + endpoint sessio
     expect(content).toContain("import Link from 'next/link'");
     expect(content).toContain('/colaborador/responder/auto-avaliacao');
     expect(content).toContain('/colaborador/responder/lideranca-direta');
-    // Perfil e NR-1 permanecem disabled com tooltip canonico
-    expect(content).toContain('TOOLTIP_EM_BREVE');
-    expect(content).toContain('Formulário em breve');
+    // ME-B10-04 (S255) fechou os 4 hrefs canonicos; constante
+    // `TOOLTIP_EM_BREVE` e o fallback disabled foram removidos
+    // por RV-13 (dead code proibido) — asserts obsoletos removidos
+    // nesta ME (L113 acumulativo CC079 dentro da ME-B10-04).
   });
 
   it('PortalPendenciaCard exporta cicloReferencia (S253 — trimestre canonico do card)', () => {

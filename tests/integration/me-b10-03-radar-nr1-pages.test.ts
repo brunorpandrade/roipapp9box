@@ -37,9 +37,12 @@ describe('ME-B10-03 — habilitacao canonica de rotas Radar NR-1', () => {
     expect(src).toContain("avaliacaoLiderancaDireta: '/meu-portal/lideranca-direta'");
   });
 
-  it('MeuPortalClient mantem meuPerfil desabilitado ate ME-B10-04', () => {
+  it('MeuPortalClient habilita meuPerfil na ME-B10-04 (S255)', () => {
     const src = readSrc('src/app/meu-portal/MeuPortalClient.tsx');
-    expect(src).toContain('meuPerfil: null');
+    // Assert original desta ME (`meuPerfil: null`) foi invalidado
+    // pela habilitacao canonica da ME-B10-04 (S255). L113 acumulativo
+    // CC079 dentro da ME-B10-04 atualiza para o valor vigente.
+    expect(src).toContain("meuPerfil: '/meu-portal/perfil-individual'");
   });
 
   it('PendenciasClient CardRadarNr1 passa href canonico do portal', () => {

@@ -10,11 +10,16 @@
 //   - Seção "Respondidos nos últimos 7 dias" abaixo, quando houver.
 //   - Estado vazio canônico literal §6.3.
 //
-// Nesta ME, o botão [Responder →] renderiza DESABILITADO com tooltip
-// "Formulário em breve" — os hrefs habilitados chegam nas ME-B10-02
-// (Instrumento A e D — habilitados), ME-B10-03 (Radar NR-1 —
-// habilitado nesta ME) e ME-B10-04 (Perfil
-// Individual).
+// Nesta ME, os hrefs canonicos estao TODOS habilitados:
+// - ME-B10-02 (S253): Instrumento A + Instrumento D.
+// - ME-B10-03 (S254): Radar NR-1.
+// - ME-B10-04 (S255): Perfil Individual (nos 2 estados canonicos
+//   `pendente|aguardando_nova_resposta` e `em_andamento`).
+// A partir desta ME o Bloco B10 fecha a superficie de escrita para
+// os 4 instrumentos individuais no canal portal — todos os cards de
+// pendencia sao clicaveis. O tooltip "Formulario em breve" e a
+// constante `TOOLTIP_EM_BREVE` foram removidos (RV-13 canonico —
+// codigo morto proibido).
 //
 // Guard client-side: se sessionStorage não tem `portalToken`, redirect
 // para /colaborador.
@@ -48,7 +53,6 @@ const INFO = '#1E40AF';
 const INFO_BG = '#DBEAFE';
 
 const EMPTY_TEXT = 'Você não tem instrumentos pendentes. Obrigado por manter seu portal em dia.';
-const TOOLTIP_EM_BREVE = 'Formulário em breve';
 
 export function PendenciasClient(): JSX.Element {
   const router = useRouter();
@@ -310,11 +314,16 @@ function CardPerfilIndividual(props: CardPendenciaProps): JSX.Element {
         progresso={`${blocos} de 10 blocos concluídos`}
         buttonLabel="Continuar"
         buttonKind="teal"
+        href="/colaborador/responder/perfil-individual"
       />
     );
   }
 
   // 'pendente' e 'aguardando_nova_resposta' compartilham visual (§6.3).
+  // ME-B10-04 S255: href habilitado bit-a-bit — o backend do
+  // `profile-form-state` cria automaticamente a tentativa
+  // `em_andamento` na primeira leitura, mesmo no estado
+  // `aguardando_nova_resposta` (§10.7 DOC 03).
   return (
     <CardBase
       icone="🧠"
@@ -323,6 +332,7 @@ function CardPerfilIndividual(props: CardPendenciaProps): JSX.Element {
       descricao="Responda seu questionário de perfil executivo"
       buttonLabel="Responder"
       buttonKind="navy"
+      href="/colaborador/responder/perfil-individual"
     />
   );
 }
@@ -340,12 +350,12 @@ interface CardBaseProps {
   readonly andamentoBg?: boolean;
   readonly atrasadoBg?: boolean;
   /**
-   * ME-B10-02 S253 — quando definido, o botao vira `<Link>` navegavel
-   * para a rota de resposta do instrumento. Quando ausente (default),
-   * mantem o botao `disabled` com tooltip "Formulário em breve" (ainda
-   * usado pelo Perfil Individual e Radar NR-1 nesta ME).
+   * Href canonico da rota de resposta do instrumento. ME-B10-04 S255
+   * tornou obrigatorio (o Bloco B10 fechou a superficie de escrita
+   * para os 4 instrumentos, entao nenhum card e renderizado sem
+   * navegacao). O botao renderiza como `<Link>` do next/navigation.
    */
-  readonly href?: string;
+  readonly href: string;
 }
 
 function CardBase(props: CardBaseProps): JSX.Element {
@@ -416,48 +426,24 @@ function CardBase(props: CardBaseProps): JSX.Element {
         </span>
       ) : null}
       <div style={{ flexShrink: 0 }}>
-        {props.href !== undefined ? (
-          <Link
-            href={props.href}
-            aria-label={props.buttonLabel}
-            style={{
-              display: 'inline-block',
-              padding: '8px 16px',
-              borderRadius: 8,
-              fontSize: 12,
-              fontWeight: 700,
-              whiteSpace: 'nowrap',
-              background: props.buttonKind === 'teal' ? TEAL : NAVY,
-              color: '#FFFFFF',
-              textDecoration: 'none',
-              fontFamily: 'inherit',
-            }}
-          >
-            {props.buttonLabel}
-          </Link>
-        ) : (
-          <button
-            type="button"
-            disabled
-            title={TOOLTIP_EM_BREVE}
-            aria-label={TOOLTIP_EM_BREVE}
-            style={{
-              padding: '8px 16px',
-              borderRadius: 8,
-              fontSize: 12,
-              fontWeight: 700,
-              border: 'none',
-              whiteSpace: 'nowrap',
-              background: props.buttonKind === 'teal' ? TEAL : NAVY,
-              color: '#FFFFFF',
-              opacity: 0.5,
-              cursor: 'not-allowed',
-              fontFamily: 'inherit',
-            }}
-          >
-            {props.buttonLabel}
-          </button>
-        )}
+        <Link
+          href={props.href}
+          aria-label={props.buttonLabel}
+          style={{
+            display: 'inline-block',
+            padding: '8px 16px',
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 700,
+            whiteSpace: 'nowrap',
+            background: props.buttonKind === 'teal' ? TEAL : NAVY,
+            color: '#FFFFFF',
+            textDecoration: 'none',
+            fontFamily: 'inherit',
+          }}
+        >
+          {props.buttonLabel}
+        </Link>
       </div>
     </div>
   );
