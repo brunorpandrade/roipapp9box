@@ -74,6 +74,17 @@ export interface PortalPendenciaCard {
   readonly status: 'Pendente' | 'Atrasado';
   readonly prazoOriginal: Date | null;
   readonly diasEmAtraso: number;
+  /**
+   * Referencia do ciclo canonico da pendencia (S253 — ME-B10-02).
+   * Para Instrumentos A e D o valor tem forma `YYYY-QN` e serve como
+   * `trimestre` no payload do POST `/api/portal/save-instrument-{a,d}`.
+   * Para o Radar NR-1 tem a forma canonica do ciclo NR-1. Para o
+   * Perfil Individual (`meuPerfil`) e sempre null (o instrumento nao
+   * vive num ciclo com `cicloReferencia`). Espelha 1-a-1 o campo
+   * `cicloReferencia` de `PendenciaRow` do engine RH — dado ja
+   * calculado, sem consulta adicional.
+   */
+  readonly cicloReferencia: string | null;
   /** Preenchido somente quando `instrumento === 'meuPerfil'`. */
   readonly perfilIndividualEstado: PerfilIndividualEstadoPortal | null;
   /**
@@ -167,6 +178,7 @@ export async function loadPortalColaboradorPendencias(
     status: 'Pendente' | 'Atrasado';
     prazoOriginal: Date | null;
     diasEmAtraso: number;
+    cicloReferencia: string | null;
   }[] = [];
 
   let page = 1;
@@ -193,6 +205,7 @@ export async function loadPortalColaboradorPendencias(
         status: row.status,
         prazoOriginal: row.prazoOriginal,
         diasEmAtraso: row.diasEmAtraso,
+        cicloReferencia: row.cicloReferencia,
       });
     }
     page += 1;

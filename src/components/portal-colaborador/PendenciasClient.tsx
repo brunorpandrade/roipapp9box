@@ -21,6 +21,7 @@
 'use client';
 
 import { useCallback, useEffect, useState, type JSX } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import type {
@@ -264,6 +265,7 @@ function CardAutoAvaliacao(props: CardPendenciaProps): JSX.Element {
       buttonLabel="Responder →"
       buttonKind="navy"
       atrasadoBg={card.status === 'Atrasado'}
+      href="/colaborador/responder/auto-avaliacao"
     />
   );
 }
@@ -284,6 +286,7 @@ function CardLiderancaDireta(props: CardPendenciaProps): JSX.Element {
       buttonLabel="Responder →"
       buttonKind="navy"
       atrasadoBg={card.status === 'Atrasado'}
+      href="/colaborador/responder/lideranca-direta"
     />
   );
 }
@@ -334,6 +337,13 @@ interface CardBaseProps {
   readonly borderLeftTeal?: boolean;
   readonly andamentoBg?: boolean;
   readonly atrasadoBg?: boolean;
+  /**
+   * ME-B10-02 S253 — quando definido, o botao vira `<Link>` navegavel
+   * para a rota de resposta do instrumento. Quando ausente (default),
+   * mantem o botao `disabled` com tooltip "Formulário em breve" (ainda
+   * usado pelo Perfil Individual e Radar NR-1 nesta ME).
+   */
+  readonly href?: string;
 }
 
 function CardBase(props: CardBaseProps): JSX.Element {
@@ -404,27 +414,48 @@ function CardBase(props: CardBaseProps): JSX.Element {
         </span>
       ) : null}
       <div style={{ flexShrink: 0 }}>
-        <button
-          type="button"
-          disabled
-          title={TOOLTIP_EM_BREVE}
-          aria-label={TOOLTIP_EM_BREVE}
-          style={{
-            padding: '8px 16px',
-            borderRadius: 8,
-            fontSize: 12,
-            fontWeight: 700,
-            border: 'none',
-            whiteSpace: 'nowrap',
-            background: props.buttonKind === 'teal' ? TEAL : NAVY,
-            color: '#FFFFFF',
-            opacity: 0.5,
-            cursor: 'not-allowed',
-            fontFamily: 'inherit',
-          }}
-        >
-          {props.buttonLabel}
-        </button>
+        {props.href !== undefined ? (
+          <Link
+            href={props.href}
+            aria-label={props.buttonLabel}
+            style={{
+              display: 'inline-block',
+              padding: '8px 16px',
+              borderRadius: 8,
+              fontSize: 12,
+              fontWeight: 700,
+              whiteSpace: 'nowrap',
+              background: props.buttonKind === 'teal' ? TEAL : NAVY,
+              color: '#FFFFFF',
+              textDecoration: 'none',
+              fontFamily: 'inherit',
+            }}
+          >
+            {props.buttonLabel}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            disabled
+            title={TOOLTIP_EM_BREVE}
+            aria-label={TOOLTIP_EM_BREVE}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 8,
+              fontSize: 12,
+              fontWeight: 700,
+              border: 'none',
+              whiteSpace: 'nowrap',
+              background: props.buttonKind === 'teal' ? TEAL : NAVY,
+              color: '#FFFFFF',
+              opacity: 0.5,
+              cursor: 'not-allowed',
+              fontFamily: 'inherit',
+            }}
+          >
+            {props.buttonLabel}
+          </button>
+        )}
       </div>
     </div>
   );

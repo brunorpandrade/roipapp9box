@@ -130,6 +130,15 @@ export interface MeuPortalPendenciaItem {
   readonly status: PendenciaStatus;
   readonly prazoOriginal: Date | null;
   readonly diasEmAtraso: number;
+  /**
+   * Referencia do ciclo canonico da pendencia (S253 — ME-B10-02).
+   * Para Instrumentos A e D tem a forma `YYYY-QN` e serve como
+   * `trimestre` no payload dos endpoints `/api/portal/save-instrument-*`.
+   * Para Radar NR-1 tem a forma canonica do ciclo NR-1. Para
+   * `meuPerfil` (Perfil Individual) e sempre `null`. Espelha 1-a-1
+   * o campo `cicloReferencia` de `PendenciaRow` do engine RH.
+   */
+  readonly cicloReferencia: string | null;
 }
 
 /**
@@ -361,6 +370,7 @@ export async function loadMeuPortalData(
         status: row.status,
         prazoOriginal: row.prazoOriginal,
         diasEmAtraso: row.diasEmAtraso,
+        cicloReferencia: row.cicloReferencia,
       });
     }
     page += 1;

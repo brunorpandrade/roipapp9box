@@ -1,4 +1,5 @@
-// ROIP APP 9BOX — modulo do `portalToken` (ME-023, S042).
+// ROIP APP 9BOX — modulo do `portalToken` (ME-023, S042; estendido em
+// ME-B10-02, S251).
 //
 // Token de sessao do portal do colaborador (DOC 02 §5.3). Independente
 // dos regimes administrativos (§5.1 e §5.2): claim `role` NAO existe
@@ -13,6 +14,14 @@
 // mecanismo defensivo contra reuso indevido de token colado. Bump de
 // TTL requer S### dedicada.
 //
+// **S251 (ME-B10-02).** Emissao com TTL variavel: o novo endpoint
+// `POST /api/portal/session-token` (S247-Alfa — canal de escrita unico)
+// precisa emitir `portalToken` temporario TTL 10 minutos para o
+// respondente platform. `signPortalToken` recebe agora `ttlSeconds`
+// opcional — quando ausente, preserva o TTL canonico 12h de todos os
+// 10 emissores existentes (`POST /api/portal/login` etc.). Zero
+// regressao nos callers atuais; extensao pura aditiva.
+//
 // Titular polimorfico A: o token carrega `titularType` ('employee' |
 // 'clevel') e `titularId`. Fluxos NR-1, IQL e pendencias que consomem o
 // token no Bloco B3+ usam ambos para escopo.
@@ -24,8 +33,16 @@
 
 import { jwtVerify, SignJWT } from 'jose';
 
-/** TTL do portalToken (S042). Defensivo — sessionStorage encerra antes. */
-const PORTAL_SESSION_TTL_SECONDS = 12 * 60 * 60;
+/** TTL default do portalToken (S042). Defensivo — sessionStorage encerra antes. */
+const PORTAL_SESSION_TTL_SECONDS_DEFAULT = 12 * 60 * 60;
+
+/**
+ * TTL do portalToken temporario emitido a respondente platform
+ * (S247-Alfa + S251 — ME-B10-02). 10 minutos e suficiente para o
+ * submit HTTP subsequente do formulario Likert; nao persiste alem da
+ * janela do envio.
+ */
+export const PORTAL_SESSION_TTL_SECONDS_PLATFORM_TEMP = 10 * 60;
 
 /** Discriminante do titular (padrao polimorfico A). */
 type PortalTitularType = 'employee' | 'clevel';
@@ -35,6 +52,13 @@ interface PortalTokenInput {
   companyId: number;
   titularType: PortalTitularType;
   titularId: number;
+  /**
+   * TTL do token em segundos. Opcional — quando ausente, preserva o
+   * TTL canonico 12h (S042). S251 permite emissores dedicados
+   * (`session-token` da ME-B10-02) passarem valores curtos. Precisa
+   * ser inteiro positivo; valores invalidos caem no default.
+   */
+  ttlSeconds?: number;
 }
 
 /** Claims verificados do portalToken. */
@@ -58,11 +82,24 @@ function getSecretKey(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
+function resolveTtlSeconds(raw: number | undefined): number {
+  if (raw === undefined) {
+    return PORTAL_SESSION_TTL_SECONDS_DEFAULT;
+  }
+  if (!Number.isInteger(raw) || raw <= 0) {
+    return PORTAL_SESSION_TTL_SECONDS_DEFAULT;
+  }
+  return raw;
+}
+
 /**
  * Emite o portalToken (§5.3). Claims: `sub` = titularId, `kind: 'portal'`,
- * `companyId`, `titularType`, `iat`, `exp` = now + 12h (S042).
+ * `companyId`, `titularType`, `iat`, `exp` = now + `ttlSeconds` (S042 +
+ * S251). Quando `ttlSeconds` e omitido, aplica o default 12h —
+ * comportamento da ME-023 preservado para os 10 emissores pre-existentes.
  */
 export async function signPortalToken(input: PortalTokenInput): Promise<string> {
+  const ttl = resolveTtlSeconds(input.ttlSeconds);
   return new SignJWT({
     kind: 'portal',
     companyId: input.companyId,
@@ -71,7 +108,7 @@ export async function signPortalToken(input: PortalTokenInput): Promise<string> 
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(String(input.titularId))
     .setIssuedAt()
-    .setExpirationTime(`${PORTAL_SESSION_TTL_SECONDS}s`)
+    .setExpirationTime(`${ttl}s`)
     .sign(getSecretKey());
 }
 
