@@ -27,3 +27,4 @@ apply.sh
 verify.sh
 MANIFEST.sha256.*
 ME*_PATCH_INSTRUCTIONS.md
+MANIFEST.sha256
