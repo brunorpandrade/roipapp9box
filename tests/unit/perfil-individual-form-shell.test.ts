@@ -159,10 +159,14 @@ describe('PerfilIndividualFormShell — comportamento canonico', () => {
     expect(src).toContain('PERFIL_INDIVIDUAL_TOTAL_ITENS');
   });
 
-  it('renderiza 3 tipos de item canonicos (Likert + EF + Cenario)', () => {
-    expect(src).toContain('Likert');
-    expect(src).toContain('Escolha forçada');
-    expect(src).toContain('Cenário situacional');
+  it('renderiza 3 tipos de item canonicos via catalogo (Likert + EF + Cenario)', () => {
+    // Os 3 tipos sao dispatched pelo shell via `item.tipo` do catalogo.
+    // Nao ha badge visivel de tipo no formulario (DOC 05 §7.5 —
+    // enunciado + opcoes apenas). Verificamos que o dispatch por tipo
+    // esta implementado.
+    expect(src).toContain("item.tipo === 'likert'");
+    expect(src).toContain('LikertOpcoes');
+    expect(src).toContain('AlternativaOpcoes');
   });
 
   it('bloco 10 (ehBlocoFinal) troca comportamento do header + footer', () => {

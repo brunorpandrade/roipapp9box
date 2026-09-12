@@ -78,7 +78,15 @@
 
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, type CSSProperties, type JSX } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type JSX,
+} from 'react';
 import { useRouter } from 'next/navigation';
 
 import {
@@ -89,7 +97,6 @@ import {
   PERFIL_INDIVIDUAL_TOTAL_ITENS,
   itensDoBlocoUx,
   type PerfilIndividualItem,
-  type PerfilIndividualTipo,
 } from '../../lib/instruments/perfilIndividualCatalog';
 
 // ============================================================
@@ -227,6 +234,18 @@ export function PerfilIndividualFormShell(props: PerfilIndividualFormShellProps)
   const [blocoUx, setBlocoUx] = useState<number>(1);
   const [voltouUmaVez, setVoltouUmaVez] = useState<boolean>(false);
   const [erroTransiente, setErroTransiente] = useState<string | null>(null);
+  // Ref canonica ao corpo scrollavel do modal — usada para resetar
+  // `scrollTop` ao 0 sempre que o `blocoUx` muda (padrao bit-a-bit do
+  // mockup canonico `perfil_individual_formulario_v3.html` linha 434
+  // e 447). Sem esse reset, avancar ou voltar bloco preserva a rolagem
+  // anterior, fazendo o usuario ver o meio ou o final do proximo bloco
+  // ao inves do topo.
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (bodyRef.current !== null) {
+      bodyRef.current.scrollTop = 0;
+    }
+  }, [blocoUx]);
 
   // -------- 1) Emissao de portalToken (canal-specifico) --------
 
@@ -645,7 +664,7 @@ export function PerfilIndividualFormShell(props: PerfilIndividualFormShellProps)
         </div>
 
         {/* CORPO */}
-        <div style={estilos.body}>
+        <div ref={bodyRef} style={estilos.body}>
           {blocoUx === 1 ? <div style={estilos.instrucao}>{INSTRUCAO_BLOCO_1}</div> : null}
           <div style={estilos.blocoLabel}>
             Bloco {blocoUx} de {PERFIL_INDIVIDUAL_TOTAL_BLOCOS}
@@ -716,7 +735,6 @@ function ItemRender(props: ItemRenderProps): JSX.Element {
   const { item, valor, onResponder, desabilitado } = props;
   return (
     <div style={estilos.itemWrapper}>
-      <div style={estilos.badgeTipo}>{badgeLabel(item.tipo)}</div>
       <div style={estilos.itemEnunciado}>
         <span style={estilos.itemNumero}>{item.numero}.</span>
         {item.enunciado}
@@ -806,12 +824,6 @@ function AlternativaOpcoes(props: AlternativaOpcoesProps): JSX.Element {
 // ============================================================
 // Helpers puros
 // ============================================================
-
-function badgeLabel(tipo: PerfilIndividualTipo): string {
-  if (tipo === 'likert') return 'Likert';
-  if (tipo === 'ef') return 'Escolha forçada';
-  return 'Cenário situacional';
-}
 
 function formatarEnviadoEm(iso: string): string {
   const d = new Date(iso);
@@ -1000,15 +1012,6 @@ const estilos = {
     marginBottom: 22,
     paddingTop: 16,
     borderTop: '1px dashed #F3F4F6',
-  } as CSSProperties,
-  badgeTipo: {
-    display: 'inline-block',
-    fontSize: 9.5,
-    fontWeight: 700,
-    color: TEXT_4,
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.03em',
-    marginBottom: 6,
   } as CSSProperties,
   itemEnunciado: {
     fontSize: 13,
