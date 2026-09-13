@@ -867,6 +867,9 @@ export async function runAssessment(
     ia_cons: iaConsStr,
     ia_ext: iaExtStr,
     calculadoEm: now,
+    // ME-B10-04 CC079: grava `enviadoEm` no caminho consistente
+    // (§10.4 DOC 03 — card "Enviado" aparece no portal por 7 dias).
+    enviadoEm,
   });
 
   await insertIndividualProfileScore(db, {

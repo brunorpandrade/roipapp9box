@@ -194,6 +194,20 @@ export async function updateIndividualProfileResultado(
     ia_cons: string;
     ia_ext: string;
     calculadoEm: Date;
+    /**
+     * ME-B10-04 CC079 acumulativo: `enviadoEm` era omitido do UPDATE
+     * canonico, deixando o campo NULL apos motor concluir. Isso
+     * quebrava `loadRespondidosRecentes` (que filtra por
+     * `enviadoEm >= NOW() - 7 dias`), fazendo o card canonico
+     * "Enviado nos ultimos 7 dias" nunca aparecer no portal.
+     *
+     * Semantica canonica:
+     * - Caminho consistente (`status='enviado'`) → passar `now`.
+     * - Caminho inconsistente (`status='inconsistente'`) → omitir
+     *   ou passar `null` (§10.6 DOC 03: card "Enviado" nao e
+     *   exibido no portal apos envio inconsistente).
+     */
+    enviadoEm?: Date | null;
   },
 ): Promise<number> {
   const [result] = await db
@@ -207,6 +221,7 @@ export async function updateIndividualProfileResultado(
       ia_cons: patch.ia_cons,
       ia_ext: patch.ia_ext,
       calculadoEm: patch.calculadoEm,
+      ...(patch.enviadoEm !== undefined ? { enviadoEm: patch.enviadoEm } : {}),
     })
     .where(eq(individualProfileAssessments.id, id));
   return result.affectedRows;
