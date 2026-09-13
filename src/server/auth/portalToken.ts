@@ -38,11 +38,23 @@ const PORTAL_SESSION_TTL_SECONDS_DEFAULT = 12 * 60 * 60;
 
 /**
  * TTL do portalToken temporario emitido a respondente platform
- * (S247-Alfa + S251 — ME-B10-02). 10 minutos e suficiente para o
- * submit HTTP subsequente do formulario Likert; nao persiste alem da
- * janela do envio.
+ * (S247-Alfa + S251 — ME-B10-02).
+ *
+ * **ME-B10-04 CC079 acumulativo:** ampliado de 10 min para 60 min.
+ * Rationale: 10 min era suficiente para instrumentos Likert curtos
+ * (A + D — 20 itens, ~2 min de resposta) e para Radar NR-1 (32 itens,
+ * ~5-8 min). Perfil Individual (80 itens em 10 blocos, 3 tipos
+ * distintos — Likert + EF + Cenario) leva canonicamente 30-60 min
+ * quando respondido com honestidade e atencao. TTL de 10 min gerava
+ * "sessão expirada" no meio do preenchimento no canal platform,
+ * for cando recarregar a pagina (retomada canonica via
+ * `profile-form-state` recupera o estado, mas quebra a UX). 60 min
+ * cobre a mediana + folga.
+ *
+ * `sessionStorage` do browser encerra na aba fechada — TTL server-side
+ * e defesa em profundidade contra token vazado.
  */
-export const PORTAL_SESSION_TTL_SECONDS_PLATFORM_TEMP = 10 * 60;
+export const PORTAL_SESSION_TTL_SECONDS_PLATFORM_TEMP = 60 * 60;
 
 /** Discriminante do titular (padrao polimorfico A). */
 type PortalTitularType = 'employee' | 'clevel';

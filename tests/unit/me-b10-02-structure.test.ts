@@ -71,8 +71,11 @@ describe('ME-B10-02 — estrutura canonica dos formularios A/D + endpoint sessio
     // Retrocompat: default 12h preservado
     expect(content).toContain('PORTAL_SESSION_TTL_SECONDS_DEFAULT');
     expect(content).toContain('12 * 60 * 60');
-    // TTL curto canonico para respondente platform (10 min)
-    expect(content).toContain('10 * 60');
+    // TTL canonico para respondente platform. ME-B10-04 CC079
+    // acumulativo: ampliado de 10 min para 60 min por cobrir
+    // Perfil Individual (80 itens em 10 blocos, ~30-60 min de
+    // preenchimento).
+    expect(content).toContain('60 * 60');
   });
 
   it('LikertFormShell exporta componente client canonico', () => {

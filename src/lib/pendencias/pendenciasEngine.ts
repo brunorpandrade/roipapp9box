@@ -426,6 +426,18 @@ export async function loadPendenciasPage(
 
   // Consulta 3: individualProfilePlaceholders pendentes (employees +
   // cLevels).
+  //
+  // ME-B10-04 CC079: `inconsistente` REMOVIDO da lista de statuses
+  // carregados. Origem canonica §10.6 DOC 03: "O card 'Enviado' no
+  // portal do colaborador NÃO é exibido. O portal permanece sem
+  // cards ativos do Perfil Individual — o colaborador não recebe
+  // indicação de que a resposta foi inválida." Reteste apos
+  // inconsistente so pode ser liberado por Bruno ou RH via
+  // `individualProfile.releaseRetest` (§10.7), que muda placeholder
+  // para 'aguardando_nova_resposta' — ai o card volta a aparecer.
+  // Sem essa liberacao, o portal do colaborador nao pode expor o
+  // card canonicamente (evita informar ao colaborador que a resposta
+  // foi rejeitada).
   const placeholdersPendentes = await db
     .select({
       userType: individualProfilePlaceholders.userType,
@@ -440,7 +452,6 @@ export async function loadPendenciasPage(
         inArray(individualProfilePlaceholders.status, [
           'pendente',
           'em_andamento',
-          'inconsistente',
           'aguardando_nova_resposta',
         ]),
       ),

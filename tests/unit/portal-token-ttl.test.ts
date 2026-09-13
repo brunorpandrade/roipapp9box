@@ -102,12 +102,14 @@ describe('signPortalToken — TTL default retrocompativel (S042)', () => {
 });
 
 describe('signPortalToken — TTL customizado para respondente platform (S251)', () => {
-  it('constante PORTAL_SESSION_TTL_SECONDS_PLATFORM_TEMP = 600 segundos (10 min)', async () => {
+  it('constante PORTAL_SESSION_TTL_SECONDS_PLATFORM_TEMP = 3600 segundos (60 min)', async () => {
+    // ME-B10-04 CC079 acumulativo: ampliado de 10 min para 60 min por
+    // cobrir Perfil Individual (80 itens em 10 blocos, ~30-60 min).
     const mod = await importarModulo();
-    expect(mod.PORTAL_SESSION_TTL_SECONDS_PLATFORM_TEMP).toBe(10 * 60);
+    expect(mod.PORTAL_SESSION_TTL_SECONDS_PLATFORM_TEMP).toBe(60 * 60);
   });
 
-  it('ttlSeconds = 600 -> emite token com exp = iat + 600', async () => {
+  it('ttlSeconds = 3600 -> emite token com exp = iat + 3600', async () => {
     const mod = await importarModulo();
     const token = await mod.signPortalToken({
       companyId: 7,
@@ -118,7 +120,7 @@ describe('signPortalToken — TTL customizado para respondente platform (S251)',
     const payload = await decodePayload(token);
     const iat = payload.iat as number;
     const exp = payload.exp as number;
-    expect(exp - iat).toBe(600);
+    expect(exp - iat).toBe(3600);
   });
 
   it('token TTL curto e verificavel pelo mesmo verifyPortalToken canonico', async () => {
