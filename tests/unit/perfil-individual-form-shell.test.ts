@@ -179,9 +179,14 @@ describe('PerfilIndividualFormShell — comportamento canonico', () => {
   });
 
   it('layout pop-up modal 80% desktop (§7.5)', () => {
-    // overlay com background semi-transparente + modal centralizado
-    expect(src).toContain('rgba(0,0,0,0.5)');
-    expect(src).toContain("width: '80%'");
-    expect(src).toContain('maxWidth: 760');
+    // ME-B10-05 S256: overlay + dimensoes migradas do inline style
+    // para classes CSS globais em `src/app/globals.css`
+    // (`.roip-modal-pi-overlay` — background rgba(0,0,0,0.6) desktop /
+    // encosta nas bordas no mobile; `.roip-modal-pi-fullscreen-mobile`
+    // — width 80% / max-width 760px / max-height 90vh desktop / tela
+    // cheia no mobile). O layout pop-up centralizado permanece
+    // canonico — apenas a fonte da regra CSS mudou.
+    expect(src).toContain('className="roip-modal-pi-overlay"');
+    expect(src).toContain('className="roip-modal-pi-fullscreen-mobile"');
   });
 });

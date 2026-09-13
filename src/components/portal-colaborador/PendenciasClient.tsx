@@ -1,5 +1,5 @@
 // ROIP APP 9BOX — Client canônico da tela de pendências do portal
-// (ME-B10-01, DOC 05 §6.3).
+// (ME-B10-01, DOC 05 §6.3; estendido ME-B10-05 S256 — perímetro mobile).
 //
 // Consome GET /api/portal/pendencias com header Authorization Bearer
 // (portalToken de sessionStorage). Renderiza:
@@ -23,6 +23,12 @@
 //
 // Guard client-side: se sessionStorage não tem `portalToken`, redirect
 // para /colaborador.
+//
+// ME-B10-05 S256: cards recebem classe `roip-pendencia-card` que
+// empilha layout verticalmente em `< 1024px`, com botão full-width.
+// Container recebe classe `roip-pendencias-container` para padding
+// responsivo. Regra canônica §6.3 mobile: card com ícone+título no
+// topo, badge à direita no topo, botão full-width no rodapé do card.
 
 'use client';
 
@@ -145,7 +151,10 @@ export function PendenciasClient(): JSX.Element {
   const vazio = pendencias.length === 0 && respondidosRecentes.length === 0;
 
   return (
-    <div style={{ maxWidth: 640, margin: '0 auto', padding: '28px 20px 60px', width: '100%' }}>
+    <div
+      className="roip-pendencias-container"
+      style={{ maxWidth: 640, margin: '0 auto', padding: '28px 20px 60px', width: '100%' }}
+    >
       {vazio ? (
         <div
           style={{
@@ -364,68 +373,68 @@ function CardBase(props: CardBaseProps): JSX.Element {
     props.andamentoBg === true ? '#F0FDFA' : props.atrasadoBg === true ? '#FEF2F2' : '#FFFFFF';
   return (
     <div
+      className="roip-pendencia-card"
       style={{
         background: bg,
         border: props.borderLeftTeal === true ? `1px solid ${BORDER}` : border,
         borderLeft: border,
         borderRadius: 12,
         padding: '16px 18px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 14,
       }}
     >
-      <div
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: '50%',
-          background: props.iconeBg,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 18,
-          flexShrink: 0,
-        }}
-      >
-        {props.icone}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 700, color: TEXT_1 }}>{props.titulo}</div>
-        <div style={{ fontSize: 11.5, color: TEXT_3, marginTop: 2, lineHeight: 1.4 }}>
-          {props.descricao}
-        </div>
-        {props.progresso !== undefined ? (
-          <div
-            style={{
-              fontSize: 11.5,
-              color: TEAL,
-              fontWeight: 600,
-              marginTop: 3,
-            }}
-          >
-            {props.progresso}
-          </div>
-        ) : null}
-      </div>
-      {props.badge !== undefined ? (
-        <span
+      <div className="roip-pendencia-topo">
+        <div
           style={{
-            fontSize: 10,
-            fontWeight: 700,
-            padding: '3px 9px',
-            borderRadius: 999,
-            textTransform: 'uppercase',
-            letterSpacing: '0.02em',
-            whiteSpace: 'nowrap',
-            background: props.badge.kind === 'Atrasado' ? DANGER_BG : INFO_BG,
-            color: props.badge.kind === 'Atrasado' ? DANGER_TX : INFO,
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            background: props.iconeBg,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 18,
+            flexShrink: 0,
           }}
         >
-          {props.badge.label}
-        </span>
-      ) : null}
-      <div style={{ flexShrink: 0 }}>
+          {props.icone}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: TEXT_1 }}>{props.titulo}</div>
+          <div style={{ fontSize: 11.5, color: TEXT_3, marginTop: 2, lineHeight: 1.4 }}>
+            {props.descricao}
+          </div>
+          {props.progresso !== undefined ? (
+            <div
+              style={{
+                fontSize: 11.5,
+                color: TEAL,
+                fontWeight: 600,
+                marginTop: 3,
+              }}
+            >
+              {props.progresso}
+            </div>
+          ) : null}
+        </div>
+        {props.badge !== undefined ? (
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              padding: '3px 9px',
+              borderRadius: 999,
+              textTransform: 'uppercase',
+              letterSpacing: '0.02em',
+              whiteSpace: 'nowrap',
+              background: props.badge.kind === 'Atrasado' ? DANGER_BG : INFO_BG,
+              color: props.badge.kind === 'Atrasado' ? DANGER_TX : INFO,
+            }}
+          >
+            {props.badge.label}
+          </span>
+        ) : null}
+      </div>
+      <div className="roip-pendencia-btn-wrap">
         <Link
           href={props.href}
           aria-label={props.buttonLabel}
@@ -457,54 +466,54 @@ function CardRespondido(props: CardRespondidoProps): JSX.Element {
   const { card } = props;
   return (
     <div
+      className="roip-pendencia-card"
       style={{
         background: '#FFFFFF',
         border: `1px solid ${BORDER}`,
         borderRadius: 12,
         padding: '16px 18px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 14,
         opacity: 0.75,
       }}
     >
-      <div
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: '50%',
-          background: '#F3F4F6',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 18,
-          flexShrink: 0,
-        }}
-      >
-        ✅
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 700, color: TEXT_1, opacity: 0.7 }}>
-          {labelInstrumentoColaborador(card.instrumento)}
+      <div className="roip-pendencia-topo">
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            background: '#F3F4F6',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 18,
+            flexShrink: 0,
+          }}
+        >
+          ✅
         </div>
-        <div style={{ fontSize: 11.5, color: TEXT_3, marginTop: 2 }}>
-          Enviado em {formatDate(card.respondidoEm)}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: TEXT_1, opacity: 0.7 }}>
+            {labelInstrumentoColaborador(card.instrumento)}
+          </div>
+          <div style={{ fontSize: 11.5, color: TEXT_3, marginTop: 2 }}>
+            Enviado em {formatDate(card.respondidoEm)}
+          </div>
         </div>
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            padding: '3px 9px',
+            borderRadius: 999,
+            textTransform: 'uppercase',
+            letterSpacing: '0.02em',
+            background: SUCCESS_BG,
+            color: SUCCESS_TX,
+          }}
+        >
+          Enviado
+        </span>
       </div>
-      <span
-        style={{
-          fontSize: 10,
-          fontWeight: 700,
-          padding: '3px 9px',
-          borderRadius: 999,
-          textTransform: 'uppercase',
-          letterSpacing: '0.02em',
-          background: SUCCESS_BG,
-          color: SUCCESS_TX,
-        }}
-      >
-        Enviado
-      </span>
     </div>
   );
 }

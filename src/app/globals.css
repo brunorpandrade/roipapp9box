@@ -1,11 +1,22 @@
-/* ROIP APP 9BOX — estilos globais canonicos (ME-055 Bloco A). */
+/* ROIP APP 9BOX — estilos globais canonicos (ME-055 Bloco A; */
+/* estendido ME-B10-05 S256/S257 — perimetro mobile integral). */
 /*                                                              */
 /* Diretivas Tailwind canonicas + reset residual minimo. A fonte */
 /* Inter e injetada via `next/font/google` em `src/app/layout.tsx` */
 /* e disponibilizada via a CSS variable `--font-inter`.           */
 /*                                                              */
 /* Origem canonica: DOC 05 §2.1 (background e text tokens),      */
-/* §2.2 (Inter como fonte unica).                                 */
+/* §2.2 (Inter como fonte unica), §19 (perimetro mobile).        */
+/*                                                              */
+/* Bloco ME-B10-05: primitivas responsivas ROIP consumidas por   */
+/* PortalLayout, ColaboradorLoginClient, GateLgpdClient,         */
+/* PendenciasClient, PrivacyModal, LikertFormShell, Nr1FormShell,*/
+/* PerfilIndividualFormShell e Layout (shell platform).          */
+/* Estrategia: CSS puro com media query unica em 1024px (§19.1)  */
+/* — sem logica condicional de componente por viewport. Toda a   */
+/* base desktop preserva os inline styles pre-existentes; as     */
+/* classes abaixo apenas OVERRIDEM propriedades especificas em   */
+/* viewport `< 1024px`.                                          */
 
 @tailwind base;
 @tailwind components;
@@ -24,4 +35,299 @@ body {
   font-family: var(--font-inter), Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================
+   ROIP MOBILE PRIMITIVES (ME-B10-05 — S256)
+   Breakpoint canonico unico: mobile `< 1024px`, desktop `>= 1024px`.
+   As 12 primitivas abaixo cobrem o perimetro do §19.2 (5 superficies
+   portal + 4 pages platform) + o realinhamento do LikertFormShell
+   (grid 5 colunas -> empilhamento vertical no mobile) canonizado em
+   CC079 acumulativo ME-B10-05.
+   ============================================================ */
+
+/* Container padrao (usado nos shells de instrumento + PendenciasClient).
+   Desktop: max-width 780px + auto margin. Mobile: 100% + zero margin. */
+.roip-container {
+  max-width: 780px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+@media (max-width: 1023.98px) {
+  .roip-container {
+    max-width: 100%;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* Padding responsivo do header sticky dos shells. */
+.roip-header-padding {
+  padding: 14px 20px 10px 20px;
+}
+@media (max-width: 1023.98px) {
+  .roip-header-padding {
+    padding: 12px 16px 8px 16px;
+  }
+}
+
+/* Padding responsivo da regua de progresso abaixo do titulo. */
+.roip-progress-padding {
+  padding: 0 20px 12px 20px;
+}
+@media (max-width: 1023.98px) {
+  .roip-progress-padding {
+    padding: 0 16px 12px 16px;
+  }
+}
+
+/* Padding do corpo scrollavel dos shells (com folga para footer fixed). */
+.roip-body-padding {
+  padding: 20px 20px 140px 20px;
+}
+@media (max-width: 1023.98px) {
+  .roip-body-padding {
+    padding: 16px 16px 140px 16px;
+  }
+}
+
+/* Grid de opcoes Likert — desktop 5 colunas, mobile empilhamento vertical.
+   Consumidor tipico: divs internos dos itens do LikertFormShell e do
+   Nr1FormShell. Regra canonica §19.5: opcoes empilhadas verticalmente
+   com numero + legenda completa lado a lado no mobile. */
+.roip-likert-options {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+@media (max-width: 1023.98px) {
+  .roip-likert-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* Botao de opcao Likert individual — desktop column (numero em cima,
+   label abaixo, centralizado), mobile row (numero e label lado a lado
+   alinhados a esquerda). Consumidor: cada <button> gerado dentro de
+   `.roip-likert-options`. */
+.roip-likert-btn {
+  padding: 10px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+@media (max-width: 1023.98px) {
+  .roip-likert-btn {
+    padding: 12px 14px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    text-align: left;
+  }
+}
+.roip-likert-btn-num {
+  font-size: 14px;
+  font-weight: 700;
+}
+@media (max-width: 1023.98px) {
+  .roip-likert-btn-num {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #f3f4f6;
+    color: #374151;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+}
+.roip-likert-btn-num.selecionado {
+  /* Desktop nao usa background aqui (o botao inteiro fica teal); */
+  /* mobile precisa do circulo teal em cima do fundo teal claro.  */
+}
+@media (max-width: 1023.98px) {
+  .roip-likert-btn-num.selecionado {
+    background: #14b8a6;
+    color: #ffffff;
+  }
+}
+.roip-likert-btn-label {
+  font-size: 10.5px;
+  text-align: center;
+}
+@media (max-width: 1023.98px) {
+  .roip-likert-btn-label {
+    font-size: 13px;
+    text-align: left;
+    font-weight: 500;
+    color: #374151;
+  }
+}
+
+/* Card de pendencia — desktop layout horizontal (icone + info + badge
+   + botao inline), mobile empilhamento vertical com botao full-width.
+   Consumidor: `CardBase` do PendenciasClient. */
+.roip-pendencia-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+@media (max-width: 1023.98px) {
+  .roip-pendencia-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+}
+.roip-pendencia-topo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+.roip-pendencia-btn-wrap {
+  flex-shrink: 0;
+}
+@media (max-width: 1023.98px) {
+  .roip-pendencia-btn-wrap {
+    width: 100%;
+  }
+  .roip-pendencia-btn-wrap > a,
+  .roip-pendencia-btn-wrap > button {
+    display: block !important;
+    text-align: center;
+    width: 100%;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+    font-size: 13.5px !important;
+  }
+}
+
+/* Modal centralizado com fallback tela cheia mobile — usado pelo
+   PrivacyModal (720px desktop, 100vw/100vh mobile). */
+.roip-modal-fullscreen-mobile {
+  background: #ffffff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 720px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+@media (max-width: 1023.98px) {
+  .roip-modal-fullscreen-mobile {
+    max-width: 100%;
+    height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+/* Overlay do modal Privacidade — desktop com padding e centralizado,
+   mobile encosta nas bordas. */
+.roip-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 400;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 20px;
+  overflow-y: auto;
+}
+@media (max-width: 1023.98px) {
+  .roip-modal-overlay {
+    padding: 0;
+    align-items: stretch;
+    overflow-y: hidden;
+  }
+}
+
+/* Modal pop-up do Perfil Individual — 80%/760px desktop, tela cheia
+   mobile. Preserva 3 zonas fixas (header/body/footer) via flexbox
+   interno do proprio shell. */
+.roip-modal-pi-fullscreen-mobile {
+  background: #ffffff;
+  border-radius: 14px;
+  width: 80%;
+  max-width: 760px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+@media (max-width: 1023.98px) {
+  .roip-modal-pi-fullscreen-mobile {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+/* Overlay do modal Perfil Individual — mesma logica do PrivacyModal. */
+.roip-modal-pi-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 100;
+}
+@media (max-width: 1023.98px) {
+  .roip-modal-pi-overlay {
+    padding: 0;
+    align-items: stretch;
+  }
+}
+
+/* Ocultar em mobile / ocultar em desktop — utilitarios de exclusao. */
+.roip-hide-mobile {
+  /* Visivel em desktop por padrao. */
+}
+@media (max-width: 1023.98px) {
+  .roip-hide-mobile {
+    display: none !important;
+  }
+}
+.roip-hide-desktop {
+  display: none;
+}
+@media (max-width: 1023.98px) {
+  .roip-hide-desktop {
+    display: block;
+  }
+}
+
+/* Platform Layout — oculta sidebar (256px) + header (56px) do shell
+   platform em mobile. Aplicada SOMENTE nas 4 pages `/meu-portal/*` que
+   servem formularios respondidos por C-level no dispositivo pessoal
+   (§19.3 lista sidebar como desktop-only; os formularios sao a
+   excecao pratica). Consumidor: prop `mobileHideSidebar` do Layout. */
+.roip-platform-shell-mobile-hide-sidebar > aside,
+.roip-platform-shell-mobile-hide-sidebar > div > header {
+  /* Desktop preserva. */
+}
+@media (max-width: 1023.98px) {
+  .roip-platform-shell-mobile-hide-sidebar > aside,
+  .roip-platform-shell-mobile-hide-sidebar > div > header {
+    display: none !important;
+  }
+  .roip-platform-shell-mobile-hide-sidebar > div > main {
+    padding: 0 !important;
+  }
 }

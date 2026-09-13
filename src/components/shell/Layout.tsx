@@ -1,5 +1,5 @@
 // ROIP APP 9BOX — Layout canonico perfil-agnostic (ME-055 Bloco B;
-// ME-056 Bloco E).
+// ME-056 Bloco E; estendido ME-B10-05 S257 — mobileHideSidebar).
 //
 // Origem canonica: DOC 05 §3 (estrutura comum a todos os menus — sidebar
 // 256px fixa) + §4 (header 56px + indicador contextual §4.2).
@@ -15,6 +15,19 @@
 // ME-056 Bloco E: `activeHref` opcional. Quando omitido, o Sidebar
 // (client component) resolve via `usePathname()`. Server components de
 // painel omitem — a rota corrente do App Router e a fonte natural.
+//
+// ME-B10-05 S257: prop opcional `mobileHideSidebar` aplica classe
+// `.roip-platform-shell-mobile-hide-sidebar` no wrapper — em viewport
+// `< 1024px` a sidebar (256px) e o header (56px) sao ocultados e o
+// `<main>` fica sem paddings, deixando o shell do formulario ocupar
+// tela cheia. Consumida SOMENTE pelas 4 pages
+// `/meu-portal/{auto-avaliacao,lideranca-direta,perfil-individual,
+// radar-nr1}` que servem formularios respondidos por C-level no
+// dispositivo pessoal. §19.3 do DOC 05 lista sidebar como
+// desktop-only para todas as demais telas de gestao administrativa —
+// os 4 formularios sao a excecao pratica canonica. Desktop e todo
+// o resto do painel administrativo preservam sidebar+header
+// intactos.
 
 import type { JSX, ReactNode } from 'react';
 
@@ -53,6 +66,15 @@ export interface LayoutProps {
    */
   readonly superAdminContext?: SuperAdminContextBarProps;
   /**
+   * ME-B10-05 S257: quando true, aplica classe
+   * `.roip-platform-shell-mobile-hide-sidebar` no wrapper para ocultar
+   * sidebar + header em viewport `< 1024px`. Usado exclusivamente
+   * pelas 4 pages `/meu-portal/*` que servem formularios de
+   * instrumento. Desktop preserva bit-a-bit; demais paineis nao
+   * passam a flag e continuam desktop-only conforme §19.3.
+   */
+  readonly mobileHideSidebar?: boolean;
+  /**
    * Conteudo canonico da rota corrente (painel, formulario, tela
    * administrativa). Renderizado no slot principal a direita da sidebar
    * e abaixo do header.
@@ -61,10 +83,13 @@ export interface LayoutProps {
 }
 
 export function Layout(props: LayoutProps): JSX.Element {
-  const { menuItems, activeHref, header, superAdminContext, children } = props;
+  const { menuItems, activeHref, header, superAdminContext, mobileHideSidebar, children } = props;
+  const className =
+    mobileHideSidebar === true ? 'roip-platform-shell-mobile-hide-sidebar' : undefined;
 
   return (
     <div
+      className={className}
       style={{
         display: 'flex',
         minHeight: '100vh',

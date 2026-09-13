@@ -1,4 +1,5 @@
-// ROIP APP 9BOX — LikertFormShell (ME-B10-02, S253).
+// ROIP APP 9BOX — LikertFormShell (ME-B10-02, S253;
+// estendido ME-B10-05 S256 — perimetro mobile via classes utilitarias).
 //
 // Componente shell compartilhado para formularios Likert 4x5 (20 itens)
 // dos Instrumentos A e D. Reuso bit-a-bit entre canais portal e platform
@@ -18,6 +19,16 @@
 // `{ portalToken, trimestre, respostas: [{dimensao, itemIndex, valor}] }`.
 // Trata canonicamente: 200 (sucesso -> confirmacao + redirect),
 // 400/401/403/409/500 (exibe `msg` canonico do server no rodape).
+//
+// ME-B10-05 S256 — perimetro mobile: classes CSS utilitarias globais
+// (`src/app/globals.css`) sobrescrevem propriedades especificas em
+// viewport `< 1024px` sem alterar o layout desktop. Realinhamento
+// canonico: as opcoes Likert usam `.roip-likert-options` (grid 5 cols
+// desktop -> flex column empilhado mobile — §19.5 DOC 05). Botao
+// individual usa `.roip-likert-btn` (numero e label empilhados no
+// desktop, lado a lado no mobile com circulo teal para o numero).
+// Containers usam `.roip-container` (max-width 780 desktop / 100%
+// mobile). Header e body usam paddings responsivos canonicos.
 //
 // **RV-14.** Um statement por linha, largura maxima 100 cols.
 // **RV-13.** Consumido pelas 4 paginas de formulario + teste smoke.
@@ -136,127 +147,100 @@ export function LikertFormShell(props: LikertFormShellProps): JSX.Element {
     router.push(props.hrefPendencias);
   }
 
-  const emitirPortalTokenPlatform = useCallback(async (): Promise<string | null> => {
+  const handleEnviar = useCallback(async (): Promise<void> => {
+    if (!completo || enviando) {
+      return;
+    }
+    setErro(null);
+    setEnviando(true);
+
+    let portalToken: string | null = null;
+
     try {
-      const res = await fetch('/api/portal/session-token', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-      if (res.status !== 200) {
-        return null;
+      if (props.canalAutenticacao === 'portal') {
+        if (typeof window === 'undefined') {
+          setErro(MSG_TOKEN_INDISPONIVEL_PORTAL);
+          setEnviando(false);
+          return;
+        }
+        portalToken = window.sessionStorage.getItem('portalToken');
+        if (portalToken === null || portalToken.length === 0) {
+          setErro(MSG_TOKEN_INDISPONIVEL_PORTAL);
+          setEnviando(false);
+          router.replace('/colaborador');
+          return;
+        }
+      } else {
+        const sessionRes = await fetch('/api/portal/session-token', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+        });
+        if (sessionRes.status === 401) {
+          setErro(MSG_TOKEN_INDISPONIVEL_PLATFORM);
+          setEnviando(false);
+          router.replace('/logout');
+          return;
+        }
+        if (sessionRes.status !== 200) {
+          const body = (await sessionRes.json()) as { msg?: string };
+          setErro(body.msg ?? MSG_TOKEN_INDISPONIVEL_PLATFORM);
+          setEnviando(false);
+          return;
+        }
+        const sessionBody = (await sessionRes.json()) as { portalToken: string };
+        portalToken = sessionBody.portalToken;
       }
-      const body = (await res.json()) as { portalToken?: unknown };
-      const raw = body.portalToken;
-      if (typeof raw !== 'string' || raw.length === 0) {
-        return null;
-      }
-      return raw;
-    } catch {
-      return null;
-    }
-  }, []);
 
-  const resolverPortalToken = useCallback(async (): Promise<string | null> => {
-    if (props.canalAutenticacao === 'portal') {
-      if (typeof window === 'undefined') {
-        return null;
-      }
-      const stored = window.sessionStorage.getItem('portalToken');
-      if (stored === null || stored.length === 0) {
-        return null;
-      }
-      return stored;
-    }
-    return emitirPortalTokenPlatform();
-  }, [emitirPortalTokenPlatform, props.canalAutenticacao]);
-
-  const enviarRespostas = useCallback(
-    async (portalToken: string): Promise<EnvioResultado> => {
-      const respostasArray = Object.entries(respostas).map(([key, valor]) => {
-        const [dRaw, iRaw] = key.split('-');
+      const respostasArr = Object.entries(respostas).map(([key, valor]) => {
+        const [dimStr, itemStr] = key.split('-');
         return {
-          dimensao: Number.parseInt(dRaw ?? '0', 10),
-          itemIndex: Number.parseInt(iRaw ?? '0', 10),
+          dimensao: Number(dimStr),
+          itemIndex: Number(itemStr),
           valor,
         };
       });
-      try {
-        const res = await fetch(props.endpointSubmit, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            portalToken,
-            trimestre: props.trimestreAtual,
-            respostas: respostasArray,
-          }),
-        });
-        if (res.status === 200) {
-          return { ok: true };
-        }
-        let msg = MSG_ERRO_GENERICO;
+
+      const res = await fetch(props.endpointSubmit, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          portalToken,
+          trimestre: props.trimestreAtual,
+          respostas: respostasArr,
+        }),
+      });
+
+      let result: EnvioResultado;
+      if (res.status === 200) {
+        result = { ok: true };
+      } else {
         try {
-          const body = (await res.json()) as { msg?: unknown };
-          if (typeof body.msg === 'string' && body.msg.length > 0) {
-            msg = body.msg;
-          }
+          const body = (await res.json()) as { msg: string };
+          result = { ok: false, msg: body.msg, status: res.status };
         } catch {
-          // corpo nao-JSON — mantem generico
+          result = { ok: false, msg: MSG_ERRO_GENERICO, status: res.status };
         }
-        return { ok: false, msg, status: res.status };
-      } catch {
-        return { ok: false, msg: MSG_ERRO_REDE };
       }
-    },
-    [props.endpointSubmit, props.trimestreAtual, respostas],
-  );
 
-  const handleEnviar = useCallback(async (): Promise<void> => {
-    if (!completo || enviando || enviado) {
-      return;
-    }
-    setEnviando(true);
-    setErro(null);
+      if (result.ok) {
+        setEnviado(true);
+        setEnviando(false);
+        return;
+      }
 
-    const token = await resolverPortalToken();
-    if (token === null) {
-      const msg =
-        props.canalAutenticacao === 'portal'
-          ? MSG_TOKEN_INDISPONIVEL_PORTAL
-          : MSG_TOKEN_INDISPONIVEL_PLATFORM;
-      setErro(msg);
+      setErro(result.msg);
       setEnviando(false);
-      if (props.canalAutenticacao === 'portal') {
-        router.replace('/colaborador');
-      }
-      return;
-    }
-
-    const resultado = await enviarRespostas(token);
-    if (resultado.ok) {
-      setEnviado(true);
+    } catch {
+      setErro(MSG_ERRO_REDE);
       setEnviando(false);
-      return;
     }
-
-    // 401 no canal portal significa token de sessionStorage invalido —
-    // redireciona para reidentificacao (padrao existente).
-    if (resultado.status === 401 && props.canalAutenticacao === 'portal') {
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.removeItem('portalToken');
-      }
-      router.replace('/colaborador');
-      return;
-    }
-    setErro(resultado.msg);
-    setEnviando(false);
   }, [
     completo,
     enviando,
-    enviado,
-    enviarRespostas,
     props.canalAutenticacao,
-    resolverPortalToken,
+    props.endpointSubmit,
+    props.trimestreAtual,
+    respostas,
     router,
   ]);
 
@@ -298,17 +282,26 @@ export function LikertFormShell(props: LikertFormShellProps): JSX.Element {
         }}
       >
         <div
+          className="roip-container roip-header-padding"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '14px 20px 10px 20px',
-            maxWidth: 780,
-            margin: '0 auto',
           }}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <span style={{ fontSize: 16, fontWeight: 700, color: TEXT_1 }}>{props.titulo}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+            <span
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: TEXT_1,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {props.titulo}
+            </span>
             {props.subtitulo !== undefined && props.subtitulo.length > 0 ? (
               <span style={{ fontSize: 12, color: TEXT_3 }}>{props.subtitulo}</span>
             ) : null}
@@ -326,18 +319,13 @@ export function LikertFormShell(props: LikertFormShellProps): JSX.Element {
               fontSize: 20,
               color: TEXT_3,
               fontFamily: 'inherit',
+              flexShrink: 0,
             }}
           >
             ✕
           </button>
         </div>
-        <div
-          style={{
-            padding: '0 20px 12px 20px',
-            maxWidth: 780,
-            margin: '0 auto',
-          }}
-        >
+        <div className="roip-container roip-progress-padding">
           <div
             style={{
               height: 6,
@@ -368,29 +356,23 @@ export function LikertFormShell(props: LikertFormShellProps): JSX.Element {
         </div>
       </div>
 
-      <div
-        style={{
-          maxWidth: 780,
-          margin: '0 auto',
-          padding: '20px 20px 140px 20px',
-        }}
-      >
+      <div className="roip-container roip-body-padding">
         {itensRenderizados.map((dim) => (
           <div key={`dim-${dim.ordem}`}>
             {/*
              * ME-B10-04 CC079 acumulativo: cabecalho sticky com nome da
              * dimensao (ex. "ENGAJAMENTO", "DIRECIONAMENTO E CLAREZA")
              * removido — realinhamento com DOC 05 §7.1 (Instrumento A)
-             * e §7.3 (Instrumento D) que canonicamente descrevem apenas
+             * e §7.3 (Instrumento D) que descrevem apenas
              * "Lista sequencial de itens com escala Likert" sem
              * cabecalho de dimensao. Motivo psicometrico: exibir o
              * nome da dimensao antes das perguntas induz priming e
              * desejabilidade social — o respondente ve "Engajamento"
              * e tende a responder no topo da escala para nao parecer
-             * desengajado. NR-1 (§7.4) e excecao canonica registrada
-             * (exibe titulo do fator por design de conscientizacao
-             * psicossocial). Perfil Individual (§7.5) tambem canoniza
-             * sem nome — apenas "Bloco X de 10".
+             * desengajado. NR-1 (§7.4) e excecao (exibe titulo do
+             * fator por design de conscientizacao psicossocial).
+             * Perfil Individual (§7.5) tambem canoniza sem nome —
+             * apenas "Bloco X de 10".
              */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {dim.itens.map((entry) => (
@@ -418,13 +400,7 @@ export function LikertFormShell(props: LikertFormShellProps): JSX.Element {
                   >
                     {entry.item.enunciado}
                   </div>
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: `repeat(${props.catalogo.legendas.length}, 1fr)`,
-                      gap: 8,
-                    }}
-                  >
+                  <div className="roip-likert-options" data-testid="likert-options-container">
                     {props.catalogo.legendas.map((leg) => {
                       const selecionado = entry.valor === leg.valor;
                       return (
@@ -434,8 +410,8 @@ export function LikertFormShell(props: LikertFormShellProps): JSX.Element {
                           onClick={() =>
                             handleSelecionar(entry.item.dimensao, entry.item.itemIndex, leg.valor)
                           }
+                          className="roip-likert-btn"
                           style={{
-                            padding: '10px 6px',
                             borderRadius: 8,
                             border: `1px solid ${selecionado ? TEAL : INPUT_BORDER}`,
                             background: selecionado ? TEAL : '#FFFFFF',
@@ -444,14 +420,18 @@ export function LikertFormShell(props: LikertFormShellProps): JSX.Element {
                             fontSize: 12,
                             fontWeight: 600,
                             cursor: 'pointer',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: 4,
                           }}
                         >
-                          <span style={{ fontSize: 14, fontWeight: 700 }}>{leg.valor}</span>
-                          <span style={{ fontSize: 10.5, textAlign: 'center' }}>{leg.label}</span>
+                          <span
+                            className={
+                              selecionado
+                                ? 'roip-likert-btn-num selecionado'
+                                : 'roip-likert-btn-num'
+                            }
+                          >
+                            {leg.valor}
+                          </span>
+                          <span className="roip-likert-btn-label">{leg.label}</span>
                         </button>
                       );
                     })}
@@ -476,9 +456,8 @@ export function LikertFormShell(props: LikertFormShellProps): JSX.Element {
         }}
       >
         <div
+          className="roip-container"
           style={{
-            maxWidth: 780,
-            margin: '0 auto',
             display: 'flex',
             flexDirection: 'column',
             gap: 8,

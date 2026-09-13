@@ -1,5 +1,9 @@
 // ROIP APP 9BOX — PerfilIndividualFormShell (ME-B10-04, S255,
-// DOC 03 §10.1-§10.13 + DOC 05 §7.5 + Perfil_Individual__instrumento_completo_.md §4).
+// DOC 03 §10.1-§10.13 + DOC 05 §7.5 + Perfil_Individual__instrumento_completo_.md §4;
+// estendido ME-B10-05 S256 — perimetro mobile. Overlay usa classe
+// `.roip-modal-pi-overlay` e o modal usa `.roip-modal-pi-fullscreen-mobile`:
+// desktop preserva 80%/760px/90vh; mobile ocupa 100vw/100vh (tela
+// cheia) conforme regra canonica §7.5 mobile do DOC 05).
 //
 // Shell dedicado ao formulario do Perfil Individual — servido bit-a-bit
 // nos canais portal (`/colaborador/responder/perfil-individual`, S207
@@ -113,7 +117,9 @@ const TEAL_SEL_BG = '#CCFBF1';
 const TEAL_TX = '#0F766E';
 const BORDER = '#E5E7EB';
 const INPUT_BORDER = '#D1D5DB';
-const OVERLAY = 'rgba(0,0,0,0.5)';
+// ME-B10-05 S256: constante OVERLAY removida — o background do overlay
+// e agora canonizado em `.roip-modal-pi-overlay` no globals.css
+// (rgba(0,0,0,0.6) desktop; encosta nas bordas no mobile).
 const TEXT_1 = '#111827';
 const TEXT_2 = '#374151';
 const TEXT_3 = '#6B7280';
@@ -572,7 +578,7 @@ export function PerfilIndividualFormShell(props: PerfilIndividualFormShellProps)
 
   if (state.kind === 'inicializando' || state.kind === 'carregando') {
     return (
-      <div style={estilos.overlayVazio}>
+      <div className="roip-modal-pi-overlay" style={estilos.overlayVazio}>
         <div style={estilos.msgLoading}>Carregando…</div>
       </div>
     );
@@ -580,7 +586,7 @@ export function PerfilIndividualFormShell(props: PerfilIndividualFormShellProps)
 
   if (state.kind === 'erro_fatal') {
     return (
-      <div style={estilos.overlay}>
+      <div className="roip-modal-pi-overlay" style={estilos.overlay}>
         <div style={estilos.modalErroFatal}>
           <div style={estilos.erroFatalTitulo}>Não foi possível abrir o formulário</div>
           <div style={estilos.erroFatalMsg}>{state.msg}</div>
@@ -594,8 +600,8 @@ export function PerfilIndividualFormShell(props: PerfilIndividualFormShellProps)
 
   if (state.kind === 'enviado') {
     return (
-      <div style={estilos.overlay}>
-        <div style={estilos.modalQuiz}>
+      <div className="roip-modal-pi-overlay" style={estilos.overlay}>
+        <div className="roip-modal-pi-fullscreen-mobile" style={estilos.modalQuiz}>
           <div style={estilos.confirmacaoWrapper}>
             <div style={estilos.confirmacaoIcone}>✅</div>
             <div style={estilos.confirmacaoTitulo}>{CONFIRM_TITULO}</div>
@@ -622,8 +628,8 @@ export function PerfilIndividualFormShell(props: PerfilIndividualFormShellProps)
   const avancarDisabled = !blocoAtualCompleto || enviandoAcao;
 
   return (
-    <div style={estilos.overlay}>
-      <div style={estilos.modalQuiz}>
+    <div className="roip-modal-pi-overlay" style={estilos.overlay}>
+      <div className="roip-modal-pi-fullscreen-mobile" style={estilos.modalQuiz}>
         {/* HEADER */}
         <div style={estilos.header}>
           <div style={estilos.headerTop}>
@@ -841,26 +847,11 @@ function formatarEnviadoEm(iso: string): string {
 // ============================================================
 
 const estilos = {
-  overlay: {
-    position: 'fixed',
-    inset: 0,
-    background: OVERLAY,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-    zIndex: 100,
-  } as CSSProperties,
-  overlayVazio: {
-    position: 'fixed',
-    inset: 0,
-    background: OVERLAY,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-    zIndex: 100,
-  } as CSSProperties,
+  // ME-B10-05 S256: overlay layout (position/background/padding/flex)
+  // controlado por `.roip-modal-pi-overlay` no globals.css — desktop
+  // preserva padding 20px e centralizacao; mobile encosta nas bordas.
+  overlay: {} as CSSProperties,
+  overlayVazio: {} as CSSProperties,
   msgLoading: {
     background: '#FFFFFF',
     borderRadius: 12,
@@ -868,17 +859,11 @@ const estilos = {
     color: TEXT_3,
     fontSize: 13,
   } as CSSProperties,
-  modalQuiz: {
-    background: '#FFFFFF',
-    borderRadius: 14,
-    width: '80%',
-    maxWidth: 760,
-    maxHeight: '90vh',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-  } as CSSProperties,
+  // ME-B10-05 S256: dimensoes (width/maxWidth/maxHeight/borderRadius/
+  // boxShadow) e layout base controlados por
+  // `.roip-modal-pi-fullscreen-mobile` no globals.css — desktop
+  // 80%/760px/90vh; mobile 100vw/100vh (tela cheia).
+  modalQuiz: {} as CSSProperties,
   modalErroFatal: {
     background: '#FFFFFF',
     borderRadius: 12,

@@ -1,5 +1,6 @@
 // ROIP APP 9BOX — Client canônico da tela de entrada do portal
-// (ME-B10-01, DOC 05 §6.1 revisado — S248 Opção B aprovada).
+// (ME-B10-01, DOC 05 §6.1 revisado — S248 Opção B aprovada;
+// estendido ME-B10-05 S256 — perímetro mobile).
 //
 // Formulário canônico revisado ME-080b (S515):
 //   - Campo CPF (com máscara 000.000.000-00, inputmode numeric).
@@ -29,6 +30,10 @@
 // exibição no header pós-login. Redirect conforme `gateStep`:
 //   - "lgpd_consent" → /colaborador/gate-lgpd
 //   - "pendencias"   → /colaborador/pendencias
+//
+// ME-B10-05 S256: classe `roip-login-card` no card e classe
+// `roip-login-outer` no wrapper permitem paddings responsivos
+// canônicos em viewport `< 1024px` (DOC 05 §19.1).
 
 'use client';
 
@@ -202,6 +207,7 @@ export function ColaboradorLoginClient(): JSX.Element {
 
   return (
     <div
+      className="roip-login-outer"
       style={{
         flex: 1,
         display: 'flex',
@@ -211,6 +217,7 @@ export function ColaboradorLoginClient(): JSX.Element {
       }}
     >
       <div
+        className="roip-login-card"
         style={{
           width: '100%',
           maxWidth: 420,

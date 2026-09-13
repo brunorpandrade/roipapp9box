@@ -26,6 +26,11 @@
 // Bloqueio de visualizacao do relatorio final por outros usuarios
 // (PC1e §10.11 aplicado a `individualProfile.getReport`) e escopo
 // da camada de leitura, fora do B10.
+//
+// ME-B10-05 S257: `mobileHideSidebar={true}` — em viewport `< 1024px`
+// o Layout oculta sidebar 256px + header 56px, deixando o
+// `PerfilIndividualFormShell` (que ja e modal pop-up) ocupar tela
+// cheia sem competir com sidebar/header. Desktop preserva bit-a-bit.
 
 import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
@@ -92,6 +97,7 @@ export default async function PerfilIndividualPlatformPage(): Promise<JSX.Elemen
     return (
       <Layout
         menuItems={menuItems}
+        mobileHideSidebar
         header={{
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,

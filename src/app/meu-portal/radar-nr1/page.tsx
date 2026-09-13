@@ -14,6 +14,10 @@
 // quando o card de pendencia esta ausente do `loadMeuPortalData` —
 // mesmo tratamento adotado em A/D. O backend `nr1-form-state` bloqueia
 // C-level com 403 canonico se a rota for acessada diretamente.
+//
+// ME-B10-05 S257: `mobileHideSidebar={true}` — em viewport `< 1024px`
+// o Layout oculta sidebar 256px + header 56px, deixando o
+// `Nr1FormShell` ocupar tela cheia. Desktop preserva bit-a-bit.
 
 import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
@@ -79,6 +83,7 @@ export default async function RadarNr1PlatformPage(): Promise<JSX.Element> {
     return (
       <Layout
         menuItems={menuItems}
+        mobileHideSidebar
         header={{
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,

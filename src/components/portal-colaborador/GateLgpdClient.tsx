@@ -1,5 +1,5 @@
 // ROIP APP 9BOX — Client canônico do gate LGPD do portal
-// (ME-B10-01, DOC 05 §6.2).
+// (ME-B10-01, DOC 05 §6.2; estendido ME-B10-05 S256 — perímetro mobile).
 //
 // Renderizado após identificação por CPF+matrícula quando
 // `versaoTermoAceita` diverge de `LGPD_TERM_VERSION`.
@@ -19,6 +19,9 @@
 // Botão único primário [Concordar e continuar]. Consome
 // POST /api/portal/consent-lgpd com `{ portalToken }` do
 // sessionStorage. Sucesso → redirect para /colaborador/pendencias.
+//
+// ME-B10-05 S256: classes `roip-lgpd-outer` e `roip-lgpd-card`
+// permitem paddings responsivos em viewport `< 1024px` (DOC 05 §19.1).
 
 'use client';
 
@@ -117,6 +120,7 @@ export function GateLgpdClient(): JSX.Element {
 
   return (
     <div
+      className="roip-lgpd-outer"
       style={{
         flex: 1,
         display: 'flex',
@@ -126,6 +130,7 @@ export function GateLgpdClient(): JSX.Element {
       }}
     >
       <div
+        className="roip-lgpd-card"
         style={{
           width: '100%',
           maxWidth: 520,
@@ -196,6 +201,8 @@ export function GateLgpdClient(): JSX.Element {
             justifyContent: 'space-between',
             fontSize: 11.5,
             color: TEXT_4,
+            gap: 8,
+            flexWrap: 'wrap',
           }}
         >
           <span>Termo v1.0</span>
@@ -217,11 +224,15 @@ export function GateLgpdClient(): JSX.Element {
           </div>
         ) : null}
 
-        <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
+        <div
+          className="roip-lgpd-cta-row"
+          style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}
+        >
           <button
             type="button"
             onClick={handleConcordar}
             disabled={loading}
+            className="roip-lgpd-cta-btn"
             style={{
               padding: '13px 32px',
               background: NAVY,

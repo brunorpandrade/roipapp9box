@@ -23,6 +23,10 @@
 // rota nao encena guard adicional porque o card do engine ja filtra
 // C-level de `avaliacaoLiderancaDireta` e o backend do save-A bloqueia
 // C-level explicitamente.
+//
+// ME-B10-05 S257: `mobileHideSidebar={true}` — em viewport `< 1024px`
+// o Layout oculta sidebar 256px + header 56px, deixando o
+// `LikertFormShell` ocupar tela cheia. Desktop preserva bit-a-bit.
 
 import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
@@ -90,6 +94,7 @@ export default async function AutoAvaliacaoPlatformPage(): Promise<JSX.Element> 
     return (
       <Layout
         menuItems={menuItems}
+        mobileHideSidebar
         header={{
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,

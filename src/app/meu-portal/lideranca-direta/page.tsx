@@ -10,6 +10,10 @@
 // Cadencia canonica §8.6 (S156): D existe apenas em Q1 e Q3. Se nao
 // houver card ativo, redireciona para `/meu-portal`. Bloqueio C-level
 // respondendo D e imposto pelo backend (§8.6 Bloqueio 3 -> 403).
+//
+// ME-B10-05 S257: `mobileHideSidebar={true}` — em viewport `< 1024px`
+// o Layout oculta sidebar 256px + header 56px, deixando o
+// `LikertFormShell` ocupar tela cheia. Desktop preserva bit-a-bit.
 
 import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
@@ -77,6 +81,7 @@ export default async function LiderancaDiretaPlatformPage(): Promise<JSX.Element
     return (
       <Layout
         menuItems={menuItems}
+        mobileHideSidebar
         header={{
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,

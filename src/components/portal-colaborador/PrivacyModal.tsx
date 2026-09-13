@@ -1,5 +1,5 @@
 // ROIP APP 9BOX — modal "Privacidade e proteção de dados"
-// (ME-B10-01, DOC 05 §6.4).
+// (ME-B10-01, DOC 05 §6.4; estendido ME-B10-05 S256 — perímetro mobile).
 //
 // Modal centralizado 720px desktop com 3 abas horizontais:
 //   Aba 1 — Termo de consentimento (texto literal v1.0 do DOC 05
@@ -12,6 +12,11 @@
 //           via `window.location.assign` — S249 Opção A canonizada).
 //
 // Fecha via [X] ou ESC.
+//
+// ME-B10-05 S256: overlay usa classe `roip-modal-overlay` e caixa usa
+// `roip-modal-fullscreen-mobile` — em viewport `< 1024px` o modal
+// ocupa 100vw/100vh (tela cheia) conforme regra canônica §6.4 mobile.
+// Desktop preserva 720px centralizado bit-a-bit.
 
 'use client';
 
@@ -71,31 +76,10 @@ export function PrivacyModal(props: PrivacyModalProps): JSX.Element {
       role="dialog"
       aria-modal="true"
       aria-label="Privacidade e proteção de dados"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.5)',
-        zIndex: 400,
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'center',
-        padding: '40px 20px',
-        overflowY: 'auto',
-      }}
+      className="roip-modal-overlay"
       onClick={onClose}
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: '#FFFFFF',
-          borderRadius: 14,
-          width: '100%',
-          maxWidth: 720,
-          boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
+      <div className="roip-modal-fullscreen-mobile" onClick={(e) => e.stopPropagation()}>
         <div
           style={{
             background: NAVY,
@@ -104,6 +88,7 @@ export function PrivacyModal(props: PrivacyModalProps): JSX.Element {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            flexShrink: 0,
           }}
         >
           <span style={{ color: '#FFFFFF', fontSize: 14, fontWeight: 700 }}>
@@ -131,6 +116,7 @@ export function PrivacyModal(props: PrivacyModalProps): JSX.Element {
             display: 'flex',
             borderBottom: `1px solid ${BORDER}`,
             background: BG,
+            flexShrink: 0,
           }}
         >
           <TabButton
@@ -150,7 +136,14 @@ export function PrivacyModal(props: PrivacyModalProps): JSX.Element {
           />
         </div>
 
-        <div style={{ padding: '24px 26px', minHeight: 240 }}>
+        <div
+          style={{
+            padding: '24px 26px',
+            minHeight: 240,
+            flex: 1,
+            overflowY: 'auto',
+          }}
+        >
           {aba === 'termo' ? (
             <div>
               <p

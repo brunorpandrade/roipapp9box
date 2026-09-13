@@ -1,4 +1,10 @@
-// ROIP APP 9BOX — Nr1FormShell (ME-B10-03, S254).
+// ROIP APP 9BOX — Nr1FormShell (ME-B10-03, S254;
+// estendido ME-B10-05 S256 — perimetro mobile via classes utilitarias
+// globais em `src/app/globals.css`. Containers usam `.roip-container`,
+// paddings usam `.roip-header-padding`/`.roip-progress-padding`/
+// `.roip-body-padding`, opcoes Likert usam `.roip-likert-options` e
+// `.roip-likert-btn` — mesma primitiva compartilhada com o
+// LikertFormShell. Desktop preservado bit-a-bit).
 //
 // Componente shell dedicado ao formulario do Radar NR-1. NAO deriva
 // do LikertFormShell (ME-B10-02) porque cinco pontos materiais divergem
@@ -581,17 +587,26 @@ export function Nr1FormShell(props: Nr1FormShellProps): JSX.Element {
         }}
       >
         <div
+          className="roip-container roip-header-padding"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '14px 20px 10px 20px',
-            maxWidth: 780,
-            margin: '0 auto',
           }}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <span style={{ fontSize: 16, fontWeight: 700, color: TEXT_1 }}>Radar NR-1</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+            <span
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: TEXT_1,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              Radar NR-1
+            </span>
             {formState.dataFechamento !== null ? (
               <span style={{ fontSize: 12, color: TEXT_3 }}>
                 Fecha em {formatarDataBR(formState.dataFechamento)}
@@ -611,18 +626,13 @@ export function Nr1FormShell(props: Nr1FormShellProps): JSX.Element {
               fontSize: 20,
               color: TEXT_3,
               fontFamily: 'inherit',
+              flexShrink: 0,
             }}
           >
             ✕
           </button>
         </div>
-        <div
-          style={{
-            padding: '0 20px 12px 20px',
-            maxWidth: 780,
-            margin: '0 auto',
-          }}
-        >
+        <div className="roip-container roip-progress-padding">
           <div
             style={{
               height: 6,
@@ -653,13 +663,7 @@ export function Nr1FormShell(props: Nr1FormShellProps): JSX.Element {
         </div>
       </div>
 
-      <div
-        style={{
-          maxWidth: 780,
-          margin: '0 auto',
-          padding: '20px 20px 140px 20px',
-        }}
-      >
+      <div className="roip-container roip-body-padding">
         {gridPorFator.map((bloco) => (
           <div key={`fator-${bloco.fator}`}>
             <div
@@ -716,13 +720,7 @@ export function Nr1FormShell(props: Nr1FormShellProps): JSX.Element {
                     >
                       {enunciado}
                     </div>
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: `repeat(${NR1_CATALOG.legendas.length}, 1fr)`,
-                        gap: 8,
-                      }}
-                    >
+                    <div className="roip-likert-options" data-testid="likert-options-container">
                       {NR1_CATALOG.legendas.map((leg) => {
                         const selecionado = valorAtual === leg.valor;
                         return (
@@ -730,8 +728,8 @@ export function Nr1FormShell(props: Nr1FormShellProps): JSX.Element {
                             key={`${key}-${leg.valor}`}
                             type="button"
                             onClick={() => handleSelecionar(item.fator, item.itemIndex, leg.valor)}
+                            className="roip-likert-btn"
                             style={{
-                              padding: '10px 6px',
                               borderRadius: 8,
                               border: `1px solid ${selecionado ? TEAL : INPUT_BORDER}`,
                               background: selecionado ? TEAL : '#FFFFFF',
@@ -740,14 +738,18 @@ export function Nr1FormShell(props: Nr1FormShellProps): JSX.Element {
                               fontSize: 12,
                               fontWeight: 600,
                               cursor: 'pointer',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              gap: 4,
                             }}
                           >
-                            <span style={{ fontSize: 14, fontWeight: 700 }}>{leg.valor}</span>
-                            <span style={{ fontSize: 10.5, textAlign: 'center' }}>{leg.label}</span>
+                            <span
+                              className={
+                                selecionado
+                                  ? 'roip-likert-btn-num selecionado'
+                                  : 'roip-likert-btn-num'
+                              }
+                            >
+                              {leg.valor}
+                            </span>
+                            <span className="roip-likert-btn-label">{leg.label}</span>
                           </button>
                         );
                       })}
@@ -773,9 +775,8 @@ export function Nr1FormShell(props: Nr1FormShellProps): JSX.Element {
         }}
       >
         <div
+          className="roip-container"
           style={{
-            maxWidth: 780,
-            margin: '0 auto',
             display: 'flex',
             flexDirection: 'column',
             gap: 8,

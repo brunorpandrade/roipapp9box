@@ -1,5 +1,5 @@
 // ROIP APP 9BOX — shell canônico do portal do colaborador
-// (ME-B10-01, DOC 05 §6).
+// (ME-B10-01, DOC 05 §6; estendido ME-B10-05 S256 — perímetro mobile).
 //
 // Layout tela cheia sem sidebar. Header brand com logo ROIP APP; nome
 // do usuário + botão [Sair] renderizados condicionalmente (ausentes na
@@ -8,7 +8,13 @@
 // PrivacyModal.
 //
 // Consumido pelas 3 pages canônicas: `/colaborador`,
-// `/colaborador/gate-lgpd`, `/colaborador/pendencias`.
+// `/colaborador/gate-lgpd`, `/colaborador/pendencias`, e pelas 4 pages
+// `/colaborador/responder/*` da ME-B10-02, ME-B10-03 e ME-B10-04.
+//
+// ME-B10-05 S256: header e footer recebem classe `roip-header-mobile`
+// e `roip-footer-mobile` para paddings responsivos canônicos (DOC 05
+// §19.1). Layout desktop preservado bit-a-bit — apenas viewport
+// `< 1024px` altera paddings via `src/app/globals.css`.
 
 'use client';
 
@@ -49,6 +55,7 @@ export function PortalLayout(props: PortalLayoutProps): JSX.Element {
     >
       {renderUserBar ? (
         <header
+          className="roip-portal-header"
           style={{
             background: '#FFFFFF',
             borderBottom: `1px solid ${BORDER}`,
@@ -71,6 +78,7 @@ export function PortalLayout(props: PortalLayoutProps): JSX.Element {
                 justifyContent: 'center',
                 fontWeight: 700,
                 fontSize: 12,
+                flexShrink: 0,
               }}
             >
               R
@@ -86,8 +94,19 @@ export function PortalLayout(props: PortalLayoutProps): JSX.Element {
               ROIP<span style={{ color: TEAL }}> APP</span>
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 12.5, color: TEXT_2 }}>{userName}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+            <span
+              className="roip-portal-user-name"
+              style={{
+                fontSize: 12.5,
+                color: TEXT_2,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {userName}
+            </span>
             <button
               type="button"
               onClick={onSair}
@@ -100,6 +119,7 @@ export function PortalLayout(props: PortalLayoutProps): JSX.Element {
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: 'pointer',
+                flexShrink: 0,
               }}
             >
               Sair
@@ -111,6 +131,7 @@ export function PortalLayout(props: PortalLayoutProps): JSX.Element {
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>{children}</main>
 
       <footer
+        className="roip-portal-footer"
         style={{
           padding: '20px 28px',
           borderTop: `1px solid ${BORDER}`,
