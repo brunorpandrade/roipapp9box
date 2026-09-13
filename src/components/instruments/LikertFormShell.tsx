@@ -32,7 +32,6 @@ import type { InstrumentCatalog } from '../../lib/instruments/instrumentACatalog
 const NAVY = '#1F3A5F';
 const NAVY_DARK = '#162d4a';
 const TEAL = '#14B8A6';
-const TEAL_DARK = '#0d9488';
 const BG = '#F9FAFB';
 const BORDER = '#E5E7EB';
 const TEXT_1 = '#111827';
@@ -271,7 +270,7 @@ export function LikertFormShell(props: LikertFormShellProps): JSX.Element {
         const respondido = valorAtual !== undefined;
         return { item, key, numero: idx, valor: valorAtual, respondido };
       });
-      return { nome: dim.nome, ordem: dIdx, itens };
+      return { ordem: dIdx, itens };
     });
   }, [props.catalogo.dimensoes, respostas]);
 
@@ -378,29 +377,21 @@ export function LikertFormShell(props: LikertFormShellProps): JSX.Element {
       >
         {itensRenderizados.map((dim) => (
           <div key={`dim-${dim.ordem}`}>
-            <div
-              style={{
-                position: 'sticky',
-                top: 92,
-                zIndex: 10,
-                background: BG,
-                padding: '12px 4px 8px 4px',
-                borderBottom: `1px solid ${BORDER}`,
-                marginBottom: 12,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: TEAL_DARK,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                }}
-              >
-                {dim.nome}
-              </div>
-            </div>
+            {/*
+             * ME-B10-04 CC079 acumulativo: cabecalho sticky com nome da
+             * dimensao (ex. "ENGAJAMENTO", "DIRECIONAMENTO E CLAREZA")
+             * removido — realinhamento com DOC 05 §7.1 (Instrumento A)
+             * e §7.3 (Instrumento D) que canonicamente descrevem apenas
+             * "Lista sequencial de itens com escala Likert" sem
+             * cabecalho de dimensao. Motivo psicometrico: exibir o
+             * nome da dimensao antes das perguntas induz priming e
+             * desejabilidade social — o respondente ve "Engajamento"
+             * e tende a responder no topo da escala para nao parecer
+             * desengajado. NR-1 (§7.4) e excecao canonica registrada
+             * (exibe titulo do fator por design de conscientizacao
+             * psicossocial). Perfil Individual (§7.5) tambem canoniza
+             * sem nome — apenas "Bloco X de 10".
+             */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {dim.itens.map((entry) => (
                 <div
