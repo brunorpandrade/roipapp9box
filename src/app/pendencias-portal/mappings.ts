@@ -61,11 +61,18 @@ export type PendenciaStatus = 'Pendente' | 'Atrasado';
 
 /**
  * Labels canonicos dos 4 instrumentos §14.23 filtro. Ordem canonica de
- * exibicao: Meu perfil, Autoavaliacao, Avaliacao da lideranca direta,
- * Radar NR-1 (mesma ordem do enum `portalReminderLog.instrumentType`).
+ * exibicao: Perfil Individual, Autoavaliacao, Avaliacao da lideranca
+ * direta, Radar NR-1 (mesma ordem do enum
+ * `portalReminderLog.instrumentType`).
+ *
+ * ME-B10-04 CC079 acumulativo: label do `meuPerfil` realinhado de
+ * "Meu perfil" para "Perfil Individual" — nomenclatura canonica dos
+ * DOCs (§10 DOC 03, §7.5 DOC 05) e bit-a-bit igual ao card do portal
+ * do colaborador (`PendenciasClient.tsx` linha 331). Elimina
+ * divergencia entre canais platform e portal.
  */
 export const INSTRUMENT_LABEL: Readonly<Record<InstrumentType, string>> = Object.freeze({
-  meuPerfil: 'Meu perfil',
+  meuPerfil: 'Perfil Individual',
   autoAvaliacao: 'Autoavaliação',
   avaliacaoLiderancaDireta: 'Avaliação da liderança direta',
   radarNR1: 'Radar NR-1',

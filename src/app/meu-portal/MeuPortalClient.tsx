@@ -34,6 +34,7 @@ import Link from 'next/link';
 import { COLORS } from '../../lib/design-tokens/colors';
 import { INSTRUMENT_LABEL } from '../pendencias-portal/mappings';
 
+import type { PendenciaStatus } from '../pendencias-portal/mappings';
 import type { MeuPortalData, MeuPortalPendenciaItem } from '../painel-rh/internals';
 
 export interface MeuPortalClientProps {
@@ -151,25 +152,52 @@ function CardPendencia(props: CardPendenciaProps): JSX.Element {
         <span style={{ fontSize: 14, color: COLORS.text.primary, fontWeight: 500 }}>
           {INSTRUMENT_LABEL[card.instrumento]}
         </span>
-        {card.prazoOriginal !== null ? (
+        {/*
+         * ME-B10-04 CC079 acumulativo: `meuPerfil` (Perfil Individual)
+         * NAO exibe linha "Prazo: {data} · {N} dias em atraso" no
+         * card do canal platform — §10.3 DOC 03 canonicamente define
+         * Perfil Individual como one-shot na vida do colaborador
+         * (sem ciclo trimestral). A heuristica S330 do engine
+         * (`derivarPrazoMeuPerfil = createdAt + 30 dias`) gera prazos
+         * historicos irreais quando o placeholder foi criado ha muito
+         * tempo (ex.: seed com createdAt=2019 → prazo=2019 → "2648
+         * dias em atraso" para renderizar em 2026). Os outros 3
+         * instrumentos (A, D, NR-1) mantem exibicao de prazo por
+         * terem ciclo trimestral canonico.
+         */}
+        {card.instrumento !== 'meuPerfil' && card.prazoOriginal !== null ? (
           <span style={{ fontSize: 12, color: COLORS.text.tertiary }}>
             Prazo: {card.prazoOriginal.toLocaleDateString('pt-BR')}
             {card.diasEmAtraso > 0 ? ` · ${card.diasEmAtraso} dia(s) em atraso` : ''}
           </span>
         ) : null}
       </div>
-      <span
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          padding: '4px 10px',
-          borderRadius: 12,
-          color: card.status === 'Atrasado' ? COLORS.badge.dangerText : COLORS.badge.warningText,
-          background: card.status === 'Atrasado' ? COLORS.badge.dangerBg : COLORS.badge.warningBg,
-        }}
-      >
-        {card.status}
-      </span>
+      {/*
+       * ME-B10-04 CC079: badge de `meuPerfil` e canonicamente sempre
+       * "Pendente" no canal platform (§10.3 — sem ciclo trimestral,
+       * sem semantica de "Atrasado"). Os outros 3 instrumentos
+       * mantem status derivado do motor (Pendente ou Atrasado).
+       */}
+      {(() => {
+        const statusExibido: PendenciaStatus =
+          card.instrumento === 'meuPerfil' ? 'Pendente' : card.status;
+        return (
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              padding: '4px 10px',
+              borderRadius: 12,
+              color:
+                statusExibido === 'Atrasado' ? COLORS.badge.dangerText : COLORS.badge.warningText,
+              background:
+                statusExibido === 'Atrasado' ? COLORS.badge.dangerBg : COLORS.badge.warningBg,
+            }}
+          >
+            {statusExibido}
+          </span>
+        );
+      })()}
     </div>
   );
 

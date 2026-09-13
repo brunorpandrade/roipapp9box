@@ -34,8 +34,12 @@ import {
 } from '../../src/app/pendencias-portal/mappings';
 
 describe('INSTRUMENT_LABEL — labels canonicos bit-exact §14.23 filtro Instrumento', () => {
-  it('meuPerfil = "Meu perfil"', () => {
-    expect(INSTRUMENT_LABEL.meuPerfil).toBe('Meu perfil');
+  it('meuPerfil = "Perfil Individual"', () => {
+    // ME-B10-04 CC079 acumulativo: label realinhado de "Meu perfil"
+    // para "Perfil Individual" (nomenclatura canonica dos DOCs §10
+    // DOC 03 e §7.5 DOC 05, bit-a-bit igual ao card do portal do
+    // colaborador).
+    expect(INSTRUMENT_LABEL.meuPerfil).toBe('Perfil Individual');
   });
 
   it('autoAvaliacao = "Autoavaliação" (com til)', () => {
