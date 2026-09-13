@@ -48,7 +48,7 @@
 import { NextResponse } from 'next/server';
 import { and, desc, eq } from 'drizzle-orm';
 
-import { individualProfileAssessments } from '../../../../db/schema';
+import { individualProfileAssessments, individualProfilePlaceholders } from '../../../../db/schema';
 import { verifyPortalToken } from '../../../../server/auth/portalToken';
 import {
   NUM_BLOCOS_TOTAL,
@@ -56,6 +56,8 @@ import {
 } from '../../../../server/services/individualProfileEngine';
 
 import {
+  MSG_ASSESSMENT_AGUARDA_LIBERACAO,
+  MSG_ASSESSMENT_JA_RESPONDIDO,
   MSG_BODY_MALFORMED,
   MSG_EXPIRED_TOKEN,
   MSG_INVALID_TOKEN,
@@ -104,7 +106,41 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   const { db } = getDbClient();
 
-  // -------- 3) Busca tentativa vigente --------
+  // -------- 3) Verificacao canonica de placeholder (§10.6-§10.7 DOC 03) --------
+  // Antes de resolver tentativa, o handler valida o estado do
+  // placeholder. Perfil Individual e one-shot (§10.3) — apos
+  // resposta consistente (placeholder='respondido') nao ha reteste
+  // canonico. Apos resposta inconsistente (placeholder='inconsistente')
+  // reteste so pode ser liberado por Bruno ou RH via
+  // `individualProfile.releaseRetest` (§10.7) — que muda placeholder
+  // para 'aguardando_nova_resposta'. Sem essa liberacao, o handler
+  // rejeita canonicamente com 409.
+  try {
+    const placeholderRows = await db
+      .select({ status: individualProfilePlaceholders.status })
+      .from(individualProfilePlaceholders)
+      .where(
+        and(
+          eq(individualProfilePlaceholders.companyId, companyId),
+          eq(individualProfilePlaceholders.userType, titularType),
+          eq(individualProfilePlaceholders.userId, titularId),
+        ),
+      )
+      .limit(1);
+    const placeholder = placeholderRows[0];
+    if (placeholder !== undefined) {
+      if (placeholder.status === 'respondido') {
+        return NextResponse.json({ msg: MSG_ASSESSMENT_JA_RESPONDIDO }, { status: 409 });
+      }
+      if (placeholder.status === 'inconsistente') {
+        return NextResponse.json({ msg: MSG_ASSESSMENT_AGUARDA_LIBERACAO }, { status: 409 });
+      }
+    }
+  } catch {
+    return NextResponse.json({ msg: MSG_UNEXPECTED }, { status: 500 });
+  }
+
+  // -------- 4) Busca tentativa vigente --------
   try {
     // Prioriza `em_andamento`; se ausente, resolve pela ultima
     // tentativa por `tentativa` decrescente.

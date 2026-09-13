@@ -39,6 +39,7 @@ import {
   CARD_COLOR_PENDENCIAS,
   INSTRUMENT_LABEL,
 } from '../pendencias-portal/mappings';
+import type { PendenciaStatus } from '../pendencias-portal/mappings';
 import type {
   DepartmentCount,
   LandingCounts,
@@ -706,22 +707,35 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
                   <span style={{ fontSize: 13, color: COLORS.text.primary }}>
                     {INSTRUMENT_LABEL[p.instrumento]}
                   </span>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      padding: '2px 8px',
-                      borderRadius: 12,
-                      color:
-                        p.status === 'Atrasado'
-                          ? COLORS.badge.dangerText
-                          : COLORS.badge.warningText,
-                      background:
-                        p.status === 'Atrasado' ? COLORS.badge.dangerBg : COLORS.badge.warningBg,
-                    }}
-                  >
-                    {p.status}
-                  </span>
+                  {(() => {
+                    // ME-B10-04 CC079: badge de `meuPerfil` e canonicamente
+                    // sempre "Pendente" (§10.3 DOC 03 — Perfil Individual
+                    // e one-shot, sem semantica de "Atrasado" derivada da
+                    // heuristica S330). Outros 3 instrumentos preservam
+                    // status derivado do motor.
+                    const statusExibido: PendenciaStatus =
+                      p.instrumento === 'meuPerfil' ? 'Pendente' : p.status;
+                    return (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: 12,
+                          color:
+                            statusExibido === 'Atrasado'
+                              ? COLORS.badge.dangerText
+                              : COLORS.badge.warningText,
+                          background:
+                            statusExibido === 'Atrasado'
+                              ? COLORS.badge.dangerBg
+                              : COLORS.badge.warningBg,
+                        }}
+                      >
+                        {statusExibido}
+                      </span>
+                    );
+                  })()}
                 </div>
               ))}
               <a

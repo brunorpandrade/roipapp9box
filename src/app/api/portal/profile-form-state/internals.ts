@@ -39,6 +39,21 @@ export const MSG_BODY_MALFORMED = 'Requisição malformada.';
 /** Erro inesperado -> 500. */
 export const MSG_UNEXPECTED = 'Erro ao ler o estado do questionário.';
 
+/**
+ * Placeholder do titular esta 'respondido' -> 409 (§10.3 DOC 03 —
+ * Perfil Individual e one-shot na vida do colaborador; nao ha
+ * reteste canonico apos resposta consistente).
+ */
+export const MSG_ASSESSMENT_JA_RESPONDIDO =
+  'Você já respondeu o Perfil Individual. Não é possível responder novamente.';
+
+/**
+ * Placeholder do titular esta 'inconsistente' -> 409 (§10.6-§10.7 DOC
+ * 03 — reteste apos resposta inconsistente so pode ser liberado por
+ * Bruno ou RH via `individualProfile.releaseRetest`).
+ */
+export const MSG_ASSESSMENT_AGUARDA_LIBERACAO = 'Aguardando liberação do RH para nova resposta.';
+
 // ============================================================
 // Cliente DB e DI para testes
 // ============================================================
