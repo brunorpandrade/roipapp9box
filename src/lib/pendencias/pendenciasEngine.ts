@@ -66,7 +66,19 @@
 //   - `PERFIL_INDIVIDUAL_THRESHOLD_DIAS` (constante) → consumido por
 //     `pendenciasEngine.ts` e `pendencias-engine.test.ts`.
 
-import { and, eq, gt, gte, inArray, isNull, lt, sql } from 'drizzle-orm';
+// **ME-fila1-01 — fix D-INSTRUMENTO-A-CARD-PENDENCIA-JANELA-FECHADA.**
+// Consulta 1 (`ciclosAtivos`) passa a filtrar `cycleSchedule.dataAbertura
+// <= now` (com OR isNull para preservar ciclos legados sem `dataAbertura`
+// definida). Antes deste fix, ciclos gravados como `status='aberto'` com
+// `dataAbertura` no futuro (agendamento antecipado) ja emitiam cards de
+// pendencia no portal do colaborador (via `loadPortalColaboradorPendencias`
+// que reusa `loadPendenciasPage`) e na tela RH `/pendencias-portal`. Fix
+// canonico DOC 03 §6.2 (Instrumento A — janela de disponibilidade) e
+// analogo para Instrumento D (§6.3) e Radar NR-1. Comportamento canonico
+// pos-fix: pendencia emerge apenas quando a janela de resposta esta
+// aberta. Regressao coberta em `me-fila1-pendencias-dataAbertura.test.ts`.
+
+import { and, eq, gt, gte, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/mysql-core';
 
 import type { RoipDatabase } from '../../db/client';
@@ -387,6 +399,10 @@ export async function loadPendenciasPage(
         eq(cycleSchedule.companyId, companyId),
         inArray(cycleSchedule.status, ['aberto', 'atrasado']),
         inArray(cycleSchedule.tipoCiclo, ['instrumento_a', 'instrumento_d', 'radar_nr1']),
+        // ME-fila1-01 fix: janela de resposta so vale a partir de
+        // `dataAbertura`. Preservado NULL como compat legada (ciclos
+        // pre-canonicos sem `dataAbertura` definida — janela imediata).
+        or(isNull(cycleSchedule.dataAbertura), lte(cycleSchedule.dataAbertura, now)),
       ),
     );
 
