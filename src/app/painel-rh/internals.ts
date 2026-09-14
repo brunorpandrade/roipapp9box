@@ -52,6 +52,10 @@ import type { RoipDatabase } from '../../db/client';
 import { companies, employees, employeeLeaderHistory } from '../../db/schema';
 import type { PortalInstrumentType } from '../../db/schema/enums';
 import { loadPendenciasPage } from '../../lib/pendencias/pendenciasEngine';
+import {
+  listInconsistentesEnriquecidoByCompany,
+  type PerfilInconsistenteRow,
+} from '../../server/services/individualProfilePlaceholders';
 import { CANONICAL_PENDENCIAS_DEFAULT_FILTERS } from '../pendencias-portal/filters';
 import type { PendenciaStatus } from '../pendencias-portal/mappings';
 
@@ -377,3 +381,24 @@ export async function loadMeuPortalData(
   } while (page <= totalPages);
   return { pendencias: acumulado };
 }
+
+/**
+ * ME-fila3-reteste-ui — SSR canonico da Secao 6 §5.5 nova ("Perfil
+ * Individual inconsistente"). Delegacao pura ao service canonico
+ * `listInconsistentesEnriquecidoByCompany`. Isolamento por empresa
+ * garantido pela propria assinatura (companyId obrigatorio). Consumido
+ * pelo `page.tsx` do `/painel-rh` e pelo `page.tsx` da rota preview
+ * `/super-admin/empresa/[id]/painel-rh-preview` — canal unico DOC 03
+ * §10.6 pt.6 + CORR1 do ME-B9-fechamento.
+ */
+export async function loadPerfisIndividuaisInconsistentes(
+  db: RoipDatabase,
+  companyId: number,
+): Promise<readonly PerfilInconsistenteRow[]> {
+  return await listInconsistentesEnriquecidoByCompany(db, companyId);
+}
+
+// Re-export do tipo canonico para o `PainelRHClient.tsx` consumir sem
+// atravessar a camada de services diretamente (mantem simetria com os
+// demais tipos deste modulo).
+export type { PerfilInconsistenteRow } from '../../server/services/individualProfilePlaceholders';

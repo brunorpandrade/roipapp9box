@@ -40,8 +40,12 @@ import { countPendenciasEmpresa } from '../../../../../lib/pendencias/pendencias
 import { resolveProfileKey } from '../../../../../lib/session/resolveProfileKey';
 import { getServerSession } from '../../../../../server/session/serverSession';
 
+import { liberarRetesteAction } from '../../../../painel-rh/actions';
 import { PainelRHClient } from '../../../../painel-rh/PainelRHClient';
-import { loadCompanyForRhPanel } from '../../../../painel-rh/internals';
+import {
+  loadCompanyForRhPanel,
+  loadPerfisIndividuaisInconsistentes,
+} from '../../../../painel-rh/internals';
 import {
   loadDepartmentCounts,
   loadLandingCounts,
@@ -86,14 +90,21 @@ export default async function PainelRHPreviewPage(props: PageProps): Promise<JSX
     // Referencia temporal canonica: `new Date()` (padrao dos demais
     // loaders de `loadMesAtualClosureStatus`).
     const reference = new Date();
-    const [counts, departmentCounts, onboardingSummary, mesAtualClosure, totalPendenciasPortal] =
-      await Promise.all([
-        loadLandingCounts(client.db, companyId),
-        loadDepartmentCounts(client.db, companyId),
-        loadOnboardingSummaryCounts(client.db, companyId),
-        loadMesAtualClosureStatus(client.db, companyId, reference),
-        countPendenciasEmpresa({ db: client.db, companyId }),
-      ]);
+    const [
+      counts,
+      departmentCounts,
+      onboardingSummary,
+      mesAtualClosure,
+      totalPendenciasPortal,
+      perfisIndividuaisInconsistentes,
+    ] = await Promise.all([
+      loadLandingCounts(client.db, companyId),
+      loadDepartmentCounts(client.db, companyId),
+      loadOnboardingSummaryCounts(client.db, companyId),
+      loadMesAtualClosureStatus(client.db, companyId, reference),
+      countPendenciasEmpresa({ db: client.db, companyId }),
+      loadPerfisIndividuaisInconsistentes(client.db, companyId),
+    ]);
 
     // ME-B9-fechamento (S232-A): flags fixas do RH puro no preview.
     // Preview de RH-Lider C1/C2 fora do escopo — canonizavel em ME
@@ -136,6 +147,8 @@ export default async function PainelRHPreviewPage(props: PageProps): Promise<JSX
           minhaEquipe={null}
           cadeiaIndireta={null}
           meuPortal={null}
+          perfisIndividuaisInconsistentes={perfisIndividuaisInconsistentes}
+          perfilInconsistenteActions={{ liberarReteste: liberarRetesteAction }}
           variant="super_admin_preview"
         />
       </Layout>

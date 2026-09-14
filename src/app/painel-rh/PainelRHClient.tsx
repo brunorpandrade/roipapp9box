@@ -29,6 +29,10 @@ import type { JSX } from 'react';
 
 import { ClickableIndicatorCard } from '../../components/painel/ClickableIndicatorCard';
 import { OnboardingKanbanMini } from '../../components/painel/OnboardingKanbanMini';
+import {
+  PerfilInconsistenteBox,
+  type PerfilInconsistenteBoxActions,
+} from '../../components/painel/PerfilInconsistenteBox';
 import { ZonaPlaceholder } from '../../components/painel/ZonaPlaceholder';
 import { COLORS } from '../../lib/design-tokens/colors';
 import {
@@ -51,6 +55,7 @@ import type {
   CadeiaIndiretaData,
   MinhaEquipeData,
   MeuPortalData,
+  PerfilInconsistenteRow,
   RhCompanyInfo,
 } from './internals';
 
@@ -88,6 +93,22 @@ export interface PainelRHClientProps {
    * traz `meuPortal` obrigatoriamente (mesmo vazio).
    */
   readonly meuPortal: MeuPortalData | null;
+  /**
+   * ME-fila3-reteste-ui — dados canonicos da Secao 6 §5.5 nova
+   * "Perfil Individual inconsistente". Lista SSR canonica dos
+   * placeholders em estado `inconsistente` ou
+   * `aguardando_nova_resposta`, enriquecidos com nome/cargo do
+   * titular e metadados da assessment mais recente. Sempre presente
+   * (lista vazia renderiza estado canonico vazio). Consumida
+   * identicamente por RH real e por Bruno em preview.
+   */
+  readonly perfisIndividuaisInconsistentes: readonly PerfilInconsistenteRow[];
+  /**
+   * ME-fila3-reteste-ui — actions canonicas injetadas pelo caller
+   * server-side. Contem `liberarReteste` que invoca o proc
+   * `individualProfile.releaseRetest` (DOC 03 §10.7).
+   */
+  readonly perfilInconsistenteActions: PerfilInconsistenteBoxActions;
   readonly variant?: PainelRHVariant;
 }
 
@@ -321,6 +342,8 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
     minhaEquipe,
     cadeiaIndireta,
     meuPortal,
+    perfisIndividuaisInconsistentes,
+    perfilInconsistenteActions,
     variant = 'rh',
   } = props;
 
@@ -776,6 +799,23 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
           <ZonaPlaceholder title="Tabela IQL" texto="Coleta de dados em andamento" />
           <ZonaPlaceholder title="Clima e Engajamento" texto="Coleta de dados em andamento" />
         </div>
+      </section>
+
+      {/*
+        Secao 6 — "Perfil Individual inconsistente" (ME-fila3-reteste-ui).
+        Canoniza DOC 03 §10.6 pt.6 + §10.7. Aparece em todos os cenarios
+        RH (RH puro / RHL1 / RHL2) e no modo preview do Super Admin —
+        canal unico canonico via reuso do `PainelRHClient` estabelecido
+        pela CORR1 do ME-B9-fechamento. Estado vazio canonico literal
+        renderizado dentro do proprio componente.
+      */}
+      <section aria-label="Perfil Individual inconsistente" style={{ marginTop: 32 }}>
+        <SectionTitle>Perfil Individual inconsistente</SectionTitle>
+        <PerfilInconsistenteBox
+          companyId={company.id}
+          linhas={perfisIndividuaisInconsistentes}
+          actions={perfilInconsistenteActions}
+        />
       </section>
     </div>
   );

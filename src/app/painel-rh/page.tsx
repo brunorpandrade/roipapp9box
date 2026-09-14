@@ -45,6 +45,7 @@ import {
 
 import { loadRhSessionFlags } from '../../lib/session/rhSessionFlags';
 
+import { liberarRetesteAction } from './actions';
 import { PainelRHClient } from './PainelRHClient';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 import {
@@ -52,6 +53,7 @@ import {
   loadCompanyForRhPanel,
   loadMeuPortalData,
   loadMinhaEquipeData,
+  loadPerfisIndividuaisInconsistentes,
 } from './internals';
 
 export default async function PainelRHPage(): Promise<JSX.Element> {
@@ -117,13 +119,15 @@ export default async function PainelRHPage(): Promise<JSX.Element> {
     const showsMinhaEquipe = profileKey === 'rh_lider_c1' || profileKey === 'rh_lider_c2';
     const showsCadeiaIndireta = profileKey === 'rh_lider_c2';
 
-    const [minhaEquipe, cadeiaIndireta, meuPortal] = await Promise.all([
-      showsMinhaEquipe ? loadMinhaEquipeData(client.db, session.userId) : Promise.resolve(null),
-      showsCadeiaIndireta
-        ? loadCadeiaIndiretaData(client.db, session.userId)
-        : Promise.resolve(null),
-      loadMeuPortalData(client.db, session.companyId, session.userId),
-    ]);
+    const [minhaEquipe, cadeiaIndireta, meuPortal, perfisIndividuaisInconsistentes] =
+      await Promise.all([
+        showsMinhaEquipe ? loadMinhaEquipeData(client.db, session.userId) : Promise.resolve(null),
+        showsCadeiaIndireta
+          ? loadCadeiaIndiretaData(client.db, session.userId)
+          : Promise.resolve(null),
+        loadMeuPortalData(client.db, session.companyId, session.userId),
+        loadPerfisIndividuaisInconsistentes(client.db, session.companyId),
+      ]);
 
     return (
       <Layout
@@ -149,6 +153,8 @@ export default async function PainelRHPage(): Promise<JSX.Element> {
           minhaEquipe={minhaEquipe}
           cadeiaIndireta={cadeiaIndireta}
           meuPortal={meuPortal}
+          perfisIndividuaisInconsistentes={perfisIndividuaisInconsistentes}
+          perfilInconsistenteActions={{ liberarReteste: liberarRetesteAction }}
         />
       </Layout>
     );
