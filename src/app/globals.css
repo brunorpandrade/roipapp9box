@@ -212,7 +212,11 @@ body {
 }
 
 /* Modal centralizado com fallback tela cheia mobile — usado pelo
-   PrivacyModal (720px desktop, 100vw/100vh mobile). */
+   PrivacyModal (720px desktop, 100vw/100dvh mobile).
+   ME-B10-05 p03 (CC079 acumulativo): `100dvh` — dynamic viewport
+   height — resolve o bug do `100vh` no iOS Safari (a barra de
+   ferramentas eh incluida no `vh`, empurrando o rodape do modal para
+   fora do viewport visivel). Fallback `100vh` para browsers antigos. */
 .roip-modal-fullscreen-mobile {
   background: #ffffff;
   border-radius: 14px;
@@ -226,6 +230,7 @@ body {
   .roip-modal-fullscreen-mobile {
     max-width: 100%;
     height: 100vh;
+    height: 100dvh;
     border-radius: 0;
     box-shadow: none;
   }
@@ -254,7 +259,15 @@ body {
 
 /* Modal pop-up do Perfil Individual — 80%/760px desktop, tela cheia
    mobile. Preserva 3 zonas fixas (header/body/footer) via flexbox
-   interno do proprio shell. */
+   interno do proprio shell.
+   ME-B10-05 p03 (CC079 acumulativo): `100dvh` — dynamic viewport
+   height — resolve o bug do `100vh` no iOS Safari (a barra de
+   ferramentas eh incluida no `vh`, empurrando o footer do modal com
+   o botao [Proximo bloco] para fora do viewport visivel). Fallback
+   `100vh` para browsers antigos. `min-height: 0` no filho direto
+   garante que o body (flex: 1 + overflow-y: auto) rola internamente
+   sem empurrar o footer para fora — regra canonica de flexbox column
+   com overflow interno. */
 .roip-modal-pi-fullscreen-mobile {
   background: #ffffff;
   border-radius: 14px;
@@ -271,9 +284,14 @@ body {
     width: 100%;
     max-width: 100%;
     max-height: 100vh;
+    max-height: 100dvh;
     height: 100vh;
+    height: 100dvh;
     border-radius: 0;
     box-shadow: none;
+  }
+  .roip-modal-pi-fullscreen-mobile > * {
+    min-height: 0;
   }
 }
 
