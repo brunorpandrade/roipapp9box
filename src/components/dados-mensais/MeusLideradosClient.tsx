@@ -1129,13 +1129,26 @@ function renderVarCells(
   // Realizado como dropdown 1-5. O proc `saveMonthlyLeaderData` recebe
   // demanda=5 fixa (canonizada aqui).
   if (row.familia6 === true) {
+    // Normalizacao canonica ME-fila2-seed retomada L113 empirica in-flight:
+    // `v.executado` vem canonicamente do backend como `decimal(15,2)` — ex.:
+    // '3.00', '5.00'. `<select value="3.00">` nao bate com
+    // `<option value="3">` do enum canonico ['1','2','3','4','5'], caindo
+    // para `value=""` (mostra "—") mesmo com dado NOT NULL no banco. Fix:
+    // trunca para inteiro (Familia 6 CC3 canonicamente aceita apenas notas
+    // Likert 1..5 inteiras — regra §14.14) preservando o formato do enum.
+    // Edits em memoria (do proprio dropdown) ja sao inteiros — normalizacao
+    // afeta apenas o valor carregado do backend.
+    const executadoFamilia6 =
+      executado !== '' && !Number.isNaN(Number(executado))
+        ? String(Math.trunc(Number(executado)))
+        : '';
     return (
       <Fragment key={`slot-${idx}`}>
         <td style={{ ...TD_READONLY_STYLE, ...borderLeftStyle }}>5</td>
         <td style={TD_READONLY_STYLE}>5</td>
         <td style={TD_STYLE}>
           <select
-            value={executado}
+            value={executadoFamilia6}
             onChange={(e) => {
               onEdit(row.employeeId, v.variableIndex, 'demanda', '5');
               onEdit(row.employeeId, v.variableIndex, 'executado', e.target.value);
