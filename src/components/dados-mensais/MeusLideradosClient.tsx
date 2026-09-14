@@ -1155,12 +1155,16 @@ function renderVarCells(
     );
   }
 
-  // Familias 1-5: Meta read-only (nao vem no MonthlyInputFormLeaderVariable
-  // — proc canonicamente ainda nao expoe `meta`; a coluna e placeholder
-  // com "—" quando ausente. Demanda e Executado sao editaveis).
+  // Familias 1-5: Meta canonicamente vem em `v.meta` (S259 consumida na
+  // ME-fila2-seed — proc `getMonthlyInputForm(aba='lider')` agora
+  // popula `meta` via JOIN com `employeeGoals.goal`). Quando `meta` eh
+  // `null`, o RH ainda nao configurou meta para essa `(employeeId,
+  // variableIndex)` — renderiza "—" preservando o padrao canonico do
+  // banner `LABEL_HINT_LINHAS_TRACO`. Demanda e Executado sao editaveis.
+  const metaDisplay = v.meta ?? '—';
   return (
     <Fragment key={`slot-${idx}`}>
-      <td style={{ ...TD_READONLY_STYLE, ...borderLeftStyle }}>—</td>
+      <td style={{ ...TD_READONLY_STYLE, ...borderLeftStyle }}>{metaDisplay}</td>
       <td style={TD_STYLE}>
         <input
           type="text"

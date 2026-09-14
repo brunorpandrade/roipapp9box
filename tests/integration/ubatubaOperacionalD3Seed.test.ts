@@ -182,7 +182,14 @@ describe('seedUbatubaOperacionalD3 — bit-exact (ME-080e D3)', () => {
     expect(Number((orphan[0] as CountResult).n)).toBe(0);
   });
 
-  it('placeholders: clevels pendentes + employees respondidos', async () => {
+  it('placeholders: distribuicao canonica ME-fila2-seed D1 (JSON canonico)', async () => {
+    // L113 patch ME-fila2-seed: derivador Ubatuba agora consome o JSON
+    // canonico `individual_profile_placeholders.json` (padrao S366).
+    // Distribuicao canonica bit-a-bit ao MD §12.1:
+    //   - 3 C-levels respondido (shifted 1001, 1002, 1003)
+    //   - 63 employees respondido
+    //   - 3 employees pendente (shifted 1028, 1030, 1031 — desligados
+    //     pre-Perfil canonicos do MD §12.2)
     const [rows] = await client.pool.query<mysql.RowDataPacket[]>(
       `SELECT userType, status, COUNT(*) AS n FROM individualProfilePlaceholders ` +
         `WHERE companyId = ${UBATUBA_COMPANY_ID} GROUP BY userType, status`,
@@ -191,8 +198,10 @@ describe('seedUbatubaOperacionalD3 — bit-exact (ME-080e D3)', () => {
     for (const r of rows) {
       found.set(`${r.userType}:${r.status}`, Number(r.n));
     }
-    expect(found.get('clevel:pendente')).toBe(3);
-    expect(found.get('employee:respondido')).toBe(66);
+    expect(found.get('clevel:respondido')).toBe(3);
+    expect(found.get('employee:respondido')).toBe(63);
+    expect(found.get('employee:pendente')).toBe(3);
+    expect(found.get('clevel:pendente')).toBeUndefined();
   });
 
   it('isolamento multi-empresa: Nativa (id=1) tem zero rows nas 3 tabelas', async () => {

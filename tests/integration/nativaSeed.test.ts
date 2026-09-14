@@ -293,12 +293,19 @@ describe('seedNativa — invariantes canonicas bit-exact §18.4 (ME-068)', () =>
     expect(await countTable(client, 'iqlData')).toBe(45);
   });
 
-  it('copsoqCycles = 1', async () => {
-    expect(await countTable(client, 'copsoqCycles')).toBe(1);
+  it('copsoqCycles = 2 (historico fechado + corrente aberto — ME-fila2-seed D2)', async () => {
+    // L113 patch ME-fila2-seed: alem do ciclo historico canonico
+    // (NR1-2026-Q4, fechado), o seed agora abre canonicamente 1 ciclo
+    // CORRENTE (2026-Q3-CORRENTE, aberto) para materializar a superficie
+    // de resposta do Radar NR-1 desde a aplicacao do seed.
+    expect(await countTable(client, 'copsoqCycles')).toBe(2);
   });
 
-  it('copsoqCycleSnapshot = 51 (Opção A ME-068a-fix: c-levels filtrados)', async () => {
-    expect(await countTable(client, 'copsoqCycleSnapshot')).toBe(51);
+  it('copsoqCycleSnapshot = 101 (51 historico + 50 corrente — ME-fila2-seed D2)', async () => {
+    // L113 patch ME-fila2-seed: 51 do ciclo historico + snapshot canonico
+    // do ciclo CORRENTE aplicando activeInMonthWhere em 2026-09-15.
+    // Total canonico bit-a-bit medido: 101.
+    expect(await countTable(client, 'copsoqCycleSnapshot')).toBe(101);
   });
 
   it('copsoq_responses = 1248 (Opção A ME-068a-fix: c-levels filtrados)', async () => {

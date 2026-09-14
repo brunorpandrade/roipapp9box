@@ -43,7 +43,7 @@
 // RV-09 canonica bit-exact: mappers batem 1:1 com o schema Drizzle real
 // (src/db/schema/tables.ts). Se o schema mudar, o TypeScript falha.
 
-import { eq } from 'drizzle-orm';
+import { and, eq, lt, lte, notInArray } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../client';
 import type {
@@ -101,9 +101,10 @@ import {
   deriveEconomicDiagnosis,
   deriveLgpdConsents,
   deriveMonthlyClosureStatus,
-  deriveProfilePlaceholders,
   deriveRfTransferLog,
+  type PlaceholderStatus,
 } from './deriveMisc';
+import { deriveOpenNr1Cycle, NATIVA_OPEN_NR1_DATA_ABERTURA } from './deriveOpenNr1Cycle';
 import { loadFixture, validateNativaManifest } from './loadJsonFixtures';
 
 // ---------------------------------------------------------------------
@@ -137,6 +138,32 @@ function toDate(iso: string): Date {
 interface EmployeeIdIndex {
   byName: Map<string, number>;
   cLevelByName: Map<string, number>;
+}
+
+/**
+ * Lookup canonico da `dataAdmissao` de um C-level pelo id.
+ * Fonte: constants Nativa. Usado pelo bloco 13 (placeholders — ME-fila2-seed
+ * D1 aprovada) para materializar `createdAt` bit-a-bit coerente com a
+ * admissao. Lanca se id ausente (invariante canonico da fixture).
+ */
+function findCLevelAdmissao(id: number): string {
+  const found = NATIVA_CLEVELS.find((c) => c.id === id);
+  if (found === undefined) {
+    throw new Error(`findCLevelAdmissao: C-level id=${id} ausente das constants canonicas.`);
+  }
+  return found.dataAdmissao;
+}
+
+/**
+ * Lookup canonico da `dataAdmissao` de um employee pelo id.
+ * Fonte: constants Nativa. Analogo a `findCLevelAdmissao`.
+ */
+function findEmployeeAdmissao(id: number): string {
+  const found = NATIVA_EMPLOYEES.find((e) => e.id === id);
+  if (found === undefined) {
+    throw new Error(`findEmployeeAdmissao: employee id=${id} ausente das constants canonicas.`);
+  }
+  return found.dataAdmissao;
 }
 
 function buildIdIndex(): EmployeeIdIndex {
@@ -350,9 +377,37 @@ export async function seedNativa(
   await db.insert(cycleSchedule).values([...cycleRows]);
   counts.cycleSchedule = cycleRows.length;
 
-  // 13. individualProfilePlaceholders (69)
-  const placeholderRows = deriveProfilePlaceholders(NATIVA_COMPANY_ID);
-  await db.insert(individualProfilePlaceholders).values([...placeholderRows]);
+  // 13. individualProfilePlaceholders (69) — S366 padrao canonico:
+  // consome o JSON pinado como fonte de verdade (ME-fila2-seed D1
+  // aprovada). O JSON carrega distribuicao canonica bit-a-bit ao MD
+  // §12.1 e §12.2: 3 C-levels respondido + 63 employees respondido +
+  // 3 employees pendente (id=28 Bruno Henrique, id=30 Felipe Barros,
+  // id=31 Marcos Vinicius Souza — desligados pre-Perfil).
+  const placeholderJson = loadFixture<
+    Array<{
+      userType: 'employee' | 'clevel';
+      userId: number;
+      nome: string;
+      status: PlaceholderStatus;
+      respondidoEm: string | null;
+    }>
+  >('individual_profile_placeholders.json');
+  const placeholderRows = placeholderJson.data.map((r) => {
+    const admissao =
+      r.userType === 'clevel' ? findCLevelAdmissao(r.userId) : findEmployeeAdmissao(r.userId);
+    const createdAt = new Date(admissao + 'T10:00:00.000Z');
+    const respondidoEm =
+      r.respondidoEm !== null ? new Date(r.respondidoEm + 'T10:00:00.000Z') : null;
+    return {
+      companyId: NATIVA_COMPANY_ID,
+      userType: r.userType,
+      userId: r.userId,
+      status: r.status,
+      createdAt,
+      respondidoEm,
+    };
+  });
+  await db.insert(individualProfilePlaceholders).values(placeholderRows);
   counts.individualProfilePlaceholders = placeholderRows.length;
 
   // --- Carregamento dos JSONs (validacao SHA-256 ja feita no manifest above).
@@ -551,6 +606,72 @@ export async function seedNativa(
   const turnRows = turnEvJson.data.map((r) => mapTerminationToRow(r));
   await db.insert(employeeTerminationEvents).values(turnRows);
   counts.employeeTerminationEvents = turnRows.length;
+
+  // 31. NR-1 Ciclo CORRENTE aberto (ME-fila2-seed D2 aprovada Opcao B).
+  // Materializa canonicamente no seed o par que a §7.24 do HISTORICO
+  // aplicou por SQL manual. Bit-a-bit a `openScheduledNr1Cycles` do
+  // motor `nr1CalculationEngine.ts` linha 524.
+  const openCycleRow = deriveOpenNr1Cycle(NATIVA_COMPANY_ID);
+  await db.insert(copsoqCycles).values([openCycleRow]);
+
+  const [openCycleId] = await db
+    .select({ id: copsoqCycles.id })
+    .from(copsoqCycles)
+    .where(
+      and(
+        eq(copsoqCycles.companyId, NATIVA_COMPANY_ID),
+        eq(copsoqCycles.ciclo, openCycleRow.ciclo),
+      ),
+    );
+  if (openCycleId === undefined) {
+    throw new Error(
+      'loadFixtures.ts: cicloDbId do ciclo NR-1 CORRENTE nao encontrado apos INSERT.',
+    );
+  }
+  counts.copsoqCyclesOpen = 1;
+
+  // 32. NR-1 Snapshot canonico do ciclo CORRENTE — employees elegiveis
+  // canonicamente em 2026-09-15 (aplica o mesmo predicado do
+  // activeInMonthWhere). C-levels nao respondem NR-1 §11.1.
+  const openBoundLast = new Date(NATIVA_OPEN_NR1_DATA_ABERTURA + 'T23:59:59.999Z');
+  const openBoundFirst = new Date(NATIVA_OPEN_NR1_DATA_ABERTURA + 'T00:00:00.000Z');
+
+  const desligadosPreviosOpenRows = await db
+    .select({ id: employeeTerminationEvents.employeeId })
+    .from(employeeTerminationEvents)
+    .where(
+      and(
+        eq(employeeTerminationEvents.companyId, NATIVA_COMPANY_ID),
+        lt(employeeTerminationEvents.dataInativacao, openBoundFirst),
+      ),
+    );
+  const desligadosPreviosOpenIds = desligadosPreviosOpenRows.map((r) => r.id);
+
+  const activeEmpsClauses = [
+    eq(employees.companyId, NATIVA_COMPANY_ID),
+    lte(employees.dataAdmissao, openBoundLast),
+  ];
+  if (desligadosPreviosOpenIds.length > 0) {
+    activeEmpsClauses.push(notInArray(employees.id, desligadosPreviosOpenIds));
+  }
+  const activeEmpsForOpenCycle = await db
+    .select({
+      id: employees.id,
+      departamento: employees.departamento,
+    })
+    .from(employees)
+    .where(and(...activeEmpsClauses));
+
+  const openSnapshotRows = activeEmpsForOpenCycle.map((e) => ({
+    cicloDbId: openCycleId.id,
+    companyId: NATIVA_COMPANY_ID,
+    employeeId: e.id,
+    departamentoId: null,
+    respondeu: false,
+    createdAt: openBoundFirst,
+  }));
+  await db.insert(copsoqCycleSnapshot).values(openSnapshotRows);
+  counts.copsoqCycleSnapshotOpen = openSnapshotRows.length;
 
   return { applied: true, counts };
 }

@@ -15,12 +15,14 @@
 //   correspondente tem `demanda` E `executado` NOT NULL, incrementa
 //   `totalFilled`. Categoriza em 3 estados: 'Preenchido', 'Parcial',
 //   'Não preenchido'.
-// - `listDirectLedInMonth`: bit-a-bit ao codigo canonico que estava
-//   em `src/server/routers/monthlyData.ts` linhas 352-418. Semantica
-//   canonica temporal: liderado direto ativo em qualquer momento do
-//   mes (nao apenas ativo agora). Filtra `employees.status='ativo'` +
-//   cobertura temporal do vinculo `employeeLeaderHistory` (dataInicio
-//   <= lastDay AND (dataFim IS NULL OR dataFim >= firstDay)).
+// - `listDirectLedInMonth`: ampliado na ME-fila2-seed (S260). Semantica
+//   canonica temporal §3.11: liderado direto ativo em qualquer momento
+//   do mes M. Substitui filtro por `employees.status='ativo'` (que
+//   escondia retroativamente desligados) pelo predicado canonico
+//   `activeInMonthWhere` de `src/lib/scope/activeInMonth.ts` (dataAdmissao
+//   <= lastDay E NAO desligado antes de firstDay). Vinculo de lideranca
+//   em `employeeLeaderHistory` continua filtrado em memoria por
+//   dataInicio/dataFim vs firstDay/lastDay.
 // - `STATUS_PREENCHIMENTO_VALUES` + `StatusPreenchimento`: bit-a-bit ao
 //   que estava em `monthlyData.ts` linhas 143 e 169. Reexportados
 //   deste service (nao duplicados) — router preserva bit-a-bit ao
@@ -36,7 +38,7 @@
 //   `loadMesAtualClosureStatus`.
 // **RV-14 canonica.** Um statement por linha, largura maxima 100 cols.
 
-import { and, eq, inArray, isNull, or } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../db/client';
 import {
@@ -46,6 +48,11 @@ import {
   performanceData,
   performanceVariableData,
 } from '../../db/schema';
+import {
+  activeInMonthWhere,
+  monthBounds,
+  resolveDesligadosPreviosIds,
+} from '../../lib/scope/activeInMonth';
 
 /** Enum canonico de statusPreenchimento (§3.11 — 3 estados). */
 export const STATUS_PREENCHIMENTO_VALUES = ['Não preenchido', 'Parcial', 'Preenchido'] as const;
@@ -69,33 +76,17 @@ export async function listDirectLedInMonth(
   liderTipo: 'employee' | 'clevel',
   mes: string,
 ): Promise<number[]> {
-  const [anoStr, mesStr] = mes.split('-');
-  const ano = Number(anoStr);
-  const mesNum = Number(mesStr);
-  const firstDay = new Date(Date.UTC(ano, mesNum - 1, 1));
-  const lastDay = new Date(Date.UTC(ano, mesNum, 0));
+  const bounds = monthBounds(mes);
+  const desligadosPreviosIds = await resolveDesligadosPreviosIds(db, companyId, bounds.firstDay);
 
   const liderColumn =
     liderTipo === 'employee' ? employeeLeaderHistory.liderId : employeeLeaderHistory.clevelId;
 
-  const links = await db
-    .select({ employeeId: employeeLeaderHistory.employeeId })
-    .from(employeeLeaderHistory)
-    .innerJoin(employees, eq(employees.id, employeeLeaderHistory.employeeId))
-    .where(
-      and(
-        eq(liderColumn, liderId),
-        eq(employees.companyId, companyId),
-        eq(employees.status, 'ativo'),
-        or(
-          isNull(employeeLeaderHistory.dataFim),
-          // Cobertura de dataFim >= firstDay resolvida em memoria abaixo
-          // — predicado composto de date range canonicamente resolvido
-          // no lado do processo (S066 do dashboard).
-        ),
-      ),
-    );
-  const linksInRange: number[] = [];
+  // Elegibilidade temporal §3.11 (S260): liderado eh elegivel no mes M
+  // se admitido ate `bounds.lastDay` E NAO desligado antes de
+  // `bounds.firstDay`. Substitui filtro por `employees.status='ativo'`
+  // pre-ME-fila2-seed — que ocultava retroativamente liderados
+  // desligados de meses passados em que estavam ativos e sob o lider.
   const rows = await db
     .select({
       employeeId: employeeLeaderHistory.employeeId,
@@ -105,24 +96,20 @@ export async function listDirectLedInMonth(
     .from(employeeLeaderHistory)
     .innerJoin(employees, eq(employees.id, employeeLeaderHistory.employeeId))
     .where(
-      and(
-        eq(liderColumn, liderId),
-        eq(employees.companyId, companyId),
-        eq(employees.status, 'ativo'),
-      ),
+      and(eq(liderColumn, liderId), activeInMonthWhere(companyId, bounds, desligadosPreviosIds)),
     );
   const seen = new Set<number>();
+  const linksInRange: number[] = [];
   for (const r of rows) {
-    if (r.dataInicio.getTime() > lastDay.getTime()) continue;
-    if (r.dataFim !== null && r.dataFim.getTime() < firstDay.getTime()) continue;
+    // Vinculo de lideranca precisa cobrir o mes (S072):
+    //   dataInicio <= lastDay  E  (dataFim IS NULL OU dataFim >= firstDay).
+    if (r.dataInicio.getTime() > bounds.lastDay.getTime()) continue;
+    if (r.dataFim !== null && r.dataFim.getTime() < bounds.firstDay.getTime()) continue;
     if (!seen.has(r.employeeId)) {
       seen.add(r.employeeId);
       linksInRange.push(r.employeeId);
     }
   }
-  // `links` acima e apenas de tipagem — o resultado real vem de
-  // `linksInRange`. Marcamos `links` como usado para o linter.
-  void links;
   return linksInRange;
 }
 

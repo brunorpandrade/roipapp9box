@@ -535,61 +535,34 @@ export function deriveCycleSchedule(companyId: number): readonly DerivedCycleSch
 export const NATIVA_CYCLE_SCHEDULE_COUNT = 5 as const;
 
 // ---------------------------------------------------------------------
-// 8. individualProfilePlaceholders (69: 66 respondidos + 3 C-levels pendentes)
+// 8. individualProfilePlaceholders (69: 66 respondidos + 3 pendentes)
 // ---------------------------------------------------------------------
+//
+// ME-fila2-seed (D1 aprovada): `deriveProfilePlaceholders` foi
+// removido; a fonte canonica passa a ser o proprio JSON pinado
+// `individual_profile_placeholders.json` (SHA-256 no manifest). Padrao
+// canonico bit-a-bit ao adotado por assessments e scores (S366).
+//
+// Racional: o derivador anterior invertia a distribuicao canonica do
+// MD §12.1 e §12.2 — marcava 3 C-levels como pendentes (canonicamente
+// respondido em 2026-02-15) e todos os 66 employees como respondido,
+// incluindo os 3 desligados pre-Perfil (Bruno Henrique id=28, Felipe
+// Barros id=30, Marcos Vinicius Souza id=31), que canonicamente sao
+// os 3 pendentes permanentes. O JSON canonico ja carrega:
+//   - 3 C-levels    status='respondido' respondidoEm='2026-02-15'
+//   - 63 employees  status='respondido' respondidoEm=data canonica
+//   -  3 employees  status='pendente'   respondidoEm=null
+// Total 69, alinhado bit-a-bit ao MD.
+//
+// O tipo `PlaceholderStatus` foi movido para consumo local em
+// `loadFixtures.ts` no bloco de placeholders — nao ha mais derivador
+// canonico deste dominio no arquivo `deriveMisc.ts`.
 
 export type PlaceholderStatus =
   'pendente' | 'em_andamento' | 'respondido' | 'inconsistente' | 'aguardando_nova_resposta';
 
-export interface DerivedProfilePlaceholder {
-  readonly companyId: number;
-  readonly userType: 'employee' | 'clevel';
-  readonly userId: number;
-  readonly status: PlaceholderStatus;
-  readonly createdAt: Date;
-  readonly respondidoEm: Date | null;
-}
-
 /**
- * D8 aprovado: 3 C-levels ficam com status='pendente' para exercitar o fluxo
- * de resposta do Perfil Individual a partir do dashboard C-level. Os 66
- * employees ficam com status='respondido' (respostas embutidas nos assessments
- * carregados via JSON).
+ * Contagem canonica bit-a-bit dos placeholders — usada nas assercoes de
+ * teste e no bloco consumidor de `loadFixtures.ts`.
  */
-export function deriveProfilePlaceholders(companyId: number): readonly DerivedProfilePlaceholder[] {
-  const rows: DerivedProfilePlaceholder[] = [];
-
-  // 3 C-levels pendentes
-  for (const cl of NATIVA_CLEVELS) {
-    rows.push({
-      companyId,
-      userType: 'clevel',
-      userId: cl.id,
-      status: 'pendente',
-      createdAt: new Date(cl.dataAdmissao + 'T10:00:00.000Z'),
-      respondidoEm: null,
-    });
-  }
-
-  // 66 employees respondidos (data canonica: 30 dias apos admissao ou 15/02/2026,
-  // o que for maior)
-  for (const emp of NATIVA_EMPLOYEES) {
-    const admissao = new Date(emp.dataAdmissao);
-    const trintaDiasApos = new Date(admissao.getTime() + 30 * 24 * 3600 * 1000);
-    const dataMinima = new Date('2026-02-15T10:00:00.000Z');
-    const respondidoEm = trintaDiasApos > dataMinima ? trintaDiasApos : dataMinima;
-
-    rows.push({
-      companyId,
-      userType: 'employee',
-      userId: emp.id,
-      status: 'respondido',
-      createdAt: new Date(emp.dataAdmissao + 'T10:00:00.000Z'),
-      respondidoEm,
-    });
-  }
-
-  return Object.freeze(rows);
-}
-
 export const NATIVA_PROFILE_PLACEHOLDERS_COUNT = 69 as const;

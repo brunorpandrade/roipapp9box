@@ -78,11 +78,17 @@ import {
   cLevelMembers,
   companyJobFamilies,
   companyMonthlyData,
+  employeeGoals,
   employees,
   monthlyClosureStatus,
   performanceData,
   performanceVariableData,
 } from '../../db/schema';
+import {
+  activeInMonthWhere,
+  monthBounds,
+  resolveDesligadosPreviosIds,
+} from '../../lib/scope/activeInMonth';
 import { getCompanyMonthlyDataByMonth } from '../services/companyMonthlyData';
 import { resolveLeaderLinkAtMonth } from '../services/employeeLeaderHistory';
 import { updatePerformanceDataInputRH } from '../services/performanceData';
@@ -197,13 +203,16 @@ export interface MonthlyInputFormRHRow {
 /**
  * Linha da variavel no retorno da aba Lider de `getMonthlyInputForm`.
  * `weight` reflete o snapshot vigente em `companyJobFamilies` no momento
- * da consulta.
+ * da consulta. `meta` reflete o `employeeGoals.goal` canonicamente
+ * configurado pelo RH por `(employeeId, variableIndex)` — `null` quando
+ * a meta ainda nao foi configurada (S259 consumida na ME-fila2-seed).
  */
 export interface MonthlyInputFormLeaderVariable {
   variableIndex: number;
   variableName: string;
   unit: string;
   weight: string;
+  meta: string | null;
   demanda: string | null;
   executado: string | null;
 }
@@ -483,7 +492,19 @@ export function createMonthlyDataRouter() {
           const cmd = await getCompanyMonthlyDataByMonth(ctx.db, input.companyId, input.mes);
           const diasUteis = cmd?.diasUteis ?? null;
 
-          // Colaboradores ativos da empresa.
+          // Colaboradores canonicamente elegiveis no mes M (S260 §3.11):
+          // - admitidos ate o ultimo dia de M
+          // - NAO desligados antes do primeiro dia de M
+          // Substitui filtro por `status='ativo'` (pre-ME-fila2-seed), que
+          // gerava dois defeitos: (1) colaboradores admitidos apos M
+          // apareciam em M com campos vazios; (2) colaboradores desligados
+          // antes do fim de M somiam retroativamente de M.
+          const bounds = monthBounds(input.mes);
+          const desligadosPreviosIds = await resolveDesligadosPreviosIds(
+            ctx.db,
+            input.companyId,
+            bounds.firstDay,
+          );
           const emps = await ctx.db
             .select({
               id: employees.id,
@@ -492,7 +513,7 @@ export function createMonthlyDataRouter() {
               descricaoCBO: employees.descricaoCBO,
             })
             .from(employees)
-            .where(and(eq(employees.companyId, input.companyId), eq(employees.status, 'ativo')))
+            .where(activeInMonthWhere(input.companyId, bounds, desligadosPreviosIds))
             .orderBy(asc(employees.name));
 
           // Dados ja lancados por colaborador no mes.
@@ -675,6 +696,25 @@ export function createMonthlyDataRouter() {
             }
           }
 
+          // Buscar metas canonicas dos liderados (S259 consumida na
+          // ME-fila2-seed). `employeeGoals.goal` eh a fonte canonica da
+          // coluna Meta §14.14. Indexado por `(employeeId, variableIndex)`.
+          const goalsByEmpVar = new Map<string, string>();
+          const empIds = empRows.map((e) => e.id);
+          if (empIds.length > 0) {
+            const goalRows = await ctx.db
+              .select({
+                employeeId: employeeGoals.employeeId,
+                variableIndex: employeeGoals.variableIndex,
+                goal: employeeGoals.goal,
+              })
+              .from(employeeGoals)
+              .where(inArray(employeeGoals.employeeId, empIds));
+            for (const g of goalRows) {
+              goalsByEmpVar.set(`${g.employeeId}:${g.variableIndex}`, g.goal);
+            }
+          }
+
           for (const emp of empRows) {
             const vars = variablesByFamily.get(emp.jobFamily) ?? [];
             const perfId = perfByEmp.get(emp.id);
@@ -690,11 +730,13 @@ export function createMonthlyDataRouter() {
                   cellsFilled += 1;
                 }
               }
+              const meta = goalsByEmpVar.get(`${emp.id}:${v.variableIndex}`) ?? null;
               return {
                 variableIndex: v.variableIndex,
                 variableName: v.variableName,
                 unit: v.unit,
                 weight: v.weight,
+                meta,
                 demanda: filled?.demanda ?? null,
                 executado: filled?.executado ?? null,
               };

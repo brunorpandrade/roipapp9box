@@ -36,6 +36,7 @@ import {
   companyJobFamilies,
   companyMonthlyData,
   employeeLeaderHistory,
+  employeeTerminationEvents,
   employees,
   monthlyClosureStatus,
   performanceData,
@@ -142,6 +143,12 @@ afterAll(async () => {
       await client.db
         .delete(employeeLeaderHistory)
         .where(inArray(employeeLeaderHistory.employeeId, empIds));
+      // L113 patch ME-fila2-seed: cleanup de termination events criados
+      // pelo teste "colaboradores inativos NAO aparecem" (adaptado a
+      // nova semantica canonica S260 do helper activeInMonthWhere).
+      await client.db
+        .delete(employeeTerminationEvents)
+        .where(inArray(employeeTerminationEvents.employeeId, empIds));
     }
     await client.db
       .delete(monthlyClosureStatus)
@@ -613,9 +620,26 @@ describe('monthlyData.getMonthlyInputForm — aba="rh"', () => {
   });
 
   it('colaboradores inativos NAO aparecem', async () => {
+    // L113 patch ME-fila2-seed (S260): pos-refactor, a elegibilidade
+    // temporal §3.11 nao depende mais do campo `employees.status`. Um
+    // employee inativo SEM `employeeTerminationEvents` aparece nas
+    // consultas de meses passados por design canonico (nova regra
+    // R17.1). Para preservar a intencao original do teste — "employee
+    // desligado antes do mes M nao aparece em M" — criamos um
+    // termination event canonico anterior ao mes '2024-06'.
     const empInativo = await createEmployee(companyId, {
       name: 'Zulmira',
       status: 'inativo',
+    });
+    await client.db.insert(employeeTerminationEvents).values({
+      employeeId: empInativo,
+      companyId,
+      dataInativacao: new Date('2024-05-15T10:00:00.000Z'),
+      motivo: 'voluntario',
+      nivelHierarquicoSnapshot: 'operacional',
+      departamentoSnapshot: 'Comercial',
+      actorTipo: 'superAdmin',
+      actorId: FIXTURE_SUPER_ADMIN_ID,
     });
     const { factory, ctx } = bindRouter();
     const bearer = await tokenPlatform('rh', empRH, companyId);
