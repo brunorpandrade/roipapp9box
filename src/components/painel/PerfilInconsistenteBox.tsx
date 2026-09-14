@@ -339,7 +339,7 @@ export function PerfilInconsistenteBox(props: PerfilInconsistenteBoxProps): JSX.
               <th style={thStyle}>Nome</th>
               <th style={thStyle}>Cargo</th>
               <th style={thStyle}>Última resposta</th>
-              <th style={thStyleCenter}>Tentativas</th>
+              <th style={thStyleCenter}>Tentativa atual</th>
               <th style={thStyle}>Liberado em</th>
               <th style={thStyleRight}>Ação</th>
             </tr>
