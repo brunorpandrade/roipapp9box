@@ -378,13 +378,27 @@ export function NovaEmpresaClient(): JSX.Element {
     <form onSubmit={handleSubmit}>
       {toast !== null && (
         <div
+          role="alert"
           style={{
-            padding: '12px 16px',
-            borderRadius: 6,
-            marginBottom: 16,
-            fontSize: 13,
+            // ME-fila5 D2 patch4 — position fixed top-right para garantir
+            // visibilidade do toast independente do scroll do formulario.
+            // O botao [Salvar] fica no rodape do form; sem position fixed,
+            // o toast era inserido no topo do form (fora da viewport
+            // apos scroll) e o redirect apos 1200ms desmontava o compo-
+            // nente antes que Bruno pudesse ve-lo. z-index 500 canonico
+            // (acima de overlays de modal §14 CAMADA_UI).
+            position: 'fixed',
+            top: 24,
+            right: 24,
+            padding: '14px 20px',
+            borderRadius: 8,
+            fontSize: 14,
+            fontWeight: 500,
             color: '#FFFFFF',
             background: toast.kind === 'success' ? '#16A34A' : '#DC2626',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+            zIndex: 500,
+            maxWidth: 360,
           }}
         >
           {toast.message}
