@@ -44,7 +44,7 @@
 // conformidade Next 15 App Router.
 
 import { NextResponse } from 'next/server';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 
 import { copsoqCycles, copsoqCycleSnapshot, employees } from '../../../../db/schema';
 import { signNr1StartToken } from '../../../../server/auth/nr1StartToken';
@@ -142,10 +142,20 @@ export async function POST(req: Request): Promise<NextResponse> {
     };
 
     // -------- 5) Ciclo aberto da empresa (§11.2) --------
+    // ME-fila4: `ORDER BY dataAbertura DESC` como defesa em profundidade
+    // ao invariante canonico DOC 03 §11.2 (no maximo 1 ciclo `aberto` por
+    // empresa — colisao de datas rejeitada na criacao; cancelamento de
+    // ciclo aberto proibido). Sob invariante bit-a-bit, LIMIT 1 sem ORDER
+    // BY retorna a linha unica. Fora do invariante (estado empirica-
+    // mente corrompido: bug hipotetico + injecao manual regime L114 +
+    // race condition em migracao), ORDER BY garante retorno determinis-
+    // tico do ciclo mais recente por abertura em MySQL — comportamento
+    // indeterminado observado empiricamente durante a ME-fila2-seed.
     const [ciclo] = await db
       .select()
       .from(copsoqCycles)
       .where(and(eq(copsoqCycles.companyId, companyId), eq(copsoqCycles.status, 'aberto')))
+      .orderBy(desc(copsoqCycles.dataAbertura))
       .limit(1);
 
     if (!ciclo) {
