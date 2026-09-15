@@ -604,3 +604,82 @@ export async function listDistinctDepartamentosByCompany(
     .orderBy(asc(employees.departamento));
   return rows.map((r) => r.departamento);
 }
+
+/**
+ * ME-fila5 Dispatch 2 (Item 5.5) — lista completa de colaboradores da
+ * empresa para exportacao XLSX. Preserva bit-a-bit toda a logica de
+ * `listEmployeesPaginated` (filtros, busca, joins, ordenacao, PC1a
+ * implicita — nunca UNION com cLevelMembers) iterando pagina a pagina
+ * ate esgotar. Sem paginacao no output — retorna array completo pronto
+ * para consumo do `buildEmployeesExportBuffer` no router.
+ *
+ * Racional canonico bit-exact: reusa a fonte da verdade `listEmployees-
+ * Paginated` em vez de replicar SELECT (que quebraria PC1a e todas as
+ * regras de filtro se divergisse no futuro).
+ *
+ * Teto defensivo: `EXPORT_MAX_ROWS` (10_000, alinhado a `UPLOAD_MAX_
+ * LINHAS` do parser upload) protege contra empresas patologicamente
+ * grandes que estourariam memoria server-side na serializacao XLSX. Nao
+ * ha PMEs alvo do MVP com mais de 10k colaboradores.
+ */
+export const EXPORT_MAX_ROWS = 10_000 as const;
+
+/** Mensagem canonica ME-fila5 D2 — teto de export excedido. */
+export const MSG_EXPORT_TETO_EXCEDIDO =
+  'Empresa excede o teto canonico de 10000 colaboradores para exportacao.' as const;
+
+/** Erro tipado canonico ME-fila5 D2 — teto de export excedido. */
+export class ExportTetoExcedidoError extends Error {
+  public readonly canonicalMessage: string;
+  constructor() {
+    super(MSG_EXPORT_TETO_EXCEDIDO);
+    this.name = 'ExportTetoExcedidoError';
+    this.canonicalMessage = MSG_EXPORT_TETO_EXCEDIDO;
+  }
+}
+
+/**
+ * Filtros aceitos por `listAllEmployeesForExport` — subconjunto canonico
+ * bit-exact dos filtros de `listEmployeesPaginated` sem `page` nem
+ * `pageSize` (paginacao gerenciada internamente).
+ */
+type ExportFilters = Omit<ListEmployeesFilters, 'page' | 'pageSize'>;
+
+/**
+ * Itera `listEmployeesPaginated` com pageSize=100 ate esgotar; retorna
+ * array completo. Preserva a ordenacao canonica do input. Aborta com
+ * `ExportTetoExcedidoError` se o `totalCount` da primeira pagina for
+ * > `EXPORT_MAX_ROWS` (protecao antes de qualquer iteracao pesada).
+ *
+ * **RV-13.** Consumido por `employees.exportSpreadsheet` (router) +
+ * teste integration `me-fila5-employees-export-spreadsheet.test.ts`.
+ */
+export async function listAllEmployeesForExport(
+  db: RoipDatabase,
+  companyId: number,
+  filters: ExportFilters,
+): Promise<readonly EmployeeListRow[]> {
+  const PAGE_SIZE = 100 as const;
+  const allRows: EmployeeListRow[] = [];
+  let page = 1;
+  // Primeira pagina — verifica totalCount contra teto antes de iterar.
+  const firstResult = await listEmployeesPaginated(db, companyId, {
+    ...filters,
+    page,
+    pageSize: PAGE_SIZE,
+  });
+  if (firstResult.totalCount > EXPORT_MAX_ROWS) {
+    throw new ExportTetoExcedidoError();
+  }
+  allRows.push(...firstResult.rows);
+  const totalPages = Math.ceil(firstResult.totalCount / PAGE_SIZE);
+  for (page = 2; page <= totalPages; page += 1) {
+    const result = await listEmployeesPaginated(db, companyId, {
+      ...filters,
+      page,
+      pageSize: PAGE_SIZE,
+    });
+    allRows.push(...result.rows);
+  }
+  return allRows;
+}

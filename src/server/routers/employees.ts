@@ -77,6 +77,7 @@ import {
   MOTIVO_TERMINATION_VALUES,
   NIVEL_HIERARQUICO_VALUES,
   cLevelMembers,
+  companies,
   employeeGoals,
   employeeLeaderHistory,
   employeeTerminationEvents,
@@ -98,11 +99,15 @@ import {
 } from '../trpc';
 
 import {
+  ExportTetoExcedidoError,
   LIST_EMPLOYEES_PAGE_SIZES,
   LIST_EMPLOYEES_SORT_FIELDS,
   LIST_EMPLOYEES_SORT_ORDERS,
+  listAllEmployeesForExport,
   listEmployeesPaginated,
+  MSG_EXPORT_TETO_EXCEDIDO,
   PAPEL_FUNCIONAL_VALUES,
+  type EmployeeListRow,
 } from '../services/employees';
 import {
   provisionInitialPassword,
@@ -174,23 +179,16 @@ export const REASON_REATRIBUICAO_INDIVIDUAL = 'Reatribuicao individual de lider'
  * (14 colunas, linha 1 do arquivo). Ordem canonica fixa; qualquer
  * divergencia sobe BAD_REQUEST global com `MSG_UPLOAD_CABECALHOS_INVALIDOS`.
  * Rotulos derivados de §16.2 (formulario canonico) e §4.5 (schema).
+ *
+ * ME-fila5 D2 canonico: fonte da verdade migrada para modulo puro
+ * `src/lib/shared/employees-columns.ts` para permitir consumo client-
+ * side (Client Components nao podem arrastar `exceljs` / `node:stream`).
+ * Re-exportado aqui bit-a-bit para preservar API publica de todos os
+ * chamadores backend (parseEmployeesUpload, buildEmployeesTemplateBuffer,
+ * testes, etc.).
  */
-export const COLUNAS_CANONICAS_EMPLOYEES = [
-  'Nome completo',
-  'CPF',
-  'E-mail',
-  'Data de nascimento',
-  'Data de admissao',
-  'CBO',
-  'Descricao do CBO',
-  'Departamento',
-  'Senioridade',
-  'Nivel hierarquico',
-  'Familia de funcao',
-  'Ativar como Lider',
-  'Ativar como RH',
-  'Nome do lider direto',
-] as const;
+import { COLUNAS_CANONICAS_EMPLOYEES } from '../../lib/shared/employees-columns';
+export { COLUNAS_CANONICAS_EMPLOYEES };
 
 /** S191 — mapa canonico rotulo humano → literal do enum `jobFamily`. */
 export const MAP_FAMILIA_FUNCAO: Record<string, (typeof JOB_FAMILY_VALUES)[number]> = {
@@ -2013,6 +2011,278 @@ export async function searchLiderCandidatesForCompany(
 }
 
 // ============================================================
+// ME-fila5 Dispatch 2 (Item 5.5) — downloadTemplate + exportSpreadsheet
+// ============================================================
+//
+// Sub-modulo canonico das 2 procs novas ME-fila5. Precedente arquitetural:
+// `spreadsheets.ts` (Proc 1 `downloadRHTemplate` + Proc 3 `downloadLeader-
+// Template`). Reusa `DownloadResult` tipado + `sanitizeRazaoSocial` +
+// `SHEET_PROTECTION_PASSWORD` do modulo `spreadsheets` para preservar
+// simetria bit-a-bit com o padrao canonico ja existente no repo.
+//
+// **RV-13.** Cada export publico tem chamador na propria ME-fila5:
+// - `DOWNLOAD_EMPLOYEES_TEMPLATE_INPUT_SCHEMA` → proc `downloadTemplate`
+//   + teste `me-fila5-employees-download-template.test.ts`.
+// - `EXPORT_EMPLOYEES_SPREADSHEET_INPUT_SCHEMA` → proc
+//   `exportSpreadsheet` + teste `me-fila5-employees-export-spreadsheet
+//   .test.ts`.
+// - `COLUNAS_CANONICAS_EMPLOYEES_EXPORT` → `buildEmployeesExportBuffer`
+//   + testes.
+// - `NOME_ABA_EMPLOYEES_TEMPLATE` + `NOME_ABA_EMPLOYEES_EXPORT` → helpers
+//   XLSX + testes.
+// - `MSG_EMPRESA_NAO_ENCONTRADA_EXPORT` → procs + testes.
+
+/** ME-fila5 D2 — nome canonico da aba do template de cadastro. */
+export const NOME_ABA_EMPLOYEES_TEMPLATE = 'Cadastro em massa' as const;
+
+/** ME-fila5 D2 — nome canonico da aba do export de listagem. */
+export const NOME_ABA_EMPLOYEES_EXPORT = 'Colaboradores' as const;
+
+/**
+ * ME-fila5 D2 — 14 rotulos canonicos da linha 1 do XLSX de export
+ * (DIVERGE dos 14 rotulos de upload em `COLUNAS_CANONICAS_EMPLOYEES`:
+ * export contem estado atual da listagem, upload e apenas estrutura
+ * para preenchimento).
+ *
+ * Origem canonica: §14.10 CAMADA_UI (14 colunas visiveis da tabela) —
+ * subconjunto que faz sentido em planilha (Foto e Perfil Individual e
+ * Dados cadastrais excluidos por serem colunas interativas de UI).
+ */
+export const COLUNAS_CANONICAS_EMPLOYEES_EXPORT = [
+  'Nome',
+  'CPF',
+  'Cargo',
+  'Senioridade',
+  'Familia de funcao',
+  'Nivel hierarquico',
+  'Departamento',
+  'Lider direto',
+  'Data de admissao',
+  'Data de cadastro',
+  'Status',
+  'Ativo como Lider',
+  'Ativo como RH',
+  'Responsavel financeiro',
+] as const;
+
+/** ME-fila5 D2 — mensagem canonica: empresa nao encontrada nas 2 procs. */
+export const MSG_EMPRESA_NAO_ENCONTRADA_EXPORT = 'Empresa nao encontrada.' as const;
+
+/** ME-fila5 D2 — input canonico da proc `employees.downloadTemplate`. */
+export const DOWNLOAD_EMPLOYEES_TEMPLATE_INPUT_SCHEMA = z.object({
+  companyId: z.number().int().positive(),
+});
+
+/**
+ * ME-fila5 D2 — input canonico da proc `employees.exportSpreadsheet`.
+ * Preserva bit-a-bit o schema `LIST_EMPLOYEES_INPUT_SCHEMA` MENOS `page`
+ * e `pageSize` (export completo). Filtros e ordenacao aplicaveis
+ * identicos ao `list` — respeita PC1a via reuso do service.
+ */
+export const EXPORT_EMPLOYEES_SPREADSHEET_INPUT_SCHEMA = LIST_EMPLOYEES_INPUT_SCHEMA.omit({
+  page: true,
+  pageSize: true,
+});
+
+/**
+ * ME-fila5 D2 — retorno canonico das 2 procs: buffer XLSX em Base64 +
+ * filename + bytes. Padrao bit-exact do `DownloadResult` do
+ * `spreadsheets.ts` §3.11.
+ */
+export interface EmployeesDownloadResult {
+  filename: string;
+  xlsxBase64: string;
+  bytes: number;
+}
+
+/**
+ * ME-fila5 D2 — resolve `razaoSocial` da empresa alvo. Reusado pelas
+ * 2 procs. NOT_FOUND canonico se empresa nao existe (defesa em
+ * profundidade ao `assertCompanyScope`).
+ */
+export async function loadCompanyRazaoSocial(db: RoipDatabase, companyId: number): Promise<string> {
+  const [row] = await db
+    .select({ razaoSocial: companies.razaoSocial })
+    .from(companies)
+    .where(eq(companies.id, companyId))
+    .limit(1);
+  if (!row) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: MSG_EMPRESA_NAO_ENCONTRADA_EXPORT,
+    });
+  }
+  return row.razaoSocial;
+}
+
+/**
+ * ME-fila5 D2 — sanitiza razao social para nome de arquivo. Padrao
+ * bit-exact do `sanitizeRazaoSocial` de `spreadsheets.ts:328` replicado
+ * localmente para evitar dependencia circular entre routers.
+ */
+export function sanitizeRazaoSocialEmp(razaoSocial: string): string {
+  return razaoSocial
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .toUpperCase()
+    .slice(0, 40);
+}
+
+/**
+ * ME-fila5 D2 — data atual em formato YYYY-MM-DD para nome de arquivo
+ * do export. Extraido para permitir mock em teste (injecao via `now`).
+ */
+export function formatIsoDateForExport(now: Date): string {
+  const y = now.getUTCFullYear();
+  const m = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(now.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * ME-fila5 D2 — mapa canonico `senioridade` enum → rotulo humano para
+ * exibicao no XLSX. Preserva a mesma capitalizacao usada em UI §14.10.
+ */
+const EXPORT_LABEL_SENIORIDADE: Record<'junior' | 'pleno' | 'senior', string> = {
+  junior: 'Junior',
+  pleno: 'Pleno',
+  senior: 'Senior',
+};
+
+/**
+ * ME-fila5 D2 — mapa canonico `nivelHierarquico` enum → rotulo humano.
+ */
+const EXPORT_LABEL_NIVEL: Record<NivelHierarquico, string> = {
+  operacional: 'Operacional',
+  tatico: 'Tatico',
+  estrategico: 'Estrategico',
+};
+
+/**
+ * ME-fila5 D2 — mapa canonico `jobFamily` enum → rotulo humano. Espelho
+ * inverso do `MAP_FAMILIA_FUNCAO` do parser upload.
+ */
+const EXPORT_LABEL_JOB_FAMILY: Record<(typeof JOB_FAMILY_VALUES)[number], string> = {
+  vendas_comercial: 'Vendas e comercial',
+  producao_operacoes: 'Producao e operacoes',
+  tecnico_especialista: 'Tecnico e especialista',
+  administrativo_suporte: 'Administrativo e suporte',
+  atendimento_relacionamento: 'Atendimento e relacionamento',
+  lideranca_gestao: 'Lideranca e gestao',
+};
+
+/**
+ * ME-fila5 D2 — formata data para ISO curto (YYYY-MM-DD) para
+ * exibicao no XLSX de export. Preserva TZ do server (UTC).
+ */
+function formatDateCell(d: Date): string {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * ME-fila5 D2 — monta buffer XLSX canonico do template de cadastro em
+ * massa. Cabecalho = 14 rotulos canonicos de `COLUNAS_CANONICAS_
+ * EMPLOYEES` (id-a-id com o parser upload). Zero linhas de dados.
+ *
+ * Sheet protection canonica preserva simetria com templates RH/Lider —
+ * cabecalho locked, corpo unlocked. Password canonico compartilhado.
+ *
+ * **RV-13.** Consumido por `employees.downloadTemplate` + teste
+ * integration.
+ */
+export async function buildEmployeesTemplateBuffer(): Promise<Buffer> {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet(NOME_ABA_EMPLOYEES_TEMPLATE);
+
+  // Cabecalho canonico exato (14 colunas, ordem fixa).
+  ws.addRow([...COLUNAS_CANONICAS_EMPLOYEES]);
+  const headerRow = ws.getRow(1);
+  headerRow.font = { bold: true };
+  headerRow.eachCell((cell) => {
+    cell.protection = { locked: true };
+  });
+
+  // Larguras confortaveis para cada coluna (heuristica UX bit-a-bit
+  // ao padrao dos templates RH/Lider).
+  const widths = [32, 16, 32, 14, 14, 12, 12, 24, 12, 18, 18, 16, 14, 32] as const;
+  widths.forEach((w, idx) => {
+    ws.getColumn(idx + 1).width = w;
+  });
+
+  // Sheet protection canonica.
+  await ws.protect(SHEET_PROTECTION_PASSWORD_EMP, {
+    selectLockedCells: true,
+    selectUnlockedCells: true,
+  });
+
+  const buf = await wb.xlsx.writeBuffer();
+  return Buffer.from(buf);
+}
+
+/**
+ * ME-fila5 D2 — password canonico do sheet protection. Bit-a-bit ao
+ * `SHEET_PROTECTION_PASSWORD` do `spreadsheets.ts:166`. Duplicado
+ * localmente para evitar dependencia circular entre routers.
+ */
+export const SHEET_PROTECTION_PASSWORD_EMP = 'roip' as const;
+
+/**
+ * ME-fila5 D2 — monta buffer XLSX canonico do export de listagem.
+ * Cabecalho = 14 rotulos de `COLUNAS_CANONICAS_EMPLOYEES_EXPORT`. Corpo
+ * = 1 linha por `EmployeeListRow` da lista. Sheet SEM protection (export
+ * e planilha de consulta somente-leitura pratica; usuario pode filtrar,
+ * ordenar, colar em outro documento).
+ *
+ * **RV-13.** Consumido por `employees.exportSpreadsheet` + teste
+ * integration.
+ */
+export async function buildEmployeesExportBuffer(
+  rows: readonly EmployeeListRow[],
+): Promise<Buffer> {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet(NOME_ABA_EMPLOYEES_EXPORT);
+
+  // Cabecalho canonico exato (14 colunas de exibicao).
+  ws.addRow([...COLUNAS_CANONICAS_EMPLOYEES_EXPORT]);
+  const headerRow = ws.getRow(1);
+  headerRow.font = { bold: true };
+
+  // Uma linha por colaborador.
+  for (const r of rows) {
+    ws.addRow([
+      r.name,
+      r.cpf,
+      r.cargo,
+      EXPORT_LABEL_SENIORIDADE[r.senioridade],
+      EXPORT_LABEL_JOB_FAMILY[r.jobFamily],
+      EXPORT_LABEL_NIVEL[r.nivelHierarquico],
+      r.departamento,
+      r.liderName ?? '—',
+      formatDateCell(r.dataAdmissao),
+      formatDateCell(r.createdAt),
+      r.status === 'ativo' ? 'Ativo' : 'Inativo',
+      r.isLider ? 'Sim' : 'Nao',
+      r.isRH ? 'Sim' : 'Nao',
+      r.isResponsavelFinanceiro ? 'Sim' : 'Nao',
+    ]);
+  }
+
+  // Larguras confortaveis.
+  const widths = [32, 16, 28, 14, 24, 14, 24, 32, 14, 14, 12, 16, 14, 22] as const;
+  widths.forEach((w, idx) => {
+    ws.getColumn(idx + 1).width = w;
+  });
+
+  const buf = await wb.xlsx.writeBuffer();
+  return Buffer.from(buf);
+}
+
+// ============================================================
 // Factory canonica do sub-router
 // ============================================================
 
@@ -2651,6 +2921,78 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           pageSize: input.pageSize,
         });
         return result;
+      }),
+
+    // --------------------------------------------------------
+    // ME-fila5 D2 — employees.downloadTemplate — RH + Bruno (§14.10)
+    // --------------------------------------------------------
+    // Gera XLSX canonico do template de cadastro em massa. Cabecalho =
+    // 14 rotulos exatos de `COLUNAS_CANONICAS_EMPLOYEES` (id-a-id com
+    // parser upload). Zero linhas de dados. Sheet protection canonica.
+    // Autorizacao id-a-id com `list` / `uploadCSV`. Guard cruzado §2.4.
+    downloadTemplate: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+      .input(DOWNLOAD_EMPLOYEES_TEMPLATE_INPUT_SCHEMA)
+      .mutation(async ({ ctx, input }): Promise<EmployeesDownloadResult> => {
+        assertCompanyScope(ctx.user, input.companyId);
+        const razaoSocial = await loadCompanyRazaoSocial(ctx.db, input.companyId);
+        const buf = await buildEmployeesTemplateBuffer();
+        const filename = `template_colaboradores_${sanitizeRazaoSocialEmp(razaoSocial)}.xlsx`;
+        return {
+          filename,
+          xlsxBase64: buf.toString('base64'),
+          bytes: buf.length,
+        };
+      }),
+
+    // --------------------------------------------------------
+    // ME-fila5 D2 — employees.exportSpreadsheet — RH + Bruno (§14.10)
+    // --------------------------------------------------------
+    // Gera XLSX canonico com todas as linhas que resultariam do `list`
+    // sem paginacao — preserva filtros, busca, ordenacao. PC1a canonica
+    // aplicada via reuso de `listAllEmployeesForExport` (que reusa
+    // `listEmployeesPaginated`). Autorizacao id-a-id com `list`. Guard
+    // cruzado §2.4. Teto defensivo EXPORT_MAX_ROWS = 10_000.
+    exportSpreadsheet: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+      .input(EXPORT_EMPLOYEES_SPREADSHEET_INPUT_SCHEMA)
+      .mutation(async ({ ctx, input }): Promise<EmployeesDownloadResult> => {
+        assertCompanyScope(ctx.user, input.companyId);
+        const razaoSocial = await loadCompanyRazaoSocial(ctx.db, input.companyId);
+        let rows: readonly EmployeeListRow[];
+        try {
+          rows = await listAllEmployeesForExport(ctx.db, input.companyId, {
+            busca: input.filters.busca,
+            departamento: input.filters.departamento,
+            liderId: input.filters.liderId,
+            liderIdTipo: input.filters.liderIdTipo,
+            nivelHierarquico: input.filters.nivelHierarquico,
+            status: input.filters.status,
+            senioridade: input.filters.senioridade,
+            jobFamily: input.filters.jobFamily,
+            dataAdmissaoInicio: input.filters.dataAdmissaoInicio,
+            dataAdmissaoFim: input.filters.dataAdmissaoFim,
+            dataCadastroInicio: input.filters.dataCadastroInicio,
+            dataCadastroFim: input.filters.dataCadastroFim,
+            papelFuncional: input.filters.papelFuncional,
+            sortBy: input.sortBy,
+            sortOrder: input.sortOrder,
+          });
+        } catch (err) {
+          if (err instanceof ExportTetoExcedidoError) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: MSG_EXPORT_TETO_EXCEDIDO,
+            });
+          }
+          throw err;
+        }
+        const buf = await buildEmployeesExportBuffer(rows);
+        const dateStr = formatIsoDateForExport(now());
+        const filename = `colaboradores_${sanitizeRazaoSocialEmp(razaoSocial)}_${dateStr}.xlsx`;
+        return {
+          filename,
+          xlsxBase64: buf.toString('base64'),
+          bytes: buf.length,
+        };
       }),
 
     // --------------------------------------------------------

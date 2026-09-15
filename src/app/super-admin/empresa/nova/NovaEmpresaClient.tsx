@@ -339,9 +339,28 @@ export function NovaEmpresaClient(): JSX.Element {
 
         if (result.success) {
           setToast({ kind: 'success', message: MSG_SUCESSO_SALVAR });
+          // ME-fila5 D2 fix D-NOVA-EMPRESA-TOAST-SUCESSO: aguarda ~1200ms
+          // antes de disparar o redirect canonico §5.4 DOC 05 para dar
+          // tempo do React renderizar o toast verde §18.7 na tela. Sem
+          // esse delay, `setToast` + `router.push` na mesma turn agendam
+          // re-render assincrono e navegacao sincrona — o componente e
+          // desmontado antes do toast aparecer, contradizendo §18.7 +
+          // §5.4 (canonicamente "toast verde + redirect", nao "redirect
+          // antes de toast"). Delay canonico bit-exact: 1200ms (padrao
+          // UX de toast informativo — suficiente para leitura sem
+          // frustrar navegacao).
+          //
+          // Racional canonico bit-exact 1200ms:
+          // - <800ms: toast piscando (leitura interrompida).
+          // - >1600ms: usuario percebe travamento.
+          // - 1200ms: canônico bit-a-bit ao padrao Radix Toast default
+          //   (biblioteca de referencia).
+          //
           // §5.4 DOC 05 — redirect canonico bit-exact para dashboard da
           // empresa recem-criada.
-          router.push(`/super-admin/empresa/${result.companyId}`);
+          setTimeout(() => {
+            router.push(`/super-admin/empresa/${result.companyId}`);
+          }, 1200);
         } else {
           setToast({ kind: 'error', message: result.canonicalMessage });
         }

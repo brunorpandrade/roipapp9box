@@ -55,6 +55,13 @@ import type {
 } from '../../../../../server/services/employees';
 
 import type { listarColaboradoresAction } from './actions';
+import type {
+  downloadTemplateColaboradoresAction,
+  exportSpreadsheetColaboradoresAction,
+  uploadCSVColaboradoresAction,
+} from './actions';
+import { ImportarPlanilhaModal } from '../../../../../components/import-mass/ImportarPlanilhaModal';
+import { triggerXlsxDownload } from '../../../../../components/import-mass/downloadXlsxBase64';
 import {
   BUSCA_MAX_LEN,
   SENIORIDADE_FILTER_VALUES,
@@ -161,6 +168,21 @@ export interface TodosColaboradoresClientProps {
   readonly hideLiderColumn?: boolean;
   readonly emptyStateGlobalText?: string;
   readonly emptyStateFilteredText?: string;
+  /**
+   * ME-fila5 D2 (Item 5.5) — 3 actions opcionais para wiring dos botoes
+   * de import/export em massa (§14 linhas 2113-2116). Ausentes → botoes
+   * escondidos (`/minha-equipe` continua canonicamente sem esses botoes
+   * porque tambem passa `hideActionsButtons=true`; nao ha regressao).
+   * Presentes → botoes renderizados ativos com handlers wire-in.
+   *
+   * Padrao arquitetural canonico bit-exact ao `refetchAction` — action
+   * function passada de Server Component (`page.tsx`) para este Client
+   * Component. Marcada `'use server'` no arquivo `actions.ts`, atravessa
+   * a fronteira Server → Client canonicamente (RV-17 preservada).
+   */
+  readonly downloadTemplateAction?: typeof downloadTemplateColaboradoresAction;
+  readonly exportSpreadsheetAction?: typeof exportSpreadsheetColaboradoresAction;
+  readonly uploadCSVAction?: typeof uploadCSVColaboradoresAction;
 }
 
 // -----------------------------------------------------------------------
@@ -201,6 +223,18 @@ const BTN_OUTLINE_DISABLED: CSSProperties = {
   color: COLORS.text.quaternary,
   cursor: 'not-allowed',
   background: '#F9FAFB',
+};
+
+/**
+ * ME-fila5 D2 — variante ativa canonica bit-a-bit ao `BTN_OUTLINE` com
+ * borda navy e texto navy (padrao dos botoes secundarios ativos §14).
+ * Aplicado aos 3 botoes de import/export quando ha action wire-in.
+ */
+const BTN_OUTLINE_ACTIVE: CSSProperties = {
+  ...BTN_OUTLINE,
+  color: COLORS.primary.navy,
+  border: `1px solid ${COLORS.primary.navy}`,
+  background: '#FFFFFF',
 };
 
 const FILTROS_TITLE: CSSProperties = {
@@ -529,6 +563,9 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
     hideLiderColumn = false,
     emptyStateGlobalText = 'Nenhum colaborador cadastrado ainda.',
     emptyStateFilteredText = 'Nenhum colaborador atende aos filtros aplicados.',
+    downloadTemplateAction,
+    exportSpreadsheetAction,
+    uploadCSVAction,
   } = props;
   // ME-084 D-ME084-1/2 — `variant` retido para eventual telemetria por
   // perfil / testes de analise estatica. Nao afeta comportamento atual
@@ -540,6 +577,9 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
   const [filters, setFilters] = useState<ColaboradoresFilters>(initialFilters);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [buscaDraft, setBuscaDraft] = useState<string>(initialFilters.busca);
+  // ME-fila5 D2 — estado do modal Importar em massa + toast simples.
+  const [importarOpen, setImportarOpen] = useState<boolean>(false);
+  const [actionToast, setActionToast] = useState<string | null>(null);
 
   const refetch = useCallback(
     async (nextFilters: ColaboradoresFilters): Promise<void> => {
@@ -554,6 +594,69 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
     },
     [companyId, refetchAction],
   );
+
+  // ME-fila5 D2 — handler canonico `[📥 Exportar planilha]`. Chama a
+  // action injetada com os filtros atuais e dispara download client-side.
+  const handleExportSpreadsheet = useCallback(async (): Promise<void> => {
+    if (exportSpreadsheetAction === undefined) return;
+    setActionToast(null);
+    try {
+      const res = await exportSpreadsheetAction(companyId, filters);
+      triggerXlsxDownload(res.xlsxBase64, res.filename);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Falha ao exportar planilha.';
+      setActionToast(msg);
+    }
+  }, [exportSpreadsheetAction, companyId, filters]);
+
+  // ME-fila5 D2 — handler canonico `[📄 Baixar planilha modelo]`. Chama a
+  // action injetada e dispara download client-side (mesmo template
+  // baixado dentro do modal — botao standalone para conveniencia).
+  const handleDownloadTemplate = useCallback(async (): Promise<void> => {
+    if (downloadTemplateAction === undefined) return;
+    setActionToast(null);
+    try {
+      const res = await downloadTemplateAction(companyId);
+      triggerXlsxDownload(res.xlsxBase64, res.filename);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Falha ao gerar planilha modelo.';
+      setActionToast(msg);
+    }
+  }, [downloadTemplateAction, companyId]);
+
+  // ME-fila5 D2 — handler passado ao modal para chamar template.
+  const handleModalDownloadTemplate = useCallback(async () => {
+    if (downloadTemplateAction === undefined) {
+      throw new Error('Download template nao disponivel neste contexto.');
+    }
+    const res = await downloadTemplateAction(companyId);
+    return { filename: res.filename, xlsxBase64: res.xlsxBase64 };
+  }, [downloadTemplateAction, companyId]);
+
+  // ME-fila5 D2 — handler passado ao modal para upload. Converte File
+  // em base64 antes de invocar a action.
+  const handleModalUpload = useCallback(
+    async (file: File) => {
+      if (uploadCSVAction === undefined) {
+        throw new Error('Upload em massa nao disponivel neste contexto.');
+      }
+      const arrayBuffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i += 1) {
+        binary += String.fromCharCode(bytes[i]!);
+      }
+      const base64 = btoa(binary);
+      return await uploadCSVAction(companyId, base64);
+    },
+    [uploadCSVAction, companyId],
+  );
+
+  // ME-fila5 D2 — refetch apos upload de sucesso para refletir novos
+  // colaboradores na tabela imediatamente.
+  const handleUploadSuccess = useCallback((): void => {
+    void refetch({ ...filters, page: 1 });
+  }, [refetch, filters]);
 
   const handleBuscaSubmit = useCallback((): void => {
     void refetch({ ...filters, busca: buscaDraft.trim(), page: 1 });
@@ -764,30 +867,54 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
           </button>
           {hideActionsButtons ? null : (
             <>
+              {/* ME-fila5 D2 — 3 botoes canonicos §14 linhas 2113-2115. */}
               <button
                 type="button"
-                disabled
-                style={BTN_OUTLINE_DISABLED}
-                title="Disponível após ME-080"
-                aria-label="Exportar planilha (disponível após ME-080)"
+                onClick={() => void handleExportSpreadsheet()}
+                disabled={exportSpreadsheetAction === undefined}
+                style={
+                  exportSpreadsheetAction === undefined ? BTN_OUTLINE_DISABLED : BTN_OUTLINE_ACTIVE
+                }
+                title={
+                  exportSpreadsheetAction === undefined
+                    ? 'Exportacao indisponivel neste contexto'
+                    : 'Exportar planilha XLSX com a listagem atual'
+                }
+                aria-label="Exportar planilha"
               >
                 📥 Exportar planilha
               </button>
               <button
                 type="button"
-                disabled
-                style={BTN_OUTLINE_DISABLED}
-                title="Disponível após ME-080"
-                aria-label="Baixar planilha modelo (disponível após ME-080)"
+                onClick={() => void handleDownloadTemplate()}
+                disabled={downloadTemplateAction === undefined}
+                style={
+                  downloadTemplateAction === undefined ? BTN_OUTLINE_DISABLED : BTN_OUTLINE_ACTIVE
+                }
+                title={
+                  downloadTemplateAction === undefined
+                    ? 'Download de modelo indisponivel neste contexto'
+                    : 'Baixar planilha modelo canonica (.xlsx)'
+                }
+                aria-label="Baixar planilha modelo"
               >
-                📄 Baixar modelo
+                📄 Baixar planilha modelo
               </button>
               <button
                 type="button"
-                disabled
-                style={BTN_OUTLINE_DISABLED}
-                title="Disponível após ME-080"
-                aria-label="Importar em massa (disponível após ME-080)"
+                onClick={() => setImportarOpen(true)}
+                disabled={uploadCSVAction === undefined || downloadTemplateAction === undefined}
+                style={
+                  uploadCSVAction === undefined || downloadTemplateAction === undefined
+                    ? BTN_OUTLINE_DISABLED
+                    : BTN_OUTLINE_ACTIVE
+                }
+                title={
+                  uploadCSVAction === undefined || downloadTemplateAction === undefined
+                    ? 'Importacao indisponivel neste contexto'
+                    : 'Importar colaboradores em massa via XLSX'
+                }
+                aria-label="Importar em massa"
               >
                 📤 Importar em massa
               </button>
@@ -1113,6 +1240,57 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
           </>
         )}
       </div>
+
+      {/* ME-fila5 D2 — toast simples para erros de acao (§14 linha 2200 —
+          padrao S499b diferido para ME-080; toast inline enxuto por hora). */}
+      {actionToast !== null && (
+        <div
+          role="alert"
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            padding: '12px 20px',
+            background: COLORS.semantic.danger,
+            color: '#FFFFFF',
+            borderRadius: 6,
+            fontSize: 13,
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+            zIndex: 500,
+            maxWidth: 320,
+          }}
+        >
+          {actionToast}
+          <button
+            type="button"
+            onClick={() => setActionToast(null)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#FFFFFF',
+              marginLeft: 12,
+              cursor: 'pointer',
+              fontSize: 14,
+            }}
+            aria-label="Fechar aviso"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* ME-fila5 D2 — modal canonico Importar em massa (§14 linhas 2194-
+          2198). Renderizado sempre (controlado por prop `open`). */}
+      {downloadTemplateAction !== undefined && uploadCSVAction !== undefined && (
+        <ImportarPlanilhaModal
+          variant="employees"
+          open={importarOpen}
+          onClose={() => setImportarOpen(false)}
+          onDownloadTemplate={handleModalDownloadTemplate}
+          onUpload={handleModalUpload}
+          onSuccess={handleUploadSuccess}
+        />
+      )}
     </div>
   );
 }

@@ -13,16 +13,29 @@
 //
 // **RV-13.** `listarColaboradoresRHAction` consumida por
 // `page.tsx` (via prop `refetchAction` do `TodosColaboradoresClient`).
+// ME-fila5 D2 acrescenta 3 actions canonicas para o Item 5.5:
+// `downloadTemplateColaboradoresRHAction`, `exportSpreadsheetColabora-
+// doresRHAction`, `uploadCSVColaboradoresRHAction`.
 //
 // **RV-12.** Zero SQL cru — service tipado Drizzle.
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
 'use server';
 
+import { cookies } from 'next/headers';
+
 import { closeDbClient, createDbClient } from '../../db/client';
 import { requireRHOrSuperAdmin } from '../../lib/routes/requireRHOrSuperAdmin';
+import { createRateLimiter } from '../../server/auth/rateLimit';
+import {
+  createEmployeesRouter,
+  UPLOAD_CONTENT_TYPES,
+  type EmployeesDownloadResult,
+  type UploadCSVResult,
+} from '../../server/routers/employees';
 import { listEmployeesPaginated, type ListEmployeesResult } from '../../server/services/employees';
 import { getServerSession } from '../../server/session/serverSession';
+import { createCallerFactory, createContextInner } from '../../server/trpc';
 
 import { colaboradoresFiltersToServiceInput, type ColaboradoresFilters } from './filters';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
@@ -56,19 +69,12 @@ export async function listarColaboradoresRHAction(
   const session = await getServerSession();
   const authed = requireRHOrSuperAdmin(session, 'listarColaboradoresRHAction');
 
-  // Escopo canonico bit-exact: RH usa companyId da sessao; super_admin
-  // chegando aqui (uso indevido — rota canonica dele e super-admin)
-  // recebe FORBIDDEN via `assertCompanyScope` do service se `companyId
-  // Ignored` divergir. Preserva contrato do refetchAction
-  // (`(companyId, filters) => Promise<Result>`).
   if (authed.kind === 'super_admin') {
     throw new Error(
       'listarColaboradoresRHAction: Super Admin deve usar rota /super-admin/empresa/[id]/…',
     );
   }
   const companyId = authed.companyId;
-  // Validacao paranoica: se o cliente enviou companyId diferente do
-  // canonico da sessao, aborta. Guard defense-in-depth.
   if (
     Number.isInteger(companyIdIgnored) &&
     companyIdIgnored > 0 &&
@@ -82,6 +88,127 @@ export async function listarColaboradoresRHAction(
     const serviceInput = colaboradoresFiltersToServiceInput(filters);
     const result = await listEmployeesPaginated(client.db, companyId, serviceInput);
     return result;
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+// -----------------------------------------------------------------------
+// ME-fila5 D2 — actions canonicas do Item 5.5 (variantes RH)
+// -----------------------------------------------------------------------
+
+const SESSION_COOKIE_NAME = 'session' as const;
+
+async function buildRHCallerContext(actionName: string) {
+  const session = await getServerSession();
+  const authed = requireRHOrSuperAdmin(session, actionName);
+  if (authed.kind === 'super_admin') {
+    throw new Error(`${actionName}: Super Admin deve usar rota /super-admin/empresa/[id]/…`);
+  }
+  const cookieStore = await cookies();
+  const cookie = cookieStore.get(SESSION_COOKIE_NAME);
+  const bearerToken = cookie === undefined ? null : cookie.value;
+  const client = createDbClient(resolveDatabaseUrl());
+  const ctx = createContextInner({
+    db: client.db,
+    rateLimiter: createRateLimiter(),
+    bearerToken,
+    ip: null,
+  });
+  return { ctx, client, companyId: authed.companyId };
+}
+
+/** §14.10 — ME-fila5 D2. Download template (variante RH). */
+export async function downloadTemplateColaboradoresRHAction(
+  companyIdIgnored: number,
+): Promise<EmployeesDownloadResult> {
+  const { ctx, client, companyId } = await buildRHCallerContext(
+    'downloadTemplateColaboradoresRHAction',
+  );
+  if (
+    Number.isInteger(companyIdIgnored) &&
+    companyIdIgnored > 0 &&
+    companyIdIgnored !== companyId
+  ) {
+    await closeDbClient(client);
+    throw new Error('downloadTemplateColaboradoresRHAction: companyId divergente da sessao.');
+  }
+  try {
+    const factory = createCallerFactory(createEmployeesRouter());
+    const caller = factory(ctx);
+    return await caller.downloadTemplate({ companyId });
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+/** §14.10 — ME-fila5 D2. Export XLSX da lista atual (variante RH). */
+export async function exportSpreadsheetColaboradoresRHAction(
+  companyIdIgnored: number,
+  filters: ColaboradoresFilters,
+): Promise<EmployeesDownloadResult> {
+  const { ctx, client, companyId } = await buildRHCallerContext(
+    'exportSpreadsheetColaboradoresRHAction',
+  );
+  if (
+    Number.isInteger(companyIdIgnored) &&
+    companyIdIgnored > 0 &&
+    companyIdIgnored !== companyId
+  ) {
+    await closeDbClient(client);
+    throw new Error('exportSpreadsheetColaboradoresRHAction: companyId divergente da sessao.');
+  }
+  try {
+    const serviceInput = colaboradoresFiltersToServiceInput(filters);
+    const factory = createCallerFactory(createEmployeesRouter());
+    const caller = factory(ctx);
+    return await caller.exportSpreadsheet({
+      companyId,
+      filters: {
+        busca: serviceInput.busca,
+        departamento: serviceInput.departamento,
+        liderId: serviceInput.liderId,
+        liderIdTipo: serviceInput.liderIdTipo,
+        nivelHierarquico: serviceInput.nivelHierarquico,
+        status: serviceInput.status,
+        senioridade: serviceInput.senioridade,
+        jobFamily: serviceInput.jobFamily,
+        dataAdmissaoInicio: serviceInput.dataAdmissaoInicio,
+        dataAdmissaoFim: serviceInput.dataAdmissaoFim,
+        dataCadastroInicio: serviceInput.dataCadastroInicio,
+        dataCadastroFim: serviceInput.dataCadastroFim,
+        papelFuncional: serviceInput.papelFuncional,
+      },
+      sortBy: serviceInput.sortBy,
+      sortOrder: serviceInput.sortOrder,
+    });
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+/** §16.6 — ME-fila5 D2. Upload em massa (variante RH). */
+export async function uploadCSVColaboradoresRHAction(
+  companyIdIgnored: number,
+  xlsxBase64: string,
+): Promise<UploadCSVResult> {
+  const { ctx, client, companyId } = await buildRHCallerContext('uploadCSVColaboradoresRHAction');
+  if (
+    Number.isInteger(companyIdIgnored) &&
+    companyIdIgnored > 0 &&
+    companyIdIgnored !== companyId
+  ) {
+    await closeDbClient(client);
+    throw new Error('uploadCSVColaboradoresRHAction: companyId divergente da sessao.');
+  }
+  try {
+    const factory = createCallerFactory(createEmployeesRouter());
+    const caller = factory(ctx);
+    return await caller.uploadCSV({
+      companyId,
+      contentBase64: xlsxBase64,
+      contentType: UPLOAD_CONTENT_TYPES[0],
+    });
   } finally {
     await closeDbClient(client);
   }

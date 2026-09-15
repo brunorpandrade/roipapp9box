@@ -56,7 +56,12 @@ import { getServerSession } from '../../server/session/serverSession';
 
 import { TodosColaboradoresClient } from './_client';
 
-import { listarColaboradoresRHAction } from './actions';
+import {
+  downloadTemplateColaboradoresRHAction,
+  exportSpreadsheetColaboradoresRHAction,
+  listarColaboradoresRHAction,
+  uploadCSVColaboradoresRHAction,
+} from './actions';
 import {
   colaboradoresFiltersToServiceInput,
   parseColaboradoresFiltersFromSearchParams,
@@ -178,6 +183,9 @@ export default async function TodosColaboradoresRHPage(props: PageProps): Promis
             novoColaboradorHref="/colaborador/novo"
             editarColaboradorHrefBase="/colaborador"
             refetchAction={listarColaboradoresRHAction}
+            downloadTemplateAction={downloadTemplateColaboradoresRHAction}
+            exportSpreadsheetAction={exportSpreadsheetColaboradoresRHAction}
+            uploadCSVAction={uploadCSVColaboradoresRHAction}
           />
         </div>
       </Layout>

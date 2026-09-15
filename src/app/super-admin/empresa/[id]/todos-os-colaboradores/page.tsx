@@ -42,7 +42,12 @@ import { resolveProfileKey } from '../../../../../lib/session/resolveProfileKey'
 import { getServerSession } from '../../../../../server/session/serverSession';
 
 import { TodosColaboradoresClient } from './TodosColaboradoresClient';
-import { listarColaboradoresAction } from './actions';
+import {
+  downloadTemplateColaboradoresAction,
+  exportSpreadsheetColaboradoresAction,
+  listarColaboradoresAction,
+  uploadCSVColaboradoresAction,
+} from './actions';
 import {
   colaboradoresFiltersToServiceInput,
   parseColaboradoresFiltersFromSearchParams,
@@ -155,6 +160,9 @@ export default async function TodosColaboradoresPage(props: PageProps): Promise<
             novoColaboradorHref={`/super-admin/empresa/${companyId}/colaborador/novo`}
             editarColaboradorHrefBase={`/super-admin/empresa/${companyId}/colaborador`}
             refetchAction={listarColaboradoresAction}
+            downloadTemplateAction={downloadTemplateColaboradoresAction}
+            exportSpreadsheetAction={exportSpreadsheetColaboradoresAction}
+            uploadCSVAction={uploadCSVColaboradoresAction}
           />
         </div>
       </Layout>
