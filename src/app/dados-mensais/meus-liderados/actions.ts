@@ -57,6 +57,11 @@ import {
   type MonthlyInputFormResult,
   type SaveMonthlyDataResult,
 } from '../../../server/routers/monthlyData';
+import {
+  createSpreadsheetsRouter,
+  type DownloadResult,
+  type UploadResult,
+} from '../../../server/routers/spreadsheets';
 import { getServerSession } from '../../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../../server/trpc';
 
@@ -69,6 +74,9 @@ const createMonthlyDataCaller = createCallerFactory(monthlyDataRouter);
 
 const monthlyClosureRouter = createMonthlyClosureRouter();
 const createMonthlyClosureCaller = createCallerFactory(monthlyClosureRouter);
+
+const spreadsheetsRouter = createSpreadsheetsRouter();
+const createSpreadsheetsCaller = createCallerFactory(spreadsheetsRouter);
 
 const cycleUnlockRequestsRouter = createCycleUnlockRequestsRouter({
   evaluateAdminAlertsFactory: NOOP_EVALUATE_ADMIN_UNLOCK_ALERTS_FACTORY,
@@ -420,6 +428,77 @@ export async function listMesesFechadosAction(input: {
       .reverse();
 
     return { ok: true, data: mesesFechados };
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+// -----------------------------------------------------------------------
+// ME-fila5 D3 — Item 5.6 — Actions canonicas Lider de import/export mensal
+// -----------------------------------------------------------------------
+
+/**
+ * ME-fila5 D3 §3.11 — Baixa XLSX canonico do template Lider mensal
+ * pre-preenchido com liderados do lider autenticado + colunas dinamicas
+ * CC3 configuradas na empresa. `liderId` + `liderTipo` sao passados
+ * pelo caller (page.tsx deriva da sessao antes de renderizar o modal).
+ */
+export async function downloadLeaderTemplateLeaderAction(input: {
+  readonly companyId: number;
+  readonly mes: string;
+  readonly liderId: number;
+  readonly liderTipo: 'employee' | 'clevel';
+}): Promise<DownloadResult> {
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const bearerToken = await resolveRawToken();
+    const ctx = createContextInner({
+      db: client.db,
+      rateLimiter: actionRateLimiter,
+      bearerToken,
+      ip: null,
+    });
+    const caller = createSpreadsheetsCaller(ctx);
+    return await caller.downloadLeaderTemplate({
+      companyId: input.companyId,
+      mes: input.mes,
+      liderId: input.liderId,
+      liderTipo: input.liderTipo,
+    });
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+/**
+ * ME-fila5 D3 §3.11 — Faz upload em massa dos dados Lider mensais via
+ * XLSX. Reusa `saveMonthlyLeaderData` internamente. Retorna `UploadResult`
+ * canonico.
+ */
+export async function uploadLeaderDataLeaderAction(input: {
+  readonly companyId: number;
+  readonly mes: string;
+  readonly liderId: number;
+  readonly liderTipo: 'employee' | 'clevel';
+  readonly xlsxBase64: string;
+}): Promise<UploadResult> {
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const bearerToken = await resolveRawToken();
+    const ctx = createContextInner({
+      db: client.db,
+      rateLimiter: actionRateLimiter,
+      bearerToken,
+      ip: null,
+    });
+    const caller = createSpreadsheetsCaller(ctx);
+    return await caller.uploadLeaderData({
+      companyId: input.companyId,
+      mes: input.mes,
+      liderId: input.liderId,
+      liderTipo: input.liderTipo,
+      xlsxBase64: input.xlsxBase64,
+    });
   } finally {
     await closeDbClient(client);
   }

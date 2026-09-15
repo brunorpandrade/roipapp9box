@@ -207,6 +207,37 @@ export interface DadosMensaisClientActions {
   readonly listCompanyLeaders?: (input: {
     readonly companyId: number;
   }) => Promise<DadosMensaisActionResult<DadosMensaisLeaderOption[]>>;
+  /**
+   * ME-fila5 D3 (Item 5.6) — actions canonicas opcionais para os botoes
+   * `[📄 Baixar planilha modelo]` + `[📤 Importar em massa]` da aba RH.
+   * Ausentes → botoes escondidos. Presentes → botoes renderizados ativos.
+   * Retornam objetos brutos (`filename` + `xlsxBase64` + counters) — nao
+   * usam `DadosMensaisActionResult` para preservar simetria bit-a-bit
+   * com `ImportarPlanilhaModal` (que espera esses shapes).
+   */
+  readonly downloadRHTemplateMonthly?: (input: {
+    readonly companyId: number;
+    readonly mes: string;
+  }) => Promise<{
+    readonly filename: string;
+    readonly xlsxBase64: string;
+    readonly bytes: number;
+  }>;
+  readonly uploadRHDataMonthly?: (input: {
+    readonly companyId: number;
+    readonly mes: string;
+    readonly xlsxBase64: string;
+  }) => Promise<{
+    readonly ok: boolean;
+    readonly linhasProcessadas: number;
+    readonly linhasSucesso: number;
+    readonly linhasErro: number;
+    readonly erros: readonly {
+      readonly linha: number;
+      readonly coluna: string;
+      readonly mensagem: string;
+    }[];
+  }>;
 }
 
 /** Props canonicas do componente compartilhado. */

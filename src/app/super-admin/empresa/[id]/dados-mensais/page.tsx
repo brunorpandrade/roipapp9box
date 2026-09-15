@@ -39,11 +39,13 @@ import {
 } from '../../../../../server/services/monthlyClosureStatus';
 
 import {
+  downloadRHTemplateAction,
   getClosureStatusAction,
   getLeadersStatusAction,
   loadMonthlyFormAction,
   saveMonthlyRHDataAction,
   unlockMonthAction,
+  uploadRHDataAction,
 } from './actions';
 import { currentMes, parseCompanyIdParam, parseTabParam } from './internals';
 
@@ -64,6 +66,9 @@ const SUPER_ADMIN_ACTIONS: DadosMensaisClientActions = {
   getLeadersStatus: getLeadersStatusAction,
   unlockMonth: unlockMonthAction,
   // Actions especificas de variant='rh' NAO injetadas (RH-only).
+  // ME-fila5 D3 (Item 5.6) — import/export em massa aba RH.
+  downloadRHTemplateMonthly: downloadRHTemplateAction,
+  uploadRHDataMonthly: uploadRHDataAction,
 };
 
 export default async function DadosMensaisPage(props: PageProps): Promise<JSX.Element> {

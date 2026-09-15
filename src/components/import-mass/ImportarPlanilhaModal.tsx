@@ -32,6 +32,10 @@ import { useCallback, useEffect, useRef, useState, type JSX } from 'react';
 
 import { COLORS } from '../../lib/design-tokens/colors';
 import { COLUNAS_CANONICAS_EMPLOYEES } from '../../lib/shared/employees-columns';
+import {
+  COLUNAS_CANONICAS_RH_MONTHLY,
+  COLUNAS_FIXAS_LIDER_MONTHLY,
+} from '../../lib/shared/monthly-columns';
 import { triggerXlsxDownload } from './downloadXlsxBase64';
 import { validateXlsxHeader, type HeaderValidationResult } from './parseXlsxHeader';
 
@@ -110,12 +114,36 @@ function resolveVariantLabels(variant: ImportarPlanilhaVariant): VariantLabels {
         expectedHeader: COLUNAS_CANONICAS_EMPLOYEES,
       };
     case 'monthly-rh':
+      return {
+        title: 'Importar dados mensais RH em massa',
+        bloco1Text:
+          'Baixe a planilha modelo (.xlsx) do mes selecionado, ja pre-' +
+          'preenchida com os colaboradores ativos da empresa. Preencha ' +
+          'as colunas Custo mensal (R$) e Faltas por colaborador; nao ' +
+          'altere as demais colunas nem os cabecalhos.',
+        bloco2Text:
+          'Arraste sua planilha preenchida ou clique para selecionar. ' +
+          'O sistema valida os cabecalhos antes do envio; colaboradores ' +
+          'ausentes do arquivo mantem os valores atuais (ou ficam em ' +
+          'branco se ainda nao houver lancamento no mes).',
+        expectedHeader: COLUNAS_CANONICAS_RH_MONTHLY,
+      };
     case 'monthly-leader':
-      throw new Error(
-        `ImportarPlanilhaModal: variante "${variant}" reservada para o ` +
-          'Dispatch 3 da ME-fila5 (Item 5.6 — planilhas de dados ' +
-          'mensais). Nao implementada nesta ME.',
-      );
+      return {
+        title: 'Importar dados mensais Lider em massa',
+        bloco1Text:
+          'Baixe a planilha modelo (.xlsx) do mes selecionado, ja pre-' +
+          'preenchida com os liderados sob sua responsabilidade + colunas ' +
+          'canonicas Meta / Demanda / Realizado por variavel CC3 ' +
+          'configurada. Preencha Demanda e Realizado por liderado; nao ' +
+          'altere as demais colunas nem os cabecalhos.',
+        bloco2Text:
+          'Arraste sua planilha preenchida ou clique para selecionar. ' +
+          'O sistema valida os cabecalhos fixos antes do envio (colunas ' +
+          'dinamicas por variavel sao validadas pelo backend). Liderados ' +
+          'ausentes do arquivo mantem os valores atuais.',
+        expectedHeader: COLUNAS_FIXAS_LIDER_MONTHLY,
+      };
   }
 }
 
@@ -342,7 +370,15 @@ export function ImportarPlanilhaModal(props: ImportarPlanilhaModalProps): JSX.El
       }
       setSelectedFile(file);
       setPhase('validating');
-      const result: HeaderValidationResult = await validateXlsxHeader(file, labels.expectedHeader);
+      // ME-fila5 D3 — variant monthly-leader usa matchMode 'prefix' (as
+      // colunas dinamicas CC3 apos as 2 fixas variam por empresa e sao
+      // validadas apenas pelo backend). Demais variants usam 'strict'.
+      const matchMode = props.variant === 'monthly-leader' ? 'prefix' : 'strict';
+      const result: HeaderValidationResult = await validateXlsxHeader(
+        file,
+        labels.expectedHeader,
+        matchMode,
+      );
       if (result.ok) {
         setHeaderError(null);
       } else {
@@ -350,7 +386,7 @@ export function ImportarPlanilhaModal(props: ImportarPlanilhaModalProps): JSX.El
       }
       setPhase('idle');
     },
-    [labels.expectedHeader],
+    [labels.expectedHeader, props.variant],
   );
 
   const handleFileInputChange = useCallback(

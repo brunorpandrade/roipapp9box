@@ -28,6 +28,11 @@ import {
   type SaveMonthlyDataResult,
   type LeaderStatusRow,
 } from '../../../../../server/routers/monthlyData';
+import {
+  createSpreadsheetsRouter,
+  type DownloadResult,
+  type UploadResult,
+} from '../../../../../server/routers/spreadsheets';
 import { createCallerFactory, createContextInner } from '../../../../../server/trpc';
 import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 
@@ -40,6 +45,9 @@ const createMonthlyDataCaller = createCallerFactory(monthlyDataRouter);
 
 const monthlyClosureRouter = createMonthlyClosureRouter();
 const createMonthlyClosureCaller = createCallerFactory(monthlyClosureRouter);
+
+const spreadsheetsRouter = createSpreadsheetsRouter();
+const createSpreadsheetsCaller = createCallerFactory(spreadsheetsRouter);
 
 const actionRateLimiter = createRateLimiter();
 
@@ -309,6 +317,76 @@ export async function getLeadersStatusAction(input: {
       return { ok: false, message: err.message };
     }
     throw err;
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+// -----------------------------------------------------------------------
+// ME-fila5 D3 — Item 5.6 — Actions canonicas de import/export mensal
+// -----------------------------------------------------------------------
+//
+// Wire-in dos botoes [📄 Baixar planilha modelo] + [📤 Importar em massa]
+// nas abas RH e Lider do `DadosMensaisClient` (variant='super_admin').
+// Delegam bit-a-bit as 4 procs canonicas de `spreadsheets.ts` via caller
+// factory + bearer token do cookie. Padrao S315 identico ao Item 5.5.
+
+/**
+ * ME-fila5 D3 §3.11 — Baixa XLSX canonico do template RH mensal pre-
+ * preenchido com colaboradores ativos da empresa. Consumido pelo modal
+ * `ImportarPlanilhaModal` variant='monthly-rh' + botao standalone.
+ */
+export async function downloadRHTemplateAction(input: {
+  readonly companyId: number;
+  readonly mes: string;
+}): Promise<DownloadResult> {
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const bearerToken = await resolveRawToken();
+    const ctx = createContextInner({
+      db: client.db,
+      rateLimiter: actionRateLimiter,
+      bearerToken,
+      ip: null,
+    });
+    const caller = createSpreadsheetsCaller(ctx);
+    return await caller.downloadRHTemplate({
+      companyId: input.companyId,
+      mes: input.mes,
+    });
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+/**
+ * ME-fila5 D3 §3.11 — Faz upload em massa dos dados RH mensais via
+ * XLSX. Delega `spreadsheets.uploadRHData` que reusa `saveMonthlyRHData`
+ * (mesma logica canonica do preenchimento manual). Retorna `UploadResult`
+ * com contadores + erros por linha para exibicao no modal.
+ */
+export async function uploadRHDataAction(input: {
+  readonly companyId: number;
+  readonly mes: string;
+  readonly xlsxBase64: string;
+  readonly diasUteis?: number;
+}): Promise<UploadResult> {
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const bearerToken = await resolveRawToken();
+    const ctx = createContextInner({
+      db: client.db,
+      rateLimiter: actionRateLimiter,
+      bearerToken,
+      ip: null,
+    });
+    const caller = createSpreadsheetsCaller(ctx);
+    return await caller.uploadRHData({
+      companyId: input.companyId,
+      mes: input.mes,
+      xlsxBase64: input.xlsxBase64,
+      diasUteis: input.diasUteis,
+    });
   } finally {
     await closeDbClient(client);
   }

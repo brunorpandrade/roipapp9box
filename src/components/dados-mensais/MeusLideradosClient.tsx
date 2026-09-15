@@ -44,6 +44,8 @@ import type {
   SaveMonthlyDataResult,
 } from '../../server/routers/monthlyData';
 
+import { triggerXlsxDownload } from '../import-mass/downloadXlsxBase64';
+import { ImportarPlanilhaModal } from '../import-mass/ImportarPlanilhaModal';
 import { ModalSolicitarDesbloqueio } from './ModalSolicitarDesbloqueio';
 import type {
   DadosMensaisActionResult,
@@ -100,6 +102,38 @@ export interface MeusLideradosClientActions {
   readonly listMesesFechados: (input: {
     readonly companyId: number;
   }) => Promise<DadosMensaisActionResult<DadosMensaisMesFechado[]>>;
+  /**
+   * ME-fila5 D3 (Item 5.6) — actions canonicas opcionais para os botoes
+   * `[📄 Baixar planilha modelo]` + `[📤 Importar em massa]` da tela
+   * Meus Liderados. Ausentes → botoes escondidos. `liderId` + `liderTipo`
+   * derivam da sessao no page.tsx e ficam wire-in no fechamento das
+   * actions (nao aparecem no contrato aqui — o modal nao os conhece).
+   * Padrao bit-a-bit ao `downloadRHTemplateMonthly` do
+   * `DadosMensaisClientActions`.
+   */
+  readonly downloadLeaderTemplateMonthly?: (input: {
+    readonly companyId: number;
+    readonly mes: string;
+  }) => Promise<{
+    readonly filename: string;
+    readonly xlsxBase64: string;
+    readonly bytes: number;
+  }>;
+  readonly uploadLeaderDataMonthly?: (input: {
+    readonly companyId: number;
+    readonly mes: string;
+    readonly xlsxBase64: string;
+  }) => Promise<{
+    readonly ok: boolean;
+    readonly linhasProcessadas: number;
+    readonly linhasSucesso: number;
+    readonly linhasErro: number;
+    readonly erros: readonly {
+      readonly linha: number;
+      readonly coluna: string;
+      readonly mensagem: string;
+    }[];
+  }>;
 }
 
 /** Props canonicas do componente. */
@@ -311,6 +345,9 @@ export function MeusLideradosClient(props: MeusLideradosClientProps): JSX.Elemen
   const [showUnlockModal, setShowUnlockModal] = useState<boolean>(false);
   const [hasPending, setHasPending] = useState<boolean>(false);
   const [pendingRequestedAt, setPendingRequestedAt] = useState<string | null>(null);
+  // ME-fila5 D3 (Item 5.6) — modal Importar em massa Lider.
+  const [importarLeaderOpen, setImportarLeaderOpen] = useState(false);
+  const [importActionError, setImportActionError] = useState<string | null>(null);
 
   const isEditable = status === 'aberto' || status === 'desbloqueado';
 
@@ -779,6 +816,68 @@ export function MeusLideradosClient(props: MeusLideradosClientProps): JSX.Elemen
       {/* Card principal: banners + tabela */}
       {!isRhPuro && !loading && error === null && (
         <div style={CARD_STYLE}>
+          {/* ME-fila5 D3 (Item 5.6) — Botoes de import/download em massa.
+              Visiveis quando actions estao injetadas + mes editavel. */}
+          {isEditable &&
+            actions.downloadLeaderTemplateMonthly !== undefined &&
+            actions.uploadLeaderDataMonthly !== undefined && (
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  marginBottom: 16,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setImportActionError(null);
+                    try {
+                      const res = await actions.downloadLeaderTemplateMonthly!({
+                        companyId,
+                        mes,
+                      });
+                      triggerXlsxDownload(res.xlsxBase64, res.filename);
+                    } catch (err) {
+                      const msg =
+                        err instanceof Error ? err.message : 'Falha ao gerar planilha modelo.';
+                      setImportActionError(msg);
+                    }
+                  }}
+                  style={{
+                    padding: '9px 16px',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    border: `1px solid ${COLORS.primary.navy}`,
+                    borderRadius: 6,
+                    background: '#FFFFFF',
+                    color: COLORS.primary.navy,
+                    cursor: 'pointer',
+                  }}
+                  title="Baixar XLSX pre-preenchido com seus liderados"
+                >
+                  📄 Baixar planilha modelo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImportarLeaderOpen(true)}
+                  style={{
+                    padding: '9px 16px',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    border: `1px solid ${COLORS.primary.navy}`,
+                    borderRadius: 6,
+                    background: '#FFFFFF',
+                    color: COLORS.primary.navy,
+                    cursor: 'pointer',
+                  }}
+                  title="Importar dados dos liderados em massa via XLSX"
+                >
+                  📤 Importar em massa
+                </button>
+              </div>
+            )}
           <div
             style={{
               display: 'flex',
@@ -1008,6 +1107,77 @@ export function MeusLideradosClient(props: MeusLideradosClientProps): JSX.Elemen
           createUnlockRequest={createUnlockRequestForModal}
         />
       )}
+
+      {/* ME-fila5 D3 (Item 5.6) — toast erro de acao import/download */}
+      {importActionError !== null && (
+        <div
+          role="alert"
+          style={{
+            position: 'fixed',
+            top: 24,
+            right: 24,
+            padding: '14px 20px',
+            borderRadius: 8,
+            fontSize: 14,
+            color: '#FFFFFF',
+            background: '#DC2626',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+            zIndex: 500,
+            maxWidth: 360,
+          }}
+        >
+          {importActionError}
+          <button
+            type="button"
+            onClick={() => setImportActionError(null)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#FFFFFF',
+              marginLeft: 12,
+              cursor: 'pointer',
+              fontSize: 14,
+            }}
+            aria-label="Fechar aviso"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* ME-fila5 D3 (Item 5.6) — modal Importar dados Lider em massa */}
+      {actions.downloadLeaderTemplateMonthly !== undefined &&
+        actions.uploadLeaderDataMonthly !== undefined && (
+          <ImportarPlanilhaModal
+            variant="monthly-leader"
+            open={importarLeaderOpen}
+            onClose={() => setImportarLeaderOpen(false)}
+            onDownloadTemplate={async () => {
+              const res = await actions.downloadLeaderTemplateMonthly!({
+                companyId,
+                mes,
+              });
+              return { filename: res.filename, xlsxBase64: res.xlsxBase64 };
+            }}
+            onUpload={async (file) => {
+              const arrayBuffer = await file.arrayBuffer();
+              const bytes = new Uint8Array(arrayBuffer);
+              let binary = '';
+              for (let i = 0; i < bytes.length; i += 1) {
+                binary += String.fromCharCode(bytes[i]!);
+              }
+              const base64 = btoa(binary);
+              return actions.uploadLeaderDataMonthly!({
+                companyId,
+                mes,
+                xlsxBase64: base64,
+              });
+            }}
+            onSuccess={() => {
+              void fetchData();
+            }}
+          />
+        )}
     </div>
   );
 }

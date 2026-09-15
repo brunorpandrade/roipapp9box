@@ -53,6 +53,8 @@ import {
   listMesesFechadosAction,
   loadMonthlyFormAction,
   saveMonthlyRHDataAction,
+  downloadRHTemplateRHAction,
+  uploadRHDataRHAction,
 } from './actions';
 import { currentMes, parseTabParam } from './internals';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
@@ -79,6 +81,9 @@ const RH_ACTIONS: DadosMensaisClientActions = {
   // Especificas canonicas de variant='super_admin' NAO injetadas
   // (unlockMonth, saveMonthlyLeaderData): §14.17 exclusivo Bruno +
   // D-086b-5 A canoniza Aba Lideres read-only para variant='rh'.
+  // ME-fila5 D3 (Item 5.6) — import/export em massa aba RH.
+  downloadRHTemplateMonthly: downloadRHTemplateRHAction,
+  uploadRHDataMonthly: uploadRHDataRHAction,
 };
 
 /**

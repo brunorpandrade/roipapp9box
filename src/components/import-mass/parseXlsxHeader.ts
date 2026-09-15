@@ -50,6 +50,17 @@ export function buildHeaderMismatchMessage(
 }
 
 /**
+ * Modo de comparacao canonico:
+ * - `strict` (default): expectedHeader deve bater EXATAMENTE (mesmos
+ *   itens, nada a mais). Usado por `employees` e `monthly-rh`.
+ * - `prefix`: expectedHeader deve aparecer como PREFIXO do header do
+ *   arquivo (nas primeiras N posicoes, em ordem). Colunas extras apos
+ *   as fixas sao permitidas (ficam para o backend validar). Usado por
+ *   `monthly-leader` (colunas dinamicas CC3 apos as 2 fixas).
+ */
+export type HeaderMatchMode = 'strict' | 'prefix';
+
+/**
  * Le a linha 1 (cabecalho) da primeira sheet do XLSX carregado e
  * compara com `expectedHeader`. Aceita ArrayBuffer do FileReader ou
  * File direto.
@@ -66,6 +77,7 @@ export function buildHeaderMismatchMessage(
 export async function validateXlsxHeader(
   file: File,
   expectedHeader: readonly string[],
+  matchMode: HeaderMatchMode = 'strict',
 ): Promise<HeaderValidationResult> {
   let buf: ArrayBuffer;
   try {
@@ -124,6 +136,32 @@ export async function validateXlsxHeader(
     : [];
 
   const expected = expectedHeader.map((c) => c.trim());
+
+  // Prefix mode: expectedHeader deve aparecer NA MESMA ORDEM nas
+  // primeiras N posicoes do arquivo. Nenhuma coluna dinamica pre-fixa
+  // (backend valida as demais). Se alguma das fixas nao bater na
+  // posicao correta, e considerada ausente.
+  if (matchMode === 'prefix') {
+    const missing: string[] = [];
+    for (let i = 0; i < expected.length; i += 1) {
+      const esperado = expected[i]!;
+      const encontrado = headerRow[i];
+      if (encontrado === undefined || encontrado !== esperado) {
+        missing.push(esperado);
+      }
+    }
+    if (missing.length === 0) {
+      return { ok: true };
+    }
+    return {
+      ok: false,
+      missing,
+      extra: [],
+      canonicalMessage: buildHeaderMismatchMessage(missing, []),
+    };
+  }
+
+  // Strict mode (default): mesmos itens, nada a mais.
   const missing = expected.filter((c) => !headerRow.includes(c));
   const extraRaw = headerRow.filter((c) => c !== '' && !expected.includes(c));
   // Remove duplicatas na lista de "extras" preservando ordem canonica.

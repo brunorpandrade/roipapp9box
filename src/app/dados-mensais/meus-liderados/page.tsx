@@ -50,11 +50,13 @@ import { getMonthlyClosureStatusByMonth } from '../../../server/services/monthly
 
 import {
   criarSolicitacaoDesbloqueioAction,
+  downloadLeaderTemplateLeaderAction,
   getClosureStatusAction,
   hasPendingUnlockAction,
   listMesesFechadosAction,
   loadMonthlyFormAction,
   saveMonthlyLeaderDataAction,
+  uploadLeaderDataLeaderAction,
 } from './actions';
 
 // -----------------------------------------------------------------------
@@ -259,6 +261,30 @@ export default async function MeusLideradosPage(): Promise<JSX.Element> {
     // do role (clevel → 'clevel'; demais → 'employee').
     const liderTipo: 'employee' | 'clevel' = session.role === 'clevel' ? 'clevel' : 'employee';
 
+    // ME-fila5 D3 (Item 5.6) — wire actions monthly-leader com closure
+    // sobre liderId + liderTipo (o modal nao os conhece).
+    const liderId = session.userId;
+    const meusLideradosActions: MeusLideradosClientActions = {
+      ...MEUS_LIDERADOS_ACTIONS,
+      downloadLeaderTemplateMonthly: async ({ companyId, mes: mesInput }) => {
+        return downloadLeaderTemplateLeaderAction({
+          companyId,
+          mes: mesInput,
+          liderId,
+          liderTipo,
+        });
+      },
+      uploadLeaderDataMonthly: async ({ companyId, mes: mesInput, xlsxBase64 }) => {
+        return uploadLeaderDataLeaderAction({
+          companyId,
+          mes: mesInput,
+          liderId,
+          liderTipo,
+          xlsxBase64,
+        });
+      },
+    };
+
     // RH puro nao tem liderados diretos por definicao canonica (§10.4
     // linha 285 — "RH puro (sem liderados) recebe conjunto vazio via
     // resolver"). Renderiza estado vazio canonico sem invocar as procs
@@ -284,7 +310,7 @@ export default async function MeusLideradosPage(): Promise<JSX.Element> {
           liderId={session.userId}
           liderTipo={liderTipo}
           isRhPuro={isRhPuro}
-          actions={MEUS_LIDERADOS_ACTIONS}
+          actions={meusLideradosActions}
         />
       </Layout>
     );

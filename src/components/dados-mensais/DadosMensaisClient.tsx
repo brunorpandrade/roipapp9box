@@ -39,6 +39,8 @@ import type { JSX } from 'react';
 import { COLORS } from '../../lib/design-tokens/colors';
 import type { MonthlyInputFormRHRow, LeaderStatusRow } from '../../server/routers/monthlyData';
 
+import { triggerXlsxDownload } from '../import-mass/downloadXlsxBase64';
+import { ImportarPlanilhaModal } from '../import-mass/ImportarPlanilhaModal';
 import { ModalSolicitarDesbloqueio } from './ModalSolicitarDesbloqueio';
 import {
   DADOS_MENSAIS_TABS,
@@ -165,6 +167,10 @@ export function DadosMensaisClient(props: DadosMensaisClientProps): JSX.Element 
 
   // Aba Lideres
   const [leaders, setLeaders] = useState<LeaderStatusRow[]>([]);
+
+  // ME-fila5 D3 (Item 5.6) — modal Importar em massa (aba RH).
+  const [importarRHOpen, setImportarRHOpen] = useState(false);
+  const [importActionError, setImportActionError] = useState<string | null>(null);
 
   // Estado canonico variant='rh': solicitacao pendente + modal
   const [hasPending, setHasPending] = useState<boolean>(false);
@@ -763,6 +769,68 @@ export function DadosMensaisClient(props: DadosMensaisClientProps): JSX.Element 
       {/* Aba RH */}
       {!loading && error === null && activeTab === 'rh' && (
         <>
+          {/* ME-fila5 D3 (Item 5.6) — Botoes de import/download em massa.
+              Visiveis quando actions estao injetadas + mes editavel. */}
+          {isEditable &&
+            actions.downloadRHTemplateMonthly !== undefined &&
+            actions.uploadRHDataMonthly !== undefined && (
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  marginBottom: 16,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setImportActionError(null);
+                    try {
+                      const res = await actions.downloadRHTemplateMonthly!({
+                        companyId,
+                        mes,
+                      });
+                      triggerXlsxDownload(res.xlsxBase64, res.filename);
+                    } catch (err) {
+                      const msg =
+                        err instanceof Error ? err.message : 'Falha ao gerar planilha modelo.';
+                      setImportActionError(msg);
+                    }
+                  }}
+                  style={{
+                    padding: '9px 16px',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    border: `1px solid ${COLORS.primary.navy}`,
+                    borderRadius: 6,
+                    background: '#FFFFFF',
+                    color: COLORS.primary.navy,
+                    cursor: 'pointer',
+                  }}
+                  title="Baixar XLSX pre-preenchido com colaboradores ativos"
+                >
+                  📄 Baixar planilha modelo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImportarRHOpen(true)}
+                  style={{
+                    padding: '9px 16px',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    border: `1px solid ${COLORS.primary.navy}`,
+                    borderRadius: 6,
+                    background: '#FFFFFF',
+                    color: COLORS.primary.navy,
+                    cursor: 'pointer',
+                  }}
+                  title="Importar dados RH em massa via XLSX"
+                >
+                  📤 Importar em massa
+                </button>
+              </div>
+            )}
           {/* Card diasUteis */}
           <div style={CARD_STYLE}>
             <div
@@ -1196,6 +1264,78 @@ export function DadosMensaisClient(props: DadosMensaisClientProps): JSX.Element 
             listMesesFechados={actions.listMesesFechados}
             listCompanyLeaders={actions.listCompanyLeaders}
             createUnlockRequest={actions.createUnlockRequest}
+          />
+        )}
+
+      {/* ME-fila5 D3 (Item 5.6) — toast erro de acao */}
+      {importActionError !== null && (
+        <div
+          role="alert"
+          style={{
+            position: 'fixed',
+            top: 24,
+            right: 24,
+            padding: '14px 20px',
+            borderRadius: 8,
+            fontSize: 14,
+            color: '#FFFFFF',
+            background: '#DC2626',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+            zIndex: 500,
+            maxWidth: 360,
+          }}
+        >
+          {importActionError}
+          <button
+            type="button"
+            onClick={() => setImportActionError(null)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#FFFFFF',
+              marginLeft: 12,
+              cursor: 'pointer',
+              fontSize: 14,
+            }}
+            aria-label="Fechar aviso"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* ME-fila5 D3 (Item 5.6) — modal Importar dados RH em massa */}
+      {actions.downloadRHTemplateMonthly !== undefined &&
+        actions.uploadRHDataMonthly !== undefined && (
+          <ImportarPlanilhaModal
+            variant="monthly-rh"
+            open={importarRHOpen}
+            onClose={() => setImportarRHOpen(false)}
+            onDownloadTemplate={async () => {
+              const res = await actions.downloadRHTemplateMonthly!({
+                companyId,
+                mes,
+              });
+              return { filename: res.filename, xlsxBase64: res.xlsxBase64 };
+            }}
+            onUpload={async (file) => {
+              const arrayBuffer = await file.arrayBuffer();
+              const bytes = new Uint8Array(arrayBuffer);
+              let binary = '';
+              for (let i = 0; i < bytes.length; i += 1) {
+                binary += String.fromCharCode(bytes[i]!);
+              }
+              const base64 = btoa(binary);
+              return actions.uploadRHDataMonthly!({
+                companyId,
+                mes,
+                xlsxBase64: base64,
+              });
+            }}
+            onSuccess={() => {
+              // Refetch da aba RH apos upload bem-sucedido.
+              void fetchData();
+            }}
           />
         )}
     </div>

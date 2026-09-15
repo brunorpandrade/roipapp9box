@@ -63,6 +63,11 @@ import {
   type MonthlyInputFormResult,
   type SaveMonthlyDataResult,
 } from '../../server/routers/monthlyData';
+import {
+  createSpreadsheetsRouter,
+  type DownloadResult,
+  type UploadResult,
+} from '../../server/routers/spreadsheets';
 import { listActiveLeadersAndClevelsByCompany } from '../../server/services/employees';
 import { getServerSession } from '../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../server/trpc';
@@ -77,6 +82,9 @@ const createMonthlyDataCaller = createCallerFactory(monthlyDataRouter);
 
 const monthlyClosureRouter = createMonthlyClosureRouter();
 const createMonthlyClosureCaller = createCallerFactory(monthlyClosureRouter);
+
+const spreadsheetsRouter = createSpreadsheetsRouter();
+const createSpreadsheetsCaller = createCallerFactory(spreadsheetsRouter);
 
 const cycleUnlockRequestsRouter = createCycleUnlockRequestsRouter({
   evaluateAdminAlertsFactory: NOOP_EVALUATE_ADMIN_UNLOCK_ALERTS_FACTORY,
@@ -484,6 +492,67 @@ export async function listCompanyLeadersRHAction(input: {
       name: r.name,
     }));
     return { ok: true, data: leaders };
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+// -----------------------------------------------------------------------
+// ME-fila5 D3 — Item 5.6 — Actions canonicas RH de import/export mensal
+// -----------------------------------------------------------------------
+
+/**
+ * ME-fila5 D3 §3.11 — Variante RH da action `downloadRHTemplate`.
+ * Guard `requireRHOrSuperAdmin` server-side; company derivada da sessao.
+ */
+export async function downloadRHTemplateRHAction(input: {
+  readonly companyId: number;
+  readonly mes: string;
+}): Promise<DownloadResult> {
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const bearerToken = await resolveRawToken();
+    const ctx = createContextInner({
+      db: client.db,
+      rateLimiter: actionRateLimiter,
+      bearerToken,
+      ip: null,
+    });
+    const caller = createSpreadsheetsCaller(ctx);
+    return await caller.downloadRHTemplate({
+      companyId: input.companyId,
+      mes: input.mes,
+    });
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+/**
+ * ME-fila5 D3 §3.11 — Variante RH da action `uploadRHData`.
+ */
+export async function uploadRHDataRHAction(input: {
+  readonly companyId: number;
+  readonly mes: string;
+  readonly xlsxBase64: string;
+  readonly diasUteis?: number;
+}): Promise<UploadResult> {
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const bearerToken = await resolveRawToken();
+    const ctx = createContextInner({
+      db: client.db,
+      rateLimiter: actionRateLimiter,
+      bearerToken,
+      ip: null,
+    });
+    const caller = createSpreadsheetsCaller(ctx);
+    return await caller.uploadRHData({
+      companyId: input.companyId,
+      mes: input.mes,
+      xlsxBase64: input.xlsxBase64,
+      diasUteis: input.diasUteis,
+    });
   } finally {
     await closeDbClient(client);
   }
