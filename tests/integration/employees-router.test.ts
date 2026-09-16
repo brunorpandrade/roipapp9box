@@ -32,6 +32,10 @@
 // Faixa CNPJ canonica 800..804 (S130 — S076/S109/S123 estendido).
 // L32 cleanup em afterAll. JWT_SECRET fixo. Padrao S009/S087.
 
+import {
+  FORMULARIO_INVOLUNTARIO_TESTE,
+  FORMULARIO_VOLUNTARIO_TESTE,
+} from '../fixtures/terminationForms';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { TRPCError } from '@trpc/server';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
@@ -406,16 +410,39 @@ describe('employees — contratos publicos exportados', () => {
   });
 
   it('INACTIVATE/REACTIVATE/DELETE schemas aceitam formatos canonicos', () => {
+    // ME-fila6 D2 (L129): formulario A/B passou a ser obrigatorio e deve
+    // corresponder ao motivo de saida.
+    expect(
+      INACTIVATE_EMPLOYEE_INPUT_SCHEMA.safeParse({
+        employeeId: 1,
+        motivoSaida: 'voluntario',
+        formulario: FORMULARIO_VOLUNTARIO_TESTE,
+      }).success,
+    ).toBe(true);
+    expect(
+      INACTIVATE_EMPLOYEE_INPUT_SCHEMA.safeParse({
+        employeeId: 1,
+        motivoSaida: 'involuntario',
+        formulario: FORMULARIO_INVOLUNTARIO_TESTE,
+      }).success,
+    ).toBe(true);
+    expect(
+      INACTIVATE_EMPLOYEE_INPUT_SCHEMA.safeParse({
+        employeeId: 1,
+        motivoSaida: 'voluntario',
+        formulario: FORMULARIO_INVOLUNTARIO_TESTE,
+      }).success,
+    ).toBe(false);
     expect(
       INACTIVATE_EMPLOYEE_INPUT_SCHEMA.safeParse({ employeeId: 1, motivoSaida: 'voluntario' })
         .success,
-    ).toBe(true);
+    ).toBe(false);
     expect(
-      INACTIVATE_EMPLOYEE_INPUT_SCHEMA.safeParse({ employeeId: 1, motivoSaida: 'involuntario' })
-        .success,
-    ).toBe(true);
-    expect(
-      INACTIVATE_EMPLOYEE_INPUT_SCHEMA.safeParse({ employeeId: 1, motivoSaida: 'outro' }).success,
+      INACTIVATE_EMPLOYEE_INPUT_SCHEMA.safeParse({
+        employeeId: 1,
+        motivoSaida: 'outro',
+        formulario: FORMULARIO_VOLUNTARIO_TESTE,
+      }).success,
     ).toBe(false);
     expect(INACTIVATE_EMPLOYEE_INPUT_SCHEMA.safeParse({ employeeId: 1 }).success).toBe(false);
     expect(REACTIVATE_EMPLOYEE_INPUT_SCHEMA.safeParse({ employeeId: 1 }).success).toBe(true);
@@ -692,6 +719,7 @@ describe('employees.inactivate — RH + Bruno, transacao §12.6', () => {
     const res = (await caller.inactivate({
       employeeId: alvoComVinculo,
       motivoSaida: 'voluntario',
+      formulario: FORMULARIO_VOLUNTARIO_TESTE,
     })) as InactivateEmployeeResult;
 
     expect(res.employeeId).toBe(alvoComVinculo);
@@ -728,6 +756,7 @@ describe('employees.inactivate — RH + Bruno, transacao §12.6', () => {
     const res = (await caller.inactivate({
       employeeId: alvo,
       motivoSaida: 'involuntario',
+      formulario: FORMULARIO_INVOLUNTARIO_TESTE,
     })) as InactivateEmployeeResult;
     const [ev] = await client.db
       .select()
@@ -743,7 +772,11 @@ describe('employees.inactivate — RH + Bruno, transacao §12.6', () => {
     const t = await tokenSuperAdmin();
     const caller = factory(ctx(t));
     await expect(
-      caller.inactivate({ employeeId: alvoRF, motivoSaida: 'voluntario' }),
+      caller.inactivate({
+        employeeId: alvoRF,
+        motivoSaida: 'voluntario',
+        formulario: FORMULARIO_VOLUNTARIO_TESTE,
+      }),
     ).rejects.toMatchObject({ code: 'CONFLICT', message: MSG_INACTIVATE_RF_BLOQUEADO });
   });
 
@@ -752,7 +785,11 @@ describe('employees.inactivate — RH + Bruno, transacao §12.6', () => {
     const t = await tokenSuperAdmin();
     const caller = factory(ctx(t));
     await expect(
-      caller.inactivate({ employeeId: alvoLiderComLiderados, motivoSaida: 'voluntario' }),
+      caller.inactivate({
+        employeeId: alvoLiderComLiderados,
+        motivoSaida: 'voluntario',
+        formulario: FORMULARIO_VOLUNTARIO_TESTE,
+      }),
     ).rejects.toMatchObject({
       code: 'CONFLICT',
       message: MSG_LIDER_COM_LIDERADOS_USE_M2V2,
@@ -766,6 +803,7 @@ describe('employees.inactivate — RH + Bruno, transacao §12.6', () => {
     const res = (await caller.inactivate({
       employeeId: alvoLiderSemLiderados,
       motivoSaida: 'voluntario',
+      formulario: FORMULARIO_VOLUNTARIO_TESTE,
     })) as InactivateEmployeeResult;
     expect(res.terminationEventId).toBeGreaterThan(0);
   });
@@ -775,10 +813,18 @@ describe('employees.inactivate — RH + Bruno, transacao §12.6', () => {
     const t = await tokenSuperAdmin();
     const caller = factory(ctx(t));
     await expect(
-      caller.inactivate({ employeeId: alvoAtivo, motivoSaida: 'voluntario' }),
+      caller.inactivate({
+        employeeId: alvoAtivo,
+        motivoSaida: 'voluntario',
+        formulario: FORMULARIO_VOLUNTARIO_TESTE,
+      }),
     ).resolves.toBeDefined();
     await expect(
-      caller.inactivate({ employeeId: alvoAtivo, motivoSaida: 'voluntario' }),
+      caller.inactivate({
+        employeeId: alvoAtivo,
+        motivoSaida: 'voluntario',
+        formulario: FORMULARIO_VOLUNTARIO_TESTE,
+      }),
     ).rejects.toMatchObject({ code: 'CONFLICT', message: MSG_JA_INATIVO });
   });
 

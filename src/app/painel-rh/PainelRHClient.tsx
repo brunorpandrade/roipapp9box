@@ -28,6 +28,8 @@ import Link from 'next/link';
 import type { JSX } from 'react';
 
 import { ClickableIndicatorCard } from '../../components/painel/ClickableIndicatorCard';
+import { TurnoverIndicatorCard } from '../../components/turnover/TurnoverIndicatorCard';
+import type { TurnoverCardData } from '../../server/services/turnoverPanel';
 import { OnboardingKanbanMini } from '../../components/painel/OnboardingKanbanMini';
 import {
   PerfilInconsistenteBox,
@@ -78,6 +80,11 @@ export type PainelRHVariant = 'rh' | 'super_admin_preview';
 
 export interface PainelRHClientProps {
   readonly company: RhCompanyInfo;
+  /**
+   * ME-fila6 D2 — card "Turnover" (especificacao "Turnover e desligamento"
+   * §5): taxa total do ultimo trimestre fechado. `null` = nenhum fechado.
+   */
+  readonly turnoverCard: TurnoverCardData | null;
   readonly counts: LandingCounts;
   readonly departmentCounts: readonly DepartmentCount[];
   readonly onboardingSummary: LandingOnboardingSummary;
@@ -463,6 +470,7 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
             href={`${hrefPrefix}/nr1`}
             ariaLabel="Abrir módulo Radar NR-1"
           />
+          <TurnoverIndicatorCard data={props.turnoverCard} href={`${hrefPrefix}/turnover`} />
         </div>
       </section>
 

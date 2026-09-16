@@ -21,6 +21,8 @@ import Link from 'next/link';
 import type { JSX } from 'react';
 
 import { ClickableIndicatorCard } from '../../../../components/painel/ClickableIndicatorCard';
+import { TurnoverIndicatorCard } from '../../../../components/turnover/TurnoverIndicatorCard';
+import type { TurnoverCardData } from '../../../../server/services/turnoverPanel';
 import { OnboardingKanbanMini } from '../../../../components/painel/OnboardingKanbanMini';
 import { ZonaPlaceholder } from '../../../../components/painel/ZonaPlaceholder';
 import { COLORS } from '../../../../lib/design-tokens/colors';
@@ -46,6 +48,8 @@ export interface CompanyLandingClientProps {
   readonly lastQuarter: string | null;
   readonly lastQuarterFaturamentoMedio: number | null;
   readonly mesAtualClosure: MesAtualClosureStatus;
+  /** ME-fila6 D2 — card "Turnover" (especificacao §5). */
+  readonly turnoverCard: TurnoverCardData | null;
 }
 
 // -----------------------------------------------------------------------
@@ -406,6 +410,10 @@ export function CompanyLandingClient(props: CompanyLandingClientProps): JSX.Elem
           sub={`Mês ${mesAtualClosure.mesAtual}`}
           href={`/super-admin/empresa/${company.id}/dados-mensais?tab=lider`}
           ariaLabel="Abrir dados mensais de líderes"
+        />
+        <TurnoverIndicatorCard
+          data={props.turnoverCard}
+          href={`/super-admin/empresa/${company.id}/turnover`}
         />
       </section>
 

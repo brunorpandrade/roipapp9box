@@ -16,7 +16,7 @@
 # Passo 10 (`verify-canonic-consistency --mode=repo`) entrou na ME-046a
 # (S161): tabela de assercoes embutida verificada contra o codigo (cadencia
 # semestral do D em Q1/Q3, direcao estrutural C x D, enum dashboardLevel,
-# inventario nominal fechado das 53 tabelas, tipos fechaveis do
+# inventario nominal fechado das 55 tabelas, tipos fechaveis do
 # cycleSchedule, ausencia de termos abandonados em src/tests). O modo
 # --mode=docs da mesma regua vive fora do validate (fundacao de abertura
 # de ME em Claude via ROIP_DOCS_DIR; passo 1 do protocolo §3).

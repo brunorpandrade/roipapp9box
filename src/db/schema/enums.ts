@@ -122,6 +122,52 @@ export type RfEventType = (typeof RF_EVENT_TYPE_VALUES)[number];
 export const MOTIVO_TERMINATION_VALUES = ['voluntario', 'involuntario'] as const;
 export type MotivoTermination = (typeof MOTIVO_TERMINATION_VALUES)[number];
 
+// ME-fila6 D2 — especificacao "Turnover e desligamento" §3 (Formulario A,
+// entrevista de desligamento voluntario). Rotulos em
+// `src/lib/shared/terminationForms.ts`.
+export const MOTIVO_SAIDA_VOLUNTARIA_VALUES = [
+  'remuneracao_beneficios',
+  'falta_perspectiva_carreira',
+  'relacao_lideranca_direta',
+  'sobrecarga_desequilibrio',
+  'cultura_clima',
+  'proposta_externa',
+  'motivo_pessoal_familiar',
+  'retorno_estudos',
+  'motivo_saude',
+  'outro',
+] as const;
+export type MotivoSaidaVoluntaria = (typeof MOTIVO_SAIDA_VOLUNTARIA_VALUES)[number];
+
+export const RESPOSTA_SIM_NAO_TALVEZ_VALUES = ['sim', 'nao', 'talvez'] as const;
+export type RespostaSimNaoTalvez = (typeof RESPOSTA_SIM_NAO_TALVEZ_VALUES)[number];
+
+export const DESTINO_SAIDA_VALUES = [
+  'mesmo_setor',
+  'setor_diferente',
+  'empreendedorismo_autonomo',
+  'nao_buscando_emprego',
+  'prefere_nao_informar',
+] as const;
+export type DestinoSaida = (typeof DESTINO_SAIDA_VALUES)[number];
+
+// ME-fila6 D2 — especificacao §4 (Formulario B, justificativa de
+// desligamento involuntario).
+export const CATEGORIA_DESLIGAMENTO_INVOLUNTARIO_VALUES = [
+  'desempenho_abaixo',
+  'violacao_conduta',
+  'desalinhamento_cultural',
+  'reducao_quadro',
+  'fim_contrato_experiencia',
+  'extincao_funcao_custo',
+  'outro',
+] as const;
+export type CategoriaDesligamentoInvoluntario =
+  (typeof CATEGORIA_DESLIGAMENTO_INVOLUNTARIO_VALUES)[number];
+
+export const RESPOSTA_SIM_NAO_NA_VALUES = ['sim', 'nao', 'nao_aplicavel'] as const;
+export type RespostaSimNaoNa = (typeof RESPOSTA_SIM_NAO_NA_VALUES)[number];
+
 // §15.3 — instrumentType (portalReminderLog + filtro §14.23). Extracao
 // canonica do enum inline de tables.ts:1234 realizada em ME-058 (padrao
 // bit-exact da extracao RF_EVENT_TYPE_VALUES em ME-057b). Consumido pela

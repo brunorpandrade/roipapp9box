@@ -26,6 +26,8 @@ import { TRPCError } from '@trpc/server';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 
+import type { FormularioDesligamento } from '../../../../lib/shared/terminationForms';
+
 import { closeDbClient, createDbClient } from '../../../../db/client';
 import { employeeLeaderHistory, employees } from '../../../../db/schema';
 import { requireRHOrSuperAdmin } from '../../../../lib/routes/requireRHOrSuperAdmin';
@@ -275,6 +277,8 @@ export async function verificarInativacaoRHAction(input: {
 export async function inativarColaboradorRHAction(input: {
   readonly employeeId: number;
   readonly motivoSaida: 'voluntario' | 'involuntario';
+  /** ME-fila6 D2 — Formulario A/B, gravado na mesma transacao. */
+  readonly formulario: FormularioDesligamento;
 }): Promise<ActionResult<InactivateEmployeeResult>> {
   await requireRHSessionAndCompanyId('inativarColaboradorRHAction');
 
@@ -321,6 +325,8 @@ export async function executarTransferenciaRHAction(input: {
   }[];
   readonly reason: string;
   readonly motivoSaida: 'voluntario' | 'involuntario';
+  /** ME-fila6 D2 — Formulario A/B, gravado na mesma transacao. */
+  readonly formulario: FormularioDesligamento;
 }): Promise<ActionResult<ExecuteResult>> {
   await requireRHSessionAndCompanyId('executarTransferenciaRHAction');
 
@@ -345,6 +351,7 @@ export async function executarTransferenciaRHAction(input: {
       candidatosGrupo4: [...input.candidatosGrupo4].map((c) => ({ ...c })),
       reason: input.reason,
       motivoSaida: input.motivoSaida,
+      formulario: input.formulario,
     });
     return { ok: true, data: result };
   } catch (err) {

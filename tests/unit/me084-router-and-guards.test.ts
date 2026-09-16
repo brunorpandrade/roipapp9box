@@ -75,13 +75,15 @@ describe('ME-084 — callsite super-admin Bruno preservado bit-exact', () => {
     expect(src).toContain(
       'todosColaboradoresHref={`/super-admin/empresa/${companyId}/todos-os-colaboradores`}',
     );
-    // 13 assignments bit-exact (actions super-admin sem sufixo RH)
+    // ME-fila6 D2 (L129): 11 assignments — `executarTransferencia` e
+    // `inativarColaborador` foram para a rota do formulario de desligamento.
+    expect(src).not.toContain('executarTransferencia: executarTransferenciaAction');
+    expect(src).not.toContain('inativarColaborador: inativarColaboradorAction');
+    expect(src).toContain('desligamentoHref={desligamentoHref}');
     for (const [key, value] of [
       ['atualizarColaborador', 'atualizarColaboradorAction'],
       ['definirRFEditar', 'definirRFEditarAction'],
       ['excluirColaborador', 'excluirColaboradorAction'],
-      ['executarTransferencia', 'executarTransferenciaAction'],
-      ['inativarColaborador', 'inativarColaboradorAction'],
       ['listarLiderados', 'listarLideradosAction'],
       ['pesquisarLiderCandidatosEditar', 'pesquisarLiderCandidatosEditarAction'],
       ['reativarColaborador', 'reativarColaboradorAction'],

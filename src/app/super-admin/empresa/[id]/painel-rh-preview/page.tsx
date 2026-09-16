@@ -30,6 +30,7 @@
 // `/super-admin/empresa/[id]/internals.ts`).
 // **RV-14 canonica.** Um statement por linha, largura maxima 100 cols.
 
+import { loadTurnoverCard } from '../../../../../server/services/turnoverPanel';
 import { notFound, redirect } from 'next/navigation';
 import type { JSX } from 'react';
 
@@ -124,6 +125,8 @@ export default async function PainelRHPreviewPage(props: PageProps): Promise<JSX
       throw new Error(`Menu canonico ausente para ${profileKey} em preview — inconsistencia §3`);
     }
 
+    const turnoverCard = await loadTurnoverCard(client.db, companyId);
+
     return (
       <Layout
         menuItems={menuItems}
@@ -137,6 +140,7 @@ export default async function PainelRHPreviewPage(props: PageProps): Promise<JSX
       >
         <PainelRHClient
           company={company}
+          turnoverCard={turnoverCard}
           counts={counts}
           departmentCounts={departmentCounts}
           onboardingSummary={onboardingSummary}

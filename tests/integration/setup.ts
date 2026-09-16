@@ -6,7 +6,7 @@
 //   1. DROP+CREATE da base efemera `roip_test` (S007 estendido — o passo 9
 //      da regua §4 nao arrasta estado entre rodadas).
 //   2. Aplica `src/db/migrations/0000_canonical.sql` inteira. Isso semeia
-//      os 19 departments (§15.1) e cria as 53 tabelas com as 107 FKs.
+//      os 19 departments (§15.1) e cria as 55 tabelas com as 109 FKs.
 //   3. Semeia UMA fixture de `superAdmins` (id=1). Necessaria porque
 //      `companyJobFamilies.updatedBy` referencia `superAdmins.id`. Os
 //      testes reutilizam esse id.

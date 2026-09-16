@@ -27,6 +27,7 @@
 // Drizzle tipado.
 // **RV-14 canonica.** Um statement por linha, largura maxima 100 cols.
 
+import { loadTurnoverCard } from '../../server/services/turnoverPanel';
 import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
 
@@ -129,6 +130,8 @@ export default async function PainelRHPage(): Promise<JSX.Element> {
         loadPerfisIndividuaisInconsistentes(client.db, session.companyId),
       ]);
 
+    const turnoverCard = await loadTurnoverCard(client.db, session.companyId);
+
     return (
       <Layout
         menuItems={menuItems}
@@ -143,6 +146,7 @@ export default async function PainelRHPage(): Promise<JSX.Element> {
       >
         <PainelRHClient
           company={company}
+          turnoverCard={turnoverCard}
           counts={counts}
           departmentCounts={departmentCounts}
           onboardingSummary={onboardingSummary}

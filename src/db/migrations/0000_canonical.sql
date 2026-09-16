@@ -1058,6 +1058,41 @@ CREATE TABLE `employeeTerminationEvents` (
   FOREIGN KEY (`companyId`) REFERENCES `companies`(`id`) ON DELETE RESTRICT
 );
 
+CREATE TABLE `terminationVoluntaryInterviews` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `terminationEventId` INT NOT NULL,
+  `motivoPrincipal` ENUM('remuneracao_beneficios','falta_perspectiva_carreira','relacao_lideranca_direta','sobrecarga_desequilibrio','cultura_clima','proposta_externa','motivo_pessoal_familiar','retorno_estudos','motivo_saude','outro') NOT NULL,
+  `motivoSecundario1` ENUM('remuneracao_beneficios','falta_perspectiva_carreira','relacao_lideranca_direta','sobrecarga_desequilibrio','cultura_clima','proposta_externa','motivo_pessoal_familiar','retorno_estudos','motivo_saude','outro') DEFAULT NULL,
+  `motivoSecundario2` ENUM('remuneracao_beneficios','falta_perspectiva_carreira','relacao_lideranca_direta','sobrecarga_desequilibrio','cultura_clima','proposta_externa','motivo_pessoal_familiar','retorno_estudos','motivo_saude','outro') DEFAULT NULL,
+  `notaConfiancaLideranca` TINYINT NOT NULL,
+  `notaReconhecimento` TINYINT NOT NULL,
+  `notaRemuneracaoJusta` TINYINT NOT NULL,
+  `notaOportunidadeCrescimento` TINYINT NOT NULL,
+  `notaClarezaExpectativas` TINYINT NOT NULL,
+  `notaAmbienteEquipe` TINYINT NOT NULL,
+  `voltariaTrabalhar` ENUM('sim','nao','talvez') NOT NULL,
+  `recomendariaEmpresa` ENUM('sim','nao','talvez') NOT NULL,
+  `destino` ENUM('mesmo_setor','setor_diferente','empreendedorismo_autonomo','nao_buscando_emprego','prefere_nao_informar') NOT NULL,
+  `oQuePoderiaReter` VARCHAR(500) NOT NULL,
+  `comentariosAdicionais` VARCHAR(500) DEFAULT NULL,
+  `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `uq_tvi_event` (`terminationEventId`),
+  FOREIGN KEY (`terminationEventId`) REFERENCES `employeeTerminationEvents`(`id`) ON DELETE CASCADE
+);
+
+CREATE TABLE `terminationInvoluntaryJustifications` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `terminationEventId` INT NOT NULL,
+  `categoria` ENUM('desempenho_abaixo','violacao_conduta','desalinhamento_cultural','reducao_quadro','fim_contrato_experiencia','extincao_funcao_custo','outro') NOT NULL,
+  `houveFeedbackFormal` ENUM('sim','nao','nao_aplicavel') NOT NULL,
+  `nivelDocumentacao` TINYINT NOT NULL,
+  `justificativa` VARCHAR(500) NOT NULL,
+  `necessidadeReposicao` BOOLEAN NOT NULL,
+  `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `uq_tij_event` (`terminationEventId`),
+  FOREIGN KEY (`terminationEventId`) REFERENCES `employeeTerminationEvents`(`id`) ON DELETE CASCADE
+);
+
 CREATE TABLE `executiveReportCache` (
   `id` INT PRIMARY KEY AUTO_INCREMENT,
   `companyId` INT NOT NULL,

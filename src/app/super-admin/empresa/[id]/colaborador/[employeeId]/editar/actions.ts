@@ -18,6 +18,8 @@ import { TRPCError } from '@trpc/server';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 
+import type { FormularioDesligamento } from '../../../../../../../lib/shared/terminationForms';
+
 import { closeDbClient, createDbClient } from '../../../../../../../db/client';
 import { employeeLeaderHistory, employees } from '../../../../../../../db/schema';
 import { createRateLimiter } from '../../../../../../../server/auth/rateLimit';
@@ -240,6 +242,8 @@ export async function verificarInativacaoAction(input: {
 export async function inativarColaboradorAction(input: {
   readonly employeeId: number;
   readonly motivoSaida: 'voluntario' | 'involuntario';
+  /** ME-fila6 D2 — Formulario A/B, gravado na mesma transacao. */
+  readonly formulario: FormularioDesligamento;
 }): Promise<ActionResult<InactivateEmployeeResult>> {
   const token = await resolveRawToken();
   if (token === null) {
@@ -294,6 +298,8 @@ export async function executarTransferenciaAction(input: {
   }[];
   readonly reason: string;
   readonly motivoSaida: 'voluntario' | 'involuntario';
+  /** ME-fila6 D2 — Formulario A/B, gravado na mesma transacao. */
+  readonly formulario: FormularioDesligamento;
 }): Promise<ActionResult<ExecuteResult>> {
   const token = await resolveRawToken();
   if (token === null) {
@@ -316,6 +322,7 @@ export async function executarTransferenciaAction(input: {
       candidatosGrupo4: [...input.candidatosGrupo4].map((c) => ({ ...c })),
       reason: input.reason,
       motivoSaida: input.motivoSaida,
+      formulario: input.formulario,
     });
     return { ok: true, data: result };
   } catch (err) {

@@ -16,7 +16,8 @@ import { and, asc, eq } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 
 import { closeDbClient, createDbClient } from '../../../../../db/client';
-import { employees, monthlyClosureStatus } from '../../../../../db/schema';
+import { employees } from '../../../../../db/schema';
+import { listClosedQuarters } from '../../../../../server/services/closedQuarters';
 import { createRateLimiter } from '../../../../../server/auth/rateLimit';
 import { createExportsRouter } from '../../../../../server/routers/exports';
 import { getServerSession } from '../../../../../server/session/serverSession';
@@ -83,45 +84,7 @@ export async function listClosedQuartersAction(input: {
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    // Trimestres com todos os 3 meses fechados.
-    const rows = await client.db
-      .select({
-        mes: monthlyClosureStatus.mes,
-      })
-      .from(monthlyClosureStatus)
-      .where(
-        and(
-          eq(monthlyClosureStatus.companyId, input.companyId),
-          eq(monthlyClosureStatus.status, 'fechado'),
-        ),
-      )
-      .orderBy(asc(monthlyClosureStatus.mes));
-
-    // Agrupar meses em trimestres e verificar se todos 3
-    // meses do trimestre estão fechados.
-    const mesSet = new Set(rows.map((r) => r.mes));
-    const trimestreMap = new Map<string, number>();
-
-    for (const m of mesSet) {
-      const [yearStr, monthStr] = m.split('-');
-      const year = Number(yearStr);
-      const month = Number(monthStr);
-      const q = Math.ceil(month / 3);
-      const tri = `${year}-Q${q}`;
-      trimestreMap.set(tri, (trimestreMap.get(tri) ?? 0) + 1);
-    }
-
-    const closed: ClosedQuarter[] = [];
-    for (const [tri, count] of trimestreMap.entries()) {
-      if (count >= 3) {
-        const match = /^(\d{4})-Q(\d)$/.exec(tri);
-        const label = match !== null ? `${match[2]}º trimestre de ${match[1]}` : tri;
-        closed.push({ trimestre: tri, label });
-      }
-    }
-
-    // Ordem decrescente, mais recente primeiro.
-    closed.sort((a, b) => b.trimestre.localeCompare(a.trimestre));
+    const closed = await listClosedQuarters(client.db, input.companyId);
     return { ok: true, data: closed };
   } finally {
     await closeDbClient(client);

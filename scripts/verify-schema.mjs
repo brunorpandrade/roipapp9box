@@ -366,8 +366,8 @@ function main() {
   console.log(`Schema TS: ${tsTables.size} tabelas`);
 
   // Nivel 1: contagem
-  if (sqlTables.size !== 53) {
-    fail(`Migration tem ${sqlTables.size} tabelas, esperado 53.`);
+  if (sqlTables.size !== 55) {
+    fail(`Migration tem ${sqlTables.size} tabelas, esperado 55.`);
   }
   if (tsTables.size !== sqlTables.size) {
     fail(`tables.ts tem ${tsTables.size} tabelas; migration tem ${sqlTables.size}.`);
@@ -436,18 +436,20 @@ function main() {
   console.log(`Total de FKs na migration: ${totalSqlFks}`);
   console.log(`Total de FKs em tables.ts: ${totalTsFks}`);
 
-  // Invariantes canonicos (§20). Colunas atualizado para 696 em ME-080b
+  // Invariantes (§20). Colunas: 696 em ME-080b; 721 em ME-fila6 D2
   // Dispatch 1 (adicao de `companies.isDemo` — E-068-11 ME-068;
   // adicao de `employees.cargo` — ME-078b D1;
   // adicao de `employees.matricula` + `cLevelMembers.matricula` — ME-080b).
-  if (totalSqlCols !== 696) {
+  if (totalSqlCols !== 721) {
     console.log(
       `${YELLOW}AVISO:${RESET} migration tem ${totalSqlCols} colunas; ` +
-        `canonico §20 pos-ME-080b = 696.`,
+        `esperado 721 (ME-fila6 D2).`,
     );
   }
-  if (totalSqlFks !== 107) {
-    console.log(`${YELLOW}AVISO:${RESET} migration tem ${totalSqlFks} FKs; canonico §20 = 107.`);
+  if (totalSqlFks !== 109) {
+    console.log(
+      `${YELLOW}AVISO:${RESET} migration tem ${totalSqlFks} FKs; esperado 109 (ME-fila6 D2).`,
+    );
   }
 
   if (hasError) {
@@ -456,7 +458,7 @@ function main() {
     process.exit(1);
   }
 
-  console.log(`\n${GREEN}OK${RESET} — schema conforme. Tabelas: 53/53; colunas: ${totalTsCols}.`);
+  console.log(`\n${GREEN}OK${RESET} — schema conforme. Tabelas: 55/55; colunas: ${totalTsCols}.`);
   process.exit(0);
 }
 

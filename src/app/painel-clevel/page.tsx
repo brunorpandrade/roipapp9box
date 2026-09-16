@@ -15,6 +15,8 @@
 //   "Cadeia propria"; Radar da empresa com 6 componentes canonicos
 //   estado §5.2 nesta ME (motores Fase 8 vem em MEs futuras).
 
+import { TurnoverIndicatorCard } from '../../components/turnover/TurnoverIndicatorCard';
+import { loadTurnoverCard, type TurnoverCardData } from '../../server/services/turnoverPanel';
 import { redirect } from 'next/navigation';
 import { and, count, eq } from 'drizzle-orm';
 import type { JSX } from 'react';
@@ -174,9 +176,14 @@ export default async function PainelCLevelPage(): Promise<JSX.Element> {
   const client = createDbClient(resolveDatabaseUrl());
   let menu: Awaited<ReturnType<typeof loadPlatformMenuContext>>;
   let companyCollaboratorsCount: number;
+  let turnoverCard: TurnoverCardData | null = null;
   try {
     menu = await loadPlatformMenuContext(client.db, session);
     companyCollaboratorsCount = await loadCompanyCollaboratorsCount(client.db, session);
+    // ME-fila6 D2 — card "Turnover" apenas para C-level com acesso total (§5/§7).
+    if (menu !== null && menu.profileKey === 'clevel_full') {
+      turnoverCard = await loadTurnoverCard(client.db, session.companyId);
+    }
   } finally {
     await closeDbClient(client);
   }
@@ -234,7 +241,9 @@ export default async function PainelCLevelPage(): Promise<JSX.Element> {
               value={String(data.companyCollaboratorsCount)}
               sub="Visão global"
             />
-          ) : (
+          ) : null}
+          {isFullScope ? <TurnoverIndicatorCard data={turnoverCard} href="/turnover" /> : null}
+          {isFullScope ? null : (
             <ComingSoonBlock
               title="Colaboradores ativos abaixo dele"
               canonicalText="Coleta de dados em andamento"

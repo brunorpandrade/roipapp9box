@@ -25,6 +25,10 @@
 // Faixa CNPJ canonica 820..824 (S143 — sub-faixa leadershipTransfer).
 // L32 cleanup em afterAll.
 
+import {
+  FORMULARIO_INVOLUNTARIO_TESTE,
+  FORMULARIO_VOLUNTARIO_TESTE,
+} from '../fixtures/terminationForms';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { TRPCError } from '@trpc/server';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
@@ -379,6 +383,7 @@ describe('leadershipTransfer — contratos publicos exportados', () => {
       candidatosGrupo4: [],
       reason: curta,
       motivoSaida: 'voluntario',
+      formulario: FORMULARIO_VOLUNTARIO_TESTE,
     });
     expect(parsedCurta.success).toBe(false);
     if (!parsedCurta.success) {
@@ -394,6 +399,7 @@ describe('leadershipTransfer — contratos publicos exportados', () => {
       candidatosGrupo4: [],
       reason: longa,
       motivoSaida: 'voluntario',
+      formulario: FORMULARIO_VOLUNTARIO_TESTE,
     });
     expect(parsedLonga.success).toBe(false);
     if (!parsedLonga.success) {
@@ -684,6 +690,7 @@ describe('leadershipTransfer.execute — transacao atomica §14.9', () => {
       candidatosGrupo4: [{ candidatoId: debora }],
       reason: REASON_VALIDA,
       motivoSaida: 'voluntario',
+      formulario: FORMULARIO_VOLUNTARIO_TESTE,
     });
 
     // Retorno canonico.
@@ -762,6 +769,7 @@ describe('leadershipTransfer.execute — transacao atomica §14.9', () => {
         candidatosGrupo4: [{ candidatoId: cand }],
         reason: REASON_VALIDA,
         motivoSaida: 'voluntario',
+        formulario: FORMULARIO_VOLUNTARIO_TESTE,
       }),
     ).rejects.toMatchObject({ code: 'CONFLICT', message: MSG_EMAIL_VAZIO_GRUPO_4 });
   });
@@ -786,6 +794,7 @@ describe('leadershipTransfer.execute — transacao atomica §14.9', () => {
         candidatosGrupo4: [],
         reason: REASON_VALIDA,
         motivoSaida: 'involuntario',
+        formulario: FORMULARIO_INVOLUNTARIO_TESTE,
       }),
     ).rejects.toMatchObject({ code: 'BAD_REQUEST', message: MSG_NOVO_LIDER_INVALIDO_LT });
   });
@@ -807,6 +816,7 @@ describe('leadershipTransfer.execute — transacao atomica §14.9', () => {
         candidatosGrupo4: [],
         reason: REASON_VALIDA,
         motivoSaida: 'voluntario',
+        formulario: FORMULARIO_VOLUNTARIO_TESTE,
       }),
     ).rejects.toMatchObject({ code: 'CONFLICT', message: MSG_LOOP_CONDICIONAL_VIOLADO });
   });
@@ -827,6 +837,7 @@ describe('leadershipTransfer.execute — transacao atomica §14.9', () => {
         candidatosGrupo4: [],
         reason: REASON_VALIDA,
         motivoSaida: 'voluntario',
+        formulario: FORMULARIO_VOLUNTARIO_TESTE,
       }),
     ).rejects.toMatchObject({
       code: 'CONFLICT',

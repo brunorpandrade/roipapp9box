@@ -31,6 +31,7 @@
 //
 // **RV-14 canonica.** Um statement por linha, largura maxima 100 cols.
 
+import { loadTurnoverCard } from '../../../../server/services/turnoverPanel';
 import { notFound, redirect } from 'next/navigation';
 import type { JSX } from 'react';
 
@@ -115,6 +116,8 @@ export default async function SuperAdminCompanyLandingPage(props: PageProps): Pr
       throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
     }
 
+    const turnoverCard = await loadTurnoverCard(client.db, companyId);
+
     return (
       <Layout
         menuItems={menuItems}
@@ -135,6 +138,7 @@ export default async function SuperAdminCompanyLandingPage(props: PageProps): Pr
           lastQuarter={lastQuarter}
           lastQuarterFaturamentoMedio={lastQuarterFaturamentoMedio}
           mesAtualClosure={mesAtualClosure}
+          turnoverCard={turnoverCard}
         />
       </Layout>
     );

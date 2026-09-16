@@ -32,6 +32,7 @@ import {
   type TransferMapping,
 } from '../../../_shared/ModalTransferenciaLiderados';
 import { ModalTransferenciaRF } from '../../../_shared/ModalTransferenciaRF';
+import { salvarTransferenciaPendente } from '@/components/desligamento/transferenciaPendente';
 import {
   ColaboradorForm,
   type ColaboradorFormValues,
@@ -44,8 +45,6 @@ import type {
   buscarCandidatosTransferenciaAction,
   definirRFEditarAction,
   excluirColaboradorAction,
-  executarTransferenciaAction,
-  inativarColaboradorAction,
   listarLideradosAction,
   pesquisarLiderCandidatosEditarAction,
   reativarColaboradorAction,
@@ -75,8 +74,6 @@ export interface ColaboradorEditarActions {
   readonly buscarCandidatosTransferencia: typeof buscarCandidatosTransferenciaAction;
   readonly definirRFEditar: typeof definirRFEditarAction;
   readonly excluirColaborador: typeof excluirColaboradorAction;
-  readonly executarTransferencia: typeof executarTransferenciaAction;
-  readonly inativarColaborador: typeof inativarColaboradorAction;
   readonly listarLiderados: typeof listarLideradosAction;
   readonly pesquisarLiderCandidatosEditar: typeof pesquisarLiderCandidatosEditarAction;
   readonly reativarColaborador: typeof reativarColaboradorAction;
@@ -101,6 +98,12 @@ interface Props {
    * todos-os-colaboradores`. RH: `/todos-os-colaboradores`.
    */
   readonly todosColaboradoresHref: string;
+  /**
+   * ME-fila6 D2 — rota do formulario de desligamento (etapa 2 da
+   * inativacao). Bruno: `/super-admin/empresa/{id}/colaborador/{emp}/
+   * desligamento`. RH: `/colaborador/{emp}/desligamento`.
+   */
+  readonly desligamentoHref: string;
   /** ME-084 — bag de actions injetada conforme rota. */
   readonly actions: ColaboradorEditarActions;
 }
@@ -300,6 +303,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
     currentRFName,
     variant = 'super_admin',
     todosColaboradoresHref,
+    desligamentoHref,
     actions,
   } = props;
   const router = useRouter();
@@ -519,36 +523,24 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
     setShowMotivoModal(true);
   }, [initialEmployee]);
 
-  const executeInactivate = useCallback(
-    async (motivoSaida: 'voluntario' | 'involuntario') => {
-      const result = await actions.inativarColaborador({
-        employeeId: initialEmployee.id,
-        motivoSaida,
-      });
-      if (!result.ok) {
-        setErrorMsg(result.message);
-        return false;
-      }
-      return true;
-    },
-    [initialEmployee.id],
-  );
-
-  const executeM2Transfer = useCallback(
-    async (
+  // ME-fila6 D2 — a inativacao efetiva saiu desta tela. Para lider com
+  // liderados, o mapeamento montado no modal de transferencia viaja para a
+  // rota do formulario de desligamento e e executado junto com ele.
+  const guardarTransferenciaENavegar = useCallback(
+    (
       mappings: readonly TransferMapping[],
       justificativa: string,
       motivoSaida: 'voluntario' | 'involuntario',
-    ) => {
+    ): void => {
       // Traduzir TransferMapping → formato Zod EXECUTE_INPUT_SCHEMA.
-      // Mapear 'clevel' → 'cLevel' (§14.3 polimorfismo canônico).
+      // Mapear 'clevel' → 'cLevel' (§14.3 polimorfismo).
       const mapeamento = mappings.map((m) => ({
         lideradoId: m.liderado_employeeId,
         novoLiderId: m.novo_lider_id,
         novoLiderTipo: (m.novo_lider_tipo === 'clevel' ? 'cLevel' : 'employee') as
           'employee' | 'cLevel',
       }));
-      // Candidatos Grupo 4: novos líderes que são non-leaders
+      // Candidatos Grupo 4: novos lideres que sao non-leaders
       // (identificados pelo group='nao_lider' nos m2Candidates).
       const g4Ids = new Set<number>();
       for (const m of mappings) {
@@ -559,22 +551,16 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
           if (cand) g4Ids.add(cand.id);
         }
       }
-      const result = await actions.executarTransferencia({
-        liderOriginalId: initialEmployee.id,
-        mapeamento,
-        candidatosGrupo4: [...g4Ids].map((id) => ({
-          candidatoId: id,
-        })),
-        reason: justificativa,
+      salvarTransferenciaPendente({
+        employeeId: initialEmployee.id,
         motivoSaida,
+        mapeamento,
+        candidatosGrupo4: [...g4Ids].map((id) => ({ candidatoId: id })),
+        reason: justificativa,
       });
-      if (!result.ok) {
-        setM2Error(result.message);
-        return false;
-      }
-      return true;
+      router.push(`${desligamentoHref}?motivo=${motivoSaida}`);
     },
-    [initialEmployee.id],
+    [desligamentoHref, initialEmployee.id, m2Candidates, router],
   );
 
   const handleConfirmMotivo = useCallback(
@@ -672,36 +658,21 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
         }
         return;
       }
-      setSaving(true);
-      try {
-        const ok = await executeInactivate(motivoSaida);
-        if (ok) {
-          setShowMotivoModal(false);
-          router.push(todosColaboradoresHref);
-        }
-      } finally {
-        setSaving(false);
-      }
+      // ME-fila6 D2 — etapa 2: rota dedicada do formulario (A ou B).
+      setShowMotivoModal(false);
+      router.push(`${desligamentoHref}?motivo=${motivoSaida}`);
     },
-    [companyId, executeInactivate, initialEmployee, router],
+    [companyId, desligamentoHref, initialEmployee, router],
   );
 
   const handleConfirmM2 = useCallback(
     async (mappings: readonly TransferMapping[], justificativa: string) => {
       if (m2MotivoSelecionado === null) return;
-      setSaving(true);
       setM2Error(null);
-      try {
-        const ok = await executeM2Transfer(mappings, justificativa, m2MotivoSelecionado);
-        if (ok) {
-          setShowM2Modal(false);
-          router.push(todosColaboradoresHref);
-        }
-      } finally {
-        setSaving(false);
-      }
+      setShowM2Modal(false);
+      guardarTransferenciaENavegar(mappings, justificativa, m2MotivoSelecionado);
     },
-    [companyId, executeM2Transfer, m2MotivoSelecionado, router],
+    [guardarTransferenciaENavegar, m2MotivoSelecionado],
   );
 
   const handleReactivate = useCallback(async () => {

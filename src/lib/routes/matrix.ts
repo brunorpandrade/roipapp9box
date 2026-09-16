@@ -437,6 +437,21 @@ export const ROUTE_MATRIX: readonly RouteRule[] = [
     },
   },
 
+  // ME-fila6 D2 — pagina de turnover (especificacao "Turnover e
+  // desligamento" §6/§7). C-level restrito e refinado no page (acesso
+  // total obrigatorio); drill-down nominal decidido server-side.
+  {
+    pattern: '/turnover',
+    canonicalRef: 'Especificacao Turnover e desligamento §7',
+    byRole: {
+      super_admin: 'redirect_super_admin',
+      rh: 'allow',
+      rh_lider: 'allow',
+      clevel: 'allow',
+      lider: 'deny',
+    },
+  },
+
   // §10.8 Revisao Responsavel financeiro ---------------------------------
   {
     pattern: '/super-admin/logs/responsavel-financeiro',

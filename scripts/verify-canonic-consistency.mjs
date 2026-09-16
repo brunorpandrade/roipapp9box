@@ -83,7 +83,8 @@ const FORBIDDEN_TERM_CLIMATE_AGGREGATION = ['climate', 'Aggregation', 'Engine'].
 const FORBIDDEN_TERM_FECHAMENTO_MANUAL_SRC = FORBIDDEN_TERM_FECHAMENTO_MANUAL;
 
 // ---------------------------------------------------------------------
-// Inventario nominal canonico das 53 tabelas (DOC 01 §3 / schema real).
+// Inventario nominal das 55 tabelas (DOC 01 §3 / schema real; ME-fila6 D2
+// acrescentou os 2 formularios de desligamento).
 // Ordem alfabetica para comparacao por conjunto (a ordem no schema e
 // funcional, nao canonica).
 // ---------------------------------------------------------------------
@@ -142,6 +143,8 @@ const CANONIC_TABLE_NAMES = new Set([
   'radarNR1Reports',
   'responsavelFinanceiroTransferLog',
   'superAdmins',
+  'terminationInvoluntaryJustifications',
+  'terminationVoluntaryInterviews',
 ]);
 
 // ---------------------------------------------------------------------
@@ -398,7 +401,7 @@ function runModeRepo(repoRoot) {
     }
   }
 
-  // ---- A5: inventario nominal fechado das 53 tabelas -----------------
+  // ---- A5: inventario nominal fechado das 55 tabelas -----------------
   if (fileExists(tablesPath)) {
     const s = readFileSafe(tablesPath);
     const found = new Set();
@@ -408,7 +411,7 @@ function runModeRepo(repoRoot) {
     const missing = [...CANONIC_TABLE_NAMES].filter((n) => !found.has(n));
     const extra = [...found].filter((n) => !CANONIC_TABLE_NAMES.has(n));
     if (missing.length === 0 && extra.length === 0 && found.size === CANONIC_TABLE_NAMES.size) {
-      record('A5', true, `53 tabelas canonicas presentes por nome, sem extras`);
+      record('A5', true, `55 tabelas presentes por nome, sem extras`);
     } else {
       record(
         'A5',

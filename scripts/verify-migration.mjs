@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // ROIP APP 9BOX — verify-migration (ME-003).
 // Passo 7 da regua permanente §4: aplica src/db/migrations/0000_canonical.sql
-// contra MySQL real e mede os invariantes §20 (53 tabelas, 694 colunas,
+// contra MySQL real e mede os invariantes §20 (55 tabelas, 721 colunas,
 // 107 FKs, 19 departments). Falha (RC != 0) se algo divergir ou se a
 // migration nao aplicar limpa.
 //
@@ -13,7 +13,8 @@
 //   1. Conecta ao server (sem base) e DROP+CREATE da base de validacao.
 //   2. Aplica a migration inteira contra a base.
 //   3. Mede os quatro invariantes contra information_schema.
-//   4. Compara literalmente com 53/694/107/19.
+//   4. Compara literalmente com 55/721/109/19
+//      (ME-fila6 D2: +2 tabelas de formularios de desligamento).
 //   5. DROP da base ao fim (sucesso ou falha).
 //
 // Racional: rodar contra base efemera evita colisao com bases de
@@ -33,9 +34,9 @@ const MIGRATION_PATH = resolve(REPO_ROOT, 'src/db/migrations/0000_canonical.sql'
 const VALIDATE_DB = 'roip_validate';
 
 const EXPECTED = {
-  tables: 53,
-  columns: 696,
-  fks: 107,
+  tables: 55,
+  columns: 721,
+  fks: 109,
   departments: 19,
 };
 

@@ -125,15 +125,18 @@ describe('ME-084 D-ME084-1/3 — ColaboradorEditarClient (refactor bag de action
     'src/app/super-admin/empresa/[id]/colaborador/[employeeId]/editar/ColaboradorEditarClient.tsx',
   );
 
-  it('exporta interface ColaboradorEditarActions com 13 actions tipadas', () => {
+  // ME-fila6 D2 (L129): `executarTransferencia` e `inativarColaborador`
+  // sairam do bag — a inativacao acontece na rota do formulario.
+  it('exporta interface ColaboradorEditarActions com 11 actions tipadas', () => {
     expect(src).toContain('export interface ColaboradorEditarActions');
+    expect(src).not.toContain('readonly executarTransferencia:');
+    expect(src).not.toContain('readonly inativarColaborador:');
+    expect(src).toContain('readonly desligamentoHref: string;');
     for (const action of [
       'atualizarColaborador',
       'buscarCandidatosTransferencia',
       'definirRFEditar',
       'excluirColaborador',
-      'executarTransferencia',
-      'inativarColaborador',
       'listarLiderados',
       'pesquisarLiderCandidatosEditar',
       'reativarColaborador',
@@ -156,14 +159,12 @@ describe('ME-084 D-ME084-1/3 — ColaboradorEditarClient (refactor bag de action
     expect(src).toMatch(/^import type \{[\s\S]*?\}\s+from\s+'\.\/actions'/m);
   });
 
-  it('todos 13 callsites usam actions.X(...) (nao mais xxxAction(...))', () => {
+  it('todos 11 callsites usam actions.X(...) (nao mais xxxAction(...))', () => {
     for (const [old, next] of [
       ['atualizarColaboradorAction(', 'actions.atualizarColaborador('],
       ['buscarCandidatosTransferenciaAction(', 'actions.buscarCandidatosTransferencia('],
       ['definirRFEditarAction(', 'actions.definirRFEditar('],
       ['excluirColaboradorAction(', 'actions.excluirColaborador('],
-      ['executarTransferenciaAction(', 'actions.executarTransferencia('],
-      ['inativarColaboradorAction(', 'actions.inativarColaborador('],
       ['listarLideradosAction(', 'actions.listarLiderados('],
       ['pesquisarLiderCandidatosEditarAction(', 'actions.pesquisarLiderCandidatosEditar('],
       ['reativarColaboradorAction(', 'actions.reativarColaborador('],
@@ -182,9 +183,10 @@ describe('ME-084 D-ME084-1/3 — ColaboradorEditarClient (refactor bag de action
     expect(src).not.toMatch(
       /router\.push\(`\/super-admin\/empresa\/\$\{companyId\}\/todos-os-colaboradores`\)/,
     );
-    // Novo builder deve aparecer >=4x (4 hrefs substituidos)
+    // ME-fila6 D2 (L129): as 2 navegacoes pos-inativacao sairam desta tela
+    // (inativacao na rota do formulario) — restam >=2 hrefs.
     const matches = src.match(/router\.push\(todosColaboradoresHref\)/g) ?? [];
-    expect(matches.length).toBeGreaterThanOrEqual(4);
+    expect(matches.length).toBeGreaterThanOrEqual(2);
   });
 
   it('passa variant ao ColaboradorForm consumido', () => {
@@ -241,5 +243,19 @@ describe('ME-084 D-ME084-1/2 — TodosColaboradoresClient (variant + hrefs + ref
     expect(src).toContain('editHref={canEditCadastro ?');
     // Nao deve mais existir builder callable
     expect(src).not.toContain('editarColaboradorHrefBuilder');
+  });
+});
+
+describe('ME-fila6 D2 — estado vazio com lider fixado pela rota', () => {
+  const src = readSrc(
+    'src/app/super-admin/empresa/[id]/todos-os-colaboradores/TodosColaboradoresClient.tsx',
+  );
+
+  it('liderId fixado pela rota (hideLiderFilter) nao conta como filtro aplicado', () => {
+    expect(src).toContain(
+      'const liderFiltradoPeloUsuario = !hideLiderFilter && filters.liderId !== null;',
+    );
+    expect(src).toContain('    liderFiltradoPeloUsuario ||');
+    expect(src).not.toContain('    filters.liderId !== null ||');
   });
 });

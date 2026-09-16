@@ -56,6 +56,11 @@ import {
   employeeTerminationEvents,
   employees,
 } from '../../db/schema';
+import {
+  FORMULARIO_DESLIGAMENTO_SCHEMA,
+  MSG_FORMULARIO_MOTIVO_DIVERGENTE,
+} from '../../lib/shared/terminationForms';
+import { insertTerminationForm } from '../services/terminationForms';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
 
 // ============================================================
@@ -159,16 +164,23 @@ export const CANDIDATO_GRUPO_4_ITEM_SCHEMA = z.object({
  * modal C3e canonico captura antes do M2 v2 abrir; o Passo 6 do §14.9
  * estende com INSERT em `employeeTerminationEvents` §12.6.
  */
-export const EXECUTE_INPUT_SCHEMA = z.object({
-  liderOriginalId: z.number().int().positive(),
-  mapeamento: z.array(MAPEAMENTO_ITEM_SCHEMA).min(1).max(500),
-  candidatosGrupo4: z.array(CANDIDATO_GRUPO_4_ITEM_SCHEMA).max(500),
-  reason: z
-    .string()
-    .min(REASON_MIN_LENGTH, { message: MSG_JUSTIFICATIVA_MIN_100 })
-    .max(REASON_MAX_LENGTH, { message: MSG_JUSTIFICATIVA_MAX_500 }),
-  motivoSaida: z.enum(MOTIVO_TERMINATION_VALUES),
-});
+export const EXECUTE_INPUT_SCHEMA = z
+  .object({
+    liderOriginalId: z.number().int().positive(),
+    mapeamento: z.array(MAPEAMENTO_ITEM_SCHEMA).min(1).max(500),
+    candidatosGrupo4: z.array(CANDIDATO_GRUPO_4_ITEM_SCHEMA).max(500),
+    reason: z
+      .string()
+      .min(REASON_MIN_LENGTH, { message: MSG_JUSTIFICATIVA_MIN_100 })
+      .max(REASON_MAX_LENGTH, { message: MSG_JUSTIFICATIVA_MAX_500 }),
+    motivoSaida: z.enum(MOTIVO_TERMINATION_VALUES),
+    // ME-fila6 D2 — formulario A/B obrigatorio, gravado na mesma transacao.
+    formulario: FORMULARIO_DESLIGAMENTO_SCHEMA,
+  })
+  .refine((v) => v.formulario.tipo === v.motivoSaida, {
+    message: MSG_FORMULARIO_MOTIVO_DIVERGENTE,
+    path: ['formulario'],
+  });
 
 // ============================================================
 // Tipos publicos exportados (RV-13 — exercitados nos testes)
@@ -891,6 +903,8 @@ export function createLeadershipTransferRouter(deps: LeadershipTransferRouterDep
               message: 'INSERT employeeTerminationEvents retornou sem id.',
             });
           }
+          // ME-fila6 D2 — formulario de desligamento na mesma transacao.
+          await insertTerminationForm(tx, termInserted.id, input.formulario);
 
           // Fecha vinculo ATIVO do proprio lider inativado (se houver).
           const liderActiveLink = await tx

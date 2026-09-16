@@ -835,10 +835,15 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
     return Math.ceil(result.totalCount / filters.pageSize);
   }, [result.totalCount, filters.pageSize]);
 
+  // ME-fila6 D2 (patch pos-certificacao D1) — com `hideLiderFilter` o
+  // lider e fixado pela rota (`/minha-equipe`, `/cadeia-indireta`), nao
+  // pelo usuario: nao conta como filtro aplicado. Sem isso o estado vazio
+  // global (§5.5) nunca aparecia para quem nao tem liderados.
+  const liderFiltradoPeloUsuario = !hideLiderFilter && filters.liderId !== null;
   const hasAnyFilter =
     filters.busca !== '' ||
     filters.departamento !== null ||
-    filters.liderId !== null ||
+    liderFiltradoPeloUsuario ||
     filters.nivelHierarquico !== null ||
     filters.status !== 'ativo' ||
     filters.senioridade !== null ||

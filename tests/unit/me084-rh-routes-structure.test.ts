@@ -236,15 +236,18 @@ describe('ME-084 rota RH 3 — `/colaborador/[employeeId]/editar`', () => {
     expect(src).not.toMatch(/\brequireSuperAdmin\(/);
   });
 
-  it('page.tsx passa bag completa das 13 actions RH + variant + href', () => {
+  // ME-fila6 D2 (L129): inativar e executar transferencia sairam do bag da
+  // edicao — sao injetadas na rota do formulario de desligamento.
+  it('page.tsx passa bag das 11 actions RH + variant + hrefs', () => {
     const src = readSrc(`${dir}/page.tsx`);
     expect(src).toContain('variant="rh"');
     expect(src).toContain('todosColaboradoresHref="/todos-os-colaboradores"');
     expect(src).toContain('atualizarColaborador: atualizarColaboradorRHAction');
     expect(src).toContain('definirRFEditar: definirRFEditarRHAction');
     expect(src).toContain('excluirColaborador: excluirColaboradorRHAction');
-    expect(src).toContain('executarTransferencia: executarTransferenciaRHAction');
-    expect(src).toContain('inativarColaborador: inativarColaboradorRHAction');
+    expect(src).not.toContain('executarTransferencia: executarTransferenciaRHAction');
+    expect(src).not.toContain('inativarColaborador: inativarColaboradorRHAction');
+    expect(src).toContain('desligamentoHref={`/colaborador/${employeeId}/desligamento`}');
     expect(src).toContain('listarLiderados: listarLideradosRHAction');
     expect(src).toContain('pesquisarLiderCandidatosEditar: pesquisarLiderCandidatosEditarRHAction');
     expect(src).toContain('reativarColaborador: reativarColaboradorRHAction');

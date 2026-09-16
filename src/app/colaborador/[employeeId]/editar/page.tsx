@@ -49,8 +49,6 @@ import {
   buscarCandidatosTransferenciaRHAction,
   definirRFEditarRHAction,
   excluirColaboradorRHAction,
-  executarTransferenciaRHAction,
-  inativarColaboradorRHAction,
   listarLideradosRHAction,
   pesquisarLiderCandidatosEditarRHAction,
   reativarColaboradorRHAction,
@@ -151,13 +149,12 @@ export default async function ColaboradorEditarRHPage(props: PageProps): Promise
             currentRFName={pageData.currentRF !== null ? pageData.currentRF.name : null}
             variant="rh"
             todosColaboradoresHref="/todos-os-colaboradores"
+            desligamentoHref={`/colaborador/${employeeId}/desligamento`}
             actions={{
               atualizarColaborador: atualizarColaboradorRHAction,
               buscarCandidatosTransferencia: buscarCandidatosTransferenciaRHAction,
               definirRFEditar: definirRFEditarRHAction,
               excluirColaborador: excluirColaboradorRHAction,
-              executarTransferencia: executarTransferenciaRHAction,
-              inativarColaborador: inativarColaboradorRHAction,
               listarLiderados: listarLideradosRHAction,
               pesquisarLiderCandidatosEditar: pesquisarLiderCandidatosEditarRHAction,
               reativarColaborador: reativarColaboradorRHAction,

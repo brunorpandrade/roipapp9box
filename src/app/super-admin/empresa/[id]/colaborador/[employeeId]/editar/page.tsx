@@ -24,8 +24,6 @@ import {
   buscarCandidatosTransferenciaAction,
   definirRFEditarAction,
   excluirColaboradorAction,
-  executarTransferenciaAction,
-  inativarColaboradorAction,
   listarLideradosAction,
   pesquisarLiderCandidatosEditarAction,
   reativarColaboradorAction,
@@ -86,6 +84,9 @@ export default async function ColaboradorEditarPage(props: PageProps): Promise<J
       throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
     }
 
+    const colaboradorBase = `/super-admin/empresa/${companyId}/colaborador/${employeeId}`;
+    const desligamentoHref = `${colaboradorBase}/desligamento`;
+
     return (
       <Layout
         menuItems={menuItems}
@@ -126,13 +127,12 @@ export default async function ColaboradorEditarPage(props: PageProps): Promise<J
             currentRFName={pageData.currentRF !== null ? pageData.currentRF.name : null}
             variant="super_admin"
             todosColaboradoresHref={`/super-admin/empresa/${companyId}/todos-os-colaboradores`}
+            desligamentoHref={desligamentoHref}
             actions={{
               atualizarColaborador: atualizarColaboradorAction,
               buscarCandidatosTransferencia: buscarCandidatosTransferenciaAction,
               definirRFEditar: definirRFEditarAction,
               excluirColaborador: excluirColaboradorAction,
-              executarTransferencia: executarTransferenciaAction,
-              inativarColaborador: inativarColaboradorAction,
               listarLiderados: listarLideradosAction,
               pesquisarLiderCandidatosEditar: pesquisarLiderCandidatosEditarAction,
               reativarColaborador: reativarColaboradorAction,

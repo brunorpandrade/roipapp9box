@@ -188,6 +188,11 @@ export const REASON_REATRIBUICAO_INDIVIDUAL = 'Reatribuicao individual de lider'
  * testes, etc.).
  */
 import { COLUNAS_CANONICAS_EMPLOYEES } from '../../lib/shared/employees-columns';
+import {
+  FORMULARIO_DESLIGAMENTO_SCHEMA,
+  MSG_FORMULARIO_MOTIVO_DIVERGENTE,
+} from '../../lib/shared/terminationForms';
+import { insertTerminationForm } from '../services/terminationForms';
 export { COLUNAS_CANONICAS_EMPLOYEES };
 
 /** S191 — mapa canonico rotulo humano → literal do enum `jobFamily`. */
@@ -537,10 +542,17 @@ export const UPDATE_EMPLOYEE_INPUT_SCHEMA = z
   );
 
 /** §12.6 — input de `employees.inactivate` com `motivoSaida` obrigatorio. */
-export const INACTIVATE_EMPLOYEE_INPUT_SCHEMA = z.object({
-  employeeId: z.number().int().positive(),
-  motivoSaida: z.enum(MOTIVO_TERMINATION_VALUES),
-});
+export const INACTIVATE_EMPLOYEE_INPUT_SCHEMA = z
+  .object({
+    employeeId: z.number().int().positive(),
+    motivoSaida: z.enum(MOTIVO_TERMINATION_VALUES),
+    // ME-fila6 D2 — formulario A/B obrigatorio, gravado na mesma transacao.
+    formulario: FORMULARIO_DESLIGAMENTO_SCHEMA,
+  })
+  .refine((v) => v.formulario.tipo === v.motivoSaida, {
+    message: MSG_FORMULARIO_MOTIVO_DIVERGENTE,
+    path: ['formulario'],
+  });
 
 /** §4.5 — input de `employees.reactivate`. `novoLiderId` opcional. */
 export const REACTIVATE_EMPLOYEE_INPUT_SCHEMA = z.object({
@@ -2663,6 +2675,8 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
               message: 'INSERT em employeeTerminationEvents nao retornou id.',
             });
           }
+          // ME-fila6 D2 — formulario de desligamento na mesma transacao.
+          await insertTerminationForm(tx, terminationInserted.id, input.formulario);
 
           const activeHistory = await tx
             .select({ id: employeeLeaderHistory.id })

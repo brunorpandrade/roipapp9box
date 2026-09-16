@@ -30,14 +30,19 @@ import {
 
 import {
   ABA_UNLOCK_VALUES,
+  CATEGORIA_DESLIGAMENTO_INVOLUNTARIO_VALUES,
   DEPARTAMENTO_VALUES,
+  DESTINO_SAIDA_VALUES,
   EMAIL_QUEUE_KIND_VALUES,
   JOB_FAMILY_VALUES,
+  MOTIVO_SAIDA_VOLUNTARIA_VALUES,
   MOTIVO_TERMINATION_VALUES,
   NIVEL_HIERARQUICO_VALUES,
   NOTIFICATION_DESTINATARIO_TIPO_VALUES,
   ONBOARDING_ESTAGIO_VALUES,
   PORTAL_INSTRUMENT_VALUES,
+  RESPOSTA_SIM_NAO_NA_VALUES,
+  RESPOSTA_SIM_NAO_TALVEZ_VALUES,
   RF_EVENT_TYPE_VALUES,
   SEVERIDADE_VALUES,
   TIPO_ACESSO_VALUES,
@@ -1499,6 +1504,59 @@ export const employeeTerminationEvents = mysqlTable(
   (t) => ({
     idxEteCompanyData: index('idx_ete_company_data').on(t.companyId, t.dataInativacao),
     idxEteEmployee: index('idx_ete_employee').on(t.employeeId),
+  }),
+);
+
+// ME-fila6 D2 — Formulario A (entrevista de desligamento voluntario).
+// 1:1 com `employeeTerminationEvents` (append-only). ON DELETE CASCADE: o
+// formulario e parte do evento e nunca existe sem ele.
+export const terminationVoluntaryInterviews = mysqlTable(
+  'terminationVoluntaryInterviews',
+  {
+    id: int('id').autoincrement().primaryKey(),
+    terminationEventId: int('terminationEventId')
+      .notNull()
+      .references(() => employeeTerminationEvents.id, { onDelete: 'cascade' }),
+    motivoPrincipal: mysqlEnum('motivoPrincipal', MOTIVO_SAIDA_VOLUNTARIA_VALUES).notNull(),
+    motivoSecundario1: mysqlEnum('motivoSecundario1', MOTIVO_SAIDA_VOLUNTARIA_VALUES),
+    motivoSecundario2: mysqlEnum('motivoSecundario2', MOTIVO_SAIDA_VOLUNTARIA_VALUES),
+    notaConfiancaLideranca: tinyint('notaConfiancaLideranca').notNull(),
+    notaReconhecimento: tinyint('notaReconhecimento').notNull(),
+    notaRemuneracaoJusta: tinyint('notaRemuneracaoJusta').notNull(),
+    notaOportunidadeCrescimento: tinyint('notaOportunidadeCrescimento').notNull(),
+    notaClarezaExpectativas: tinyint('notaClarezaExpectativas').notNull(),
+    notaAmbienteEquipe: tinyint('notaAmbienteEquipe').notNull(),
+    voltariaTrabalhar: mysqlEnum('voltariaTrabalhar', RESPOSTA_SIM_NAO_TALVEZ_VALUES).notNull(),
+    recomendariaEmpresa: mysqlEnum('recomendariaEmpresa', RESPOSTA_SIM_NAO_TALVEZ_VALUES).notNull(),
+    destino: mysqlEnum('destino', DESTINO_SAIDA_VALUES).notNull(),
+    oQuePoderiaReter: varchar('oQuePoderiaReter', { length: 500 }).notNull(),
+    comentariosAdicionais: varchar('comentariosAdicionais', { length: 500 }),
+    createdAt: timestamp('createdAt').defaultNow(),
+  },
+  (t) => ({
+    uqTviEvent: uniqueIndex('uq_tvi_event').on(t.terminationEventId),
+  }),
+);
+
+// ME-fila6 D2 — Formulario B (justificativa de desligamento involuntario).
+// 1:1 com `employeeTerminationEvents` (append-only). ON DELETE CASCADE: o
+// formulario e parte do evento e nunca existe sem ele.
+export const terminationInvoluntaryJustifications = mysqlTable(
+  'terminationInvoluntaryJustifications',
+  {
+    id: int('id').autoincrement().primaryKey(),
+    terminationEventId: int('terminationEventId')
+      .notNull()
+      .references(() => employeeTerminationEvents.id, { onDelete: 'cascade' }),
+    categoria: mysqlEnum('categoria', CATEGORIA_DESLIGAMENTO_INVOLUNTARIO_VALUES).notNull(),
+    houveFeedbackFormal: mysqlEnum('houveFeedbackFormal', RESPOSTA_SIM_NAO_NA_VALUES).notNull(),
+    nivelDocumentacao: tinyint('nivelDocumentacao').notNull(),
+    justificativa: varchar('justificativa', { length: 500 }).notNull(),
+    necessidadeReposicao: boolean('necessidadeReposicao').notNull(),
+    createdAt: timestamp('createdAt').defaultNow(),
+  },
+  (t) => ({
+    uqTijEvent: uniqueIndex('uq_tij_event').on(t.terminationEventId),
   }),
 );
 
