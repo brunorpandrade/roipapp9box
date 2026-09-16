@@ -88,13 +88,8 @@ import { and, asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { RoipDatabase } from '../../db/client';
-import {
-  cLevelMembers,
-  companies,
-  companyJobFamilies,
-  employees,
-  employeeLeaderHistory,
-} from '../../db/schema';
+import { cLevelMembers, companies, employees, employeeLeaderHistory } from '../../db/schema';
+import { listEmployeeVariables } from '../services/employeeVariables';
 import { roleProcedure, router } from '../trpc';
 import type { AuthenticatedUser, Context } from '../trpc';
 import { createCallerFactory } from '../trpc';
@@ -516,8 +511,6 @@ async function loadLeaderTemplateData(
     variaveis: Array<{ variableIndex: number; weight: string }>;
   }> = [];
 
-  const varsByFamily = new Map<string, Array<{ variableIndex: number; weight: string }>>();
-
   for (const empId of lideradoIds) {
     const [emp] = await db
       .select({
@@ -533,27 +526,15 @@ async function loadLeaderTemplateData(
     if (!emp) continue;
     if (emp.status !== 'ativo') continue;
 
-    let vars = varsByFamily.get(emp.jobFamily);
-    if (!vars) {
-      const rows = await db
-        .select({
-          variableIndex: companyJobFamilies.variableIndex,
-          weight: companyJobFamilies.weight,
-        })
-        .from(companyJobFamilies)
-        .where(
-          and(
-            eq(companyJobFamilies.companyId, companyId),
-            eq(
-              companyJobFamilies.jobFamily,
-              emp.jobFamily as (typeof companyJobFamilies.jobFamily.enumValues)[number],
-            ),
-          ),
-        )
-        .orderBy(asc(companyJobFamilies.variableIndex));
-      vars = rows;
-      varsByFamily.set(emp.jobFamily, vars);
-    }
+    // ME-fila6 D3 — variaveis vigentes do liderado (snapshot individual
+    // quando as 4 metas estao definidas; senao template da familia).
+    const vigentes = await listEmployeeVariables(db, companyId, [
+      { id: emp.id, jobFamily: emp.jobFamily },
+    ]);
+    const vars = (vigentes.get(emp.id) ?? []).map((v) => ({
+      variableIndex: v.variableIndex,
+      weight: v.weight,
+    }));
 
     liderados.push({
       employeeId: emp.id,

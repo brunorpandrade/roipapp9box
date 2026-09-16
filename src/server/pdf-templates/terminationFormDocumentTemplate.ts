@@ -60,6 +60,7 @@ const CSS = `
   .doc-desligamento ul { list-style: none; padding: 0; margin: 0; }
   .doc-desligamento li { font-size: 9.5pt; margin-bottom: 1mm; }
   .doc-desligamento .linhas { border-bottom: 0.5pt solid #9ca3af; height: 7mm; }
+  .doc-desligamento .escala { display: flex; gap: 8mm; font-size: 9.5pt; }
 `;
 
 function opcoes(labels: readonly string[]): string {
@@ -77,8 +78,10 @@ function linhas(qtd: number): string {
   return Array.from({ length: qtd }, () => '<div class="linhas"></div>').join('');
 }
 
+// ME-fila6 D3 — escala 1-5 numa linha so (antes: 5 linhas por pergunta).
 function escala(): string {
-  return opcoes(['1', '2', '3', '4', '5']);
+  const itens = ['1', '2', '3', '4', '5'].map((n) => `<span>&#9744; ${n}</span>`).join('');
+  return `<div class="escala">${itens}</div>`;
 }
 
 function corpoVoluntario(): string {

@@ -76,7 +76,6 @@ import { z } from 'zod';
 import type { RoipDatabase } from '../../db/client';
 import {
   cLevelMembers,
-  companyJobFamilies,
   companyMonthlyData,
   employeeGoals,
   employees,
@@ -84,6 +83,7 @@ import {
   performanceData,
   performanceVariableData,
 } from '../../db/schema';
+import type { JobFamily } from '../../db/schema';
 import {
   activeInMonthWhere,
   monthBounds,
@@ -91,6 +91,7 @@ import {
 } from '../../lib/scope/activeInMonth';
 import { getCompanyMonthlyDataByMonth } from '../services/companyMonthlyData';
 import { resolveLeaderLinkAtMonth } from '../services/employeeLeaderHistory';
+import { listEmployeeVariables } from '../services/employeeVariables';
 import { updatePerformanceDataInputRH } from '../services/performanceData';
 import { updatePerformanceVariableInputLeader } from '../services/performanceVariableData';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
@@ -202,8 +203,10 @@ export interface MonthlyInputFormRHRow {
 
 /**
  * Linha da variavel no retorno da aba Lider de `getMonthlyInputForm`.
- * `weight` reflete o snapshot vigente em `companyJobFamilies` no momento
- * da consulta. `meta` reflete o `employeeGoals.goal` canonicamente
+ * `weight`, `variableName` e `unit` refletem as variaveis vigentes do
+ * colaborador (ME-fila6 D3 — `listEmployeeVariables`: snapshot individual
+ * de `employeeGoals` quando as 4 metas estao definidas; senao template).
+ * `meta` reflete o `employeeGoals.goal` canonicamente
  * configurado pelo RH por `(employeeId, variableIndex)` — `null` quando
  * a meta ainda nao foi configurada (S259 consumida na ME-fila2-seed).
  */
@@ -339,29 +342,6 @@ function isPastDay5OfNextMonth(mes: string, now: Date): boolean {
   // mesNum e 1..12; o mes subsequente e (mesNum) em base 0-indexed do JS.
   const day5NextMonth = Date.UTC(ano, mesNum, 5, 0, 0, 0);
   return now.getTime() >= day5NextMonth;
-}
-
-/**
- * Retorna a lista de `variableIndex` que sao objeto de lancamento canonico
- * (weight > 0) para uma dada jobFamily de uma empresa. Consumido por:
- *   - `saveMonthlyLeaderData` — rejeita input em variavel com peso=0.
- *   - `getMonthlyInputForm(aba='lider')` — expoe as 4 variaveis com peso
- *     como snapshot ao caller (UI decide render/bloqueio).
- */
-async function listVariablesForFamily(db: RoipDatabase, companyId: number, jobFamily: string) {
-  return await db
-    .select()
-    .from(companyJobFamilies)
-    .where(
-      and(
-        eq(companyJobFamilies.companyId, companyId),
-        eq(
-          companyJobFamilies.jobFamily,
-          jobFamily as (typeof companyJobFamilies.jobFamily.enumValues)[number],
-        ),
-      ),
-    )
-    .orderBy(asc(companyJobFamilies.variableIndex));
 }
 
 /**
@@ -628,25 +608,13 @@ export function createMonthlyDataRouter() {
             .where(inArray(employees.id, liderados))
             .orderBy(asc(employees.name));
 
-          // Cache de variaveis por familia (evita N+1).
-          const variablesByFamily = new Map<
-            string,
-            Array<{ variableIndex: number; variableName: string; unit: string; weight: string }>
-          >();
-          for (const emp of empRows) {
-            if (!variablesByFamily.has(emp.jobFamily)) {
-              const vars = await listVariablesForFamily(ctx.db, input.companyId, emp.jobFamily);
-              variablesByFamily.set(
-                emp.jobFamily,
-                vars.map((v) => ({
-                  variableIndex: v.variableIndex,
-                  variableName: v.variableName,
-                  unit: v.unit,
-                  weight: v.weight,
-                })),
-              );
-            }
-          }
+          // ME-fila6 D3 — variaveis vigentes por colaborador (snapshot
+          // individual quando as 4 metas estao definidas; senao template).
+          const variablesByEmployee = await listEmployeeVariables(
+            ctx.db,
+            input.companyId,
+            empRows.map((e) => ({ id: e.id, jobFamily: e.jobFamily })),
+          );
 
           // Buscar performanceData de todos os liderados no mes.
           const perfRows = await ctx.db
@@ -716,7 +684,7 @@ export function createMonthlyDataRouter() {
           }
 
           for (const emp of empRows) {
-            const vars = variablesByFamily.get(emp.jobFamily) ?? [];
+            const vars = variablesByEmployee.get(emp.id) ?? [];
             const perfId = perfByEmp.get(emp.id);
             const varsFilled = perfId !== undefined ? perfVarByPerf.get(perfId) : undefined;
             const variaveis: MonthlyInputFormLeaderVariable[] = vars.map((v) => {
@@ -1001,7 +969,7 @@ export function createMonthlyDataRouter() {
         // vinculo (employees.companyId).
         const liderCache = new Map<
           number,
-          { jobFamily: string; familia6: boolean; ativoEmpresa: boolean }
+          { jobFamily: JobFamily; familia6: boolean; ativoEmpresa: boolean }
         >();
         for (const l of input.liderados) {
           const link = await resolveLeaderLinkAtMonth(ctx.db, l.employeeId, input.mes);
@@ -1051,24 +1019,22 @@ export function createMonthlyDataRouter() {
           });
         }
 
-        // Cache de variaveis por familia canonica.
-        const variableCache = new Map<
-          string,
-          Map<number, { weight: string; variableName: string; unit: string }>
-        >();
-        async function getVarsMap(family: string) {
-          const cached = variableCache.get(family);
-          if (cached) return cached;
-          const vars = await listVariablesForFamily(ctx.db, input.companyId, family);
+        // ME-fila6 D3 — variaveis vigentes por liderado (snapshot individual
+        // quando as 4 metas estao definidas; senao template da familia).
+        const variablesByEmployee = await listEmployeeVariables(
+          ctx.db,
+          input.companyId,
+          [...liderCache.entries()].map(([id, info]) => ({ id, jobFamily: info.jobFamily })),
+        );
+        function getVarsMap(employeeId: number) {
           const map = new Map<number, { weight: string; variableName: string; unit: string }>();
-          for (const v of vars) {
+          for (const v of variablesByEmployee.get(employeeId) ?? []) {
             map.set(v.variableIndex, {
               weight: v.weight,
               variableName: v.variableName,
               unit: v.unit,
             });
           }
-          variableCache.set(family, map);
           return map;
         }
 
@@ -1077,7 +1043,7 @@ export function createMonthlyDataRouter() {
         // casos ruins (mesma familia de precedente RV-04 do ME-035).
         for (const l of input.liderados) {
           const info = liderCache.get(l.employeeId)!;
-          const varsMap = await getVarsMap(info.jobFamily);
+          const varsMap = getVarsMap(l.employeeId);
           for (const v of l.variaveis) {
             const varMeta = varsMap.get(v.variableIndex);
             if (!varMeta) {
@@ -1163,7 +1129,7 @@ export function createMonthlyDataRouter() {
               perfDataId = first.id;
             }
 
-            const varsMap = await getVarsMap(info.jobFamily);
+            const varsMap = getVarsMap(l.employeeId);
             for (const v of l.variaveis) {
               const varMeta = varsMap.get(v.variableIndex)!;
               // Familia 6: forca demanda=5 no backend, ignora valor do

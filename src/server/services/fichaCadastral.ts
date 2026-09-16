@@ -29,6 +29,7 @@ import {
   type PlatformSession,
 } from '../../lib/session/platformMenuContext';
 
+import { canViewerDefineGoals, loadMetasStatus, type MetasStatus } from './employeeGoalsModal';
 import { resolveHierarchicalScope } from './hierarchicalScope';
 
 /** Dados exibidos no pop-up (campos do formulario de cadastro). */
@@ -52,6 +53,10 @@ export interface FichaCadastral {
   readonly isResponsavelFinanceiro: boolean;
   readonly liderName: string | null;
   readonly liderTipo: 'employee' | 'clevel' | null;
+  /** ME-fila6 D3 — visualizador pode abrir [Definir metas] (DOC 02). */
+  readonly podeDefinirMetas: boolean;
+  /** ME-fila6 D3 — selo de metas da familia atual. */
+  readonly metasStatus: MetasStatus;
 }
 
 /** Visualizador autenticado. */
@@ -145,6 +150,9 @@ export async function loadFichaCadastralForViewer(
       return null;
     }
   }
+  const podeDefinirMetas =
+    row.status === 'ativo' && (await canViewerDefineGoals(db, viewer, companyId, employeeId));
+  const metasStatus = await loadMetasStatus(db, employeeId, row.jobFamily);
   const liderTipo = row.liderName !== null ? 'employee' : row.clevelName !== null ? 'clevel' : null;
   return {
     id: row.id,
@@ -166,5 +174,7 @@ export async function loadFichaCadastralForViewer(
     isResponsavelFinanceiro: row.isResponsavelFinanceiro === true,
     liderName: row.liderName ?? row.clevelName ?? null,
     liderTipo,
+    podeDefinirMetas,
+    metasStatus,
   };
 }

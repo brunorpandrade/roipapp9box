@@ -12,7 +12,8 @@
 //   D3  — Foto como avatar auto-gerado por iniciais (mockup literal).
 //   D5  — [Enviar primeiro acesso] disabled S503 com tooltip canonico.
 //   D6  — Autocomplete lider direto polimorfico (employee | clevel).
-//   D7  — [Definir metas] disabled S503 com tooltip canonico.
+//   D7  — [Definir metas]: slot `metasSlot` (ME-fila6 D3); sem slot (cadastro novo)
+//         o botao fica desabilitado ate o colaborador ser salvo.
 //   D9  — Toggle RF abre ModalTransferenciaRF quando ha titular vigente.
 //
 // Este arquivo entrega apenas o SHAPE VISUAL do form. Estado, side
@@ -21,7 +22,15 @@
 
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type JSX } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type JSX,
+  type ReactNode,
+} from 'react';
 
 import { COLORS } from '../../../../../lib/design-tokens/colors';
 
@@ -162,6 +171,11 @@ export interface ColaboradorFormProps {
    * (§13.4 canonico + roleProcedure 'rh'/'rh_lider' em employees.update).
    */
   readonly variant?: 'super_admin' | 'rh';
+  /**
+   * ME-fila6 D3 — controle [Definir metas] + selo (§13.4 Secao 6). Ausente
+   * no cadastro novo (colaborador ainda sem id).
+   */
+  readonly metasSlot?: ReactNode;
 }
 
 // ============================================================
@@ -322,7 +336,7 @@ const BTN_DISABLED_STYLE = {
 };
 
 const S503_TOOLTIP_PRIMEIRO_ACESSO = 'Envio de primeiro acesso disponível em ME futura de auth.';
-const S503_TOOLTIP_DEFINIR_METAS = 'Definição de metas disponível em ME futura do motor Eixo X.';
+const TOOLTIP_METAS_APOS_CADASTRO = 'Salve o colaborador para definir as metas.';
 
 // ============================================================
 // Helpers puros (RV-13 — testaveis)
@@ -363,6 +377,7 @@ export function ColaboradorForm(props: ColaboradorFormProps): JSX.Element {
     searchLiderCandidates,
     presetIsRH,
     variant = 'super_admin',
+    metasSlot,
   } = props;
   // ME-084 D-ME084-1/2 — flags derivadas bit-exact de `variant`. RH nao
   // ve toggles Bruno-exclusive; alem disso `isRH` e `isResponsavelFinanceiro`
@@ -840,24 +855,31 @@ export function ColaboradorForm(props: ColaboradorFormProps): JSX.Element {
         </section>
       ) : null}
 
-      {/* Seção 6 — Metas (M1 disabled S503) */}
+      {/* Seção 6 — Metas (§13.4 / §13.7 — ME-fila6 D3) */}
       <section style={SECTION_CARD_STYLE}>
         <h2 style={SECTION_TITLE_STYLE}>Metas de desempenho</h2>
         <div style={{ fontSize: 13, color: COLORS.text.secondary }}>
-          As metas mensais dependem da família de função selecionada. A definição individual será
-          habilitada quando o motor do Eixo X entrar em operação.
+          As metas mensais dependem da família de função do colaborador. Sem as 4 metas
+          configuradas, o motor do Eixo X ignora este colaborador.
         </div>
         <div>
-          <button
-            type="button"
-            disabled
-            style={BTN_DISABLED_STYLE}
-            title={S503_TOOLTIP_DEFINIR_METAS}
-            aria-label={S503_TOOLTIP_DEFINIR_METAS}
-          >
-            Definir metas
-          </button>
+          {metasSlot ?? (
+            <button
+              type="button"
+              disabled
+              style={BTN_DISABLED_STYLE}
+              title={TOOLTIP_METAS_APOS_CADASTRO}
+              aria-label={TOOLTIP_METAS_APOS_CADASTRO}
+            >
+              Definir metas
+            </button>
+          )}
         </div>
+        {metasSlot === undefined ? (
+          <div style={{ fontSize: 12, color: COLORS.text.tertiary }}>
+            {TOOLTIP_METAS_APOS_CADASTRO}
+          </div>
+        ) : null}
       </section>
     </div>
   );

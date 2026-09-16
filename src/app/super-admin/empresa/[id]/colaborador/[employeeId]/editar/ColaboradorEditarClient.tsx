@@ -33,6 +33,8 @@ import {
 } from '../../../_shared/ModalTransferenciaLiderados';
 import { ModalTransferenciaRF } from '../../../_shared/ModalTransferenciaRF';
 import { salvarTransferenciaPendente } from '@/components/desligamento/transferenciaPendente';
+import { DefinirMetasControl } from '@/components/metas/DefinirMetasControl';
+import type { MetasStatus } from '@/server/services/employeeGoalsModal';
 import {
   ColaboradorForm,
   type ColaboradorFormValues,
@@ -104,6 +106,8 @@ interface Props {
    * desligamento`. RH: `/colaborador/{emp}/desligamento`.
    */
   readonly desligamentoHref: string;
+  /** ME-fila6 D3 — selo inicial da Secao 6 (Metas). */
+  readonly initialMetasStatus: MetasStatus;
   /** ME-084 — bag de actions injetada conforme rota. */
   readonly actions: ColaboradorEditarActions;
 }
@@ -304,6 +308,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
     variant = 'super_admin',
     todosColaboradoresHref,
     desligamentoHref,
+    initialMetasStatus,
     actions,
   } = props;
   const router = useRouter();
@@ -791,6 +796,13 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
         cpfReadonly={true}
         searchLiderCandidates={handleSearchLider}
         variant={variant}
+        metasSlot={
+          <DefinirMetasControl
+            companyId={companyId}
+            employeeId={initialEmployee.id}
+            initialStatus={initialMetasStatus}
+          />
+        }
       />
       <div style={CREDENTIALS_SECTION_STYLE}>
         <h3 style={CREDENTIALS_TITLE_STYLE}>Credenciais de acesso</h3>

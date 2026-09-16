@@ -31,6 +31,7 @@ import {
   formatDateBR,
 } from '../../app/super-admin/empresa/[id]/todos-os-colaboradores/internals';
 import { COLORS } from '../../lib/design-tokens/colors';
+import { DefinirMetasControl } from '../metas/DefinirMetasControl';
 import type { FichaCadastral } from '../../server/services/fichaCadastral';
 
 export interface FichaCadastralModalProps {
@@ -232,22 +233,33 @@ export function FichaCadastralModal(props: FichaCadastralModalProps): JSX.Elemen
             </div>
           ) : null}
         </div>
-        {editHref !== null ? (
-          <div style={FOOTER_STYLE}>
-            <Link
-              href={editHref}
-              style={{
-                background: COLORS.accent.teal,
-                color: '#FFFFFF',
-                padding: '8px 16px',
-                borderRadius: 8,
-                fontSize: 14,
-                fontWeight: 600,
-                textDecoration: 'none',
-              }}
-            >
-              ✎ Editar cadastro
-            </Link>
+        {ficha !== null && (ficha.podeDefinirMetas || editHref !== null) ? (
+          <div style={{ ...FOOTER_STYLE, justifyContent: 'space-between', gap: 12 }}>
+            {ficha.podeDefinirMetas ? (
+              <DefinirMetasControl
+                companyId={companyId}
+                employeeId={ficha.id}
+                initialStatus={ficha.metasStatus}
+              />
+            ) : (
+              <span />
+            )}
+            {editHref !== null ? (
+              <Link
+                href={editHref}
+                style={{
+                  background: COLORS.accent.teal,
+                  color: '#FFFFFF',
+                  padding: '8px 16px',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+              >
+                ✎ Editar cadastro
+              </Link>
+            ) : null}
           </div>
         ) : null}
       </div>

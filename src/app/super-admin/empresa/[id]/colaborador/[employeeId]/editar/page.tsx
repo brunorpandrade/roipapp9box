@@ -6,6 +6,7 @@
 //
 // RV-14. Um statement por linha, largura maxima 100 colunas.
 
+import { loadMetasStatus } from '@/server/services/employeeGoalsModal';
 import { notFound, redirect } from 'next/navigation';
 import type { JSX } from 'react';
 
@@ -87,6 +88,12 @@ export default async function ColaboradorEditarPage(props: PageProps): Promise<J
     const colaboradorBase = `/super-admin/empresa/${companyId}/colaborador/${employeeId}`;
     const desligamentoHref = `${colaboradorBase}/desligamento`;
 
+    const metasStatus = await loadMetasStatus(
+      client.db,
+      pageData.employee.id,
+      pageData.employee.jobFamily,
+    );
+
     return (
       <Layout
         menuItems={menuItems}
@@ -127,6 +134,7 @@ export default async function ColaboradorEditarPage(props: PageProps): Promise<J
             currentRFName={pageData.currentRF !== null ? pageData.currentRF.name : null}
             variant="super_admin"
             todosColaboradoresHref={`/super-admin/empresa/${companyId}/todos-os-colaboradores`}
+            initialMetasStatus={metasStatus}
             desligamentoHref={desligamentoHref}
             actions={{
               atualizarColaborador: atualizarColaboradorAction,
