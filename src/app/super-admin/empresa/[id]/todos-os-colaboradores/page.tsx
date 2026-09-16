@@ -41,6 +41,8 @@ import { resolveMenuItems } from '../../../../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../../../../lib/session/resolveProfileKey';
 import { getServerSession } from '../../../../../server/session/serverSession';
 
+import { carregarFichaCadastralAction } from '../../../../_shared/fichaCadastral/actions';
+
 import { TodosColaboradoresClient } from './TodosColaboradoresClient';
 import {
   downloadTemplateColaboradoresAction,
@@ -160,6 +162,7 @@ export default async function TodosColaboradoresPage(props: PageProps): Promise<
             novoColaboradorHref={`/super-admin/empresa/${companyId}/colaborador/novo`}
             editarColaboradorHrefBase={`/super-admin/empresa/${companyId}/colaborador`}
             refetchAction={listarColaboradoresAction}
+            fichaCadastralAction={carregarFichaCadastralAction}
             downloadTemplateAction={downloadTemplateColaboradoresAction}
             exportSpreadsheetAction={exportSpreadsheetColaboradoresAction}
             uploadCSVAction={uploadCSVColaboradoresAction}

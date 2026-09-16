@@ -40,9 +40,7 @@ import { PerfilIndividualFormShell } from '../../../components/instruments/Perfi
 import { Layout } from '../../../components/shell/Layout';
 import { closeDbClient, createDbClient } from '../../../db/client';
 import { resolveDatabaseUrl } from '../../../lib/db/resolveDatabaseUrl';
-import { resolveMenuItems } from '../../../lib/menu/menuConfig';
-import { loadRhSessionFlags } from '../../../lib/session/rhSessionFlags';
-import { resolveProfileKey } from '../../../lib/session/resolveProfileKey';
+import { loadPlatformMenuContext } from '../../../lib/session/platformMenuContext';
 import { getServerSession } from '../../../server/session/serverSession';
 
 import { loadCompanyForRhPanel, loadMeuPortalData } from '../../painel-rh/internals';
@@ -65,27 +63,13 @@ export default async function PerfilIndividualPlatformPage(): Promise<JSX.Elemen
       redirect('/');
     }
 
-    const rhFlags = await loadRhSessionFlags(client.db, session.userId);
-    const isRH = rhFlags !== null ? rhFlags.isRH : false;
-    const isLider =
-      rhFlags !== null ? rhFlags.isLider : session.role === 'lider' || session.role === 'rh_lider';
-    const hasDescendingChain = rhFlags !== null ? rhFlags.hasDescendingChain : false;
-    const isResponsavelFinanceiro = rhFlags !== null ? rhFlags.isResponsavelFinanceiro : false;
-
-    const profileKey = resolveProfileKey({
-      session,
-      isRH,
-      isLider,
-      acessoTotal: false,
-      hasDescendingChain,
-      cLevelCount: 0,
-      isSuperAdminInCompany: false,
-    });
-
-    const menuItems = resolveMenuItems(profileKey, isResponsavelFinanceiro);
-    if (menuItems === null) {
-      throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
+    // ME-fila6 D1 — menu/RF/sino via helper unico (antes C-level lia
+    // `employees` com o id de `cLevelMembers` e recebia menu restrito).
+    const menu = await loadPlatformMenuContext(client.db, session);
+    if (menu === null) {
+      redirect('/');
     }
+    const menuItems = menu.menuItems;
 
     const userType: 'employee' | 'clevel' = session.role === 'clevel' ? 'clevel' : 'employee';
     const data = await loadMeuPortalData(client.db, session.companyId, session.userId, userType);
@@ -103,7 +87,7 @@ export default async function PerfilIndividualPlatformPage(): Promise<JSX.Elemen
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: company.logoUrl ?? undefined,
           user: { displayName: session.displayName },
-          showNotificationBell: true,
+          showNotificationBell: menu.showNotificationBell,
         }}
       >
         <PerfilIndividualFormShell canalAutenticacao="platform" hrefPendencias={HREF_PENDENCIAS} />

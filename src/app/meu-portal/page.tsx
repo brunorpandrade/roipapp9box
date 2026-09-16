@@ -29,9 +29,7 @@ import type { JSX } from 'react';
 
 import { Layout } from '../../components/shell/Layout';
 import { closeDbClient, createDbClient } from '../../db/client';
-import { resolveMenuItems } from '../../lib/menu/menuConfig';
-import { loadRhSessionFlags } from '../../lib/session/rhSessionFlags';
-import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
+import { loadPlatformMenuContext } from '../../lib/session/platformMenuContext';
 import { getServerSession } from '../../server/session/serverSession';
 
 import { loadCompanyForRhPanel, loadMeuPortalData } from '../painel-rh/internals';
@@ -58,31 +56,13 @@ export default async function MeuPortalPage(): Promise<JSX.Element> {
       redirect('/');
     }
 
-    // Menu canonico — precisamos das flags do RH para os cenarios
-    // rh puro / rh_lider; para clevel e lider puros as flags do
-    // `loadRhSessionFlags` retornam null (nao sao employees RH). Nesse
-    // caso resolvemos flags default a partir da propria session.role.
-    const rhFlags = await loadRhSessionFlags(client.db, session.userId);
-    const isRH = rhFlags !== null ? rhFlags.isRH : false;
-    const isLider =
-      rhFlags !== null ? rhFlags.isLider : session.role === 'lider' || session.role === 'rh_lider';
-    const hasDescendingChain = rhFlags !== null ? rhFlags.hasDescendingChain : false;
-    const isResponsavelFinanceiro = rhFlags !== null ? rhFlags.isResponsavelFinanceiro : false;
-
-    const profileKey = resolveProfileKey({
-      session,
-      isRH,
-      isLider,
-      acessoTotal: false,
-      hasDescendingChain,
-      cLevelCount: 0,
-      isSuperAdminInCompany: false,
-    });
-
-    const menuItems = resolveMenuItems(profileKey, isResponsavelFinanceiro);
-    if (menuItems === null) {
-      throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
+    // ME-fila6 D1 — menu/RF/sino via helper unico (antes C-level lia
+    // `employees` com o id de `cLevelMembers` e recebia menu restrito).
+    const menu = await loadPlatformMenuContext(client.db, session);
+    if (menu === null) {
+      redirect('/');
     }
+    const menuItems = menu.menuItems;
 
     // C-level respondente e `session.userId` referindo `cLevelMembers.id`;
     // demais roles sao employees.
@@ -97,7 +77,7 @@ export default async function MeuPortalPage(): Promise<JSX.Element> {
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: company.logoUrl ?? undefined,
           user: { displayName: session.displayName },
-          showNotificationBell: true,
+          showNotificationBell: menu.showNotificationBell,
         }}
       >
         <MeuPortalClient

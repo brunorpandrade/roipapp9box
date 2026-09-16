@@ -66,8 +66,19 @@ import type { ServerSession } from '../../server/session/serverSession';
  *   `session.kind !== 'super_admin'`. Na ME-056, todos os consumidores
  *   passam `false` — a rota dentro-de-empresa entra em ME futura.
  */
+/**
+ * ME-fila6 D1 — o resolvedor le apenas `kind` e `role`; o tipo aceita
+ * qualquer sessao com essa identidade (inclui `ServerSession`).
+ */
+export type ProfileKeySession =
+  | { readonly kind: 'super_admin' }
+  | {
+      readonly kind: 'platform';
+      readonly role: Extract<ServerSession, { readonly kind: 'platform' }>['role'];
+    };
+
 export interface ProfileKeyInput {
-  readonly session: ServerSession;
+  readonly session: ProfileKeySession;
   readonly isRH: boolean;
   readonly isLider: boolean;
   readonly acessoTotal: boolean;

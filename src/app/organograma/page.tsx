@@ -25,24 +25,20 @@
 //
 // **RV-13.** Todo import consumido bit-exact:
 //   - `OrganogramaClient` via `_client.ts` shim (RV-14 canonica).
-//   - `loadRhSessionFlags` (helper canonico consolidado ME-086 D-086-10).
+//   - `loadPlatformMenuContext` (helper unico de menu — ME-fila6 D1).
 //   - `resolveApplyPC1b` (helper canonico ampliado ME-086b RETOMADA
 //     §11.8 PC1g — cobre RH/RH-Lider/Lider/CF).
 //   - Loader `loadFullOrgTree` (service `orgTree`).
 //
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
-import { and, eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
 
 import { Layout } from '../../components/shell/Layout';
 import { closeDbClient, createDbClient } from '../../db/client';
-import { cLevelMembers } from '../../db/schema';
 import { COLORS } from '../../lib/design-tokens/colors';
-import { resolveMenuItems } from '../../lib/menu/menuConfig';
-import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
-import { loadRhSessionFlags } from '../../lib/session/rhSessionFlags';
+import { loadPlatformMenuContext } from '../../lib/session/platformMenuContext';
 import { resolveApplyPC1b } from '../../server/routers/orgTree';
 import { resolveHierarchicalScope } from '../../server/services/hierarchicalScope';
 import { getServerSession } from '../../server/session/serverSession';
@@ -50,47 +46,6 @@ import { loadFullOrgTree } from '../../server/services/orgTree';
 
 import { OrganogramaClient } from './_client';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
-
-/**
- * Flags default canonicas para C-level — usadas quando o guard
- * resolve para branch RH/RH-Lider ou Lider (nao ha C-level na sessao
- * para carregar). Bit-exact ao padrao ME-084/ME-B9-CR.
- */
-function defaultCLevelFlags(): { readonly cLevelCount: number; readonly acessoTotal: boolean } {
-  return { cLevelCount: 0, acessoTotal: false };
-}
-
-/**
- * §12.2 CAMADA_UI — resolve flags reais de C-level (`acessoTotal=true`
- * obrigatorio para acesso pleno; CF cai em access-denied). Bit-exact
- * ao padrao `/central-relatorios` ME-B9-CR3.
- */
-async function resolveCLevelFlags(
-  db: Awaited<ReturnType<typeof createDbClient>>['db'],
-  userId: number,
-  companyId: number,
-): Promise<{
-  readonly acessoTotal: boolean;
-  readonly cLevelCount: number;
-} | null> {
-  const memberRows = await db
-    .select({ acessoTotal: cLevelMembers.acessoTotal })
-    .from(cLevelMembers)
-    .where(eq(cLevelMembers.id, userId))
-    .limit(1);
-  const member = memberRows[0];
-  if (member === undefined) {
-    return null;
-  }
-  const countRows = await db
-    .select({ id: cLevelMembers.id })
-    .from(cLevelMembers)
-    .where(and(eq(cLevelMembers.companyId, companyId), eq(cLevelMembers.status, 'ativo')));
-  return {
-    acessoTotal: member.acessoTotal ?? true,
-    cLevelCount: countRows.length,
-  };
-}
 
 export default async function OrganogramaRHPage(): Promise<JSX.Element> {
   const session = await getServerSession();
@@ -125,16 +80,23 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
       redirect('/');
     }
 
+    // ME-fila6 D1 — menu/RF/sino via helper unico (antes o ramo C-level
+    // passava RF=false fixo e o ramo Lider exibia o sino, contra §4.1).
+    const menu = await loadPlatformMenuContext(client.db, session);
+    if (menu === null) {
+      redirect('/');
+    }
+
     // Branch canonico bit-exact por perfil para resolver menu.
     // C-level: consulta canonica flags (§12.2 CAMADA_UI). CF entra
     // canonicamente bit-exact — fix D-086b-CF-ORGANOGRAMA RETOMADA:
     // matriz §10.4 nao rejeita CF em /organograma; a rejeicao ocorre
     // canonicamente em /todos-os-colaboradores e /central-relatorios.
     if (session.role === 'clevel') {
-      const cFlags = await resolveCLevelFlags(client.db, session.userId, session.companyId);
+      const cFlags = menu.cLevel;
       if (cFlags === null) {
         // Session bate C-level mas nao existe registro correspondente
-        // em cLevelMembers — inconsistencia canonica de sessao/dados.
+        // em cLevelMembers — inconsistencia de sessao/dados.
         redirect('/access-denied?rota=/organograma');
       }
       // §11.8 PC1g canonica bit-exact — resolve PC1b com contexto
@@ -166,23 +128,9 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
         },
       );
       const restrictedNodeIds = scope === null ? undefined : Array.from(scope);
-      const menuFlagsClevel = { isRH: false, isLider: false, hasDescendingChain: false };
-      const profileKeyClevel = resolveProfileKey({
-        session,
-        isRH: menuFlagsClevel.isRH,
-        isLider: menuFlagsClevel.isLider,
-        acessoTotal: cFlags.acessoTotal,
-        hasDescendingChain: menuFlagsClevel.hasDescendingChain,
-        cLevelCount: cFlags.cLevelCount,
-        isSuperAdminInCompany: false,
-      });
-      const menuItemsClevel = resolveMenuItems(profileKeyClevel, false);
-      if (menuItemsClevel === null) {
-        throw new Error(`Menu canonico ausente para ${profileKeyClevel} — inconsistencia §3`);
-      }
       return (
         <Layout
-          menuItems={menuItemsClevel}
+          menuItems={menu.menuItems}
           header={{
             leftMode: 'in_company',
             companyDisplayName: session.companyDisplayName,
@@ -203,14 +151,9 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
       );
     }
 
-    // Branch canonico bit-exact Lider puro: menu de lider (isLider=true,
-    // isRH=false). loadRhSessionFlags aceita canonicamente qualquer
-    // role platform.
+    // Branch Lider puro: menu de lider resolvido por
+    // `loadPlatformMenuContext` (ME-fila6 D1).
     if (session.role === 'lider') {
-      const menuFlags = await loadRhSessionFlags(client.db, session.userId);
-      if (menuFlags === null) {
-        redirect('/');
-      }
       // §11.8 PC1g canonica bit-exact — Lider sempre com PC1b.
       const applyPC1bLider = resolveApplyPC1b({
         role: session.role,
@@ -225,29 +168,15 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
         companyId: session.companyId,
       });
       const restrictedNodeIdsLider = scopeLider === null ? undefined : Array.from(scopeLider);
-      const cFlags = defaultCLevelFlags();
-      const profileKey = resolveProfileKey({
-        session,
-        isRH: false,
-        isLider: true,
-        acessoTotal: cFlags.acessoTotal,
-        hasDescendingChain: menuFlags.hasDescendingChain,
-        cLevelCount: cFlags.cLevelCount,
-        isSuperAdminInCompany: false,
-      });
-      const menuItems = resolveMenuItems(profileKey, menuFlags.isResponsavelFinanceiro);
-      if (menuItems === null) {
-        throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
-      }
       return (
         <Layout
-          menuItems={menuItems}
+          menuItems={menu.menuItems}
           header={{
             leftMode: 'in_company',
             companyDisplayName: session.companyDisplayName,
             companyLogoUrl: session.companyLogoUrl ?? undefined,
             user: { displayName: session.displayName },
-            showNotificationBell: true,
+            showNotificationBell: menu.showNotificationBell,
           }}
         >
           <OrganogramaPageInner
@@ -262,13 +191,8 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
       );
     }
 
-    // Branch canonico bit-exact RH puro / RH-Lider (bit-exact ao
-    // padrao `/central-relatorios` pre-CR3). ME-086 D-086-10: helper
-    // canonico consolidado `loadRhSessionFlags`.
-    const menuFlags = await loadRhSessionFlags(client.db, session.userId);
-    if (menuFlags === null) {
-      redirect('/');
-    }
+    // Branch RH puro / RH-Lider: menu resolvido por
+    // `loadPlatformMenuContext` (ME-fila6 D1).
     // §11.8 PC1g canonica bit-exact — RH e RH-Lider sempre com PC1b
     // (comportamento bit-exact ao original §11.2, preservado).
     const applyPC1bRh = resolveApplyPC1b({
@@ -276,30 +200,15 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
       userId: session.userId,
       companyId: session.companyId,
     });
-    const cFlags = defaultCLevelFlags();
-    const profileKey = resolveProfileKey({
-      session,
-      isRH: menuFlags.isRH,
-      isLider: menuFlags.isLider,
-      acessoTotal: cFlags.acessoTotal,
-      hasDescendingChain: menuFlags.hasDescendingChain,
-      cLevelCount: cFlags.cLevelCount,
-      isSuperAdminInCompany: false,
-    });
-    const menuItems = resolveMenuItems(profileKey, menuFlags.isResponsavelFinanceiro);
-    if (menuItems === null) {
-      throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
-    }
-
     return (
       <Layout
-        menuItems={menuItems}
+        menuItems={menu.menuItems}
         header={{
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
           user: { displayName: session.displayName },
-          showNotificationBell: true,
+          showNotificationBell: menu.showNotificationBell,
         }}
       >
         <OrganogramaPageInner

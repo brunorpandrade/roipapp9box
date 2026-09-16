@@ -25,17 +25,16 @@
 
 import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
-import { and, eq, isNull, sql } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 
 import { Layout } from '../../components/shell/Layout';
 import { closeDbClient, createDbClient } from '../../db/client';
-import { cLevelMembers, employeeLeaderHistory, employees } from '../../db/schema';
 import { findCompanyDisplayInfo } from '../../lib/logs/companyHistoryLog';
 import type { MenuItem } from '../../lib/menu/menuConfig';
 import { resolveMenuItems } from '../../lib/menu/menuConfig';
 // eslint-disable-next-line @stylistic/max-len -- path canonico do guard
 import { requireAuthenticatedNonCollaborator } from '../../lib/routes/requireAuthenticatedNonCollaborator';
+import { loadPlatformMenuContext } from '../../lib/session/platformMenuContext';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { createRateLimiter } from '../../server/auth/rateLimit';
 import { myDataRouter } from '../../server/routers/myData';
@@ -82,7 +81,6 @@ export default async function MeusDadosPage(): Promise<JSX.Element> {
     let menuItems: readonly MenuItem[] | null = null;
     let companyDisplayName: string | undefined;
     let companyLogoUrl: string | undefined;
-    let isResponsavelFinanceiro = false;
     let showNotificationBell = false;
 
     if (activeSession.kind === 'super_admin') {
@@ -107,87 +105,14 @@ export default async function MeusDadosPage(): Promise<JSX.Element> {
       // Platform: rh, rh_lider, clevel ou lider.
       companyDisplayName = activeSession.companyDisplayName;
       companyLogoUrl = activeSession.companyLogoUrl ?? undefined;
-      const role = activeSession.role;
-      let isRH = false;
-      let isLider = false;
-      let acessoTotal = false;
-      let hasDescendingChain = false;
-      let cLevelCount = 0;
-
-      if (role === 'clevel') {
-        // C-level: precisa de acessoTotal (do proprio C-level) e do
-        // cLevelCount da empresa.
-        const clevelRows = await client.db
-          .select({ acessoTotal: cLevelMembers.acessoTotal })
-          .from(cLevelMembers)
-          .where(eq(cLevelMembers.id, activeSession.userId))
-          .limit(1);
-        const cRow = clevelRows[0];
-        acessoTotal = cRow?.acessoTotal ?? true;
-        const totalRows = await client.db
-          .select({ count: sql<number>`COUNT(*)` })
-          .from(cLevelMembers)
-          .where(
-            and(
-              eq(cLevelMembers.companyId, activeSession.companyId),
-              eq(cLevelMembers.status, 'ativo'),
-            ),
-          );
-        cLevelCount = Number(totalRows[0]?.count ?? 0);
-        // isResponsavelFinanceiro do C-level (§11.5 do menu).
-        const clevelRfRows = await client.db
-          .select({ rf: cLevelMembers.isResponsavelFinanceiro })
-          .from(cLevelMembers)
-          .where(eq(cLevelMembers.id, activeSession.userId))
-          .limit(1);
-        isResponsavelFinanceiro = clevelRfRows[0]?.rf ?? false;
-      } else {
-        // rh, rh_lider, lider — vive em employees.
-        isRH = role === 'rh' || role === 'rh_lider';
-        isLider = role === 'rh_lider' || role === 'lider';
-        showNotificationBell = role === 'rh' || role === 'rh_lider';
-
-        if (role === 'rh_lider' || role === 'lider') {
-          // hasDescendingChain: existe pelo menos 1 liderado direto do
-          // usuario que tambem e lider? (DOC canonical resolveProfileKey
-          // §51-59.)
-          const chainRows = await client.db
-            .select({ id: employees.id })
-            .from(employeeLeaderHistory)
-            .innerJoin(employees, eq(employees.id, employeeLeaderHistory.employeeId))
-            .where(
-              and(
-                eq(employeeLeaderHistory.liderId, activeSession.userId),
-                isNull(employeeLeaderHistory.dataFim),
-                eq(employees.isLider, true),
-              ),
-            )
-            .limit(1);
-          hasDescendingChain = chainRows.length > 0;
-        }
-
-        const empRfRows = await client.db
-          .select({ rf: employees.isResponsavelFinanceiro })
-          .from(employees)
-          .where(eq(employees.id, activeSession.userId))
-          .limit(1);
-        isResponsavelFinanceiro = empRfRows[0]?.rf ?? false;
+      // ME-fila6 D1 — helper unico (antes a cadeia descendente nao filtrava
+      // `employees.status='ativo'`, inflando o Cenario 2 do menu).
+      const menu = await loadPlatformMenuContext(client.db, activeSession);
+      if (menu === null) {
+        redirect('/');
       }
-
-      const profileKey = resolveProfileKey({
-        session: activeSession,
-        isRH,
-        isLider,
-        acessoTotal,
-        hasDescendingChain,
-        cLevelCount,
-        isSuperAdminInCompany: false,
-      });
-      const items = resolveMenuItems(profileKey, isResponsavelFinanceiro);
-      if (items === null) {
-        throw new Error(`resolveMenuItems retornou null para profileKey=${profileKey}`);
-      }
-      menuItems = items;
+      menuItems = menu.menuItems;
+      showNotificationBell = menu.showNotificationBell;
     }
 
     // 3. Company display info para header (in_company perfis).

@@ -40,8 +40,9 @@
 // D-ME085-2 B + S230-B):
 // - liderId = session.userId (forcado server-side via
 //   `enforceEmployeeLeaderScope`; sobrescreve qualquer input do cliente).
-// - liderIdTipo = 'employee' (tanto RH-Lider quanto Lider sao sempre
-//   employees, nunca clevel; C-level fora do escopo desta rota).
+// - liderIdTipo = 'employee' para RH-Lider e Lider; 'clevel' para C-level
+//   (ME-fila6 D1 — DOC 02 §10.4 CU/CT/CF ✓; vinculo via
+//   `employeeLeaderHistory.clevelId`).
 // - papelFuncional: se cliente enviar 'respfin' via URL manipulada,
 //   reseta para 'todos' (defense-in-depth §14.10.1 + §16.2 — opcao RF
 //   nao existe nesta rota).
@@ -81,8 +82,8 @@ import { colaboradoresFiltersToServiceInput } from './filters';
  *
  * Regras canonicas aplicadas:
  * (1) `liderId = leaderId` (session.userId do usuario autenticado).
- * (2) `liderIdTipo = 'employee'` (tanto RH-Lider quanto Lider sao
- *     sempre employees, nunca clevel).
+ * (2) `liderIdTipo = leaderTipo` — `'employee'` (default, RH-Lider e
+ *     Lider) ou `'clevel'` (C-level, ME-fila6 D1).
  * (3) `papelFuncional = 'respfin' → 'todos'` (§16.2 — opcao RF
  *     canonicamente ausente nesta rota).
  *
@@ -93,11 +94,12 @@ import { colaboradoresFiltersToServiceInput } from './filters';
 export function enforceEmployeeLeaderScope(
   filters: ColaboradoresFilters,
   leaderId: number,
+  leaderTipo: 'employee' | 'clevel' = 'employee',
 ): ColaboradoresFilters {
   return {
     ...filters,
     liderId: leaderId,
-    liderIdTipo: 'employee',
+    liderIdTipo: leaderTipo,
     papelFuncional: filters.papelFuncional === 'respfin' ? 'todos' : filters.papelFuncional,
   };
 }
@@ -136,8 +138,9 @@ export async function loadMinhaEquipePageForEmployeeLeader(
   companyId: number,
   leaderId: number,
   filters: ColaboradoresFilters,
+  leaderTipo: 'employee' | 'clevel' = 'employee',
 ): Promise<MinhaEquipeEmployeeLeaderPageData> {
-  const scopedFilters = enforceEmployeeLeaderScope(filters, leaderId);
+  const scopedFilters = enforceEmployeeLeaderScope(filters, leaderId, leaderTipo);
   const serviceInput = colaboradoresFiltersToServiceInput(scopedFilters);
   const [listResult, departamentos, lideres] = await Promise.all([
     listEmployeesPaginated(db, companyId, serviceInput),

@@ -33,11 +33,8 @@
 //   `emptyStateGlobalText` + `emptyStateFilteredText`).
 // - D-ME085-5 A: guard inline (sem novo helper — extracao L125 para
 //   ME futura quando >=3 rotas RH-Lider-only existirem).
-// - N7-A: reutiliza `loadRhSessionFlags` de `../painel-rh/internals`
-//   bit-exact (variante canonicamente correta com `status='ativo'`);
-//   NAO refatora `resolveMenuFlagsForRH` das 5 pages ME-084 nesta ME.
-//   Debito D-B9-MENU-FLAGS-DIVERGENTES registrado para ME-B9-
-//   fechamento.
+// - N7-A (ME-085): helper de flags do painel-rh — substituido na
+//   ME-fila6 D1 por `loadPlatformMenuContext`.
 // - D-ME085-7 A: contador dinamico "N liderado(s) direto(s)"
 //   respeitando filtros ativos (usa `totalCount` do result que ja
 //   escopa via `enforceRHLiderScope`).
@@ -47,25 +44,29 @@
 // Padrao S366 CC068: `page.tsx` exporta apenas o default. Helpers
 // vivem em `internals.ts` irmao; refetch action em `actions.ts`.
 //
-// Middleware `matrix.ts` linhas 214-222 ja restringe RH puro (deny)
-// + super_admin (redirect_super_admin). Guard defense-in-depth abaixo
-// cobre edge cases (matriz alterada, cookie stale) + refina escopo v1
-// para RH-Lider apenas (lider/clevel autorizados pela matriz mas fora
-// do escopo canonico ME-085 caem em access-denied).
+// Middleware `matrix.ts` ja restringe RH puro (deny) + super_admin
+// (redirect_super_admin). O guard abaixo e defense-in-depth.
 //
-// **RV-13 canonica.** Todo import consumido no runtime Next 15:
+// **RV-13.** Imports consumidos no runtime Next 15:
 // - `getServerSession`, `redirect` → guard.
-// - `createDbClient`/`closeDbClient` → transacao unica com finally.
-// - `loadCompanyForRhPanel`, `loadRhSessionFlags` → dados de sessao
-//   (reuso canonico bit-exact do padrao `/painel-rh` — N7-A).
-// - `resolveProfileKey`, `resolveMenuItems` → menu canonico §3.4/§3.5.
-// - `Layout` → shell canonico.
+// - `createDbClient`/`closeDbClient` → conexao unica com finally.
+// - `loadPlatformMenuContext` → menu §3.4-§3.9, RF e sino.
+// - `Layout` → shell.
 // - `parseColaboradoresFiltersFromSearchParams` → parse query string.
-// - `loadMinhaEquipePageForRHLider` → 3 queries paralelas.
+// - `enforceEmployeeLeaderScope`, `loadMinhaEquipePageForEmployeeLeader` → escopo.
 // - `TodosColaboradoresClient` → renderiza a tabela via _client shim.
 // - `listarMinhaEquipeAction` → prop `refetchAction`.
+// - `carregarFichaCadastralAction` → pop-up de ficha cadastral §14.10.
 //
 // **RV-14 canonica.** Um statement por linha, largura maxima 100 cols.
+//
+// ME-fila6 D1 (D-CLEVEL-MINHA-EQUIPE-SEM-LIDERADOS):
+// - DOC 02 §10.4: `/minha-equipe` ✓ para CU, CT e CF. O guard aceitava
+//   apenas RH-Lider e Lider. C-level agora acessa com escopo
+//   `liderIdTipo='clevel'`; sem liderados diretos, a tabela mostra o
+//   estado vazio §5.5 (o item de menu §3.8/§3.9 e mantido).
+// - Menu/RF/sino via `loadPlatformMenuContext` (sino apenas RH — §4.1).
+// - Ficha cadastral §14.10: `[✎ Editar cadastro]` apenas para RH-Lider.
 
 import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
@@ -73,19 +74,16 @@ import type { JSX } from 'react';
 import { Layout } from '../../components/shell/Layout';
 import { closeDbClient, createDbClient } from '../../db/client';
 import { COLORS } from '../../lib/design-tokens/colors';
-import { resolveMenuItems } from '../../lib/menu/menuConfig';
-import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import { loadPlatformMenuContext } from '../../lib/session/platformMenuContext';
 import { getServerSession } from '../../server/session/serverSession';
-import { loadRhSessionFlags } from '../../lib/session/rhSessionFlags';
-
-import { loadCompanyForRhPanel } from '../painel-rh/internals';
+import { carregarFichaCadastralAction } from '../_shared/fichaCadastral/actions';
 
 import { TodosColaboradoresClient } from './_client';
 
 import { listarMinhaEquipeAction } from './actions';
 import { parseColaboradoresFiltersFromSearchParams } from './filters';
 import { enforceEmployeeLeaderScope, loadMinhaEquipePageForEmployeeLeader } from './internals';
-import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 interface PageProps {
   readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -96,8 +94,7 @@ export default async function MinhaEquipePage(props: PageProps): Promise<JSX.Ele
   if (session === null) {
     redirect('/');
   }
-  // §10.4 linha 817: Bruno em `/minha-equipe` → redirect canonico
-  // `/super-admin` (rota indisponivel para Super Admin §13.7).
+  // §10.4: Bruno em `/minha-equipe` → redirect `/super-admin` (§13.7).
   if (session.kind === 'super_admin') {
     redirect('/super-admin');
   }
@@ -108,73 +105,42 @@ export default async function MinhaEquipePage(props: PageProps): Promise<JSX.Ele
   if (session.passwordSet === false) {
     redirect('/alterar-senha');
   }
-  // ME-B9-fechamento S230-B: escopo canonico ampliado — aceita
-  // `rh_lider` (D-ME085-1 A original, C1 + C2) E `lider` (Lider Cenario
-  // 1 + Cenario 2). Alinha guard com matriz §10.4 (RHL1/RHL2/L1/L2 =
-  // allow). RH puro: deny canonico §10.4 (middleware ja bloqueia;
-  // defense-in-depth aqui). C-level (CU/CT/CF): autorizado na matriz
-  // mas dependente estruturalmente de `liderIdTipo='clevel'` no scoper
-  // — canonizado quando primeira empresa cliente com C-level unico for
-  // onboarded (D-CU-EMPIRICO). Loader compartilhado
-  // `loadMinhaEquipePageForEmployeeLeader` opera bit-a-bit para
-  // employee-leaders (RH-Lider ou Lider); nenhum branch por role
-  // dentro do loader — sao equivalentes canonicamente para escopo de
-  // liderados diretos ativos.
-  if (session.role !== 'rh_lider' && session.role !== 'lider') {
+  // §10.4: RH puro nega (middleware ja bloqueia; defense-in-depth).
+  if (session.role !== 'rh_lider' && session.role !== 'lider' && session.role !== 'clevel') {
     redirect('/access-denied?rota=/minha-equipe');
   }
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    const flags = await loadRhSessionFlags(client.db, session.userId);
-    if (flags === null) {
+    const menu = await loadPlatformMenuContext(client.db, session);
+    if (menu === null) {
       // Registro deletado entre emissao e verificacao — sessao invalida.
       redirect('/');
     }
-    const company = await loadCompanyForRhPanel(client.db, session.companyId);
-    if (company === null) {
-      // Empresa deletada entre emissao e verificacao — sessao invalida.
-      redirect('/');
-    }
-    // §3.4 / §3.5 — resolve menu canonico do RH-Lider C1 ou C2 conforme
-    // `hasDescendingChain` (calculado em `loadRhSessionFlags` com filtro
-    // canonico `status='ativo'` — N7-A).
-    const profileKey = resolveProfileKey({
-      session,
-      isRH: flags.isRH,
-      isLider: flags.isLider,
-      acessoTotal: false,
-      hasDescendingChain: flags.hasDescendingChain,
-      cLevelCount: 0,
-      isSuperAdminInCompany: false,
-    });
-    const menuItems = resolveMenuItems(profileKey, flags.isResponsavelFinanceiro);
-    if (menuItems === null) {
-      throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
-    }
 
     const companyId = session.companyId;
+    const leaderTipo = session.role === 'clevel' ? 'clevel' : 'employee';
     const rawParams = (await props.searchParams) ?? {};
-    // Parse tolerante Next 15 → aplica override RH-Lider (defense-in-
-    // depth: cliente nao pode escapar do escopo via URL manipulada).
+    // Parse tolerante → override de escopo (cliente nao escapa via URL).
     const parsedFilters = parseColaboradoresFiltersFromSearchParams(rawParams);
-    const scopedFilters = enforceEmployeeLeaderScope(parsedFilters, session.userId);
+    const scopedFilters = enforceEmployeeLeaderScope(parsedFilters, session.userId, leaderTipo);
     const pageData = await loadMinhaEquipePageForEmployeeLeader(
       client.db,
       companyId,
       session.userId,
       scopedFilters,
+      leaderTipo,
     );
 
     return (
       <Layout
-        menuItems={menuItems}
+        menuItems={menu.menuItems}
         header={{
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
-          companyLogoUrl: company.logoUrl ?? undefined,
+          companyLogoUrl: session.companyLogoUrl ?? undefined,
           user: { displayName: session.displayName },
-          showNotificationBell: true,
+          showNotificationBell: menu.showNotificationBell,
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -219,6 +185,8 @@ export default async function MinhaEquipePage(props: PageProps): Promise<JSX.Ele
             novoColaboradorHref="/colaborador/novo"
             editarColaboradorHrefBase="/colaborador"
             refetchAction={listarMinhaEquipeAction}
+            fichaCadastralAction={carregarFichaCadastralAction}
+            canEditCadastro={session.role === 'rh_lider'}
             hideActionsButtons
             hideLiderFilter
             hideRfBadgeAndFilter

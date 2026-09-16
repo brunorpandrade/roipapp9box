@@ -225,15 +225,20 @@ describe('ME-084 D-ME084-1/2 — TodosColaboradoresClient (variant + hrefs + ref
       /href=\{`\/super-admin\/empresa\/\$\{companyId\}\/colaborador\/\$\{row\.id\}\/editar`\}/,
     );
     expect(src).toContain('href={novoColaboradorHref}');
-    // ME-084 patch1: href de editar e concat inline `${base}/${row.id}/editar`.
-    expect(src).toContain('href={`${editarColaboradorHrefBase}/${row.id}/editar`}');
+    // ME-fila6 D1 (L129): href de editar saiu da linha e foi para o rodape
+    // do pop-up de ficha cadastral (§14.10), concat inline com o alvo.
+    expect(src).toContain('`${editarColaboradorHrefBase}/${fichaAlvo.id}/editar`');
+    expect(src).not.toContain('href={`${editarColaboradorHrefBase}/${row.id}/editar`}');
   });
 
-  it('renderRow recebe editarColaboradorHrefBase (nao mais builder)', () => {
-    // ME-084 patch1: signature ampliada aceita 3 args, terceiro e base string.
+  it('renderRow abre a ficha cadastral (nao navega para edicao)', () => {
+    // ME-fila6 D1 (L129): renderRow nao recebe mais a base de edicao; o
+    // icone 📇 dispara `onOpenFicha`. Edicao so no rodape do pop-up quando
+    // `canEditCadastro` (Bruno, RH puro, RH-Lider).
     expect(src).toContain('function renderRow(');
-    expect(src).toContain('editarColaboradorHrefBase: string');
-    expect(src).toContain('${editarColaboradorHrefBase}/${row.id}/editar');
+    expect(src).toContain('onOpenFicha: (id: number, name: string) => void');
+    expect(src).toContain('onClick={(): void => onOpenFicha(row.id, row.name)}');
+    expect(src).toContain('editHref={canEditCadastro ?');
     // Nao deve mais existir builder callable
     expect(src).not.toContain('editarColaboradorHrefBuilder');
   });

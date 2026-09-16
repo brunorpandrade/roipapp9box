@@ -60,7 +60,9 @@ import type {
   exportSpreadsheetColaboradoresAction,
   uploadCSVColaboradoresAction,
 } from './actions';
+import { FichaCadastralModal } from '../../../../../components/colaboradores/FichaCadastralModal';
 import { ImportarPlanilhaModal } from '../../../../../components/import-mass/ImportarPlanilhaModal';
+import type { carregarFichaCadastralAction } from '../../../../_shared/fichaCadastral/actions';
 import { triggerXlsxDownload } from '../../../../../components/import-mass/downloadXlsxBase64';
 import {
   BUSCA_MAX_LEN,
@@ -183,6 +185,17 @@ export interface TodosColaboradoresClientProps {
   readonly downloadTemplateAction?: typeof downloadTemplateColaboradoresAction;
   readonly exportSpreadsheetAction?: typeof exportSpreadsheetColaboradoresAction;
   readonly uploadCSVAction?: typeof uploadCSVColaboradoresAction;
+  /**
+   * ME-fila6 D1 — DOC 05 §14.10 pop-up de ficha cadastral somente leitura
+   * aberto pelo icone 📇. Server action com escopo decidido pela sessao.
+   */
+  readonly fichaCadastralAction: typeof carregarFichaCadastralAction;
+  /**
+   * ME-fila6 D1 — DOC 05 §14.10: `[✎ Editar cadastro]` no rodape da ficha
+   * APENAS para Bruno, RH puro e RH-Lider. Default `true` preserva as rotas
+   * de Bruno e RH; Lider e C-level passam `false`.
+   */
+  readonly canEditCadastro?: boolean;
 }
 
 // -----------------------------------------------------------------------
@@ -566,6 +579,8 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
     downloadTemplateAction,
     exportSpreadsheetAction,
     uploadCSVAction,
+    fichaCadastralAction,
+    canEditCadastro = true,
   } = props;
   // ME-084 D-ME084-1/2 — `variant` retido para eventual telemetria por
   // perfil / testes de analise estatica. Nao afeta comportamento atual
@@ -580,6 +595,8 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
   // ME-fila5 D2 — estado do modal Importar em massa + toast simples.
   const [importarOpen, setImportarOpen] = useState<boolean>(false);
   const [actionToast, setActionToast] = useState<string | null>(null);
+  // ME-fila6 D1 — alvo do pop-up de ficha cadastral (§14.10).
+  const [fichaAlvo, setFichaAlvo] = useState<{ id: number; name: string } | null>(null);
 
   const refetch = useCallback(
     async (nextFilters: ColaboradoresFilters): Promise<void> => {
@@ -1178,12 +1195,8 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                 </thead>
                 <tbody>
                   {result.rows.map((row) =>
-                    renderRow(
-                      row,
-                      companyId,
-                      editarColaboradorHrefBase,
-                      hideLiderColumn,
-                      hideRfBadgeAndFilter,
+                    renderRow(row, hideLiderColumn, hideRfBadgeAndFilter, (id, name) =>
+                      setFichaAlvo({ id, name }),
                     ),
                   )}
                 </tbody>
@@ -1291,6 +1304,18 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
           onSuccess={handleUploadSuccess}
         />
       )}
+
+      {fichaAlvo !== null ? (
+        <FichaCadastralModal
+          companyId={companyId}
+          employeeId={fichaAlvo.id}
+          employeeName={fichaAlvo.name}
+          loadAction={fichaCadastralAction}
+          editHref={canEditCadastro ? `${editarColaboradorHrefBase}/${fichaAlvo.id}/editar` : null}
+          hideRf={hideRfBadgeAndFilter}
+          onClose={() => setFichaAlvo(null)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -1322,17 +1347,13 @@ function renderSortableTh(
 
 function renderRow(
   row: EmployeeListRow,
-  companyId: number,
-  editarColaboradorHrefBase: string,
   hideLiderColumn: boolean,
   hideRfBadgeAndFilter: boolean,
+  onOpenFicha: (id: number, name: string) => void,
 ): JSX.Element {
-  // ME-084 — `companyId` mantido na assinatura para compatibilidade com
-  // callsites e para eventual uso em telemetria. Href de edicao vem da
-  // base string injetada (variant-agnostic), concatenada inline com
-  // `row.id` — evita passar funcao pela fronteira Server->Client (Next
-  // 15 canonico N15).
-  void companyId;
+  // ME-fila6 D1 — o icone 📇 abre o pop-up de ficha cadastral (§14.10) em
+  // vez de navegar para a rota de edicao (exclusiva de Bruno e RH). O href
+  // de edicao passou para o rodape do pop-up.
   const avatarColor = hashNameToColor(row.name);
   const iniciais = getIniciaisFromName(row.name);
   const nivelStyle = getNivelBadgeStyle(row.nivelHierarquico);
@@ -1381,18 +1402,22 @@ function renderRow(
         </td>
       )}
       <td style={TD_STYLE}>
-        <Link
-          href={`${editarColaboradorHrefBase}/${row.id}/editar`}
+        <button
+          type="button"
+          onClick={(): void => onOpenFicha(row.id, row.name)}
           style={{
             color: COLORS.accent.teal,
             fontSize: 14,
-            textDecoration: 'none',
+            background: 'transparent',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
           }}
           title="Ver ficha do colaborador"
           aria-label={`Ver ficha de ${row.name}`}
         >
           📇
-        </Link>
+        </button>
       </td>
       <td style={TD_STYLE}>
         <span style={piStyle}>{PROFILE_INDIVIDUAL_STATUS_LABELS[row.profileIndividualStatus]}</span>

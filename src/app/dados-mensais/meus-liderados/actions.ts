@@ -438,17 +438,23 @@ export async function listMesesFechadosAction(input: {
 // -----------------------------------------------------------------------
 
 /**
- * ME-fila5 D3 §3.11 — Baixa XLSX canonico do template Lider mensal
- * pre-preenchido com liderados do lider autenticado + colunas dinamicas
- * CC3 configuradas na empresa. `liderId` + `liderTipo` sao passados
- * pelo caller (page.tsx deriva da sessao antes de renderizar o modal).
+ * ME-fila5 D3 §3.11 — Baixa XLSX do template Lider mensal pre-preenchido
+ * com liderados do lider autenticado + colunas dinamicas CC3 configuradas
+ * na empresa.
+ *
+ * ME-fila6 D1 — `liderId` e `liderTipo` passam a ser derivados da sessao
+ * (antes vinham do input, e o `page.tsx` montava closures inline que o
+ * Next 15 rejeita na fronteira Server -> Client, gerando erro 500). A
+ * action e injetada diretamente no `MeusLideradosClient`.
  */
 export async function downloadLeaderTemplateLeaderAction(input: {
   readonly companyId: number;
   readonly mes: string;
-  readonly liderId: number;
-  readonly liderTipo: 'employee' | 'clevel';
 }): Promise<DownloadResult> {
+  const session = requireLiderRHLiderOrClevel(
+    await getServerSession(),
+    'downloadLeaderTemplateLeaderAction',
+  );
   const client = createDbClient(resolveDatabaseUrl());
   try {
     const bearerToken = await resolveRawToken();
@@ -460,10 +466,10 @@ export async function downloadLeaderTemplateLeaderAction(input: {
     });
     const caller = createSpreadsheetsCaller(ctx);
     return await caller.downloadLeaderTemplate({
-      companyId: input.companyId,
+      companyId: session.companyId,
       mes: input.mes,
-      liderId: input.liderId,
-      liderTipo: input.liderTipo,
+      liderId: session.userId,
+      liderTipo: deriveLiderTipoFromRole(session.role),
     });
   } finally {
     await closeDbClient(client);
@@ -472,16 +478,20 @@ export async function downloadLeaderTemplateLeaderAction(input: {
 
 /**
  * ME-fila5 D3 §3.11 — Faz upload em massa dos dados Lider mensais via
- * XLSX. Reusa `saveMonthlyLeaderData` internamente. Retorna `UploadResult`
- * canonico.
+ * XLSX. Reusa `saveMonthlyLeaderData` internamente. Retorna `UploadResult`.
+ *
+ * ME-fila6 D1 — `liderId` e `liderTipo` derivados da sessao (mesmo
+ * racional de `downloadLeaderTemplateLeaderAction`).
  */
 export async function uploadLeaderDataLeaderAction(input: {
   readonly companyId: number;
   readonly mes: string;
-  readonly liderId: number;
-  readonly liderTipo: 'employee' | 'clevel';
   readonly xlsxBase64: string;
 }): Promise<UploadResult> {
+  const session = requireLiderRHLiderOrClevel(
+    await getServerSession(),
+    'uploadLeaderDataLeaderAction',
+  );
   const client = createDbClient(resolveDatabaseUrl());
   try {
     const bearerToken = await resolveRawToken();
@@ -493,10 +503,10 @@ export async function uploadLeaderDataLeaderAction(input: {
     });
     const caller = createSpreadsheetsCaller(ctx);
     return await caller.uploadLeaderData({
-      companyId: input.companyId,
+      companyId: session.companyId,
       mes: input.mes,
-      liderId: input.liderId,
-      liderTipo: input.liderTipo,
+      liderId: session.userId,
+      liderTipo: deriveLiderTipoFromRole(session.role),
       xlsxBase64: input.xlsxBase64,
     });
   } finally {

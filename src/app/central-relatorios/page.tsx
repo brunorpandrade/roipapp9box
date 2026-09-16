@@ -35,17 +35,13 @@
 //
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
-import { and, eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
 
 import { RelatoriosClient } from '../../components/central-relatorios/RelatoriosClient';
 import { Layout } from '../../components/shell/Layout';
 import { closeDbClient, createDbClient } from '../../db/client';
-import { cLevelMembers } from '../../db/schema';
-import { resolveMenuItems } from '../../lib/menu/menuConfig';
-import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
-import { loadRhSessionFlags } from '../../lib/session/rhSessionFlags';
+import { loadPlatformMenuContext } from '../../lib/session/platformMenuContext';
 import { getServerSession } from '../../server/session/serverSession';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
@@ -63,49 +59,6 @@ import {
   startReportDownloadTokenClevelAction,
   startReportDownloadTokenRHAction,
 } from './actions';
-
-/**
- * Flags default canonicas para C-level — usadas apenas quando o guard
- * resolve para branch RH/RH-Lider (nao ha C-level na sessao para
- * carregar). Bit-exact ao padrao ME-084.
- */
-function defaultCLevelFlags(): { readonly cLevelCount: number; readonly acessoTotal: boolean } {
-  return { cLevelCount: 0, acessoTotal: false };
-}
-
-/**
- * ME-B9-CR3 (D-CENTRAL-CLEVEL) — resolve flags reais de C-level (§12.2:
- * `acessoTotal=true` obrigatorio; CF nega). Bit-exact ao padrao usado em
- * `/painel-clevel/page.tsx`.
- */
-async function resolveCLevelFlags(
-  db: ReturnType<typeof createDbClient>['db'],
-  userId: number,
-  companyId: number,
-): Promise<{
-  readonly acessoTotal: boolean;
-  readonly cLevelCount: number;
-} | null> {
-  const memberRows = await db
-    .select({ acessoTotal: cLevelMembers.acessoTotal })
-    .from(cLevelMembers)
-    .where(eq(cLevelMembers.id, userId))
-    .limit(1);
-  const member = memberRows[0];
-  if (member === undefined) {
-    return null;
-  }
-  const countRows = await db
-    .select({ id: cLevelMembers.id })
-    .from(cLevelMembers)
-    .where(and(eq(cLevelMembers.companyId, companyId), eq(cLevelMembers.status, 'ativo')));
-  return {
-    // Coluna canonica com `.default(true)`; Drizzle infere `boolean | null`.
-    // Fallback bit-exact ao pattern usado em `/painel-clevel/page.tsx`.
-    acessoTotal: member.acessoTotal ?? true,
-    cLevelCount: countRows.length,
-  };
-}
 
 export default async function CentralRelatoriosRHPage(): Promise<JSX.Element> {
   const session = await getServerSession();
@@ -129,30 +82,19 @@ export default async function CentralRelatoriosRHPage(): Promise<JSX.Element> {
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    // Branch canonico ME-B9-CR3: role='clevel' segue caminho dedicado
-    // (§12.2 CAMADA_UI: exige acessoTotal=true; CF cai em access-denied).
+    // ME-fila6 D1 — helper unico: CU/CT passam, CF nega (antes o filtro
+    // era apenas `acessoTotal` e o RF do C-level era ignorado no menu).
+    const menu = await loadPlatformMenuContext(client.db, session);
+    if (menu === null) {
+      redirect('/');
+    }
     if (session.role === 'clevel') {
-      const cFlags = await resolveCLevelFlags(client.db, session.userId, session.companyId);
-      if (cFlags === null || !cFlags.acessoTotal) {
+      if (menu.profileKey !== 'clevel_full') {
         redirect('/access-denied?rota=/central-relatorios');
-      }
-      const menuFlagsClevel = { isRH: false, isLider: false, hasDescendingChain: false };
-      const profileKeyClevel = resolveProfileKey({
-        session,
-        isRH: menuFlagsClevel.isRH,
-        isLider: menuFlagsClevel.isLider,
-        acessoTotal: cFlags.acessoTotal,
-        hasDescendingChain: menuFlagsClevel.hasDescendingChain,
-        cLevelCount: cFlags.cLevelCount,
-        isSuperAdminInCompany: false,
-      });
-      const menuItemsClevel = resolveMenuItems(profileKeyClevel, false);
-      if (menuItemsClevel === null) {
-        throw new Error(`Menu canonico ausente para ${profileKeyClevel} — inconsistencia §3`);
       }
       return (
         <Layout
-          menuItems={menuItemsClevel}
+          menuItems={menu.menuItems}
           header={{
             leftMode: 'in_company',
             companyDisplayName: session.companyDisplayName,
@@ -178,36 +120,15 @@ export default async function CentralRelatoriosRHPage(): Promise<JSX.Element> {
       );
     }
 
-    // Branch canonico RH puro / RH-Lider (bit-exact ao pre-CR3).
-    // ME-086 D-086-10: helper canonico consolidado.
-    const menuFlags = await loadRhSessionFlags(client.db, session.userId);
-    if (menuFlags === null) {
-      redirect('/');
-    }
-    const cFlags = defaultCLevelFlags();
-    const profileKey = resolveProfileKey({
-      session,
-      isRH: menuFlags.isRH,
-      isLider: menuFlags.isLider,
-      acessoTotal: cFlags.acessoTotal,
-      hasDescendingChain: menuFlags.hasDescendingChain,
-      cLevelCount: cFlags.cLevelCount,
-      isSuperAdminInCompany: false,
-    });
-    const menuItems = resolveMenuItems(profileKey, menuFlags.isResponsavelFinanceiro);
-    if (menuItems === null) {
-      throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
-    }
-
     return (
       <Layout
-        menuItems={menuItems}
+        menuItems={menu.menuItems}
         header={{
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
           user: { displayName: session.displayName },
-          showNotificationBell: true,
+          showNotificationBell: menu.showNotificationBell,
         }}
       >
         <RelatoriosClient

@@ -36,7 +36,8 @@ import { and, asc, eq } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 
 import { closeDbClient, createDbClient } from '../../db/client';
-import { cLevelMembers, employees, monthlyClosureStatus } from '../../db/schema';
+import { employees, monthlyClosureStatus } from '../../db/schema';
+import { loadPlatformMenuContext } from '../../lib/session/platformMenuContext';
 import { requireClevelOrSuperAdmin } from '../../lib/routes/requireClevelOrSuperAdmin';
 import { requireRHOrSuperAdmin } from '../../lib/routes/requireRHOrSuperAdmin';
 import { signPdfEphemeralToken } from '../../server/auth/pdfEphemeralToken';
@@ -399,19 +400,13 @@ async function assertAcessoTotalAndResolveCompanyId(
   if (session.kind === 'super_admin') {
     return inputCompanyId;
   }
-  const rows = await db
-    .select({ acessoTotal: cLevelMembers.acessoTotal })
-    .from(cLevelMembers)
-    .where(eq(cLevelMembers.id, session.userId))
-    .limit(1);
-  const member = rows[0];
-  if (member === undefined) {
+  // ME-fila6 D1 — DOC 02 §10.7/§9.15: CU ✓, CT ✓, CF ✗. Antes o filtro era
+  // apenas `acessoTotal`, bloqueando C-level unico com `acessoTotal=false`.
+  const menu = await loadPlatformMenuContext(db, session);
+  if (menu === null) {
     throw new Error(`${actionName}: perfil C-level nao encontrado.`);
   }
-  // Coluna canonica com `.default(true)`; Drizzle infere `boolean | null`.
-  // Fallback bit-exact: null equivale a `true` (default do schema).
-  const acessoTotal = member.acessoTotal ?? true;
-  if (!acessoTotal) {
+  if (menu.profileKey !== 'clevel_full') {
     throw new Error(`${actionName}: acesso restrito.`);
   }
   return session.companyId;

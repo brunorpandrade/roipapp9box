@@ -18,7 +18,20 @@
 // admin/rh/rh_lider) do router, que por sua vez alimenta a rota Bruno
 // `/super-admin/empresa/[id]/todos-os-colaboradores` (§14.10).
 
-import { and, asc, countDistinct, desc, eq, gte, isNull, like, lte, max, or } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  countDistinct,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  like,
+  lte,
+  max,
+  or,
+} from 'drizzle-orm';
 import type { AnyColumn, SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/mysql-core';
 
@@ -364,7 +377,14 @@ export async function listEmployeesPaginated(
   db: RoipDatabase,
   companyId: number,
   filters: ListEmployeesFilters,
+  scopeEmployeeIds?: readonly number[],
 ): Promise<ListEmployeesResult> {
+  // ME-fila6 D1 — escopo opcional por conjunto fechado de employees
+  // (`/cadeia-indireta` §14.12). Conjunto vazio = resultado vazio, sem
+  // consulta ao banco.
+  if (scopeEmployeeIds !== undefined && scopeEmployeeIds.length === 0) {
+    return { rows: [], totalCount: 0, filtersApplied: filters };
+  }
   const liderEmp = alias(employees, 'liderEmp');
   const elh = alias(employeeLeaderHistory, 'elh');
 
@@ -413,6 +433,7 @@ export async function listEmployeesPaginated(
       ? undefined
       : lte(employees.createdAt, filters.dataCadastroFim),
     papelCond,
+    scopeEmployeeIds === undefined ? undefined : inArray(employees.id, [...scopeEmployeeIds]),
   ];
 
   // Filtro `liderId` canonica bit-exact — precisa correlacao com o vinculo

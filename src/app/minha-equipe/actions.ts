@@ -67,11 +67,9 @@ export async function listarMinhaEquipeAction(
       'listarMinhaEquipeAction: Super Admin nao acessa /minha-equipe (matriz §10.4).',
     );
   }
-  if (session.role !== 'rh_lider' && session.role !== 'lider') {
-    throw new Error(
-      'listarMinhaEquipeAction: rota canonicamente restrita a RH-Lider e Lider ' +
-        '(S230-B ME-B9-fechamento).',
-    );
+  // ME-fila6 D1 — DOC 02 §10.4: RH-Lider, Lider e C-level (CU/CT/CF).
+  if (session.role !== 'rh_lider' && session.role !== 'lider' && session.role !== 'clevel') {
+    throw new Error('listarMinhaEquipeAction: rota restrita a RH-Lider, Lider e C-level.');
   }
   const companyId = session.companyId;
   // Validacao paranoica: se o cliente enviou companyId diferente do
@@ -84,7 +82,8 @@ export async function listarMinhaEquipeAction(
     throw new Error('listarMinhaEquipeAction: companyId divergente da sessao.');
   }
 
-  const scopedFilters = enforceEmployeeLeaderScope(filters, session.userId);
+  const leaderTipo = session.role === 'clevel' ? 'clevel' : 'employee';
+  const scopedFilters = enforceEmployeeLeaderScope(filters, session.userId, leaderTipo);
   const serviceInput = colaboradoresFiltersToServiceInput(scopedFilters);
 
   const client = createDbClient(resolveDatabaseUrl());

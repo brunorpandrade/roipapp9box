@@ -16,96 +16,42 @@
 //   estado §5.2 nesta ME (motores Fase 8 vem em MEs futuras).
 
 import { redirect } from 'next/navigation';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, count, eq } from 'drizzle-orm';
 import type { JSX } from 'react';
 
 import { Layout } from '../../components/shell/Layout';
-import { createDbClient } from '../../db/client';
-import { cLevelMembers, companies, employees } from '../../db/schema';
+import { closeDbClient, createDbClient, type RoipDatabase } from '../../db/client';
+import { cLevelMembers, employees } from '../../db/schema';
 import { COLORS } from '../../lib/design-tokens/colors';
-import { resolveMenuItems } from '../../lib/menu/menuConfig';
-import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
+import {
+  loadPlatformMenuContext,
+  type PlatformSession,
+} from '../../lib/session/platformMenuContext';
 import { getServerSession } from '../../server/session/serverSession';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
-interface CLevelFlags {
-  readonly acessoTotal: boolean;
-  readonly isResponsavelFinanceiro: boolean;
-  readonly cLevelCount: number;
-}
-
-interface CLevelPanelData {
-  readonly companyCollaboratorsCount: number;
-}
-
-async function loadCLevelContext(userId: number): Promise<{
-  flags: CLevelFlags;
-  data: CLevelPanelData;
-  companyLogoUrl: string | null;
-} | null> {
-  const client = createDbClient(resolveDatabaseUrl());
-  try {
-    const memberRows = await client.db
-      .select({
-        acessoTotal: cLevelMembers.acessoTotal,
-        isResponsavelFinanceiro: cLevelMembers.isResponsavelFinanceiro,
-        companyId: cLevelMembers.companyId,
-      })
+/**
+ * ME-fila6 D1 — total de colaboradores ativos da empresa (employees +
+ * C-levels ativos). Flags de menu/RF sairam para `loadPlatformMenuContext`.
+ */
+async function loadCompanyCollaboratorsCount(
+  db: RoipDatabase,
+  session: PlatformSession,
+): Promise<number> {
+  const [empRows, cLevelRows] = await Promise.all([
+    db
+      .select({ n: count() })
+      .from(employees)
+      .where(and(eq(employees.companyId, session.companyId), eq(employees.status, 'ativo'))),
+    db
+      .select({ n: count() })
       .from(cLevelMembers)
-      .where(eq(cLevelMembers.id, userId))
-      .limit(1);
-    const member = memberRows[0];
-    if (member === undefined) {
-      return null;
-    }
-
-    const [countRows, empRows, cLevelCountRows, companyRows] = await Promise.all([
-      client.db
-        .select({ count: sql<number>`count(*)` })
-        .from(cLevelMembers)
-        .where(
-          and(eq(cLevelMembers.companyId, member.companyId), eq(cLevelMembers.status, 'ativo')),
-        ),
-      client.db
-        .select({ count: sql<number>`count(*)` })
-        .from(employees)
-        .where(and(eq(employees.companyId, member.companyId), eq(employees.status, 'ativo'))),
-      client.db
-        .select({ count: sql<number>`count(*)` })
-        .from(cLevelMembers)
-        .where(
-          and(eq(cLevelMembers.companyId, member.companyId), eq(cLevelMembers.status, 'ativo')),
-        ),
-      client.db
-        .select({ logoUrl: companies.logoUrl })
-        .from(companies)
-        .where(eq(companies.id, member.companyId))
-        .limit(1),
-    ]);
-
-    // Total colaboradores ativos empresa = employees + cLevelMembers.
-    const totalCompanyCollaborators =
-      Number(empRows[0]?.count ?? 0) + Number(cLevelCountRows[0]?.count ?? 0);
-
-    return {
-      flags: {
-        acessoTotal: member.acessoTotal === true,
-        isResponsavelFinanceiro: member.isResponsavelFinanceiro === true,
-        cLevelCount: Number(countRows[0]?.count ?? 0),
-      },
-      data: {
-        companyCollaboratorsCount: totalCompanyCollaborators,
-      },
-      companyLogoUrl: companyRows[0]?.logoUrl ?? null,
-    };
-  } finally {
-    await client.pool.end();
-  }
+      .where(
+        and(eq(cLevelMembers.companyId, session.companyId), eq(cLevelMembers.status, 'ativo')),
+      ),
+  ]);
+  return Number(empRows[0]?.n ?? 0) + Number(cLevelRows[0]?.n ?? 0);
 }
-
-// -----------------------------------------------------------------------
-// Fragmentos canonicos de UI
-// -----------------------------------------------------------------------
 
 function StructuralCard(props: {
   readonly title: string;
@@ -225,26 +171,20 @@ export default async function PainelCLevelPage(): Promise<JSX.Element> {
     redirect('/');
   }
 
-  const ctx = await loadCLevelContext(session.userId);
-  if (ctx === null) {
+  const client = createDbClient(resolveDatabaseUrl());
+  let menu: Awaited<ReturnType<typeof loadPlatformMenuContext>>;
+  let companyCollaboratorsCount: number;
+  try {
+    menu = await loadPlatformMenuContext(client.db, session);
+    companyCollaboratorsCount = await loadCompanyCollaboratorsCount(client.db, session);
+  } finally {
+    await closeDbClient(client);
+  }
+  if (menu === null) {
     redirect('/');
   }
-  const { flags, data, companyLogoUrl } = ctx;
-
-  const profileKey = resolveProfileKey({
-    session,
-    isRH: false,
-    isLider: false,
-    acessoTotal: flags.acessoTotal,
-    hasDescendingChain: false,
-    cLevelCount: flags.cLevelCount,
-    isSuperAdminInCompany: false,
-  });
-
-  const menuItems = resolveMenuItems(profileKey, flags.isResponsavelFinanceiro);
-  if (menuItems === null) {
-    throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
-  }
+  const { profileKey, menuItems } = menu;
+  const data = { companyCollaboratorsCount };
 
   const isFullScope = profileKey === 'clevel_full';
 
@@ -254,7 +194,7 @@ export default async function PainelCLevelPage(): Promise<JSX.Element> {
       header={{
         leftMode: 'in_company',
         companyDisplayName: session.companyDisplayName,
-        companyLogoUrl: companyLogoUrl ?? undefined,
+        companyLogoUrl: session.companyLogoUrl ?? undefined,
         user: { displayName: session.displayName },
         // C-level NUNCA tem sino (S474 §4.1).
         showNotificationBell: false,

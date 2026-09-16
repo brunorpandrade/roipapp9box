@@ -26,6 +26,7 @@ import { cookies } from 'next/headers';
 
 import { closeDbClient, createDbClient } from '../../db/client';
 import { requireRHOrSuperAdmin } from '../../lib/routes/requireRHOrSuperAdmin';
+import { loadPlatformMenuContext } from '../../lib/session/platformMenuContext';
 import { createRateLimiter } from '../../server/auth/rateLimit';
 import {
   createEmployeesRouter,
@@ -88,6 +89,41 @@ export async function listarColaboradoresRHAction(
     const serviceInput = colaboradoresFiltersToServiceInput(filters);
     const result = await listEmployeesPaginated(client.db, companyId, serviceInput);
     return result;
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+/**
+ * ME-fila6 D1 — DOC 02 §10.4 + DOC 05 §14.10: refetch da listagem para
+ * C-level `clevel_full` (C-level unico ou `acessoTotal=true`). CF
+ * (`clevel_restricted`) e rejeitado. Escopo: empresa inteira da sessao.
+ * Mesmo service da variante RH (lista apenas `employees`).
+ */
+export async function listarColaboradoresCLevelAction(
+  companyIdIgnored: number,
+  filters: ColaboradoresFilters,
+): Promise<ListEmployeesResult> {
+  const session = await getServerSession();
+  if (session === null || session.kind !== 'platform' || session.role !== 'clevel') {
+    throw new Error('listarColaboradoresCLevelAction: acesso restrito.');
+  }
+  const companyId = session.companyId;
+  if (
+    Number.isInteger(companyIdIgnored) &&
+    companyIdIgnored > 0 &&
+    companyIdIgnored !== companyId
+  ) {
+    throw new Error('listarColaboradoresCLevelAction: companyId divergente da sessao.');
+  }
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const menu = await loadPlatformMenuContext(client.db, session);
+    if (menu === null || menu.profileKey !== 'clevel_full') {
+      throw new Error('listarColaboradoresCLevelAction: acesso restrito.');
+    }
+    const serviceInput = colaboradoresFiltersToServiceInput(filters);
+    return await listEmployeesPaginated(client.db, companyId, serviceInput);
   } finally {
     await closeDbClient(client);
   }

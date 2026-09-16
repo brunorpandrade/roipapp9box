@@ -13,13 +13,12 @@
 
 import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
-import { and, eq, isNull, sql } from 'drizzle-orm';
 
 import { Layout } from '../../components/shell/Layout';
 import { closeDbClient, createDbClient } from '../../db/client';
-import { cLevelMembers, employeeLeaderHistory, employees } from '../../db/schema';
 import { findCompanyDisplayInfo } from '../../lib/logs/companyHistoryLog';
 import { resolveMenuItems } from '../../lib/menu/menuConfig';
+import { loadPlatformMenuContext } from '../../lib/session/platformMenuContext';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { getServerSession } from '../../server/session/serverSession';
 
@@ -104,75 +103,14 @@ export default async function AlterarSenhaPage(): Promise<JSX.Element> {
   // Modo voluntario platform: envolver em Layout canonico do perfil.
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    const role = session.role;
-    let isRH = false;
-    let isLider = false;
-    let acessoTotal = false;
-    let hasDescendingChain = false;
-    let cLevelCount = 0;
-    let isResponsavelFinanceiro = false;
-    let showNotificationBell = false;
-
-    if (role === 'clevel') {
-      const clevelRows = await client.db
-        .select({ acessoTotal: cLevelMembers.acessoTotal })
-        .from(cLevelMembers)
-        .where(eq(cLevelMembers.id, session.userId))
-        .limit(1);
-      acessoTotal = clevelRows[0]?.acessoTotal ?? true;
-      const totalRows = await client.db
-        .select({ count: sql<number>`COUNT(*)` })
-        .from(cLevelMembers)
-        .where(
-          and(eq(cLevelMembers.companyId, session.companyId), eq(cLevelMembers.status, 'ativo')),
-        );
-      cLevelCount = Number(totalRows[0]?.count ?? 0);
-      const clevelRfRows = await client.db
-        .select({ rf: cLevelMembers.isResponsavelFinanceiro })
-        .from(cLevelMembers)
-        .where(eq(cLevelMembers.id, session.userId))
-        .limit(1);
-      isResponsavelFinanceiro = clevelRfRows[0]?.rf ?? false;
-    } else {
-      isRH = role === 'rh' || role === 'rh_lider';
-      isLider = role === 'rh_lider' || role === 'lider';
-      showNotificationBell = role === 'rh' || role === 'rh_lider';
-      if (role === 'rh_lider' || role === 'lider') {
-        const chainRows = await client.db
-          .select({ id: employees.id })
-          .from(employeeLeaderHistory)
-          .innerJoin(employees, eq(employees.id, employeeLeaderHistory.employeeId))
-          .where(
-            and(
-              eq(employeeLeaderHistory.liderId, session.userId),
-              isNull(employeeLeaderHistory.dataFim),
-              eq(employees.isLider, true),
-            ),
-          )
-          .limit(1);
-        hasDescendingChain = chainRows.length > 0;
-      }
-      const empRfRows = await client.db
-        .select({ rf: employees.isResponsavelFinanceiro })
-        .from(employees)
-        .where(eq(employees.id, session.userId))
-        .limit(1);
-      isResponsavelFinanceiro = empRfRows[0]?.rf ?? false;
+    // ME-fila6 D1 — helper unico (antes a cadeia descendente nao filtrava
+    // `employees.status='ativo'`, inflando o Cenario 2 do menu).
+    const menu = await loadPlatformMenuContext(client.db, session);
+    if (menu === null) {
+      redirect('/');
     }
-
-    const profileKey = resolveProfileKey({
-      session,
-      isRH,
-      isLider,
-      acessoTotal,
-      hasDescendingChain,
-      cLevelCount,
-      isSuperAdminInCompany: false,
-    });
-    const menuItems = resolveMenuItems(profileKey, isResponsavelFinanceiro);
-    if (menuItems === null) {
-      throw new Error(`resolveMenuItems retornou null para profileKey=${profileKey}`);
-    }
+    const menuItems = menu.menuItems;
+    const showNotificationBell = menu.showNotificationBell;
 
     const companyInfo = await findCompanyDisplayInfo(client.db, session.companyId);
     const companyDisplayName = companyInfo?.nomeFantasia ?? session.companyDisplayName;

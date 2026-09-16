@@ -140,6 +140,51 @@ export async function resolveHierarchicalScope(
 // -----------------------------------------------------------------------
 
 /**
+ * ME-fila6 D1 — DOC 05 §14.12 `/cadeia-indireta`. Retorna os ids dos
+ * employees da cadeia descendente do lider informado EXCLUINDO os
+ * liderados diretos (esses aparecem em `/minha-equipe`). O lider pode ser
+ * employee (`liderId`) ou C-level (`clevelId`). Ordem crescente de id.
+ */
+export async function listIndirectChainEmployeeIds(
+  db: RoipDatabase,
+  companyId: number,
+  leader: { readonly tipo: 'employee' | 'clevel'; readonly id: number },
+): Promise<readonly number[]> {
+  const links = await db
+    .select({
+      employeeId: employeeLeaderHistory.employeeId,
+      liderId: employeeLeaderHistory.liderId,
+      clevelId: employeeLeaderHistory.clevelId,
+    })
+    .from(employeeLeaderHistory)
+    .innerJoin(employees, eq(employees.id, employeeLeaderHistory.employeeId))
+    .where(and(eq(employees.companyId, companyId), isNull(employeeLeaderHistory.dataFim)));
+
+  const directIds = new Set<number>();
+  for (const l of links) {
+    const isDirect = leader.tipo === 'clevel' ? l.clevelId === leader.id : l.liderId === leader.id;
+    if (isDirect) {
+      directIds.add(l.employeeId);
+    }
+  }
+
+  const scope = new Set<string>();
+  for (const directId of directIds) {
+    collectDescendants(directId, links, scope);
+  }
+
+  const ids: number[] = [];
+  for (const key of scope) {
+    const id = Number(key.slice('employee-'.length));
+    if (!directIds.has(id)) {
+      ids.push(id);
+    }
+  }
+  ids.sort((a, b) => a - b);
+  return ids;
+}
+
+/**
  * Resolve escopo canônico do CF. Subordinados diretos são employees
  * cujo vínculo ativo em `employeeLeaderHistory` aponta `clevelId=CF.id`.
  * Descendentes são recursivos via `liderId`.

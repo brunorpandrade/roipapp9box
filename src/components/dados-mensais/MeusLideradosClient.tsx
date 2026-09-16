@@ -106,10 +106,10 @@ export interface MeusLideradosClientActions {
    * ME-fila5 D3 (Item 5.6) — actions canonicas opcionais para os botoes
    * `[📄 Baixar planilha modelo]` + `[📤 Importar em massa]` da tela
    * Meus Liderados. Ausentes → botoes escondidos. `liderId` + `liderTipo`
-   * derivam da sessao no page.tsx e ficam wire-in no fechamento das
-   * actions (nao aparecem no contrato aqui — o modal nao os conhece).
-   * Padrao bit-a-bit ao `downloadRHTemplateMonthly` do
-   * `DadosMensaisClientActions`.
+   * sao derivados da sessao dentro das proprias server actions
+   * (ME-fila6 D1 — closures inline no page.tsx quebravam a fronteira
+   * Server -> Client do Next 15). Padrao do `downloadRHTemplateMonthly`
+   * do `DadosMensaisClientActions`.
    */
   readonly downloadLeaderTemplateMonthly?: (input: {
     readonly companyId: number;
