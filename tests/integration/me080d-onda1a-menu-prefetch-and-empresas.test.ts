@@ -101,14 +101,15 @@ describe('ME-080d — MENU_SUPER_ADMIN_GLOBAL (Onda 1e revisão de D2 + Onda 1a 
   });
 });
 
-describe('ME-080d Onda 1a — ITEM_FATURAMENTO em MENU_RH (D8: D-FATURAMENTO-B8)', () => {
-  it('ITEM_FATURAMENTO declara prefetch: false em MENU_RH quando RF=true', () => {
+describe('ME-fila7 — ITEM_FATURAMENTO em MENU_RH (rota /faturamento-mensal existe)', () => {
+  it('ITEM_FATURAMENTO NAO declara prefetch: false em MENU_RH quando RF=true', () => {
     // Em RH, ITEM_FATURAMENTO so aparece se isResponsavelFinanceiro=true.
-    // Faturamento aponta a /faturamento-mensal (D-FATURAMENTO-B8, bloco futuro).
+    // ME-fila7 construcao dispatch 1: /faturamento-mensal foi implementada
+    // (fecha D-FATURAMENTO-B8), entao o item volta a prefetchar normalmente.
     const rhItems = requireItems(resolveMenuItems('rh', true), 'rh (RF=true)');
     const faturamento = findLinkByLabel(rhItems, 'Faturamento da empresa');
     expect(faturamento).toBeDefined();
     expect(faturamento?.href).toBe('/faturamento-mensal');
-    expect(faturamento?.prefetch).toBe(false);
+    expect(faturamento?.prefetch).toBeUndefined();
   });
 });

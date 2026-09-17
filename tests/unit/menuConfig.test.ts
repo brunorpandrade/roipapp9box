@@ -68,7 +68,7 @@ describe('MENU_CONFIG_BY_PROFILE — composicao canonica DOC 05 §3.1-§3.10', (
     ]);
   });
 
-  it('§3.2 super_admin_in_company — 15 itens canonicos com "Início" showBackArrow', () => {
+  it('§3.2 super_admin_in_company — 16 itens canonicos com "Início" showBackArrow', () => {
     const config = MENU_CONFIG_BY_PROFILE.super_admin_in_company;
     expect(config).not.toBeNull();
     expect(summarizeAll(config as MenuConfig)).toEqual([
@@ -76,6 +76,7 @@ describe('MENU_CONFIG_BY_PROFILE — composicao canonica DOC 05 §3.1-§3.10', (
       ['Painel', '/super-admin/empresa/[id]'],
       ['Todos os colaboradores', '/super-admin/empresa/[id]/todos-os-colaboradores'],
       ['Relatórios e exportações', '/super-admin/empresa/[id]/relatorios-e-exportacoes'],
+      ['Faturamento da empresa', '/super-admin/empresa/[id]/faturamento-mensal'],
       ['Dados mensais', '/super-admin/empresa/[id]/dados-mensais'],
       ['Organograma', '/super-admin/empresa/[id]/organograma'],
       ['C-level e RH', '/super-admin/empresa/[id]/clevel-rh'],

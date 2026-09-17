@@ -101,15 +101,15 @@ export type MenuConfig = readonly MenuItem[];
 // DOC 02 §3.4: posicionamento canonico imediatamente acima de "Dados mensais".
 // Rota canonica: `/faturamento-mensal`. Icone: `DollarSign` §2.7.
 const ITEM_FATURAMENTO: MenuLinkItem = {
-  // ME-080d Onda 1a — D8: prefetch: false (rota /faturamento-mensal ainda
-  // nao implementada, D-FATURAMENTO-B8 registrado para bloco futuro
-  // dedicado).
+  // ME-fila7 construcao dispatch 1 — rota /faturamento-mensal implementada
+  // (RF via loadPlatformMenuContext). O prefetch: false do ME-080d Onda 1a
+  // (D8, rota ausente / D-FATURAMENTO-B8) foi removido: o Sidebar volta a
+  // prefetchar normalmente.
   type: 'link',
   label: 'Faturamento da empresa',
   href: '/faturamento-mensal',
   iconKey: 'Faturamento da empresa',
   condition: 'isResponsavelFinanceiro',
-  prefetch: false,
 };
 
 const SEPARATOR: MenuSeparatorItem = { type: 'separator' };
@@ -265,6 +265,14 @@ const MENU_SUPER_ADMIN_IN_COMPANY: MenuConfig = [
     label: 'Relatórios e exportações',
     href: '/super-admin/empresa/[id]/relatorios-e-exportacoes',
     iconKey: 'Relatórios e exportações',
+  },
+  {
+    // ME-fila7 construcao dispatch 1 — §14.15/§236: item aparece no menu
+    // dentro-de-empresa de Bruno (incondicional; sem `condition` de RF).
+    type: 'link',
+    label: 'Faturamento da empresa',
+    href: '/super-admin/empresa/[id]/faturamento-mensal',
+    iconKey: 'Faturamento da empresa',
   },
   {
     type: 'link',
