@@ -1372,7 +1372,13 @@ function renderRow(
         </span>
       </td>
       <td style={{ ...TD_STYLE, minWidth: 200 }}>
-        <span style={{ fontWeight: 600 }}>{row.name}</span>
+        <Link
+          href={`/dashboard-individual/${row.id}`}
+          style={{ fontWeight: 600, color: COLORS.accent.teal, textDecoration: 'none' }}
+          title={`Abrir dashboard de ${row.name}`}
+        >
+          {row.name}
+        </Link>
         {row.isLider ? (
           <span style={BADGE_L} title="Líder de equipe">
             L
