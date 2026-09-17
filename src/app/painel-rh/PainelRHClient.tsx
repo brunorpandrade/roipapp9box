@@ -444,7 +444,7 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
             value={String(counts.totalColaboradoresAtivos + counts.totalCLevelsAtivos)}
             sub={
               `Inclui ${counts.totalCLevelsAtivos} ` +
-              `C-level${counts.totalCLevelsAtivos === 1 ? '' : 's'} (PC1c)`
+              `C-level${counts.totalCLevelsAtivos === 1 ? '' : 's'}`
             }
             href={`${hrefPrefix}/todos-os-colaboradores`}
             ariaLabel="Ver todos os colaboradores ativos"
