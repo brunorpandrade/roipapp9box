@@ -224,9 +224,68 @@ function barra(valor: string | null, cor: string): JSX.Element {
   );
 }
 
+const AZUL_AUTO = '#4F7FE0';
+const VERDE_LIDER = '#45B08C';
+
+const CLOSE_X: CSSProperties = {
+  border: `1px solid ${COLORS.border.default}`,
+  background: COLORS.background.card,
+  borderRadius: 8,
+  width: 32,
+  height: 32,
+  fontSize: 16,
+  lineHeight: 1,
+  color: COLORS.text.secondary,
+  cursor: 'pointer',
+};
+
+function statusBadge(respondido: boolean): JSX.Element {
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        fontSize: 10,
+        fontWeight: 600,
+        color: respondido ? COLORS.badge.successTextAlt : COLORS.text.tertiary,
+        background: respondido ? COLORS.badge.successBg : COLORS.background.elevated,
+        borderRadius: 999,
+        padding: '2px 8px',
+        marginBottom: 6,
+      }}
+    >
+      {respondido ? 'Respondido' : 'Pendente'}
+    </span>
+  );
+}
+
+function dimRow(label: string, valor: string | null, cor: string): JSX.Element {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+      <span style={{ width: 96, fontSize: 12, color: COLORS.text.secondary, flexShrink: 0 }}>
+        {label}
+      </span>
+      {barra(valor, cor)}
+      <span
+        style={{
+          width: 44,
+          textAlign: 'right',
+          fontSize: 12,
+          fontWeight: 600,
+          color: cor,
+          flexShrink: 0,
+        }}
+      >
+        {formatPercent(valor)}
+      </span>
+    </div>
+  );
+}
+
 function EixoYModal(props: { eixoY: EixoY; onClose: () => void }): JSX.Element {
   const { eixoY } = props;
   const convergente = !eixoY.alertaDivergencia;
+  const divBg = convergente ? COLORS.badge.successBg : COLORS.badge.warningBg;
+  const divText = convergente ? COLORS.badge.successText : COLORS.badge.warningText;
   return (
     <div style={OVERLAY} onClick={props.onClose}>
       <div
@@ -234,65 +293,64 @@ function EixoYModal(props: { eixoY: EixoY; onClose: () => void }): JSX.Element {
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: COLORS.text.primary }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.text.primary }}>
             Eixo Y (Plenitude)
           </div>
-          <button type="button" onClick={props.onClose} style={navBtnStyle(false)}>
-            Fechar
+          <button type="button" onClick={props.onClose} aria-label="Fechar" style={CLOSE_X}>
+            ×
           </button>
         </div>
         <div
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 12 }}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 14 }}
         >
-          <div style={{ background: COLORS.background.elevated, borderRadius: 8, padding: 10 }}>
-            <div style={LABEL}>AUTOAVALIAÇÃO</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.text.primary }}>
+          <div style={{ background: COLORS.background.elevated, borderRadius: 8, padding: 12 }}>
+            <div style={{ fontSize: 12, color: COLORS.text.tertiary, marginBottom: 4 }}>
+              Autoavaliação
+            </div>
+            {statusBadge(eixoY.scoreA !== null)}
+            <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.primary.navy }}>
               {formatPercent(eixoY.scoreA)}
             </div>
             <div style={{ fontSize: 11, color: COLORS.text.tertiary }}>Peso 40%</div>
           </div>
-          <div style={{ background: COLORS.background.elevated, borderRadius: 8, padding: 10 }}>
-            <div style={LABEL}>AVALIAÇÃO DO LÍDER</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.text.primary }}>
+          <div style={{ background: COLORS.background.elevated, borderRadius: 8, padding: 12 }}>
+            <div style={{ fontSize: 12, color: COLORS.text.tertiary, marginBottom: 4 }}>
+              Avaliação do líder
+            </div>
+            {statusBadge(eixoY.scoreC !== null)}
+            <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.primary.navy }}>
               {formatPercent(eixoY.scoreC)}
             </div>
             <div style={{ fontSize: 11, color: COLORS.text.tertiary }}>Peso 60%</div>
           </div>
-          <div
-            style={{
-              background: convergente ? COLORS.badge.successBg : COLORS.badge.warningBg,
-              borderRadius: 8,
-              padding: 10,
-            }}
-          >
-            <div style={LABEL}>DIVERGÊNCIA</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.text.primary }}>
+          <div style={{ background: divBg, borderRadius: 8, padding: 12 }}>
+            <div style={{ fontSize: 12, color: divText, marginBottom: 4 }}>Divergência</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: divText }}>
               {formatScore(eixoY.divergencia)} pts
             </div>
-            <div style={{ fontSize: 11, color: COLORS.text.tertiary }}>
+            <div style={{ fontSize: 11, color: divText }}>
               {convergente ? 'Convergente' : 'Divergente'}
             </div>
           </div>
         </div>
-        <div style={{ ...LABEL, marginTop: 16, marginBottom: 8 }}>DETALHAMENTO POR DIMENSÃO</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ ...LABEL, marginTop: 18, marginBottom: 8, fontSize: 12 }}>
+          DETALHAMENTO POR DIMENSÃO
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {eixoY.dimensoes.map((d) => (
             <div key={d.label}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: COLORS.text.primary }}>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: COLORS.text.primary,
+                  marginBottom: 2,
+                }}
+              >
                 {d.label}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                {barra(d.a, COLORS.primary.navy)}
-                <span style={{ fontSize: 11, color: COLORS.primary.navy, width: 42 }}>
-                  {formatPercent(d.a)}
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                {barra(d.c, COLORS.accent.teal)}
-                <span style={{ fontSize: 11, color: COLORS.accent.tealHover, width: 42 }}>
-                  {formatPercent(d.c)}
-                </span>
-              </div>
+              {dimRow('Autoavaliação', d.a, AZUL_AUTO)}
+              {dimRow('Líder', d.c, VERDE_LIDER)}
             </div>
           ))}
         </div>
