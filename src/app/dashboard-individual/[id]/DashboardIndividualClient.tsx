@@ -5,24 +5,28 @@ import type { CSSProperties, JSX } from 'react';
 
 import { COLORS } from '../../../lib/design-tokens/colors';
 
-import { generateDiagnosticoAction } from './actions';
+import { generateDiagnosticoAction, loadDashboardQuarterAction } from './actions';
 import {
-  QUADRANTE_LEGENDA,
   NINE_BOX_GRID,
+  QUADRANTE_LEGENDA,
   colIndexFor,
   direcaoArrow,
   faixaDesempenhoLabel,
   faixaPlenitudeLabel,
+  formatBRLInt,
+  formatMultiplier,
   formatPercent,
   formatScore,
   initialsOf,
+  quarterLabel,
   rowIndexFor,
 } from './internals';
 import type {
   DashboardIndividualClientProps,
-  DiagnosticoState,
+  EixoY,
   PosicaoX,
   PosicaoY,
+  QuarterView,
 } from './internals';
 
 const CARD: CSSProperties = {
@@ -39,165 +43,367 @@ const LABEL: CSSProperties = {
   letterSpacing: '0.04em',
 };
 
-function NineBox(props: { posicaoX: PosicaoX; posicaoY: PosicaoY; direcao: string }): JSX.Element {
+const OVERLAY: CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(17,24,39,0.55)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 24,
+  zIndex: 50,
+};
+
+function navBtnStyle(disabled: boolean): CSSProperties {
+  return {
+    border: `1px solid ${COLORS.border.default}`,
+    background: COLORS.background.card,
+    borderRadius: 8,
+    padding: '6px 14px',
+    fontSize: 13,
+    color: COLORS.text.secondary,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.4 : 1,
+  };
+}
+
+function NineBox(props: {
+  posicaoX: PosicaoX;
+  posicaoY: PosicaoY;
+  iniciais: string;
+  seta: string;
+  setaColor: string;
+}): JSX.Element {
   const activeRow = rowIndexFor(props.posicaoY);
   const activeCol = colIndexFor(props.posicaoX);
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
-      {NINE_BOX_GRID.map((row, r) =>
-        row.map((cell, c) => {
-          const active = r === activeRow && c === activeCol;
-          return (
-            <div
-              key={cell.quadrante}
-              style={{
-                background: cell.bg,
-                color: cell.text,
-                borderRadius: 8,
-                padding: '10px 6px',
-                minHeight: 54,
-                fontSize: 9,
-                fontWeight: 700,
-                textAlign: 'center',
-                letterSpacing: '0.03em',
-                lineHeight: 1.2,
-                outline: active ? `2px solid ${COLORS.text.primary}` : 'none',
-                outlineOffset: active ? 1 : 0,
-                position: 'relative',
-                opacity: active ? 1 : 0.65,
-              }}
-            >
-              {cell.quadrante}
-              {active && props.direcao.length > 0 ? (
-                <span style={{ position: 'absolute', top: 3, right: 5, fontSize: 12 }}>
-                  {props.direcao}
-                </span>
-              ) : null}
-            </div>
-          );
-        }),
-      )}
+    <div style={{ display: 'flex', alignItems: 'stretch', gap: 8 }}>
+      <div
+        style={{
+          writingMode: 'vertical-rl',
+          transform: 'rotate(180deg)',
+          ...LABEL,
+          fontSize: 10,
+          textAlign: 'center',
+        }}
+      >
+        ↑ PLENITUDE
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+          {NINE_BOX_GRID.map((row, r) =>
+            row.map((cell, c) => {
+              const active = r === activeRow && c === activeCol;
+              return (
+                <div
+                  key={cell.quadrante}
+                  style={{
+                    background: cell.bg,
+                    color: cell.text,
+                    borderRadius: 10,
+                    minHeight: 92,
+                    padding: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.03em',
+                    lineHeight: 1.2,
+                    position: 'relative',
+                    outline: active ? `2px solid ${COLORS.text.primary}` : 'none',
+                    outlineOffset: active ? 1 : 0,
+                    opacity: active ? 1 : 0.7,
+                  }}
+                >
+                  {active ? (
+                    <div
+                      style={{
+                        width: 46,
+                        height: 46,
+                        borderRadius: '50%',
+                        background: COLORS.primary.navy,
+                        color: '#FFFFFF',
+                        fontSize: 14,
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {props.iniciais}
+                    </div>
+                  ) : (
+                    cell.quadrante
+                  )}
+                  {active && props.seta.length > 0 ? (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        bottom: 6,
+                        right: 8,
+                        fontSize: 16,
+                        color: props.setaColor,
+                      }}
+                    >
+                      {props.seta}
+                    </span>
+                  ) : null}
+                </div>
+              );
+            }),
+          )}
+        </div>
+        <div style={{ textAlign: 'center', ...LABEL, marginTop: 8, fontSize: 10 }}>
+          DESEMPENHO →
+        </div>
+      </div>
     </div>
   );
 }
 
-function DiagnosticoArea(props: {
-  employeeId: number;
-  trimestre: string | null;
-  isTrimestreAtual: boolean;
-  inicial: DiagnosticoState;
-}): JSX.Element {
-  const [texto, setTexto] = useState<string | null>(props.inicial.texto);
-  const [geradoEm, setGeradoEm] = useState<string | null>(props.inicial.geradoEm);
-  const [gerando, setGerando] = useState<boolean>(false);
-  const [erro, setErro] = useState<string | null>(null);
-
-  const gerar = useCallback(async (): Promise<void> => {
-    if (props.trimestre === null) {
-      return;
-    }
-    setGerando(true);
-    setErro(null);
-    const res = await generateDiagnosticoAction({
-      employeeId: props.employeeId,
-      trimestre: props.trimestre,
-    });
-    setGerando(false);
-    if (!res.ok) {
-      setErro(res.error ?? 'Não foi possível gerar o diagnóstico agora.');
-      return;
-    }
-    setTexto(res.texto);
-    setGeradoEm(res.geradoEm);
-  }, [props.employeeId, props.trimestre]);
-
-  const podeGerar = props.isTrimestreAtual && props.trimestre !== null;
-  const rotuloBotao = texto === null ? 'Gerar diagnóstico' : 'Atualizar diagnóstico';
-
+function LegendaModal(props: { onClose: () => void }): JSX.Element {
   return (
-    <div style={CARD}>
-      <div style={{ ...LABEL, marginBottom: 8 }}>DIAGNÓSTICO — IA</div>
-      {gerando ? (
-        <p style={{ fontSize: 13, color: COLORS.text.tertiary }}>Gerando diagnóstico…</p>
-      ) : texto !== null ? (
+    <div style={OVERLAY} onClick={props.onClose}>
+      <div
+        style={{ ...CARD, maxWidth: 820, width: '100%', maxHeight: '86vh', overflowY: 'auto' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button type="button" onClick={props.onClose} style={navBtnStyle(false)}>
+            Fechar
+          </button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+          {NINE_BOX_GRID.flat().map((cell) => (
+            <div key={cell.quadrante} style={{ background: cell.bg, borderRadius: 8, padding: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: cell.text, marginBottom: 4 }}>
+                {cell.quadrante}
+              </div>
+              <div style={{ fontSize: 11, color: COLORS.text.secondary, lineHeight: 1.4 }}>
+                {QUADRANTE_LEGENDA[cell.quadrante] ?? ''}
+              </div>
+            </div>
+          ))}
+        </div>
         <div
           style={{
-            fontSize: 13,
-            lineHeight: 1.7,
-            color: COLORS.text.secondary,
+            marginTop: 12,
+            padding: 10,
             background: COLORS.background.elevated,
             borderRadius: 8,
-            padding: 12,
+            fontSize: 12,
+            color: COLORS.text.secondary,
           }}
         >
-          {texto}
+          <div>
+            <strong>Faixas de desempenho:</strong> Baixo &lt;60% · Médio 60–85% · Alto &gt;85%
+          </div>
+          <div>
+            <strong>Faixas de plenitude:</strong> Baixa &lt;50% · Média 50–75% · Alta &gt;75%
+          </div>
         </div>
-      ) : (
-        <p style={{ fontSize: 13, color: COLORS.text.tertiary }}>
-          Diagnóstico não gerado para este trimestre.
-        </p>
-      )}
-      {geradoEm !== null && !gerando ? (
-        <p style={{ fontSize: 11, color: COLORS.text.quaternary, marginTop: 6 }}>
-          Gerado em {new Date(geradoEm).toLocaleString('pt-BR')}
-        </p>
-      ) : null}
-      {erro !== null ? (
-        <p style={{ fontSize: 12, color: COLORS.badge.dangerText, marginTop: 8 }}>{erro}</p>
-      ) : null}
-      {podeGerar ? (
-        <button
-          type="button"
-          onClick={() => void gerar()}
-          disabled={gerando}
-          style={{
-            marginTop: 12,
-            padding: '8px 16px',
-            borderRadius: 8,
-            border: texto === null ? 'none' : `1px solid ${COLORS.border.default}`,
-            background: texto === null ? COLORS.primary.navy : COLORS.background.card,
-            color: texto === null ? '#FFFFFF' : COLORS.text.secondary,
-            fontWeight: 600,
-            fontSize: 13,
-            cursor: gerando ? 'not-allowed' : 'pointer',
-          }}
+      </div>
+    </div>
+  );
+}
+
+function barra(valor: string | null, cor: string): JSX.Element {
+  const num = Number(valor);
+  const pct = Number.isFinite(num) ? Math.max(0, Math.min(100, num)) : 0;
+  return (
+    <div style={{ flex: 1, height: 8, background: COLORS.border.default, borderRadius: 999 }}>
+      <div style={{ width: `${pct}%`, height: 8, background: cor, borderRadius: 999 }} />
+    </div>
+  );
+}
+
+function EixoYModal(props: { eixoY: EixoY; onClose: () => void }): JSX.Element {
+  const { eixoY } = props;
+  const convergente = !eixoY.alertaDivergencia;
+  return (
+    <div style={OVERLAY} onClick={props.onClose}>
+      <div
+        style={{ ...CARD, maxWidth: 720, width: '100%', maxHeight: '86vh', overflowY: 'auto' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: COLORS.text.primary }}>
+            Eixo Y (Plenitude)
+          </div>
+          <button type="button" onClick={props.onClose} style={navBtnStyle(false)}>
+            Fechar
+          </button>
+        </div>
+        <div
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 12 }}
         >
-          {rotuloBotao}
-        </button>
-      ) : null}
+          <div style={{ background: COLORS.background.elevated, borderRadius: 8, padding: 10 }}>
+            <div style={LABEL}>AUTOAVALIAÇÃO</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.text.primary }}>
+              {formatPercent(eixoY.scoreA)}
+            </div>
+            <div style={{ fontSize: 11, color: COLORS.text.tertiary }}>Peso 40%</div>
+          </div>
+          <div style={{ background: COLORS.background.elevated, borderRadius: 8, padding: 10 }}>
+            <div style={LABEL}>AVALIAÇÃO DO LÍDER</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.text.primary }}>
+              {formatPercent(eixoY.scoreC)}
+            </div>
+            <div style={{ fontSize: 11, color: COLORS.text.tertiary }}>Peso 60%</div>
+          </div>
+          <div
+            style={{
+              background: convergente ? COLORS.badge.successBg : COLORS.badge.warningBg,
+              borderRadius: 8,
+              padding: 10,
+            }}
+          >
+            <div style={LABEL}>DIVERGÊNCIA</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.text.primary }}>
+              {formatScore(eixoY.divergencia)} pts
+            </div>
+            <div style={{ fontSize: 11, color: COLORS.text.tertiary }}>
+              {convergente ? 'Convergente' : 'Divergente'}
+            </div>
+          </div>
+        </div>
+        <div style={{ ...LABEL, marginTop: 16, marginBottom: 8 }}>DETALHAMENTO POR DIMENSÃO</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {eixoY.dimensoes.map((d) => (
+            <div key={d.label}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: COLORS.text.primary }}>
+                {d.label}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                {barra(d.a, COLORS.primary.navy)}
+                <span style={{ fontSize: 11, color: COLORS.primary.navy, width: 42 }}>
+                  {formatPercent(d.a)}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                {barra(d.c, COLORS.accent.teal)}
+                <span style={{ fontSize: 11, color: COLORS.accent.tealHover, width: 42 }}>
+                  {formatPercent(d.c)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
 
 export function DashboardIndividualClient(props: DashboardIndividualClientProps): JSX.Element {
-  const { employee, eixoX, eixoY, nineBox, diagnostico, trimestre } = props;
-  const quadrante = nineBox?.quadrante ?? null;
-  const legenda = quadrante !== null ? (QUADRANTE_LEGENDA[quadrante] ?? '') : '';
-  const seta = direcaoArrow(nineBox?.direcaoMovimento ?? null);
+  const { employee, trimestresDisponiveis } = props;
+  const [view, setView] = useState<QuarterView>(props.view);
+  const [carregandoNav, setCarregandoNav] = useState<boolean>(false);
+  const [gerando, setGerando] = useState<boolean>(false);
+  const [erroDiag, setErroDiag] = useState<string | null>(null);
+  const [legendaOpen, setLegendaOpen] = useState<boolean>(false);
+  const [eixoYOpen, setEixoYOpen] = useState<boolean>(false);
+
+  const idx = view.trimestre !== null ? trimestresDisponiveis.indexOf(view.trimestre) : -1;
+  const temAnterior = idx >= 0 && idx < trimestresDisponiveis.length - 1;
+  const temProximo = idx > 0;
+
+  const navegar = useCallback(
+    async (delta: number): Promise<void> => {
+      if (idx < 0) {
+        return;
+      }
+      const alvoIdx = idx - delta;
+      if (alvoIdx < 0 || alvoIdx >= trimestresDisponiveis.length) {
+        return;
+      }
+      const alvo = trimestresDisponiveis[alvoIdx];
+      if (alvo === undefined) {
+        return;
+      }
+      setCarregandoNav(true);
+      setErroDiag(null);
+      const res = await loadDashboardQuarterAction({ employeeId: employee.id, trimestre: alvo });
+      setCarregandoNav(false);
+      if (res.ok && res.view !== null) {
+        setView(res.view);
+      }
+    },
+    [employee.id, idx, trimestresDisponiveis],
+  );
+
+  const gerar = useCallback(async (): Promise<void> => {
+    if (view.trimestre === null) {
+      return;
+    }
+    setGerando(true);
+    setErroDiag(null);
+    const res = await generateDiagnosticoAction({
+      employeeId: employee.id,
+      trimestre: view.trimestre,
+    });
+    setGerando(false);
+    if (!res.ok) {
+      setErroDiag(res.error ?? 'Não foi possível gerar o diagnóstico agora.');
+      return;
+    }
+    setView((v) => ({ ...v, diagnostico: { texto: res.texto, geradoEm: res.geradoEm } }));
+  }, [employee.id, view.trimestre]);
+
+  const nb = view.nineBox;
+  const seta = direcaoArrow(nb?.direcaoMovimento ?? null);
+  const legenda = nb !== null ? (QUADRANTE_LEGENDA[nb.quadrante] ?? '') : '';
+  const fin = view.financeiro;
+  const eixoY = view.eixoY;
+  const podeGerar = view.isTrimestreAtual && view.trimestre !== null;
+  const rotuloBotao =
+    view.diagnostico.texto === null ? 'Gerar diagnóstico' : 'Atualizar diagnóstico';
 
   return (
-    <div style={{ padding: '24px 32px', maxWidth: 1100 }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 4 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: COLORS.text.primary, margin: 0 }}>
-          Dashboard individual
-        </h1>
-        {trimestre !== null ? (
-          <span style={{ fontSize: 13, color: COLORS.text.tertiary }}>{trimestre}</span>
-        ) : null}
+    <div style={{ padding: '20px 28px', maxWidth: 1180 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+        <button
+          type="button"
+          onClick={() => void navegar(-1)}
+          disabled={!temAnterior || carregandoNav}
+          style={navBtnStyle(!temAnterior || carregandoNav)}
+        >
+          ‹ Anterior
+        </button>
+        <div
+          style={{
+            fontSize: 15,
+            fontWeight: 700,
+            color: COLORS.text.primary,
+            minWidth: 220,
+            textAlign: 'center',
+          }}
+        >
+          {quarterLabel(view.trimestre)}
+        </div>
+        <button
+          type="button"
+          onClick={() => void navegar(1)}
+          disabled={!temProximo || carregandoNav}
+          style={navBtnStyle(!temProximo || carregandoNav)}
+        >
+          Próximo ›
+        </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr', gap: 16, marginTop: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.35fr', gap: 16, marginTop: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={CARD}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div
                 style={{
-                  width: 46,
-                  height: 46,
+                  width: 48,
+                  height: 48,
                   borderRadius: '50%',
                   background: COLORS.primary.navy,
                   color: '#FFFFFF',
-                  fontSize: 15,
+                  fontSize: 16,
                   fontWeight: 600,
                   display: 'flex',
                   alignItems: 'center',
@@ -207,51 +413,63 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
               >
                 {initialsOf(employee.name)}
               </div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, color: COLORS.text.primary }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 16, fontWeight: 600, color: COLORS.text.primary }}>
                   {employee.name}
                 </div>
                 <div style={{ fontSize: 12, color: COLORS.text.tertiary }}>
                   {employee.jobFamily} · {employee.departamento}
                 </div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, marginTop: 3 }}>
                   <span style={{ fontSize: 11, color: COLORS.text.quaternary }}>
                     {employee.senioridade}
                   </span>
                   <span style={{ fontSize: 11, color: COLORS.text.quaternary }}>
                     {employee.nivelHierarquico}
                   </span>
-                  {employee.isLider ? (
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: COLORS.badge.rhText,
-                        background: COLORS.badge.rhBg,
-                        borderRadius: 999,
-                        padding: '1px 8px',
-                      }}
-                    >
-                      Líder
-                    </span>
-                  ) : null}
                 </div>
               </div>
+              {employee.status === 'ativo' ? (
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: COLORS.badge.successTextAlt,
+                    background: COLORS.badge.successBg,
+                    borderRadius: 999,
+                    padding: '2px 10px',
+                    flexShrink: 0,
+                  }}
+                >
+                  ● Ativo
+                </span>
+              ) : null}
             </div>
           </div>
 
           <div style={CARD}>
-            <div style={{ ...LABEL, marginBottom: 10 }}>9-BOX</div>
-            {nineBox !== null ? (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 10,
+              }}
+            >
+              <div style={{ ...LABEL, fontSize: 13, color: COLORS.text.primary }}>9-BOX</div>
+              <button type="button" onClick={() => setLegendaOpen(true)} style={navBtnStyle(false)}>
+                Legenda
+              </button>
+            </div>
+            {nb !== null ? (
               <>
                 <NineBox
-                  posicaoX={nineBox.posicaoX}
-                  posicaoY={nineBox.posicaoY}
-                  direcao={seta.char}
+                  posicaoX={nb.posicaoX}
+                  posicaoY={nb.posicaoY}
+                  iniciais={initialsOf(employee.name)}
+                  seta={seta.char}
+                  setaColor={seta.color}
                 />
-                <div style={{ textAlign: 'center', ...LABEL, marginTop: 8, fontSize: 10 }}>
-                  DESEMPENHO →
-                </div>
                 <div style={{ marginTop: 12 }}>
                   <div style={{ ...LABEL, fontSize: 10 }}>QUADRANTE ATUAL</div>
                   <div
@@ -260,10 +478,9 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
                       fontWeight: 700,
                       color: COLORS.text.primary,
                       marginTop: 2,
-                      letterSpacing: '0.03em',
                     }}
                   >
-                    {quadrante}
+                    {nb.quadrante}
                   </div>
                   <div
                     style={{
@@ -279,7 +496,7 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
               </>
             ) : (
               <p style={{ fontSize: 13, color: COLORS.text.tertiary }}>
-                Sem classificação 9-Box para este colaborador.
+                Sem classificação 9-Box neste trimestre.
               </p>
             )}
           </div>
@@ -291,10 +508,10 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
               <div>
                 <div style={LABEL}>EIXO X</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.semantic.success }}>
-                  {formatPercent(eixoX?.indiceDesempenho ?? null)}
+                  {formatPercent(view.eixoX?.indiceDesempenho ?? null)}
                 </div>
                 <div style={{ fontSize: 11, color: COLORS.text.tertiary, marginTop: 2 }}>
-                  {faixaDesempenhoLabel(eixoX?.faixaDesempenho ?? null)}
+                  {faixaDesempenhoLabel(view.eixoX?.faixaDesempenho ?? null)}
                 </div>
               </div>
               <div>
@@ -305,11 +522,20 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
                 <div style={{ fontSize: 11, color: COLORS.text.tertiary, marginTop: 2 }}>
                   {faixaPlenitudeLabel(eixoY?.faixaPlenitude ?? null)}
                 </div>
+                {eixoY !== null ? (
+                  <button
+                    type="button"
+                    onClick={() => setEixoYOpen(true)}
+                    style={{ ...navBtnStyle(false), marginTop: 8, width: '100%', fontSize: 11 }}
+                  >
+                    Detalhamento
+                  </button>
+                ) : null}
               </div>
               <div>
                 <div style={LABEL}>OCIOSIDADE</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.text.primary }}>
-                  {formatPercent(eixoX?.capacidadeOciosa ?? null)}
+                  {formatPercent(view.eixoX?.capacidadeOciosa ?? null)}
                 </div>
               </div>
             </div>
@@ -330,33 +556,104 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
             ) : null}
           </div>
 
-          {eixoY !== null && eixoY.dimensoes.length > 0 ? (
+          {fin !== null ? (
             <div style={CARD}>
-              <div style={{ ...LABEL, marginBottom: 8 }}>PLENITUDE — AUTOAVALIAÇÃO vs LÍDER</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {eixoY.dimensoes.map((d) => (
-                  <div
-                    key={d.label}
-                    style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}
-                  >
-                    <span style={{ color: COLORS.text.secondary }}>{d.label}</span>
-                    <span style={{ color: COLORS.text.tertiary }}>
-                      auto {formatScore(d.a)} · líder {formatScore(d.c)}
-                    </span>
+              <div style={{ ...LABEL, marginBottom: 10 }}>
+                DADOS FINANCEIROS — MÉDIA MENSAL DO TRIMESTRE
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 12, color: COLORS.text.tertiary }}>ROI estimado</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.text.primary }}>
+                    {formatMultiplier(fin.roiEstimado)}
                   </div>
-                ))}
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: COLORS.text.tertiary }}>Meta de ROI</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.text.primary }}>
+                    {formatMultiplier(fin.metaROI)}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: COLORS.text.tertiary }}>Retorno estimado</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.text.primary }}>
+                    {formatBRLInt(fin.retornoEstimado)}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: COLORS.text.tertiary }}>
+                    % da meta atingida
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.semantic.warning }}>
+                    {formatPercent(fin.percMetaAtingida)}
+                  </div>
+                </div>
               </div>
             </div>
           ) : null}
 
-          <DiagnosticoArea
-            employeeId={employee.id}
-            trimestre={trimestre}
-            isTrimestreAtual={props.isTrimestreAtual}
-            inicial={diagnostico}
-          />
+          <div style={CARD}>
+            <div style={{ ...LABEL, marginBottom: 8 }}>DIAGNÓSTICO — IA</div>
+            {gerando ? (
+              <p style={{ fontSize: 13, color: COLORS.text.tertiary }}>Gerando diagnóstico…</p>
+            ) : view.diagnostico.texto !== null ? (
+              <div
+                style={{
+                  fontSize: 13,
+                  lineHeight: 1.7,
+                  color: COLORS.text.secondary,
+                  background: COLORS.background.elevated,
+                  borderRadius: 8,
+                  padding: 12,
+                }}
+              >
+                {view.diagnostico.texto}
+              </div>
+            ) : (
+              <p style={{ fontSize: 13, color: COLORS.text.tertiary }}>
+                Diagnóstico não gerado para este trimestre.
+              </p>
+            )}
+            {view.diagnostico.geradoEm !== null && !gerando ? (
+              <p style={{ fontSize: 11, color: COLORS.text.quaternary, marginTop: 6 }}>
+                Gerado em {new Date(view.diagnostico.geradoEm).toLocaleString('pt-BR')}
+              </p>
+            ) : null}
+            {erroDiag !== null ? (
+              <p style={{ fontSize: 12, color: COLORS.badge.dangerText, marginTop: 8 }}>
+                {erroDiag}
+              </p>
+            ) : null}
+            {podeGerar ? (
+              <button
+                type="button"
+                onClick={() => void gerar()}
+                disabled={gerando}
+                style={{
+                  marginTop: 12,
+                  padding: '8px 16px',
+                  borderRadius: 8,
+                  border:
+                    view.diagnostico.texto === null ? 'none' : `1px solid ${COLORS.border.default}`,
+                  background:
+                    view.diagnostico.texto === null ? COLORS.primary.navy : COLORS.background.card,
+                  color: view.diagnostico.texto === null ? '#FFFFFF' : COLORS.text.secondary,
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: gerando ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {rotuloBotao}
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
+
+      {legendaOpen ? <LegendaModal onClose={() => setLegendaOpen(false)} /> : null}
+      {eixoYOpen && eixoY !== null ? (
+        <EixoYModal eixoY={eixoY} onClose={() => setEixoYOpen(false)} />
+      ) : null}
     </div>
   );
 }

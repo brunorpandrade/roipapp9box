@@ -1,15 +1,11 @@
 // ROIP APP 9BOX — rota `/dashboard-individual/[id]` (ME-fila7 construcao
-// dispatch 3, fase 1). Dashboard individual read-only: 9-Box, Eixo X/Y e
-// Diagnostico IA, a partir de `dashboard.getEmployeeDashboard` (S065).
-// Escopo PC1f aplicado pelo guard interno do resolver (DOC 02 §9.10).
+// dispatch 3.2/3.3). Dashboard individual com navegacao por trimestre,
+// 9-Box, Eixo X/Y, Dados financeiros e Diagnostico IA, a partir de
+// `dashboard.getEmployeeDashboard` (S065, trimestre opcional). Escopo PC1f
+// pelo guard interno do resolver (DOC 02 §9.10).
 //
-// Origem canonica:
-// - DOC 05 §14.25 + §10 (Diagnostico IA).
-// - DOC 02 §9.10/§10.4 (PC1f + acesso Bruno via super-admin).
-// - Mockup `dashboard_individual_v7.html`.
-//
-// **RV-13.** Todo import consumido. `DashboardIndividualClient` abaixo
-// do Layout.
+// **RV-13.** Todo import consumido. `DashboardIndividualClient` abaixo do
+// Layout.
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
 import { TRPCError } from '@trpc/server';
@@ -25,16 +21,21 @@ import { resolveMenuItems } from '../../../lib/menu/menuConfig';
 import { loadPlatformMenuContext } from '../../../lib/session/platformMenuContext';
 import { resolveProfileKey } from '../../../lib/session/resolveProfileKey';
 import { createRateLimiter } from '../../../server/auth/rateLimit';
-import { createDashboardRouter } from '../../../server/routers/dashboard';
+import {
+  DASHBOARD_HISTORY_LIMIT_CAP,
+  createDashboardRouter,
+} from '../../../server/routers/dashboard';
 import { getServerSession } from '../../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../../server/trpc';
 
 import { DashboardIndividualClient } from './DashboardIndividualClient';
 import {
+  buildQuarterView,
   currentTrimestreUTC,
   parseEmployeeIdParam,
+  pickDefaultTrimestre,
   type DashboardIndividualClientProps,
-  type DimensaoAC,
+  type QuarterView,
 } from './internals';
 
 const SESSION_COOKIE = 'session';
@@ -76,7 +77,10 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
 
     let dashboard;
     try {
-      dashboard = await caller.getEmployeeDashboard({ employeeId });
+      dashboard = await caller.getEmployeeDashboard({
+        employeeId,
+        historyLimit: DASHBOARD_HISTORY_LIMIT_CAP,
+      });
     } catch (err) {
       if (err instanceof TRPCError && err.code === 'FORBIDDEN') {
         redirect('/access-denied?rota=/dashboard-individual');
@@ -87,20 +91,27 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
       throw err;
     }
 
-    const q = dashboard.latestQuarterly;
-    const p = dashboard.latestPlenitude;
-    const nb = dashboard.latestNineBox;
-    const trimestre = q?.trimestre ?? null;
+    const trimestresDisponiveis = dashboard.history.map((h) => h.trimestre);
+    const trimestreLatest = dashboard.history[0]?.trimestre ?? null;
+    const defaultTrimestre = pickDefaultTrimestre(trimestresDisponiveis, currentTrimestreUTC());
 
-    const dimensoes: DimensaoAC[] =
-      p !== null
-        ? [
-            { label: 'Engajamento', a: p.engajamentoA, c: p.engajamentoC },
-            { label: 'Desenvolvimento', a: p.desenvolvimentoA, c: p.desenvolvimentoC },
-            { label: 'Pertencimento', a: p.pertencimentoA, c: p.pertencimentoC },
-            { label: 'Realização', a: p.realizacaoA, c: p.realizacaoC },
-          ]
-        : [];
+    let view: QuarterView;
+    if (defaultTrimestre !== null && defaultTrimestre !== trimestreLatest) {
+      const snap = await caller.getEmployeeDashboard({ employeeId, trimestre: defaultTrimestre });
+      view = buildQuarterView({
+        trimestre: defaultTrimestre,
+        quarterly: snap.latestQuarterly,
+        plenitude: snap.latestPlenitude,
+        nineBox: snap.latestNineBox,
+      });
+    } else {
+      view = buildQuarterView({
+        trimestre: trimestreLatest,
+        quarterly: dashboard.latestQuarterly,
+        plenitude: dashboard.latestPlenitude,
+        nineBox: dashboard.latestNineBox,
+      });
+    }
 
     const clientProps: DashboardIndividualClientProps = {
       variant: session.kind === 'super_admin' ? 'super_admin' : 'platform',
@@ -111,41 +122,11 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
         jobFamily: dashboard.employee.jobFamily,
         senioridade: dashboard.employee.senioridade,
         nivelHierarquico: dashboard.employee.nivelHierarquico,
+        status: dashboard.employee.status,
         isLider: dashboard.employee.isLider,
       },
-      trimestre,
-      isTrimestreAtual: trimestre !== null && trimestre === currentTrimestreUTC(),
-      eixoX:
-        q !== null
-          ? {
-              indiceDesempenho: q.indiceDesempenho,
-              faixaDesempenho: q.faixaDesempenho,
-              capacidadeOciosa: q.capacidadeOciosa,
-            }
-          : null,
-      eixoY:
-        p !== null
-          ? {
-              plenitudeScore: p.plenitudeScore,
-              faixaPlenitude: p.faixaPlenitude,
-              divergencia: p.divergencia,
-              alertaDivergencia: p.alertaDivergencia === true,
-              dimensoes,
-            }
-          : null,
-      nineBox:
-        nb !== null
-          ? {
-              posicaoX: nb.posicaoX,
-              posicaoY: nb.posicaoY,
-              quadrante: nb.quadrante,
-              direcaoMovimento: nb.direcaoMovimento,
-            }
-          : null,
-      diagnostico: {
-        texto: q?.diagnosticoIA ?? null,
-        geradoEm: q?.diagnosticoIAgeradoEm != null ? q.diagnosticoIAgeradoEm.toISOString() : null,
-      },
+      trimestresDisponiveis,
+      view,
     };
 
     if (session.kind === 'super_admin') {

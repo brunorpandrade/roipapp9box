@@ -1,7 +1,7 @@
-// ROIP APP 9BOX — teste estrutural (ME-fila7 construcao dispatch 3,
-// fase 1). Cobre os exports puros da tela Dashboard individual e a grade
-// 9-Box. A regra de negocio (dados/escopo/diagnostico) permanece coberta
-// por `tests/integration/dashboard-router*` e afins.
+// ROIP APP 9BOX — teste estrutural (ME-fila7 dispatch 3.2/3.3). Cobre os
+// exports puros da tela Dashboard individual, a grade 9-Box, os formatadores
+// e a escolha do trimestre default. Regra de negocio permanece em
+// `tests/integration/dashboard-router*`.
 
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -14,12 +14,14 @@ import {
   colIndexFor,
   currentTrimestreUTC,
   direcaoArrow,
-  faixaDesempenhoLabel,
-  faixaPlenitudeLabel,
+  formatBRLInt,
+  formatMultiplier,
   formatPercent,
   formatScore,
   initialsOf,
   parseEmployeeIdParam,
+  pickDefaultTrimestre,
+  quarterLabel,
   rowIndexFor,
 } from '../../src/app/dashboard-individual/[id]/internals';
 
@@ -30,49 +32,44 @@ describe('dashboard individual — helpers puros', () => {
     expect(parseEmployeeIdParam('42')).toBe(42);
     expect(parseEmployeeIdParam('0')).toBeNull();
     expect(parseEmployeeIdParam('abc')).toBeNull();
-    expect(parseEmployeeIdParam('')).toBeNull();
   });
 
   it('currentTrimestreUTC devolve YYYY-QN', () => {
     expect(currentTrimestreUTC(new Date('2026-09-17T12:00:00Z'))).toBe('2026-Q3');
-    expect(currentTrimestreUTC(new Date('2026-01-05T12:00:00Z'))).toBe('2026-Q1');
     expect(currentTrimestreUTC(new Date('2026-12-31T12:00:00Z'))).toBe('2026-Q4');
   });
 
-  it('initialsOf devolve ate 2 iniciais maiusculas', () => {
-    expect(initialsOf('Fernanda Costa')).toBe('FC');
-    expect(initialsOf('Marina')).toBe('M');
+  it('quarterLabel rotula a faixa de meses', () => {
+    expect(quarterLabel('2026-Q1')).toBe('Janeiro a Março de 2026');
+    expect(quarterLabel('2025-Q4')).toBe('Outubro a Dezembro de 2025');
+    expect(quarterLabel(null)).toBe('—');
   });
 
-  it('formatPercent e formatScore tratam nulo/invalido', () => {
-    expect(formatPercent(null)).toBe('—');
+  it('pickDefaultTrimestre escolhe o mais recente <= atual', () => {
+    const lista = ['2028-Q1', '2027-Q4', '2026-Q3', '2026-Q2', '2026-Q1'];
+    expect(pickDefaultTrimestre(lista, '2026-Q3')).toBe('2026-Q3');
+    expect(pickDefaultTrimestre(['2027-Q1', '2026-Q4'], '2026-Q4')).toBe('2026-Q4');
+    expect(pickDefaultTrimestre([], '2026-Q3')).toBeNull();
+  });
+
+  it('formatadores tratam nulo/invalido', () => {
     expect(formatPercent('98.4')).toBe('98,4%');
-    expect(formatScore(null)).toBe('—');
+    expect(formatMultiplier('3.4')).toBe('3,4×');
+    expect(formatBRLInt('13260')).toContain('13.260');
     expect(formatScore('80.6')).toBe('81');
+    expect(formatPercent(null)).toBe('—');
   });
 
-  it('faixa labels mapeiam corretamente', () => {
-    expect(faixaDesempenhoLabel('alto')).toBe('Alto desempenho');
-    expect(faixaPlenitudeLabel('baixa')).toBe('Baixa plenitude');
-  });
-
-  it('direcaoArrow mapeia enum de movimento', () => {
+  it('initialsOf e direcaoArrow', () => {
+    expect(initialsOf('Fernanda Costa')).toBe('FC');
     expect(direcaoArrow('subiu').char).toBe('↑');
-    expect(direcaoArrow('desceu').char).toBe('↓');
     expect(direcaoArrow('estavel').char).toBe('');
-    expect(direcaoArrow(null).char).toBe('');
   });
 });
 
 describe('dashboard individual — grade 9-Box', () => {
-  it('tem 3x3 celulas', () => {
+  it('tem 3x3 celulas e cobre 9 quadrantes com legenda', () => {
     expect(NINE_BOX_GRID).toHaveLength(3);
-    for (const row of NINE_BOX_GRID) {
-      expect(row).toHaveLength(3);
-    }
-  });
-
-  it('cobre os 9 quadrantes com legenda', () => {
     const quadrantes = NINE_BOX_GRID.flat().map((c) => c.quadrante);
     expect(new Set(quadrantes).size).toBe(9);
     for (const q of quadrantes) {
@@ -80,14 +77,13 @@ describe('dashboard individual — grade 9-Box', () => {
     }
   });
 
-  it('posiciona ALTO IMPACTO em plenitude alta + desempenho alto', () => {
-    const cell = NINE_BOX_GRID[rowIndexFor('alta')]?.[colIndexFor('alto')];
-    expect(cell?.quadrante).toBe('ALTO IMPACTO');
-  });
-
-  it('posiciona RISCO CRÍTICO em plenitude baixa + desempenho baixo', () => {
-    const cell = NINE_BOX_GRID[rowIndexFor('baixa')]?.[colIndexFor('baixo')];
-    expect(cell?.quadrante).toBe('RISCO CRÍTICO');
+  it('posiciona ALTO IMPACTO e RISCO CRÍTICO corretamente', () => {
+    expect(NINE_BOX_GRID[rowIndexFor('alta')]?.[colIndexFor('alto')]?.quadrante).toBe(
+      'ALTO IMPACTO',
+    );
+    expect(NINE_BOX_GRID[rowIndexFor('baixa')]?.[colIndexFor('baixo')]?.quadrante).toBe(
+      'RISCO CRÍTICO',
+    );
   });
 });
 

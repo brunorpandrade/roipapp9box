@@ -10,7 +10,16 @@ import { createDashboardRouter } from '../../../server/routers/dashboard';
 import { getServerSession } from '../../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../../server/trpc';
 
+import { buildQuarterView, type QuarterView } from './internals';
+
 const SESSION_COOKIE = 'session';
+
+/** Retorno de `loadDashboardQuarterAction`. */
+export interface LoadQuarterResult {
+  readonly ok: boolean;
+  readonly view: QuarterView | null;
+  readonly error?: string;
+}
 
 /** Retorno de `generateDiagnosticoAction`. */
 export interface GenerateDiagnosticoResult {
@@ -33,11 +42,41 @@ async function requireToken(): Promise<string> {
   return token;
 }
 
-/**
- * Gera (ou atualiza) o Diagnostico IA do trimestre atual do colaborador.
- * O backend (`dashboard.generateDiagnostico`, §6.6) aplica o guard de
- * trimestre atual, escopo PC1f e permissao; erros voltam como mensagem.
- */
+/** Carrega o snapshot de um trimestre (navegacao Anterior/Proximo). */
+export async function loadDashboardQuarterAction(input: {
+  employeeId: number;
+  trimestre: string;
+}): Promise<LoadQuarterResult> {
+  const token = await requireToken();
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const caller = createCallerFactory(createDashboardRouter())(
+      createContextInner({
+        db: client.db,
+        rateLimiter: createRateLimiter(),
+        bearerToken: token,
+      }),
+    );
+    const dash = await caller.getEmployeeDashboard({
+      employeeId: input.employeeId,
+      trimestre: input.trimestre,
+    });
+    const view = buildQuarterView({
+      trimestre: input.trimestre,
+      quarterly: dash.latestQuarterly,
+      plenitude: dash.latestPlenitude,
+      nineBox: dash.latestNineBox,
+    });
+    return { ok: true, view };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Erro ao carregar o trimestre.';
+    return { ok: false, view: null, error: message };
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+/** Gera (ou atualiza) o Diagnostico IA do trimestre atual do colaborador. */
 export async function generateDiagnosticoAction(input: {
   employeeId: number;
   trimestre: string;

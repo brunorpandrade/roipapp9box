@@ -303,6 +303,10 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
         z.object({
           employeeId: z.number().int().positive(),
           historyLimit: z.number().int().positive().max(DASHBOARD_HISTORY_LIMIT_CAP).optional(),
+          // ME-fila7 3.2 — trimestre opcional. Ausente preserva o
+          // comportamento canonico (linha mais recente); presente devolve o
+          // snapshot (Eixo X/Y + 9-Box) daquele trimestre para a navegacao.
+          trimestre: TRIMESTRE_INPUT_SCHEMA_DASHBOARD.optional(),
         }),
       )
       .query(async ({ ctx, input }): Promise<EmployeeDashboardResult> => {
@@ -393,25 +397,53 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
           .where(eq(performanceQuarterlyData.employeeId, input.employeeId))
           .orderBy(desc(performanceQuarterlyData.trimestre))
           .limit(historyLimit);
-        const latestQuarterly = history[0] ?? null;
 
-        // Leitura Eixo Y — ultima linha de plenitudeData (por trimestre
-        // decrescente). Pode nao existir (S065 — nullable canonico).
+        // ME-fila7 3.2 — quando `trimestre` e informado, seleciona o
+        // snapshot daquele trimestre; ausente preserva a linha mais recente.
+        let latestQuarterly = history[0] ?? null;
+        if (input.trimestre !== undefined) {
+          const quarterlyRows = await ctx.db
+            .select()
+            .from(performanceQuarterlyData)
+            .where(
+              and(
+                eq(performanceQuarterlyData.employeeId, input.employeeId),
+                eq(performanceQuarterlyData.trimestre, input.trimestre),
+              ),
+            )
+            .limit(1);
+          latestQuarterly = quarterlyRows[0] ?? null;
+        }
+
+        // Leitura Eixo Y — plenitudeData do trimestre alvo (ou mais recente).
+        const plenitudeWhere =
+          input.trimestre !== undefined
+            ? and(
+                eq(plenitudeData.employeeId, input.employeeId),
+                eq(plenitudeData.trimestre, input.trimestre),
+              )
+            : eq(plenitudeData.employeeId, input.employeeId);
         const plenitudeRows = await ctx.db
           .select()
           .from(plenitudeData)
-          .where(eq(plenitudeData.employeeId, input.employeeId))
+          .where(plenitudeWhere)
           .orderBy(desc(plenitudeData.trimestre))
           .limit(1);
         const latestPlenitude = plenitudeRows[0] ?? null;
 
-        // Leitura 9-Box — ultima linha de nineBoxClassifications. Pode
-        // nao existir (S065 — nullable canonico; §7.1 registra motivo
-        // em `nineBoxCalculationLog` mas nao cria linha nesta tabela).
+        // Leitura 9-Box — nineBoxClassifications do trimestre alvo (ou mais
+        // recente). Pode nao existir (S065 — nullable canonico).
+        const nineBoxWhere =
+          input.trimestre !== undefined
+            ? and(
+                eq(nineBoxClassifications.employeeId, input.employeeId),
+                eq(nineBoxClassifications.trimestre, input.trimestre),
+              )
+            : eq(nineBoxClassifications.employeeId, input.employeeId);
         const nineBoxRows = await ctx.db
           .select()
           .from(nineBoxClassifications)
-          .where(eq(nineBoxClassifications.employeeId, input.employeeId))
+          .where(nineBoxWhere)
           .orderBy(desc(nineBoxClassifications.trimestre))
           .limit(1);
         const latestNineBox = nineBoxRows[0] ?? null;
