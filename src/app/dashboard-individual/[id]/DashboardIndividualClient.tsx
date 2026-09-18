@@ -16,14 +16,19 @@ import {
   formatBRLInt,
   formatMultiplier,
   formatPercent,
+  formatPercentFrac,
   formatScore,
   initialsOf,
+  ociosidadeLabel,
+  ociosidadeTier,
   quarterLabel,
   rowIndexFor,
 } from './internals';
 import type {
   DashboardIndividualClientProps,
   EixoY,
+  FaixaDesempenho,
+  OciosidadeTier,
   PosicaoX,
   PosicaoY,
   QuarterView,
@@ -296,6 +301,32 @@ function EixoYModal(props: { eixoY: EixoY; onClose: () => void }): JSX.Element {
   );
 }
 
+function faixaDesColor(f: FaixaDesempenho | null): string {
+  if (f === 'alto') {
+    return COLORS.semantic.success;
+  }
+  if (f === 'medio') {
+    return COLORS.semantic.warning;
+  }
+  if (f === 'baixo') {
+    return COLORS.semantic.danger;
+  }
+  return COLORS.text.primary;
+}
+
+function ociColor(tier: OciosidadeTier): string {
+  if (tier === 'saudavel') {
+    return COLORS.semantic.success;
+  }
+  if (tier === 'atencao') {
+    return COLORS.semantic.warning;
+  }
+  if (tier === 'critica') {
+    return COLORS.semantic.danger;
+  }
+  return COLORS.text.primary;
+}
+
 export function DashboardIndividualClient(props: DashboardIndividualClientProps): JSX.Element {
   const { employee, trimestresDisponiveis } = props;
   const [view, setView] = useState<QuarterView>(props.view);
@@ -359,6 +390,11 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
   const podeGerar = view.isTrimestreAtual && view.trimestre !== null;
   const rotuloBotao =
     view.diagnostico.texto === null ? 'Gerar diagnóstico' : 'Atualizar diagnóstico';
+  const eixoXColor = faixaDesColor(view.eixoX?.faixaDesempenho ?? null);
+  const ociTier = ociosidadeTier(view.eixoX?.capacidadeOciosa ?? null);
+  const metaNum = fin !== null ? Number(fin.percMetaAtingida) : Number.NaN;
+  const metaColor =
+    Number.isFinite(metaNum) && metaNum >= 100 ? COLORS.semantic.success : COLORS.semantic.warning;
 
   return (
     <div style={{ padding: '20px 28px', maxWidth: 1180 }}>
@@ -507,8 +543,8 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
               <div>
                 <div style={LABEL}>EIXO X</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.semantic.success }}>
-                  {formatPercent(view.eixoX?.indiceDesempenho ?? null)}
+                <div style={{ fontSize: 22, fontWeight: 700, color: eixoXColor }}>
+                  {formatPercentFrac(view.eixoX?.indiceDesempenho ?? null)}
                 </div>
                 <div style={{ fontSize: 11, color: COLORS.text.tertiary, marginTop: 2 }}>
                   {faixaDesempenhoLabel(view.eixoX?.faixaDesempenho ?? null)}
@@ -534,8 +570,11 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
               </div>
               <div>
                 <div style={LABEL}>OCIOSIDADE</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.text.primary }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: ociColor(ociTier) }}>
                   {formatPercent(view.eixoX?.capacidadeOciosa ?? null)}
+                </div>
+                <div style={{ fontSize: 11, color: COLORS.text.tertiary, marginTop: 2 }}>
+                  {ociosidadeLabel(ociTier)}
                 </div>
               </div>
             </div>
@@ -584,7 +623,7 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
                   <div style={{ fontSize: 12, color: COLORS.text.tertiary }}>
                     % da meta atingida
                   </div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.semantic.warning }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: metaColor }}>
                     {formatPercent(fin.percMetaAtingida)}
                   </div>
                 </div>

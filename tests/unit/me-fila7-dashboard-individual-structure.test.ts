@@ -17,8 +17,10 @@ import {
   formatBRLInt,
   formatMultiplier,
   formatPercent,
+  formatPercentFrac,
   formatScore,
   initialsOf,
+  ociosidadeTier,
   parseEmployeeIdParam,
   pickDefaultTrimestre,
   quarterLabel,
@@ -54,10 +56,23 @@ describe('dashboard individual — helpers puros', () => {
 
   it('formatadores tratam nulo/invalido', () => {
     expect(formatPercent('98.4')).toBe('98,4%');
+    expect(formatPercentFrac('0.984')).toBe('98,4%');
     expect(formatMultiplier('3.4')).toBe('3,4×');
     expect(formatBRLInt('13260')).toContain('13.260');
     expect(formatScore('80.6')).toBe('81');
     expect(formatPercent(null)).toBe('—');
+    expect(formatPercentFrac(null)).toBe('—');
+  });
+
+  it('ociosidadeTier segue as faixas de negocio', () => {
+    expect(ociosidadeTier('0')).toBe('critica');
+    expect(ociosidadeTier('4.9')).toBe('critica');
+    expect(ociosidadeTier('5')).toBe('saudavel');
+    expect(ociosidadeTier('15')).toBe('saudavel');
+    expect(ociosidadeTier('20')).toBe('atencao');
+    expect(ociosidadeTier('25')).toBe('atencao');
+    expect(ociosidadeTier('30')).toBe('critica');
+    expect(ociosidadeTier(null)).toBe('sem_dado');
   });
 
   it('initialsOf e direcaoArrow', () => {

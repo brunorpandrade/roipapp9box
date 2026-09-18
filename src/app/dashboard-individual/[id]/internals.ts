@@ -309,6 +309,59 @@ export function faixaPlenitudeLabel(f: FaixaPlenitude | null): string {
   return '—';
 }
 
+/** Percentual a partir de fracao 0–1 (ex.: `0.9840` -> `98,4%`). Usado no
+ * Eixo X, cujo `indiceDesempenho` e gravado como razao (sem x100). */
+export function formatPercentFrac(valor: string | null): string {
+  if (valor === null) {
+    return '—';
+  }
+  const num = Number(valor);
+  if (!Number.isFinite(num)) {
+    return '—';
+  }
+  return `${(num * 100).toFixed(1).replace('.', ',')}%`;
+}
+
+export type OciosidadeTier = 'saudavel' | 'atencao' | 'critica' | 'sem_dado';
+
+/**
+ * Faixa de ociosidade (regra de negocio): abaixo de 5% e critica (sem folga
+ * — perigoso); 5% a 15% e saudavel; acima de 15% ate 25% e atencao; acima de
+ * 25% e critica. `capacidadeOciosa` chega em escala 0–100.
+ */
+export function ociosidadeTier(valor: string | null): OciosidadeTier {
+  if (valor === null) {
+    return 'sem_dado';
+  }
+  const num = Number(valor);
+  if (!Number.isFinite(num)) {
+    return 'sem_dado';
+  }
+  if (num < 5) {
+    return 'critica';
+  }
+  if (num <= 15) {
+    return 'saudavel';
+  }
+  if (num <= 25) {
+    return 'atencao';
+  }
+  return 'critica';
+}
+
+export function ociosidadeLabel(tier: OciosidadeTier): string {
+  if (tier === 'saudavel') {
+    return 'Faixa saudável';
+  }
+  if (tier === 'atencao') {
+    return 'Faixa de atenção';
+  }
+  if (tier === 'critica') {
+    return 'Faixa crítica';
+  }
+  return '';
+}
+
 interface QuarterlyLike {
   readonly trimestre: string;
   readonly indiceDesempenho: string | null;
