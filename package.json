@@ -21,7 +21,8 @@
     "seed:ubatuba:op-d2": "node scripts/seed-ubatuba-operacional-d2.mjs",
     "seed:ubatuba:op-d3": "node scripts/seed-ubatuba-operacional-d3.mjs",
     "seed:ubatuba:op-d4-final": "node scripts/seed-ubatuba-operacional-d4-final.mjs",
-    "reset-reseed:ubatuba": "node scripts/reset-reseed-ubatuba.mjs"
+    "reset-reseed:ubatuba": "node scripts/reset-reseed-ubatuba.mjs",
+    "reset-reseed:nativa": "node scripts/reset-reseed-nativa.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "5.101.2",

@@ -904,6 +904,12 @@ function mapPlenitudeToRow(r: Record<string, unknown>) {
     alertaDivergencia: r.alertaDivergencia as boolean,
     engajamentoA: r.engajamentoA != null ? (r.engajamentoA as number).toFixed(2) : null,
     engajamentoC: r.engajamentoC != null ? (r.engajamentoC as number).toFixed(2) : null,
+    desenvolvimentoA: r.desenvolvimentoA != null ? (r.desenvolvimentoA as number).toFixed(2) : null,
+    desenvolvimentoC: r.desenvolvimentoC != null ? (r.desenvolvimentoC as number).toFixed(2) : null,
+    pertencimentoA: r.pertencimentoA != null ? (r.pertencimentoA as number).toFixed(2) : null,
+    pertencimentoC: r.pertencimentoC != null ? (r.pertencimentoC as number).toFixed(2) : null,
+    realizacaoA: r.realizacaoA != null ? (r.realizacaoA as number).toFixed(2) : null,
+    realizacaoC: r.realizacaoC != null ? (r.realizacaoC as number).toFixed(2) : null,
   };
 }
 
@@ -1024,6 +1030,7 @@ function mapNr1SnapToRow(r: Record<string, unknown>, cicloDbId: number, idx: Emp
     employeeId,
     departamentoId: null,
     respondeu: true,
+    respostaInvalida: r.respostaInvalida as boolean,
     createdAt: new Date('2026-10-20T00:00:00.000Z'),
   };
 }
@@ -1071,6 +1078,7 @@ function mapNr1FactToRow(r: Record<string, unknown>, cicloDbId: number) {
     fator: r.fatorNum as number,
     score: r.score != null ? (r.score as number).toFixed(2) : '0.00',
     countRespondentes: r.countRespondentes as number,
+    agregadoDe: r.agregadoDe ?? null,
   };
 }
 

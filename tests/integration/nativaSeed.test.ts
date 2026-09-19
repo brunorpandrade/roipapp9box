@@ -155,6 +155,21 @@ async function countTable(client: RoipDbClient, tableName: string): Promise<numb
   return first ? Number(first.n) : 0;
 }
 
+async function countNonNull(
+  client: RoipDbClient,
+  tableName: string,
+  columnName: string,
+): Promise<number> {
+  // COUNT(coluna) conta apenas nao-nulos. Nome de tabela/coluna vem de
+  // constante literal do proprio teste — sem risco de injecao (RV-12 excecao
+  // de invariante de teste).
+  const [rows] = await client.pool.query<mysql.RowDataPacket[]>(
+    `SELECT COUNT(\`${columnName}\`) AS n FROM \`${tableName}\``,
+  );
+  const first = rows[0];
+  return first ? Number(first.n) : 0;
+}
+
 describe('seedNativa — invariantes canonicas bit-exact §18.4 (ME-068)', () => {
   const cfg = parseDatabaseUrl(DEFAULT_URL);
   let client: RoipDbClient;
@@ -279,6 +294,29 @@ describe('seedNativa — invariantes canonicas bit-exact §18.4 (ME-068)', () =>
 
   it('plenitudeData = 401', async () => {
     expect(await countTable(client, 'plenitudeData')).toBe(401);
+  });
+
+  it('plenitudeData — 6 dimensoes faltantes populadas (ME-fila7 loader fix)', async () => {
+    for (const col of [
+      'desenvolvimentoA',
+      'desenvolvimentoC',
+      'pertencimentoA',
+      'pertencimentoC',
+      'realizacaoA',
+      'realizacaoC',
+    ]) {
+      expect(await countNonNull(client, 'plenitudeData', col)).toBe(401);
+    }
+  });
+
+  it('copsoqFactorScores.agregadoDe populado (ME-fila7 loader fix)', async () => {
+    expect(await countNonNull(client, 'copsoqFactorScores', 'agregadoDe')).toBe(16);
+  });
+
+  it('copsoqCycleSnapshot.respostaInvalida populado (ME-fila7 loader fix)', async () => {
+    expect(
+      await countNonNull(client, 'copsoqCycleSnapshot', 'respostaInvalida'),
+    ).toBeGreaterThanOrEqual(54);
   });
 
   it('nineBoxClassifications = 387', async () => {
