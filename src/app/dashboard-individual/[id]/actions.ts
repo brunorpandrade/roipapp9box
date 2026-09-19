@@ -73,6 +73,7 @@ export async function loadDashboardQuarterAction(input: {
       quarterly: dash.latestQuarterly,
       plenitude: dash.latestPlenitude,
       nineBox: dash.latestNineBox,
+      assiduidadeMedia: dash.assiduidadeMedia,
     });
     return { ok: true, view };
   } catch (err) {

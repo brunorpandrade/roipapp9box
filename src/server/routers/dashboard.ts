@@ -144,6 +144,7 @@ export interface EmployeeDashboardResult {
   history: (typeof performanceQuarterlyData.$inferSelect)[];
   latestPlenitude: typeof plenitudeData.$inferSelect | null;
   latestNineBox: typeof nineBoxClassifications.$inferSelect | null;
+  assiduidadeMedia: string | null;
 }
 
 /**
@@ -492,6 +493,31 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
           liderDireto = liderRows[0]?.name ?? null;
         }
 
+        // Assiduidade media do trimestre alvo (media mensal de performanceData).
+        const trimestreAlvoAssid = input.trimestre ?? latestQuarterly?.trimestre ?? null;
+        let assiduidadeMedia: string | null = null;
+        if (trimestreAlvoAssid !== null) {
+          const mesesAssid = getQuarterMonths(trimestreAlvoAssid);
+          if (mesesAssid !== null && mesesAssid.length > 0) {
+            const assidRows = await ctx.db
+              .select({ assiduidade: performanceData.assiduidade })
+              .from(performanceData)
+              .where(
+                and(
+                  eq(performanceData.employeeId, input.employeeId),
+                  inArray(performanceData.mes, mesesAssid),
+                ),
+              );
+            const vals = assidRows
+              .map((r) => (r.assiduidade != null ? Number(r.assiduidade) : null))
+              .filter((n): n is number => n !== null && Number.isFinite(n));
+            if (vals.length > 0) {
+              const soma = vals.reduce((a, b) => a + b, 0);
+              assiduidadeMedia = (soma / vals.length).toFixed(2);
+            }
+          }
+        }
+
         return {
           employee: {
             id: emp.id,
@@ -511,6 +537,7 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
           history,
           latestPlenitude,
           latestNineBox,
+          assiduidadeMedia,
         };
       }),
 

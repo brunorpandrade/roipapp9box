@@ -95,14 +95,25 @@ function NineBox(props: {
     <div style={{ display: 'flex', alignItems: 'stretch', gap: 8 }}>
       <div
         style={{
-          writingMode: 'vertical-rl',
-          transform: 'rotate(180deg)',
-          ...LABEL,
-          fontSize: 10,
-          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 4,
         }}
       >
-        ↑ PLENITUDE
+        <span style={{ ...LABEL, fontSize: 11 }}>↑</span>
+        <span
+          style={{
+            writingMode: 'vertical-rl',
+            transform: 'rotate(180deg)',
+            ...LABEL,
+            fontSize: 10,
+            textAlign: 'center',
+          }}
+        >
+          PLENITUDE
+        </span>
       </div>
       <div style={{ flex: 1 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
@@ -738,6 +749,21 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
                   seta={seta.char}
                   setaColor={seta.color}
                 />
+                {view.assiduidadeMedia !== null ? (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ ...LABEL, fontSize: 10 }}>ASSIDUIDADE MÉDIA</div>
+                    <div
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 700,
+                        color: COLORS.semantic.success,
+                        marginTop: 2,
+                      }}
+                    >
+                      {formatPercent(view.assiduidadeMedia)}
+                    </div>
+                  </div>
+                ) : null}
                 <div style={{ marginTop: 12 }}>
                   <div style={{ ...LABEL, fontSize: 10 }}>QUADRANTE ATUAL</div>
                   <div

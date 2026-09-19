@@ -105,6 +105,7 @@ export interface QuarterView {
   readonly nineBox: NineBoxPos | null;
   readonly financeiro: FinanceiroBlock | null;
   readonly diagnostico: DiagnosticoState;
+  readonly assiduidadeMedia: string | null;
 }
 
 export interface DashboardIndividualClientProps {
@@ -488,6 +489,7 @@ export function buildQuarterView(args: {
   quarterly: QuarterlyLike | null;
   plenitude: PlenitudeLike | null;
   nineBox: NineBoxLike | null;
+  assiduidadeMedia?: string | null;
 }): QuarterView {
   const { trimestre, quarterly, plenitude, nineBox } = args;
   const dimensoes: DimensaoAC[] =
@@ -551,5 +553,6 @@ export function buildQuarterView(args: {
           ? quarterly.diagnosticoIAgeradoEm.toISOString()
           : null,
     },
+    assiduidadeMedia: args.assiduidadeMedia ?? null,
   };
 }
