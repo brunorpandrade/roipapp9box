@@ -133,6 +133,9 @@ export interface EmployeeDashboardResult {
     nivelHierarquico: string;
     status: 'ativo' | 'inativo';
     isLider: boolean;
+    dataNascimento: Date;
+    dataAdmissao: Date;
+    liderDireto: string | null;
   };
   latestQuarterly: typeof performanceQuarterlyData.$inferSelect | null;
   history: (typeof performanceQuarterlyData.$inferSelect)[];
@@ -324,6 +327,8 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
             nivelHierarquico: employees.nivelHierarquico,
             status: employees.status,
             isLider: employees.isLider,
+            dataNascimento: employees.dataNascimento,
+            dataAdmissao: employees.dataAdmissao,
           })
           .from(employees)
           .where(eq(employees.id, input.employeeId))
@@ -448,6 +453,18 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
           .limit(1);
         const latestNineBox = nineBoxRows[0] ?? null;
 
+        // Lider direto (nome) — registro ativo de employeeLeaderHistory.
+        const leaderLink = await getActiveLeaderHistoryByEmployee(ctx.db, input.employeeId);
+        let liderDireto: string | null = null;
+        if (leaderLink?.liderId != null) {
+          const liderRows = await ctx.db
+            .select({ name: employees.name })
+            .from(employees)
+            .where(eq(employees.id, leaderLink.liderId))
+            .limit(1);
+          liderDireto = liderRows[0]?.name ?? null;
+        }
+
         return {
           employee: {
             id: emp.id,
@@ -459,6 +476,9 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
             nivelHierarquico: emp.nivelHierarquico,
             status: emp.status ?? 'ativo',
             isLider: emp.isLider ?? false,
+            dataNascimento: emp.dataNascimento,
+            dataAdmissao: emp.dataAdmissao,
+            liderDireto,
           },
           latestQuarterly,
           history,

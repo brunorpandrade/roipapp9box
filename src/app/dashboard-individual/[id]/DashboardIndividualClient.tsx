@@ -5,6 +5,8 @@ import type { CSSProperties, JSX } from 'react';
 
 import { COLORS } from '../../../lib/design-tokens/colors';
 
+import { FichaCadastralModal } from '../../../components/colaboradores/FichaCadastralModal';
+
 import { generateDiagnosticoAction, loadDashboardQuarterAction } from './actions';
 import {
   NINE_BOX_GRID,
@@ -18,11 +20,13 @@ import {
   formatPercent,
   formatPercentFrac,
   formatScore,
+  idadeAnos,
   initialsOf,
   ociosidadeLabel,
   ociosidadeTier,
   quarterLabel,
   rowIndexFor,
+  tempoEmpresa,
 } from './internals';
 import type {
   DashboardIndividualClientProps,
@@ -386,13 +390,14 @@ function ociColor(tier: OciosidadeTier): string {
 }
 
 export function DashboardIndividualClient(props: DashboardIndividualClientProps): JSX.Element {
-  const { employee, trimestresDisponiveis } = props;
+  const { employee, trimestresDisponiveis, fichaLoadAction, editHref, hideRf } = props;
   const [view, setView] = useState<QuarterView>(props.view);
   const [carregandoNav, setCarregandoNav] = useState<boolean>(false);
   const [gerando, setGerando] = useState<boolean>(false);
   const [erroDiag, setErroDiag] = useState<string | null>(null);
   const [legendaOpen, setLegendaOpen] = useState<boolean>(false);
   const [eixoYOpen, setEixoYOpen] = useState<boolean>(false);
+  const [detalhesOpen, setDetalhesOpen] = useState<boolean>(false);
 
   const idx = view.trimestre !== null ? trimestresDisponiveis.indexOf(view.trimestre) : -1;
   const temAnterior = idx >= 0 && idx < trimestresDisponiveis.length - 1;
@@ -514,30 +519,59 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
                 <div style={{ fontSize: 12, color: COLORS.text.tertiary }}>
                   {employee.jobFamily} · {employee.departamento}
                 </div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 3 }}>
+                {employee.liderDireto !== null ? (
+                  <div style={{ fontSize: 12, color: COLORS.text.tertiary }}>
+                    Líder: {employee.liderDireto}
+                  </div>
+                ) : null}
+                <div style={{ display: 'flex', gap: 8, marginTop: 3, flexWrap: 'wrap' }}>
+                  {idadeAnos(employee.dataNascimento) !== null ? (
+                    <span style={{ fontSize: 11, color: COLORS.text.quaternary }}>
+                      {idadeAnos(employee.dataNascimento)} anos
+                    </span>
+                  ) : null}
                   <span style={{ fontSize: 11, color: COLORS.text.quaternary }}>
                     {employee.senioridade}
                   </span>
                   <span style={{ fontSize: 11, color: COLORS.text.quaternary }}>
                     {employee.nivelHierarquico}
                   </span>
+                  <span style={{ fontSize: 11, color: COLORS.text.quaternary }}>
+                    {tempoEmpresa(employee.dataAdmissao)}
+                  </span>
                 </div>
               </div>
-              {employee.status === 'ativo' ? (
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: COLORS.badge.successTextAlt,
-                    background: COLORS.badge.successBg,
-                    borderRadius: 999,
-                    padding: '2px 10px',
-                    flexShrink: 0,
-                  }}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
+                  gap: 8,
+                  flexShrink: 0,
+                }}
+              >
+                {employee.status === 'ativo' ? (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: COLORS.badge.successTextAlt,
+                      background: COLORS.badge.successBg,
+                      borderRadius: 999,
+                      padding: '2px 10px',
+                    }}
+                  >
+                    ● Ativo
+                  </span>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setDetalhesOpen(true)}
+                  style={navBtnStyle(false)}
                 >
-                  ● Ativo
-                </span>
-              ) : null}
+                  Detalhes
+                </button>
+              </div>
             </div>
           </div>
 
@@ -750,6 +784,17 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
       {legendaOpen ? <LegendaModal onClose={() => setLegendaOpen(false)} /> : null}
       {eixoYOpen && eixoY !== null ? (
         <EixoYModal eixoY={eixoY} onClose={() => setEixoYOpen(false)} />
+      ) : null}
+      {detalhesOpen ? (
+        <FichaCadastralModal
+          companyId={employee.companyId}
+          employeeId={employee.id}
+          employeeName={employee.name}
+          loadAction={fichaLoadAction}
+          editHref={editHref}
+          hideRf={hideRf}
+          onClose={() => setDetalhesOpen(false)}
+        />
       ) : null}
     </div>
   );

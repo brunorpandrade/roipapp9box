@@ -28,6 +28,7 @@ import {
 import { getServerSession } from '../../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../../server/trpc';
 
+import { carregarFichaCadastralAction } from '../../_shared/fichaCadastral/actions';
 import { DashboardIndividualClient } from './DashboardIndividualClient';
 import {
   buildQuarterView,
@@ -113,10 +114,15 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
       });
     }
 
+    const isSuper = session.kind === 'super_admin';
+    const empCompanyId = dashboard.employee.companyId;
+    const toIsoDate = (d: Date | null): string | null =>
+      d != null ? d.toISOString().slice(0, 10) : null;
     const clientProps: DashboardIndividualClientProps = {
-      variant: session.kind === 'super_admin' ? 'super_admin' : 'platform',
+      variant: isSuper ? 'super_admin' : 'platform',
       employee: {
         id: dashboard.employee.id,
+        companyId: empCompanyId,
         name: dashboard.employee.name,
         departamento: dashboard.employee.departamento,
         jobFamily: dashboard.employee.jobFamily,
@@ -124,9 +130,17 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
         nivelHierarquico: dashboard.employee.nivelHierarquico,
         status: dashboard.employee.status,
         isLider: dashboard.employee.isLider,
+        dataNascimento: toIsoDate(dashboard.employee.dataNascimento),
+        dataAdmissao: toIsoDate(dashboard.employee.dataAdmissao),
+        liderDireto: dashboard.employee.liderDireto,
       },
       trimestresDisponiveis,
       view,
+      fichaLoadAction: carregarFichaCadastralAction,
+      editHref: isSuper
+        ? `/super-admin/empresa/${empCompanyId}/colaborador/${dashboard.employee.id}/editar`
+        : null,
+      hideRf: !isSuper,
     };
 
     if (session.kind === 'super_admin') {

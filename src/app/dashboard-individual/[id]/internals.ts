@@ -11,6 +11,13 @@
 // **RV-13.** Todo export consumido (page + client + actions + teste).
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
+import type { FichaCadastralActionResult } from '../../_shared/fichaCadastral/actions';
+
+export type FichaLoadAction = (
+  companyId: number,
+  employeeId: number,
+) => Promise<FichaCadastralActionResult>;
+
 export type PosicaoX = 'baixo' | 'medio' | 'alto';
 export type PosicaoY = 'baixa' | 'media' | 'alta';
 export type FaixaDesempenho = 'baixo' | 'medio' | 'alto';
@@ -19,6 +26,7 @@ export type DirecaoMovimento = 'subiu' | 'desceu' | 'lateral' | 'estavel' | 'pri
 
 export interface EmployeeHeader {
   readonly id: number;
+  readonly companyId: number;
   readonly name: string;
   readonly departamento: string;
   readonly jobFamily: string;
@@ -26,6 +34,9 @@ export interface EmployeeHeader {
   readonly nivelHierarquico: string;
   readonly status: string;
   readonly isLider: boolean;
+  readonly dataNascimento: string | null;
+  readonly dataAdmissao: string | null;
+  readonly liderDireto: string | null;
 }
 
 export interface EixoX {
@@ -85,6 +96,9 @@ export interface DashboardIndividualClientProps {
   readonly employee: EmployeeHeader;
   readonly trimestresDisponiveis: readonly string[];
   readonly view: QuarterView;
+  readonly fichaLoadAction: FichaLoadAction;
+  readonly editHref: string | null;
+  readonly hideRf: boolean;
 }
 
 const MESES_QUADRIMESTRE: Readonly<Record<string, string>> = {
@@ -230,6 +244,47 @@ export function initialsOf(name: string): string {
   const first = parts[0]?.[0] ?? '';
   const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
   return (first + last).toUpperCase();
+}
+
+/** Idade em anos a partir de uma data ISO (YYYY-MM-DD). */
+export function idadeAnos(iso: string | null): number | null {
+  if (iso === null) {
+    return null;
+  }
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) {
+    return null;
+  }
+  const now = new Date();
+  let anos = now.getUTCFullYear() - d.getUTCFullYear();
+  const mDiff = now.getUTCMonth() - d.getUTCMonth();
+  if (mDiff < 0 || (mDiff === 0 && now.getUTCDate() < d.getUTCDate())) {
+    anos -= 1;
+  }
+  return anos >= 0 ? anos : null;
+}
+
+/** Tempo de empresa a partir da admissao ISO, formato `Xa Ym`. */
+export function tempoEmpresa(iso: string | null): string {
+  if (iso === null) {
+    return '—';
+  }
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) {
+    return '—';
+  }
+  const now = new Date();
+  let meses = (now.getUTCFullYear() - d.getUTCFullYear()) * 12;
+  meses += now.getUTCMonth() - d.getUTCMonth();
+  if (now.getUTCDate() < d.getUTCDate()) {
+    meses -= 1;
+  }
+  if (meses < 0) {
+    return '—';
+  }
+  const anos = Math.floor(meses / 12);
+  const restoMeses = meses % 12;
+  return `${anos}a ${restoMeses}m`;
 }
 
 export function formatPercent(valor: string | null): string {

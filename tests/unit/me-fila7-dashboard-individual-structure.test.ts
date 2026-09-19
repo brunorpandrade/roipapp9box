@@ -19,12 +19,14 @@ import {
   formatPercent,
   formatPercentFrac,
   formatScore,
+  idadeAnos,
   initialsOf,
   ociosidadeTier,
   parseEmployeeIdParam,
   pickDefaultTrimestre,
   quarterLabel,
   rowIndexFor,
+  tempoEmpresa,
 } from '../../src/app/dashboard-individual/[id]/internals';
 
 const REPO_ROOT = resolve(__dirname, '../..');
@@ -79,6 +81,14 @@ describe('dashboard individual — helpers puros', () => {
     expect(initialsOf('Fernanda Costa')).toBe('FC');
     expect(direcaoArrow('subiu').char).toBe('↑');
     expect(direcaoArrow('estavel').char).toBe('');
+  });
+
+  it('idadeAnos e tempoEmpresa', () => {
+    expect(idadeAnos(null)).toBeNull();
+    expect(idadeAnos('data-invalida')).toBeNull();
+    expect(idadeAnos('2000-01-01')).toBeGreaterThanOrEqual(20);
+    expect(tempoEmpresa(null)).toBe('—');
+    expect(tempoEmpresa('2023-01-01')).toMatch(/^\d+a \d+m$/);
   });
 });
 
