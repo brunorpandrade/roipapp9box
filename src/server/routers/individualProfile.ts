@@ -653,8 +653,13 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
 
     // ============================================================
     // Proc 3 — generatePDF (§10.10; S261)
+    // ME pos-fila7: `rh_lider` incluido para alinhar a `getReport` e
+    // `releaseRetest` (que ja o autorizam) e ao DOC 02 §69 — RH-Lider
+    // acumula as permissoes de RH puro, inclusive baixar o PDF do Perfil
+    // Individual. A ausencia anterior era divergencia entre procs do
+    // mesmo instrumento, sem sinalizacao que a justificasse.
     // ============================================================
-    generatePDF: roleProcedure(['super_admin', 'rh'])
+    generatePDF: roleProcedure(['super_admin', 'rh', 'rh_lider'])
       .input(GENERATE_PDF_INPUT_SCHEMA)
       .mutation(async ({ ctx, input }): Promise<GeneratePDFResult> => {
         // §2.4 — isolamento por empresa. Super Admin atravessa.

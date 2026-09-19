@@ -7,6 +7,7 @@ import { COLORS } from '../../../lib/design-tokens/colors';
 
 import { FichaCadastralModal } from '../../../components/colaboradores/FichaCadastralModal';
 
+import { PerfilIndividualRelatorioModal } from './PerfilIndividualRelatorioModal';
 import {
   generateDiagnosticoAction,
   loadDashboardQuarterAction,
@@ -534,6 +535,7 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
   const [eixoXOpen, setEixoXOpen] = useState<boolean>(false);
   const [eixoXData, setEixoXData] = useState<EixoXDetalhe | null>(null);
   const [eixoXLoading, setEixoXLoading] = useState<boolean>(false);
+  const [perfilOpen, setPerfilOpen] = useState<boolean>(false);
 
   const idx = view.trimestre !== null ? trimestresDisponiveis.indexOf(view.trimestre) : -1;
   const temAnterior = idx >= 0 && idx < trimestresDisponiveis.length - 1;
@@ -953,9 +955,42 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
               </button>
             ) : null}
           </div>
+
+          <div style={CARD}>
+            <div style={{ ...LABEL, marginBottom: 10 }}>PERFIL INDIVIDUAL</div>
+            <button
+              type="button"
+              onClick={() => setPerfilOpen(true)}
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                borderRadius: 8,
+                border: 'none',
+                background: COLORS.accent.teal,
+                color: '#FFFFFF',
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: 'pointer',
+              }}
+            >
+              Perfil individual
+            </button>
+          </div>
         </div>
       </div>
 
+      {perfilOpen ? (
+        <PerfilIndividualRelatorioModal
+          companyId={employee.companyId}
+          employeeId={employee.id}
+          employeeName={employee.name}
+          cargo={employee.jobFamily}
+          nivelHierarquico={employee.nivelHierarquico}
+          departamento={employee.departamento}
+          liderDireto={employee.liderDireto}
+          onClose={() => setPerfilOpen(false)}
+        />
+      ) : null}
       {legendaOpen ? <LegendaModal onClose={() => setLegendaOpen(false)} /> : null}
       {eixoYOpen && eixoY !== null ? (
         <EixoYModal eixoY={eixoY} onClose={() => setEixoYOpen(false)} />

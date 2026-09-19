@@ -53,6 +53,7 @@ import {
   type IndividualProfileReportGenerationFacade,
   type TriggerReportGenerationArgs,
 } from '../../src/server/routers/individualProfile';
+import type { PdfRendererFacade } from '../../src/server/services/pdfRenderer';
 import { createCallerFactory, createContextInner, type Context } from '../../src/server/trpc';
 
 const TEST_URL =
@@ -76,6 +77,14 @@ const CNPJ_RETEST_OK = '10000000000966';
 const CNPJ_RETEST_PRECOND = '10000000000967';
 const CNPJ_RETEST_AUTH = '10000000000968';
 const CNPJ_RETEST_PC1E = '10000000000969';
+const CNPJ_PDF_AUTH = '10000000000970';
+
+/** Stub deterministico do renderer PDF — devolve um binario PDF minimo
+ *  (magic bytes %PDF). Evita a toolchain Puppeteer real (S260); o foco
+ *  do teste e a AUTORIZACAO do roleProcedure, nao o render. */
+const PDF_STUB: PdfRendererFacade = {
+  renderPdf: () => Promise.resolve(new Uint8Array([0x25, 0x50, 0x44, 0x46])),
+};
 
 let client: RoipDbClient;
 const createdCompanyIds: number[] = [];
@@ -942,5 +951,80 @@ describe('individualProfile.releaseRetest — autorizacao S212/S231', () => {
     expect(out.tentativa).toBe(2);
     expect(out.retesteLiberadoTipo).toBe('super_admin');
     expect(out.placeholderStatus).toBe('aguardando_nova_resposta');
+  });
+});
+
+// ============================================================
+// 8) generatePDF — autorizacao (ME pos-fila7, correcao D8)
+// ============================================================
+//
+// §10.13/§9.2: PDF do Perfil Individual e de Bruno e RH — RH-Lider
+// incluido porque acumula as permissoes de RH (DOC 02 §69). A whitelist
+// canonica passa a ser ['super_admin', 'rh', 'rh_lider']; 'lider' e
+// 'clevel' seguem fora. Prova nos dois sentidos: rh_lider autorizado
+// (gera o binario) e lider barrado pelo roleProcedure (FORBIDDEN).
+
+describe('individualProfile.generatePDF — autorizacao D8', () => {
+  let companyId: number;
+  let rhLiderId: number;
+  let liderId: number;
+  let alvoId: number;
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_PDF_AUTH);
+    rhLiderId = await createEmployee(companyId);
+    liderId = await createEmployee(companyId, 'ativo', true);
+    alvoId = await createEmployee(companyId);
+    await createPlaceholder(companyId, alvoId, 'employee', 'respondido');
+    const a = await createAssessment(companyId, alvoId, 'employee', 1);
+    // expandidoJson na forma canonica consumida pelo template do PDF
+    // (individualProfileTemplate) — pre-condicao do generatePDF.
+    await createScore(
+      companyId,
+      alvoId,
+      a,
+      1,
+      {
+        expandidoJson: {
+          sintese_executiva: 'Sintese executiva.',
+          como_age: 'Age de forma colaborativa.',
+          quem_e: 'Profissional experiente.',
+          o_que_move: 'Aprendizado e proposito.',
+          como_reage_sob_pressao: 'Mantem composicao.',
+          naturalmente_excelente: 'Leitura de dinamicas.',
+          recomendacoes_executivas: ['Recomendacao A', 'Recomendacao B'],
+          confiabilidade: 'alta',
+          natural_vs_adaptado: null,
+          padrao_paradoxal: null,
+          dimensoes_com_hedge: null,
+        },
+      },
+      'employee',
+    );
+  });
+
+  it('rh_lider gera o PDF (whitelist ampliada — antes tomava FORBIDDEN)', async () => {
+    const { factory, ctx } = bindRouter({ pdfRenderer: PDF_STUB });
+    const caller = factory(ctx(await tokenPlatform('rh_lider', rhLiderId, companyId)));
+    const out = await caller.generatePDF({ companyId, userType: 'employee', userId: alvoId });
+    const bytes = Buffer.from(out.pdfBase64, 'base64');
+    expect(bytes[0]).toBe(0x25);
+    expect(bytes[1]).toBe(0x50);
+    expect(out.filename.endsWith('.pdf')).toBe(true);
+  });
+
+  it('rh gera o PDF (controle positivo da whitelist)', async () => {
+    const { factory, ctx } = bindRouter({ pdfRenderer: PDF_STUB });
+    const caller = factory(ctx(await tokenPlatform('rh', rhLiderId, companyId)));
+    const out = await caller.generatePDF({ companyId, userType: 'employee', userId: alvoId });
+    expect(Buffer.from(out.pdfBase64, 'base64')[0]).toBe(0x25);
+  });
+
+  it('lider recebe FORBIDDEN (fora da whitelist do roleProcedure)', async () => {
+    const { factory, ctx } = bindRouter({ pdfRenderer: PDF_STUB });
+    const caller = factory(ctx(await tokenPlatform('lider', liderId, companyId)));
+    await expect(
+      caller.generatePDF({ companyId, userType: 'employee', userId: alvoId }),
+    ).rejects.toThrow();
   });
 });
