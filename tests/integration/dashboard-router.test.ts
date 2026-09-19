@@ -48,6 +48,7 @@ import {
   createDashboardRouter,
   DASHBOARD_HISTORY_LIMIT_CAP,
   DASHBOARD_HISTORY_LIMIT_DEFAULT,
+  type EixoXDetalheResult,
   type EmployeeDashboardResult,
   TRIMESTRE_INPUT_SCHEMA_DASHBOARD,
 } from '../../src/server/routers/dashboard';
@@ -943,5 +944,7 @@ describe('dashboard — contratos publicos', () => {
     };
     expect(shape.employee.id).toBe(1);
     expect(mask.companyId).toBe(1);
+    const eixoX: EixoXDetalheResult = { indiceDesempenho: '0.9840', variaveis: [] };
+    expect(eixoX.variaveis).toHaveLength(0);
   });
 });

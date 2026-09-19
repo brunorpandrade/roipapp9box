@@ -16,6 +16,7 @@ import {
   direcaoArrow,
   formatBRLInt,
   formatMultiplier,
+  formatNumBR,
   formatPercent,
   formatPercentFrac,
   formatScore,
@@ -61,6 +62,9 @@ describe('dashboard individual — helpers puros', () => {
     expect(formatPercentFrac('0.984')).toBe('98,4%');
     expect(formatMultiplier('3.4')).toBe('3,4×');
     expect(formatBRLInt('13260')).toContain('13.260');
+    expect(formatNumBR('1800')).toContain('1.800');
+    expect(formatNumBR('10.2')).toBe('10,2');
+    expect(formatNumBR(null)).toBe('—');
     expect(formatScore('80.6')).toBe('81');
     expect(formatPercent(null)).toBe('—');
     expect(formatPercentFrac(null)).toBe('—');

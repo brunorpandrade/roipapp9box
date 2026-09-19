@@ -62,19 +62,22 @@
 //     para stub em teste.
 
 import { TRPCError } from '@trpc/server';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { RoipDatabase } from '../../db/client';
 import {
   cLevelMembers,
   companyEconomicDiagnosis,
+  employeeGoals,
   employees,
   nineBoxClassifications,
+  performanceData,
+  performanceVariableData,
   plenitudeData,
   performanceQuarterlyData,
 } from '../../db/schema';
-import { getTrimestreFromDateInTimezone } from '../../lib/quarterlyPeriod';
+import { getQuarterMonths, getTrimestreFromDateInTimezone } from '../../lib/quarterlyPeriod';
 import {
   createDefaultDiagnosticoIAServiceDeps,
   generateDiagnosticoIA,
@@ -282,6 +285,30 @@ function deriveTrimestreAtual(deps: { now: () => Date; timeZone: string }): stri
  * Zod schema canonico do input das procs Diagnostico IA.
  */
 export const DIAGNOSTICO_INPUT_SCHEMA = z.object({
+  employeeId: z.number().int().positive(),
+  trimestre: TRIMESTRE_INPUT_SCHEMA_DASHBOARD,
+});
+
+/** Uma variavel do detalhamento do Eixo X (media mensal do trimestre). */
+export interface EixoXVariavelDetalhe {
+  readonly variableIndex: number;
+  readonly nome: string;
+  readonly unidade: string;
+  readonly meta: string | null;
+  readonly demanda: string | null;
+  readonly executado: string | null;
+  readonly desempenho: string | null;
+  readonly peso: string | null;
+}
+
+/** Resultado de `getEixoXDetalhe`. `indiceDesempenho` e fracao 0-1. */
+export interface EixoXDetalheResult {
+  readonly indiceDesempenho: string | null;
+  readonly variaveis: readonly EixoXVariavelDetalhe[];
+}
+
+/** Input canonico do detalhamento do Eixo X. */
+export const EIXO_X_DETALHE_INPUT_SCHEMA = z.object({
   employeeId: z.number().int().positive(),
   trimestre: TRIMESTRE_INPUT_SCHEMA_DASHBOARD,
 });
@@ -756,6 +783,118 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
           diagnostico: outcome.diagnostico,
           diagnosticoGeradoEm: outcome.diagnosticoIAgeradoEm,
           trimestre: input.trimestre,
+        };
+      }),
+
+    getEixoXDetalhe: roleProcedure(['super_admin', 'rh', 'rh_lider', 'clevel', 'lider'])
+      .input(EIXO_X_DETALHE_INPUT_SCHEMA)
+      .query(async ({ ctx, input }): Promise<EixoXDetalheResult> => {
+        const [emp] = await ctx.db
+          .select({
+            companyId: employees.companyId,
+            status: employees.status,
+          })
+          .from(employees)
+          .where(eq(employees.id, input.employeeId))
+          .limit(1);
+        if (!emp) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Colaborador nao encontrado.' });
+        }
+        if (ctx.user.role !== 'super_admin') {
+          if (ctx.user.companyId !== emp.companyId) {
+            throw new TRPCError({
+              code: 'FORBIDDEN',
+              message: 'Colaborador fora do escopo da empresa.',
+            });
+          }
+        }
+        if (emp.status === 'inativo') {
+          const allowsInactive =
+            ctx.user.role === 'super_admin' ||
+            ctx.user.role === 'rh' ||
+            ctx.user.role === 'rh_lider';
+          if (!allowsInactive) {
+            throw new TRPCError({
+              code: 'FORBIDDEN',
+              message: 'Dashboard de colaborador inativo restrito a Bruno e RH.',
+            });
+          }
+        }
+        if (ctx.user.role === 'lider') {
+          if (ctx.user.userId !== input.employeeId) {
+            const link = await getActiveLeaderHistoryByEmployee(ctx.db, input.employeeId);
+            if (!link || link.liderId !== ctx.user.userId) {
+              throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'Colaborador fora da cadeia direta do lider.',
+              });
+            }
+          }
+        }
+
+        // Media mensal do trimestre por variableIndex.
+        const months = getQuarterMonths(input.trimestre);
+        if (months === null || months.length === 0) {
+          return { indiceDesempenho: null, variaveis: [] };
+        }
+        const perfRows = await ctx.db
+          .select({ id: performanceData.id })
+          .from(performanceData)
+          .where(
+            and(
+              eq(performanceData.employeeId, input.employeeId),
+              inArray(performanceData.mes, months),
+            ),
+          );
+        const perfIds = perfRows.map((r) => r.id);
+        const varRows =
+          perfIds.length > 0
+            ? await ctx.db
+                .select()
+                .from(performanceVariableData)
+                .where(inArray(performanceVariableData.performanceDataId, perfIds))
+            : [];
+        const goals = await ctx.db
+          .select()
+          .from(employeeGoals)
+          .where(eq(employeeGoals.employeeId, input.employeeId));
+
+        const agg = new Map<number, { d: number; e: number; s: number; n: number }>();
+        for (const v of varRows) {
+          const cur = agg.get(v.variableIndex) ?? { d: 0, e: 0, s: 0, n: 0 };
+          cur.d += v.demanda != null ? Number(v.demanda) : 0;
+          cur.e += v.executado != null ? Number(v.executado) : 0;
+          cur.s += v.desempenho != null ? Number(v.desempenho) : 0;
+          cur.n += 1;
+          agg.set(v.variableIndex, cur);
+        }
+        const variaveis: EixoXVariavelDetalhe[] = goals
+          .slice()
+          .sort((a, b) => a.variableIndex - b.variableIndex)
+          .map((g) => {
+            const a = agg.get(g.variableIndex);
+            const n = a?.n ?? 0;
+            return {
+              variableIndex: g.variableIndex,
+              nome: g.variableName,
+              unidade: g.unit,
+              meta: g.goal,
+              demanda: n > 0 && a ? (a.d / n).toFixed(2) : null,
+              executado: n > 0 && a ? (a.e / n).toFixed(2) : null,
+              desempenho: n > 0 && a ? (a.s / n).toFixed(4) : null,
+              peso: g.weight,
+            };
+          });
+
+        const quarterlyRow = await getPerformanceQuarterlyDataByQuarter(
+          ctx.db,
+          emp.companyId,
+          input.employeeId,
+          input.trimestre,
+        );
+        return {
+          indiceDesempenho: quarterlyRow?.indiceDesempenho ?? null,
+          variaveis,
         };
       }),
   });

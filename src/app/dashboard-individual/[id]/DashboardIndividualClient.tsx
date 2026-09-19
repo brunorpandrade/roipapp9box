@@ -7,7 +7,11 @@ import { COLORS } from '../../../lib/design-tokens/colors';
 
 import { FichaCadastralModal } from '../../../components/colaboradores/FichaCadastralModal';
 
-import { generateDiagnosticoAction, loadDashboardQuarterAction } from './actions';
+import {
+  generateDiagnosticoAction,
+  loadDashboardQuarterAction,
+  loadEixoXDetalheAction,
+} from './actions';
 import {
   NINE_BOX_GRID,
   QUADRANTE_LEGENDA,
@@ -17,6 +21,7 @@ import {
   faixaPlenitudeLabel,
   formatBRLInt,
   formatMultiplier,
+  formatNumBR,
   formatPercent,
   formatPercentFrac,
   formatScore,
@@ -30,6 +35,7 @@ import {
 } from './internals';
 import type {
   DashboardIndividualClientProps,
+  EixoXDetalhe,
   EixoY,
   FaixaDesempenho,
   OciosidadeTier,
@@ -389,6 +395,122 @@ function ociColor(tier: OciosidadeTier): string {
   return COLORS.text.primary;
 }
 
+function EixoXModal(props: {
+  detalhe: EixoXDetalhe | null;
+  loading: boolean;
+  onClose: () => void;
+}): JSX.Element {
+  const { detalhe, loading } = props;
+  return (
+    <div style={OVERLAY} onClick={props.onClose}>
+      <div
+        style={{ ...CARD, maxWidth: 720, width: '100%', maxHeight: '86vh', overflowY: 'auto' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.text.primary }}>
+            Eixo X (Desempenho)
+          </div>
+          <button type="button" onClick={props.onClose} aria-label="Fechar" style={CLOSE_X}>
+            ×
+          </button>
+        </div>
+        {loading ? (
+          <p style={{ fontSize: 13, color: COLORS.text.tertiary, marginTop: 14 }}>
+            Carregando detalhamento…
+          </p>
+        ) : detalhe === null ? (
+          <p style={{ fontSize: 13, color: COLORS.text.tertiary, marginTop: 14 }}>
+            Não foi possível carregar o detalhamento.
+          </p>
+        ) : (
+          <>
+            <div
+              style={{
+                background: COLORS.background.elevated,
+                borderRadius: 8,
+                padding: 12,
+                marginTop: 12,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span style={{ fontSize: 13, color: COLORS.text.secondary }}>
+                Índice de desempenho trimestral
+              </span>
+              <span style={{ fontSize: 20, fontWeight: 700, color: COLORS.primary.navy }}>
+                {formatPercentFrac(detalhe.indiceDesempenho)}
+              </span>
+            </div>
+            <div style={{ marginTop: 14, overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead>
+                  <tr style={{ color: COLORS.text.tertiary }}>
+                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>Variável</th>
+                    <th style={{ textAlign: 'right', padding: '6px 8px' }}>Meta</th>
+                    <th style={{ textAlign: 'right', padding: '6px 8px' }}>Demanda</th>
+                    <th style={{ textAlign: 'right', padding: '6px 8px' }}>Executado</th>
+                    <th style={{ textAlign: 'right', padding: '6px 8px' }}>Desempenho</th>
+                    <th style={{ textAlign: 'right', padding: '6px 8px' }}>Peso</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detalhe.variaveis.map((v) => (
+                    <tr
+                      key={v.variableIndex}
+                      style={{ borderTop: `1px solid ${COLORS.border.divider}` }}
+                    >
+                      <td style={{ textAlign: 'left', padding: '8px', color: COLORS.text.primary }}>
+                        {v.nome}
+                      </td>
+                      <td
+                        style={{ textAlign: 'right', padding: '8px', color: COLORS.text.secondary }}
+                      >
+                        {formatNumBR(v.meta)}
+                      </td>
+                      <td
+                        style={{ textAlign: 'right', padding: '8px', color: COLORS.text.secondary }}
+                      >
+                        {formatNumBR(v.demanda)}
+                      </td>
+                      <td
+                        style={{ textAlign: 'right', padding: '8px', color: COLORS.text.primary }}
+                      >
+                        {formatNumBR(v.executado)}
+                      </td>
+                      <td
+                        style={{
+                          textAlign: 'right',
+                          padding: '8px',
+                          color: COLORS.semantic.success,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {formatPercentFrac(v.desempenho)}
+                      </td>
+                      <td
+                        style={{ textAlign: 'right', padding: '8px', color: COLORS.text.tertiary }}
+                      >
+                        {formatPercent(v.peso)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {detalhe.variaveis.length === 0 ? (
+                <p style={{ fontSize: 13, color: COLORS.text.tertiary, marginTop: 8 }}>
+                  Sem variáveis para este trimestre.
+                </p>
+              ) : null}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function DashboardIndividualClient(props: DashboardIndividualClientProps): JSX.Element {
   const { employee, trimestresDisponiveis, fichaLoadAction, editHref, hideRf } = props;
   const [view, setView] = useState<QuarterView>(props.view);
@@ -398,6 +520,9 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
   const [legendaOpen, setLegendaOpen] = useState<boolean>(false);
   const [eixoYOpen, setEixoYOpen] = useState<boolean>(false);
   const [detalhesOpen, setDetalhesOpen] = useState<boolean>(false);
+  const [eixoXOpen, setEixoXOpen] = useState<boolean>(false);
+  const [eixoXData, setEixoXData] = useState<EixoXDetalhe | null>(null);
+  const [eixoXLoading, setEixoXLoading] = useState<boolean>(false);
 
   const idx = view.trimestre !== null ? trimestresDisponiveis.indexOf(view.trimestre) : -1;
   const temAnterior = idx >= 0 && idx < trimestresDisponiveis.length - 1;
@@ -443,6 +568,21 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
       return;
     }
     setView((v) => ({ ...v, diagnostico: { texto: res.texto, geradoEm: res.geradoEm } }));
+  }, [employee.id, view.trimestre]);
+
+  const abrirEixoX = useCallback(async (): Promise<void> => {
+    if (view.trimestre === null) {
+      return;
+    }
+    setEixoXOpen(true);
+    setEixoXLoading(true);
+    setEixoXData(null);
+    const res = await loadEixoXDetalheAction({
+      employeeId: employee.id,
+      trimestre: view.trimestre,
+    });
+    setEixoXLoading(false);
+    setEixoXData(res.ok ? res.detalhe : null);
   }, [employee.id, view.trimestre]);
 
   const nb = view.nineBox;
@@ -641,6 +781,15 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
                 <div style={{ fontSize: 11, color: COLORS.text.tertiary, marginTop: 2 }}>
                   {faixaDesempenhoLabel(view.eixoX?.faixaDesempenho ?? null)}
                 </div>
+                {view.eixoX !== null ? (
+                  <button
+                    type="button"
+                    onClick={() => void abrirEixoX()}
+                    style={{ ...navBtnStyle(false), marginTop: 8, width: '100%', fontSize: 11 }}
+                  >
+                    Detalhamento
+                  </button>
+                ) : null}
               </div>
               <div>
                 <div style={LABEL}>EIXO Y</div>
@@ -784,6 +933,13 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
       {legendaOpen ? <LegendaModal onClose={() => setLegendaOpen(false)} /> : null}
       {eixoYOpen && eixoY !== null ? (
         <EixoYModal eixoY={eixoY} onClose={() => setEixoYOpen(false)} />
+      ) : null}
+      {eixoXOpen ? (
+        <EixoXModal
+          detalhe={eixoXData}
+          loading={eixoXLoading}
+          onClose={() => setEixoXOpen(false)}
+        />
       ) : null}
       {detalhesOpen ? (
         <FichaCadastralModal

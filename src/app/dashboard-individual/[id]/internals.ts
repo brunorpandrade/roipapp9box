@@ -68,6 +68,22 @@ export interface NineBoxPos {
   readonly direcaoMovimento: DirecaoMovimento | null;
 }
 
+export interface EixoXVariavel {
+  readonly variableIndex: number;
+  readonly nome: string;
+  readonly unidade: string;
+  readonly meta: string | null;
+  readonly demanda: string | null;
+  readonly executado: string | null;
+  readonly desempenho: string | null;
+  readonly peso: string | null;
+}
+
+export interface EixoXDetalhe {
+  readonly indiceDesempenho: string | null;
+  readonly variaveis: readonly EixoXVariavel[];
+}
+
 export interface FinanceiroBlock {
   readonly roiEstimado: string | null;
   readonly metaROI: string | null;
@@ -336,6 +352,18 @@ export function formatBRLInt(valor: string | null): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   });
+}
+
+/** Numero em pt-BR, ate 2 casas, sem forcar decimais (ex.: 1800 -> `1.800`). */
+export function formatNumBR(valor: string | null): string {
+  if (valor === null) {
+    return '—';
+  }
+  const num = Number(valor);
+  if (!Number.isFinite(num)) {
+    return '—';
+  }
+  return num.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 }
 
 export function faixaDesempenhoLabel(f: FaixaDesempenho | null): string {

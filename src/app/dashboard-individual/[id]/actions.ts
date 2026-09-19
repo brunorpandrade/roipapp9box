@@ -10,9 +10,16 @@ import { createDashboardRouter } from '../../../server/routers/dashboard';
 import { getServerSession } from '../../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../../server/trpc';
 
-import { buildQuarterView, type QuarterView } from './internals';
+import { buildQuarterView, type EixoXDetalhe, type QuarterView } from './internals';
 
 const SESSION_COOKIE = 'session';
+
+/** Retorno de `loadEixoXDetalheAction`. */
+export interface LoadEixoXResult {
+  readonly ok: boolean;
+  readonly detalhe: EixoXDetalhe | null;
+  readonly error?: string;
+}
 
 /** Retorno de `loadDashboardQuarterAction`. */
 export interface LoadQuarterResult {
@@ -71,6 +78,34 @@ export async function loadDashboardQuarterAction(input: {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erro ao carregar o trimestre.';
     return { ok: false, view: null, error: message };
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+/** Carrega o detalhamento do Eixo X (variaveis) de um trimestre. */
+export async function loadEixoXDetalheAction(input: {
+  employeeId: number;
+  trimestre: string;
+}): Promise<LoadEixoXResult> {
+  const token = await requireToken();
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const caller = createCallerFactory(createDashboardRouter())(
+      createContextInner({
+        db: client.db,
+        rateLimiter: createRateLimiter(),
+        bearerToken: token,
+      }),
+    );
+    const detalhe = await caller.getEixoXDetalhe({
+      employeeId: input.employeeId,
+      trimestre: input.trimestre,
+    });
+    return { ok: true, detalhe };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Erro ao carregar o detalhamento.';
+    return { ok: false, detalhe: null, error: message };
   } finally {
     await closeDbClient(client);
   }
