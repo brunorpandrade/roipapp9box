@@ -433,7 +433,7 @@ function RiSubLista(props: { rotulo: string; itens: unknown }): JSX.Element | nu
       >
         {props.rotulo}
       </div>
-      <ul style={{ margin: 0, paddingLeft: 18 }}>
+      <ul style={{ margin: 0, paddingLeft: 18, listStyleType: 'disc' }}>
         {arr.map((r, i) => (
           <li
             key={i}

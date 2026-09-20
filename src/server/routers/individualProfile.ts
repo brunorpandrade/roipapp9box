@@ -781,6 +781,24 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
         const generatedAt = now();
         const generatedAtDate = generatedAt.toISOString().slice(0, 10);
 
+        // Lider direto (nome) para a identificacao do PDF. C-level nao
+        // tem lider direto no modelo; employee resolve pelo historico
+        // ativo (mesmo padrao do dashboard). Vazio quando nao ha vinculo.
+        let liderDiretoNome = 'Nao se aplica';
+        if (input.userType === 'employee') {
+          const leaderLink = await getActiveLeaderHistoryByEmployee(ctx.db, input.userId);
+          if (leaderLink?.liderId != null) {
+            const liderRows = await ctx.db
+              .select({ name: employees.name })
+              .from(employees)
+              .where(eq(employees.id, leaderLink.liderId))
+              .limit(1);
+            liderDiretoNome = liderRows[0]?.name ?? '';
+          } else {
+            liderDiretoNome = '';
+          }
+        }
+
         const html = renderIndividualProfileHTML({
           company: {
             nomeFantasia: company.nomeFantasia ?? '',
@@ -791,7 +809,7 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
             cargo,
             nivelHierarquico,
             departamento,
-            liderDireto: input.userType === 'clevel' ? 'Nao se aplica' : '',
+            liderDireto: liderDiretoNome,
             dataAplicacao,
           },
           expandido: score.expandidoJson as IndividualProfileExpandidoJson,
