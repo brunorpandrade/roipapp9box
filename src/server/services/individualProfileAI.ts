@@ -32,7 +32,8 @@ import {
   type ClaudeCallFacade,
   type ClaudeCallSurface,
 } from './claudeCall';
-import type { RoipDatabase } from '../../db/client';
+import { closeDbClient, createDbClient, type RoipDatabase } from '../../db/client';
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 import {
   getIndividualProfileScoreById,
   setIndividualProfileExpandidoCache,
@@ -554,23 +555,64 @@ export const defaultLoadPayloadContext: LoadPayloadContext = async (db, scoreId)
 };
 
 /**
- * Factory canonica de conveniencia (S244). Instancia a Facade real com
- * o `db` recebido, `DEFAULT_CLAUDE_CALL_FACADE` e o loader canonico.
- * Consumida pelo `appRouter` via
- * `IndividualProfileRouterDeps.reportGenerationFactory`.
+ * Facade autossuficiente para producao (ME pos-fila7). Diferente da
+ * factory por-request, NAO usa o `db` do request — abre uma conexao
+ * PROPRIA por disparo e a fecha so quando os jobs de IA terminam.
+ *
+ * Motivo: a geracao e fire-and-forget (25-77s), mas a server action que
+ * chama `getReport` fecha a conexao do request em ~1s. Se os jobs
+ * herdassem o `db` do request, a gravacao (`setCache`) bateria numa
+ * conexao ja fechada e o texto nunca persistia (falha silenciosa no
+ * `.catch`). Com conexao propria, a gravacao sobrevive ao fim do
+ * request. A conexao e fechada no `finally` do `Promise.all` interno.
  */
-export function createDefaultIndividualProfileReportGenerationFacade(
-  db: RoipDatabase,
-): IndividualProfileReportGenerationFacade {
-  // Import lazy do wrapper canonico para preservar o padrao Facade DI
-  // (S258) — o modulo `claudeCall.ts` exporta a facade default sem
-  // efeitos colaterais alem de leitura de env-var, que so ocorre no
-  // momento da chamada real.
-  return makeIndividualProfileReportGenerationFacade({
-    db,
-    claudeCallFacade: DEFAULT_CLAUDE_CALL_FACADE,
-    loadPayloadContext: defaultLoadPayloadContext,
-  });
+export function createReportGenerationFacade(): IndividualProfileReportGenerationFacade {
+  return {
+    triggerReportGeneration: (args: TriggerReportGenerationArgs): Promise<void> => {
+      const client = createDbClient(resolveDatabaseUrl());
+      const deps: IndividualProfileAIDeps = {
+        db: client.db,
+        claudeCallFacade: DEFAULT_CLAUDE_CALL_FACADE,
+        loadPayloadContext: defaultLoadPayloadContext,
+      };
+      const jobs: Array<Promise<IndividualProfileAIOutcome>> = [];
+      if (args.gerarResumo) {
+        jobs.push(
+          runIndividualProfileAIGeneration(deps, {
+            scoreId: args.scoreId,
+            companyId: args.companyId,
+            userType: args.userType,
+            userId: args.userId,
+            tentativa: args.tentativa,
+            formato: 'resumo',
+            triggeredByUserId: args.triggeredByUserId,
+            triggeredByUserType: args.triggeredByUserType,
+          }),
+        );
+      }
+      if (args.gerarExpandido) {
+        jobs.push(
+          runIndividualProfileAIGeneration(deps, {
+            scoreId: args.scoreId,
+            companyId: args.companyId,
+            userType: args.userType,
+            userId: args.userId,
+            tentativa: args.tentativa,
+            formato: 'expandido',
+            triggeredByUserId: args.triggeredByUserId,
+            triggeredByUserType: args.triggeredByUserType,
+          }),
+        );
+      }
+      // Fire-and-forget para o request (retorna ja), mas a conexao
+      // PROPRIA so fecha quando TODOS os jobs terminam de gravar —
+      // sobrevive ao fechamento da conexao do request (ME pos-fila7).
+      void Promise.allSettled(jobs).finally(() => {
+        void closeDbClient(client);
+      });
+      return Promise.resolve();
+    },
+  };
 }
 
 /**

@@ -28,8 +28,7 @@ import { createExportsRouter } from './exports';
 import { createEconomicDiagnosisRouter } from './economicDiagnosis';
 import { createEmployeesRouter } from './employees';
 import { createIndividualProfileRouter } from './individualProfile';
-// eslint-disable-next-line @stylistic/max-len -- import canonico do religador S244
-import { createDefaultIndividualProfileReportGenerationFacade } from '../services/individualProfileAI';
+import { createReportGenerationFacade } from '../services/individualProfileAI';
 import { createIndividualProfilePlaceholdersRouter } from './individualProfilePlaceholders';
 import { createInstrumentARouter } from './instrumentA';
 import { createInstrumentCRouter } from './instrumentC';
@@ -473,14 +472,14 @@ const individualProfilePlaceholdersRouter = createIndividualProfilePlaceholdersR
  *
  * S244 (ME-050/51): religacao do wrapper de geracao IA. O default do
  * modulo continua no-op defensivo (compatibilidade de testes-unit); o
- * `reportGenerationFactory` injetado aqui produz a Facade real com
- * `ctx.db` de cada request, apontando ao motor
- * `individualProfileAI.ts` (S244) via
- * `createDefaultIndividualProfileReportGenerationFacade`. `pdfRenderer`
- * continua com o default `puppeteer-core` (S260 — Facade DI).
+ * `reportGeneration` (facade estatica) usa conexao PROPRIA de vida
+ * longa para os jobs de IA — nao o `ctx.db` do request, que a server
+ * action fecha em ~1s (a geracao leva 25-77s). Sem isso, a gravacao do
+ * texto batia em conexao fechada e nunca persistia (ME pos-fila7).
+ * `pdfRenderer` continua com o default `puppeteer-core` (S260).
  */
 const individualProfileRouter = createIndividualProfileRouter({
-  reportGenerationFactory: createDefaultIndividualProfileReportGenerationFacade,
+  reportGeneration: createReportGenerationFacade(),
 });
 
 /**

@@ -52,8 +52,13 @@ const MSG_SEM_RELATORIO =
   'Este colaborador ainda não respondeu ao Perfil Individual. O relatório fica ' +
   'disponível após o envio e o cálculo da avaliação.';
 
-const POLL_INTERVALO_MS = 2000;
-const POLL_TENTATIVAS_MAX = 15;
+// O expandido gera em ate ~200s (timeout de backend); o polling do
+// front precisa cobrir esse pior caso com folga, senao desiste antes de
+// o texto ficar pronto e exibe o estado de falha por engano. Intervalo
+// de 3s x 90 tentativas = ~270s de teto; o polling para antes disso
+// assim que ambos os formatos ficam prontos (gerando* == false).
+const POLL_INTERVALO_MS = 3000;
+const POLL_TENTATIVAS_MAX = 90;
 
 interface Props {
   readonly companyId: number;
