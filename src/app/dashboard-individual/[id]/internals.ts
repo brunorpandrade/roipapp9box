@@ -66,6 +66,8 @@ export interface NineBoxPos {
   readonly posicaoY: PosicaoY;
   readonly quadrante: string;
   readonly direcaoMovimento: DirecaoMovimento | null;
+  readonly posicaoXAnterior: PosicaoX | null;
+  readonly posicaoYAnterior: PosicaoY | null;
 }
 
 export interface EixoXVariavel {
@@ -190,17 +192,66 @@ export function rowIndexFor(posicaoY: PosicaoY): number {
   return ROW_INDEX[posicaoY];
 }
 
-export function direcaoArrow(d: DirecaoMovimento | null): { char: string; color: string } {
-  if (d === 'subiu') {
-    return { char: '↑', color: '#16A34A' };
+/**
+ * Deriva a seta de deslocamento 9-Box (ME pos-fila7) a partir das
+ * posicoes atual e anterior. Substitui `direcaoArrow` (que reduzia o
+ * movimento a 3 direcoes) pela regra completa:
+ *
+ * Eixos (indices em COL_INDEX/ROW_INDEX):
+ *  - X (desempenho): baixo<medio<alto — colIndex cresce para a DIREITA.
+ *  - Y (plenitude): alta<media<baixa no indice — SUBIR e rowIndex MENOR.
+ *
+ * Semantica: dxDir = colAtual - colAnt (>0 direita, <0 esquerda);
+ *            dySem = rowAnt - rowAtual (>0 subiu, <0 desceu).
+ *
+ * Seta (8 direcoes): sem movimento -> nenhuma; combinacoes de
+ * direita/esquerda x cima/baixo -> →←↑↓ e diagonais ↗↘↖↙.
+ *
+ * Cor: VERDE (#16A34A) avanco limpo (nenhum eixo retrocede e ao menos um
+ * avanca — direita e/ou cima); VERMELHO (#DC2626) retrocesso limpo;
+ * AMARELO (#D97706) movimento misto (um eixo avanca e o outro retrocede).
+ */
+export function derivarSeta(
+  posX: PosicaoX,
+  posY: PosicaoY,
+  posXAnt: PosicaoX | null,
+  posYAnt: PosicaoY | null,
+): { char: string; color: string } {
+  if (posXAnt === null || posYAnt === null) {
+    return { char: '', color: '' };
   }
-  if (d === 'desceu') {
-    return { char: '↓', color: '#DC2626' };
+  const dxDir = COL_INDEX[posX] - COL_INDEX[posXAnt];
+  const dySem = ROW_INDEX[posYAnt] - ROW_INDEX[posY];
+  if (dxDir === 0 && dySem === 0) {
+    return { char: '', color: '' };
   }
-  if (d === 'lateral') {
-    return { char: '→', color: '#D97706' };
+  const VERDE = '#16A34A';
+  const VERMELHO = '#DC2626';
+  const AMARELO = '#D97706';
+  let color: string;
+  const avancou = dxDir > 0 || dySem > 0;
+  const retrocedeu = dxDir < 0 || dySem < 0;
+  if (avancou && retrocedeu) {
+    color = AMARELO;
+  } else if (avancou) {
+    color = VERDE;
+  } else {
+    color = VERMELHO;
   }
-  return { char: '', color: '' };
+  const CHAR: Record<string, string> = {
+    '1,1': '↗',
+    '1,0': '→',
+    '1,-1': '↘',
+    '0,1': '↑',
+    '0,-1': '↓',
+    '-1,1': '↖',
+    '-1,0': '←',
+    '-1,-1': '↙',
+  };
+  const sx = Math.sign(dxDir);
+  const sy = Math.sign(dySem);
+  const char = CHAR[`${sx},${sy}`] ?? '';
+  return { char, color };
 }
 
 export function parseEmployeeIdParam(raw: string): number | null {
@@ -489,9 +540,11 @@ export function buildQuarterView(args: {
   quarterly: QuarterlyLike | null;
   plenitude: PlenitudeLike | null;
   nineBox: NineBoxLike | null;
+  nineBoxAnterior?: NineBoxLike | null;
   assiduidadeMedia?: string | null;
 }): QuarterView {
   const { trimestre, quarterly, plenitude, nineBox } = args;
+  const nineBoxAnterior = args.nineBoxAnterior ?? null;
   const dimensoes: DimensaoAC[] =
     plenitude !== null
       ? [
@@ -535,6 +588,8 @@ export function buildQuarterView(args: {
             posicaoY: nineBox.posicaoY,
             quadrante: nineBox.quadrante,
             direcaoMovimento: nineBox.direcaoMovimento,
+            posicaoXAnterior: nineBoxAnterior?.posicaoX ?? null,
+            posicaoYAnterior: nineBoxAnterior?.posicaoY ?? null,
           }
         : null,
     financeiro:

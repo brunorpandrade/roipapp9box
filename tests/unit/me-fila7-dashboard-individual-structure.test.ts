@@ -13,7 +13,7 @@ import {
   QUADRANTE_LEGENDA,
   colIndexFor,
   currentTrimestreUTC,
-  direcaoArrow,
+  derivarSeta,
   formatBRLInt,
   formatMultiplier,
   formatNumBR,
@@ -81,10 +81,36 @@ describe('dashboard individual — helpers puros', () => {
     expect(ociosidadeTier(null)).toBe('sem_dado');
   });
 
-  it('initialsOf e direcaoArrow', () => {
+  it('initialsOf e derivarSeta', () => {
     expect(initialsOf('Fernanda Costa')).toBe('FC');
-    expect(direcaoArrow('subiu').char).toBe('↑');
-    expect(direcaoArrow('estavel').char).toBe('');
+    // sem anterior -> sem seta
+    expect(derivarSeta('medio', 'media', null, null).char).toBe('');
+    // mesmo quadrante -> sem seta
+    expect(derivarSeta('medio', 'media', 'medio', 'media').char).toBe('');
+    // so direita (desempenho subiu) -> -> verde
+    const dir = derivarSeta('alto', 'media', 'medio', 'media');
+    expect(dir.char).toBe('→');
+    expect(dir.color).toBe('#16A34A');
+    // so cima (plenitude subiu: media->alta) -> ↑ verde
+    const cima = derivarSeta('medio', 'alta', 'medio', 'media');
+    expect(cima.char).toBe('↑');
+    expect(cima.color).toBe('#16A34A');
+    // direita + cima -> ↗ verde
+    expect(derivarSeta('alto', 'alta', 'medio', 'media').char).toBe('↗');
+    // so esquerda -> ← vermelho
+    const esq = derivarSeta('baixo', 'media', 'medio', 'media');
+    expect(esq.char).toBe('←');
+    expect(esq.color).toBe('#DC2626');
+    // baixo (plenitude desceu: media->baixa) -> ↓ vermelho
+    expect(derivarSeta('medio', 'baixa', 'medio', 'media').char).toBe('↓');
+    // esquerda + baixo -> ↙ vermelho
+    expect(derivarSeta('baixo', 'baixa', 'medio', 'media').char).toBe('↙');
+    // misto: direita + baixo -> ↘ amarelo
+    const misto = derivarSeta('alto', 'baixa', 'medio', 'media');
+    expect(misto.char).toBe('↘');
+    expect(misto.color).toBe('#D97706');
+    // misto: esquerda + cima -> ↖ amarelo
+    expect(derivarSeta('baixo', 'alta', 'medio', 'media').color).toBe('#D97706');
   });
 
   it('idadeAnos e tempoEmpresa', () => {

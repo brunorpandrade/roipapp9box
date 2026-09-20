@@ -930,6 +930,7 @@ describe('dashboard — contratos publicos', () => {
       history: [],
       latestPlenitude: null,
       latestNineBox: null,
+      nineBoxAnterior: null,
       assiduidadeMedia: null,
     };
     const mask: CompanyEconomicDashboardResult = {

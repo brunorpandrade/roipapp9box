@@ -62,7 +62,7 @@
 //     para stub em teste.
 
 import { TRPCError } from '@trpc/server';
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, lt } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { RoipDatabase } from '../../db/client';
@@ -144,6 +144,13 @@ export interface EmployeeDashboardResult {
   history: (typeof performanceQuarterlyData.$inferSelect)[];
   latestPlenitude: typeof plenitudeData.$inferSelect | null;
   latestNineBox: typeof nineBoxClassifications.$inferSelect | null;
+  /**
+   * Classificacao 9-Box do trimestre imediatamente anterior ao alvo
+   * (posicoes X/Y), para o frontend derivar a seta de deslocamento com
+   * as 8 direcoes e as cores corretas (ME pos-fila7). null quando nao ha
+   * trimestre anterior. Leitura pura — nao toca schema nem persistencia.
+   */
+  nineBoxAnterior: typeof nineBoxClassifications.$inferSelect | null;
   assiduidadeMedia: string | null;
 }
 
@@ -481,6 +488,26 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
           .limit(1);
         const latestNineBox = nineBoxRows[0] ?? null;
 
+        // Classificacao 9-Box anterior (trimestre < alvo), a mais recente,
+        // para o frontend derivar a seta de deslocamento (ME pos-fila7).
+        // Leitura pura. `trimestre` e string comparavel (YYYY-Qn ordena
+        // lexicograficamente na mesma ordem cronologica).
+        const nineBoxAnteriorRows =
+          latestNineBox !== null
+            ? await ctx.db
+                .select()
+                .from(nineBoxClassifications)
+                .where(
+                  and(
+                    eq(nineBoxClassifications.employeeId, input.employeeId),
+                    lt(nineBoxClassifications.trimestre, latestNineBox.trimestre),
+                  ),
+                )
+                .orderBy(desc(nineBoxClassifications.trimestre))
+                .limit(1)
+            : [];
+        const nineBoxAnterior = nineBoxAnteriorRows[0] ?? null;
+
         // Lider direto (nome) — registro ativo de employeeLeaderHistory.
         const leaderLink = await getActiveLeaderHistoryByEmployee(ctx.db, input.employeeId);
         let liderDireto: string | null = null;
@@ -537,6 +564,7 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
           history,
           latestPlenitude,
           latestNineBox,
+          nineBoxAnterior,
           assiduidadeMedia,
         };
       }),

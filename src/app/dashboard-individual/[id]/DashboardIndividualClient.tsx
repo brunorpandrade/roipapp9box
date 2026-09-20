@@ -17,7 +17,7 @@ import {
   NINE_BOX_GRID,
   QUADRANTE_LEGENDA,
   colIndexFor,
-  direcaoArrow,
+  derivarSeta,
   faixaDesempenhoLabel,
   faixaPlenitudeLabel,
   formatBRLInt,
@@ -599,7 +599,10 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
   }, [employee.id, view.trimestre]);
 
   const nb = view.nineBox;
-  const seta = direcaoArrow(nb?.direcaoMovimento ?? null);
+  const seta =
+    nb !== null
+      ? derivarSeta(nb.posicaoX, nb.posicaoY, nb.posicaoXAnterior, nb.posicaoYAnterior)
+      : { char: '', color: '' };
   const legenda = nb !== null ? (QUADRANTE_LEGENDA[nb.quadrante] ?? '') : '';
   const fin = view.financeiro;
   const eixoY = view.eixoY;

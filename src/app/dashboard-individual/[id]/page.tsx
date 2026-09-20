@@ -104,6 +104,7 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
         quarterly: snap.latestQuarterly,
         plenitude: snap.latestPlenitude,
         nineBox: snap.latestNineBox,
+        nineBoxAnterior: snap.nineBoxAnterior,
         assiduidadeMedia: snap.assiduidadeMedia,
       });
     } else {
@@ -112,6 +113,7 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
         quarterly: dashboard.latestQuarterly,
         plenitude: dashboard.latestPlenitude,
         nineBox: dashboard.latestNineBox,
+        nineBoxAnterior: dashboard.nineBoxAnterior,
         assiduidadeMedia: dashboard.assiduidadeMedia,
       });
     }
