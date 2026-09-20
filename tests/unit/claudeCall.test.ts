@@ -22,6 +22,7 @@ import {
   CLAUDE_CALL_RETRY_BACKOFF_MS,
   CLAUDE_MODEL_DEFAULT,
   claudeCall,
+  extractJsonPayload,
   type ClaudeCallDeps,
   type ClaudeCallOpts,
   type ClaudeCallTelemetryRecord,
@@ -324,7 +325,54 @@ describe('services/claudeCall (ME-050/51)', () => {
 
   it('constantes canonicas expostas', () => {
     expect(CLAUDE_MODEL_DEFAULT).toBe('claude-sonnet-4-6');
-    expect(CLAUDE_CALL_DEFAULT_TIMEOUT_MS).toBe(60_000);
+    expect(CLAUDE_CALL_DEFAULT_TIMEOUT_MS).toBe(120_000);
     expect(CLAUDE_CALL_RETRY_BACKOFF_MS).toEqual([5_000, 15_000]);
+  });
+});
+
+// ============================================================
+// extractJsonPayload — descasca invólucros de LLM (ME pos-fila7)
+// ============================================================
+//
+// Corrige a causa real de `falha_json` observada em producao: o modelo
+// devolve o JSON valido embrulhado em cerca de markdown ou com
+// preambulo em linguagem natural, e o JSON.parse direto quebrava.
+// Prova nos dois sentidos: entradas embrulhadas passam a parsear; JSON
+// puro segue intacto; lixo sem JSON continua reprovando.
+
+describe('extractJsonPayload (ME pos-fila7)', () => {
+  it('JSON puro passa intacto', () => {
+    const raw = '{"a":1,"b":"x"}';
+    expect(JSON.parse(extractJsonPayload(raw))).toEqual({ a: 1, b: 'x' });
+  });
+
+  it('descasca cerca de markdown ```json', () => {
+    const raw = '```json\n{"a":1}\n```';
+    expect(JSON.parse(extractJsonPayload(raw))).toEqual({ a: 1 });
+  });
+
+  it('descasca cerca de markdown sem rotulo', () => {
+    const raw = '```\n{"a":2}\n```';
+    expect(JSON.parse(extractJsonPayload(raw))).toEqual({ a: 2 });
+  });
+
+  it('remove preambulo em linguagem natural', () => {
+    const raw = 'Aqui esta o JSON solicitado:\n{"a":3,"b":[1,2]}';
+    expect(JSON.parse(extractJsonPayload(raw))).toEqual({ a: 3, b: [1, 2] });
+  });
+
+  it('remove preambulo e epilogo ao redor do objeto', () => {
+    const raw = 'Segue:\n{"ok":true}\nEspero ter ajudado.';
+    expect(JSON.parse(extractJsonPayload(raw))).toEqual({ ok: true });
+  });
+
+  it('suporta array no topo', () => {
+    const raw = '```json\n[{"x":1}]\n```';
+    expect(JSON.parse(extractJsonPayload(raw))).toEqual([{ x: 1 }]);
+  });
+
+  it('texto sem JSON continua reprovando no parse (falha_json preservada)', () => {
+    const raw = 'desculpe, nao consegui gerar';
+    expect(() => JSON.parse(extractJsonPayload(raw))).toThrow();
   });
 });

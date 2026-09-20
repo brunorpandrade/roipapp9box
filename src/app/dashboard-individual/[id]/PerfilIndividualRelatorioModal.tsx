@@ -622,7 +622,7 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
                   {modo === 'expandida' ? 'Perfil completo' : 'Resumo'}
                 </span>
               ) : null}
-              {snap !== null && !semRelatorio && snap.podeBaixarPdf ? (
+              {snap !== null && !semRelatorio && snap.podeBaixarPdf && !snap.gerandoExpandido ? (
                 <button
                   type="button"
                   onClick={() => void baixarPdf()}
@@ -638,6 +638,20 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
               ✕
             </button>
           </div>
+
+          {erroPdf !== null ? (
+            <div
+              style={{
+                background: COLORS.badge.dangerBg,
+                color: COLORS.badge.dangerText,
+                padding: '8px 24px',
+                fontSize: 12,
+                flexShrink: 0,
+              }}
+            >
+              {erroPdf}
+            </div>
+          ) : null}
 
           <div style={IDENTIF}>
             <div style={AVATAR}>{initialsOf(props.employeeName)}</div>
@@ -708,12 +722,6 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
                       <SecaoSubvetores key={dim} dim={dim} snap={snap} />
                     ))
                   : null}
-
-                {erroPdf !== null ? (
-                  <p style={{ fontSize: 12, color: COLORS.badge.dangerText, marginTop: 8 }}>
-                    {erroPdf}
-                  </p>
-                ) : null}
               </>
             ) : null}
           </div>

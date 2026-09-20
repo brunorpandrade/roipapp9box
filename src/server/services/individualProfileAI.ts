@@ -53,9 +53,15 @@ export const INDIVIDUAL_PROFILE_AI_LOCK_TTL_MS = 90_000;
 
 /** `max_tokens` canonico (§3.7). */
 export const INDIVIDUAL_PROFILE_AI_MAX_TOKENS = 8_000;
-
 /** `temperature` canonica (§3.7). */
 export const INDIVIDUAL_PROFILE_AI_TEMPERATURE = 0.3;
+/**
+ * Timeout por formato. O expandido gera texto longo e, em producao,
+ * excede o default de transporte; o resumo e curto. Calibrados a
+ * partir da telemetria real (resumo ~50s, expandido ate ~200s).
+ */
+const INDIVIDUAL_PROFILE_AI_TIMEOUT_RESUMO_MS = 90_000;
+const INDIVIDUAL_PROFILE_AI_TIMEOUT_EXPANDIDO_MS = 200_000;
 
 // ============================================================
 // Formato canonico (§8.1 / §8.2) — payload composer
@@ -406,6 +412,10 @@ export async function runIndividualProfileAIGeneration(
       maxTokens: INDIVIDUAL_PROFILE_AI_MAX_TOKENS,
       temperature: INDIVIDUAL_PROFILE_AI_TEMPERATURE,
       jsonExpected: true,
+      timeoutMs:
+        formato === 'resumo'
+          ? INDIVIDUAL_PROFILE_AI_TIMEOUT_RESUMO_MS
+          : INDIVIDUAL_PROFILE_AI_TIMEOUT_EXPANDIDO_MS,
       telemetry: {
         companyId: args.companyId,
         surface,

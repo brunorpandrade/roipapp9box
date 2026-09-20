@@ -48,7 +48,7 @@ import { randomUUID } from 'node:crypto';
 export const CLAUDE_MODEL_DEFAULT = 'claude-sonnet-4-6';
 
 /** Timeout canonico por chamada (§3.7 e §7.7). Em milissegundos. */
-export const CLAUDE_CALL_DEFAULT_TIMEOUT_MS = 60_000;
+export const CLAUDE_CALL_DEFAULT_TIMEOUT_MS = 120_000;
 
 /** Backoff canonico entre retentativas (§2.2). Em milissegundos. */
 export const CLAUDE_CALL_RETRY_BACKOFF_MS = [5_000, 15_000] as const;
@@ -190,6 +190,41 @@ function defaultApiKeyResolver(): string {
 function defaultModelResolver(): string {
   const model = process.env.CLAUDE_MODEL;
   return model && model.length > 0 ? model : CLAUDE_MODEL_DEFAULT;
+}
+
+/**
+ * Extrai o payload JSON de uma resposta de LLM. Modelos costumam
+ * embrulhar o JSON em cerca de markdown (```json ... ```) ou anexar
+ * preambulo/epilogo em linguagem natural, o que quebra o JSON.parse
+ * direto (status falha_json). Esta funcao descasca esses invólucros:
+ *
+ * 1. Remove cercas de código markdown (```json / ```), se presentes.
+ * 2. Se ainda restar texto ao redor, recorta do primeiro `{` ou `[`
+ *    ate o `}` ou `]` correspondente de fechamento no fim.
+ *
+ * Retorna a melhor candidata a JSON; se nada casar, devolve o texto
+ * original aparado (deixando o JSON.parse falhar e reportar falha_json,
+ * como antes).
+ */
+export function extractJsonPayload(raw: string): string {
+  let s = raw.trim();
+  // 1. Cerca de codigo markdown, com ou sem rotulo de linguagem.
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fence && typeof fence[1] === 'string') {
+    s = fence[1].trim();
+  }
+  // 2. Se ja comeca e termina como JSON, usa direto.
+  const first = s.search(/[[{]/);
+  if (first === -1) {
+    return s;
+  }
+  const openChar = s[first];
+  const closeChar = openChar === '{' ? '}' : ']';
+  const last = s.lastIndexOf(closeChar);
+  if (last <= first) {
+    return s;
+  }
+  return s.slice(first, last + 1).trim();
 }
 
 function defaultOnTelemetry(record: ClaudeCallTelemetryRecord): void {
@@ -390,7 +425,7 @@ export async function claudeCall(
     }
     let parsed: unknown;
     try {
-      parsed = JSON.parse(outcome.content);
+      parsed = JSON.parse(extractJsonPayload(outcome.content));
       return finishSuccess(outcome.content, parsed, outcome.usage);
     } catch (err) {
       jsonAttemptsUsed += 1;
