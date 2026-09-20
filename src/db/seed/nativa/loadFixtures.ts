@@ -92,6 +92,7 @@ import {
   type NativaEmployeeRow,
 } from './constants';
 import { deriveEmployeeRow } from './deriveEmployee';
+import { getPerfilVariadoNativa, mediaEquNativa } from './perfilIndividualOverrides';
 import { deriveNativaEmployeeGoals } from './deriveEmployeeGoals';
 import { deriveNativaEmployeeLeaderHistory } from './deriveEmployeeLeaderHistory';
 import {
@@ -761,12 +762,52 @@ function mapScoreToRow(
   if (assessmentId === undefined) {
     throw new Error(`mapScoreToRow: assessment nao encontrado ${userType}:${userId}:1`);
   }
+  // Metodo C (ME escores-demo): override determinístico dos 7 perfis
+  // variados da demo, fonte unica em perfilIndividualOverrides. Quando
+  // presente, sobrepoe o placeholder '50.00'; senao, comportamento atual.
+  const override = getPerfilVariadoNativa(userType, userId);
   const perf = (r.perfilComportamental as string | null) ?? null;
-  const vetorDom = (r.vetorDominante as string | null) ?? null;
   const top3 = (r.top3 as unknown) ?? null;
+  const vetorDom = override?.vetorDominante ?? (r.vetorDominante as string | null) ?? null;
+  const vetorSust = override?.vetorSustentacao ?? null;
+  const vetorNegl = override?.vetorNegligenciado ?? null;
+  const top3Final = override?.top3 ?? top3;
   const flags = (r.flags as unknown) ?? null;
   const scores = (r.scores as Record<string, number> | undefined) ?? {};
+  const overrideMap: Readonly<Record<string, number>> | null =
+    override !== null
+      ? {
+          post_assert: override.post_assert,
+          post_tarefas: override.post_tarefas,
+          post_pessoas: override.post_pessoas,
+          post_pressao: override.post_pressao,
+          est_abert: override.est_abert,
+          est_disc: override.est_disc,
+          est_ext: override.est_ext,
+          est_amab: override.est_amab,
+          est_estab: override.est_estab,
+          mot_maestria: override.mot_maestria,
+          mot_lideranca: override.mot_lideranca,
+          mot_autonomia: override.mot_autonomia,
+          mot_seguranca: override.mot_seguranca,
+          mot_proposito: override.mot_proposito,
+          equ_autocons: override.equ_autocons,
+          equ_autogest: override.equ_autogest,
+          equ_leitura: override.equ_leitura,
+          equ_influencia: override.equ_influencia,
+          equ_indice: mediaEquNativa(override),
+          ass_sabed: override.ass_sabed,
+          ass_coragem: override.ass_coragem,
+          ass_humanid: override.ass_humanid,
+          ass_justica: override.ass_justica,
+          ass_temper: override.ass_temper,
+          ass_transc: override.ass_transc,
+        }
+      : null;
   const dec = (k: string): string => {
+    if (overrideMap !== null && typeof overrideMap[k] === 'number') {
+      return overrideMap[k].toFixed(2);
+    }
     const v = scores[k];
     return typeof v === 'number' ? v.toFixed(2) : '50.00';
   };
@@ -804,9 +845,9 @@ function mapScoreToRow(
     ass_transc: dec('ass_transc'),
     perfilComportamental: perf,
     vetorDominante: vetorDom,
-    vetorSustentacao: null,
-    vetorNegligenciado: null,
-    top3Assinatura: top3,
+    vetorSustentacao: vetorSust,
+    vetorNegligenciado: vetorNegl,
+    top3Assinatura: top3Final,
     flags,
     resumoJson: null,
     expandidoJson: null,
