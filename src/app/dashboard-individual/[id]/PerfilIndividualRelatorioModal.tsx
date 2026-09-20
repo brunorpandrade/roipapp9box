@@ -22,7 +22,7 @@
 // RV-14: um statement por linha, largura maxima 100.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { CSSProperties, JSX } from 'react';
+import type { CSSProperties, JSX, ReactNode } from 'react';
 
 import { COLORS } from '../../../lib/design-tokens/colors';
 import { Spinner } from '../../../components/ui/Spinner';
@@ -350,6 +350,234 @@ function tagDoSubvetor(chave: SubvetorKey, snap: PerfilRelatorioSnapshot): strin
     return 'Top 3';
   }
   return null;
+}
+
+// ── Render dos textos ricos de IA (system prompt Secao 11) ────────
+// resumoJson/expandidoJson chegam como objetos aninhados. Estes
+// helpers renderizam paragrafos e listas com coercao defensiva (a
+// origem e um LLM).
+
+function riAsStr(v: unknown): string {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  return '';
+}
+
+function riAsList(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.map(riAsStr).filter((s) => s.trim().length > 0);
+}
+
+function riGet(obj: unknown, key: string): unknown {
+  if (obj !== null && typeof obj === 'object' && key in obj) {
+    return (obj as Record<string, unknown>)[key];
+  }
+  return undefined;
+}
+
+function RiParas(props: { texto: unknown }): JSX.Element | null {
+  const s = riAsStr(props.texto).trim();
+  if (s.length === 0) return null;
+  const paras = s.split(/\n{2,}/).map((p) => p.trim());
+  return (
+    <>
+      {paras.map((p, i) => (
+        <p
+          key={i}
+          style={{ fontSize: 13, color: COLORS.text.secondary, lineHeight: 1.7, margin: '0 0 8px' }}
+        >
+          {p}
+        </p>
+      ))}
+    </>
+  );
+}
+
+function RiSubBloco(props: { rotulo: string; texto: unknown }): JSX.Element | null {
+  const s = riAsStr(props.texto).trim();
+  if (s.length === 0) return null;
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          color: COLORS.text.quaternary,
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          marginBottom: 4,
+        }}
+      >
+        {props.rotulo}
+      </div>
+      <RiParas texto={s} />
+    </div>
+  );
+}
+
+function RiSubLista(props: { rotulo: string; itens: unknown }): JSX.Element | null {
+  const arr = riAsList(props.itens);
+  if (arr.length === 0) return null;
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          color: COLORS.text.quaternary,
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          marginBottom: 4,
+        }}
+      >
+        {props.rotulo}
+      </div>
+      <ul style={{ margin: 0, paddingLeft: 18 }}>
+        {arr.map((r, i) => (
+          <li
+            key={i}
+            style={{ fontSize: 13, color: COLORS.text.secondary, lineHeight: 1.6, marginBottom: 3 }}
+          >
+            {r}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function RiSecao(props: { titulo: string; children: ReactNode }): JSX.Element {
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <div style={SECAO_TITULO}>{props.titulo}</div>
+      {props.children}
+    </div>
+  );
+}
+
+function TextosSintese(props: { sintese: unknown }): JSX.Element {
+  const s = props.sintese;
+  return (
+    <RiSecao titulo="Síntese executiva">
+      <RiSubBloco rotulo="Retrato integrado" texto={riGet(s, 'retrato_integrado')} />
+      <RiSubBloco rotulo="Entrega natural" texto={riGet(s, 'entrega_natural')} />
+      <RiSubBloco rotulo="Pontos de atenção" texto={riGet(s, 'pontos_atencao')} />
+      <RiSubBloco rotulo="Recomendação" texto={riGet(s, 'recomendacao_sintese')} />
+    </RiSecao>
+  );
+}
+
+function TextosRecomendacoes(props: { rec: unknown }): JSX.Element {
+  const r = props.rec;
+  return (
+    <RiSecao titulo="Recomendações executivas">
+      <RiSubBloco rotulo="Onde performa melhor" texto={riGet(r, 'onde_performa_melhor')} />
+      <RiSubLista rotulo="O que precisa do gestor" itens={riGet(r, 'o_que_precisa_do_gestor')} />
+      <RiSubBloco rotulo="Zona de desenvolvimento" texto={riGet(r, 'zona_de_desenvolvimento')} />
+      <RiSubLista rotulo="Sinais de alerta" itens={riGet(r, 'sinais_de_alerta')} />
+      <RiSubBloco rotulo="Contextos a evitar" texto={riGet(r, 'contextos_a_evitar')} />
+    </RiSecao>
+  );
+}
+
+function TextosResumo(props: { resumo: unknown }): JSX.Element {
+  const r = props.resumo;
+  return (
+    <>
+      <TextosSintese sintese={riGet(r, 'sintese_executiva')} />
+      <TextosRecomendacoes rec={riGet(r, 'recomendacoes_executivas')} />
+    </>
+  );
+}
+
+function TextosExpandido(props: { exp: unknown }): JSX.Element {
+  const e = props.exp;
+  return (
+    <>
+      <TextosSintese sintese={riGet(e, 'sintese_executiva')} />
+      <RiSecao titulo="Como essa pessoa age">
+        <RiSubBloco
+          rotulo="Estilo predominante"
+          texto={riGet(riGet(e, 'como_age'), 'estilo_predominante')}
+        />
+        <RiSubLista
+          rotulo="Contribuições típicas"
+          itens={riGet(riGet(e, 'como_age'), 'contribuicoes_tipicas')}
+        />
+        <RiSubLista
+          rotulo="Riscos de excesso"
+          itens={riGet(riGet(e, 'como_age'), 'riscos_de_excesso')}
+        />
+        <RiSubBloco
+          rotulo="Natural vs. adaptado"
+          texto={riGet(riGet(e, 'como_age'), 'natural_vs_adaptado')}
+        />
+      </RiSecao>
+      <RiSecao titulo="Quem essa pessoa é">
+        <RiSubBloco
+          rotulo="Configuração estrutural"
+          texto={riGet(riGet(e, 'quem_e'), 'configuracao_estrutural')}
+        />
+        <RiSubLista
+          rotulo="Implicações práticas"
+          itens={riGet(riGet(e, 'quem_e'), 'implicacoes_praticas')}
+        />
+        <RiSubBloco
+          rotulo="Amplifica ou compensa"
+          texto={riGet(riGet(e, 'quem_e'), 'amplifica_ou_compensa')}
+        />
+      </RiSecao>
+      <RiSecao titulo="O que move essa pessoa">
+        <RiSubBloco
+          rotulo="Sustenta o engajamento"
+          texto={riGet(riGet(e, 'o_que_move'), 'sustenta_engajamento')}
+        />
+        <RiSubBloco
+          rotulo="Sustenta a energia"
+          texto={riGet(riGet(e, 'o_que_move'), 'sustenta_energia')}
+        />
+        <RiSubLista rotulo="O que esgota" itens={riGet(riGet(e, 'o_que_move'), 'o_que_esgota')} />
+        <RiSubBloco
+          rotulo="O que sacrifica"
+          texto={riGet(riGet(e, 'o_que_move'), 'o_que_sacrifica')}
+        />
+      </RiSecao>
+      <RiSecao titulo="Como reage sob pressão">
+        <RiSubBloco
+          rotulo="Leitura geral"
+          texto={riGet(riGet(e, 'como_reage_sob_pressao'), 'leitura_geral')}
+        />
+        <RiSubLista
+          rotulo="O que faz bem"
+          itens={riGet(riGet(e, 'como_reage_sob_pressao'), 'o_que_faz_bem')}
+        />
+        <RiSubLista
+          rotulo="O que deteriora"
+          itens={riGet(riGet(e, 'como_reage_sob_pressao'), 'o_que_deteriora')}
+        />
+        <RiSubBloco
+          rotulo="Padrão paradoxal"
+          texto={riGet(riGet(e, 'como_reage_sob_pressao'), 'padrao_paradoxal')}
+        />
+      </RiSecao>
+      <RiSecao titulo="No que é naturalmente excelente">
+        <RiSubBloco
+          rotulo="Assinatura dominante"
+          texto={riGet(riGet(e, 'naturalmente_excelente'), 'assinatura_dominante')}
+        />
+        <RiSubLista
+          rotulo="Onde gera valor"
+          itens={riGet(riGet(e, 'naturalmente_excelente'), 'onde_gera_valor')}
+        />
+        <RiSubLista
+          rotulo="Riscos de overuse"
+          itens={riGet(riGet(e, 'naturalmente_excelente'), 'riscos_de_overuse')}
+        />
+      </RiSecao>
+      <TextosRecomendacoes rec={riGet(e, 'recomendacoes_executivas')} />
+    </>
+  );
 }
 
 function PainelEscores(props: { snap: PerfilRelatorioSnapshot }): JSX.Element {
@@ -714,9 +942,15 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
               </p>
             ) : snap !== null ? (
               <>
-                {/* Blocos de texto (IA). Na demo chegam NULL — estado
-                    canonico de carregamento/falha (§9.6/§9.7). */}
-                {textoAusente ? <EstadoTextoIA falhou={textoFalhou} onRetry={retryTexto} /> : null}
+                {/* Blocos de texto (IA). Ausentes -> estado canonico de
+                    carregamento/falha (§9.6/§9.7); presentes -> textos ricos. */}
+                {textoAusente ? (
+                  <EstadoTextoIA falhou={textoFalhou} onRetry={retryTexto} />
+                ) : modo === 'resumo' ? (
+                  <TextosResumo resumo={snap.resumoJson} />
+                ) : (
+                  <TextosExpandido exp={snap.expandidoJson} />
+                )}
 
                 {/* Painel de escores deterministico — sempre visivel. */}
                 {modo === 'resumo' ? <PainelEscores snap={snap} /> : null}

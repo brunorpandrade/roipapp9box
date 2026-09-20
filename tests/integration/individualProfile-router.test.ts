@@ -978,7 +978,8 @@ describe('individualProfile.generatePDF — autorizacao D8', () => {
     await createPlaceholder(companyId, alvoId, 'employee', 'respondido');
     const a = await createAssessment(companyId, alvoId, 'employee', 1);
     // expandidoJson na forma canonica consumida pelo template do PDF
-    // (individualProfileTemplate) — pre-condicao do generatePDF.
+    // (individualProfileTemplate, system prompt Secao 11) — pre-condicao
+    // do generatePDF.
     await createScore(
       companyId,
       alvoId,
@@ -986,17 +987,48 @@ describe('individualProfile.generatePDF — autorizacao D8', () => {
       1,
       {
         expandidoJson: {
-          sintese_executiva: 'Sintese executiva.',
-          como_age: 'Age de forma colaborativa.',
-          quem_e: 'Profissional experiente.',
-          o_que_move: 'Aprendizado e proposito.',
-          como_reage_sob_pressao: 'Mantem composicao.',
-          naturalmente_excelente: 'Leitura de dinamicas.',
-          recomendacoes_executivas: ['Recomendacao A', 'Recomendacao B'],
-          confiabilidade: 'alta',
-          natural_vs_adaptado: null,
-          padrao_paradoxal: null,
-          dimensoes_com_hedge: null,
+          sintese_executiva: {
+            retrato_integrado: 'Retrato.',
+            entrega_natural: 'Entrega.',
+            pontos_atencao: 'Atencao.',
+            recomendacao_sintese: 'Recomendacao.',
+          },
+          como_age: {
+            estilo_predominante: 'Estilo.',
+            contribuicoes_tipicas: ['C1'],
+            riscos_de_excesso: ['R1'],
+            natural_vs_adaptado: null,
+          },
+          quem_e: {
+            configuracao_estrutural: 'Config.',
+            implicacoes_praticas: ['I1'],
+            amplifica_ou_compensa: 'Amplifica.',
+          },
+          o_que_move: {
+            sustenta_engajamento: 'Engaja.',
+            sustenta_energia: 'Energia.',
+            o_que_esgota: ['E1'],
+            o_que_sacrifica: 'Sacrifica.',
+          },
+          como_reage_sob_pressao: {
+            leitura_geral: 'Leitura.',
+            o_que_faz_bem: ['B1'],
+            o_que_deteriora: ['D1'],
+            padrao_paradoxal: null,
+          },
+          naturalmente_excelente: {
+            assinatura_dominante: 'Assinatura.',
+            onde_gera_valor: ['V1'],
+            riscos_de_overuse: ['O1'],
+          },
+          recomendacoes_executivas: {
+            onde_performa_melhor: 'Melhor.',
+            o_que_precisa_do_gestor: ['G1', 'G2'],
+            zona_de_desenvolvimento: 'Zona.',
+            sinais_de_alerta: ['A1'],
+            contextos_a_evitar: 'Evitar.',
+          },
+          confiabilidade: { nivel: 'alta', nota_contexto: null, dimensoes_com_hedge: null },
         },
       },
       'employee',

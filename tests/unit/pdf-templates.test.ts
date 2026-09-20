@@ -45,20 +45,55 @@ const CANON_INDIVIDUAL: IndividualProfileTemplateInput = {
     dataAplicacao: '2026-06-15',
   },
   expandido: {
-    sintese_executiva: 'Perfil equilibrado com alta orientação a pessoas.',
-    como_age: 'Age de forma colaborativa, priorizando alinhamento.',
-    quem_e: 'Profissional experiente com foco em resultado.',
-    o_que_move: 'Aprendizado contínuo e propósito de contribuir.',
-    como_reage_sob_pressao: 'Mantém compostura, ainda que reduza delegação.',
-    naturalmente_excelente: 'Leitura fina de dinâmicas de equipe.',
-    recomendacoes_executivas: [
-      'Consolidar rituais de escuta ativa com liderados.',
-      'Testar delegação em contextos de baixa criticidade.',
-    ],
-    confiabilidade: 'alta',
-    natural_vs_adaptado: null,
-    padrao_paradoxal: null,
-    dimensoes_com_hedge: null,
+    sintese_executiva: {
+      retrato_integrado: 'Perfil equilibrado com alta orientação a pessoas.',
+      entrega_natural: 'Entrega consistente em contextos colaborativos.',
+      pontos_atencao: 'Pode centralizar decisões sob pressão.',
+      recomendacao_sintese: 'Ampliar delegação gradual.',
+    },
+    como_age: {
+      estilo_predominante: 'Age de forma colaborativa, priorizando alinhamento.',
+      contribuicoes_tipicas: ['Facilita consenso.', 'Mantém o time coeso.'],
+      riscos_de_excesso: ['Pode evitar conflito necessário.'],
+      natural_vs_adaptado: null,
+    },
+    quem_e: {
+      configuracao_estrutural: 'Profissional experiente com foco em resultado.',
+      implicacoes_praticas: ['Adapta-se bem a contextos variados.'],
+      amplifica_ou_compensa: 'A estabilidade sustenta a competência emocional.',
+    },
+    o_que_move: {
+      sustenta_engajamento: 'Aprendizado contínuo e propósito de contribuir.',
+      sustenta_energia: 'Reconhecimento do impacto gerado.',
+      o_que_esgota: ['Microgestão.'],
+      o_que_sacrifica: 'Abre mão de protagonismo por harmonia.',
+    },
+    como_reage_sob_pressao: {
+      leitura_geral: 'Mantém compostura, ainda que reduza delegação.',
+      o_que_faz_bem: ['Estabiliza o time.'],
+      o_que_deteriora: ['Centraliza decisões.'],
+      padrao_paradoxal: null,
+    },
+    naturalmente_excelente: {
+      assinatura_dominante: 'Leitura fina de dinâmicas de equipe.',
+      onde_gera_valor: ['Mediação de conflitos.'],
+      riscos_de_overuse: ['Excesso de acolhimento.'],
+    },
+    recomendacoes_executivas: {
+      onde_performa_melhor: 'Times que exigem coesão e escuta.',
+      o_que_precisa_do_gestor: [
+        'Consolidar rituais de escuta ativa com liderados.',
+        'Testar delegação em contextos de baixa criticidade.',
+      ],
+      zona_de_desenvolvimento: 'Delegação sob pressão.',
+      sinais_de_alerta: ['Sobrecarga silenciosa.'],
+      contextos_a_evitar: 'Ambientes de alta competição individual.',
+    },
+    confiabilidade: {
+      nivel: 'alta',
+      nota_contexto: null,
+      dimensoes_com_hedge: null,
+    },
   },
   subvetores: [
     { bloco: 'Postura', rotulo: 'Assertividade e ritmo', valor: 62.5 },
@@ -199,11 +234,11 @@ describe('individualProfileTemplate (ME-050/51)', () => {
     expect(html).toContain('Perfil Individual');
     expect(html).toContain('Identificação');
     expect(html).toContain('Síntese executiva');
-    expect(html).toContain('Como age');
-    expect(html).toContain('Quem é');
-    expect(html).toContain('O que move');
+    expect(html).toContain('Como essa pessoa age');
+    expect(html).toContain('Quem essa pessoa é');
+    expect(html).toContain('O que move essa pessoa');
     expect(html).toContain('Como reage sob pressão');
-    expect(html).toContain('Naturalmente excelente');
+    expect(html).toContain('naturalmente excelente');
     expect(html).toContain('Painel dos subvetores');
     expect(html).toContain('Recomendações executivas');
     expect(html).toContain('Confiabilidade');
@@ -221,9 +256,19 @@ describe('individualProfileTemplate (ME-050/51)', () => {
       ...CANON_INDIVIDUAL,
       expandido: {
         ...CANON_INDIVIDUAL.expandido,
-        natural_vs_adaptado: 'Texto sobre natural vs adaptado.',
-        padrao_paradoxal: 'Texto sobre padrão paradoxal.',
-        dimensoes_com_hedge: ['Dimensão X com ressalva'],
+        como_age: {
+          ...CANON_INDIVIDUAL.expandido.como_age,
+          natural_vs_adaptado: 'Texto sobre natural vs adaptado.',
+        },
+        como_reage_sob_pressao: {
+          ...CANON_INDIVIDUAL.expandido.como_reage_sob_pressao,
+          padrao_paradoxal: 'Texto sobre padrão paradoxal.',
+        },
+        confiabilidade: {
+          ...CANON_INDIVIDUAL.expandido.confiabilidade,
+          nivel: 'moderada',
+          dimensoes_com_hedge: ['Dimensão X com ressalva'],
+        },
       },
     });
     expect(html).toContain('Natural vs. adaptado');

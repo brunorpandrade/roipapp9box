@@ -387,24 +387,66 @@ afterAll(async () => {
 
 /** JSON canonico do resumo conforme DOC 04 §3.8 (versao minima). */
 const RESUMO_JSON_STUB = {
-  sintese_executiva: 'Sintese canonica de teste.',
-  recomendacoes_executivas: ['Recomendacao 1', 'Recomendacao 2'],
-  confiabilidade: 'alta',
+  sintese_executiva: {
+    retrato_integrado: 'Retrato integrado de teste.',
+    entrega_natural: 'Entrega natural de teste.',
+    pontos_atencao: 'Pontos de atencao de teste.',
+    recomendacao_sintese: 'Recomendacao de sintese.',
+  },
+  recomendacoes_executivas: {
+    onde_performa_melhor: 'Onde performa melhor.',
+    o_que_precisa_do_gestor: ['Item gestor 1', 'Item gestor 2'],
+    zona_de_desenvolvimento: 'Zona de desenvolvimento.',
+    sinais_de_alerta: ['Sinal 1'],
+    contextos_a_evitar: 'Contextos a evitar.',
+  },
+  confiabilidade: { nivel: 'alta', nota_contexto: null },
 };
 
-/** JSON canonico do expandido conforme DOC 04 §3.8. */
+/** JSON canonico do expandido conforme system prompt Secao 11. */
 const EXPANDIDO_JSON_STUB = {
-  sintese_executiva: 'Sintese executiva expandida.',
-  como_age: 'Age de forma colaborativa.',
-  quem_e: 'Profissional experiente.',
-  o_que_move: 'Aprendizado e proposito.',
-  como_reage_sob_pressao: 'Mantem composicao.',
-  naturalmente_excelente: 'Leitura de dinamicas.',
-  recomendacoes_executivas: ['Recomendacao A', 'Recomendacao B'],
-  confiabilidade: 'alta',
-  natural_vs_adaptado: null,
-  padrao_paradoxal: null,
-  dimensoes_com_hedge: null,
+  sintese_executiva: {
+    retrato_integrado: 'Retrato integrado expandido.',
+    entrega_natural: 'Entrega natural expandida.',
+    pontos_atencao: 'Pontos de atencao expandidos.',
+    recomendacao_sintese: 'Recomendacao de sintese expandida.',
+  },
+  como_age: {
+    estilo_predominante: 'Age de forma colaborativa.',
+    contribuicoes_tipicas: ['Contribuicao 1'],
+    riscos_de_excesso: ['Risco 1'],
+    natural_vs_adaptado: null,
+  },
+  quem_e: {
+    configuracao_estrutural: 'Profissional experiente.',
+    implicacoes_praticas: ['Implicacao 1'],
+    amplifica_ou_compensa: 'Amplifica competencia emocional.',
+  },
+  o_que_move: {
+    sustenta_engajamento: 'Aprendizado e proposito.',
+    sustenta_energia: 'Reconhecimento.',
+    o_que_esgota: ['Microgestao'],
+    o_que_sacrifica: 'Protagonismo por harmonia.',
+  },
+  como_reage_sob_pressao: {
+    leitura_geral: 'Mantem composicao.',
+    o_que_faz_bem: ['Estabiliza'],
+    o_que_deteriora: ['Centraliza'],
+    padrao_paradoxal: null,
+  },
+  naturalmente_excelente: {
+    assinatura_dominante: 'Leitura de dinamicas.',
+    onde_gera_valor: ['Mediacao'],
+    riscos_de_overuse: ['Excesso de acolhimento'],
+  },
+  recomendacoes_executivas: {
+    onde_performa_melhor: 'Times coesos.',
+    o_que_precisa_do_gestor: ['Recomendacao A', 'Recomendacao B'],
+    zona_de_desenvolvimento: 'Delegacao.',
+    sinais_de_alerta: ['Sobrecarga'],
+    contextos_a_evitar: 'Alta competicao individual.',
+  },
+  confiabilidade: { nivel: 'alta', nota_contexto: null, dimensoes_com_hedge: null },
 };
 
 /** Stub deterministico do PDF renderer (S260) — bytes "%PDF-1.7". */
