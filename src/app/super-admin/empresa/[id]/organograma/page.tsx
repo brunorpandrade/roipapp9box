@@ -128,6 +128,7 @@ export default async function OrganogramaPage(props: PageProps): Promise<JSX.Ele
             companyId={companyId}
             initialRoot={pageData.root}
             applyPC1b={pageData.applyPC1b}
+            canViewClevelProfile
           />
         </div>
       </Layout>

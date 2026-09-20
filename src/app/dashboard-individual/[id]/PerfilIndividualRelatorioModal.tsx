@@ -62,8 +62,9 @@ const POLL_TENTATIVAS_MAX = 90;
 
 interface Props {
   readonly companyId: number;
-  readonly employeeId: number;
-  readonly employeeName: string;
+  readonly userType: 'employee' | 'clevel';
+  readonly userId: number;
+  readonly titularNome: string;
   readonly cargo: string;
   readonly nivelHierarquico: string;
   readonly departamento: string;
@@ -706,7 +707,7 @@ function EstadoTextoIA(props: { falhou: boolean; onRetry: () => void }): JSX.Ele
 }
 
 export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
-  const { companyId, employeeId, onClose } = props;
+  const { companyId, userType, userId, onClose } = props;
   const [snap, setSnap] = useState<PerfilRelatorioSnapshot | null>(null);
   const [modo, setModo] = useState<Modo>('resumo');
   const [carregando, setCarregando] = useState<boolean>(true);
@@ -719,7 +720,7 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
   const bodyRef = useRef<HTMLDivElement | null>(null);
 
   const carregar = useCallback(async (): Promise<void> => {
-    const res = await carregarPerfilRelatorioAction({ companyId, employeeId });
+    const res = await carregarPerfilRelatorioAction({ companyId, userType, userId });
     if (!res.ok) {
       setErro(res.error ?? 'Erro ao carregar o relatório.');
       setCarregando(false);
@@ -732,7 +733,7 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
     }
     setSnap(res.snapshot);
     setCarregando(false);
-  }, [companyId, employeeId]);
+  }, [companyId, userType, userId]);
 
   useEffect(() => {
     void carregar();
@@ -775,7 +776,7 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
   const baixarPdf = useCallback(async (): Promise<void> => {
     setErroPdf(null);
     setBaixandoPdf(true);
-    const res = await baixarPerfilPdfAction({ companyId, employeeId });
+    const res = await baixarPerfilPdfAction({ companyId, userType, userId });
     setBaixandoPdf(false);
     if (!res.ok || res.pdfBase64 === null || res.filename === null) {
       setErroPdf(res.error ?? 'Erro ao gerar o PDF.');
@@ -795,7 +796,7 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [companyId, employeeId]);
+  }, [companyId, userType, userId]);
 
   const textoAusente =
     snap !== null && (snap.gerandoResumo || snap.gerandoExpandido || textoFalhou);
@@ -887,10 +888,10 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
           ) : null}
 
           <div style={IDENTIF}>
-            <div style={AVATAR}>{initialsOf(props.employeeName)}</div>
+            <div style={AVATAR}>{initialsOf(props.titularNome)}</div>
             <div>
               <div style={{ fontSize: 15, fontWeight: 700, color: COLORS.text.primary }}>
-                {props.employeeName}
+                {props.titularNome}
               </div>
               <div
                 style={{

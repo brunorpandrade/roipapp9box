@@ -108,6 +108,7 @@ import {
 } from '../pdf-templates/individualProfileTemplate';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
 import { assertCompanyScope } from './employees';
+import { MSG_AUTO_VISAO_PERFIL, assertNaoAutoVisaoEmployee } from './_shared/selfViewGuard';
 
 // ============================================================
 // Mensagens canonicas (S206)
@@ -499,6 +500,11 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
         assertCompanyScope(ctx.user, input.companyId);
         // §10.11 + §15.5 — PC1e antes de qualquer leitura (S211).
         assertPC1e(ctx.user, input.userType);
+        // D-SELF (ME §8.05) — ninguem ve o proprio Perfil Individual.
+        // Alvo `clevel` ja e Bruno-only por PC1e acima.
+        if (input.userType === 'employee') {
+          assertNaoAutoVisaoEmployee(ctx.user, input.userId, MSG_AUTO_VISAO_PERFIL);
+        }
         await resolveTitular(ctx.db, ctx.user, input.companyId, input.userType, input.userId);
         await assertLiderDireto(ctx.db, ctx.user, input.userType, input.userId);
 

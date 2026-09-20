@@ -29,6 +29,7 @@
 //
 // **RV-14.** Um statement por linha, largura máxima 100 colunas.
 
+import Link from 'next/link';
 import { useCallback, useMemo, useState, type CSSProperties, type JSX } from 'react';
 
 import { COLORS } from '../../../../../lib/design-tokens/colors';
@@ -67,6 +68,14 @@ export interface OrganogramaClientProps {
    * `undefined` = sem PC1i (Bruno, que não é colaborador da empresa).
    */
   readonly selfNodeId?: string | null;
+  /**
+   * D-ENTRY-2 (ME §8.05). `true` apenas na rota de Bruno
+   * (`/super-admin/empresa/[id]/organograma`). Habilita, no drawer do nó
+   * C-level, o botão `[Ver Perfil Individual]` (PC1e = Bruno). `false`
+   * ou ausente nas rotas operacionais (RH/C-level/Líder), onde o nó
+   * C-level nem sequer é clicável para RH (PC1b).
+   */
+  readonly canViewClevelProfile?: boolean;
 }
 
 // -----------------------------------------------------------------------
@@ -79,6 +88,24 @@ const ZOOM_STEP = 0.1;
 const ZOOM_INITIAL = 1.0;
 
 const RESUMO_DRAWER_WIDTH = 300;
+
+// D-ENTRY-2 (ME §8.05). Rota Bruno-only do relatório de Perfil do
+// C-level, alcançada pelo nó C-level do organograma (§14.9 — navega para
+// a tela principal, não in-place).
+const CLEVEL_PERFIL_ROUTE_PREFIX = '/dashboard-individual/clevel/';
+
+// D-ENTRY-1 (ME §8.05). Extrai o `employeeId` numérico do id de nó
+// `employee-N` (nós `operacional`/`lider`). Retorna NaN para ids fora
+// desse formato — o chamador só invoca em nós `operacional`.
+function parseEmployeeNodeId(nodeId: string): number {
+  return Number.parseInt(nodeId.replace('employee-', ''), 10);
+}
+
+// D-ENTRY-2 (ME §8.05). Extrai o `cLevelId` numérico do id de nó
+// `clevel-N`. Chamado apenas em nós `clevel` na rota de Bruno.
+function parseClevelNodeId(nodeId: string): number {
+  return Number.parseInt(nodeId.replace('clevel-', ''), 10);
+}
 
 // -----------------------------------------------------------------------
 // CSS canônico bit-exact das linhas conectoras (§14.9 + mockup 79-97)
@@ -503,14 +530,17 @@ function RenderedNode(props: RenderedNodeProps): JSX.Element {
 interface ResumoDrawerProps {
   readonly selectedNode: OrgTreeNode;
   readonly applyPC1b: boolean;
+  readonly canViewClevelProfile: boolean;
   readonly onClose: () => void;
 }
 
 function ResumoDrawer(props: ResumoDrawerProps): JSX.Element {
-  const { selectedNode, applyPC1b, onClose } = props;
+  const { selectedNode, applyPC1b, canViewClevelProfile, onClose } = props;
   const tipoLabel = NODE_TYPE_LABELS[selectedNode.type];
   const isEmpresa = selectedNode.type === 'empresa';
   const showLiderados = !isEmpresa && selectedNode.numLideradosDiretos > 0;
+  const isOperacional = selectedNode.type === 'operacional';
+  const podeVerPerfilClevel = canViewClevelProfile && selectedNode.type === 'clevel';
 
   return (
     <div
@@ -642,36 +672,94 @@ function ResumoDrawer(props: ResumoDrawerProps): JSX.Element {
             </span>
           </div>
         )}
-        <button
-          type="button"
-          disabled
-          title={DASHBOARD_UNAVAILABLE_TOOLTIP}
-          style={{
-            marginTop: 14,
-            width: '100%',
-            padding: 9,
-            background: COLORS.background.elevated,
-            color: COLORS.text.quaternary,
-            border: `1px solid ${COLORS.border.default}`,
-            borderRadius: 8,
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: 'not-allowed',
-          }}
-        >
-          Abrir dashboard
-        </button>
-        <div
-          style={{
-            marginTop: 8,
-            fontSize: 11,
-            color: COLORS.text.quaternary,
-            lineHeight: 1.5,
-            fontStyle: 'italic',
-          }}
-        >
-          {DASHBOARD_UNAVAILABLE_TOOLTIP}
-        </div>
+        {isOperacional ? (
+          // D-ENTRY-1: nó de colaborador abre o dashboard individual na
+          // tela principal (§14.9). Auto-referência já é bloqueada antes
+          // (nó próprio esmaecido por PC1i não abre o drawer).
+          <Link
+            href={`/dashboard-individual/${parseEmployeeNodeId(selectedNode.id)}`}
+            title={`Abrir dashboard de ${selectedNode.name}`}
+            style={{
+              display: 'block',
+              boxSizing: 'border-box',
+              marginTop: 14,
+              width: '100%',
+              padding: 9,
+              background: COLORS.primary.navy,
+              color: COLORS.background.card,
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 12,
+              fontWeight: 600,
+              textAlign: 'center',
+              textDecoration: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Abrir dashboard
+          </Link>
+        ) : podeVerPerfilClevel ? (
+          // D-ENTRY-2: Perfil Individual do C-level, restrito a Bruno
+          // (PC1e). Navega para a rota dedicada (o C-level não possui
+          // dashboard individual — dashboard de equipe é Fase 4).
+          <Link
+            href={`${CLEVEL_PERFIL_ROUTE_PREFIX}${parseClevelNodeId(selectedNode.id)}`}
+            title={`Ver Perfil Individual de ${selectedNode.name}`}
+            style={{
+              display: 'block',
+              boxSizing: 'border-box',
+              marginTop: 14,
+              width: '100%',
+              padding: 9,
+              background: COLORS.accent.teal,
+              color: COLORS.background.card,
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 12,
+              fontWeight: 600,
+              textAlign: 'center',
+              textDecoration: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Ver Perfil Individual
+          </Link>
+        ) : (
+          // Empresa / C-level (sem permissão de Perfil) / Líder: destino é
+          // dashboard global/equipe (§14.9 + §14.25) — Fase 4.
+          <>
+            <button
+              type="button"
+              disabled
+              title={DASHBOARD_UNAVAILABLE_TOOLTIP}
+              style={{
+                marginTop: 14,
+                width: '100%',
+                padding: 9,
+                background: COLORS.background.elevated,
+                color: COLORS.text.quaternary,
+                border: `1px solid ${COLORS.border.default}`,
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'not-allowed',
+              }}
+            >
+              Abrir dashboard
+            </button>
+            <div
+              style={{
+                marginTop: 8,
+                fontSize: 11,
+                color: COLORS.text.quaternary,
+                lineHeight: 1.5,
+                fontStyle: 'italic',
+              }}
+            >
+              {DASHBOARD_UNAVAILABLE_TOOLTIP}
+            </div>
+          </>
+        )}
         {applyPC1b && selectedNode.type === 'clevel' && (
           <div
             style={{
@@ -695,7 +783,13 @@ function ResumoDrawer(props: ResumoDrawerProps): JSX.Element {
 // -----------------------------------------------------------------------
 
 export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
-  const { initialRoot, applyPC1b, restrictedNodeIds, selfNodeId } = props;
+  const {
+    initialRoot,
+    applyPC1b,
+    restrictedNodeIds,
+    selfNodeId,
+    canViewClevelProfile = false,
+  } = props;
 
   // §11.9 PC1h — converte a lista canônica de IDs permitidos em Set
   // para consulta O(1) durante render de cada nó. Memoizado por
@@ -1104,6 +1198,7 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
           <ResumoDrawer
             selectedNode={selectedNode}
             applyPC1b={applyPC1b}
+            canViewClevelProfile={canViewClevelProfile}
             onClose={handleCloseDrawer}
           />
         )}

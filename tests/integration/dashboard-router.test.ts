@@ -6,8 +6,9 @@
 //     companyId no handler §2.4).
 //   - `getEmployeeDashboard` com Eixo X, Eixo Y (nullable) e 9-Box
 //     (nullable) — S065; guard de inativo (§3.13); guard S066 (lider
-//     direto via `employeeLeaderHistory`); dashboard proprio do lider
-//     permitido; historico com limit default/customizado; cap.
+//     direto via `employeeLeaderHistory`); D-SELF (ME §8.05): auto-visao
+//     do dashboard bloqueada (lider/rh/rh_lider FORBIDDEN, Bruno isento);
+//     historico com limit default/customizado; cap.
 //   - `getCompanyEconomicDashboard` com mascaramento canonico (matriz
 //     DOC 02 §3.3): Bruno/RH/RH-Lider/C-level acessoTotal=true -> 5/5;
 //     C-level acessoTotal=false -> 3/5 (roiEmpresa e folhaPorcentagem
@@ -95,6 +96,7 @@ const CNPJ_CROSS_A = '10000000000606';
 const CNPJ_CROSS_B = '10000000000607';
 const CNPJ_HISTORY = '10000000000608';
 const CNPJ_NULL_YZ = '10000000000609';
+const CNPJ_DSELF = '10000000000610';
 
 const NOW = new Date('2025-04-11T14:00:00Z');
 
@@ -386,11 +388,13 @@ function bindRouter() {
 describe('dashboard — guards de autorizacao', () => {
   let companyId: number;
   let employeeId: number;
+  let rhId: number;
   let clevelId: number;
 
   beforeAll(async () => {
     companyId = await createCompany(CNPJ_GUARDS);
     employeeId = await createEmployee(companyId);
+    rhId = await createEmployee(companyId);
     clevelId = await createCLevel(companyId, true);
     await createTrimestreLine(companyId, employeeId, '2025-Q1');
     await createDiagnosis(companyId, '2025-Q1', 'aceitavel');
@@ -406,7 +410,7 @@ describe('dashboard — guards de autorizacao', () => {
 
   it('getEmployeeDashboard com RH da mesma empresa -> OK', async () => {
     const { factory, ctx } = bindRouter();
-    const bearer = await tokenPlatform('rh', employeeId, companyId);
+    const bearer = await tokenPlatform('rh', rhId, companyId);
     const caller = factory(ctx(bearer));
     const result = await caller.getEmployeeDashboard({ employeeId });
     expect(result.employee.id).toBe(employeeId);
@@ -609,12 +613,63 @@ describe('dashboard — guard S066 lider cadeia direta', () => {
     });
   });
 
-  it('liderA ve o proprio dashboard (auto) -> OK', async () => {
+  it('liderA tenta ver o proprio dashboard (auto-visao) -> FORBIDDEN (D-SELF)', async () => {
     const { factory, ctx } = bindRouter();
     const bearer = await tokenPlatform('lider', liderA, companyId);
     const caller = factory(ctx(bearer));
-    const result = await caller.getEmployeeDashboard({ employeeId: liderA });
-    expect(result.employee.id).toBe(liderA);
+    await expect(caller.getEmployeeDashboard({ employeeId: liderA })).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    });
+  });
+});
+
+// ============================================================
+// 4b) D-SELF — auto-visao do dashboard bloqueada (ME §8.05)
+// ============================================================
+
+describe('dashboard — D-SELF auto-visao bloqueada', () => {
+  let companyId: number;
+  let empSelf: number;
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_DSELF);
+    empSelf = await createEmployee(companyId, { isLider: true });
+    await createTrimestreLine(companyId, empSelf, '2025-Q1');
+  });
+
+  it('lider vendo o proprio dashboard -> FORBIDDEN', async () => {
+    const { factory, ctx } = bindRouter();
+    const bearer = await tokenPlatform('lider', empSelf, companyId);
+    const caller = factory(ctx(bearer));
+    await expect(caller.getEmployeeDashboard({ employeeId: empSelf })).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    });
+  });
+
+  it('rh vendo o proprio dashboard -> FORBIDDEN', async () => {
+    const { factory, ctx } = bindRouter();
+    const bearer = await tokenPlatform('rh', empSelf, companyId);
+    const caller = factory(ctx(bearer));
+    await expect(caller.getEmployeeDashboard({ employeeId: empSelf })).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    });
+  });
+
+  it('rh_lider vendo o proprio dashboard -> FORBIDDEN', async () => {
+    const { factory, ctx } = bindRouter();
+    const bearer = await tokenPlatform('rh_lider', empSelf, companyId);
+    const caller = factory(ctx(bearer));
+    await expect(caller.getEmployeeDashboard({ employeeId: empSelf })).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    });
+  });
+
+  it('super_admin (Bruno) vendo o mesmo colaborador -> OK (isento)', async () => {
+    const { factory, ctx } = bindRouter();
+    const bearer = await tokenSuperAdmin();
+    const caller = factory(ctx(bearer));
+    const result = await caller.getEmployeeDashboard({ employeeId: empSelf });
+    expect(result.employee.id).toBe(empSelf);
   });
 });
 

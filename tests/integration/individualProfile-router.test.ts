@@ -657,6 +657,22 @@ describe('individualProfile.getReport — guards canonicos', () => {
     ).rejects.toThrow(MSG_FORA_DA_CADEIA_DIRETA);
   });
 
+  it('D-SELF — lider NAO le o proprio Perfil (auto-visao) -> FORBIDDEN', async () => {
+    const { factory, ctx } = bindRouter();
+    const caller = factory(ctx(await tokenPlatform('lider', liderId, companyId)));
+    await expect(
+      caller.getReport({ companyId, userType: 'employee', userId: liderId }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
+
+  it('D-SELF — rh NAO le o proprio Perfil (auto-visao) -> FORBIDDEN', async () => {
+    const { factory, ctx } = bindRouter();
+    const caller = factory(ctx(await tokenPlatform('rh', rhId, companyId)));
+    await expect(
+      caller.getReport({ companyId, userType: 'employee', userId: rhId }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
+
   it('§3.13 — inativo e restrito a Bruno e RH', async () => {
     const { factory, ctx } = bindRouter();
     const rhCaller = factory(ctx(await tokenPlatform('rh', rhId, companyId)));

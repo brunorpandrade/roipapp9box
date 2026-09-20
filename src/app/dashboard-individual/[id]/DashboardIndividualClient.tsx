@@ -985,8 +985,9 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
       {perfilOpen ? (
         <PerfilIndividualRelatorioModal
           companyId={employee.companyId}
-          employeeId={employee.id}
-          employeeName={employee.name}
+          userType="employee"
+          userId={employee.id}
+          titularNome={employee.name}
           cargo={employee.jobFamily}
           nivelHierarquico={employee.nivelHierarquico}
           departamento={employee.departamento}

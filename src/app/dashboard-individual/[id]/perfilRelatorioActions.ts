@@ -7,12 +7,13 @@
 // `pdfRenderer` S260) e delegam a `individualProfile.getReport` /
 // `individualProfile.generatePDF` (DOC 03 §10.13).
 //
-// O dashboard individual sempre alveja um colaborador da tabela
-// `employees`, nunca um C-level (dashboard.ts guard D035/§15.4) — por
-// isso `userType` e fixo em 'employee'. Os guards canonicos (PC1e,
-// escopo empresa §2.4, cadeia direta S066, inativo §3.13) sao aplicados
-// server-side pelo proprio `getReport`; o botao no client e apenas o
-// gatilho.
+// As actions recebem `{ userType, userId }` (ME §8.05): o dashboard
+// individual passa `userType='employee'`; a superficie Bruno-only do
+// organograma passa `userType='clevel'` para o relatorio de Perfil do
+// C-level (PC1e = Bruno). Os guards canonicos (PC1e, D-SELF, escopo
+// empresa §2.4, cadeia direta S066, inativo §3.13) sao aplicados
+// server-side pelo proprio `getReport`/`generatePDF`; o botao no client
+// e apenas o gatilho.
 //
 // RV-14: um statement por linha, largura maxima 100.
 
@@ -109,7 +110,8 @@ async function resolvePodeBaixarPdf(): Promise<boolean> {
  */
 export async function carregarPerfilRelatorioAction(input: {
   companyId: number;
-  employeeId: number;
+  userType: 'employee' | 'clevel';
+  userId: number;
 }): Promise<CarregarPerfilRelatorioResult> {
   const token = await requireToken();
   const client = createDbClient(resolveDatabaseUrl());
@@ -123,8 +125,8 @@ export async function carregarPerfilRelatorioAction(input: {
     );
     const report = await caller.individualProfile.getReport({
       companyId: input.companyId,
-      userType: 'employee',
-      userId: input.employeeId,
+      userType: input.userType,
+      userId: input.userId,
     });
     if (report === null) {
       return { ok: true, snapshot: null, semRelatorio: true };
@@ -196,7 +198,8 @@ export async function carregarPerfilRelatorioAction(input: {
  */
 export async function baixarPerfilPdfAction(input: {
   companyId: number;
-  employeeId: number;
+  userType: 'employee' | 'clevel';
+  userId: number;
 }): Promise<BaixarPerfilPdfResult> {
   const token = await requireToken();
   const client = createDbClient(resolveDatabaseUrl());
@@ -210,8 +213,8 @@ export async function baixarPerfilPdfAction(input: {
     );
     const result = await caller.individualProfile.generatePDF({
       companyId: input.companyId,
-      userType: 'employee',
-      userId: input.employeeId,
+      userType: input.userType,
+      userId: input.userId,
     });
     return { ok: true, pdfBase64: result.pdfBase64, filename: result.filename };
   } catch (err) {

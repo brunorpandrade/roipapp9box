@@ -89,6 +89,7 @@ import { getActiveLeaderHistoryByEmployee } from '../services/employeeLeaderHist
 import { getPerformanceQuarterlyDataByQuarter } from '../services/performanceQuarterlyData';
 import type { ChatIaUserType } from '../services/_shared/dashboardContextTypes';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import { MSG_AUTO_VISAO_DASHBOARD, assertNaoAutoVisaoEmployee } from './_shared/selfViewGuard';
 
 // ============================================================
 // Constantes e tipos publicos
@@ -401,6 +402,11 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
           }
         }
 
+        // Guard D-SELF (ME §8.05): ninguem ve o proprio dashboard. Bruno
+        // e C-level isentos (ver `assertNaoAutoVisaoEmployee`). Substitui o
+        // antigo "dashboard proprio do lider permitido".
+        assertNaoAutoVisaoEmployee(ctx.user, input.employeeId, MSG_AUTO_VISAO_DASHBOARD);
+
         // Guard canonico D035 (§15.4): dashboard de colaborador da tabela
         // `employees` alveja um `employee`, nunca um C-level (C-levels
         // vivem em `cLevelMembers`, tabela separada — esta proc nao os
@@ -413,20 +419,14 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
         // direta ativa). Cadeia indireta e materia de motor de
         // organograma (ME futura).
         if (ctx.user.role === 'lider') {
-          if (ctx.user.userId === input.employeeId) {
-            // Lider vendo o proprio dashboard — permitido.
-          } else {
-            const okDirect = await isEmployeeDirectlyLedBy(
-              ctx.db,
-              input.employeeId,
-              ctx.user.userId,
-            );
-            if (!okDirect) {
-              throw new TRPCError({
-                code: 'FORBIDDEN',
-                message: 'Colaborador fora da cadeia direta do lider.',
-              });
-            }
+          // Auto-visao ja bloqueada por D-SELF acima; resta a cadeia
+          // direta (S066).
+          const okDirect = await isEmployeeDirectlyLedBy(ctx.db, input.employeeId, ctx.user.userId);
+          if (!okDirect) {
+            throw new TRPCError({
+              code: 'FORBIDDEN',
+              message: 'Colaborador fora da cadeia direta do lider.',
+            });
           }
         }
 
