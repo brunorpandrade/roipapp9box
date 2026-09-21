@@ -49,8 +49,14 @@ describe('ME §8.06.3 — resolveDrawerDashboardAction (§14.9 S518)', () => {
     expect(r).toEqual<DrawerDashboardAction>({ kind: 'unavailable' });
   });
 
-  it('nó da empresa fica indisponível (agregado vem depois)', () => {
+  it('nó da empresa sem href fica indisponível', () => {
     const r = resolveDrawerDashboardAction(node('empresa', 1, 'empresa'), true);
     expect(r).toEqual<DrawerDashboardAction>({ kind: 'unavailable' });
+  });
+
+  it('nó da empresa com href abre o dashboard agregado (§8.06.4)', () => {
+    const href = '/super-admin/empresa/1/dashboard-empresa';
+    const r = resolveDrawerDashboardAction(node('empresa', 1, 'empresa'), true, href);
+    expect(r).toEqual<DrawerDashboardAction>({ kind: 'empresa-dashboard', href });
   });
 });

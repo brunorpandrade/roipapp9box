@@ -77,6 +77,13 @@ export interface OrganogramaClientProps {
    * C-level nem sequer é clicável para RH (PC1b).
    */
   readonly canViewClevelProfile?: boolean;
+  /**
+   * §8.06.4. Href do dashboard agregado da empresa, usado no drawer do
+   * nó da empresa. Presente apenas na rota de Bruno; ausente nas rotas
+   * RH/C-level (dashboard agregado chega na ME §8.06.5), onde o botão do
+   * nó da empresa segue diferido.
+   */
+  readonly empresaDashboardHref?: string | null;
 }
 
 // -----------------------------------------------------------------------
@@ -519,15 +526,20 @@ interface ResumoDrawerProps {
   readonly selectedNode: OrgTreeNode;
   readonly applyPC1b: boolean;
   readonly canViewClevelProfile: boolean;
+  readonly empresaDashboardHref: string | null;
   readonly onClose: () => void;
 }
 
 function ResumoDrawer(props: ResumoDrawerProps): JSX.Element {
-  const { selectedNode, applyPC1b, canViewClevelProfile, onClose } = props;
+  const { selectedNode, applyPC1b, canViewClevelProfile, empresaDashboardHref, onClose } = props;
   const tipoLabel = NODE_TYPE_LABELS[selectedNode.type];
   const isEmpresa = selectedNode.type === 'empresa';
   const showLiderados = !isEmpresa && selectedNode.numLideradosDiretos > 0;
-  const dashboardAction = resolveDrawerDashboardAction(selectedNode, canViewClevelProfile);
+  const dashboardAction = resolveDrawerDashboardAction(
+    selectedNode,
+    canViewClevelProfile,
+    empresaDashboardHref,
+  );
 
   return (
     <div
@@ -712,10 +724,36 @@ function ResumoDrawer(props: ResumoDrawerProps): JSX.Element {
           >
             Ver Perfil Individual
           </Link>
+        ) : dashboardAction.kind === 'empresa-dashboard' ? (
+          // Nó da empresa (§8.06.4): abre o dashboard agregado da empresa.
+          // Presente apenas nas rotas que passam `empresaDashboardHref`
+          // (Bruno). A rota reaplica os guards.
+          <Link
+            href={dashboardAction.href}
+            title="Abrir dashboard da empresa"
+            style={{
+              display: 'block',
+              boxSizing: 'border-box',
+              marginTop: 14,
+              width: '100%',
+              padding: 9,
+              background: COLORS.primary.navy,
+              color: COLORS.background.card,
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 12,
+              fontWeight: 600,
+              textAlign: 'center',
+              textDecoration: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Abrir dashboard
+          </Link>
         ) : (
-          // Empresa / C-level sem acesso ao Perfil: dashboard agregado da
-          // empresa e "ver agregado da cadeia" chegam nas ME §8.06.5/
-          // §8.06.6. Botão diferido por ora.
+          // Nó da empresa sem dashboard habilitado (rotas RH/C-level, ME
+          // §8.06.5) ou C-level sem acesso ao Perfil: "ver agregado da
+          // cadeia" chega na ME §8.06.6. Botão diferido por ora.
           <>
             <button
               type="button"
@@ -778,6 +816,7 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
     restrictedNodeIds,
     selfNodeId,
     canViewClevelProfile = false,
+    empresaDashboardHref = null,
   } = props;
 
   // §11.9 PC1h — converte a lista canônica de IDs permitidos em Set
@@ -1188,6 +1227,7 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
             selectedNode={selectedNode}
             applyPC1b={applyPC1b}
             canViewClevelProfile={canViewClevelProfile}
+            empresaDashboardHref={empresaDashboardHref}
             onClose={handleCloseDrawer}
           />
         )}

@@ -129,6 +129,7 @@ export default async function OrganogramaPage(props: PageProps): Promise<JSX.Ele
             initialRoot={pageData.root}
             applyPC1b={pageData.applyPC1b}
             canViewClevelProfile
+            empresaDashboardHref={`/super-admin/empresa/${companyId}/dashboard-empresa`}
           />
         </div>
       </Layout>

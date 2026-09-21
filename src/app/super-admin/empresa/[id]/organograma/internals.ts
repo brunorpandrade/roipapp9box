@@ -130,17 +130,22 @@ export function getIniciaisFromName(name: string): string {
 export type DrawerDashboardAction =
   | { readonly kind: 'individual'; readonly employeeId: number }
   | { readonly kind: 'perfil-clevel'; readonly cLevelId: number }
+  | { readonly kind: 'empresa-dashboard'; readonly href: string }
   | { readonly kind: 'unavailable' };
 
 export function resolveDrawerDashboardAction(
   node: OrgTreeNode,
   canViewClevelProfile: boolean,
+  empresaDashboardHref: string | null = null,
 ): DrawerDashboardAction {
   if (node.type === 'operacional' || node.type === 'lider') {
     return { kind: 'individual', employeeId: node.entityId };
   }
   if (node.type === 'clevel' && canViewClevelProfile) {
     return { kind: 'perfil-clevel', cLevelId: node.entityId };
+  }
+  if (node.type === 'empresa' && empresaDashboardHref !== null) {
+    return { kind: 'empresa-dashboard', href: empresaDashboardHref };
   }
   return { kind: 'unavailable' };
 }

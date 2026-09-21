@@ -449,7 +449,7 @@ async function readAnteriorEstado(
  * defaults canonicos §7.2 (`NINE_BOX_DEFAULT_THRESHOLD_*`). Uma
  * chamada de banco por invocacao.
  */
-async function readThresholds(
+export async function readThresholds(
   db: RoipDatabase,
   companyId: number,
 ): Promise<{
