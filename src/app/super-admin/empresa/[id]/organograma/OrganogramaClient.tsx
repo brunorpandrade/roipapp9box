@@ -42,6 +42,7 @@ import {
   PC1H_TOOLTIP,
   PC1I_TOOLTIP,
   getIniciaisFromName,
+  resolveDrawerDashboardAction,
 } from './internals';
 
 // -----------------------------------------------------------------------
@@ -93,19 +94,6 @@ const RESUMO_DRAWER_WIDTH = 300;
 // C-level, alcançada pelo nó C-level do organograma (§14.9 — navega para
 // a tela principal, não in-place).
 const CLEVEL_PERFIL_ROUTE_PREFIX = '/dashboard-individual/clevel/';
-
-// D-ENTRY-1 (ME §8.05). Extrai o `employeeId` numérico do id de nó
-// `employee-N` (nós `operacional`/`lider`). Retorna NaN para ids fora
-// desse formato — o chamador só invoca em nós `operacional`.
-function parseEmployeeNodeId(nodeId: string): number {
-  return Number.parseInt(nodeId.replace('employee-', ''), 10);
-}
-
-// D-ENTRY-2 (ME §8.05). Extrai o `cLevelId` numérico do id de nó
-// `clevel-N`. Chamado apenas em nós `clevel` na rota de Bruno.
-function parseClevelNodeId(nodeId: string): number {
-  return Number.parseInt(nodeId.replace('clevel-', ''), 10);
-}
 
 // -----------------------------------------------------------------------
 // CSS canônico bit-exact das linhas conectoras (§14.9 + mockup 79-97)
@@ -539,8 +527,7 @@ function ResumoDrawer(props: ResumoDrawerProps): JSX.Element {
   const tipoLabel = NODE_TYPE_LABELS[selectedNode.type];
   const isEmpresa = selectedNode.type === 'empresa';
   const showLiderados = !isEmpresa && selectedNode.numLideradosDiretos > 0;
-  const isOperacional = selectedNode.type === 'operacional';
-  const podeVerPerfilClevel = canViewClevelProfile && selectedNode.type === 'clevel';
+  const dashboardAction = resolveDrawerDashboardAction(selectedNode, canViewClevelProfile);
 
   return (
     <div
@@ -672,12 +659,13 @@ function ResumoDrawer(props: ResumoDrawerProps): JSX.Element {
             </span>
           </div>
         )}
-        {isOperacional ? (
-          // D-ENTRY-1: nó de colaborador abre o dashboard individual na
-          // tela principal (§14.9). Auto-referência já é bloqueada antes
-          // (nó próprio esmaecido por PC1i não abre o drawer).
+        {dashboardAction.kind === 'individual' ? (
+          // D-ENTRY-1 + S518: nó de colaborador (operacional) e nó de
+          // líder abrem o dashboard individual da própria pessoa na tela
+          // principal (§14.9). Auto-referência já é bloqueada antes (nó
+          // próprio esmaecido por PC1i não abre o drawer).
           <Link
-            href={`/dashboard-individual/${parseEmployeeNodeId(selectedNode.id)}`}
+            href={`/dashboard-individual/${dashboardAction.employeeId}`}
             title={`Abrir dashboard de ${selectedNode.name}`}
             style={{
               display: 'block',
@@ -698,12 +686,12 @@ function ResumoDrawer(props: ResumoDrawerProps): JSX.Element {
           >
             Abrir dashboard
           </Link>
-        ) : podeVerPerfilClevel ? (
+        ) : dashboardAction.kind === 'perfil-clevel' ? (
           // D-ENTRY-2: Perfil Individual do C-level, restrito a Bruno
           // (PC1e). Navega para a rota dedicada (o C-level não possui
-          // dashboard individual — dashboard de equipe é Fase 4).
+          // dashboard individual).
           <Link
-            href={`${CLEVEL_PERFIL_ROUTE_PREFIX}${parseClevelNodeId(selectedNode.id)}`}
+            href={`${CLEVEL_PERFIL_ROUTE_PREFIX}${dashboardAction.cLevelId}`}
             title={`Ver Perfil Individual de ${selectedNode.name}`}
             style={{
               display: 'block',
@@ -725,8 +713,9 @@ function ResumoDrawer(props: ResumoDrawerProps): JSX.Element {
             Ver Perfil Individual
           </Link>
         ) : (
-          // Empresa / C-level (sem permissão de Perfil) / Líder: destino é
-          // dashboard global/equipe (§14.9 + §14.25) — Fase 4.
+          // Empresa / C-level sem acesso ao Perfil: dashboard agregado da
+          // empresa e "ver agregado da cadeia" chegam nas ME §8.06.5/
+          // §8.06.6. Botão diferido por ora.
           <>
             <button
               type="button"

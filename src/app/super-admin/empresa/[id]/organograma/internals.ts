@@ -29,6 +29,8 @@
 //   - `PC1I_TOOLTIP` → `OrganogramaClient.tsx` (§11.10 PC1i ME-086b
 //     RETOMADA v2 — auto-referência vedada).
 //   - `getIniciaisFromName` → `OrganogramaClient.tsx` + testes.
+//   - `resolveDrawerDashboardAction` / `DrawerDashboardAction` →
+//     `OrganogramaClient.tsx` + testes (§14.9 S518).
 //   - Tipo `OrganogramaPageData` → `page.tsx` + `OrganogramaClient.tsx`.
 //
 // **RV-12.** Zero SQL cru — persistência via API tipada Drizzle nos
@@ -109,6 +111,38 @@ export function getIniciaisFromName(name: string): string {
   const primeira = primeiraParte[0] ?? '';
   const ultima = ultimaParte[0] ?? '';
   return (primeira + ultima).toUpperCase();
+}
+
+// -----------------------------------------------------------------------
+// Ação de dashboard do drawer (§14.9 S518)
+// -----------------------------------------------------------------------
+
+/**
+ * Ação primária do drawer do organograma estrutural por nó (§14.9 /
+ * ESPEC §5). `individual` para pessoa com dashboard individual — nó
+ * `operacional` e nó `lider` (S518, usando `entityId`); `perfil-clevel`
+ * para C-level quando o observador é o Super Admin (D-ENTRY-2);
+ * `unavailable` para o nó da empresa e para C-level sem acesso ao Perfil
+ * (agregados e analítico chegam nas ME §8.06.5/§8.06.6). Bloqueios de
+ * auto-visão e de cadeia (D-SELF, PC1b, PC1h/PC1i) são aplicados a
+ * montante — nós bloqueados nem abrem o drawer.
+ */
+export type DrawerDashboardAction =
+  | { readonly kind: 'individual'; readonly employeeId: number }
+  | { readonly kind: 'perfil-clevel'; readonly cLevelId: number }
+  | { readonly kind: 'unavailable' };
+
+export function resolveDrawerDashboardAction(
+  node: OrgTreeNode,
+  canViewClevelProfile: boolean,
+): DrawerDashboardAction {
+  if (node.type === 'operacional' || node.type === 'lider') {
+    return { kind: 'individual', employeeId: node.entityId };
+  }
+  if (node.type === 'clevel' && canViewClevelProfile) {
+    return { kind: 'perfil-clevel', cLevelId: node.entityId };
+  }
+  return { kind: 'unavailable' };
 }
 
 // -----------------------------------------------------------------------
