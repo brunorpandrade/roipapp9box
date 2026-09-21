@@ -1,9 +1,11 @@
 // ROIP APP 9BOX — dashboard agregado da empresa (ESPEC §7 empresa + §10
-// + §14.25). Reaproveita a linguagem visual do dashboard individual, mas
-// substitui a bolha unica do 9-Box pelo heatmap 3x3 (contagem por celula)
-// com o centro de massa do coletivo, e troca os multiplos financeiros
-// pela razao dos brutos. Sem Chat IA e sem Dialogos (§10.6). Componente
-// de apresentacao (sem estado); navegacao por trimestre via Link.
+// + §14.25). Reaproveita o LAYOUT do dashboard individual (§10.7): mesma
+// grade de duas colunas, o mesmo 9-Box colorido com os rotulos de
+// quadrante (NINE_BOX_GRID) e os mesmos cards de Eixo X/Y e financeiro.
+// A unica diferenca do coletivo (§10.3): o 9-Box mostra a contagem por
+// celula (heatmap) com o centro de massa destacado, no lugar da bolha
+// unica; e o financeiro traz a razao dos brutos (§10.8). Sem Chat IA e
+// sem Dialogos (§10.6). Componente de apresentacao (sem estado).
 //
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
@@ -11,8 +13,15 @@ import Link from 'next/link';
 import type { CSSProperties, JSX } from 'react';
 
 import { COLORS } from '../../../../../lib/design-tokens/colors';
-import type { CompanyAggregatePage } from '../../../../../server/services/companyAggregate';
 import type { AggregateResult } from '../../../../../server/services/aggregationEngine';
+import type { CompanyAggregatePage } from '../../../../../server/services/companyAggregate';
+import {
+  NINE_BOX_GRID,
+  colIndexFor,
+  rowIndexFor,
+  type PosicaoX,
+  type PosicaoY,
+} from '../../../../dashboard-individual/[id]/internals';
 
 export interface EmpresaDashboardClientProps {
   readonly data: CompanyAggregatePage;
@@ -20,16 +29,13 @@ export interface EmpresaDashboardClientProps {
 }
 
 const CARD: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 4,
   padding: 16,
-  borderRadius: 10,
+  borderRadius: 12,
   border: `1px solid ${COLORS.border.default}`,
   background: COLORS.background.card,
 };
 
-const ROTULO: CSSProperties = {
+const LABEL: CSSProperties = {
   fontSize: 11,
   fontWeight: 600,
   letterSpacing: '0.06em',
@@ -37,16 +43,17 @@ const ROTULO: CSSProperties = {
   color: COLORS.text.tertiary,
 };
 
-const VALOR: CSSProperties = {
-  fontSize: 22,
-  fontWeight: 700,
-  color: COLORS.text.primary,
+const FAIXA_X: Readonly<Record<PosicaoX, string>> = {
+  alto: 'Alto desempenho',
+  medio: 'Médio desempenho',
+  baixo: 'Baixo desempenho',
 };
 
-const LINHA_X: readonly string[] = ['Baixo', 'Médio', 'Alto'];
-const LINHA_Y: readonly string[] = ['Alta', 'Média', 'Baixa'];
-const IDX_X: Readonly<Record<string, number>> = { baixo: 0, medio: 1, alto: 2 };
-const IDX_Y: Readonly<Record<string, number>> = { alta: 0, media: 1, baixa: 2 };
+const FAIXA_Y: Readonly<Record<PosicaoY, string>> = {
+  alta: 'Alta plenitude',
+  media: 'Média plenitude',
+  baixa: 'Baixa plenitude',
+};
 
 function fmt(v: number | null, dec: number): string {
   if (v === null) {
@@ -63,123 +70,185 @@ function brl(v: number): string {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-function Indicador(props: {
-  readonly titulo: string;
-  readonly valor: string;
-  readonly sub?: string;
-}): JSX.Element {
-  return (
-    <div style={CARD}>
-      <span style={ROTULO}>{props.titulo}</span>
-      <span style={VALOR}>{props.valor}</span>
-      {props.sub !== undefined ? (
-        <span style={{ fontSize: 12, color: COLORS.text.secondary }}>{props.sub}</span>
-      ) : null}
-    </div>
-  );
-}
-
-function Heatmap(props: { readonly agg: AggregateResult }): JSX.Element {
-  const { agg } = props;
-  const cmX = agg.centroMassa.posicaoX === null ? -1 : (IDX_X[agg.centroMassa.posicaoX] ?? -1);
-  const cmY = agg.centroMassa.posicaoY === null ? -1 : (IDX_Y[agg.centroMassa.posicaoY] ?? -1);
-  return (
-    <div style={CARD}>
-      <span style={ROTULO}>9-Box — distribuição do coletivo</span>
-      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-around',
-            fontSize: 11,
-            color: COLORS.text.tertiary,
-          }}
-        >
-          {LINHA_Y.map((r) => (
-            <span key={r}>{r}</span>
-          ))}
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
-            {agg.heatmap.map((linha, row) =>
-              linha.map((n, col) => {
-                const centro = row === cmY && col === cmX;
-                return (
-                  <div
-                    key={`${row}-${col}`}
-                    style={{
-                      aspectRatio: '1 / 1',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 8,
-                      fontSize: 18,
-                      fontWeight: 700,
-                      color: n > 0 ? COLORS.text.primary : COLORS.text.quaternary,
-                      background: COLORS.background.elevated,
-                      border: centro
-                        ? `2px solid ${COLORS.accent.teal}`
-                        : `1px solid ${COLORS.border.default}`,
-                    }}
-                  >
-                    {n}
-                  </div>
-                );
-              }),
-            )}
-          </div>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: 6,
-              marginTop: 4,
-              fontSize: 11,
-              color: COLORS.text.tertiary,
-              textAlign: 'center',
-            }}
-          >
-            {LINHA_X.map((c) => (
-              <span key={c}>{c}</span>
-            ))}
-          </div>
-        </div>
-      </div>
-      <span style={{ fontSize: 12, color: COLORS.text.secondary, marginTop: 8 }}>
-        Centro de massa: desempenho {fmt(agg.centroMassa.x, 1)} · plenitude{' '}
-        {fmt(agg.centroMassa.y, 1)}
-        {agg.centroMassa.quadrante !== null ? ` — ${agg.centroMassa.quadrante}` : ''}
-      </span>
-    </div>
-  );
-}
-
 function TrimestreNav(props: {
   readonly data: CompanyAggregatePage;
   readonly basePath: string;
 }): JSX.Element {
   const { data, basePath } = props;
-  const link = (tri: string | null, txt: string): JSX.Element => {
-    if (tri === null) {
-      return <span style={{ color: COLORS.text.quaternary, fontSize: 13 }}>{txt}</span>;
-    }
-    return (
-      <Link
-        href={`${basePath}?trimestre=${tri}`}
-        style={{ color: COLORS.accent.teal, fontSize: 13 }}
-      >
-        {txt}
-      </Link>
-    );
+  const pill: CSSProperties = {
+    padding: '8px 14px',
+    borderRadius: 8,
+    border: `1px solid ${COLORS.border.default}`,
+    background: COLORS.background.card,
+    fontSize: 13,
+    color: COLORS.text.secondary,
+    textDecoration: 'none',
   };
+  const inativo: CSSProperties = { ...pill, color: COLORS.text.quaternary };
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-      {link(data.trimestreAnterior, '← Anterior')}
-      <span style={{ fontSize: 14, fontWeight: 600, color: COLORS.text.primary }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+      {data.trimestreAnterior !== null ? (
+        <Link href={`${basePath}?trimestre=${data.trimestreAnterior}`} style={pill}>
+          ‹ Anterior
+        </Link>
+      ) : (
+        <span style={inativo}>‹ Anterior</span>
+      )}
+      <span style={{ fontSize: 15, fontWeight: 700, color: COLORS.text.primary }}>
         {data.label ?? '—'}
       </span>
-      {link(data.trimestreSeguinte, 'Seguinte →')}
+      {data.trimestreSeguinte !== null ? (
+        <Link href={`${basePath}?trimestre=${data.trimestreSeguinte}`} style={pill}>
+          Próximo ›
+        </Link>
+      ) : (
+        <span style={inativo}>Próximo ›</span>
+      )}
+    </div>
+  );
+}
+
+function NineBoxColetivo(props: { readonly agg: AggregateResult }): JSX.Element {
+  const { agg } = props;
+  const cmRow = agg.centroMassa.posicaoY === null ? -1 : rowIndexFor(agg.centroMassa.posicaoY);
+  const cmCol = agg.centroMassa.posicaoX === null ? -1 : colIndexFor(agg.centroMassa.posicaoX);
+  return (
+    <div style={CARD}>
+      <div style={LABEL}>9-Box — distribuição do coletivo</div>
+      <div style={{ display: 'flex', alignItems: 'stretch', gap: 8, marginTop: 12 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <span
+            style={{
+              writingMode: 'vertical-rl',
+              transform: 'rotate(180deg)',
+              ...LABEL,
+              fontSize: 10,
+            }}
+          >
+            PLENITUDE ↑
+          </span>
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            {NINE_BOX_GRID.map((row, r) =>
+              row.map((cell, c) => {
+                const centro = r === cmRow && c === cmCol;
+                const n = agg.heatmap[r]![c]!;
+                return (
+                  <div
+                    key={cell.quadrante}
+                    style={{
+                      background: cell.bg,
+                      color: cell.text,
+                      borderRadius: 10,
+                      minHeight: 96,
+                      padding: 8,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 4,
+                      textAlign: 'center',
+                      outline: centro ? `2px solid ${COLORS.text.primary}` : 'none',
+                      outlineOffset: centro ? 1 : 0,
+                      opacity: centro ? 1 : 0.75,
+                    }}
+                  >
+                    <span style={{ fontSize: 22, fontWeight: 700 }}>{n}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.03em' }}>
+                      {cell.quadrante}
+                    </span>
+                  </div>
+                );
+              }),
+            )}
+          </div>
+          <div style={{ textAlign: 'center', ...LABEL, marginTop: 8, fontSize: 10 }}>
+            DESEMPENHO →
+          </div>
+        </div>
+      </div>
+      <div style={{ fontSize: 12, color: COLORS.text.secondary, marginTop: 12 }}>
+        Centro de massa: desempenho {fmt(agg.centroMassa.x, 1)} · plenitude{' '}
+        {fmt(agg.centroMassa.y, 1)}
+        {agg.centroMassa.quadrante !== null ? ` — ${agg.centroMassa.quadrante}` : ''}
+      </div>
+    </div>
+  );
+}
+
+function EixosCard(props: { readonly agg: AggregateResult }): JSX.Element {
+  const { agg } = props;
+  const faixaX = agg.centroMassa.posicaoX === null ? '—' : FAIXA_X[agg.centroMassa.posicaoX];
+  const faixaY = agg.centroMassa.posicaoY === null ? '—' : FAIXA_Y[agg.centroMassa.posicaoY];
+  const item = (titulo: string, valor: string, faixa: string): JSX.Element => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <span style={LABEL}>{titulo}</span>
+      <span style={{ fontSize: 26, fontWeight: 700, color: COLORS.text.primary }}>{valor}</span>
+      <span style={{ fontSize: 12, color: COLORS.text.secondary }}>{faixa}</span>
+    </div>
+  );
+  return (
+    <div style={CARD}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+        {item('Eixo X — Desempenho', fmt(agg.desempenhoScore, 1), faixaX)}
+        {item('Eixo Y — Plenitude', fmt(agg.eixoY, 1), faixaY)}
+        {item('Ociosidade média', pct(agg.ociosidade), `Índice ${fmt(agg.indiceDesempenho, 2)}`)}
+      </div>
+    </div>
+  );
+}
+
+function FinanceiroCard(props: { readonly agg: AggregateResult }): JSX.Element {
+  const { agg } = props;
+  const item = (titulo: string, valor: string): JSX.Element => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <span style={{ fontSize: 13, color: COLORS.text.tertiary }}>{titulo}</span>
+      <span style={{ fontSize: 20, fontWeight: 700, color: COLORS.text.primary }}>{valor}</span>
+    </div>
+  );
+  return (
+    <div style={CARD}>
+      <div style={LABEL}>Dados financeiros — razão dos brutos</div>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 12,
+          marginTop: 12,
+        }}
+      >
+        {item('ROI', agg.roi === null ? '—' : `${fmt(agg.roi, 2)}×`)}
+        {item('Retorno estimado', brl(agg.retornoTotal))}
+        {item('Custo do trimestre', brl(agg.custoTotal))}
+      </div>
+    </div>
+  );
+}
+
+function DimensoesCard(props: { readonly agg: AggregateResult }): JSX.Element {
+  return (
+    <div style={CARD}>
+      <div style={LABEL}>Plenitude por dimensão (A / C)</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+        {props.agg.dimensoes.map((d) => (
+          <div
+            key={d.label}
+            style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}
+          >
+            <span style={{ color: COLORS.text.secondary }}>{d.label}</span>
+            <span style={{ color: COLORS.text.primary }}>
+              {fmt(d.a, 1)} / {fmt(d.c, 1)}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -213,39 +282,25 @@ export function EmpresaDashboardClient(props: EmpresaDashboardClientProps): JSX.
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <TrimestreNav data={data} basePath={basePath} />
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: 12,
-        }}
-      >
-        <Indicador titulo="Colaboradores" valor={String(agg.headcount)} />
-        <Indicador titulo="Desempenho (score)" valor={fmt(agg.desempenhoScore, 1)} />
-        <Indicador titulo="Índice de desempenho" valor={fmt(agg.indiceDesempenho, 2)} />
-        <Indicador titulo="Ociosidade média" valor={pct(agg.ociosidade)} />
-        <Indicador titulo="Plenitude" valor={fmt(agg.eixoY, 1)} />
-        <Indicador
-          titulo="ROI"
-          valor={agg.roi === null ? '—' : `${fmt(agg.roi, 2)}×`}
-          sub={`Retorno ${brl(agg.retornoTotal)} · Custo ${brl(agg.custoTotal)}`}
-        />
-      </div>
-      <Heatmap agg={agg} />
-      <div style={CARD}>
-        <span style={ROTULO}>Plenitude por dimensão (A / C)</span>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
-          {agg.dimensoes.map((d) => (
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.35fr', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={CARD}>
+            <div style={LABEL}>Coletivo</div>
             <div
-              key={d.label}
-              style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}
+              style={{ fontSize: 26, fontWeight: 700, color: COLORS.text.primary, marginTop: 4 }}
             >
-              <span style={{ color: COLORS.text.secondary }}>{d.label}</span>
-              <span style={{ color: COLORS.text.primary }}>
-                {fmt(d.a, 1)} / {fmt(d.c, 1)}
-              </span>
+              {agg.headcount} colaboradores
             </div>
-          ))}
+            <div style={{ fontSize: 13, color: COLORS.text.secondary, marginTop: 4 }}>
+              Quadrante do centro de massa: {agg.centroMassa.quadrante ?? '—'}
+            </div>
+          </div>
+          <NineBoxColetivo agg={agg} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <EixosCard agg={agg} />
+          <FinanceiroCard agg={agg} />
+          <DimensoesCard agg={agg} />
         </div>
       </div>
     </div>
