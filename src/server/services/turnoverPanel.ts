@@ -29,33 +29,42 @@ import {
   computeTurnoverRate,
 } from './turnoverEngine';
 
-/** Taxa com numeros absolutos (formato DOC 03 §12.5). */
-export interface TurnoverTaxa {
-  readonly taxa: number;
+/**
+ * Total do trimestre — percentual sobre o headcount de fechamento do
+ * trimestre anterior (§12.1 / ESPEC §11.2).
+ */
+interface TurnoverTotal {
   readonly saidas: number;
-  readonly headcount: number;
+  readonly percentual: number;
+  readonly headcountBase: number;
+}
+
+/**
+ * Composicao por motivo — percentual sobre o total de desligados do
+ * trimestre (§12.4 / ESPEC §11.2).
+ */
+interface TurnoverComposicao {
+  readonly saidas: number;
+  readonly percentual: number;
 }
 
 /** Card dos paineis. `null` = nenhum trimestre fechado. */
-export interface TurnoverCardData extends TurnoverTaxa {
+export interface TurnoverCardData {
   readonly trimestre: string;
   readonly label: string;
+  readonly total: TurnoverTotal;
+  readonly voluntario: TurnoverComposicao;
+  readonly involuntario: TurnoverComposicao;
 }
 
-/** Resumo de um trimestre fechado. */
-interface TurnoverTrimestreResumo {
-  readonly trimestre: string;
-  readonly label: string;
-  readonly total: TurnoverTaxa;
-  readonly voluntario: TurnoverTaxa;
-  readonly involuntario: TurnoverTaxa;
-}
+/** Resumo de um trimestre fechado (mesma forma do card). */
+type TurnoverTrimestreResumo = TurnoverCardData;
 
-/** Dados da pagina. `trimestre` nulo = nenhum trimestre fechado. */
+/** Dados da pagina. `resumo` nulo = nenhum trimestre fechado. */
 export interface TurnoverPageData {
   readonly trimestresFechados: readonly ClosedQuarterItem[];
   readonly resumo: TurnoverTrimestreResumo | null;
-  readonly rolling12m: (TurnoverTaxa & { readonly trimestreReferencia: string }) | null;
+  readonly rolling12m: (TurnoverTotal & { readonly trimestreReferencia: string }) | null;
   readonly trimestreAnterior: string | null;
   readonly trimestreSeguinte: string | null;
 }
@@ -77,23 +86,24 @@ async function resumoDoTrimestre(
   db: RoipDatabase,
   companyId: number,
   item: ClosedQuarterItem,
-): Promise<{ resumo: TurnoverTrimestreResumo; anualizado: TurnoverTaxa }> {
+): Promise<{ resumo: TurnoverTrimestreResumo; anualizado: TurnoverTotal }> {
   const r = await computeTurnoverByCompany(db, companyId, item.trimestre);
   const head = r.totalHeadcountInicioTrimestre;
+  const total = r.totalSaidasTrimestre;
   const vol = r.aberturaPorMotivo.voluntario;
   const inv = r.aberturaPorMotivo.involuntario;
   return {
     resumo: {
       trimestre: item.trimestre,
       label: item.label,
-      total: { taxa: r.taxaTrimestral, saidas: r.totalSaidasTrimestre, headcount: head },
-      voluntario: { taxa: computeTurnoverRate(vol, head), saidas: vol, headcount: head },
-      involuntario: { taxa: computeTurnoverRate(inv, head), saidas: inv, headcount: head },
+      total: { saidas: total, percentual: r.taxaTrimestral, headcountBase: head },
+      voluntario: { saidas: vol, percentual: computeTurnoverRate(vol, total) },
+      involuntario: { saidas: inv, percentual: computeTurnoverRate(inv, total) },
     },
     anualizado: {
-      taxa: r.taxaAnualizada,
       saidas: r.totalSaidasAnualizado,
-      headcount: r.totalHeadcountInicioAnualizado,
+      percentual: r.taxaAnualizada,
+      headcountBase: r.totalHeadcountInicioAnualizado,
     },
   };
 }
@@ -109,7 +119,7 @@ export async function loadTurnoverCard(
     return null;
   }
   const { resumo } = await resumoDoTrimestre(db, companyId, ultimo);
-  return { trimestre: ultimo.trimestre, label: ultimo.label, ...resumo.total };
+  return resumo;
 }
 
 /**

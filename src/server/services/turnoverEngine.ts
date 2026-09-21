@@ -283,6 +283,27 @@ function addMs(d: Date, delta: number): Date {
   return new Date(d.getTime() + delta);
 }
 
+/**
+ * Referencia do denominador trimestral (§12.1 / ESPEC §11.2): o fechamento
+ * do trimestre anterior, representado pelo primeiro instante do trimestre
+ * (`trimestreInicio`). Excecao do primeiro trimestre na plataforma: quando
+ * nao ha quadro no inicio do trimestre (headcount zero nesse instante), usa
+ * o fechamento do proprio trimestre (`trimestreFim`). Decisao company-wide:
+ * a excecao vale para todos os recortes trimestrais (total, nivel,
+ * departamento) do mesmo calculo.
+ */
+async function resolveDenominadorTrimestral(
+  db: RoipDatabase,
+  companyId: number,
+  b: TurnoverBoundaries,
+): Promise<Date> {
+  const inicio = await headcountByFilter(db, companyId, b.trimestreInicio);
+  if (inicio > 0) {
+    return b.trimestreInicio;
+  }
+  return b.trimestreFim;
+}
+
 // ============================================================
 // Motor publico — visao empresa
 // ============================================================
@@ -313,7 +334,8 @@ export async function computeTurnoverByCompany(
     b.anualizadoFim,
   );
 
-  const totalHeadTrim = await headcountByFilter(db, companyId, b.trimestreInicio);
+  const refTrim = await resolveDenominadorTrimestral(db, companyId, b);
+  const totalHeadTrim = await headcountByFilter(db, companyId, refTrim);
   const totalHeadAnual = await headcountByFilter(db, companyId, b.anualizadoInicio);
 
   const aberturaPorNivel: TurnoverByNivelLine[] = [];
@@ -322,7 +344,7 @@ export async function computeTurnoverByCompany(
       key: 'nivel',
       value: nivel,
     });
-    const head = await headcountByFilter(db, companyId, b.trimestreInicio, {
+    const head = await headcountByFilter(db, companyId, refTrim, {
       key: 'nivel',
       value: nivel,
     });
@@ -381,7 +403,8 @@ export async function computeTurnoverByDepartamento(
     value: departamento,
   });
 
-  const headTrim = await headcountByFilter(db, companyId, b.trimestreInicio, {
+  const refTrim = await resolveDenominadorTrimestral(db, companyId, b);
+  const headTrim = await headcountByFilter(db, companyId, refTrim, {
     key: 'departamento',
     value: departamento,
   });

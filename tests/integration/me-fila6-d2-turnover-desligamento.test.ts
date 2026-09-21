@@ -52,7 +52,7 @@ import {
   NOTAS_VOLUNTARIO,
   ORIENTACAO_JUSTIFICATIVA_INVOLUNTARIO,
 } from '../../src/lib/shared/terminationForms';
-import { formatTaxaTurnover } from '../../src/lib/shared/turnoverFormat';
+import { formatTurnoverAbsPct } from '../../src/lib/shared/turnoverFormat';
 import { resolveTurnoverAccess } from '../../src/app/turnover/internals';
 import {
   FORMULARIO_INVOLUNTARIO_TESTE,
@@ -300,10 +300,13 @@ describe('ME-fila6 D2 — turnover e desligamento (MySQL real)', () => {
 
     it('card mostra a taxa total do ultimo trimestre fechado', async () => {
       const card = await loadTurnoverCard(client.db, companyA);
-      expect(card).toMatchObject({ trimestre: '2025-Q4', taxa: 20, saidas: 2, headcount: 10 });
-      expect(formatTaxaTurnover(card!.taxa, card!.saidas, card!.headcount)).toBe(
-        '20,0% (2 saídas de 10 colaboradores)',
-      );
+      expect(card).toMatchObject({
+        trimestre: '2025-Q4',
+        total: { saidas: 2, percentual: 20, headcountBase: 10 },
+        voluntario: { saidas: 1, percentual: 50 },
+        involuntario: { saidas: 1, percentual: 50 },
+      });
+      expect(formatTurnoverAbsPct(card!.total.saidas, card!.total.percentual)).toBe('2 (20,0%)');
     });
 
     it('card retorna null sem trimestre fechado', async () => {
@@ -313,12 +316,12 @@ describe('ME-fila6 D2 — turnover e desligamento (MySQL real)', () => {
     it('pagina divide total, voluntario e involuntario e navega entre fechados', async () => {
       const page = await loadTurnoverPage(client.db, companyA, null);
       expect(page.resumo?.trimestre).toBe('2025-Q4');
-      expect(page.resumo?.total).toEqual({ taxa: 20, saidas: 2, headcount: 10 });
-      expect(page.resumo?.voluntario).toEqual({ taxa: 10, saidas: 1, headcount: 10 });
-      expect(page.resumo?.involuntario).toEqual({ taxa: 10, saidas: 1, headcount: 10 });
+      expect(page.resumo?.total).toEqual({ saidas: 2, percentual: 20, headcountBase: 10 });
+      expect(page.resumo?.voluntario).toEqual({ saidas: 1, percentual: 50 });
+      expect(page.resumo?.involuntario).toEqual({ saidas: 1, percentual: 50 });
       expect(page.rolling12m).toMatchObject({
-        taxa: 20,
         saidas: 2,
+        percentual: 20,
         trimestreReferencia: '2025-Q4',
       });
       expect(page.trimestreAnterior).toBe('2025-Q3');

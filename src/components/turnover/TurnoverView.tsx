@@ -23,14 +23,10 @@ import type { MotivoTermination } from '../../db/schema/enums';
 import { COLORS } from '../../lib/design-tokens/colors';
 import {
   TURNOVER_SEM_TRIMESTRE_FECHADO,
-  formatAbsolutosTurnover,
-  formatPercentualTurnover,
+  formatBaseFechamento,
+  formatTurnoverAbsPct,
 } from '../../lib/shared/turnoverFormat';
-import type {
-  TurnoverDrilldownRow,
-  TurnoverPageData,
-  TurnoverTaxa,
-} from '../../server/services/turnoverPanel';
+import type { TurnoverDrilldownRow, TurnoverPageData } from '../../server/services/turnoverPanel';
 import { FormularioDesligamentoLeitura } from '../desligamento/FormularioDesligamentoLeitura';
 
 import { DocumentosPadraoClient, type DocumentoPadraoView } from './DocumentosPadraoClient';
@@ -63,7 +59,9 @@ const GRUPO_TITULO: Record<MotivoTermination, string> = {
 
 function Indicador(props: {
   readonly titulo: string;
-  readonly taxa: TurnoverTaxa;
+  readonly saidas: number;
+  readonly percentual: number;
+  readonly baseInfo?: string;
   readonly sub?: string;
   readonly href?: string;
   readonly ativo?: boolean;
@@ -82,11 +80,11 @@ function Indicador(props: {
         {props.titulo}
       </span>
       <span style={{ fontSize: 22, fontWeight: 700, color: COLORS.text.primary }}>
-        {formatPercentualTurnover(props.taxa.taxa)}
+        {formatTurnoverAbsPct(props.saidas, props.percentual)}
       </span>
-      <span style={{ fontSize: 12, color: COLORS.text.secondary }}>
-        {formatAbsolutosTurnover(props.taxa.saidas, props.taxa.headcount)}
-      </span>
+      {props.baseInfo !== undefined ? (
+        <span style={{ fontSize: 12, color: COLORS.text.secondary }}>{props.baseInfo}</span>
+      ) : null}
       {props.sub !== undefined ? (
         <span style={{ fontSize: 12, color: COLORS.accent.teal }}>{props.sub}</span>
       ) : null}
@@ -139,7 +137,8 @@ export function TurnoverView(props: TurnoverViewProps): JSX.Element {
           <section aria-label="Últimos 4 trimestres fechados">
             <Indicador
               titulo="Últimos 4 trimestres fechados (rolling 12 meses)"
-              taxa={data.rolling12m}
+              saidas={data.rolling12m.saidas}
+              percentual={data.rolling12m.percentual}
             />
           </section>
 
@@ -172,12 +171,18 @@ export function TurnoverView(props: TurnoverViewProps): JSX.Element {
               gap: 12,
             }}
           >
-            <Indicador titulo="Total" taxa={resumo.total} />
+            <Indicador
+              titulo="Total"
+              saidas={resumo.total.saidas}
+              percentual={resumo.total.percentual}
+              baseInfo={formatBaseFechamento(resumo.total.headcountBase)}
+            />
             {(['voluntario', 'involuntario'] as const).map((m) => (
               <Indicador
                 key={m}
                 titulo={m === 'voluntario' ? 'Voluntário' : 'Involuntário'}
-                taxa={resumo[m]}
+                saidas={resumo[m].saidas}
+                percentual={resumo[m].percentual}
                 ativo={grupo === m}
                 href={
                   podeDrilldown
