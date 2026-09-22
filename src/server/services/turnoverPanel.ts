@@ -18,7 +18,7 @@ import { and, asc, eq, gte, lt } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../db/client';
 import { employeeTerminationEvents, employees } from '../../db/schema';
-import type { MotivoTermination, NivelHierarquico } from '../../db/schema';
+import type { Departamento, MotivoTermination, NivelHierarquico } from '../../db/schema';
 import type { FormularioDesligamento } from '../../lib/shared/terminationForms';
 
 import { listClosedQuarters } from './closedQuarters';
@@ -26,6 +26,7 @@ import { loadTerminationFormsByEventIds } from './terminationForms';
 import {
   computeTurnoverBoundaries,
   computeTurnoverByCompany,
+  computeTurnoverByDepartamento,
   computeTurnoverRate,
 } from './turnoverEngine';
 
@@ -86,8 +87,12 @@ async function resumoDoTrimestre(
   db: RoipDatabase,
   companyId: number,
   item: ClosedQuarterItem,
+  departamento?: Departamento,
 ): Promise<{ resumo: TurnoverTrimestreResumo; anualizado: TurnoverTotal }> {
-  const r = await computeTurnoverByCompany(db, companyId, item.trimestre);
+  const r =
+    departamento === undefined
+      ? await computeTurnoverByCompany(db, companyId, item.trimestre)
+      : await computeTurnoverByDepartamento(db, companyId, departamento, item.trimestre);
   const head = r.totalHeadcountInicioTrimestre;
   const total = r.totalSaidasTrimestre;
   const vol = r.aberturaPorMotivo.voluntario;
@@ -130,6 +135,7 @@ export async function loadTurnoverPage(
   db: RoipDatabase,
   companyId: number,
   trimestrePedido: string | null,
+  departamento?: Departamento,
 ): Promise<TurnoverPageData> {
   const fechados = await listClosedQuarters(db, companyId);
   const maisRecente = fechados[0];
@@ -145,8 +151,8 @@ export async function loadTurnoverPage(
   const idxPedido = fechados.findIndex((q) => q.trimestre === trimestrePedido);
   const idx = idxPedido >= 0 ? idxPedido : 0;
   const selecionado = fechados[idx] ?? maisRecente;
-  const { resumo } = await resumoDoTrimestre(db, companyId, selecionado);
-  const referencia = await resumoDoTrimestre(db, companyId, maisRecente);
+  const { resumo } = await resumoDoTrimestre(db, companyId, selecionado, departamento);
+  const referencia = await resumoDoTrimestre(db, companyId, maisRecente, departamento);
   return {
     trimestresFechados: fechados,
     resumo,

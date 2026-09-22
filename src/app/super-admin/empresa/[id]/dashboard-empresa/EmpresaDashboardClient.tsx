@@ -21,6 +21,7 @@ import {
   MostradoresCard,
   NineBoxColetivo,
   TrimestreNav,
+  TurnoverCard,
   fmt,
 } from '../_agregado/shared';
 
@@ -62,36 +63,6 @@ function FinanceiroCard(props: { readonly data: CompanyAggregatePage }): JSX.Ele
   );
 }
 
-function TurnoverCard(props: { readonly data: CompanyAggregatePage }): JSX.Element {
-  const t = props.data.turnover;
-  const resumo = t?.resumo ?? null;
-  const rolling = t?.rolling12m ?? null;
-  const abs = (saidas: number, percentual: number): string => `${saidas} (${fmt(percentual, 1)}%)`;
-  const item = (valor: string, rotulo: string): JSX.Element => (
-    <div>
-      <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.text.primary }}>{valor}</div>
-      <div style={{ ...LABEL, fontSize: 11 }}>{rotulo}</div>
-    </div>
-  );
-  return (
-    <div style={CARD}>
-      <div style={{ ...LABEL, marginBottom: 10 }}>Turnover</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-        {item(resumo === null ? '—' : abs(resumo.total.saidas, resumo.total.percentual), 'Total')}
-        {item(
-          resumo === null ? '—' : abs(resumo.voluntario.saidas, resumo.voluntario.percentual),
-          'Voluntário',
-        )}
-        {item(
-          resumo === null ? '—' : abs(resumo.involuntario.saidas, resumo.involuntario.percentual),
-          'Involuntário',
-        )}
-        {item(rolling === null ? '—' : `${fmt(rolling.percentual, 1)}%`, '12 meses')}
-      </div>
-    </div>
-  );
-}
-
 export function EmpresaDashboardClient(props: EmpresaDashboardClientProps): JSX.Element {
   const { data, basePath } = props;
   if (data.trimestre === null || data.aggregate === null) {
@@ -126,7 +97,7 @@ export function EmpresaDashboardClient(props: EmpresaDashboardClientProps): JSX.
           <FinanceiroCard data={data} />
           <MostradoresCard agg={agg} assiduidade={data.assiduidade} />
           <DimensoesCard agg={agg} />
-          <TurnoverCard data={data} />
+          <TurnoverCard turnover={data.turnover} />
         </div>
       </div>
     </div>

@@ -288,6 +288,7 @@ export interface RecorteAggregatePage {
   readonly aggregate: AggregateResult | null;
   readonly thresholds: AggregationThresholds | null;
   readonly assiduidade: number | null;
+  readonly turnover: TurnoverPageData | null;
 }
 
 async function resolveRecorteIds(
@@ -327,6 +328,7 @@ export async function loadRecorteAggregatePage(
       aggregate: null,
       thresholds: null,
       assiduidade: null,
+      turnover: null,
     };
   }
   const tri = nav.selecionado.trimestre;
@@ -334,6 +336,10 @@ export async function loadRecorteAggregatePage(
   const escopo = await resolveEscopo(db, companyId, tri, ids);
   const aggregate = computeAggregate(escopo.pessoas, escopo.thresholds);
   const assiduidade = await loadAssiduidade(db, companyId, tri, escopo.ids);
+  const turnover =
+    alvo.tipo === 'departamento'
+      ? await loadTurnoverPage(db, companyId, trimestrePedido, alvo.departamento)
+      : null;
 
   return {
     trimestresFechados: fechados,
@@ -344,5 +350,6 @@ export async function loadRecorteAggregatePage(
     aggregate,
     thresholds: escopo.thresholds,
     assiduidade,
+    turnover,
   };
 }

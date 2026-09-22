@@ -13,6 +13,7 @@ import type { CSSProperties, JSX } from 'react';
 
 import { COLORS } from '../../../../../lib/design-tokens/colors';
 import type { AggregateResult } from '../../../../../server/services/aggregationEngine';
+import type { TurnoverPageData } from '../../../../../server/services/turnoverPanel';
 import {
   NINE_BOX_GRID,
   colIndexFor,
@@ -304,6 +305,36 @@ export function DimensoesCard(props: { readonly agg: AggregateResult }): JSX.Ele
             cor={corPlenitude(d.posicao)}
           />
         ))}
+      </div>
+    </div>
+  );
+}
+
+export function TurnoverCard(props: { readonly turnover: TurnoverPageData | null }): JSX.Element {
+  const t = props.turnover;
+  const resumo = t?.resumo ?? null;
+  const rolling = t?.rolling12m ?? null;
+  const abs = (saidas: number, percentual: number): string => `${saidas} (${fmt(percentual, 1)}%)`;
+  const item = (valor: string, rotulo: string): JSX.Element => (
+    <div>
+      <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.text.primary }}>{valor}</div>
+      <div style={{ ...LABEL, fontSize: 11 }}>{rotulo}</div>
+    </div>
+  );
+  return (
+    <div style={CARD}>
+      <div style={{ ...LABEL, marginBottom: 10 }}>Turnover</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+        {item(resumo === null ? '—' : abs(resumo.total.saidas, resumo.total.percentual), 'Total')}
+        {item(
+          resumo === null ? '—' : abs(resumo.voluntario.saidas, resumo.voluntario.percentual),
+          'Voluntário',
+        )}
+        {item(
+          resumo === null ? '—' : abs(resumo.involuntario.saidas, resumo.involuntario.percentual),
+          'Involuntário',
+        )}
+        {item(rolling === null ? '—' : `${fmt(rolling.percentual, 1)}%`, '12 meses')}
       </div>
     </div>
   );

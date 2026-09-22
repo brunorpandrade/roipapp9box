@@ -17,6 +17,7 @@ import {
   MostradoresCard,
   NineBoxColetivo,
   TrimestreNav,
+  TurnoverCard,
 } from '../../../_agregado/shared';
 
 export interface RecorteDashboardClientProps {
@@ -57,6 +58,7 @@ export function RecorteDashboardClient(props: RecorteDashboardClientProps): JSX.
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <MostradoresCard agg={agg} assiduidade={data.assiduidade} />
           <DimensoesCard agg={agg} />
+          {data.turnover !== null ? <TurnoverCard turnover={data.turnover} /> : null}
         </div>
       </div>
     </div>
