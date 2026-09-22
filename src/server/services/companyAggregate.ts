@@ -26,7 +26,13 @@ import {
   listDirectReportEmployeeIds,
   type RecorteLeader,
 } from './recorteScope';
+import { getIqlDataByClevelQuarter, getIqlDataByLiderQuarter } from './iqlData';
 import { loadTurnoverPage, type TurnoverPageData } from './turnoverPanel';
+import {
+  computeDirecaoMovimento,
+  type NineBoxDirecaoMovimento,
+  type NineBoxQuadrante,
+} from './nineBoxCalculationEngine';
 import {
   computeAggregate,
   type AggregateResult,
@@ -276,8 +282,50 @@ export type RecorteAlvo =
   | { readonly tipo: 'cadeia'; readonly leader: RecorteLeader };
 
 /**
+ * Piso de anonimizacao do IQL (§8.8): abaixo de 3 respondentes o IQL do
+ * lider nao e exibido. Mesmo limiar de `composeEquipeIqlBlock`
+ * (dashboardEquipeContext).
+ */
+const IQL_PISO_RESPONDENTES = 3;
+
+/**
+ * IQL do lider-dono de um recorte de equipe/cadeia (§8.8; geral + 4
+ * dimensoes). Preenchido so quando o lider tem IQL no trimestre com ao
+ * menos `IQL_PISO_RESPONDENTES` respondentes. `null` nos demais casos
+ * (departamento/empresa sem lider unico; sem dado; abaixo do piso).
+ * §8.06.6a.
+ */
+export interface IqlLiderBloco {
+  readonly iql: number | null;
+  readonly direcionamentoClareza: number | null;
+  readonly desenvolvimentoApoio: number | null;
+  readonly relacionamentoConfianca: number | null;
+  readonly gestaoResultados: number | null;
+  readonly countRespondentes: number;
+}
+
+/**
+ * Movimento do coletivo no 9-Box entre o trimestre selecionado e o
+ * imediatamente anterior fechado, sobre o MESMO conjunto de pessoas do
+ * recorte (composicao atual). A direcao usa a regua §7.5
+ * (`computeDirecaoMovimento`) aplicada ao centro de massa — mesma
+ * semantica do movimento individual. §8.06.6a.
+ */
+export interface Movimento9Box {
+  readonly direcao: NineBoxDirecaoMovimento;
+  readonly quadranteAtual: NineBoxQuadrante | null;
+  readonly quadranteAnterior: NineBoxQuadrante | null;
+  readonly deltaX: number | null;
+  readonly deltaY: number | null;
+  readonly trimestreAnterior: string | null;
+}
+
+/**
  * Dados da pagina de um recorte. Mesma tela da empresa MENOS folha e
- * turnover (§11, exclusivos da empresa; §8.06.5 Opcao A).
+ * turnover (§11, exclusivos da empresa; §8.06.5 Opcao A). Equipe direta
+ * e cadeia total ganham, na coluna direita, o IQL do lider-dono e o
+ * movimento no 9-Box (§8.06.6a); departamento/empresa nao (sem lider
+ * unico).
  */
 export interface RecorteAggregatePage {
   readonly trimestresFechados: readonly ClosedQuarterItem[];
@@ -289,6 +337,8 @@ export interface RecorteAggregatePage {
   readonly thresholds: AggregationThresholds | null;
   readonly assiduidade: number | null;
   readonly turnover: TurnoverPageData | null;
+  readonly iqlLider: IqlLiderBloco | null;
+  readonly movimento9box: Movimento9Box | null;
 }
 
 async function resolveRecorteIds(
@@ -303,6 +353,86 @@ async function resolveRecorteIds(
     return new Set(await listDirectReportEmployeeIds(db, companyId, alvo.leader));
   }
   return new Set(await listChainEmployeeIds(db, companyId, alvo.leader));
+}
+
+/**
+ * IQL do lider-dono de um recorte de equipe/cadeia no trimestre. Le a
+ * linha de `iqlData` pelo tipo do lider (employee -> por liderId;
+ * C-level -> por clevelId) e aplica o piso de anonimizacao §8.8.
+ * Retorna `null` sem dado ou abaixo do piso. §8.06.6a.
+ */
+async function loadIqlLiderRecorte(
+  db: RoipDatabase,
+  companyId: number,
+  trimestre: string,
+  leader: RecorteLeader,
+): Promise<IqlLiderBloco | null> {
+  const row =
+    leader.tipo === 'clevel'
+      ? await getIqlDataByClevelQuarter(db, companyId, leader.id, trimestre)
+      : await getIqlDataByLiderQuarter(db, companyId, leader.id, trimestre);
+  if (row === undefined) {
+    return null;
+  }
+  const countRespondentes = row.countRespondentes ?? 0;
+  if (countRespondentes < IQL_PISO_RESPONDENTES) {
+    return null;
+  }
+  return {
+    iql: parseDec(row.iql),
+    direcionamentoClareza: parseDec(row.scoreDirecionamentoClareza),
+    desenvolvimentoApoio: parseDec(row.scoreDesenvolvimentoApoio),
+    relacionamentoConfianca: parseDec(row.scoreRelacionamentoConfianca),
+    gestaoResultados: parseDec(row.scoreGestaoResultados),
+    countRespondentes,
+  };
+}
+
+/**
+ * Monta o movimento no 9-Box do coletivo comparando o centro de massa
+ * do trimestre selecionado (`atual`) com o do trimestre anterior
+ * (`anterior`), pela regua §7.5 (`computeDirecaoMovimento`). Sem base
+ * de comparacao (sem trimestre anterior, ou centro de massa ausente em
+ * qualquer dos dois — recorte abaixo do piso), a direcao e
+ * `'primeira_vez'` e os deltas ficam nulos. Puro (RV-13: consumido por
+ * `loadRecorteAggregatePage` + teste unit). §8.06.6a.
+ */
+export function buildMovimento9box(
+  atual: AggregateResult,
+  anterior: AggregateResult | null,
+  trimestreAnterior: string | null,
+): Movimento9Box | null {
+  const cmA = atual.centroMassa;
+  if (cmA.quadrante === null || cmA.posicaoY === null) {
+    return null;
+  }
+  const semBase = {
+    direcao: 'primeira_vez' as NineBoxDirecaoMovimento,
+    quadranteAtual: cmA.quadrante,
+    quadranteAnterior: null,
+    deltaX: null,
+    deltaY: null,
+    trimestreAnterior: null,
+  };
+  if (anterior === null || trimestreAnterior === null) {
+    return semBase;
+  }
+  const cmP = anterior.centroMassa;
+  if (cmP.quadrante === null || cmP.posicaoY === null) {
+    return semBase;
+  }
+  const direcao = computeDirecaoMovimento(cmA.quadrante, cmA.posicaoY, {
+    quadrante: cmP.quadrante,
+    posicaoY: cmP.posicaoY,
+  });
+  return {
+    direcao,
+    quadranteAtual: cmA.quadrante,
+    quadranteAnterior: cmP.quadrante,
+    deltaX: cmA.x !== null && cmP.x !== null ? round2(cmA.x - cmP.x) : null,
+    deltaY: cmA.y !== null && cmP.y !== null ? round2(cmA.y - cmP.y) : null,
+    trimestreAnterior,
+  };
 }
 
 /**
@@ -329,6 +459,8 @@ export async function loadRecorteAggregatePage(
       thresholds: null,
       assiduidade: null,
       turnover: null,
+      iqlLider: null,
+      movimento9box: null,
     };
   }
   const tri = nav.selecionado.trimestre;
@@ -341,6 +473,20 @@ export async function loadRecorteAggregatePage(
       ? await loadTurnoverPage(db, companyId, trimestrePedido, alvo.departamento)
       : null;
 
+  // §8.06.6a — IQL do lider-dono e movimento no 9-Box so em equipe
+  // direta e cadeia total (departamento/empresa nao tem lider unico).
+  let iqlLider: IqlLiderBloco | null = null;
+  let movimento9box: Movimento9Box | null = null;
+  if (alvo.tipo === 'equipe' || alvo.tipo === 'cadeia') {
+    iqlLider = await loadIqlLiderRecorte(db, companyId, tri, alvo.leader);
+    let aggAnterior: AggregateResult | null = null;
+    if (nav.anterior !== null) {
+      const escopoAnt = await resolveEscopo(db, companyId, nav.anterior, ids);
+      aggAnterior = computeAggregate(escopoAnt.pessoas, escopoAnt.thresholds);
+    }
+    movimento9box = buildMovimento9box(aggregate, aggAnterior, nav.anterior);
+  }
+
   return {
     trimestresFechados: fechados,
     trimestre: tri,
@@ -351,5 +497,7 @@ export async function loadRecorteAggregatePage(
     thresholds: escopo.thresholds,
     assiduidade,
     turnover,
+    iqlLider,
+    movimento9box,
   };
 }

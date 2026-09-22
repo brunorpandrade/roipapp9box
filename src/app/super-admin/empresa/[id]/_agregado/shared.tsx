@@ -13,6 +13,10 @@ import type { CSSProperties, JSX } from 'react';
 
 import { COLORS } from '../../../../../lib/design-tokens/colors';
 import type { AggregateResult } from '../../../../../server/services/aggregationEngine';
+import type { IqlLiderBloco, Movimento9Box } from '../../../../../server/services/companyAggregate';
+import type {
+  NineBoxDirecaoMovimento, // rótulos do card de movimento (§8.06.6a)
+} from '../../../../../server/services/nineBoxCalculationEngine';
 import type { TurnoverPageData } from '../../../../../server/services/turnoverPanel';
 import {
   NINE_BOX_GRID,
@@ -335,6 +339,107 @@ export function TurnoverCard(props: { readonly turnover: TurnoverPageData | null
           'Involuntário',
         )}
         {item(rolling === null ? '—' : `${fmt(rolling.percentual, 1)}%`, '12 meses')}
+      </div>
+    </div>
+  );
+}
+
+export function IqlLiderCard(props: { readonly iqlLider: IqlLiderBloco }): JSX.Element {
+  const q = props.iqlLider;
+  const dims = [
+    { label: 'Direcionamento e clareza', v: q.direcionamentoClareza },
+    { label: 'Desenvolvimento e apoio', v: q.desenvolvimentoApoio },
+    { label: 'Relacionamento e confiança', v: q.relacionamentoConfianca },
+    { label: 'Gestão de resultados', v: q.gestaoResultados },
+  ];
+  return (
+    <div style={CARD}>
+      <div style={{ ...LABEL, marginBottom: 8 }}>IQL do líder</div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <span style={{ fontSize: 26, fontWeight: 700, color: COLORS.text.primary }}>
+          {fmt(q.iql, 1)}
+        </span>
+        <span style={{ fontSize: 12, color: COLORS.text.tertiary }}>
+          geral · {q.countRespondentes} respondentes
+        </span>
+      </div>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 8,
+          marginTop: 12,
+        }}
+      >
+        {dims.map((d) => (
+          <Gauge
+            key={d.label}
+            titulo={d.label}
+            arcValue={d.v}
+            texto={fmt(d.v, 1)}
+            cor={COLORS.text.primary}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const MOV_LABEL: Readonly<
+  Record<
+    NineBoxDirecaoMovimento,
+    { readonly txt: string; readonly seta: string; readonly cor: string }
+  >
+> = {
+  subiu: { txt: 'Subiu', seta: '↑', cor: SU },
+  desceu: { txt: 'Caiu', seta: '↓', cor: DA },
+  lateral: { txt: 'Movimento lateral', seta: '→', cor: WA },
+  estavel: { txt: 'Manteve', seta: '=', cor: NEUTRO },
+  primeira_vez: { txt: 'Sem base anterior', seta: '•', cor: COLORS.text.tertiary },
+};
+
+function sinal(v: number | null): string {
+  if (v === null) {
+    return '—';
+  }
+  const s = v > 0 ? '+' : '';
+  return `${s}${fmt(v, 1)}`;
+}
+
+export function Movimento9BoxCard(props: { readonly movimento: Movimento9Box }): JSX.Element {
+  const m = props.movimento;
+  const mov = MOV_LABEL[m.direcao];
+  return (
+    <div style={CARD}>
+      <div style={{ ...LABEL, marginBottom: 8 }}>Movimento no 9-Box</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 24, fontWeight: 700, color: mov.cor }}>{mov.seta}</span>
+        <span style={{ fontSize: 18, fontWeight: 700, color: mov.cor }}>{mov.txt}</span>
+      </div>
+      <div style={{ fontSize: 13, color: COLORS.text.secondary, marginTop: 8 }}>
+        Quadrante: {m.quadranteAtual ?? '—'}
+        {m.quadranteAnterior !== null ? ` (antes: ${m.quadranteAnterior})` : ''}
+      </div>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 8,
+          marginTop: 8,
+        }}
+      >
+        <div>
+          <div style={{ ...LABEL, fontSize: 11 }}>Δ Desempenho</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: COLORS.text.primary }}>
+            {sinal(m.deltaX)}
+          </div>
+        </div>
+        <div>
+          <div style={{ ...LABEL, fontSize: 11 }}>Δ Plenitude</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: COLORS.text.primary }}>
+            {sinal(m.deltaY)}
+          </div>
+        </div>
       </div>
     </div>
   );

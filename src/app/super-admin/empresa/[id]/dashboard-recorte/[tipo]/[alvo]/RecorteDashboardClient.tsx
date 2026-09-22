@@ -12,9 +12,11 @@ import type { RecorteAggregatePage } from '../../../../../../../server/services/
 import {
   ColetivoCard,
   DimensoesCard,
+  IqlLiderCard,
   MensagemPiso,
   MensagemVazio,
   MostradoresCard,
+  Movimento9BoxCard,
   NineBoxColetivo,
   TrimestreNav,
   TurnoverCard,
@@ -59,6 +61,10 @@ export function RecorteDashboardClient(props: RecorteDashboardClientProps): JSX.
           <MostradoresCard agg={agg} assiduidade={data.assiduidade} />
           <DimensoesCard agg={agg} />
           {data.turnover !== null ? <TurnoverCard turnover={data.turnover} /> : null}
+          {data.iqlLider !== null ? <IqlLiderCard iqlLider={data.iqlLider} /> : null}
+          {data.movimento9box !== null ? (
+            <Movimento9BoxCard movimento={data.movimento9box} />
+          ) : null}
         </div>
       </div>
     </div>
