@@ -43,6 +43,7 @@ import {
   type EscopoPayload,
   type HistoricalCycleRow,
 } from './internals';
+import { COLORS } from '../../../../../lib/design-tokens/colors';
 
 // -----------------------------------------------------------------------
 // Styles inline (padrão B8 — Tailwind via classes canônicas)
@@ -1534,13 +1535,14 @@ export function Nr1Client({
               const fator = FATORES_NR1.find((f) => f.id === a.fatorId);
               const scoreNum = a.scoreValor ? Number(a.scoreValor) : 0;
               const isCritical = scoreNum < 40;
+              const corAlerta = isCritical ? COLORS.semantic.danger : COLORS.semantic.warning;
               return (
                 <div
                   key={a.id}
                   style={{
                     background: '#fff',
                     border: '1px solid #E5E7EB',
-                    borderLeft: `4px solid ${isCritical ? '#DC2626' : '#D97706'}`,
+                    borderLeft: `4px solid ${corAlerta}`,
                     borderRadius: 8,
                     padding: '12px 14px',
                     display: 'flex',
@@ -1595,7 +1597,7 @@ export function Nr1Client({
                     style={{
                       fontSize: 14,
                       fontWeight: 700,
-                      color: isCritical ? '#DC2626' : '#D97706',
+                      color: corAlerta,
                       minWidth: 50,
                       textAlign: 'right',
                     }}

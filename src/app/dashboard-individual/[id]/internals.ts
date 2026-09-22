@@ -12,6 +12,7 @@
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
 import type { FichaCadastralActionResult } from '../../_shared/fichaCadastral/actions';
+import { COLORS } from '../../../lib/design-tokens/colors';
 
 export type FichaLoadAction = (
   companyId: number,
@@ -209,7 +210,7 @@ export function rowIndexFor(posicaoY: PosicaoY): number {
  *
  * Cor: VERDE (#16A34A) avanco limpo (nenhum eixo retrocede e ao menos um
  * avanca — direita e/ou cima); VERMELHO (#DC2626) retrocesso limpo;
- * AMARELO (#D97706) movimento misto (um eixo avanca e o outro retrocede).
+ * AMARELO (#F2A900) movimento misto (um eixo avanca e o outro retrocede).
  */
 export function derivarSeta(
   posX: PosicaoX,
@@ -227,7 +228,7 @@ export function derivarSeta(
   }
   const VERDE = '#16A34A';
   const VERMELHO = '#DC2626';
-  const AMARELO = '#D97706';
+  const AMARELO = COLORS.semantic.warning;
   let color: string;
   const avancou = dxDir > 0 || dySem > 0;
   const retrocedeu = dxDir < 0 || dySem < 0;

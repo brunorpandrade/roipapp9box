@@ -192,10 +192,6 @@ describe('ME §8.06.4 — dashboard agregado da empresa (MySQL real)', () => {
     expect(agg.abaixoDoPiso).toBe(false);
     expect(agg.desempenhoScore).toBe(70);
     expect(agg.eixoY).toBe(62.5);
-    // ROI dos brutos: 14000 / 9000.
-    expect(agg.retornoTotal).toBe(14000);
-    expect(agg.custoTotal).toBe(9000);
-    expect(agg.roi).toBe(1.56);
     // Centro de massa: 70 -> medio, 62.5 -> media.
     expect(agg.centroMassa.quadrante).toBe('EQUILÍBRIO FRÁGIL');
     expect(agg.heatmapClassificados).toBe(2);

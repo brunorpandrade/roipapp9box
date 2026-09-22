@@ -468,7 +468,7 @@ export function RelatoriosClient(props: Props): JSX.Element {
           style={{
             padding: '12px 16px',
             background: '#FEF3C7',
-            borderLeft: '3px solid #D97706',
+            borderLeft: `3px solid ${COLORS.semantic.warning}`,
             borderRadius: 8,
             fontSize: 12,
             color: '#92400E',

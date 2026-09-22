@@ -5,7 +5,7 @@
 // - DOC 05 §14.23 (Rota `/pendencias-portal`) — 6 filtros + 11 colunas
 //   + 3 cards resumo + textos canonicos literais de modais e toasts.
 // - DOC 05 §5.8 (Card resumo Pendencias no portal) — cores canonicas
-//   `#16A34A` (0 pendencias) vs `#D97706` (1+ pendencias).
+//   `#16A34A` (0 pendencias) vs `#F2A900` (1+ pendencias).
 // - DOC 05 linha 555 (Nota canonica de coexistencia): cooldown 72h do
 //   card resumo (canonizado tambem em §14.23 modal individual).
 // - `portalReminderLog.instrumentType` enum (DOC 01 §M004 / tables.ts
@@ -35,6 +35,7 @@
 //     `pendenciasEngine.ts`, actions, cliente e testes.
 
 import type { PortalInstrumentType } from '../../db/schema/enums';
+import { COLORS } from '../../lib/design-tokens/colors';
 
 // -----------------------------------------------------------------------
 // Tipos canonicos
@@ -112,7 +113,7 @@ export const CARD_COLOR_PENDENCIAS: Readonly<{
   readonly positive: string;
 }> = Object.freeze({
   zero: '#16A34A',
-  positive: '#D97706',
+  positive: COLORS.semantic.warning,
 });
 
 /**
@@ -126,7 +127,7 @@ export const DIAS_ATRASO_COLOR: Readonly<{
   readonly neutral: string;
 }> = Object.freeze({
   danger: '#DC2626',
-  warn: '#D97706',
+  warn: COLORS.semantic.warning,
   neutral: '#6B7280',
 });
 

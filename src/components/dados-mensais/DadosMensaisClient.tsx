@@ -671,7 +671,7 @@ export function DadosMensaisClient(props: DadosMensaisClientProps): JSX.Element 
           style={{
             padding: '12px 16px',
             background: '#FEF3C7',
-            borderLeft: '3px solid #D97706',
+            borderLeft: `3px solid ${COLORS.semantic.warning}`,
             borderRadius: 8,
             fontSize: 12,
             color: '#92400E',
@@ -689,7 +689,7 @@ export function DadosMensaisClient(props: DadosMensaisClientProps): JSX.Element 
           style={{
             padding: '12px 16px',
             background: '#FEF3C7',
-            borderLeft: '3px solid #D97706',
+            borderLeft: `3px solid ${COLORS.semantic.warning}`,
             borderRadius: 8,
             fontSize: 12,
             color: '#92400E',
@@ -1091,7 +1091,7 @@ export function DadosMensaisClient(props: DadosMensaisClientProps): JSX.Element 
                         width: 8,
                         height: 8,
                         borderRadius: '50%',
-                        background: '#D97706',
+                        background: COLORS.semantic.warning,
                         display: 'inline-block',
                       }}
                     />

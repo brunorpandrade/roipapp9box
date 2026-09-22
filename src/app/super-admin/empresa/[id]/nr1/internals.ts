@@ -33,6 +33,8 @@
 // -----------------------------------------------------------------------
 
 /** §14.28 — texto canônico literal do banner amarelo permanente. */
+import { COLORS } from '../../../../../lib/design-tokens/colors';
+
 export const BANNER_TEXT_NR1 =
   'Este módulo entrega um radar diagnóstico preliminar dos ' +
   '8 fatores psicossociais canônicos. Não substitui os ' +
@@ -232,14 +234,14 @@ export function classForScore(score: number): 'verde' | 'amarelo' | 'vermelho' {
 /** Hex de cor para cada faixa. */
 export const SCORE_COLORS = {
   verde: '#16A34A',
-  amarelo: '#D97706',
+  amarelo: COLORS.semantic.warning,
   vermelho: '#DC2626',
 } as const;
 
 /** Hex de cor de fundo para cada faixa (dots). */
 export const SCORE_BG_COLORS = {
   verde: '#16A34A',
-  amarelo: '#D97706',
+  amarelo: COLORS.semantic.warning,
   vermelho: '#DC2626',
 } as const;
 

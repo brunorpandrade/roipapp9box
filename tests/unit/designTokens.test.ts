@@ -139,7 +139,7 @@ describe('COLORS — paleta canonica DOC 05 §2.1', () => {
 
   it('semantica: success/warning/danger canonicos', () => {
     expect(COLORS.semantic.success).toBe('#16A34A');
-    expect(COLORS.semantic.warning).toBe('#D97706');
+    expect(COLORS.semantic.warning).toBe('#F2A900');
     expect(COLORS.semantic.danger).toBe('#DC2626');
   });
 
@@ -188,13 +188,13 @@ describe('COLORS — paleta canonica DOC 05 §2.1', () => {
 describe('COLORS — escalas canonicas §2.4 Clima e §2.5 Radar NR-1', () => {
   it('escala Clima §2.4: vermelho/amarelo/verde canonicos', () => {
     expect(COLORS.scoreScale.climateLow).toBe('#DC2626');
-    expect(COLORS.scoreScale.climateMid).toBe('#D97706');
+    expect(COLORS.scoreScale.climateMid).toBe('#F2A900');
     expect(COLORS.scoreScale.climateHigh).toBe('#16A34A');
   });
 
   it('escala Radar NR-1 §2.5: vermelho/amarelo/verde canonicos', () => {
     expect(COLORS.scoreScale.nr1Low).toBe('#DC2626');
-    expect(COLORS.scoreScale.nr1Mid).toBe('#D97706');
+    expect(COLORS.scoreScale.nr1Mid).toBe('#F2A900');
     expect(COLORS.scoreScale.nr1High).toBe('#16A34A');
   });
 

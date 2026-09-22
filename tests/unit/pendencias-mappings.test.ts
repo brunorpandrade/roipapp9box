@@ -103,8 +103,8 @@ describe('CARD_COLOR_PENDENCIAS — cores canonicas §5.8 bit-exact', () => {
     expect(CARD_COLOR_PENDENCIAS.zero).toBe('#16A34A');
   });
 
-  it('1+ pendencias = laranja #D97706 (DOC 05 §5.8 linha 649)', () => {
-    expect(CARD_COLOR_PENDENCIAS.positive).toBe('#D97706');
+  it('1+ pendencias = laranja #F2A900 (DOC 05 §5.8 linha 649)', () => {
+    expect(CARD_COLOR_PENDENCIAS.positive).toBe('#F2A900');
   });
 
   it('objeto e Object.freeze', () => {
@@ -117,8 +117,8 @@ describe('DIAS_ATRASO_COLOR — cores canonicas coluna 9 §14.23 linha 2633', ()
     expect(DIAS_ATRASO_COLOR.danger).toBe('#DC2626');
   });
 
-  it('warn = #D97706 (laranja para 1 a 5 dias)', () => {
-    expect(DIAS_ATRASO_COLOR.warn).toBe('#D97706');
+  it('warn = #F2A900 (laranja para 1 a 5 dias)', () => {
+    expect(DIAS_ATRASO_COLOR.warn).toBe('#F2A900');
   });
 
   it('neutral = #6B7280 (cinza para 0 dias)', () => {

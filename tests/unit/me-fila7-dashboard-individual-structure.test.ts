@@ -108,9 +108,9 @@ describe('dashboard individual — helpers puros', () => {
     // misto: direita + baixo -> ↘ amarelo
     const misto = derivarSeta('alto', 'baixa', 'medio', 'media');
     expect(misto.char).toBe('↘');
-    expect(misto.color).toBe('#D97706');
+    expect(misto.color).toBe('#F2A900');
     // misto: esquerda + cima -> ↖ amarelo
-    expect(derivarSeta('baixo', 'alta', 'medio', 'media').color).toBe('#D97706');
+    expect(derivarSeta('baixo', 'alta', 'medio', 'media').color).toBe('#F2A900');
   });
 
   it('idadeAnos e tempoEmpresa', () => {

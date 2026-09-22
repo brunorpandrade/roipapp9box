@@ -23,7 +23,7 @@ export const COLORS = {
   // §2.1 semantica
   semantic: {
     success: '#16A34A',
-    warning: '#D97706',
+    warning: '#F2A900', // §2.1 amarelo semaforo (ME 8.06.4: #D97706 -> #F2A900)
     danger: '#DC2626',
     dangerHover: '#B91C1C', // §2.3 hover danger
   },
@@ -72,10 +72,10 @@ export const COLORS = {
   // Hex identicos aos de `semantic` — sao os mesmos por definicao canonica.
   scoreScale: {
     climateLow: '#DC2626',
-    climateMid: '#D97706',
+    climateMid: '#F2A900',
     climateHigh: '#16A34A',
     nr1Low: '#DC2626',
-    nr1Mid: '#D97706',
+    nr1Mid: '#F2A900',
     nr1High: '#16A34A',
   },
   // §2.6 nos do organograma
