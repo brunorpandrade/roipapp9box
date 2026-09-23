@@ -97,6 +97,8 @@ const CNPJ_CROSS_B = '10000000000607';
 const CNPJ_HISTORY = '10000000000608';
 const CNPJ_NULL_YZ = '10000000000609';
 const CNPJ_DSELF = '10000000000610';
+const CNPJ_PC1H_LIDER = '10000000000611';
+const CNPJ_PC1H_CLEVEL = '10000000000612';
 
 const NOW = new Date('2025-04-11T14:00:00Z');
 
@@ -337,6 +339,18 @@ async function linkLeader(employeeId: number, liderId: number): Promise<void> {
     dataInicio: new Date('2024-01-01'),
     dataFim: null,
     reason: 'Fixture de teste dashboard-router ME-035',
+    transferBatchId: nextTransferBatchId(),
+  });
+}
+
+async function linkLeaderClevel(employeeId: number, clevelId: number): Promise<void> {
+  await client.db.insert(employeeLeaderHistory).values({
+    employeeId,
+    liderId: null,
+    clevelId,
+    dataInicio: new Date('2024-01-01'),
+    dataFim: null,
+    reason: 'Fixture de teste dashboard-router PC1h C-level',
     transferBatchId: nextTransferBatchId(),
   });
 }
@@ -1003,5 +1017,126 @@ describe('dashboard — contratos publicos', () => {
     expect(mask.companyId).toBe(1);
     const eixoX: EixoXDetalheResult = { indiceDesempenho: '0.9840', variaveis: [] };
     expect(eixoX.variaveis).toHaveLength(0);
+  });
+});
+
+// ============================================================
+// 4c) PC1h — cadeia descendente propria (lider indireto + C-level)
+// Prova a correcao: lider ve a cadeia INDIRETA (nao so o direto);
+// C-level restrito (>=2 ativos, acessoTotal=false) so ve a propria
+// cadeia; C-level total atravessa. Substitui o antigo S066 direto-apenas.
+// ============================================================
+
+describe('dashboard — PC1h lider cadeia indireta', () => {
+  let companyId: number;
+  let liderTopo: number;
+  let subLider: number;
+  let indireto: number;
+  let outroLider: number;
+  let outroLiderado: number;
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_PC1H_LIDER);
+    liderTopo = await createEmployee(companyId, { isLider: true });
+    subLider = await createEmployee(companyId, { isLider: true });
+    indireto = await createEmployee(companyId);
+    outroLider = await createEmployee(companyId, { isLider: true });
+    outroLiderado = await createEmployee(companyId);
+    // Cadeia: liderTopo -> subLider -> indireto (dois niveis).
+    await linkLeader(subLider, liderTopo);
+    await linkLeader(indireto, subLider);
+    // Cadeia disjunta: outroLider -> outroLiderado.
+    await linkLeader(outroLiderado, outroLider);
+    await createTrimestreLine(companyId, indireto, '2025-Q1');
+    await createTrimestreLine(companyId, subLider, '2025-Q1');
+    await createTrimestreLine(companyId, outroLiderado, '2025-Q1');
+  });
+
+  it('liderTopo ve o liderado direto (subLider) -> OK', async () => {
+    const { factory, ctx } = bindRouter();
+    const bearer = await tokenPlatform('lider', liderTopo, companyId);
+    const caller = factory(ctx(bearer));
+    const result = await caller.getEmployeeDashboard({ employeeId: subLider });
+    expect(result.employee.id).toBe(subLider);
+  });
+
+  it('liderTopo ve o INDIRETO (neto) -> OK (correcao PC1h)', async () => {
+    const { factory, ctx } = bindRouter();
+    const bearer = await tokenPlatform('lider', liderTopo, companyId);
+    const caller = factory(ctx(bearer));
+    const result = await caller.getEmployeeDashboard({ employeeId: indireto });
+    expect(result.employee.id).toBe(indireto);
+  });
+
+  it('liderTopo tenta ver colaborador de cadeia disjunta -> FORBIDDEN', async () => {
+    const { factory, ctx } = bindRouter();
+    const bearer = await tokenPlatform('lider', liderTopo, companyId);
+    const caller = factory(ctx(bearer));
+    await expect(caller.getEmployeeDashboard({ employeeId: outroLiderado })).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    });
+  });
+
+  it('getEixoXDetalhe segue a mesma cadeia PC1h (indireto -> OK)', async () => {
+    const { factory, ctx } = bindRouter();
+    const bearer = await tokenPlatform('lider', liderTopo, companyId);
+    const caller = factory(ctx(bearer));
+    const result = await caller.getEixoXDetalhe({ employeeId: indireto, trimestre: '2025-Q1' });
+    expect(result).toHaveProperty('variaveis');
+  });
+
+  it('getDiagnostico segue a mesma cadeia PC1h (disjunto -> FORBIDDEN)', async () => {
+    const { factory, ctx } = bindRouter();
+    const bearer = await tokenPlatform('lider', liderTopo, companyId);
+    const caller = factory(ctx(bearer));
+    await expect(
+      caller.getDiagnostico({ employeeId: outroLiderado, trimestre: '2025-Q1' }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
+});
+
+describe('dashboard — PC1h C-level cadeia propria', () => {
+  let companyId: number;
+  let clevelTotal: number;
+  let clevelRestrito: number;
+  let daCadeia: number;
+  let foraDaCadeia: number;
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_PC1H_CLEVEL);
+    // Dois C-levels ativos -> cLevelCount = 2, entao o restrito e de fato
+    // restrito (cLevelCount > 1 && acessoTotal = false).
+    clevelTotal = await createCLevel(companyId, true);
+    clevelRestrito = await createCLevel(companyId, false);
+    daCadeia = await createEmployee(companyId);
+    foraDaCadeia = await createEmployee(companyId);
+    await linkLeaderClevel(daCadeia, clevelRestrito);
+    await createTrimestreLine(companyId, daCadeia, '2025-Q1');
+    await createTrimestreLine(companyId, foraDaCadeia, '2025-Q1');
+  });
+
+  it('C-level restrito ve colaborador da propria cadeia -> OK', async () => {
+    const { factory, ctx } = bindRouter();
+    const bearer = await tokenPlatform('clevel', clevelRestrito, companyId);
+    const caller = factory(ctx(bearer));
+    const result = await caller.getEmployeeDashboard({ employeeId: daCadeia });
+    expect(result.employee.id).toBe(daCadeia);
+  });
+
+  it('C-level restrito tenta ver colaborador fora da cadeia -> FORBIDDEN', async () => {
+    const { factory, ctx } = bindRouter();
+    const bearer = await tokenPlatform('clevel', clevelRestrito, companyId);
+    const caller = factory(ctx(bearer));
+    await expect(caller.getEmployeeDashboard({ employeeId: foraDaCadeia })).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    });
+  });
+
+  it('C-level total atravessa (fora da cadeia do restrito) -> OK', async () => {
+    const { factory, ctx } = bindRouter();
+    const bearer = await tokenPlatform('clevel', clevelTotal, companyId);
+    const caller = factory(ctx(bearer));
+    const result = await caller.getEmployeeDashboard({ employeeId: foraDaCadeia });
+    expect(result.employee.id).toBe(foraDaCadeia);
   });
 });

@@ -86,7 +86,9 @@ import {
   type GenerateDiagnosticoIAOutcome,
 } from '../services/diagnosticoIAService';
 import { getActiveLeaderHistoryByEmployee } from '../services/employeeLeaderHistory';
+import { resolveHierarchicalScope } from '../services/hierarchicalScope';
 import { getPerformanceQuarterlyDataByQuarter } from '../services/performanceQuarterlyData';
+import { loadCLevelSessionContext } from '../../lib/session/cLevelSessionContext';
 import type { ChatIaUserType } from '../services/_shared/dashboardContextTypes';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
 import { MSG_AUTO_VISAO_DASHBOARD, assertNaoAutoVisaoEmployee } from './_shared/selfViewGuard';
@@ -188,27 +190,61 @@ export interface CompanyEconomicDashboardResult {
 }
 
 // ============================================================
-// Helpers privados (S066 — cadeia direta)
+// Helpers privados (PC1h — cadeia descendente propria)
 // ============================================================
 
 /**
- * Determina se o colaborador `targetId` esta sob liderança direta do
- * lider `leaderEmployeeId` no momento vigente (§4.6 — `dataFim IS NULL`).
- *
- * Cadeia INDIRETA (mais de um nivel de profundidade) NAO e checada aqui —
- * materia de motor de organograma (ME futura de dashboards em cascata).
- * Nesta ME, lider ve APENAS liderados diretos, conforme S066.
+ * Regua pura do escopo de acesso ao dashboard individual (matriz DOC 02
+ * §10.4, linha do individual; PC1h). `scope === null` (Bruno, RH, RH-Lider,
+ * C-level total/unico) libera qualquer alvo; com escopo restrito (lider,
+ * C-level restrito) o alvo so e liberado quando `employee-<id>` esta na
+ * cadeia descendente propria. Fora do escopo -> FORBIDDEN. Funcao pura,
+ * provada nos dois sentidos isoladamente (RV-03).
  */
-async function isEmployeeDirectlyLedBy(
-  db: RoipDatabase,
-  targetEmployeeId: number,
-  leaderEmployeeId: number,
-): Promise<boolean> {
-  const link = await getActiveLeaderHistoryByEmployee(db, targetEmployeeId);
-  if (link === undefined) {
-    return false;
+export function assertAlvoNoEscopo(scope: ReadonlySet<string> | null, employeeId: number): void {
+  if (scope === null) {
+    return;
   }
-  return link.liderId === leaderEmployeeId;
+  if (!scope.has(`employee-${employeeId}`)) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Colaborador fora da cadeia descendente do usuario.',
+    });
+  }
+}
+
+/**
+ * Resolve o escopo de cadeia do usuario `lider`/`clevel` e aplica
+ * `assertAlvoNoEscopo`. Regua unica reusada de organograma/recorte
+ * (`resolveHierarchicalScope`, RV-14): lider -> cadeia descendente propria;
+ * C-level restrito -> propria cadeia; C-level total/unico -> null (tudo).
+ * Substitui o antigo S066 (direto-apenas). Cadeia direta e indireta cobertas.
+ */
+async function assertCadeiaDescendente(
+  db: RoipDatabase,
+  user: {
+    readonly role: 'rh' | 'rh_lider' | 'clevel' | 'lider';
+    readonly userId: number;
+    readonly companyId: number;
+  },
+  employeeId: number,
+): Promise<void> {
+  let scope: ReadonlySet<string> | null;
+  if (user.role === 'clevel') {
+    const cctx = await loadCLevelSessionContext(db, user.companyId, user.userId);
+    scope = await resolveHierarchicalScope(
+      db,
+      { role: 'clevel', userId: user.userId, companyId: user.companyId },
+      cctx ?? undefined,
+    );
+  } else {
+    scope = await resolveHierarchicalScope(db, {
+      role: user.role,
+      userId: user.userId,
+      companyId: user.companyId,
+    });
+  }
+  assertAlvoNoEscopo(scope, employeeId);
 }
 
 // ============================================================
@@ -415,19 +451,13 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
         // aqui, mas mantemos a defesa canonica no lugar quando a proc
         // for estendida.
 
-        // Guard canonico S066: lider so ve liderado direto (cadeia
-        // direta ativa). Cadeia indireta e materia de motor de
-        // organograma (ME futura).
-        if (ctx.user.role === 'lider') {
-          // Auto-visao ja bloqueada por D-SELF acima; resta a cadeia
-          // direta (S066).
-          const okDirect = await isEmployeeDirectlyLedBy(ctx.db, input.employeeId, ctx.user.userId);
-          if (!okDirect) {
-            throw new TRPCError({
-              code: 'FORBIDDEN',
-              message: 'Colaborador fora da cadeia direta do lider.',
-            });
-          }
+        // Guard PC1h (matriz DOC 02 §10.4, linha do individual): lider e
+        // C-level veem a propria cadeia descendente (direto E indireto);
+        // C-level total/unico, RH e Bruno atravessam. Auto-visao ja
+        // bloqueada por D-SELF acima. Regua unica reusada de organograma/
+        // recorte (RV-14). Substitui o antigo S066 (direto-apenas).
+        if (ctx.user.role === 'lider' || ctx.user.role === 'clevel') {
+          await assertCadeiaDescendente(ctx.db, ctx.user, input.employeeId);
         }
 
         // Leitura Eixo X — ultima linha + N ultimas para historico.
@@ -724,16 +754,8 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
             });
           }
         }
-        if (ctx.user.role === 'lider') {
-          if (ctx.user.userId !== input.employeeId) {
-            const link = await getActiveLeaderHistoryByEmployee(ctx.db, input.employeeId);
-            if (!link || link.liderId !== ctx.user.userId) {
-              throw new TRPCError({
-                code: 'FORBIDDEN',
-                message: 'Colaborador fora da cadeia direta do lider.',
-              });
-            }
-          }
+        if (ctx.user.role === 'lider' || ctx.user.role === 'clevel') {
+          await assertCadeiaDescendente(ctx.db, ctx.user, input.employeeId);
         }
         const quarterlyRow = await getPerformanceQuarterlyDataByQuarter(
           ctx.db,
@@ -794,16 +816,8 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
             });
           }
         }
-        if (ctx.user.role === 'lider') {
-          if (ctx.user.userId !== input.employeeId) {
-            const link = await getActiveLeaderHistoryByEmployee(ctx.db, input.employeeId);
-            if (!link || link.liderId !== ctx.user.userId) {
-              throw new TRPCError({
-                code: 'FORBIDDEN',
-                message: 'Colaborador fora da cadeia direta do lider.',
-              });
-            }
-          }
+        if (ctx.user.role === 'lider' || ctx.user.role === 'clevel') {
+          await assertCadeiaDescendente(ctx.db, ctx.user, input.employeeId);
         }
         const trimestreAtual = deriveTrimestreAtual(routerDeps);
         const facade = routerDeps.diagnosticoIAFactory(ctx.db);
@@ -875,16 +889,8 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
             });
           }
         }
-        if (ctx.user.role === 'lider') {
-          if (ctx.user.userId !== input.employeeId) {
-            const link = await getActiveLeaderHistoryByEmployee(ctx.db, input.employeeId);
-            if (!link || link.liderId !== ctx.user.userId) {
-              throw new TRPCError({
-                code: 'FORBIDDEN',
-                message: 'Colaborador fora da cadeia direta do lider.',
-              });
-            }
-          }
+        if (ctx.user.role === 'lider' || ctx.user.role === 'clevel') {
+          await assertCadeiaDescendente(ctx.db, ctx.user, input.employeeId);
         }
 
         // Media mensal do trimestre por variableIndex.

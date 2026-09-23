@@ -20,13 +20,11 @@
 // **RV-12.** Drizzle tipado (`count()`), sem SQL cru.
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
-import { and, count, eq } from 'drizzle-orm';
-
 import type { RoipDatabase } from '../../db/client';
-import { cLevelMembers } from '../../db/schema';
 import type { ServerSession } from '../../server/session/serverSession';
 import { resolveMenuItems, type MenuItem, type ProfileKey } from '../menu/menuConfig';
 
+import { loadCLevelSessionContext } from './cLevelSessionContext';
 import { resolveProfileKey } from './resolveProfileKey';
 import { loadRhSessionFlags } from './rhSessionFlags';
 
@@ -73,31 +71,15 @@ export async function loadPlatformMenuContext(
   session: PlatformSession,
 ): Promise<PlatformMenuContext | null> {
   if (session.role === 'clevel') {
-    const memberRows = await db
-      .select({
-        acessoTotal: cLevelMembers.acessoTotal,
-        isResponsavelFinanceiro: cLevelMembers.isResponsavelFinanceiro,
-      })
-      .from(cLevelMembers)
-      .where(
-        and(eq(cLevelMembers.id, session.userId), eq(cLevelMembers.companyId, session.companyId)),
-      )
-      .limit(1);
-    const member = memberRows[0];
-    if (member === undefined) {
+    const cctx = await loadCLevelSessionContext(db, session.companyId, session.userId);
+    if (cctx === null) {
       return null;
     }
-    const countRows = await db
-      .select({ n: count() })
-      .from(cLevelMembers)
-      .where(
-        and(eq(cLevelMembers.companyId, session.companyId), eq(cLevelMembers.status, 'ativo')),
-      );
     const cLevel: CLevelMenuFlags = {
-      acessoTotal: member.acessoTotal !== false,
-      cLevelCount: Number(countRows[0]?.n ?? 0),
+      acessoTotal: cctx.acessoTotal,
+      cLevelCount: cctx.cLevelCount,
     };
-    const isResponsavelFinanceiro = member.isResponsavelFinanceiro === true;
+    const isResponsavelFinanceiro = cctx.isResponsavelFinanceiro;
     const profileKey = resolveProfileKey({
       session,
       isRH: false,

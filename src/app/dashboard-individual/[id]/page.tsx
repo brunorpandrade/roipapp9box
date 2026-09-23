@@ -8,7 +8,6 @@
 // Layout.
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
-import { TRPCError } from '@trpc/server';
 import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import type { JSX } from 'react';
@@ -29,6 +28,7 @@ import { getServerSession } from '../../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../../server/trpc';
 
 import { carregarFichaCadastralAction } from '../../_shared/fichaCadastral/actions';
+import { translateDashboardCallerError } from './callerErrorRedirect';
 import { DashboardIndividualClient } from './DashboardIndividualClient';
 import {
   buildQuarterView,
@@ -83,13 +83,7 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
         historyLimit: DASHBOARD_HISTORY_LIMIT_CAP,
       });
     } catch (err) {
-      if (err instanceof TRPCError && err.code === 'FORBIDDEN') {
-        redirect('/access-denied?rota=/dashboard-individual');
-      }
-      if (err instanceof TRPCError && err.code === 'NOT_FOUND') {
-        notFound();
-      }
-      throw err;
+      translateDashboardCallerError(err, session.kind);
     }
 
     const trimestresDisponiveis = dashboard.history.map((h) => h.trimestre);
@@ -98,7 +92,12 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
 
     let view: QuarterView;
     if (defaultTrimestre !== null && defaultTrimestre !== trimestreLatest) {
-      const snap = await caller.getEmployeeDashboard({ employeeId, trimestre: defaultTrimestre });
+      let snap;
+      try {
+        snap = await caller.getEmployeeDashboard({ employeeId, trimestre: defaultTrimestre });
+      } catch (err) {
+        translateDashboardCallerError(err, session.kind);
+      }
       view = buildQuarterView({
         trimestre: defaultTrimestre,
         quarterly: snap.latestQuarterly,
