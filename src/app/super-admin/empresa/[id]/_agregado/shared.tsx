@@ -436,6 +436,53 @@ function sinal(v: number | null): string {
   return `${s}${fmt(v, 1)}`;
 }
 
+// Rotacao (horaria) da seta cheia por direcao — base ↓ = 0°. §8.06.6a.
+const ANGULO_SETA: Readonly<Record<string, number>> = {
+  '↓': 0,
+  '↙': 45,
+  '←': 90,
+  '↖': 135,
+  '↑': 180,
+  '↗': 225,
+  '→': 270,
+  '↘': 315,
+};
+
+// Seta grande do card de movimento como SVG solido, na cor do veredito.
+// Uma unica seta (para baixo) rotacionada; "=" (manteve) e "•" (sem
+// base) seguem o mesmo tratamento solido. §8.06.6a.
+function MovimentoSeta(props: {
+  readonly tipo: 'seta' | 'igual' | 'ponto';
+  readonly angulo: number;
+  readonly cor: string;
+}): JSX.Element {
+  const size = 64;
+  if (props.tipo === 'igual') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 100 100" role="img" aria-label="Manteve">
+        <rect x="18" y="36" width="64" height="12" rx="3" fill={props.cor} />
+        <rect x="18" y="54" width="64" height="12" rx="3" fill={props.cor} />
+      </svg>
+    );
+  }
+  if (props.tipo === 'ponto') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 100 100" role="img" aria-label="Sem base">
+        <circle cx="50" cy="50" r="9" fill={props.cor} />
+      </svg>
+    );
+  }
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" role="img" aria-label="Movimento">
+      <path
+        d="M42 14 h16 v40 h18 L50 90 L24 54 h18 z"
+        fill={props.cor}
+        transform={`rotate(${props.angulo} 50 50)`}
+      />
+    </svg>
+  );
+}
+
 export function Movimento9BoxCard(props: { readonly movimento: Movimento9Box }): JSX.Element {
   const m = props.movimento;
   const semBase = m.trimestreAnterior === null;
@@ -444,19 +491,21 @@ export function Movimento9BoxCard(props: { readonly movimento: Movimento9Box }):
       ? derivarSeta(m.posicaoXAtual, m.posicaoYAtual, m.posicaoXAnterior, m.posicaoYAnterior)
       : { char: '', color: '', label: '' };
   let veredito: string;
-  let setaGrande: string;
+  let setaTipo: 'seta' | 'igual' | 'ponto';
+  let setaAngulo = 0;
   let cor: string;
   if (semBase) {
     veredito = 'Sem base anterior';
-    setaGrande = '•';
+    setaTipo = 'ponto';
     cor = COLORS.text.tertiary;
   } else if (seta.char.length === 0) {
     veredito = 'Manteve';
-    setaGrande = '=';
+    setaTipo = 'igual';
     cor = NEUTRO;
   } else {
     veredito = seta.label;
-    setaGrande = seta.char;
+    setaTipo = 'seta';
+    setaAngulo = ANGULO_SETA[seta.char] ?? 0;
     cor = seta.color;
   }
   // Frase de transição no sentido do movimento: de onde veio -> para
@@ -472,34 +521,31 @@ export function Movimento9BoxCard(props: { readonly movimento: Movimento9Box }):
   return (
     <div style={CARD}>
       <div style={{ ...LABEL, marginBottom: 8 }}>Movimento no 9-Box</div>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 8,
-        }}
-      >
-        <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ flex: 1 }}>
           <div style={{ fontSize: 22, fontWeight: 700, color: cor }}>{veredito}</div>
           <div style={{ fontSize: 14, color: COLORS.text.secondary, marginTop: 4 }}>{frase}</div>
-        </div>
-        <span style={{ fontSize: 44, fontWeight: 700, lineHeight: 1, color: cor }}>
-          {setaGrande}
-        </span>
-      </div>
-      <div style={{ display: 'flex', gap: 40, marginTop: 16 }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ ...LABEL, fontSize: 11 }}>Δ Desempenho</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.text.primary, marginTop: 4 }}>
-            {sinal(m.deltaX)}
+          <div style={{ display: 'flex', gap: 40, marginTop: 12 }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ ...LABEL, fontSize: 11 }}>Δ Desempenho</div>
+              <div
+                style={{ fontSize: 20, fontWeight: 700, color: COLORS.text.primary, marginTop: 4 }}
+              >
+                {sinal(m.deltaX)}
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ ...LABEL, fontSize: 11 }}>Δ Plenitude</div>
+              <div
+                style={{ fontSize: 20, fontWeight: 700, color: COLORS.text.primary, marginTop: 4 }}
+              >
+                {sinal(m.deltaY)}
+              </div>
+            </div>
           </div>
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ ...LABEL, fontSize: 11 }}>Δ Plenitude</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.text.primary, marginTop: 4 }}>
-            {sinal(m.deltaY)}
-          </div>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <MovimentoSeta tipo={setaTipo} angulo={setaAngulo} cor={cor} />
         </div>
       </div>
     </div>
