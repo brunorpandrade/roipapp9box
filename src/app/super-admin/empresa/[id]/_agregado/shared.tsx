@@ -1,5 +1,3 @@
-'use client';
-
 // ROIP APP 9BOX — peças compartilhadas dos dashboards agregados (ESPEC
 // §7, §10). Extraídas do dashboard da empresa na ME §8.06.5 (RV-14) para
 // serem reaproveitadas pelos dashboards de recorte (departamento, equipe
@@ -9,10 +7,14 @@
 // card/seta de movimento (só equipe/cadeia). Folha e turnover NÃO estão
 // aqui — são exclusivos da empresa (§11) e ficam no EmpresaDashboardClient.
 //
+// Módulo server-safe (sem 'use client'): o EmpresaDashboardClient chama
+// `fmt` e usa CARD/LABEL no servidor. O único trecho com estado (o botão
+// Legenda + modal) vive em `LegendaButton` (client).
+//
 // **RV-14.** Um statement por linha, largura máxima 100 colunas.
 
 import Link from 'next/link';
-import { useState, type CSSProperties, type JSX } from 'react';
+import type { CSSProperties, JSX } from 'react';
 
 import { COLORS } from '../../../../../lib/design-tokens/colors';
 import type { AggregateResult } from '../../../../../server/services/aggregationEngine';
@@ -20,7 +22,6 @@ import type { IqlLiderBloco, Movimento9Box } from '../../../../../server/service
 import type { TurnoverPageData } from '../../../../../server/services/turnoverPanel';
 import {
   NINE_BOX_GRID,
-  QUADRANTE_LEGENDA,
   colIndexFor,
   derivarSeta,
   faixaDesempenhoLabel,
@@ -33,6 +34,7 @@ import {
   type PosicaoX,
   type PosicaoY,
 } from '../../../../dashboard-individual/[id]/internals';
+import { LegendaButton } from './LegendaButton';
 
 export const CARD: CSSProperties = {
   padding: 16,
@@ -47,27 +49,6 @@ export const LABEL: CSSProperties = {
   letterSpacing: '0.06em',
   textTransform: 'uppercase',
   color: COLORS.text.tertiary,
-};
-
-const BTN: CSSProperties = {
-  padding: '6px 12px',
-  borderRadius: 8,
-  border: `1px solid ${COLORS.border.default}`,
-  background: COLORS.background.card,
-  fontSize: 13,
-  color: COLORS.text.secondary,
-  cursor: 'pointer',
-};
-
-const OVERLAY: CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(0, 0, 0, 0.4)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: 20,
-  zIndex: 50,
 };
 
 const SU = COLORS.semantic.success;
@@ -221,58 +202,11 @@ export function ColetivoCard(props: { readonly agg: AggregateResult }): JSX.Elem
   );
 }
 
-function LegendaModal(props: { readonly onClose: () => void }): JSX.Element {
-  return (
-    <div style={OVERLAY} onClick={props.onClose}>
-      <div
-        style={{ ...CARD, maxWidth: 820, width: '100%', maxHeight: '86vh', overflowY: 'auto' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <button type="button" onClick={props.onClose} style={BTN}>
-            Fechar
-          </button>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-          {NINE_BOX_GRID.flat().map((cell) => (
-            <div key={cell.quadrante} style={{ background: cell.bg, borderRadius: 8, padding: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: cell.text, marginBottom: 4 }}>
-                {cell.quadrante}
-              </div>
-              <div style={{ fontSize: 11, color: COLORS.text.secondary, lineHeight: 1.4 }}>
-                {QUADRANTE_LEGENDA[cell.quadrante] ?? ''}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div
-          style={{
-            marginTop: 12,
-            padding: 10,
-            background: COLORS.background.elevated,
-            borderRadius: 8,
-            fontSize: 12,
-            color: COLORS.text.secondary,
-          }}
-        >
-          <div>
-            <strong>Faixas de desempenho:</strong> Baixo &lt;60% · Médio 60–85% · Alto &gt;85%
-          </div>
-          <div>
-            <strong>Faixas de plenitude:</strong> Baixa &lt;50% · Média 50–75% · Alta &gt;75%
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function NineBoxColetivo(props: {
   readonly agg: AggregateResult;
   readonly movimento?: Movimento9Box | null;
 }): JSX.Element {
   const { agg } = props;
-  const [legendaOpen, setLegendaOpen] = useState<boolean>(false);
   const cmRow = agg.centroMassa.posicaoY === null ? -1 : rowIndexFor(agg.centroMassa.posicaoY);
   const cmCol = agg.centroMassa.posicaoX === null ? -1 : colIndexFor(agg.centroMassa.posicaoX);
   const mv = props.movimento ?? null;
@@ -284,9 +218,7 @@ export function NineBoxColetivo(props: {
     <div style={CARD}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={LABEL}>9-Box — distribuição do coletivo</div>
-        <button type="button" onClick={() => setLegendaOpen(true)} style={BTN}>
-          Legenda
-        </button>
+        <LegendaButton />
       </div>
       <div style={{ display: 'flex', alignItems: 'stretch', gap: 8, marginTop: 12 }}>
         <div
@@ -357,7 +289,6 @@ export function NineBoxColetivo(props: {
           </div>
         </div>
       </div>
-      {legendaOpen ? <LegendaModal onClose={() => setLegendaOpen(false)} /> : null}
     </div>
   );
 }
@@ -528,11 +459,13 @@ export function Movimento9BoxCard(props: { readonly movimento: Movimento9Box }):
     setaGrande = seta.char;
     cor = seta.color;
   }
+  // Frase de transição no sentido do movimento: de onde veio -> para
+  // onde está (anterior -> atual). §8.06.6a.
   let frase: string;
   if (m.quadranteAtual === null) {
     frase = '—';
   } else if (m.quadranteAnterior !== null) {
-    frase = `${m.quadranteAtual} → ${m.quadranteAnterior}`;
+    frase = `${m.quadranteAnterior} → ${m.quadranteAtual}`;
   } else {
     frase = m.quadranteAtual;
   }
@@ -542,37 +475,29 @@ export function Movimento9BoxCard(props: { readonly movimento: Movimento9Box }):
       <div
         style={{
           display: 'flex',
-          alignItems: 'flex-start',
+          alignItems: 'center',
           justifyContent: 'space-between',
           gap: 8,
         }}
       >
         <div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: cor }}>{veredito}</div>
-          <div style={{ fontSize: 13, color: COLORS.text.secondary, marginTop: 4 }}>{frase}</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: cor }}>{veredito}</div>
+          <div style={{ fontSize: 14, color: COLORS.text.secondary, marginTop: 4 }}>{frase}</div>
         </div>
-        <span style={{ fontSize: 40, fontWeight: 700, lineHeight: 1, color: cor }}>
+        <span style={{ fontSize: 44, fontWeight: 700, lineHeight: 1, color: cor }}>
           {setaGrande}
         </span>
       </div>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 8,
-          marginTop: 12,
-          textAlign: 'center',
-        }}
-      >
-        <div>
+      <div style={{ display: 'flex', gap: 40, marginTop: 16 }}>
+        <div style={{ textAlign: 'center' }}>
           <div style={{ ...LABEL, fontSize: 11 }}>Δ Desempenho</div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.text.primary, marginTop: 2 }}>
+          <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.text.primary, marginTop: 4 }}>
             {sinal(m.deltaX)}
           </div>
         </div>
-        <div>
+        <div style={{ textAlign: 'center' }}>
           <div style={{ ...LABEL, fontSize: 11 }}>Δ Plenitude</div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.text.primary, marginTop: 2 }}>
+          <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.text.primary, marginTop: 4 }}>
             {sinal(m.deltaY)}
           </div>
         </div>

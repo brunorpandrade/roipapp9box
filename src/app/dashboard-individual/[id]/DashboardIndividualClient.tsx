@@ -147,36 +147,37 @@ function NineBox(props: {
                   {active ? (
                     <div
                       style={{
-                        width: 46,
-                        height: 46,
-                        borderRadius: '50%',
-                        background: COLORS.primary.navy,
-                        color: '#FFFFFF',
-                        fontSize: 14,
-                        fontWeight: 700,
                         display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
-                        justifyContent: 'center',
+                        gap: 4,
                       }}
                     >
-                      {props.iniciais}
+                      <div
+                        style={{
+                          width: 46,
+                          height: 46,
+                          borderRadius: '50%',
+                          background: COLORS.primary.navy,
+                          color: '#FFFFFF',
+                          fontSize: 14,
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {props.iniciais}
+                      </div>
+                      {props.seta.length > 0 ? (
+                        <span style={{ fontSize: 16, fontWeight: 700, color: props.setaColor }}>
+                          {props.seta}
+                        </span>
+                      ) : null}
                     </div>
                   ) : (
                     cell.quadrante
                   )}
-                  {active && props.seta.length > 0 ? (
-                    <span
-                      style={{
-                        position: 'absolute',
-                        bottom: 6,
-                        right: 8,
-                        fontSize: 16,
-                        color: props.setaColor,
-                      }}
-                    >
-                      {props.seta}
-                    </span>
-                  ) : null}
                 </div>
               );
             }),
