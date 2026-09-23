@@ -12,15 +12,24 @@
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
 import type { FichaCadastralActionResult } from '../../_shared/fichaCadastral/actions';
-import { COLORS } from '../../../lib/design-tokens/colors';
+import {
+  colIndexFor,
+  derivarSeta,
+  rowIndexFor,
+  type PosicaoX,
+  type PosicaoY,
+} from '../../../lib/nineBoxSeta';
+
+// Régua de seta e índices de posição vivem em `lib/nineBoxSeta` (RV-14):
+// uma cópia só, compartilhada com os dashboards agregados. Reexportados
+// aqui para os consumidores que já importam de `internals`.
+export { colIndexFor, derivarSeta, rowIndexFor };
+export type { PosicaoX, PosicaoY };
 
 export type FichaLoadAction = (
   companyId: number,
   employeeId: number,
 ) => Promise<FichaCadastralActionResult>;
-
-export type PosicaoX = 'baixo' | 'medio' | 'alto';
-export type PosicaoY = 'baixa' | 'media' | 'alta';
 export type FaixaDesempenho = 'baixo' | 'medio' | 'alto';
 export type FaixaPlenitude = 'baixa' | 'media' | 'alta';
 export type DirecaoMovimento = 'subiu' | 'desceu' | 'lateral' | 'estavel' | 'primeira_vez';
@@ -181,79 +190,6 @@ export const QUADRANTE_LEGENDA: Readonly<Record<string, string>> = {
     'Situação de maior vulnerabilidade da matriz. Requer compreensão ampla ' +
     'das causas antes de qualquer decisão.',
 };
-
-const COL_INDEX: Readonly<Record<PosicaoX, number>> = { baixo: 0, medio: 1, alto: 2 };
-const ROW_INDEX: Readonly<Record<PosicaoY, number>> = { alta: 0, media: 1, baixa: 2 };
-
-export function colIndexFor(posicaoX: PosicaoX): number {
-  return COL_INDEX[posicaoX];
-}
-
-export function rowIndexFor(posicaoY: PosicaoY): number {
-  return ROW_INDEX[posicaoY];
-}
-
-/**
- * Deriva a seta de deslocamento 9-Box (ME pos-fila7) a partir das
- * posicoes atual e anterior. Substitui `direcaoArrow` (que reduzia o
- * movimento a 3 direcoes) pela regra completa:
- *
- * Eixos (indices em COL_INDEX/ROW_INDEX):
- *  - X (desempenho): baixo<medio<alto — colIndex cresce para a DIREITA.
- *  - Y (plenitude): alta<media<baixa no indice — SUBIR e rowIndex MENOR.
- *
- * Semantica: dxDir = colAtual - colAnt (>0 direita, <0 esquerda);
- *            dySem = rowAnt - rowAtual (>0 subiu, <0 desceu).
- *
- * Seta (8 direcoes): sem movimento -> nenhuma; combinacoes de
- * direita/esquerda x cima/baixo -> →←↑↓ e diagonais ↗↘↖↙.
- *
- * Cor: VERDE (#16A34A) avanco limpo (nenhum eixo retrocede e ao menos um
- * avanca — direita e/ou cima); VERMELHO (#DC2626) retrocesso limpo;
- * AMARELO (#F2A900) movimento misto (um eixo avanca e o outro retrocede).
- */
-export function derivarSeta(
-  posX: PosicaoX,
-  posY: PosicaoY,
-  posXAnt: PosicaoX | null,
-  posYAnt: PosicaoY | null,
-): { char: string; color: string } {
-  if (posXAnt === null || posYAnt === null) {
-    return { char: '', color: '' };
-  }
-  const dxDir = COL_INDEX[posX] - COL_INDEX[posXAnt];
-  const dySem = ROW_INDEX[posYAnt] - ROW_INDEX[posY];
-  if (dxDir === 0 && dySem === 0) {
-    return { char: '', color: '' };
-  }
-  const VERDE = '#16A34A';
-  const VERMELHO = '#DC2626';
-  const AMARELO = COLORS.semantic.warning;
-  let color: string;
-  const avancou = dxDir > 0 || dySem > 0;
-  const retrocedeu = dxDir < 0 || dySem < 0;
-  if (avancou && retrocedeu) {
-    color = AMARELO;
-  } else if (avancou) {
-    color = VERDE;
-  } else {
-    color = VERMELHO;
-  }
-  const CHAR: Record<string, string> = {
-    '1,1': '↗',
-    '1,0': '→',
-    '1,-1': '↘',
-    '0,1': '↑',
-    '0,-1': '↓',
-    '-1,1': '↖',
-    '-1,0': '←',
-    '-1,-1': '↙',
-  };
-  const sx = Math.sign(dxDir);
-  const sy = Math.sign(dySem);
-  const char = CHAR[`${sx},${sy}`] ?? '';
-  return { char, color };
-}
 
 export function parseEmployeeIdParam(raw: string): number | null {
   if (raw.length === 0) {

@@ -55,7 +55,7 @@ export function RecorteDashboardClient(props: RecorteDashboardClientProps): JSX.
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.35fr', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <ColetivoCard agg={agg} />
-          <NineBoxColetivo agg={agg} />
+          <NineBoxColetivo agg={agg} movimento={data.movimento9box} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <MostradoresCard agg={agg} assiduidade={data.assiduidade} />

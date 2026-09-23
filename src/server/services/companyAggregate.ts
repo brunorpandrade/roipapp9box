@@ -17,7 +17,14 @@ import { getQuarterMonths } from '../../lib/quarterlyPeriod';
 
 import { listClosedQuarters } from './closedQuarters';
 import { getCompanyEconomicDiagnosisByQuarter } from './companyEconomicDiagnosis';
-import { computePosicaoX, computePosicaoY, readThresholds } from './nineBoxCalculationEngine';
+import {
+  computePosicaoX,
+  computePosicaoY,
+  readThresholds,
+  type NineBoxPosicaoX,
+  type NineBoxPosicaoY,
+  type NineBoxQuadrante,
+} from './nineBoxCalculationEngine';
 import { listPerformanceQuarterlyDataByCompany } from './performanceQuarterlyData';
 import { listPlenitudeDataByCompany } from './plenitudeData';
 import {
@@ -28,11 +35,6 @@ import {
 } from './recorteScope';
 import { getIqlDataByClevelQuarter, getIqlDataByLiderQuarter } from './iqlData';
 import { loadTurnoverPage, type TurnoverPageData } from './turnoverPanel';
-import {
-  computeDirecaoMovimento,
-  type NineBoxDirecaoMovimento,
-  type NineBoxQuadrante,
-} from './nineBoxCalculationEngine';
 import {
   computeAggregate,
   type AggregateResult,
@@ -307,14 +309,18 @@ export interface IqlLiderBloco {
 /**
  * Movimento do coletivo no 9-Box entre o trimestre selecionado e o
  * imediatamente anterior fechado, sobre o MESMO conjunto de pessoas do
- * recorte (composicao atual). A direcao usa a regua §7.5
- * (`computeDirecaoMovimento`) aplicada ao centro de massa — mesma
- * semantica do movimento individual. §8.06.6a.
+ * recorte (composicao atual). Guarda as posicoes (celula) do centro de
+ * massa atual e anterior; a seta e o veredito sao derivados na UI pela
+ * regua unica `derivarSeta` (lib/nineBoxSeta) — a mesma do dashboard
+ * individual. Gatilho da seta: troca de quadrante (Opcao A). §8.06.6a.
  */
 export interface Movimento9Box {
-  readonly direcao: NineBoxDirecaoMovimento;
   readonly quadranteAtual: NineBoxQuadrante | null;
   readonly quadranteAnterior: NineBoxQuadrante | null;
+  readonly posicaoXAtual: NineBoxPosicaoX | null;
+  readonly posicaoYAtual: NineBoxPosicaoY | null;
+  readonly posicaoXAnterior: NineBoxPosicaoX | null;
+  readonly posicaoYAnterior: NineBoxPosicaoY | null;
   readonly deltaX: number | null;
   readonly deltaY: number | null;
   readonly trimestreAnterior: string | null;
@@ -391,11 +397,12 @@ async function loadIqlLiderRecorte(
 /**
  * Monta o movimento no 9-Box do coletivo comparando o centro de massa
  * do trimestre selecionado (`atual`) com o do trimestre anterior
- * (`anterior`), pela regua §7.5 (`computeDirecaoMovimento`). Sem base
- * de comparacao (sem trimestre anterior, ou centro de massa ausente em
- * qualquer dos dois — recorte abaixo do piso), a direcao e
- * `'primeira_vez'` e os deltas ficam nulos. Puro (RV-13: consumido por
- * `loadRecorteAggregatePage` + teste unit). §8.06.6a.
+ * (`anterior`). Guarda as posicoes (celula) dos dois; a UI deriva a
+ * seta/veredito por `derivarSeta`. Sem base de comparacao (sem
+ * trimestre anterior, ou centro de massa ausente em qualquer dos dois —
+ * recorte abaixo do piso), as posicoes anteriores e os deltas ficam
+ * nulos. Puro (RV-13: consumido por `loadRecorteAggregatePage` /
+ * `loadCompanyAggregatePage` + teste unit). §8.06.6a.
  */
 export function buildMovimento9box(
   atual: AggregateResult,
@@ -403,13 +410,16 @@ export function buildMovimento9box(
   trimestreAnterior: string | null,
 ): Movimento9Box | null {
   const cmA = atual.centroMassa;
-  if (cmA.quadrante === null || cmA.posicaoY === null) {
+  if (cmA.quadrante === null || cmA.posicaoX === null || cmA.posicaoY === null) {
     return null;
   }
-  const semBase = {
-    direcao: 'primeira_vez' as NineBoxDirecaoMovimento,
+  const semBase: Movimento9Box = {
     quadranteAtual: cmA.quadrante,
     quadranteAnterior: null,
+    posicaoXAtual: cmA.posicaoX,
+    posicaoYAtual: cmA.posicaoY,
+    posicaoXAnterior: null,
+    posicaoYAnterior: null,
     deltaX: null,
     deltaY: null,
     trimestreAnterior: null,
@@ -418,17 +428,16 @@ export function buildMovimento9box(
     return semBase;
   }
   const cmP = anterior.centroMassa;
-  if (cmP.quadrante === null || cmP.posicaoY === null) {
+  if (cmP.quadrante === null || cmP.posicaoX === null || cmP.posicaoY === null) {
     return semBase;
   }
-  const direcao = computeDirecaoMovimento(cmA.quadrante, cmA.posicaoY, {
-    quadrante: cmP.quadrante,
-    posicaoY: cmP.posicaoY,
-  });
   return {
-    direcao,
     quadranteAtual: cmA.quadrante,
     quadranteAnterior: cmP.quadrante,
+    posicaoXAtual: cmA.posicaoX,
+    posicaoYAtual: cmA.posicaoY,
+    posicaoXAnterior: cmP.posicaoX,
+    posicaoYAnterior: cmP.posicaoY,
     deltaX: cmA.x !== null && cmP.x !== null ? round2(cmA.x - cmP.x) : null,
     deltaY: cmA.y !== null && cmP.y !== null ? round2(cmA.y - cmP.y) : null,
     trimestreAnterior,
@@ -473,8 +482,9 @@ export async function loadRecorteAggregatePage(
       ? await loadTurnoverPage(db, companyId, trimestrePedido, alvo.departamento)
       : null;
 
-  // §8.06.6a — IQL do lider-dono e movimento no 9-Box so em equipe
-  // direta e cadeia total (departamento/empresa nao tem lider unico).
+  // §8.06.6a — IQL do lider-dono, movimento no 9-Box (seta na grade) e
+  // card de deslocamento so em equipe/cadeia. Departamento e empresa
+  // nao tem lider unico nem card/seta de movimento.
   let iqlLider: IqlLiderBloco | null = null;
   let movimento9box: Movimento9Box | null = null;
   if (alvo.tipo === 'equipe' || alvo.tipo === 'cadeia') {

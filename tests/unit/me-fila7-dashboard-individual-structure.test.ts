@@ -97,14 +97,18 @@ describe('dashboard individual — helpers puros', () => {
     expect(cima.color).toBe('#16A34A');
     // direita + cima -> ↗ verde
     expect(derivarSeta('alto', 'alta', 'medio', 'media').char).toBe('↗');
-    // so esquerda -> ← vermelho
+    // so esquerda (desempenho cai, plenitude igual) -> ← amarelo (§8.06.6a)
     const esq = derivarSeta('baixo', 'media', 'medio', 'media');
     expect(esq.char).toBe('←');
-    expect(esq.color).toBe('#DC2626');
-    // baixo (plenitude desceu: media->baixa) -> ↓ vermelho
-    expect(derivarSeta('medio', 'baixa', 'medio', 'media').char).toBe('↓');
-    // esquerda + baixo -> ↙ vermelho
-    expect(derivarSeta('baixo', 'baixa', 'medio', 'media').char).toBe('↙');
+    expect(esq.color).toBe('#F2A900');
+    // baixo (plenitude desceu: media->baixa) -> ↓ amarelo (§8.06.6a)
+    const baixo = derivarSeta('medio', 'baixa', 'medio', 'media');
+    expect(baixo.char).toBe('↓');
+    expect(baixo.color).toBe('#F2A900');
+    // esquerda + baixo (ambos retrocedem) -> ↙ vermelho
+    const esqBaixo = derivarSeta('baixo', 'baixa', 'medio', 'media');
+    expect(esqBaixo.char).toBe('↙');
+    expect(esqBaixo.color).toBe('#DC2626');
     // misto: direita + baixo -> ↘ amarelo
     const misto = derivarSeta('alto', 'baixa', 'medio', 'media');
     expect(misto.char).toBe('↘');

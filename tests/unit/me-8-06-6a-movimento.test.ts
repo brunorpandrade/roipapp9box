@@ -1,7 +1,9 @@
 // ROIP APP 9BOX — ME §8.06.6a — movimento do coletivo no 9-Box (teste
-// puro, sem banco). Prova o `buildMovimento9box`: direcao pela regua
-// §7.5 aplicada ao centro de massa, deltas do centro de massa, e os
-// casos sem base (sem trimestre anterior, centro de massa ausente).
+// puro, sem banco). Prova o `buildMovimento9box`: guarda as posições
+// (célula) do centro de massa atual e anterior, os deltas e os
+// quadrantes; os casos sem base (sem trimestre anterior, centro de
+// massa ausente) zeram posições anteriores e deltas. A seta/veredito é
+// derivada na UI por `derivarSeta` (coberto em nineBoxSeta.test.ts).
 
 import { describe, expect, it } from 'vitest';
 
@@ -43,7 +45,7 @@ function agg(cm: CmInput): AggregateResult {
 const vazio = agg({ x: null, y: null, posicaoX: null, posicaoY: null, quadrante: null });
 
 describe('ME §8.06.6a — buildMovimento9box', () => {
-  it('subiu: posicaoY sobe (media -> alta), com deltas do centro de massa', () => {
+  it('com base: guarda posições atual/anterior, deltas e quadrantes', () => {
     const atual = agg({
       x: 90,
       y: 85,
@@ -59,15 +61,18 @@ describe('ME §8.06.6a — buildMovimento9box', () => {
       quadrante: 'ALTA ENTREGA',
     });
     const m = buildMovimento9box(atual, ant, '2025-Q2');
-    expect(m?.direcao).toBe('subiu');
     expect(m?.quadranteAtual).toBe('ALTO IMPACTO');
     expect(m?.quadranteAnterior).toBe('ALTA ENTREGA');
+    expect(m?.posicaoXAtual).toBe('alto');
+    expect(m?.posicaoYAtual).toBe('alta');
+    expect(m?.posicaoXAnterior).toBe('alto');
+    expect(m?.posicaoYAnterior).toBe('media');
     expect(m?.deltaX).toBe(10);
     expect(m?.deltaY).toBe(15);
     expect(m?.trimestreAnterior).toBe('2025-Q2');
   });
 
-  it('caiu: posicaoY desce (media -> baixa)', () => {
+  it('deltas negativos quando o centro de massa recua', () => {
     const atual = agg({
       x: 55,
       y: 40,
@@ -83,31 +88,13 @@ describe('ME §8.06.6a — buildMovimento9box', () => {
       quadrante: 'EQUILÍBRIO FRÁGIL',
     });
     const m = buildMovimento9box(atual, ant, '2025-Q2');
-    expect(m?.direcao).toBe('desceu');
     expect(m?.deltaX).toBe(-3);
     expect(m?.deltaY).toBe(-15);
+    expect(m?.posicaoYAnterior).toBe('media');
+    expect(m?.posicaoYAtual).toBe('baixa');
   });
 
-  it('lateral: quadrante muda mas posicaoY se mantem (so Eixo X mudou)', () => {
-    const atual = agg({
-      x: 90,
-      y: 60,
-      posicaoX: 'alto',
-      posicaoY: 'media',
-      quadrante: 'ALTA ENTREGA',
-    });
-    const ant = agg({
-      x: 70,
-      y: 60,
-      posicaoX: 'medio',
-      posicaoY: 'media',
-      quadrante: 'EQUILÍBRIO FRÁGIL',
-    });
-    const m = buildMovimento9box(atual, ant, '2025-Q2');
-    expect(m?.direcao).toBe('lateral');
-  });
-
-  it('manteve: mesmo quadrante nos dois trimestres', () => {
+  it('mesma célula: posições atual e anterior iguais (UI marca Manteve)', () => {
     const atual = agg({
       x: 90,
       y: 85,
@@ -123,10 +110,13 @@ describe('ME §8.06.6a — buildMovimento9box', () => {
       quadrante: 'ALTO IMPACTO',
     });
     const m = buildMovimento9box(atual, ant, '2025-Q2');
-    expect(m?.direcao).toBe('estavel');
+    expect(m?.posicaoXAtual).toBe('alto');
+    expect(m?.posicaoXAnterior).toBe('alto');
+    expect(m?.posicaoYAtual).toBe('alta');
+    expect(m?.posicaoYAnterior).toBe('alta');
   });
 
-  it('sem trimestre anterior: primeira_vez, deltas nulos', () => {
+  it('sem trimestre anterior: posições anteriores e deltas nulos', () => {
     const atual = agg({
       x: 90,
       y: 85,
@@ -135,14 +125,17 @@ describe('ME §8.06.6a — buildMovimento9box', () => {
       quadrante: 'ALTO IMPACTO',
     });
     const m = buildMovimento9box(atual, null, null);
-    expect(m?.direcao).toBe('primeira_vez');
+    expect(m?.quadranteAtual).toBe('ALTO IMPACTO');
     expect(m?.quadranteAnterior).toBeNull();
+    expect(m?.posicaoXAtual).toBe('alto');
+    expect(m?.posicaoXAnterior).toBeNull();
+    expect(m?.posicaoYAnterior).toBeNull();
     expect(m?.deltaX).toBeNull();
     expect(m?.deltaY).toBeNull();
     expect(m?.trimestreAnterior).toBeNull();
   });
 
-  it('anterior sem centro de massa (abaixo do piso): primeira_vez', () => {
+  it('anterior sem centro de massa (abaixo do piso): posições anteriores nulas', () => {
     const atual = agg({
       x: 90,
       y: 85,
@@ -151,11 +144,12 @@ describe('ME §8.06.6a — buildMovimento9box', () => {
       quadrante: 'ALTO IMPACTO',
     });
     const m = buildMovimento9box(atual, vazio, '2025-Q2');
-    expect(m?.direcao).toBe('primeira_vez');
     expect(m?.quadranteAnterior).toBeNull();
+    expect(m?.posicaoXAnterior).toBeNull();
+    expect(m?.trimestreAnterior).toBeNull();
   });
 
-  it('atual sem centro de massa: sem card de movimento (null)', () => {
+  it('atual sem centro de massa: sem movimento (null)', () => {
     const m = buildMovimento9box(
       vazio,
       agg({ x: 80, y: 70, posicaoX: 'alto', posicaoY: 'media', quadrante: 'ALTA ENTREGA' }),

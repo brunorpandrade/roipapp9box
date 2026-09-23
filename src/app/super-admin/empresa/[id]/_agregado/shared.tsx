@@ -1,26 +1,28 @@
+'use client';
+
 // ROIP APP 9BOX — peças compartilhadas dos dashboards agregados (ESPEC
 // §7, §10). Extraídas do dashboard da empresa na ME §8.06.5 (RV-14) para
 // serem reaproveitadas pelos dashboards de recorte (departamento, equipe
 // direta, cadeia total). O comum: navegação de trimestre, card do
-// coletivo, 9-Box com contagem + centro de massa, mostradores por faixa
-// e as 4 dimensões. Folha e turnover NÃO estão aqui — são exclusivos da
-// empresa (§11) e ficam no EmpresaDashboardClient.
+// coletivo, 9-Box com contagem + centro de massa + legenda, mostradores
+// por faixa e as 4 dimensões. §8.06.6a acrescenta o IQL do líder e o
+// card/seta de movimento (só equipe/cadeia). Folha e turnover NÃO estão
+// aqui — são exclusivos da empresa (§11) e ficam no EmpresaDashboardClient.
 //
 // **RV-14.** Um statement por linha, largura máxima 100 colunas.
 
 import Link from 'next/link';
-import type { CSSProperties, JSX } from 'react';
+import { useState, type CSSProperties, type JSX } from 'react';
 
 import { COLORS } from '../../../../../lib/design-tokens/colors';
 import type { AggregateResult } from '../../../../../server/services/aggregationEngine';
 import type { IqlLiderBloco, Movimento9Box } from '../../../../../server/services/companyAggregate';
-import type {
-  NineBoxDirecaoMovimento, // rótulos do card de movimento (§8.06.6a)
-} from '../../../../../server/services/nineBoxCalculationEngine';
 import type { TurnoverPageData } from '../../../../../server/services/turnoverPanel';
 import {
   NINE_BOX_GRID,
+  QUADRANTE_LEGENDA,
   colIndexFor,
+  derivarSeta,
   faixaDesempenhoLabel,
   faixaPlenitudeLabel,
   formatPercent,
@@ -45,6 +47,27 @@ export const LABEL: CSSProperties = {
   letterSpacing: '0.06em',
   textTransform: 'uppercase',
   color: COLORS.text.tertiary,
+};
+
+const BTN: CSSProperties = {
+  padding: '6px 12px',
+  borderRadius: 8,
+  border: `1px solid ${COLORS.border.default}`,
+  background: COLORS.background.card,
+  fontSize: 13,
+  color: COLORS.text.secondary,
+  cursor: 'pointer',
+};
+
+const OVERLAY: CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(0, 0, 0, 0.4)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 20,
+  zIndex: 50,
 };
 
 const SU = COLORS.semantic.success;
@@ -88,6 +111,15 @@ function corAssiduidade(v: number | null): string {
   if (v === null) return NEUTRO;
   if (v >= 95) return SU;
   if (v >= 85) return WA;
+  return DA;
+}
+
+// Faixas de cor do IQL (CAMADA_NEGOCIO §8.5): ate 65 vermelho, 66-75
+// amarelo, acima de 75 verde. Vale para o geral e para as 4 dimensoes.
+function corIql(v: number | null): string {
+  if (v === null) return NEUTRO;
+  if (v > 75) return SU;
+  if (v > 65) return WA;
   return DA;
 }
 
@@ -189,24 +221,94 @@ export function ColetivoCard(props: { readonly agg: AggregateResult }): JSX.Elem
   );
 }
 
-export function NineBoxColetivo(props: { readonly agg: AggregateResult }): JSX.Element {
+function LegendaModal(props: { readonly onClose: () => void }): JSX.Element {
+  return (
+    <div style={OVERLAY} onClick={props.onClose}>
+      <div
+        style={{ ...CARD, maxWidth: 820, width: '100%', maxHeight: '86vh', overflowY: 'auto' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button type="button" onClick={props.onClose} style={BTN}>
+            Fechar
+          </button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+          {NINE_BOX_GRID.flat().map((cell) => (
+            <div key={cell.quadrante} style={{ background: cell.bg, borderRadius: 8, padding: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: cell.text, marginBottom: 4 }}>
+                {cell.quadrante}
+              </div>
+              <div style={{ fontSize: 11, color: COLORS.text.secondary, lineHeight: 1.4 }}>
+                {QUADRANTE_LEGENDA[cell.quadrante] ?? ''}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div
+          style={{
+            marginTop: 12,
+            padding: 10,
+            background: COLORS.background.elevated,
+            borderRadius: 8,
+            fontSize: 12,
+            color: COLORS.text.secondary,
+          }}
+        >
+          <div>
+            <strong>Faixas de desempenho:</strong> Baixo &lt;60% · Médio 60–85% · Alto &gt;85%
+          </div>
+          <div>
+            <strong>Faixas de plenitude:</strong> Baixa &lt;50% · Média 50–75% · Alta &gt;75%
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function NineBoxColetivo(props: {
+  readonly agg: AggregateResult;
+  readonly movimento?: Movimento9Box | null;
+}): JSX.Element {
   const { agg } = props;
+  const [legendaOpen, setLegendaOpen] = useState<boolean>(false);
   const cmRow = agg.centroMassa.posicaoY === null ? -1 : rowIndexFor(agg.centroMassa.posicaoY);
   const cmCol = agg.centroMassa.posicaoX === null ? -1 : colIndexFor(agg.centroMassa.posicaoX);
+  const mv = props.movimento ?? null;
+  const seta =
+    mv !== null && mv.posicaoXAtual !== null && mv.posicaoYAtual !== null
+      ? derivarSeta(mv.posicaoXAtual, mv.posicaoYAtual, mv.posicaoXAnterior, mv.posicaoYAnterior)
+      : { char: '', color: '', label: '' };
   return (
     <div style={CARD}>
-      <div style={LABEL}>9-Box — distribuição do coletivo</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={LABEL}>9-Box — distribuição do coletivo</div>
+        <button type="button" onClick={() => setLegendaOpen(true)} style={BTN}>
+          Legenda
+        </button>
+      </div>
       <div style={{ display: 'flex', alignItems: 'stretch', gap: 8, marginTop: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+          }}
+        >
+          <span style={{ ...LABEL, fontSize: 11 }}>↑</span>
           <span
             style={{
               writingMode: 'vertical-rl',
               transform: 'rotate(180deg)',
               ...LABEL,
-              fontSize: 11,
+              fontSize: 10,
+              textAlign: 'center',
             }}
           >
-            Plenitude ↑
+            PLENITUDE
           </span>
         </div>
         <div style={{ flex: 1 }}>
@@ -215,6 +317,7 @@ export function NineBoxColetivo(props: { readonly agg: AggregateResult }): JSX.E
               row.map((cell, c) => {
                 const centro = r === cmRow && c === cmCol;
                 const n = agg.heatmap[r]![c]!;
+                const mostraSeta = centro && seta.char.length > 0;
                 return (
                   <div
                     key={cell.quadrante}
@@ -222,7 +325,7 @@ export function NineBoxColetivo(props: { readonly agg: AggregateResult }): JSX.E
                       background: cell.bg,
                       color: cell.text,
                       borderRadius: 10,
-                      minHeight: 88,
+                      minHeight: 92,
                       padding: 8,
                       display: 'flex',
                       flexDirection: 'column',
@@ -232,23 +335,29 @@ export function NineBoxColetivo(props: { readonly agg: AggregateResult }): JSX.E
                       textAlign: 'center',
                       outline: centro ? `2px solid ${COLORS.text.primary}` : 'none',
                       outlineOffset: centro ? 1 : 0,
-                      opacity: centro ? 1 : 0.75,
+                      opacity: centro ? 1 : 0.7,
                     }}
                   >
                     <span style={{ fontSize: 22, fontWeight: 700 }}>{n}</span>
                     <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.02em' }}>
                       {cell.quadrante}
                     </span>
+                    {mostraSeta ? (
+                      <span style={{ fontSize: 16, fontWeight: 700, color: seta.color }}>
+                        {seta.char}
+                      </span>
+                    ) : null}
                   </div>
                 );
               }),
             )}
           </div>
-          <div style={{ textAlign: 'center', ...LABEL, marginTop: 8, fontSize: 11 }}>
-            Desempenho →
+          <div style={{ textAlign: 'center', ...LABEL, marginTop: 8, fontSize: 10 }}>
+            DESEMPENHO →
           </div>
         </div>
       </div>
+      {legendaOpen ? <LegendaModal onClose={() => setLegendaOpen(false)} /> : null}
     </div>
   );
 }
@@ -354,11 +463,14 @@ export function IqlLiderCard(props: { readonly iqlLider: IqlLiderBloco }): JSX.E
   ];
   return (
     <div style={CARD}>
-      <div style={{ ...LABEL, marginBottom: 8 }}>IQL do líder</div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-        <span style={{ fontSize: 26, fontWeight: 700, color: COLORS.text.primary }}>
-          {fmt(q.iql, 1)}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
+        <span style={{ fontSize: 15, fontWeight: 700, color: COLORS.text.primary }}>IQL</span>
+        <span style={{ fontSize: 10.5, color: COLORS.text.tertiary }}>
+          (Índice de Qualidade da Liderança)
         </span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <span style={{ fontSize: 26, fontWeight: 700, color: corIql(q.iql) }}>{fmt(q.iql, 1)}</span>
         <span style={{ fontSize: 12, color: COLORS.text.tertiary }}>
           geral · {q.countRespondentes} respondentes
         </span>
@@ -377,26 +489,13 @@ export function IqlLiderCard(props: { readonly iqlLider: IqlLiderBloco }): JSX.E
             titulo={d.label}
             arcValue={d.v}
             texto={fmt(d.v, 1)}
-            cor={COLORS.text.primary}
+            cor={corIql(d.v)}
           />
         ))}
       </div>
     </div>
   );
 }
-
-const MOV_LABEL: Readonly<
-  Record<
-    NineBoxDirecaoMovimento,
-    { readonly txt: string; readonly seta: string; readonly cor: string }
-  >
-> = {
-  subiu: { txt: 'Subiu', seta: '↑', cor: SU },
-  desceu: { txt: 'Caiu', seta: '↓', cor: DA },
-  lateral: { txt: 'Movimento lateral', seta: '→', cor: WA },
-  estavel: { txt: 'Manteve', seta: '=', cor: NEUTRO },
-  primeira_vez: { txt: 'Sem base anterior', seta: '•', cor: COLORS.text.tertiary },
-};
 
 function sinal(v: number | null): string {
   if (v === null) {
@@ -408,35 +507,72 @@ function sinal(v: number | null): string {
 
 export function Movimento9BoxCard(props: { readonly movimento: Movimento9Box }): JSX.Element {
   const m = props.movimento;
-  const mov = MOV_LABEL[m.direcao];
+  const semBase = m.trimestreAnterior === null;
+  const seta =
+    !semBase && m.posicaoXAtual !== null && m.posicaoYAtual !== null
+      ? derivarSeta(m.posicaoXAtual, m.posicaoYAtual, m.posicaoXAnterior, m.posicaoYAnterior)
+      : { char: '', color: '', label: '' };
+  let veredito: string;
+  let setaGrande: string;
+  let cor: string;
+  if (semBase) {
+    veredito = 'Sem base anterior';
+    setaGrande = '•';
+    cor = COLORS.text.tertiary;
+  } else if (seta.char.length === 0) {
+    veredito = 'Manteve';
+    setaGrande = '=';
+    cor = NEUTRO;
+  } else {
+    veredito = seta.label;
+    setaGrande = seta.char;
+    cor = seta.color;
+  }
+  let frase: string;
+  if (m.quadranteAtual === null) {
+    frase = '—';
+  } else if (m.quadranteAnterior !== null) {
+    frase = `${m.quadranteAtual} → ${m.quadranteAnterior}`;
+  } else {
+    frase = m.quadranteAtual;
+  }
   return (
     <div style={CARD}>
       <div style={{ ...LABEL, marginBottom: 8 }}>Movimento no 9-Box</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 24, fontWeight: 700, color: mov.cor }}>{mov.seta}</span>
-        <span style={{ fontSize: 18, fontWeight: 700, color: mov.cor }}>{mov.txt}</span>
-      </div>
-      <div style={{ fontSize: 13, color: COLORS.text.secondary, marginTop: 8 }}>
-        Quadrante: {m.quadranteAtual ?? '—'}
-        {m.quadranteAnterior !== null ? ` (antes: ${m.quadranteAnterior})` : ''}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 8,
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: cor }}>{veredito}</div>
+          <div style={{ fontSize: 13, color: COLORS.text.secondary, marginTop: 4 }}>{frase}</div>
+        </div>
+        <span style={{ fontSize: 40, fontWeight: 700, lineHeight: 1, color: cor }}>
+          {setaGrande}
+        </span>
       </div>
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
           gap: 8,
-          marginTop: 8,
+          marginTop: 12,
+          textAlign: 'center',
         }}
       >
         <div>
           <div style={{ ...LABEL, fontSize: 11 }}>Δ Desempenho</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: COLORS.text.primary }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.text.primary, marginTop: 2 }}>
             {sinal(m.deltaX)}
           </div>
         </div>
         <div>
           <div style={{ ...LABEL, fontSize: 11 }}>Δ Plenitude</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: COLORS.text.primary }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.text.primary, marginTop: 2 }}>
             {sinal(m.deltaY)}
           </div>
         </div>
