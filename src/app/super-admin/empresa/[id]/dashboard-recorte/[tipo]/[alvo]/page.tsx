@@ -10,20 +10,17 @@
 import { notFound, redirect } from 'next/navigation';
 import type { JSX } from 'react';
 
-import type { RoipDatabase } from '../../../../../../../db/client';
 import { closeDbClient, createDbClient } from '../../../../../../../db/client';
-import { DEPARTAMENTO_VALUES, type Departamento } from '../../../../../../../db/schema/enums';
 import { COLORS } from '../../../../../../../lib/design-tokens/colors';
 import { resolveDatabaseUrl } from '../../../../../../../lib/db/resolveDatabaseUrl';
 import { findCompanyDisplayInfo } from '../../../../../../../lib/logs/companyHistoryLog';
 import { resolveMenuItems } from '../../../../../../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../../../../../../lib/session/resolveProfileKey';
-import { getCLevelMemberById } from '../../../../../../../server/services/cLevelMembers';
 import {
   loadRecorteAggregatePage,
   type RecorteAlvo,
 } from '../../../../../../../server/services/companyAggregate';
-import { getEmployeeById } from '../../../../../../../server/services/employees';
+import { resolveRecorteAlvo } from '../../../../../../../server/services/recorteAccess';
 import { Layout } from '../../../../../../../components/shell/Layout';
 import { getServerSession } from '../../../../../../../server/session/serverSession';
 import { parseCompanyIdParam } from '../../../organograma/internals';
@@ -33,48 +30,6 @@ import { RecorteDashboardClient } from './RecorteDashboardClient';
 interface PageProps {
   readonly params: Promise<{ id: string; tipo: string; alvo: string }>;
   readonly searchParams: Promise<{ trimestre?: string }>;
-}
-
-interface AlvoResolvido {
-  readonly alvo: RecorteAlvo;
-  readonly titulo: string;
-}
-
-function isDepartamento(v: string): v is Departamento {
-  return (DEPARTAMENTO_VALUES as readonly string[]).includes(v);
-}
-
-async function resolveAlvo(
-  db: RoipDatabase,
-  companyId: number,
-  tipo: 'departamento' | 'equipe' | 'cadeia',
-  alvoRaw: string,
-): Promise<AlvoResolvido | null> {
-  if (tipo === 'departamento') {
-    const dept = decodeURIComponent(alvoRaw);
-    if (!isDepartamento(dept)) {
-      return null;
-    }
-    return { alvo: { tipo: 'departamento', departamento: dept }, titulo: `Departamento — ${dept}` };
-  }
-  const m = /^(employee|clevel)-(\d+)$/.exec(alvoRaw);
-  if (m === null) {
-    return null;
-  }
-  const leaderTipo = m[1] === 'clevel' ? 'clevel' : 'employee';
-  const leaderId = Number(m[2]);
-  const registro =
-    leaderTipo === 'clevel'
-      ? await getCLevelMemberById(db, leaderId)
-      : await getEmployeeById(db, leaderId);
-  if (registro === undefined || registro.companyId !== companyId) {
-    return null;
-  }
-  const rotulo = tipo === 'equipe' ? 'Equipe direta' : 'Cadeia total';
-  return {
-    alvo: { tipo, leader: { tipo: leaderTipo, id: leaderId } },
-    titulo: `${rotulo} — ${registro.name}`,
-  };
 }
 
 export default async function DashboardRecortePage(props: PageProps): Promise<JSX.Element> {
@@ -104,16 +59,17 @@ export default async function DashboardRecortePage(props: PageProps): Promise<JS
       notFound();
     }
 
-    const resolvido = await resolveAlvo(client.db, companyId, tipo, alvoRaw);
+    const resolvido = await resolveRecorteAlvo(client.db, companyId, tipo, alvoRaw);
     if (resolvido === null) {
       notFound();
     }
+    const alvo: RecorteAlvo = resolvido.alvo;
 
     const data = await loadRecorteAggregatePage(
       client.db,
       companyId,
       trimestrePedido ?? null,
-      resolvido.alvo,
+      alvo,
     );
 
     const profileKey = resolveProfileKey({
