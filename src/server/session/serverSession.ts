@@ -65,6 +65,7 @@ import { eq } from 'drizzle-orm';
 import { createDbClient, type RoipDatabase } from '../../db/client';
 import { cLevelMembers, companies, employees, superAdmins } from '../../db/schema';
 import { verifyToken } from '../auth/jwt';
+import { currentCredentialVersion } from '../../lib/session/credentialVersion';
 
 // -----------------------------------------------------------------------
 // Tipos canonicos
@@ -159,6 +160,18 @@ export async function resolveServerSession(
     return null;
   }
   const inner = verified.token;
+
+  // §5.7 (S011) — invalidacao de sessao por versao de credencial. O
+  // middleware `authed` do tRPC ja compara o pwv no transporte; o render
+  // server-side via `getServerSession` NAO comparava, permitindo que uma
+  // sessao cuja credencial ja foi trocada (senha via §4.7, e-mail via
+  // §4.9, reset via §4.5) continuasse abrindo paineis renderizados no
+  // servidor. RV-14: mesma unidade `currentCredentialVersion` consumida
+  // pelo `authed`, sem segunda copia da regra.
+  const expectedPwv = await currentCredentialVersion(db, inner);
+  if (expectedPwv === null || expectedPwv !== inner.claims.credentialVersion) {
+    return null;
+  }
 
   if (inner.kind === 'super_admin') {
     const rows = await db

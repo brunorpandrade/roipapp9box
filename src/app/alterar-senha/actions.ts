@@ -13,8 +13,10 @@ import { TRPCError } from '@trpc/server';
 import { cookies } from 'next/headers';
 
 import { closeDbClient, createDbClient } from '../../db/client';
+import { verifyToken } from '../../server/auth/jwt';
 import { createRateLimiter } from '../../server/auth/rateLimit';
 import { authRouter } from '../../server/routers/auth';
+import { setSessionCookie, type SessionKind } from '../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../server/trpc';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
@@ -37,15 +39,18 @@ export type ActionResult<T = null> =
  * C-level) OU Super Admin. `auth.changePassword` cuida da role interna.
  * Retorna sucesso simples — o client redireciona para o painel apos ok.
  *
- * NOTA canonica sobre cookie: `auth.changePassword` re-emite JWT com pwv
- * atualizado via `ctx.reissuedToken.value`. Como estamos chamando via
- * createCallerFactory (nao pelo endpoint tRPC HTTP), essa re-emissao
- * fica no contexto criado aqui e NAO chega automaticamente ao browser.
- * O usuario permanecera com o cookie antigo — mas como o backend so
- * verifica pwv no proximo request tRPC, e como o painel usa server
- * components (getServerSession consulta banco, nao pwv), a sessao
- * segue valida. Se o usuario chamar tRPC apos trocar senha, o guard
- * `authed` fara reissue automatica (mesmo mecanismo do login).
+ * NOTA canonica sobre cookie (§5.7 "exceto a sessao atual"):
+ * `auth.changePassword` re-emite o JWT com o pwv derivado do NOVO
+ * passwordHash e o publica em `ctx.reissuedToken.value`. Como a chamada
+ * e via createCallerFactory (nao pelo endpoint tRPC HTTP), o adapter de
+ * fetch nao existe para publicar o header `x-roip-session`; portanto
+ * este action LE `ctx.reissuedToken.value` e grava o cookie `session`
+ * novo via `setSessionCookie`. Sem isso, o cookie do browser
+ * permaneceria com o pwv antigo e o proximo render server-side
+ * (`getServerSession`, que agora compara pwv — §5.7) invalidaria a
+ * propria sessao que originou a troca, derrubando o usuario em
+ * `/meus-dados` com UNAUTHORIZED. Gravar o cookie realiza a regra
+ * canonica: invalida todas as sessoes EXCETO a atual.
  */
 export async function alterarSenhaAction(input: {
   readonly senhaAtual: string;
@@ -58,18 +63,27 @@ export async function alterarSenhaAction(input: {
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    const caller = createAuthCaller(
-      createContextInner({
-        db: client.db,
-        rateLimiter: actionRateLimiter,
-        bearerToken: token,
-        ip: null,
-      }),
-    );
+    const ctx = createContextInner({
+      db: client.db,
+      rateLimiter: actionRateLimiter,
+      bearerToken: token,
+      ip: null,
+    });
+    const caller = createAuthCaller(ctx);
     await caller.changePassword({
       senhaAtual: input.senhaAtual,
       novaSenha: input.novaSenha,
     });
+    // §5.7 "exceto a sessao atual": grava no browser o cookie `session`
+    // reemitido com o pwv novo. `changePassword` sempre preenche
+    // `ctx.reissuedToken.value` no sucesso (Super Admin e plataforma).
+    const reissuedToken = ctx.reissuedToken.value;
+    if (reissuedToken !== null) {
+      const verified = await verifyToken(reissuedToken);
+      const kind: SessionKind =
+        verified.valid && verified.token.kind === 'super_admin' ? 'super_admin' : 'platform';
+      await setSessionCookie(reissuedToken, kind);
+    }
     return { ok: true, data: { passwordSet: true } };
   } catch (err) {
     if (err instanceof TRPCError) {

@@ -41,17 +41,10 @@ import { initTRPC, TRPCError } from '@trpc/server';
 import type { FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch';
 
 import { createDbClient, type RoipDatabase } from '../db/client';
-import {
-  deriveCredentialVersion,
-  verifyToken,
-  type PlatformRole,
-  type VerifiedToken,
-} from './auth/jwt';
+import { verifyToken, type PlatformRole } from './auth/jwt';
 import { createRateLimiter, type RateLimiter } from './auth/rateLimit';
-import { getCLevelMemberById } from './services/cLevelMembers';
 import { getCompanyById } from './services/companies';
-import { getEmployeeById } from './services/employees';
-import { getSuperAdminById } from './services/superAdmins';
+import { currentCredentialVersion } from '../lib/session/credentialVersion';
 
 /** Enum canonico completo do claim `role` (DOC 02 §2.2) — 5 valores. */
 export const ALL_ROLES = ['super_admin', 'rh', 'rh_lider', 'clevel', 'lider'] as const;
@@ -222,42 +215,6 @@ export const createCallerFactory = t.createCallerFactory;
  * qualquer endpoint que nao dependa de identidade.
  */
 export const publicProcedure = t.procedure;
-
-/**
- * Deriva a versao de credencial vigente do titular do token (§5.7, S011).
- * Retorna null quando o titular nao existe ou nao possui `passwordHash`
- * definido (S014): um token cujo titular sumiu ou nunca definiu senha e
- * tratado como sessao invalida, nunca como AccessDenied.
- */
-async function currentCredentialVersion(
-  db: RoipDatabase,
-  token: VerifiedToken,
-): Promise<string | null> {
-  if (token.kind === 'super_admin') {
-    const admin = await getSuperAdminById(db, token.claims.superAdminId);
-    if (admin === undefined) {
-      return null;
-    }
-    // Super Admin: e-mail participa da derivacao (§5.7 — alteracao de
-    // e-mail tambem invalida sessoes). `passwordHash` e NOT NULL na tabela.
-    return deriveCredentialVersion(admin.passwordHash + admin.email);
-  }
-
-  if (token.claims.role === 'clevel') {
-    const member = await getCLevelMemberById(db, token.claims.userId);
-    if (member === undefined || member.passwordHash === null) {
-      return null;
-    }
-    return deriveCredentialVersion(member.passwordHash);
-  }
-
-  // rh | rh_lider | lider — titular em `employees`.
-  const employee = await getEmployeeById(db, token.claims.userId);
-  if (employee === undefined || employee.passwordHash === null) {
-    return null;
-  }
-  return deriveCredentialVersion(employee.passwordHash);
-}
 
 /**
  * Middleware de autenticacao (§8.4 passos 1,2,6,7 + §5.7). Ordem canonica:

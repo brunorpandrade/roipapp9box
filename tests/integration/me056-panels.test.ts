@@ -27,7 +27,13 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { and, eq, sql } from 'drizzle-orm';
 
 import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/client';
-import { cLevelMembers, companies, employees, employeeLeaderHistory } from '../../src/db/schema';
+import {
+  cLevelMembers,
+  companies,
+  employees,
+  employeeLeaderHistory,
+  superAdmins,
+} from '../../src/db/schema';
 import { hashPassword } from '../../src/server/auth/password';
 import {
   deriveCredentialVersion,
@@ -56,11 +62,28 @@ describe('ME-056 — Paineis + resolveServerSession (MySQL real)', () => {
   let companyIdA: number;
   let hashOk: string;
   let pwv: string;
+  let superAdminPwv: string;
 
   beforeAll(async () => {
     client = createDbClient(TEST_URL);
     hashOk = await hashPassword(SENHA_OK, BCRYPT_COST_TEST);
     pwv = deriveCredentialVersion(hashOk);
+    // super_admin: o pwv deriva de passwordHash + email do titular (§5.7,
+    // currentCredentialVersion). O fixture id=1 (tests/integration/setup.ts)
+    // tem passwordHash e email proprios; resolveServerSession agora compara
+    // o pwv tambem no render server-side (correcao Debitos A/B da §8.07),
+    // entao o token de super_admin precisa do pwv coerente com o fixture.
+    const [fixtureSuperAdmin] = await client.db
+      .select({ passwordHash: superAdmins.passwordHash, email: superAdmins.email })
+      .from(superAdmins)
+      .where(eq(superAdmins.id, 1))
+      .limit(1);
+    if (fixtureSuperAdmin === undefined) {
+      throw new Error('fixture super admin id=1 ausente (tests/integration/setup.ts)');
+    }
+    superAdminPwv = deriveCredentialVersion(
+      fixtureSuperAdmin.passwordHash + fixtureSuperAdmin.email,
+    );
   });
 
   afterAll(async () => {
@@ -193,7 +216,10 @@ describe('ME-056 — Paineis + resolveServerSession (MySQL real)', () => {
 
   describe('resolveServerSession — 5 roles + userId inexistente', () => {
     it('super_admin: enriquece displayName com superAdmins.name (fixture id=1)', async () => {
-      const token = await signSuperAdminToken({ superAdminId: 1, credentialVersion: pwv });
+      const token = await signSuperAdminToken({
+        superAdminId: 1,
+        credentialVersion: superAdminPwv,
+      });
       const session = await resolveServerSession(token, client.db);
       expect(session).not.toBe(null);
       if (session === null) return;
@@ -717,7 +743,10 @@ describe('ME-056 — Paineis + resolveServerSession (MySQL real)', () => {
     });
 
     it('super_admin → ProfileKey super_admin_global (§3.1)', async () => {
-      const token = await signSuperAdminToken({ superAdminId: 1, credentialVersion: pwv });
+      const token = await signSuperAdminToken({
+        superAdminId: 1,
+        credentialVersion: superAdminPwv,
+      });
       const session = await resolveServerSession(token, client.db);
       if (session?.kind !== 'super_admin') return;
       const profileKey = resolveProfileKey({
