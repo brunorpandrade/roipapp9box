@@ -36,13 +36,24 @@ import { COLORS } from '../../../../../lib/design-tokens/colors';
 import type { OrgTreeNode, OrgTreeNodeType } from '../../../../../server/services/orgTree';
 
 import {
+  CROSSOVER_LABEL,
   DASHBOARD_UNAVAILABLE_TOOLTIP,
   NODE_TYPE_LABELS,
   PC1B_TOOLTIP,
   PC1H_TOOLTIP,
   PC1I_TOOLTIP,
+  RECORTE_BASE_PATH_NATIVA,
+  analyticHasSubLeaders,
+  analyticInternalChildren,
+  analyticNodeKind,
+  buildAnalyticForest,
+  buildRecorteDepartamentoHref,
+  buildRecorteLeaderHref,
   getIniciaisFromName,
+  isDepartamentoAcessivel,
+  resolveCLevelCrossover,
   resolveDrawerDashboardAction,
+  type AnalyticDepartment,
 } from './internals';
 
 // -----------------------------------------------------------------------
@@ -84,6 +95,13 @@ export interface OrganogramaClientProps {
    * nó da empresa segue diferido.
    */
   readonly empresaDashboardHref?: string | null;
+  /**
+   * §8.06.6c (D3). Base dos hrefs de recorte do modo analítico. Ausente na
+   * rota nativa (assume `/dashboard-recorte`); a rota de Bruno passa
+   * `/super-admin/empresa/<id>/dashboard-recorte`. Generaliza o padrão de
+   * `empresaDashboardHref` para os recortes de departamento/equipe/cadeia.
+   */
+  readonly recorteBasePath?: string;
 }
 
 // -----------------------------------------------------------------------
@@ -527,11 +545,21 @@ interface ResumoDrawerProps {
   readonly applyPC1b: boolean;
   readonly canViewClevelProfile: boolean;
   readonly empresaDashboardHref: string | null;
+  readonly viewerHasFullScope: boolean;
+  readonly recorteBasePath: string;
   readonly onClose: () => void;
 }
 
 function ResumoDrawer(props: ResumoDrawerProps): JSX.Element {
-  const { selectedNode, applyPC1b, canViewClevelProfile, empresaDashboardHref, onClose } = props;
+  const {
+    selectedNode,
+    applyPC1b,
+    canViewClevelProfile,
+    empresaDashboardHref,
+    viewerHasFullScope,
+    recorteBasePath,
+    onClose,
+  } = props;
   const tipoLabel = NODE_TYPE_LABELS[selectedNode.type];
   const isEmpresa = selectedNode.type === 'empresa';
   const showLiderados = !isEmpresa && selectedNode.numLideradosDiretos > 0;
@@ -540,6 +568,11 @@ function ResumoDrawer(props: ResumoDrawerProps): JSX.Element {
     canViewClevelProfile,
     empresaDashboardHref,
   );
+  // §8.06.6d (ESPEC §5) — ação "ver agregado da cadeia" no nó de C-level.
+  // Só quem tem escopo total (Bruno, CU, CT) e apenas quando o C-level
+  // comanda dois ou mais departamentos. RH/RH-Líder não chegam aqui (PC1b
+  // mantém o nó de C-level não clicável).
+  const crossover = resolveCLevelCrossover(selectedNode, viewerHasFullScope, recorteBasePath);
 
   return (
     <div
@@ -787,6 +820,30 @@ function ResumoDrawer(props: ResumoDrawerProps): JSX.Element {
             </div>
           </>
         )}
+        {crossover.kind === 'crossover' && (
+          <Link
+            href={crossover.href}
+            title="Abrir o dashboard agregado da cadeia total deste C-level"
+            style={{
+              display: 'block',
+              boxSizing: 'border-box',
+              marginTop: 14,
+              width: '100%',
+              padding: 9,
+              background: COLORS.accent.teal,
+              color: COLORS.background.card,
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 12,
+              fontWeight: 600,
+              textAlign: 'center',
+              textDecoration: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            {CROSSOVER_LABEL}
+          </Link>
+        )}
         {applyPC1b && selectedNode.type === 'clevel' && (
           <div
             style={{
@@ -817,6 +874,7 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
     selfNodeId,
     canViewClevelProfile = false,
     empresaDashboardHref = null,
+    recorteBasePath = RECORTE_BASE_PATH_NATIVA,
   } = props;
 
   // §11.9 PC1h — converte a lista canônica de IDs permitidos em Set
@@ -842,6 +900,14 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [showSearchResults, setShowSearchResults] = useState<boolean>(false);
   const [zoomLevel, setZoomLevel] = useState<number>(ZOOM_INITIAL);
+  // §8.06.6c (D1) — modo estrutural (quem reporta a quem) vs analítico
+  // (como os números se somam). O analítico só existe no cliente,
+  // reprojetando `initialRoot` por departamento (§3 contiguidade).
+  const [mode, setMode] = useState<'estrutural' | 'analitico'>('estrutural');
+
+  // §8.06.6c/6d — escopo PC1h nulo (Bruno, RH, RH-Líder, CU, CT). Governa
+  // o esmaecimento de departamento (D5) e a exibição do crossover (D4).
+  const viewerHasFullScope = restrictedNodeIdsSet === null;
 
   const searchIndex = useMemo(() => buildSearchIndex(initialRoot), [initialRoot]);
 
@@ -1069,18 +1135,21 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
           )}
         </div>
 
-        {/* Toggle modo analítico desabilitado (D1 mantida) */}
+        {/* Toggle modo estrutural ↔ analítico (§8.06.6c, D1). */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             type="button"
-            disabled
-            title={DASHBOARD_UNAVAILABLE_TOOLTIP}
+            onClick={() => setMode((m) => (m === 'estrutural' ? 'analitico' : 'estrutural'))}
+            role="switch"
+            aria-checked={mode === 'analitico'}
+            aria-label="Alternar entre modo estrutural e analítico"
+            title="Estrutural: quem reporta a quem. Analítico: como os números se somam."
             style={{
               width: 38,
               height: 20,
-              background: COLORS.border.default,
+              background: mode === 'analitico' ? COLORS.accent.teal : COLORS.border.default,
               borderRadius: 999,
-              cursor: 'not-allowed',
+              cursor: 'pointer',
               flexShrink: 0,
               border: 'none',
               padding: 0,
@@ -1091,22 +1160,23 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
               style={{
                 position: 'absolute',
                 top: 2,
-                left: 2,
+                left: mode === 'analitico' ? 20 : 2,
                 width: 16,
                 height: 16,
                 borderRadius: '50%',
                 background: COLORS.background.card,
+                transition: 'left 120ms ease',
               }}
             />
           </button>
           <span
-            title={DASHBOARD_UNAVAILABLE_TOOLTIP}
             style={{
               fontSize: 12,
               fontWeight: 600,
-              color: COLORS.text.quaternary,
-              cursor: 'not-allowed',
+              color: mode === 'analitico' ? COLORS.accent.teal : COLORS.text.secondary,
+              cursor: 'pointer',
             }}
+            onClick={() => setMode((m) => (m === 'estrutural' ? 'analitico' : 'estrutural'))}
           >
             Modo analítico
           </span>
@@ -1206,18 +1276,27 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
               minWidth: '100%',
             }}
           >
-            <ul className="org-tree">
-              <RenderedNode
-                node={initialRoot}
-                selectedNodeId={selectedNodeId}
-                expandedIds={expandedIds}
-                applyPC1b={applyPC1b}
+            {mode === 'estrutural' ? (
+              <ul className="org-tree">
+                <RenderedNode
+                  node={initialRoot}
+                  selectedNodeId={selectedNodeId}
+                  expandedIds={expandedIds}
+                  applyPC1b={applyPC1b}
+                  restrictedNodeIds={restrictedNodeIdsSet}
+                  selfNodeId={selfNodeIdNormalized}
+                  onSelect={handleSelect}
+                  onToggle={handleToggle}
+                />
+              </ul>
+            ) : (
+              <AnalyticView
+                root={initialRoot}
                 restrictedNodeIds={restrictedNodeIdsSet}
                 selfNodeId={selfNodeIdNormalized}
-                onSelect={handleSelect}
-                onToggle={handleToggle}
+                recorteBasePath={recorteBasePath}
               />
-            </ul>
+            )}
           </div>
         </div>
 
@@ -1228,9 +1307,498 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
             applyPC1b={applyPC1b}
             canViewClevelProfile={canViewClevelProfile}
             empresaDashboardHref={empresaDashboardHref}
+            viewerHasFullScope={viewerHasFullScope}
+            recorteBasePath={recorteBasePath}
             onClose={handleCloseDrawer}
           />
         )}
+      </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------
+// Modo analítico (§8.06.6c — ESPEC §6). Reprojeta a árvore por
+// departamento no cliente e navega por drill-down. Dois gestos distintos
+// por nó (§6.5, D2): o corpo da bolha faz o drill; o elemento dedicado
+// (canto) abre a aba lateral com os botões de dashboard. §3 garante que a
+// cadeia interna de um departamento é contígua.
+// -----------------------------------------------------------------------
+
+interface AnalyticSideTabButton {
+  readonly label: string;
+  readonly href: string;
+}
+
+interface AnalyticSideTab {
+  readonly title: string;
+  readonly subtitle: string;
+  readonly buttons: readonly AnalyticSideTabButton[];
+}
+
+interface AnalyticViewProps {
+  readonly root: OrgTreeNode;
+  readonly restrictedNodeIds: ReadonlySet<string> | null;
+  readonly selfNodeId: string | null;
+  readonly recorteBasePath: string;
+}
+
+interface AnalyticCrumb {
+  readonly label: string;
+  readonly onClick: () => void;
+}
+
+function AnalyticView(props: AnalyticViewProps): JSX.Element {
+  const { root, restrictedNodeIds, selfNodeId, recorteBasePath } = props;
+  const forest = useMemo(() => buildAnalyticForest(root), [root]);
+  const [departamento, setDepartamento] = useState<string | null>(null);
+  const [trail, setTrail] = useState<readonly OrgTreeNode[]>([]);
+  const [sideTab, setSideTab] = useState<AnalyticSideTab | null>(null);
+
+  const activeDept: AnalyticDepartment | undefined =
+    departamento === null ? undefined : forest.find((d) => d.departamento === departamento);
+
+  function goRoot(): void {
+    setDepartamento(null);
+    setTrail([]);
+    setSideTab(null);
+  }
+
+  function enterDepartamento(dept: AnalyticDepartment): void {
+    setDepartamento(dept.departamento);
+    setTrail([]);
+    setSideTab(null);
+  }
+
+  function enterNode(node: OrgTreeNode): void {
+    setTrail((t) => [...t, node]);
+    setSideTab(null);
+  }
+
+  function goToTrailIndex(index: number): void {
+    setTrail((t) => t.slice(0, index + 1));
+    setSideTab(null);
+  }
+
+  function personRestricted(node: OrgTreeNode): boolean {
+    if (selfNodeId !== null && node.id === selfNodeId) {
+      return true;
+    }
+    if (restrictedNodeIds === null) {
+      return false;
+    }
+    return !restrictedNodeIds.has(node.id);
+  }
+
+  function personTooltip(node: OrgTreeNode): string {
+    if (selfNodeId !== null && node.id === selfNodeId) {
+      return PC1I_TOOLTIP;
+    }
+    return PC1H_TOOLTIP;
+  }
+
+  function openDepartamentoSideTab(dept: AnalyticDepartment): void {
+    setSideTab({
+      title: dept.departamento,
+      subtitle: 'Departamento',
+      buttons: [
+        {
+          label: 'Abrir dashboard do departamento',
+          href: buildRecorteDepartamentoHref(recorteBasePath, dept.departamento),
+        },
+      ],
+    });
+  }
+
+  function openPersonSideTab(node: OrgTreeNode, dept: string): void {
+    const kind = analyticNodeKind(node, dept);
+    const buttons: AnalyticSideTabButton[] = [];
+    if (kind === 'lider') {
+      buttons.push({
+        label: 'Equipe direta',
+        href: buildRecorteLeaderHref(recorteBasePath, 'equipe', node.id),
+      });
+      if (analyticHasSubLeaders(node, dept)) {
+        buttons.push({
+          label: 'Cadeia total',
+          href: buildRecorteLeaderHref(recorteBasePath, 'cadeia', node.id),
+        });
+      }
+    }
+    buttons.push({
+      label: 'Dashboard individual',
+      href: `/dashboard-individual/${node.entityId}`,
+    });
+    setSideTab({
+      title: node.name,
+      subtitle: node.cargo.length > 0 ? node.cargo : NODE_TYPE_LABELS[node.type],
+      buttons,
+    });
+  }
+
+  const crumbs: AnalyticCrumb[] = [{ label: 'Empresa', onClick: goRoot }];
+  if (activeDept !== undefined) {
+    crumbs.push({ label: activeDept.departamento, onClick: () => goToTrailIndex(-1) });
+    trail.forEach((n, i) => {
+      crumbs.push({ label: n.name, onClick: () => goToTrailIndex(i) });
+    });
+  }
+
+  const currentNodes: readonly OrgTreeNode[] =
+    activeDept === undefined
+      ? []
+      : trail.length === 0
+        ? activeDept.localTops
+        : analyticInternalChildren(trail[trail.length - 1] as OrgTreeNode, activeDept.departamento);
+
+  return (
+    <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', minWidth: '100%' }}>
+      <div style={{ flex: 1 }}>
+        {/* Breadcrumb */}
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 6,
+            marginBottom: 20,
+            fontSize: 13,
+          }}
+        >
+          {crumbs.map((c, i) => (
+            <span key={`${c.label}-${i}`} style={{ display: 'inline-flex', alignItems: 'center' }}>
+              {i > 0 && <span style={{ margin: '0 6px', color: COLORS.text.quaternary }}>/</span>}
+              {i === crumbs.length - 1 ? (
+                <span style={{ fontWeight: 700, color: COLORS.text.primary }}>{c.label}</span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={c.onClick}
+                  style={{
+                    border: 'none',
+                    background: 'none',
+                    padding: 0,
+                    fontSize: 13,
+                    color: COLORS.accent.teal,
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                  }}
+                >
+                  {c.label}
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+
+        {/* Bolhas do nível atual */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+          {activeDept === undefined
+            ? forest.map((dept) => {
+                const acessivel = isDepartamentoAcessivel(
+                  dept.memberEmployeeIds,
+                  restrictedNodeIds,
+                );
+                return (
+                  <div
+                    key={dept.departamento}
+                    style={{
+                      position: 'relative',
+                      width: 220,
+                      opacity: acessivel ? 1 : 0.45,
+                    }}
+                    title={acessivel ? undefined : PC1H_TOOLTIP}
+                  >
+                    <button
+                      type="button"
+                      disabled={!acessivel}
+                      onClick={() => enterDepartamento(dept)}
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        textAlign: 'left',
+                        boxSizing: 'border-box',
+                        padding: '14px 16px',
+                        background: COLORS.primary.navy,
+                        color: COLORS.background.card,
+                        border: 'none',
+                        borderRadius: 10,
+                        cursor: acessivel ? 'pointer' : 'not-allowed',
+                      }}
+                    >
+                      <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 2 }}>
+                        Departamento
+                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 700 }}>{dept.departamento}</div>
+                      <div style={{ fontSize: 11, opacity: 0.8, marginTop: 4 }}>
+                        {dept.memberEmployeeIds.length} pessoa
+                        {dept.memberEmployeeIds.length === 1 ? '' : 's'}
+                      </div>
+                    </button>
+                    {acessivel && (
+                      <button
+                        type="button"
+                        onClick={() => openDepartamentoSideTab(dept)}
+                        aria-label={`Dashboards de ${dept.departamento}`}
+                        title="Abrir dashboards"
+                        style={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          width: 22,
+                          height: 22,
+                          borderRadius: '50%',
+                          border: 'none',
+                          background: COLORS.accent.teal,
+                          color: COLORS.background.card,
+                          fontSize: 14,
+                          lineHeight: '22px',
+                          cursor: 'pointer',
+                          padding: 0,
+                        }}
+                      >
+                        +
+                      </button>
+                    )}
+                  </div>
+                );
+              })
+            : currentNodes.map((node) => {
+                const dept = activeDept.departamento;
+                const kind = analyticNodeKind(node, dept);
+                const restrito = personRestricted(node);
+                const isLider = kind === 'lider';
+                const iniciais = getIniciaisFromName(node.name);
+                return (
+                  <div
+                    key={node.id}
+                    style={{
+                      position: 'relative',
+                      width: 220,
+                      opacity: restrito ? 0.45 : 1,
+                    }}
+                    title={restrito ? personTooltip(node) : undefined}
+                  >
+                    {restrito ? (
+                      <div
+                        style={{
+                          boxSizing: 'border-box',
+                          width: '100%',
+                          padding: '14px 16px',
+                          background: COLORS.background.card,
+                          border: `1px solid ${COLORS.border.default}`,
+                          borderRadius: 10,
+                          cursor: 'not-allowed',
+                        }}
+                      >
+                        <AnalyticPersonBody
+                          iniciais={iniciais}
+                          name={node.name}
+                          cargo={node.cargo}
+                          isLider={isLider}
+                        />
+                      </div>
+                    ) : isLider ? (
+                      <button
+                        type="button"
+                        onClick={() => enterNode(node)}
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          textAlign: 'left',
+                          boxSizing: 'border-box',
+                          padding: '14px 16px',
+                          background: COLORS.background.card,
+                          border: `1px solid ${COLORS.accent.teal}`,
+                          borderRadius: 10,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <AnalyticPersonBody
+                          iniciais={iniciais}
+                          name={node.name}
+                          cargo={node.cargo}
+                          isLider
+                        />
+                      </button>
+                    ) : (
+                      <Link
+                        href={`/dashboard-individual/${node.entityId}`}
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          boxSizing: 'border-box',
+                          padding: '14px 16px',
+                          background: COLORS.background.card,
+                          border: `1px solid ${COLORS.border.default}`,
+                          borderRadius: 10,
+                          textDecoration: 'none',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <AnalyticPersonBody
+                          iniciais={iniciais}
+                          name={node.name}
+                          cargo={node.cargo}
+                          isLider={false}
+                        />
+                      </Link>
+                    )}
+                    {!restrito && isLider && (
+                      <button
+                        type="button"
+                        onClick={() => openPersonSideTab(node, dept)}
+                        aria-label={`Dashboards de ${node.name}`}
+                        title="Abrir dashboards"
+                        style={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          width: 22,
+                          height: 22,
+                          borderRadius: '50%',
+                          border: 'none',
+                          background: COLORS.accent.teal,
+                          color: COLORS.background.card,
+                          fontSize: 14,
+                          lineHeight: '22px',
+                          cursor: 'pointer',
+                          padding: 0,
+                        }}
+                      >
+                        +
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+          {activeDept !== undefined && currentNodes.length === 0 && (
+            <div style={{ fontSize: 13, color: COLORS.text.tertiary }}>
+              Sem pessoas neste nível.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Aba lateral do analítico (segundo gesto) */}
+      {sideTab !== null && (
+        <div
+          style={{
+            width: 260,
+            flexShrink: 0,
+            background: COLORS.background.card,
+            border: `1px solid ${COLORS.border.default}`,
+            borderRadius: 12,
+            padding: 16,
+          }}
+        >
+          <div
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}
+          >
+            <div>
+              <div style={{ fontSize: 11, color: COLORS.text.tertiary }}>{sideTab.subtitle}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: COLORS.text.primary }}>
+                {sideTab.title}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSideTab(null)}
+              aria-label="Fechar"
+              style={{
+                border: 'none',
+                background: 'none',
+                fontSize: 18,
+                lineHeight: 1,
+                color: COLORS.text.tertiary,
+                cursor: 'pointer',
+                padding: 0,
+              }}
+            >
+              ×
+            </button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14 }}>
+            {sideTab.buttons.map((b) => (
+              <Link
+                key={b.label}
+                href={b.href}
+                style={{
+                  display: 'block',
+                  boxSizing: 'border-box',
+                  width: '100%',
+                  padding: 9,
+                  background: COLORS.accent.teal,
+                  color: COLORS.background.card,
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  textAlign: 'center',
+                  textDecoration: 'none',
+                }}
+              >
+                {b.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface AnalyticPersonBodyProps {
+  readonly iniciais: string;
+  readonly name: string;
+  readonly cargo: string;
+  readonly isLider: boolean;
+}
+
+function AnalyticPersonBody(props: AnalyticPersonBodyProps): JSX.Element {
+  const { iniciais, name, cargo, isLider } = props;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: '50%',
+          flexShrink: 0,
+          background: isLider ? COLORS.accent.teal : COLORS.background.elevated,
+          color: isLider ? COLORS.background.card : COLORS.text.secondary,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 12,
+          fontWeight: 700,
+        }}
+      >
+        {iniciais}
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: COLORS.text.primary,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {name}
+        </div>
+        <div
+          style={{
+            fontSize: 11,
+            color: COLORS.text.tertiary,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {cargo.length > 0 ? cargo : isLider ? 'Líder' : 'Colaborador'}
+        </div>
       </div>
     </div>
   );

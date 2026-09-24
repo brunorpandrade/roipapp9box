@@ -1,27 +1,25 @@
-// ROIP APP 9BOX — rota canônica Bruno `/super-admin/empresa/[id]/
-// organograma` (§14.9, ME-077). QUARTA rota de código do bloco B8.
+// ROIP APP 9BOX — rota Bruno `/super-admin/empresa/[id]/organograma`
+// (§14.9, ME-077; ME §8.06.6c). QUARTA rota de código do bloco B8.
 //
 // Origem canônica:
-// - CAMADA_UI §14.9 (organograma — layout árvore + modo normal +
-//   comportamento clique por tipo de nó) + §2.6 (cores dos nós).
-// - CAMADA_AUTH §10.3 linha 807 (Bruno atravessa `/super-admin/
-//   empresa/[id]/…`) + §10.9 (rotas dentro-de-empresa exclusivas Bruno)
-//   + §11.2 PC1b (não aplicável a Bruno).
+// - CAMADA_UI §14.9 (organograma — layout árvore + modo estrutural +
+//   modo analítico + comportamento clique por tipo de nó) + §2.6 (cores).
+// - ESPEC_ORGANOGRAMAS §5 (crossover) + §6 (analítico) + §8 (acesso).
+// - CAMADA_AUTH §10.3 (Bruno atravessa `/super-admin/empresa/[id]/…`)
+//   + §10.9 (rotas dentro-de-empresa exclusivas Bruno) + §11.2 PC1b (não
+//   aplicável a Bruno).
 // - CAMADA_NEGOCIO §15.7 (regra visual PC1b não aplicável a Bruno).
 // - CAMADA_DADOS §4.4/§4.5/§4.6.
-// - MASTER_ESCOPO_B8.md §2.1 (pattern canônico bit-exact) + §3.4
-//   (ficha canônica desta ME).
 //
-// Pattern §2.1 canônico bit-exact preservado bit-exact via consumo dos
-// helpers `getServerSession`, `resolveProfileKey`, `resolveMenuItems`,
-// `Layout`, `superAdminContext`.
+// Pattern §2.1 preservado via consumo dos helpers `getServerSession`,
+// `resolveProfileKey`, `resolveMenuItems`, `Layout`, `superAdminContext`.
 //
 // **RV-13.** Todo import consumido: `parseCompanyIdParam` (parse [id]),
-// `resolveDatabaseUrl`, `loadOrganogramaPage` → `page.tsx`.
-// `OrganogramaClient` → renderizado abaixo do Layout.
+// `resolveDatabaseUrl`, `loadOrganogramaPage`, `OrganogramaClient`.
 //
-// **RV-08.** Nenhuma decisão aqui — todos os loaders são helpers puros
-// pré-decididos em `internals.ts` + service `orgTree.ts`.
+// ME §8.06.6c (D3): Bruno passa `recorteBasePath` dedicado
+// (`/super-admin/empresa/<id>/dashboard-recorte`) para o modo analítico —
+// generaliza o padrão de `empresaDashboardHref` (§8.06.4).
 //
 // **RV-14.** Um statement por linha, largura máxima 100 colunas.
 
@@ -83,8 +81,8 @@ export default async function OrganogramaPage(props: PageProps): Promise<JSX.Ele
       isSuperAdminInCompany: true,
     });
 
-    // D088 canônico bit-exact — passa `companyId` para substituir place-
-    // holder `[id]` nos hrefs do menu §3.2.
+    // D088 — passa `companyId` para substituir placeholder `[id]` nos hrefs
+    // do menu §3.2.
     const menuItems = resolveMenuItems(profileKey, false, companyId);
     if (menuItems === null) {
       throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
@@ -130,6 +128,7 @@ export default async function OrganogramaPage(props: PageProps): Promise<JSX.Ele
             applyPC1b={pageData.applyPC1b}
             canViewClevelProfile
             empresaDashboardHref={`/super-admin/empresa/${companyId}/dashboard-empresa`}
+            recorteBasePath={`/super-admin/empresa/${companyId}/dashboard-recorte`}
           />
         </div>
       </Layout>

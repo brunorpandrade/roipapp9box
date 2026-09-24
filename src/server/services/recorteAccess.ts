@@ -11,12 +11,18 @@
 // - `resolveHierarchicalScope` (§11.9): null = sem restrição; Set de ids
 //   de nó (`employee-N`/`clevel-N`) = cadeia própria.
 //
+// ME §8.06.6c (D5): o núcleo da decisão de departamento foi extraído para
+// `everyEmployeeInScope` (`src/lib/scope/recorteScopeRule.ts`), régua
+// única reusada por esta autorização (servidor) e pelo esmaecimento do
+// organograma analítico (cliente) — RV-14, sem duas cópias.
+//
 // **RV-13.** `resolveRecorteAlvo` e `canAccessRecorte` consumidos pelas
 // rotas de recorte + teste de integração.
 // **RV-14.** Um statement por linha, largura máxima 100 colunas.
 
 import type { RoipDatabase } from '../../db/client';
 import { DEPARTAMENTO_VALUES, type Departamento } from '../../db/schema/enums';
+import { everyEmployeeInScope } from '../../lib/scope/recorteScopeRule';
 
 import { getCLevelMemberById } from './cLevelMembers';
 import type { RecorteAlvo } from './companyAggregate';
@@ -82,7 +88,8 @@ export async function resolveRecorteAlvo(
  *     (`selfNodeId`) ou está na cadeia descendente (`scope`);
  *   - departamento: acessível só se TODAS as pessoas do recorte estão na
  *     cadeia (um departamento com alguém fora da cadeia é negado, para
- *     não expor números de fora dela num agregado).
+ *     não expor números de fora dela num agregado). Decisão via régua
+ *     única `everyEmployeeInScope` (D5).
  * §8.06.6b.
  */
 export async function canAccessRecorte(
@@ -100,7 +107,7 @@ export async function canAccessRecorte(
     if (ids.length === 0) {
       return false;
     }
-    return ids.every((id) => scope.has(`employee-${id}`));
+    return everyEmployeeInScope(ids, scope);
   }
   const leaderNode = `${alvo.leader.tipo}-${alvo.leader.id}`;
   if (leaderNode === selfNodeId) {
