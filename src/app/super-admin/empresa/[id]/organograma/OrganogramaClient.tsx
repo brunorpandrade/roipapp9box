@@ -14,9 +14,11 @@
 //     à direita, com botão fechar `×`. Oculto por default (canvas full-
 //     width); aparece ao clicar em qualquer nó; fecha via botão `×` ou
 //     clique fora.
-//   - D1 mantido (modo analítico diferido → Fase 4): toggle desabilitado.
-//   - D2 mantido (dashboards diferidos → Fase 4): todos os botões
-//     `[Abrir dashboard]` desabilitados.
+//   - §8.06.6c: modo analítico ativado (toggle estrutural ↔ analítico) +
+//     navegação por recorte (departamento/equipe/cadeia/individual) +
+//     crossover "ver agregado da cadeia" no nó de C-level. O dashboard
+//     individual de líder/colaborador é link ativo; o C-level não tem
+//     dashboard individual (ESPEC §5/§9), logo não exibe botão diferido.
 //
 // Origem canônica:
 // - CAMADA_UI §14.9 (organograma — layout árvore + painel resumido +
@@ -783,10 +785,12 @@ function ResumoDrawer(props: ResumoDrawerProps): JSX.Element {
           >
             Abrir dashboard
           </Link>
-        ) : (
+        ) : selectedNode.type === 'empresa' ? (
           // Nó da empresa sem dashboard habilitado (rotas RH/C-level, ME
-          // §8.06.5) ou C-level sem acesso ao Perfil: "ver agregado da
-          // cadeia" chega na ME §8.06.6. Botão diferido por ora.
+          // §8.06.5). O C-level NÃO tem dashboard individual (ESPEC §5/§9):
+          // seu único acesso analítico é "ver agregado da cadeia",
+          // renderizado à parte abaixo — por isso o botão diferido não
+          // aparece para o C-level (§8.06.6c).
           <>
             <button
               type="button"
@@ -819,7 +823,7 @@ function ResumoDrawer(props: ResumoDrawerProps): JSX.Element {
               {DASHBOARD_UNAVAILABLE_TOOLTIP}
             </div>
           </>
-        )}
+        ) : null}
         {crossover.kind === 'crossover' && (
           <Link
             href={crossover.href}
