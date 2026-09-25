@@ -18,6 +18,12 @@
 // bit-exact §14.9 via reutilizacao integral do `OrganogramaClient`
 // da ME-077 (978 linhas — ja expoe `applyPC1b: boolean`, S408).
 //
+// ME §8.06 (dashboard da empresa nativo): o no da empresa recebe
+// `empresaDashboardHref` = `/dashboard-empresa` para RH e C-level total
+// (escopo nulo, ESPEC §8 + DOC 02 §10.4 linha 853), substituindo o botao
+// diferido de Fase 4 por um link real. Lider e C-level restrito nao
+// recebem o href (o no da empresa ja e esmaecido para eles por PC1h).
+//
 // Padrao canonico bit-exact ao precedente `/central-relatorios`
 // (ME-B9-CR) + `/todos-os-colaboradores` (ME-084): guard defensivo
 // canonico 5 checks (redirect super-admin, kind, passwordSet, role,
@@ -29,6 +35,8 @@
 //   - `resolveApplyPC1b` (helper canonico ampliado ME-086b RETOMADA
 //     §11.8 PC1g — cobre RH/RH-Lider/Lider/CF).
 //   - Loader `loadFullOrgTree` (service `orgTree`).
+//   - `canViewCompanyAggregate` + `NATIVE_EMPRESA_DASHBOARD_HREF`
+//     (regua unica do agregado da empresa — ME §8.06).
 //
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
@@ -38,6 +46,10 @@ import type { JSX } from 'react';
 import { Layout } from '../../components/shell/Layout';
 import { closeDbClient, createDbClient } from '../../db/client';
 import { COLORS } from '../../lib/design-tokens/colors';
+import {
+  canViewCompanyAggregate,
+  NATIVE_EMPRESA_DASHBOARD_HREF,
+} from '../../lib/scope/companyAggregateAccess';
 import { loadPlatformMenuContext } from '../../lib/session/platformMenuContext';
 import { resolveApplyPC1b } from '../../server/routers/orgTree';
 import { resolveHierarchicalScope } from '../../server/services/hierarchicalScope';
@@ -128,6 +140,11 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
         },
       );
       const restrictedNodeIds = scope === null ? undefined : Array.from(scope);
+      // ME §8.06 — no da empresa: href real so para escopo total
+      // (CU/CT). CF nao recebe (o no da empresa ja e esmaecido por PC1h).
+      const empresaDashboardHref = canViewCompanyAggregate(scope)
+        ? NATIVE_EMPRESA_DASHBOARD_HREF
+        : undefined;
       return (
         <Layout
           menuItems={menu.menuItems}
@@ -146,6 +163,7 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
             applyPC1b={applyPC1b}
             restrictedNodeIds={restrictedNodeIds}
             selfNodeId={`clevel-${session.userId}`}
+            empresaDashboardHref={empresaDashboardHref}
           />
         </Layout>
       );
@@ -168,6 +186,8 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
         companyId: session.companyId,
       });
       const restrictedNodeIdsLider = scopeLider === null ? undefined : Array.from(scopeLider);
+      // ME §8.06 — Lider nao tem agregado da empresa (ESPEC §8 + §10.4
+      // linha 853): sem href; o no da empresa segue esmaecido por PC1h.
       return (
         <Layout
           menuItems={menu.menuItems}
@@ -217,6 +237,7 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
           root={root}
           applyPC1b={applyPC1bRh}
           selfNodeId={`employee-${session.userId}`}
+          empresaDashboardHref={NATIVE_EMPRESA_DASHBOARD_HREF}
         />
       </Layout>
     );
@@ -237,6 +258,7 @@ interface OrganogramaPageInnerProps {
   readonly applyPC1b: boolean;
   readonly restrictedNodeIds?: ReadonlyArray<string>;
   readonly selfNodeId?: string | null;
+  readonly empresaDashboardHref?: string;
 }
 
 function OrganogramaPageInner(props: OrganogramaPageInnerProps): JSX.Element {
@@ -269,6 +291,7 @@ function OrganogramaPageInner(props: OrganogramaPageInnerProps): JSX.Element {
         applyPC1b={props.applyPC1b}
         restrictedNodeIds={props.restrictedNodeIds}
         selfNodeId={props.selfNodeId}
+        empresaDashboardHref={props.empresaDashboardHref}
       />
     </div>
   );
