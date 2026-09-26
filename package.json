@@ -14,6 +14,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "validate": "bash scripts/validate.sh",
+    "validate:fast": "bash scripts/validate-fast.sh",
     "seed:super-admin": "node scripts/seed-super-admin.mjs",
     "seed:nativa": "node scripts/seed-nativa.mjs",
     "seed:ubatuba": "node scripts/seed-ubatuba.mjs",

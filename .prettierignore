@@ -5,3 +5,6 @@ next-env.d.ts
 src/db/migrations/
 
 docs/aceite/VALIDACAO_ACEITACAO.md
+
+# Cache do typecheck incremental (tsBuildInfoFile) — nunca versionado
+*.tsbuildinfo

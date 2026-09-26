@@ -1,48 +1,67 @@
 import { defineConfig } from 'vitest/config';
 
-// ROIP APP 9BOX — configuracao do vitest (ME-010; estendido na ME-020;
-// `oxc.jsx = { runtime: 'automatic' }` adicionado na ME-055b).
+// ROIP APP 9BOX — configuracao do vitest.
 //
-// - `oxc.jsx = { runtime: 'automatic' }`: adicionado na ME-055b Bloco B.
-//   Vitest 4 usa Vite 7+ com transformador OXC. O `tsconfig.json` do
-//   repo preserva JSX para o Next em build (`"jsx": "preserve"`), o que
-//   impede o OXC de transformar `.tsx` durante os testes. Este override
-//   forca o transform JSX so no contexto do vitest, sem afetar o build
-//   do Next. Necessario para o `shell.test.ts` que importa componentes
-//   `.tsx` diretamente para provar RV-13 (nenhum export orfao).
-// - `include`: testes de integracao (Bloco B1 — RV-11, contra MySQL real)
-//   e testes unitarios (a partir da ME-020 — modulos puramente
-//   algoritmicos de `src/server/auth/` que nao tocam banco). O veredito
-//   unit vs integration e pre-decidido na abertura de cada ME (RV-08).
-// - `globalSetup`: DROP+CREATE da base `roip_test`, aplicacao da migration
-//   canonica e semeadura da fixture minima antes de qualquer teste; DROP ao
-//   final. Padrao S007 estendido ao passo 9 da regua §4. Roda uma unica vez
-//   para a suite inteira — os testes unitarios convivem com ele sem custo
-//   adicional relevante.
-// - `pool: 'forks'` + `fileParallelism: false` + `maxWorkers: 1`: uma unica
-//   worker sequencial para isolar corridas concorrentes sobre a mesma base
-//   MySQL. Determinismo sobre paralelismo — condiz com a natureza da base
-//   compartilhada.
-// - `testTimeout: 60000` / `hookTimeout: 120000`: primeira execucao inclui
-//   aplicacao da migration (1147 linhas de DDL) e pode extrapolar defaults
-//   em runners lentos. ME-B9-fechamento amplia para 2x os valores anteriores
-//   (30000/60000) para saneamento canonico do debito D-VITEST-FORK-TIMEOUT —
-//   timeouts falsos observados empiricamente em `alerts.test.ts` e
-//   `seedSuperAdmin.test.ts` em full-run com `pool: 'forks'` + `maxWorkers: 1`
-//   sob contencao MySQL. Ambos os testes PASSam em isolamento; a margem 2x
-//   absorve o overhead extra de setup entre suites sem alterar o pool
-//   sequencial (determinismo preservado — RV-11).
+// Historico: ME-010 (criacao); ME-020 (unitarios de src/server/auth);
+// ME-055b (`oxc.jsx = { runtime: 'automatic' }`); ME-B9-fechamento
+// (timeouts 2x); ME de otimizacao do tempo de testes (split em dois
+// projetos vitest — unitario sem banco, integracao com banco).
+//
+// - `oxc.jsx = { runtime: 'automatic' }` (raiz, herdado por ambos os
+//   projetos via `extends: true`): Vitest 4 usa Vite 7+ com transformador
+//   OXC. O `tsconfig.json` do repo preserva JSX para o Next em build
+//   (`"jsx": "preserve"`), o que impede o OXC de transformar `.tsx`
+//   durante os testes. Este override forca o transform JSX so no contexto
+//   do vitest, sem afetar o build do Next. Necessario para os testes que
+//   importam componentes `.tsx` diretamente para provar RV-13.
+//
+// - Split em dois projetos (`test.projects`):
+//   * `unit` — `tests/unit/**/*.test.ts`. SEM `globalSetup`: nenhum
+//     teste unitario toca o banco (os que importam `src/db/*` usam
+//     enums/constantes/derivadores em tempo de compilacao ou um `db`
+//     mockado). Sem banco, o projeto roda com o pool paralelo padrao do
+//     vitest — e o atalho `validate:fast` (`vitest run --project unit`)
+//     nunca sobe o MySQL efemero. O teste `executiveReportAI` — unico
+//     unitario que abria conexao real — foi recategorizado para
+//     `tests/integration` nesta ME.
+//   * `integration` — `tests/integration/**/*.test.ts`. Mantem o
+//     `globalSetup` (S007 estendido: DROP+CREATE de `roip_test`, migration
+//     canonica, fixture de superAdmin) e o pool sequencial por worker
+//     unica (`pool: 'forks'` + `fileParallelism: false` + `maxWorkers: 1`)
+//     que isola corridas concorrentes sobre a base MySQL compartilhada.
+//     Determinismo sobre paralelismo — condiz com a base compartilhada.
+//     `testTimeout`/`hookTimeout` ampliados absorvem a aplicacao da
+//     migration (1147 linhas de DDL) em runners lentos (RV-11).
+//
+// `npx vitest run` sem filtro roda os DOIS projetos — o conjunto coletado
+// e identico ao anterior (343 arquivos). O passo 9 do `npm run validate`
+// (`npx vitest run`) permanece inalterado em texto e em cobertura.
 export default defineConfig({
   oxc: {
     jsx: { runtime: 'automatic' },
   },
   test: {
-    include: ['tests/integration/**/*.test.ts', 'tests/unit/**/*.test.ts'],
-    globalSetup: ['./tests/integration/setup.ts'],
-    pool: 'forks',
-    fileParallelism: false,
-    maxWorkers: 1,
-    testTimeout: 60000,
-    hookTimeout: 120000,
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          include: ['tests/unit/**/*.test.ts'],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'integration',
+          include: ['tests/integration/**/*.test.ts'],
+          globalSetup: ['./tests/integration/setup.ts'],
+          pool: 'forks',
+          fileParallelism: false,
+          maxWorkers: 1,
+          testTimeout: 60000,
+          hookTimeout: 120000,
+        },
+      },
+    ],
   },
 });
