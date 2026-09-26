@@ -158,6 +158,7 @@ export default async function TodosColaboradoresPage(props: PageProps): Promise<
             initialFilters={filters}
             initialDepartamentos={pageData.departamentos}
             initialLideres={pageData.lideres}
+            searchIndex={pageData.searchIndex}
             variant="super_admin"
             novoColaboradorHref={`/super-admin/empresa/${companyId}/colaborador/novo`}
             editarColaboradorHrefBase={`/super-admin/empresa/${companyId}/colaborador`}

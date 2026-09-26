@@ -119,6 +119,7 @@ export default async function CadeiaIndiretaPage(props: PageProps): Promise<JSX.
             initialFilters={filters}
             initialDepartamentos={pageData.departamentos}
             initialLideres={[]}
+            searchIndex={pageData.searchIndex}
             variant="rh"
             novoColaboradorHref="/colaborador/novo"
             editarColaboradorHrefBase="/colaborador"

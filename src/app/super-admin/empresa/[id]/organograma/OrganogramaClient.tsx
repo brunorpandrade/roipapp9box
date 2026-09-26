@@ -35,6 +35,7 @@ import Link from 'next/link';
 import { useCallback, useMemo, useState, type CSSProperties, type JSX } from 'react';
 
 import { COLORS } from '../../../../../lib/design-tokens/colors';
+import { normalizeForSearch } from '../../../../../lib/text/normalizeForSearch';
 import type { OrgTreeNode, OrgTreeNodeType } from '../../../../../server/services/orgTree';
 
 import {
@@ -310,13 +311,6 @@ function buildSearchIndex(root: OrgTreeNode): readonly SearchIndexEntry[] {
   }
   visit(root);
   return flat;
-}
-
-function normalizeForSearch(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '');
 }
 
 // -----------------------------------------------------------------------

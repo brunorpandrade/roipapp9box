@@ -24,10 +24,15 @@ import {
 } from '../../lib/session/platformMenuContext';
 import {
   listDistinctDepartamentosByCompany,
+  listEmployeesByCompany,
   listEmployeesPaginated,
   type ListEmployeesResult,
 } from '../../server/services/employees';
 import { listIndirectChainEmployeeIds } from '../../server/services/hierarchicalScope';
+import {
+  buildEmployeeSearchIndex,
+  type EmployeeSearchEntry,
+} from '../super-admin/empresa/[id]/todos-os-colaboradores/internals';
 
 import {
   colaboradoresFiltersToServiceInput,
@@ -85,6 +90,7 @@ export function enforceCadeiaIndiretaFilters(filters: ColaboradoresFilters): Col
 export interface CadeiaIndiretaPageData {
   readonly listResult: ListEmployeesResult;
   readonly departamentos: Awaited<ReturnType<typeof listDistinctDepartamentosByCompany>>;
+  readonly searchIndex: readonly EmployeeSearchEntry[];
 }
 
 /** Lista a pagina corrente da cadeia indireta com os filtros ja aplicados. */
@@ -98,16 +104,21 @@ export async function listCadeiaIndireta(
   return await listEmployeesPaginated(db, companyId, serviceInput, scopeEmployeeIds);
 }
 
-/** Carga inicial: listagem + departamentos do dropdown. */
+/** Carga inicial: listagem + departamentos do dropdown + indice de busca. */
 export async function loadCadeiaIndiretaPage(
   db: RoipDatabase,
   companyId: number,
   scopeEmployeeIds: readonly number[],
   filters: ColaboradoresFilters,
 ): Promise<CadeiaIndiretaPageData> {
-  const [listResult, departamentos] = await Promise.all([
+  const scopeSet = new Set(scopeEmployeeIds);
+  const [listResult, departamentos, allRows] = await Promise.all([
     listCadeiaIndireta(db, companyId, scopeEmployeeIds, filters),
     listDistinctDepartamentosByCompany(db, companyId),
+    listEmployeesByCompany(db, companyId),
   ]);
-  return { listResult, departamentos };
+  // Indice do autocomplete restrito a cadeia descendente do usuario
+  // (`scopeEmployeeIds`) — o cliente so recebe quem este perfil pode ver.
+  const searchIndex = buildEmployeeSearchIndex(allRows.filter((r) => scopeSet.has(r.id)));
+  return { listResult, departamentos, searchIndex };
 }

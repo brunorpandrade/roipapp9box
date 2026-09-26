@@ -181,6 +181,7 @@ export default async function MinhaEquipePage(props: PageProps): Promise<JSX.Ele
             initialFilters={scopedFilters}
             initialDepartamentos={pageData.departamentos}
             initialLideres={pageData.lideres}
+            searchIndex={pageData.searchIndex}
             variant="rh"
             novoColaboradorHref="/colaborador/novo"
             editarColaboradorHrefBase="/colaborador"

@@ -34,10 +34,15 @@ import type { Departamento } from '../../db/schema';
 import {
   listActiveLeadersAndClevelsByCompany,
   listDistinctDepartamentosByCompany,
+  listEmployeesByCompany,
   listEmployeesPaginated,
   type ListEmployeesFilters,
   type ListEmployeesResult,
 } from '../../server/services/employees';
+import {
+  buildEmployeeSearchIndex,
+  type EmployeeSearchEntry,
+} from '../super-admin/empresa/[id]/todos-os-colaboradores/internals';
 
 /**
  * §14.10 — resolve URL do banco canonica bit-exact. Reutiliza
@@ -53,6 +58,7 @@ export interface TodosColaboradoresRHPageData {
   readonly listResult: ListEmployeesResult;
   readonly departamentos: readonly Departamento[];
   readonly lideres: readonly { id: number; name: string; tipo: 'employee' | 'clevel' }[];
+  readonly searchIndex: readonly EmployeeSearchEntry[];
 }
 
 /**
@@ -66,10 +72,12 @@ export async function loadTodosColaboradoresPageForRH(
   companyId: number,
   filters: ListEmployeesFilters,
 ): Promise<TodosColaboradoresRHPageData> {
-  const [listResult, departamentos, lideres] = await Promise.all([
+  const [listResult, departamentos, lideres, allRows] = await Promise.all([
     listEmployeesPaginated(db, companyId, filters),
     listDistinctDepartamentosByCompany(db, companyId),
     listActiveLeadersAndClevelsByCompany(db, companyId),
+    listEmployeesByCompany(db, companyId),
   ]);
-  return { listResult, departamentos, lideres };
+  const searchIndex = buildEmployeeSearchIndex(allRows);
+  return { listResult, departamentos, lideres, searchIndex };
 }

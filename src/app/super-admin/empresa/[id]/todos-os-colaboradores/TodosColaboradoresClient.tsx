@@ -60,6 +60,7 @@ import type {
   exportSpreadsheetColaboradoresAction,
   uploadCSVColaboradoresAction,
 } from './actions';
+import { ColaboradorSearchBox } from './ColaboradorSearchBox';
 import { FichaCadastralModal } from '../../../../../components/colaboradores/FichaCadastralModal';
 import { ImportarPlanilhaModal } from '../../../../../components/import-mass/ImportarPlanilhaModal';
 import type { carregarFichaCadastralAction } from '../../../../_shared/fichaCadastral/actions';
@@ -83,6 +84,7 @@ import {
   formatDateBR,
   getIniciaisFromName,
   hashNameToColor,
+  type EmployeeSearchEntry,
 } from './internals';
 
 // -----------------------------------------------------------------------
@@ -196,6 +198,14 @@ export interface TodosColaboradoresClientProps {
    * de Bruno e RH; Lider e C-level passam `false`.
    */
   readonly canEditCadastro?: boolean;
+  /**
+   * ME-fila (lupa + autocomplete §14.10) — indice de busca client-side
+   * para o autocomplete do `ColaboradorSearchBox`. Opcional: rotas sem
+   * indice (`/minha-equipe`, `/cadeia-indireta`) mantem o campo de busca
+   * com lupa, sem dropdown de sugestoes. Preenchido pelas duas rotas da
+   * tabela (`page.tsx` via `pageData.searchIndex`).
+   */
+  readonly searchIndex?: readonly EmployeeSearchEntry[];
 }
 
 // -----------------------------------------------------------------------
@@ -275,16 +285,6 @@ const FILTRO_SELECT: CSSProperties = {
   background: '#FFFFFF',
   cursor: 'pointer',
   minWidth: 160,
-};
-
-const FILTRO_INPUT: CSSProperties = {
-  padding: '7px 12px',
-  border: `1px solid ${COLORS.border.default}`,
-  borderRadius: 8,
-  fontSize: 12,
-  color: COLORS.text.primary,
-  background: '#FFFFFF',
-  minWidth: 220,
 };
 
 const FILTRO_DATE: CSSProperties = {
@@ -581,6 +581,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
     uploadCSVAction,
     fichaCadastralAction,
     canEditCadastro = true,
+    searchIndex = [],
   } = props;
   // ME-084 D-ME084-1/2 — `variant` retido para eventual telemetria por
   // perfil / testes de analise estatica. Nao afeta comportamento atual
@@ -678,6 +679,17 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
   const handleBuscaSubmit = useCallback((): void => {
     void refetch({ ...filters, busca: buscaDraft.trim(), page: 1 });
   }, [buscaDraft, filters, refetch]);
+
+  // ME-fila (§14.10 autocomplete) — selecao de sugestao: define a `busca`
+  // com o nome escolhido e faz commit via o mesmo motor de filtro (sem
+  // rota nova nem alteracao no server-side).
+  const handleSelectSuggestion = useCallback(
+    (nome: string): void => {
+      setBuscaDraft(nome);
+      void refetch({ ...filters, busca: nome.trim(), page: 1 });
+    },
+    [filters, refetch],
+  );
 
   const handleDepartamentoChange = useCallback(
     (novo: Departamento | null): void => {
@@ -865,18 +877,13 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
       {/* Toolbar canonica bit-exact — 4 botoes de acao + botao RH */}
       <div style={CARD_STYLE}>
         <div style={TOOLBAR_ROW}>
-          <input
-            style={FILTRO_INPUT}
-            type="text"
-            placeholder="Buscar por nome, CPF ou cargo..."
+          <ColaboradorSearchBox
             value={buscaDraft}
             maxLength={BUSCA_MAX_LEN}
-            onChange={(e): void => setBuscaDraft(e.target.value)}
-            onKeyDown={(e): void => {
-              if (e.key === 'Enter') handleBuscaSubmit();
-            }}
-            onBlur={handleBuscaSubmit}
-            aria-label="Buscar colaborador"
+            suggestions={searchIndex}
+            onChange={setBuscaDraft}
+            onSubmit={handleBuscaSubmit}
+            onSelectSuggestion={handleSelectSuggestion}
           />
           <button
             type="button"

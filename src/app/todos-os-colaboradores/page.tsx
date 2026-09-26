@@ -165,6 +165,7 @@ export default async function TodosColaboradoresRHPage(props: PageProps): Promis
               initialFilters={filters}
               initialDepartamentos={pageData.departamentos}
               initialLideres={pageData.lideres}
+              searchIndex={pageData.searchIndex}
               variant="rh"
               novoColaboradorHref="/colaborador/novo"
               editarColaboradorHrefBase="/colaborador"
@@ -180,6 +181,7 @@ export default async function TodosColaboradoresRHPage(props: PageProps): Promis
               initialFilters={filters}
               initialDepartamentos={pageData.departamentos}
               initialLideres={pageData.lideres}
+              searchIndex={pageData.searchIndex}
               variant="rh"
               novoColaboradorHref="/colaborador/novo"
               editarColaboradorHrefBase="/colaborador"

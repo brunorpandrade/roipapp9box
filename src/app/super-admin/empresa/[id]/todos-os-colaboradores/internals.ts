@@ -45,6 +45,7 @@ import { type Departamento, type JobFamily, type NivelHierarquico } from '../../
 import {
   listActiveLeadersAndClevelsByCompany,
   listDistinctDepartamentosByCompany,
+  listEmployeesByCompany,
   listEmployeesPaginated,
   type ListEmployeesFilters,
   type ListEmployeesResult,
@@ -271,27 +272,58 @@ export function parseCompanyIdParam(raw: string): number | null {
  * listagem + total + dropdowns pre-populados (departamentos + lideres
  * ativos).
  */
+/**
+ * §14.10 autocomplete — entrada leve do indice de busca client-side.
+ * Projecao minima e serializavel de `employees` para o `ColaboradorSearch
+ * Box` sugerir por nome/cargo sem trafegar as demais colunas. Reusada
+ * pela rota nativa RH (import do tipo).
+ */
+export interface EmployeeSearchEntry {
+  readonly id: number;
+  readonly name: string;
+  readonly cargo: string;
+}
+
+/**
+ * §14.10 autocomplete — constroi o indice de busca a partir das linhas
+ * completas de `listEmployeesByCompany`. Puro e deterministico: projeta
+ * `{ id, name, cargo }` e ordena por nome (pt-BR). Fonte unica reusada
+ * pelas duas rotas da tabela (RV-14). Todos os status entram no indice —
+ * o typeahead encontra qualquer colaborador; o filtro `status` da tabela
+ * segue independente ao aplicar a `busca` selecionada.
+ */
+export function buildEmployeeSearchIndex(
+  rows: readonly { readonly id: number; readonly name: string; readonly cargo: string }[],
+): readonly EmployeeSearchEntry[] {
+  return rows
+    .map((r) => ({ id: r.id, name: r.name, cargo: r.cargo }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+}
+
 export interface TodosColaboradoresPageData {
   readonly listResult: ListEmployeesResult;
   readonly departamentos: readonly Departamento[];
   readonly lideres: readonly { id: number; name: string; tipo: 'employee' | 'clevel' }[];
+  readonly searchIndex: readonly EmployeeSearchEntry[];
 }
 
 /**
- * §14.10 — carrega dados iniciais canonicos bit-exact da pagina. Tres
+ * §14.10 — carrega dados iniciais canonicos bit-exact da pagina. Quatro
  * queries paralelas (Promise.all): listagem paginada + departamentos
- * distintos + lideres ativos. `filters` chega ja parseado do `filters.ts`
- * (via `page.tsx`).
+ * distintos + lideres ativos + indice de busca (autocomplete §14.10).
+ * `filters` chega ja parseado do `filters.ts` (via `page.tsx`).
  */
 export async function loadTodosColaboradoresPage(
   db: RoipDatabase,
   companyId: number,
   filters: ListEmployeesFilters,
 ): Promise<TodosColaboradoresPageData> {
-  const [listResult, departamentos, lideres] = await Promise.all([
+  const [listResult, departamentos, lideres, allRows] = await Promise.all([
     listEmployeesPaginated(db, companyId, filters),
     listDistinctDepartamentosByCompany(db, companyId),
     listActiveLeadersAndClevelsByCompany(db, companyId),
+    listEmployeesByCompany(db, companyId),
   ]);
-  return { listResult, departamentos, lideres };
+  const searchIndex = buildEmployeeSearchIndex(allRows);
+  return { listResult, departamentos, lideres, searchIndex };
 }

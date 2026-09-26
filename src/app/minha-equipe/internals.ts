@@ -60,13 +60,21 @@ import type { RoipDatabase } from '../../db/client';
 import type { Departamento } from '../../db/schema';
 import {
   listActiveLeadersAndClevelsByCompany,
+  listAllEmployeesForExport,
   listDistinctDepartamentosByCompany,
   listEmployeesPaginated,
   type ListEmployeesResult,
 } from '../../server/services/employees';
+import {
+  buildEmployeeSearchIndex,
+  type EmployeeSearchEntry,
+} from '../super-admin/empresa/[id]/todos-os-colaboradores/internals';
 
 import type { ColaboradoresFilters } from './filters';
-import { colaboradoresFiltersToServiceInput } from './filters';
+import {
+  CANONICAL_COLABORADORES_DEFAULT_FILTERS,
+  colaboradoresFiltersToServiceInput,
+} from './filters';
 
 /**
  * §14.11 — resolve URL do banco canonica bit-exact. Reutiliza
@@ -120,6 +128,7 @@ export interface MinhaEquipeEmployeeLeaderPageData {
   readonly listResult: ListEmployeesResult;
   readonly departamentos: readonly Departamento[];
   readonly lideres: readonly { id: number; name: string; tipo: 'employee' | 'clevel' }[];
+  readonly searchIndex: readonly EmployeeSearchEntry[];
 }
 
 /**
@@ -142,10 +151,23 @@ export async function loadMinhaEquipePageForEmployeeLeader(
 ): Promise<MinhaEquipeEmployeeLeaderPageData> {
   const scopedFilters = enforceEmployeeLeaderScope(filters, leaderId, leaderTipo);
   const serviceInput = colaboradoresFiltersToServiceInput(scopedFilters);
-  const [listResult, departamentos, lideres] = await Promise.all([
+  // Indice do autocomplete: universo completo do escopo do lider (todos os
+  // liderados diretos, qualquer status), independente dos filtros
+  // transitorios da tela. Escopado por `liderId` — nunca excede o que a
+  // tabela mostra a este perfil.
+  const indexServiceInput = colaboradoresFiltersToServiceInput(
+    enforceEmployeeLeaderScope(
+      { ...CANONICAL_COLABORADORES_DEFAULT_FILTERS, status: 'todos' },
+      leaderId,
+      leaderTipo,
+    ),
+  );
+  const [listResult, departamentos, lideres, allScopedRows] = await Promise.all([
     listEmployeesPaginated(db, companyId, serviceInput),
     listDistinctDepartamentosByCompany(db, companyId),
     listActiveLeadersAndClevelsByCompany(db, companyId),
+    listAllEmployeesForExport(db, companyId, indexServiceInput),
   ]);
-  return { listResult, departamentos, lideres };
+  const searchIndex = buildEmployeeSearchIndex(allScopedRows);
+  return { listResult, departamentos, lideres, searchIndex };
 }
