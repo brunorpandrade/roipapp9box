@@ -11,9 +11,10 @@
 import { and, avg, eq, inArray, isNotNull } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../db/client';
-import { performanceData } from '../../db/schema';
+import { companies, performanceData } from '../../db/schema';
 import type { Departamento } from '../../db/schema/enums';
 import { getQuarterMonths } from '../../lib/quarterlyPeriod';
+import type { StatusDiagnostico } from '../../lib/roiFormulas';
 
 import { listClosedQuarters } from './closedQuarters';
 import { getCompanyEconomicDiagnosisByQuarter } from './companyEconomicDiagnosis';
@@ -42,11 +43,21 @@ import {
   type PersonQuarterInput,
 } from './aggregationEngine';
 
-/** Financeiro da empresa (§11.1). ROI = faturamento medio / folha media. */
+/**
+ * Financeiro da empresa (§11.1 + DOC 02 §3.3). ROI = faturamento medio /
+ * folha media. Os 5 indicadores da matriz §3.3: faturamento medio, folha
+ * media, ROI, status do diagnostico economico e % folha sobre faturamento.
+ * A faixa saudavel (folhaPercMinima/Maxima) vem do cadastro e governa as
+ * zonas de cor da % folha (§11.1).
+ */
 interface FinanceiroEmpresa {
   readonly folhaMedia: number | null;
   readonly faturamentoMedio: number | null;
   readonly roi: number | null;
+  readonly folhaPorcentagem: number | null;
+  readonly statusDiagnostico: StatusDiagnostico | null;
+  readonly folhaPercMinima: number | null;
+  readonly folhaPercMaxima: number | null;
 }
 
 type ClosedQuarterItem = Awaited<ReturnType<typeof listClosedQuarters>>[number];
@@ -175,7 +186,27 @@ async function loadFinanceiro(
     folhaMedia !== null && folhaMedia > 0 && faturamentoMedio !== null
       ? round2(faturamentoMedio / folhaMedia)
       : null;
-  return { folhaMedia, faturamentoMedio, roi };
+  const folhaPorcentagem = parseDec(econ.folhaPorcentagem);
+  const statusDiagnostico = econ.statusDiagnostico;
+  const [company] = await db
+    .select({
+      folhaPercMinima: companies.folhaPercMinima,
+      folhaPercMaxima: companies.folhaPercMaxima,
+    })
+    .from(companies)
+    .where(eq(companies.id, companyId))
+    .limit(1);
+  const folhaPercMinima = parseDec(company?.folhaPercMinima ?? null);
+  const folhaPercMaxima = parseDec(company?.folhaPercMaxima ?? null);
+  return {
+    folhaMedia,
+    faturamentoMedio,
+    roi,
+    folhaPorcentagem,
+    statusDiagnostico,
+    folhaPercMinima,
+    folhaPercMaxima,
+  };
 }
 
 /** Assiduidade media dos classificados no trimestre (§10.3). */
