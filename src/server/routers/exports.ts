@@ -55,6 +55,7 @@ import {
   type BuildExecutiveReportArgs,
 } from '../services/executiveReportEngine';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 import { sanitizeRazaoSocial } from './spreadsheets';
 import {
   formatTrimestreCicloReferencia,
@@ -317,12 +318,7 @@ function deriveGeradoPor(user: AuthenticatedUser): {
  * router, precedente majoritario entre os 4 routers de escopo empresa.
  */
 export function assertCompanyScopeExports(user: AuthenticatedUser, companyId: number): void {
-  if (user.role === 'super_admin') {
-    return;
-  }
-  if (user.companyId !== companyId) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: MSG_COMPANY_MISMATCH_EXP });
-  }
+  assertUserCompanyScope(user, companyId, MSG_COMPANY_MISMATCH_EXP);
 }
 
 export function createExportsRouter(deps: ExportsRouterDeps = {}) {

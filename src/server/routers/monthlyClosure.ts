@@ -69,6 +69,7 @@ import {
   type RunDailyClosureJobResult,
 } from '../services/monthlyClosureOrchestrator';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 
 // ============================================================
 // Constantes canonicas
@@ -216,15 +217,7 @@ function resolveDeps(deps: MonthlyClosureRouterDeps): ResolvedDeps {
  * sempre atravessa).
  */
 function assertCompanyScope(user: AuthenticatedUser, companyId: number): void {
-  if (user.role === 'super_admin') {
-    return;
-  }
-  if (user.companyId !== companyId) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Acesso negado ao mês desta empresa.',
-    });
-  }
+  assertUserCompanyScope(user, companyId, 'Acesso negado ao mês desta empresa.');
 }
 
 /**

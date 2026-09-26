@@ -86,11 +86,11 @@ import {
   type GenerateDiagnosticoIAOutcome,
 } from '../services/diagnosticoIAService';
 import { getActiveLeaderHistoryByEmployee } from '../services/employeeLeaderHistory';
-import { resolveHierarchicalScope } from '../services/hierarchicalScope';
+import { assertCadeiaDescendente } from '../services/cadeiaScopeGuard';
 import { getPerformanceQuarterlyDataByQuarter } from '../services/performanceQuarterlyData';
-import { loadCLevelSessionContext } from '../../lib/session/cLevelSessionContext';
 import type { ChatIaUserType } from '../services/_shared/dashboardContextTypes';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 import { MSG_AUTO_VISAO_DASHBOARD, assertNaoAutoVisaoEmployee } from './_shared/selfViewGuard';
 
 // ============================================================
@@ -192,60 +192,10 @@ export interface CompanyEconomicDashboardResult {
 // ============================================================
 // Helpers privados (PC1h — cadeia descendente propria)
 // ============================================================
-
-/**
- * Regua pura do escopo de acesso ao dashboard individual (matriz DOC 02
- * §10.4, linha do individual; PC1h). `scope === null` (Bruno, RH, RH-Lider,
- * C-level total/unico) libera qualquer alvo; com escopo restrito (lider,
- * C-level restrito) o alvo so e liberado quando `employee-<id>` esta na
- * cadeia descendente propria. Fora do escopo -> FORBIDDEN. Funcao pura,
- * provada nos dois sentidos isoladamente (RV-03).
- */
-export function assertAlvoNoEscopo(scope: ReadonlySet<string> | null, employeeId: number): void {
-  if (scope === null) {
-    return;
-  }
-  if (!scope.has(`employee-${employeeId}`)) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Colaborador fora da cadeia descendente do usuario.',
-    });
-  }
-}
-
-/**
- * Resolve o escopo de cadeia do usuario `lider`/`clevel` e aplica
- * `assertAlvoNoEscopo`. Regua unica reusada de organograma/recorte
- * (`resolveHierarchicalScope`, RV-14): lider -> cadeia descendente propria;
- * C-level restrito -> propria cadeia; C-level total/unico -> null (tudo).
- * Substitui o antigo S066 (direto-apenas). Cadeia direta e indireta cobertas.
- */
-async function assertCadeiaDescendente(
-  db: RoipDatabase,
-  user: {
-    readonly role: 'rh' | 'rh_lider' | 'clevel' | 'lider';
-    readonly userId: number;
-    readonly companyId: number;
-  },
-  employeeId: number,
-): Promise<void> {
-  let scope: ReadonlySet<string> | null;
-  if (user.role === 'clevel') {
-    const cctx = await loadCLevelSessionContext(db, user.companyId, user.userId);
-    scope = await resolveHierarchicalScope(
-      db,
-      { role: 'clevel', userId: user.userId, companyId: user.companyId },
-      cctx ?? undefined,
-    );
-  } else {
-    scope = await resolveHierarchicalScope(db, {
-      role: user.role,
-      userId: user.userId,
-      companyId: user.companyId,
-    });
-  }
-  assertAlvoNoEscopo(scope, employeeId);
-}
+//
+// `assertAlvoNoEscopo` e `assertCadeiaDescendente` migraram para
+// `services/cadeiaScopeGuard.ts` (fonte unica, RV-14) na ME de
+// seguranca cross-company, para reuso pelas demais procedures por alvo.
 
 // ============================================================
 // Factory canonica do sub-router
@@ -611,14 +561,7 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
       )
       .query(async ({ ctx, input }): Promise<CompanyEconomicDashboardResult> => {
         // Guard canonico cruzado (§2.4).
-        if (ctx.user.role !== 'super_admin') {
-          if (ctx.user.companyId !== input.companyId) {
-            throw new TRPCError({
-              code: 'FORBIDDEN',
-              message: 'Empresa fora do escopo.',
-            });
-          }
-        }
+        assertUserCompanyScope(ctx.user, input.companyId);
 
         // Guard canonico da matriz DOC 02 §3.3 (S067): lider NAO ve
         // NENHUM dos 5 cards. Bloqueio canonico F2 v2.2 §10.5.

@@ -60,7 +60,8 @@ import {
   employees,
   nr1AreaDivergenceAnalysis,
 } from '../../db/schema';
-import { roleProcedure, router } from '../trpc';
+import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 import { signPdfEphemeralToken } from '../auth/pdfEphemeralToken';
 import {
   adesaoPercentualNr1,
@@ -456,13 +457,8 @@ function assertJustificativaCanonicaNr1(valor: string): string {
 }
 
 /** §2.4 — guard cruzado de empresa (super_admin atravessa). */
-function assertCompanyScopeNr1(
-  user: { role: string; companyId?: number },
-  companyId: number,
-): void {
-  if (user.role !== 'super_admin' && user.companyId !== companyId) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: MSG_EMPRESA_FORA_DO_ESCOPO_NR1 });
-  }
+function assertCompanyScopeNr1(user: AuthenticatedUser, companyId: number): void {
+  assertUserCompanyScope(user, companyId, MSG_EMPRESA_FORA_DO_ESCOPO_NR1);
 }
 
 // ============================================================

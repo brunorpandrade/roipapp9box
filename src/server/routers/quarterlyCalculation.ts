@@ -66,7 +66,9 @@ import {
 } from '../../db/schema';
 import { getQuarterMonths } from '../../lib/quarterlyPeriod';
 import { recalculateQuarter, type RoiCalculationResult } from '../services/roiCalculationEngine';
+import { assertAgregadoEmpresa, assertCadeiaDescendente } from '../services/cadeiaScopeGuard';
 import { roleProcedure, router } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 
 // ============================================================
 // Dependency injection — motor `roiCalculationEngine` (S060)
@@ -295,13 +297,12 @@ export function createQuarterlyCalculationRouter(deps: { roiEngine?: RoiEngineFa
         // Guard canonico cruzado (§2.4 isolamento por empresa):
         // super_admin atravessa (nao tem `companyId` no ctx); demais
         // roles autenticadas cruzam contra o `companyId` do proprio JWT.
-        if (ctx.user.role !== 'super_admin') {
-          if (ctx.user.companyId !== emp.companyId) {
-            throw new TRPCError({
-              code: 'FORBIDDEN',
-              message: 'Colaborador fora do escopo da empresa.',
-            });
-          }
+        assertUserCompanyScope(ctx.user, emp.companyId, 'Colaborador fora do escopo da empresa.');
+
+        // Bateria de seguranca (Etapa 0, item 2) — S5: C-level restrito
+        // so le resultados trimestrais da propria cadeia (PC1h).
+        if (ctx.user.role === 'clevel') {
+          await assertCadeiaDescendente(ctx.db, ctx.user, input.employeeId);
         }
 
         const rows = await ctx.db
@@ -329,14 +330,10 @@ export function createQuarterlyCalculationRouter(deps: { roiEngine?: RoiEngineFa
       )
       .query(async ({ ctx, input }): Promise<CompanyQuarterlyStatus> => {
         // Guard canonico cruzado (§2.4 isolamento por empresa).
-        if (ctx.user.role !== 'super_admin') {
-          if (ctx.user.companyId !== input.companyId) {
-            throw new TRPCError({
-              code: 'FORBIDDEN',
-              message: 'Empresa fora do escopo.',
-            });
-          }
-        }
+        assertUserCompanyScope(ctx.user, input.companyId);
+        // Bateria de seguranca (Etapa 0, item 2) — S7: agregado da
+        // empresa negado a C-level restrito (regua unica do agregado).
+        await assertAgregadoEmpresa(ctx.db, ctx.user);
 
         // Precondicao canonica: trimestre valido. O regex do
         // `TRIMESTRE_INPUT_SCHEMA` ja restringe formato, mas a semantica

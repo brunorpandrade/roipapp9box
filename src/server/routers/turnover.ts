@@ -44,7 +44,9 @@ import {
   type TurnoverByCompanyResult,
   type TurnoverByDepartamentoResult,
 } from '../services/turnoverEngine';
+import { assertAgregadoEmpresa } from '../services/cadeiaScopeGuard';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 
 import { TRIMESTRE_INPUT_SCHEMA } from './quarterlyCalculation';
 
@@ -85,12 +87,7 @@ export const GET_BY_DEPARTAMENTO_INPUT_SCHEMA = z.object({
  * canonica literal para o assert de teste.
  */
 export function assertCompanyScopeTurn(user: AuthenticatedUser, companyId: number): void {
-  if (user.role === 'super_admin') {
-    return;
-  }
-  if (user.companyId !== companyId) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: MSG_COMPANY_MISMATCH_TURN });
-  }
+  assertUserCompanyScope(user, companyId, MSG_COMPANY_MISMATCH_TURN);
 }
 
 // ============================================================
@@ -122,6 +119,10 @@ export function createTurnoverRouter() {
           throw new TRPCError({ code: 'NOT_FOUND', message: MSG_COMPANY_NAO_ENCONTRADA_TURN });
         }
         assertCompanyScopeTurn(ctx.user, input.companyId);
+        // Bateria de seguranca (Etapa 0, item 2) — S7: turnover e
+        // agregado da empresa; C-level restrito nao o alcanca (mesma
+        // regua da pagina `/turnover`, agora tambem no transporte).
+        await assertAgregadoEmpresa(ctx.db, ctx.user);
         return await computeTurnoverByCompany(ctx.db, input.companyId, input.trimestre);
       }),
 
@@ -140,6 +141,7 @@ export function createTurnoverRouter() {
           throw new TRPCError({ code: 'NOT_FOUND', message: MSG_COMPANY_NAO_ENCONTRADA_TURN });
         }
         assertCompanyScopeTurn(ctx.user, input.companyId);
+        await assertAgregadoEmpresa(ctx.db, ctx.user);
         return await computeTurnoverByDepartamento(
           ctx.db,
           input.companyId,

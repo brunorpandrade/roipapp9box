@@ -55,6 +55,7 @@ import {
 } from '../../db/schema';
 import { TRPCError } from '@trpc/server';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 
 // ============================================================
 // Mensagens canonicas literais (DOC 06 §21 + DOC 03 §2)
@@ -185,15 +186,7 @@ export interface SummaryCounts {
  * proprio `companyId` do JWT. Lanca FORBIDDEN canonico ao mismatch.
  */
 export function assertCompanyScopeOnb(user: AuthenticatedUser, companyId: number): void {
-  if (user.role === 'super_admin') {
-    return;
-  }
-  if (user.companyId !== companyId) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: MSG_LEADER_ONB_COMPANY_MISMATCH,
-    });
-  }
+  assertUserCompanyScope(user, companyId, MSG_LEADER_ONB_COMPANY_MISMATCH);
 }
 
 /**

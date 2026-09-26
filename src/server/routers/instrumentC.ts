@@ -102,12 +102,14 @@ import {
   getInstrumentoABDataCorte,
   parseTrimestreCicloReferencia,
 } from '../../lib/cycleDates';
+import { assertCadeiaDescendente } from '../services/cadeiaScopeGuard';
 import { getActiveLeaderHistoryByEmployee } from '../services/employeeLeaderHistory';
 import {
   DEFAULT_PLENITUDE_ENGINE,
   type PlenitudeEngineFacade,
 } from '../services/plenitudeCalculationEngine';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 
 // ============================================================
 // Constantes canonicas
@@ -387,15 +389,7 @@ function resolveDeps(deps: InstrumentCRouterDeps): ResolvedDeps {
  * invariante.
  */
 function assertCompanyScope(user: AuthenticatedUser, companyId: number): void {
-  if (user.role === 'super_admin') {
-    return;
-  }
-  if (user.companyId !== companyId) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Acesso negado ao instrumento desta empresa.',
-    });
-  }
+  assertUserCompanyScope(user, companyId, 'Acesso negado ao instrumento desta empresa.');
 }
 
 /**
@@ -834,6 +828,23 @@ export function createInstrumentCRouter(deps: InstrumentCRouterDeps = {}) {
       )
       .query(async ({ ctx, input }): Promise<GetAssessmentResult> => {
         assertCompanyScope(ctx.user, input.companyId);
+
+        // Bateria de seguranca (Etapa 0, item 2) — S1/S3: o alvo precisa
+        // pertencer a empresa informada (antes a leitura era so por
+        // `employeeId`, vazando avaliacoes de outra empresa) e, para
+        // lider e C-level restrito, estar na cadeia descendente propria
+        // (PC1h, CAMADA_AUTH §3 linhas 71-73).
+        const [alvo] = await ctx.db
+          .select({ companyId: employees.companyId })
+          .from(employees)
+          .where(eq(employees.id, input.employeeId))
+          .limit(1);
+        if (!alvo || alvo.companyId !== input.companyId) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: MSG_COMPANY_MISMATCH_EMP });
+        }
+        if (ctx.user.role === 'lider' || ctx.user.role === 'clevel') {
+          await assertCadeiaDescendente(ctx.db, ctx.user, input.employeeId);
+        }
 
         const [comp] = await ctx.db
           .select({ timezone: companies.timezone })

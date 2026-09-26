@@ -89,6 +89,7 @@ import {
 } from '../../db/schema';
 import { getInstrumentoABDataCorte, parseTrimestreCicloReferencia } from '../../lib/cycleDates';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 
 // ============================================================
 // Constantes canonicas
@@ -526,12 +527,7 @@ export function createInstrumentARouter(deps: InstrumentARouterDeps = {}) {
       )
       .query(async ({ ctx, input }): Promise<GetInstrumentAStatusResult> => {
         // §2.4 — guard cruzado companyId (super_admin atravessa).
-        if (ctx.user.role !== 'super_admin' && ctx.user.companyId !== input.companyId) {
-          throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: 'Empresa fora do escopo do titular.',
-          });
-        }
+        assertUserCompanyScope(ctx.user, input.companyId, 'Empresa fora do escopo do titular.');
 
         // Resolve o fuso canonico da empresa para o corte de status.
         const [company] = await ctx.db

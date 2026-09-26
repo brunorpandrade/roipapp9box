@@ -66,6 +66,7 @@ import {
 } from '../../db/schema';
 
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 import {
   provisionInitialPassword,
   provisionUniqueMatricula,
@@ -397,12 +398,7 @@ export const DEFAULT_CLEVEL_MEMBERS_ROUTER_DEPS: Required<CLevelMembersRouterDep
  * NAO e code dead — e chamada por cada handler (RV-13).
  */
 export function assertCompanyScopeCl(user: AuthenticatedUser, companyId: number): void {
-  if (user.role === 'super_admin') {
-    return;
-  }
-  if (user.companyId !== companyId) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: MSG_COMPANY_MISMATCH_CL });
-  }
+  assertUserCompanyScope(user, companyId, MSG_COMPANY_MISMATCH_CL);
 }
 
 /**

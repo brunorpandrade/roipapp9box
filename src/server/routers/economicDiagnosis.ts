@@ -36,12 +36,13 @@
 // Chamador exclusivo: `appRouter` (acoplado em `routers/index.ts`).
 // Testes: `tests/integration/economicDiagnosis-router.test.ts`.
 
-import { TRPCError } from '@trpc/server';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { companyEconomicDiagnosis } from '../../db/schema';
+import { assertAgregadoEmpresa } from '../services/cadeiaScopeGuard';
 import { roleProcedure, router } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 
 // ============================================================
 // Constantes e tipos publicos
@@ -94,14 +95,11 @@ export function createEconomicDiagnosisRouter() {
         // Guard canonico cruzado (§2.4 isolamento por empresa):
         // super_admin atravessa (nao tem `companyId` no ctx); demais
         // roles autenticadas cruzam contra o `companyId` do proprio JWT.
-        if (ctx.user.role !== 'super_admin') {
-          if (ctx.user.companyId !== input.companyId) {
-            throw new TRPCError({
-              code: 'FORBIDDEN',
-              message: 'Empresa fora do escopo.',
-            });
-          }
-        }
+        assertUserCompanyScope(ctx.user, input.companyId);
+        // Bateria de seguranca (Etapa 0, item 2) — S7: o diagnostico
+        // economico e agregado da empresa (ROI, folha); C-level restrito
+        // nao o alcanca (§3.3 mascara; aqui nega a linha integral).
+        await assertAgregadoEmpresa(ctx.db, ctx.user);
 
         const rows = await ctx.db
           .select()
@@ -133,14 +131,11 @@ export function createEconomicDiagnosisRouter() {
       )
       .query(async ({ ctx, input }) => {
         // Guard canonico cruzado (§2.4).
-        if (ctx.user.role !== 'super_admin') {
-          if (ctx.user.companyId !== input.companyId) {
-            throw new TRPCError({
-              code: 'FORBIDDEN',
-              message: 'Empresa fora do escopo.',
-            });
-          }
-        }
+        assertUserCompanyScope(ctx.user, input.companyId);
+        // Bateria de seguranca (Etapa 0, item 2) — S7: o diagnostico
+        // economico e agregado da empresa (ROI, folha); C-level restrito
+        // nao o alcanca (§3.3 mascara; aqui nega a linha integral).
+        await assertAgregadoEmpresa(ctx.db, ctx.user);
 
         const limit = input.limit ?? DIAGNOSIS_HISTORY_LIMIT_DEFAULT;
 

@@ -48,6 +48,7 @@ import {
 } from '../../db/schema';
 
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import { assertUserCompanyScope, isCompanyInScope } from '../../lib/scope/userCompanyScope';
 
 // ============================================================
 // Constantes canonicas (§5.10 / §5.12)
@@ -83,6 +84,10 @@ export const MSG_MES_FECHADO_REV =
 /** §5.6 — perfil sem RF tentando gravar faturamento. */
 export const MSG_SAVE_FATURAMENTO_NAO_RF =
   'Apenas o Responsavel financeiro pode gravar o faturamento mensal.' as const;
+
+/** §9.11 — perfil sem RF tentando ler o faturamento mensal (bateria de seguranca). */
+export const MSG_GET_FATURAMENTO_NAO_RF =
+  'Apenas o Responsavel financeiro pode consultar o faturamento mensal.' as const;
 
 /** §5.10 — faturamento invalido (nao numerico ou <= 0). */
 export const MSG_FATURAMENTO_INVALIDO =
@@ -166,12 +171,7 @@ export const DEFAULT_REVENUE_ROUTER_DEPS: Required<RevenueRouterDeps> = {
 
 /** §2.4 guard cruzado companyId — super_admin atravessa. */
 export function assertCompanyScopeRev(user: AuthenticatedUser, companyId: number): void {
-  if (user.role === 'super_admin') {
-    return;
-  }
-  if (user.companyId !== companyId) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: MSG_COMPANY_MISMATCH_REV });
-  }
+  assertUserCompanyScope(user, companyId, MSG_COMPANY_MISMATCH_REV);
 }
 
 /**
@@ -224,12 +224,12 @@ export async function isCallerResponsavelFinanceiroRev(
   user: AuthenticatedUser,
   companyId: number,
 ): Promise<boolean> {
+  if (!isCompanyInScope(user, companyId)) {
+    return false;
+  }
   if (user.role === 'super_admin') {
     // Bruno atravessa por definicao — este helper existe para nao-Bruno.
     return true;
-  }
-  if (user.companyId !== companyId) {
-    return false;
   }
   if (user.role === 'clevel') {
     const rows = await db
@@ -380,6 +380,16 @@ export function createRevenueRouter(deps: RevenueRouterDeps = {}) {
       .input(GET_FATURAMENTO_INPUT_SCHEMA)
       .query(async ({ ctx, input }): Promise<GetFaturamentoResult> => {
         assertCompanyScopeRev(ctx.user, input.companyId);
+        // Bateria de seguranca (Etapa 0, item 2) — S8: a leitura do
+        // faturamento mensal e do Responsavel financeiro (matriz DOC 02
+        // §10.4 `RF` + §9.11), nao de qualquer perfil da empresa. A pagina
+        // ja barrava; o transporte tRPC agora tambem (defense-in-depth).
+        if (ctx.user.role !== 'super_admin') {
+          const isRF = await isCallerResponsavelFinanceiroRev(ctx.db, ctx.user, input.companyId);
+          if (!isRF) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: MSG_GET_FATURAMENTO_NAO_RF });
+          }
+        }
         const rows = await ctx.db
           .select({
             faturamentoBruto: companyMonthlyData.faturamentoBruto,

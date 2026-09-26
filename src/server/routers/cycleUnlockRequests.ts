@@ -68,6 +68,7 @@ import {
   monthlyUnlockLog,
 } from '../../db/schema';
 import { protectedProcedure, roleProcedure, router } from '../trpc';
+import { assertUserCompanyScope, isCompanyInScope } from '../../lib/scope/userCompanyScope';
 
 // (import intencional isolado para o linter — o alias `_sqlUnused` acima
 // nao e consumido; removido do arquivo pelo prettier-organize-imports se
@@ -337,10 +338,9 @@ function assertCreateAuthorization(
     return;
   }
 
-  // Perfis administrativos: sempre restritos a propria empresa.
-  if (user.companyId !== input.companyId) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: MSG_CREATE_NAO_AUTORIZADO });
-  }
+  // Perfis administrativos: sempre restritos a propria empresa (§2.4,
+  // fonte unica em `userCompanyScope`).
+  assertUserCompanyScope(user, input.companyId, MSG_CREATE_NAO_AUTORIZADO);
 
   if (input.aba === 'rh') {
     if (user.role === 'rh' || user.role === 'rh_lider') {
@@ -391,9 +391,7 @@ function assertHasPendingAuthorization(
     return;
   }
 
-  if (user.companyId !== input.companyId) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: MSG_HAS_PENDING_NAO_AUTORIZADO });
-  }
+  assertUserCompanyScope(user, input.companyId, MSG_HAS_PENDING_NAO_AUTORIZADO);
 
   if (user.role === 'rh' || user.role === 'rh_lider') {
     return;
@@ -431,11 +429,11 @@ async function isCallerResponsavelFinanceiro(
   user: AuthenticatedUserView,
   companyId: number,
 ): Promise<boolean> {
+  if (!isCompanyInScope(user, companyId)) {
+    return false;
+  }
   if (user.role === 'super_admin') {
     return true;
-  }
-  if (user.companyId !== companyId) {
-    return false;
   }
   if (user.role === 'clevel') {
     const rows = await db

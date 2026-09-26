@@ -97,6 +97,7 @@ import {
   type AuthenticatedUser,
   type Context,
 } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 
 import {
   ExportTetoExcedidoError,
@@ -794,12 +795,7 @@ export const DEFAULT_EMPLOYEES_ROUTER_DEPS: Required<EmployeesRouterDeps> = {
  * proprio `companyId` do JWT. Lanca FORBIDDEN quando ha mismatch.
  */
 export function assertCompanyScope(user: AuthenticatedUser, companyId: number): void {
-  if (user.role === 'super_admin') {
-    return;
-  }
-  if (user.companyId !== companyId) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: MSG_COMPANY_MISMATCH_EMP });
-  }
+  assertUserCompanyScope(user, companyId, MSG_COMPANY_MISMATCH_EMP);
 }
 
 /**

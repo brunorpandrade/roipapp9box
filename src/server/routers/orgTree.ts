@@ -57,6 +57,7 @@ import { z } from 'zod';
 
 import { loadEmployeeSubtree, loadFullOrgTree, type OrgTreeNode } from '../services/orgTree';
 import { type AuthenticatedUser, roleProcedure, router } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 
 // ============================================================
 // Mensagens canônicas literais (§9.1 + padrão transversal)
@@ -110,15 +111,7 @@ export interface OrgTreeResult {
  * `leaderOnboarding.ts:171`).
  */
 export function assertCompanyScopeOrgTree(user: AuthenticatedUser, companyId: number): void {
-  if (user.role === 'super_admin') {
-    return;
-  }
-  if (user.companyId !== companyId) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: MSG_ORG_TREE_COMPANY_MISMATCH,
-    });
-  }
+  assertUserCompanyScope(user, companyId, MSG_ORG_TREE_COMPANY_MISMATCH);
 }
 
 /**

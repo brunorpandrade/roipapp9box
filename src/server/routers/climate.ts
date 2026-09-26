@@ -57,6 +57,7 @@ import { z } from 'zod';
 
 import { climateEngagementData } from '../../db/schema';
 import { roleProcedure, router } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 import {
   type ClimateCalculationResult,
   type ClimateEngineFacade,
@@ -376,12 +377,7 @@ export function createClimateRouter(deps: ClimateRouterDeps = {}) {
       .input(GET_CLIMATE_BLOCK_INPUT_SCHEMA)
       .query(async ({ ctx, input }): Promise<GetClimateBlockResult> => {
         // §2.4 — guard cruzado companyId (super_admin atravessa).
-        if (ctx.user.role !== 'super_admin' && ctx.user.companyId !== input.companyId) {
-          throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: MSG_EMPRESA_FORA_DO_ESCOPO_CLIMATE,
-          });
-        }
+        assertUserCompanyScope(ctx.user, input.companyId, MSG_EMPRESA_FORA_DO_ESCOPO_CLIMATE);
 
         // Validacao fina do `escopoReferencia` por escopo.
         const escopoReferencia = input.escopoReferencia ?? null;

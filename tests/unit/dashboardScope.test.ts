@@ -7,7 +7,7 @@
 import { TRPCError } from '@trpc/server';
 import { describe, expect, it } from 'vitest';
 
-import { assertAlvoNoEscopo } from '../../src/server/routers/dashboard';
+import { assertAlvoNoEscopo } from '../../src/server/services/cadeiaScopeGuard';
 
 describe('assertAlvoNoEscopo', () => {
   it('scope null libera qualquer alvo (sem PC1h)', () => {

@@ -478,6 +478,86 @@ export const ROUTE_MATRIX: readonly RouteRule[] = [
     },
   },
 
+  // Bateria de seguranca cross-company (Etapa 0, item 2) — rotas reais
+  // de `src/app` que existiam fora da matriz. Antes o middleware as
+  // liberava com `next()` (ou, no caso de `/colaborador/:id/*`, as
+  // tratava como PUBLICAS pelo prefixo do portal) e a unica barreira
+  // era o guard de cada `page.tsx`. Passam a ter regra explicita
+  // (defense-in-depth §2.4); a regua `tests/unit/routeMatrixCoverage`
+  // reprova qualquer `page.tsx` nao publico fora desta matriz.
+  {
+    // Edicao integral do colaborador na rota nativa RH (ME-084).
+    pattern: '/colaborador/:employeeId/editar',
+    canonicalRef: '§10.9 + §13.5',
+    byRole: {
+      super_admin: 'redirect_painel', // Bruno usa a variante /super-admin/empresa/:id/...
+      rh: 'allow',
+      rh_lider: 'allow',
+      clevel: 'deny',
+      lider: 'deny',
+    },
+  },
+  {
+    // Formulario de desligamento na rota nativa RH (ME-fila6 D2).
+    pattern: '/colaborador/:employeeId/desligamento',
+    canonicalRef: 'Especificacao Turnover e desligamento §2',
+    byRole: {
+      super_admin: 'redirect_painel',
+      rh: 'allow',
+      rh_lider: 'allow',
+      clevel: 'deny',
+      lider: 'deny',
+    },
+  },
+  {
+    // Perfil/dashboard do C-level — exclusivo do Super Admin (§8.05).
+    pattern: '/dashboard-individual/clevel/:cLevelId',
+    canonicalRef: '§8.05 (acesso ao Perfil do C-level)',
+    byRole: {
+      super_admin: 'allow',
+      rh: 'deny',
+      rh_lider: 'deny',
+      clevel: 'deny',
+      lider: 'deny',
+    },
+  },
+  {
+    // Recortes coletivos na rota nativa (§8.06.6b) — guard fino PC1h no page.
+    pattern: '/dashboard-recorte/:tipo/:alvo',
+    canonicalRef: 'ESPEC_ORGANOGRAMAS §8 + PC1h',
+    byRole: {
+      super_admin: 'redirect_painel', // Bruno usa /super-admin/empresa/:id/dashboard-recorte
+      rh: 'allow',
+      rh_lider: 'allow',
+      clevel: 'allow',
+      lider: 'allow',
+    },
+  },
+  {
+    // Sub-rotas do portal autenticado (`/meu-portal/<instrumento>`).
+    pattern: '/meu-portal/:instrumento',
+    canonicalRef: '§10.7',
+    byRole: {
+      super_admin: 'redirect_painel',
+      rh: 'allow',
+      rh_lider: 'allow',
+      clevel: 'allow',
+      lider: 'allow',
+    },
+  },
+  {
+    // Indice de logs do Super Admin (rota pai de §10.6/§10.8).
+    pattern: '/super-admin/logs',
+    canonicalRef: '§10.3 + §9.1',
+    byRole: {
+      super_admin: 'allow',
+      rh: 'deny',
+      rh_lider: 'deny',
+      clevel: 'deny',
+      lider: 'deny',
+    },
+  },
+
   // Rotas placeholder Fase 4 (§9.16) — stub para todos os perfis
   // administrativos exceto colaborador puro (que nao autentica na
   // plataforma admin). Sem AccessDeniedPage — pagina renderiza stub

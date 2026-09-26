@@ -40,7 +40,7 @@ import {
   type SendChatMessageArgs,
   type SendChatMessageOutcome,
 } from '../services/aiChatService';
-import { getActiveLeaderHistoryByEmployee } from '../services/employeeLeaderHistory';
+import { assertCadeiaDescendente } from '../services/cadeiaScopeGuard';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
 
 // ============================================================
@@ -235,8 +235,9 @@ async function resolveScopeOrThrow(
 }
 
 /**
- * Guard canonico S066 aplicado a `lider`: acesso restrito a cadeia
- * direta (ou ao proprio dashboard/equipe). Chamado apos `resolveScope`.
+ * Guard de escopo PC1h (substitui S066): lider conversa sobre o proprio
+ * dashboard/equipe e sobre a cadeia descendente; C-level restrito
+ * apenas sobre a propria cadeia. Chamado apos `resolveScope`.
  */
 async function assertLiderScopeOrThrow(
   db: RoipDatabase,
@@ -244,29 +245,28 @@ async function assertLiderScopeOrThrow(
   dashboardLevel: 'equipe' | 'individual',
   contextId: number,
 ): Promise<void> {
-  if (user.role !== 'lider') {
+  if (user.role !== 'lider' && user.role !== 'clevel') {
     return;
   }
-  if (dashboardLevel === 'equipe') {
-    if (user.userId !== contextId) {
-      throw new TRPCError({
-        code: 'FORBIDDEN',
-        message: MSG_CHAT_IA_CONTEXTO_NAO_ENCONTRADO,
-      });
+  if (user.role === 'lider') {
+    if (dashboardLevel === 'equipe') {
+      if (user.userId !== contextId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: MSG_CHAT_IA_CONTEXTO_NAO_ENCONTRADO,
+        });
+      }
+      return;
     }
-    return;
+    if (user.userId === contextId) {
+      return;
+    }
   }
-  // level === 'individual': ou dashboard proprio, ou liderado direto.
-  if (user.userId === contextId) {
-    return;
-  }
-  const link = await getActiveLeaderHistoryByEmployee(db, contextId);
-  if (!link || link.liderId !== user.userId) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: MSG_CHAT_IA_CONTEXTO_NAO_ENCONTRADO,
-    });
-  }
+  // Bateria de seguranca (Etapa 0, item 2) — S6: lider (cadeia
+  // descendente, Cenario 2) e C-level restrito (propria cadeia) so
+  // conversam sobre contextos dentro do escopo PC1h; C-level total
+  // atravessa (escopo nulo).
+  await assertCadeiaDescendente(db, user, contextId, MSG_CHAT_IA_CONTEXTO_NAO_ENCONTRADO);
 }
 
 // ============================================================

@@ -70,7 +70,7 @@ import { z } from 'zod';
 
 import type { RoipDatabase } from '../../db/client';
 import { employees, nineBoxClassifications } from '../../db/schema';
-import { getActiveLeaderHistoryByEmployee } from '../services/employeeLeaderHistory';
+import { assertCadeiaDescendente } from '../services/cadeiaScopeGuard';
 import { getNineBoxClassificationByQuarter } from '../services/nineBoxClassifications';
 import type {
   NineBoxDirecaoMovimento,
@@ -79,6 +79,7 @@ import type {
   NineBoxQuadrante,
 } from '../services/nineBoxCalculationEngine';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 
 // ============================================================
 // Constantes canonicas
@@ -215,40 +216,31 @@ export interface NineBoxTrajectoryResult {
  * procs deste router.
  */
 function assertCompanyScopeNineBox(user: AuthenticatedUser, companyId: number): void {
-  if (user.role === 'super_admin') {
-    return;
-  }
-  if (user.companyId !== companyId) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Recurso fora do escopo da empresa.',
-    });
-  }
+  assertUserCompanyScope(user, companyId, 'Recurso fora do escopo da empresa.');
 }
 
+/** Mensagem canonica de alvo fora da cadeia (S066 → PC1h). */
+const MSG_FORA_DA_CADEIA_NINE_BOX = 'Colaborador fora da cadeia direta do lider.';
+
 /**
- * Guard canonico S066 (cadeia direta de lider). Restrito a `role ===
- * 'lider'`. Lider ve apenas liderados diretos ativos + o proprio
- * dashboard.
+ * Guard de cadeia descendente (PC1h) — substitui S066 (cadeia direta de
+ * lider) na bateria de seguranca (Etapa 0, item 2). Lider le a propria
+ * cadeia descendente (direta e indireta) mais o proprio dashboard;
+ * C-level restrito le exclusivamente a propria cadeia; RH e C-level
+ * total atravessam.
  */
 async function assertLiderDiretoNineBox(
   db: RoipDatabase,
   user: AuthenticatedUser,
   targetEmployeeId: number,
 ): Promise<void> {
-  if (user.role !== 'lider') {
+  if (user.role !== 'lider' && user.role !== 'clevel') {
     return;
   }
-  if (user.userId === targetEmployeeId) {
+  if (user.role === 'lider' && user.userId === targetEmployeeId) {
     return;
   }
-  const link = await getActiveLeaderHistoryByEmployee(db, targetEmployeeId);
-  if (!link || link.liderId !== user.userId) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Colaborador fora da cadeia direta do lider.',
-    });
-  }
+  await assertCadeiaDescendente(db, user, targetEmployeeId, MSG_FORA_DA_CADEIA_NINE_BOX);
 }
 
 /**

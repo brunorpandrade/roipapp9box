@@ -71,6 +71,7 @@ import {
 } from '../../db/schema';
 import { parseTrimestreCicloReferencia, type Trimestre } from '../../lib/cycleDates';
 import { roleProcedure, router } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 import {
   DIA_ABERTURA_INSTRUMENT_D,
   NUM_DIMENSOES_D,
@@ -633,12 +634,7 @@ export function createInstrumentDRouter(deps: InstrumentDRouterDeps = {}) {
       )
       .query(async ({ ctx, input }): Promise<GetInstrumentDStatusResult> => {
         // §2.4 — guard cruzado companyId (super_admin atravessa).
-        if (ctx.user.role !== 'super_admin' && ctx.user.companyId !== input.companyId) {
-          throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: 'Empresa fora do escopo do titular.',
-          });
-        }
+        assertUserCompanyScope(ctx.user, input.companyId, 'Empresa fora do escopo do titular.');
 
         // Resolve o fuso canonico da empresa para o corte de status
         // e para o snapshot §8.3.

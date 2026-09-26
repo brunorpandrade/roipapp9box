@@ -75,7 +75,9 @@ import { z } from 'zod';
 
 import type { RoipDatabase } from '../../db/client';
 import { cLevelMembers, employeeLeaderHistory, employees, iqlData } from '../../db/schema';
+import { assertCadeiaDescendente } from '../services/cadeiaScopeGuard';
 import { roleProcedure, router } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 import {
   DEFAULT_IQL_ENGINE,
   type IqlCalculationResult,
@@ -153,6 +155,9 @@ export const MSG_TRIMESTRE_INVALIDO_IQL =
  * §8.4 — avaliado inexistente ou fora do escopo da empresa. Guard
  * canonico do `getIQLData` e do `calculateIQL`.
  */
+/** §2.4 — empresa do input divergente do JWT (fonte unica em `userCompanyScope`). */
+export const MSG_EMPRESA_FORA_DO_ESCOPO_IQL = 'Empresa fora do escopo do titular.';
+
 export const MSG_AVALIADO_NAO_ENCONTRADO_IQL = 'Avaliado não encontrado no escopo da empresa.';
 
 // ============================================================
@@ -560,12 +565,7 @@ export function createIqlRouter(deps: IqlRouterDeps = {}) {
       .input(GET_IQL_DATA_INPUT_SCHEMA)
       .query(async ({ ctx, input }): Promise<GetIQLDataResult> => {
         // §2.4 — guard cruzado companyId (super_admin atravessa).
-        if (ctx.user.role !== 'super_admin' && ctx.user.companyId !== input.companyId) {
-          throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: 'Empresa fora do escopo do titular.',
-          });
-        }
+        assertUserCompanyScope(ctx.user, input.companyId, MSG_EMPRESA_FORA_DO_ESCOPO_IQL);
 
         // §8.6 Bloqueio 4: IQL de C-level apenas Bruno.
         if (input.avaliadoTipo === 'clevel' && ctx.user.role !== 'super_admin') {
@@ -613,6 +613,15 @@ export function createIqlRouter(deps: IqlRouterDeps = {}) {
           input.avaliadoTipo === 'employee' &&
           ctx.user.role !== 'super_admin' &&
           ctx.user.userId === input.avaliadoId;
+
+        // Bateria de seguranca (Etapa 0, item 2) — S4: lider e C-level
+        // restrito so leem o IQL de avaliados da propria cadeia
+        // descendente (CAMADA_AUTH §3 linhas 71-73; PC1h). A auto-visao
+        // segue o Bloqueio B1 (dadosBloqueados) logo abaixo, sem FORBIDDEN.
+        const isPerfilRestrito = ctx.user.role === 'lider' || ctx.user.role === 'clevel';
+        if (isPerfilRestrito && input.avaliadoTipo === 'employee' && !isProprioLider) {
+          await assertCadeiaDescendente(ctx.db, ctx.user, input.avaliadoId);
+        }
 
         // Le a linha de iqlData (pode nao existir se nenhuma resposta
         // foi gravada ainda).
@@ -746,12 +755,7 @@ export function createIqlRouter(deps: IqlRouterDeps = {}) {
       .input(GET_TABELA_IQL_INPUT_SCHEMA)
       .query(async ({ ctx, input }): Promise<GetTabelaIQLResult> => {
         // §2.4 — guard cruzado companyId (super_admin atravessa).
-        if (ctx.user.role !== 'super_admin' && ctx.user.companyId !== input.companyId) {
-          throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: 'Empresa fora do escopo do titular.',
-          });
-        }
+        assertUserCompanyScope(ctx.user, input.companyId, MSG_EMPRESA_FORA_DO_ESCOPO_IQL);
 
         // Resolve escopo de avaliados por perfil (§8.7).
         let liderIds: number[] = [];

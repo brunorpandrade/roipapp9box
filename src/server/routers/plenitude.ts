@@ -59,10 +59,11 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { employees, plenitudeData } from '../../db/schema';
-import { getActiveLeaderHistoryByEmployee } from '../services/employeeLeaderHistory';
+import { assertCadeiaDescendente } from '../services/cadeiaScopeGuard';
 import { getPlenitudeDataByQuarter } from '../services/plenitudeData';
 import type { RoipDatabase } from '../../db/client';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 
 // ============================================================
 // Constantes canonicas
@@ -106,23 +107,20 @@ export type PlenitudeDataResult = typeof plenitudeData.$inferSelect;
  * leitura para bloquear cross-company (RH da empresa X nunca ve
  * plenitude da empresa Y).
  */
+/** Mensagem canonica de alvo fora da cadeia (S066 → PC1h). */
+const MSG_FORA_DA_CADEIA_PLENITUDE = 'Colaborador fora da cadeia direta do lider.';
+
 function assertCompanyScopePlenitude(user: AuthenticatedUser, companyId: number): void {
-  if (user.role === 'super_admin') {
-    return;
-  }
-  if (user.companyId !== companyId) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Colaborador fora do escopo da empresa.',
-    });
-  }
+  assertUserCompanyScope(user, companyId, 'Colaborador fora do escopo da empresa.');
 }
 
 /**
- * Guard canonico S066 (cadeia direta de lider). Restrito a `role ===
- * 'lider'` — chamadores fora dessa role passam sem checagem adicional
- * (RH e C-level tem escopo empresa; super_admin atravessa). Lider ve
- * APENAS liderados diretos ativos (`employeeLeaderHistory` com
+ * Guard de cadeia descendente (PC1h, §11.9) — substitui o antigo S066
+ * (lider direto apenas) na bateria de seguranca (Etapa 0, item 2):
+ * lider le toda a cadeia descendente propria (Cenario 2) e C-level
+ * restrito le exclusivamente a propria cadeia; RH e C-level total
+ * atravessam; a auto-visao do lider e preservada. Historico S066: lider
+ * via APENAS liderados diretos ativos (`employeeLeaderHistory` com
  * `dataFim IS NULL` e `liderId = ctx.user.userId`) e o proprio
  * dashboard. Cadeia indireta e materia de motor de organograma
  * (ME futura).
@@ -132,19 +130,13 @@ async function assertLiderDireto(
   user: AuthenticatedUser,
   targetEmployeeId: number,
 ): Promise<void> {
-  if (user.role !== 'lider') {
+  if (user.role !== 'lider' && user.role !== 'clevel') {
     return;
   }
-  if (user.userId === targetEmployeeId) {
+  if (user.role === 'lider' && user.userId === targetEmployeeId) {
     return;
   }
-  const link = await getActiveLeaderHistoryByEmployee(db, targetEmployeeId);
-  if (!link || link.liderId !== user.userId) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Colaborador fora da cadeia direta do lider.',
-    });
-  }
+  await assertCadeiaDescendente(db, user, targetEmployeeId, MSG_FORA_DA_CADEIA_PLENITUDE);
 }
 
 // ============================================================

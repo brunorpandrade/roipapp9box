@@ -91,6 +91,7 @@ import { insertTransferLogEntry } from '../services/responsavelFinanceiroTransfe
 import { provisionInitialPassword } from '../services/credentialProvisioning';
 
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 
 // ============================================================
 // ME-075 — mensagens canonicas bit-exact `updateJobFamilies`
@@ -313,12 +314,7 @@ export const MYSQL_ERR_ROW_IS_REFERENCED_RF = 1451 as const;
  * chamada pelo handler; RV-08 satisfeita: nao amplia decisao do Manus).
  */
 export function assertCompanyScopeRf(user: AuthenticatedUser, companyId: number): void {
-  if (user.role === 'super_admin') {
-    return;
-  }
-  if (user.companyId !== companyId) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: MSG_COMPANY_MISMATCH_RF });
-  }
+  assertUserCompanyScope(user, companyId, MSG_COMPANY_MISMATCH_RF);
 }
 
 /**

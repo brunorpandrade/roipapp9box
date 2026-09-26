@@ -95,6 +95,7 @@ import { listEmployeeVariables } from '../services/employeeVariables';
 import { updatePerformanceDataInputRH } from '../services/performanceData';
 import { updatePerformanceVariableInputLeader } from '../services/performanceVariableData';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 
 // ============================================================
 // Mensagens canonicas literais do §3.12 (S073 — testadas verbatim)
@@ -301,15 +302,7 @@ export interface PendentLeaderRow {
  * do sub-router.
  */
 function assertCompanyScope(user: AuthenticatedUser, companyId: number): void {
-  if (user.role === 'super_admin') {
-    return;
-  }
-  if (user.companyId !== companyId) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Empresa fora do escopo.',
-    });
-  }
+  assertUserCompanyScope(user, companyId, 'Empresa fora do escopo.');
 }
 
 /**

@@ -91,6 +91,7 @@ import type { RoipDatabase } from '../../db/client';
 import { cLevelMembers, companies, employees, employeeLeaderHistory } from '../../db/schema';
 import { listEmployeeVariables } from '../services/employeeVariables';
 import { roleProcedure, router } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 import type { AuthenticatedUser, Context } from '../trpc';
 import { createCallerFactory } from '../trpc';
 import { createMonthlyDataRouter, FAMILIA_6_JOB_FAMILY } from './monthlyData';
@@ -306,15 +307,7 @@ export const DEFAULT_MONTHLY_DATA_FACADE: MonthlyDataFacade = {
 /** Guard cruzado canonico (§2.4). Duplicado de monthlyData.ts por
  *  evitar edit cruzado (padrao S049 — helper local por sub-router). */
 function assertCompanyScope(user: AuthenticatedUser, companyId: number): void {
-  if (user.role === 'super_admin') {
-    return;
-  }
-  if (user.companyId !== companyId) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: MSG_EMPRESA_FORA_DO_ESCOPO_SPREADSHEETS,
-    });
-  }
+  assertUserCompanyScope(user, companyId, MSG_EMPRESA_FORA_DO_ESCOPO_SPREADSHEETS);
 }
 
 /** Sanitiza razao social para uso em nome de arquivo (S188 — sem
@@ -454,21 +447,28 @@ async function loadLeaderTemplateData(
   }
 
   // Nome do lider.
-  let liderNome = 'Lider';
+  // Bateria de seguranca (Etapa 0, item 2) — S2: o lider informado
+  // precisa pertencer a empresa do template. Antes a consulta era so por
+  // id e o template saia com o nome do lider e os liderados de OUTRA
+  // empresa para um RH que informasse um `liderId` alheio.
+  let liderNome: string | undefined;
   if (liderTipo === 'employee') {
     const [l] = await db
       .select({ name: employees.name })
       .from(employees)
-      .where(eq(employees.id, liderId))
+      .where(and(eq(employees.id, liderId), eq(employees.companyId, companyId)))
       .limit(1);
-    if (l) liderNome = l.name;
+    liderNome = l?.name;
   } else {
     const [l] = await db
       .select({ name: cLevelMembers.name })
       .from(cLevelMembers)
-      .where(eq(cLevelMembers.id, liderId))
+      .where(and(eq(cLevelMembers.id, liderId), eq(cLevelMembers.companyId, companyId)))
       .limit(1);
-    if (l) liderNome = l.name;
+    liderNome = l?.name;
+  }
+  if (liderNome === undefined) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: MSG_EMPRESA_FORA_DO_ESCOPO_SPREADSHEETS });
   }
 
   // Liderados diretos no mes (mesma semantica de S080, sem replicar
@@ -521,7 +521,7 @@ async function loadLeaderTemplateData(
         status: employees.status,
       })
       .from(employees)
-      .where(eq(employees.id, empId))
+      .where(and(eq(employees.id, empId), eq(employees.companyId, companyId)))
       .limit(1);
     if (!emp) continue;
     if (emp.status !== 'ativo') continue;

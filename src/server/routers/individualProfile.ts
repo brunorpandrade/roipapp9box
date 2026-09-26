@@ -98,6 +98,7 @@ import {
   individualProfilePlaceholders,
   individualProfileScores,
 } from '../../db/schema';
+import { assertCadeiaDescendente } from '../services/cadeiaScopeGuard';
 import { getActiveLeaderHistoryByEmployee } from '../services/employeeLeaderHistory';
 import { DEFAULT_PDF_RENDERER_FACADE, type PdfRendererFacade } from '../services/pdfRenderer';
 import {
@@ -129,7 +130,7 @@ export const MSG_PC1E_PERFIL_INDIVIDUAL_CLEVEL =
 export const MSG_TITULAR_INATIVO_RESTRITO =
   'Perfil Individual de colaborador inativo restrito a Bruno e RH.';
 
-/** S066 — lider ve apenas liderados diretos ativos. */
+/** S066 → PC1h — lider e C-level restrito veem apenas a propria cadeia descendente. */
 export const MSG_FORA_DA_CADEIA_DIRETA = 'Colaborador fora da cadeia direta do líder.';
 
 /** Titular inexistente na empresa informada. */
@@ -319,10 +320,11 @@ export function assertPC1e(user: AuthenticatedUser, userType: IndividualProfileU
 }
 
 /**
- * Guard S066 (cadeia direta de lider), identico ao provado na ME-042.
- * Aplicavel apenas quando `role === 'lider'`: RH e C-level tem escopo
- * de empresa; super_admin atravessa. Cadeia indireta (Cenario 2) e
- * materia do motor de organograma, ME futura.
+ * Guard de cadeia descendente (PC1h) — substitui S066 (cadeia direta de
+ * lider, ME-042) na bateria de seguranca (Etapa 0, item 2). Lider le
+ * toda a cadeia descendente propria (Cenario 2); C-level restrito le
+ * exclusivamente a propria cadeia; RH e C-level total atravessam;
+ * super_admin atravessa. Alvo C-level segue bloqueado para ambos.
  */
 async function assertLiderDireto(
   db: RoipDatabase,
@@ -330,21 +332,16 @@ async function assertLiderDireto(
   userType: IndividualProfileUserType,
   targetUserId: number,
 ): Promise<void> {
-  if (user.role !== 'lider') {
+  if (user.role !== 'lider' && user.role !== 'clevel') {
     return;
   }
-  // Titular C-level jamais chega aqui (PC1e barra antes), mas a guarda
-  // mantem o invariante explicito: lider nao le C-level.
   if (userType !== 'employee') {
     throw new TRPCError({ code: 'FORBIDDEN', message: MSG_FORA_DA_CADEIA_DIRETA });
   }
-  if (user.userId === targetUserId) {
+  if (user.role === 'lider' && user.userId === targetUserId) {
     return;
   }
-  const link = await getActiveLeaderHistoryByEmployee(db, targetUserId);
-  if (!link || link.liderId !== user.userId) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: MSG_FORA_DA_CADEIA_DIRETA });
-  }
+  await assertCadeiaDescendente(db, user, targetUserId, MSG_FORA_DA_CADEIA_DIRETA);
 }
 
 /**

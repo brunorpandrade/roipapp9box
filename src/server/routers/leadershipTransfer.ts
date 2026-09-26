@@ -62,6 +62,7 @@ import {
 } from '../../lib/shared/terminationForms';
 import { insertTerminationForm } from '../services/terminationForms';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 
 // ============================================================
 // Constantes canonicas
@@ -261,12 +262,7 @@ export const DEFAULT_LEADERSHIP_TRANSFER_ROUTER_DEPS: Required<LeadershipTransfe
  * roles restritos ao proprio `companyId` do JWT.
  */
 export function assertCompanyScopeLT(user: AuthenticatedUser, companyId: number): void {
-  if (user.role === 'super_admin') {
-    return;
-  }
-  if (user.companyId !== companyId) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: MSG_COMPANY_MISMATCH_LT });
-  }
+  assertUserCompanyScope(user, companyId, MSG_COMPANY_MISMATCH_LT);
 }
 
 /**
