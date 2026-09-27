@@ -1,23 +1,26 @@
-// ROIP APP 9BOX — form canônico bit-exact compartilhado entre as rotas
+// ROIP APP 9BOX — form canonico bit-exact compartilhado entre as rotas
 // `/super-admin/empresa/[id]/clevel/novo` (§13.2) e `/super-admin/
 // empresa/[id]/clevel/[cLevelId]/editar` (§13.3). ME-078a.
 //
-// Formulário canônico bit-exact das 6 seções canônicas do §13.2/§13.3:
+// Formulario canonico bit-exact das 6 secoes canonicas do §13.2/§13.3:
 //   1. Dados pessoais (Foto/Nome/CPF/Data de nascimento/E-mail/Telefone).
-//      Obs: Telefone não é coluna canônica em `cLevelMembers` (§4.4); o
-//      campo é renderizado somente como acessório visual bit-exact ao
-//      mockup — não persiste. Data de admissão canônica preservada.
-//   2. Vínculo profissional (Cargo/Descrição do cargo/Departamento).
-//   3. Família de função (grid 3/2/1 canônico bit-exact — 6 famílias
+//      Obs: Telefone nao e coluna canonica em `cLevelMembers` (§4.4); o
+//      campo e renderizado somente como acessorio visual bit-exact ao
+//      mockup — nao persiste. Data de admissao canonica preservada.
+//   2. Vinculo profissional (Cargo/Descricao do cargo/Departamento).
+//   3. Familia de funcao (grid 3/2/1 canonico bit-exact — 6 familias
 //      hard-coded canonicamente FASE_1 §9). Obs: `cLevelMembers` do
-//      schema canônico bit-exact NÃO tem coluna `jobFamily`. Campo
+//      schema canonico bit-exact NAO tem coluna `jobFamily`. Campo
 //      renderizado visualmente bit-exact ao mockup como componente
-//      canônico, mas NÃO persiste (seleção visualmente registrada).
-//   4. Escopo de visualização (`acessoTotal` + banner Contexto A/B).
-//   5. Papéis funcionais (toggle "Ativar como Responsável financeiro"
-//      + nota canônica bit-exact §13.9 D3 — sem toggle RH).
+//      canonico, mas NAO persiste (selecao visualmente registrada).
+//   4. Escopo de visualizacao (`acessoTotal` + banner Contexto A/B).
+//   5. Papeis funcionais (toggle "Ativar como Responsavel financeiro" +
+//      ME 3.5 D5 patch2: toggle "Ativar como RH" — D9 §12 DOC 02 herdada
+//      via `roleProcedure(['super_admin'])` no server. Ambos os toggles
+//      operam com a mesma semantica de UI e a decisao D3 anterior de
+//      "nota canonica" foi substituida por este novo toggle em regime).
 //   6. Status inicial (badge verde — novo C-level sempre nasce ativo;
-//      em edição, o toggle Ativar/Inativar aparece + botão dedicado).
+//      em edicao, o toggle Ativar/Inativar aparece + botao dedicado).
 //
 // **RV-13.** Consumido por `CLevelNovoClient.tsx` e `CLevelEditarClient.tsx`.
 
@@ -28,7 +31,7 @@ import { useState, type ChangeEvent, type JSX } from 'react';
 import { COLORS } from '../../../../../lib/design-tokens/colors';
 
 // -----------------------------------------------------------------------
-// Enum canônico bit-exact de departamentos (§4.4 + §15.1 CAMADA_DADOS)
+// Enum canonico bit-exact de departamentos (§4.4 + §15.1 CAMADA_DADOS)
 // -----------------------------------------------------------------------
 
 export const DEPARTAMENTO_OPTIONS = [
@@ -54,7 +57,7 @@ export const DEPARTAMENTO_OPTIONS = [
 ] as const;
 
 // -----------------------------------------------------------------------
-// 6 famílias hard-coded canônicas bit-exact (FASE_1 §9)
+// 6 familias hard-coded canonicas bit-exact (FASE_1 §9)
 // -----------------------------------------------------------------------
 
 export const FAMILIAS_FUNCAO = [
@@ -93,7 +96,7 @@ export const FAMILIAS_FUNCAO = [
 export type FamiliaFuncaoId = (typeof FAMILIAS_FUNCAO)[number]['id'];
 
 // -----------------------------------------------------------------------
-// Tipagem canônica dos valores do form
+// Tipagem canonica dos valores do form
 // -----------------------------------------------------------------------
 
 export interface CLevelFormValues {
@@ -111,6 +114,13 @@ export interface CLevelFormValues {
   jobFamily: FamiliaFuncaoId | '';
   acessoTotal: boolean;
   isResponsavelFinanceiro: boolean;
+  /**
+   * ME 3.5 D5 patch2 — flag `isRH` do C-level. Quando true, o C-level
+   * ganha capacidades operacionais de RH e o toggle "Painel RH" aparece
+   * no rodape do menu (D6, decidido D-ME 3.5-D2). Persiste na coluna
+   * `cLevelMembers.isRH` via procedure `create`/`update`.
+   */
+  isRH: boolean;
 }
 
 export const EMPTY_CLEVEL_FORM_VALUES: CLevelFormValues = {
@@ -128,30 +138,31 @@ export const EMPTY_CLEVEL_FORM_VALUES: CLevelFormValues = {
   jobFamily: 'estrategica_direcao',
   acessoTotal: true,
   isResponsavelFinanceiro: false,
+  isRH: false,
 };
 
 // -----------------------------------------------------------------------
-// Props canônicas do form compartilhado
+// Props canonicas do form compartilhado
 // -----------------------------------------------------------------------
 
 export interface CLevelFormProps {
   readonly mode: 'create' | 'edit';
   readonly initialValues: CLevelFormValues;
   readonly onValuesChange: (values: CLevelFormValues) => void;
-  /** Contexto A canônico bit-exact §13.2 — banner "primeiro C-level". */
+  /** Contexto A canonico bit-exact §13.2 — banner "primeiro C-level". */
   readonly isFirstCLevel: boolean;
-  /** Contexto A canônico bit-exact §13.3 — banner "único C-level". */
+  /** Contexto A canonico bit-exact §13.3 — banner "unico C-level". */
   readonly isOnlyCLevel: boolean;
-  /** Nome do RF atual da empresa (para nota canônica no toggle RF). */
+  /** Nome do RF atual da empresa (para nota canonica no toggle RF). */
   readonly currentRFName: string | null;
-  /** Handler de tentativa de ativação do toggle RF (mostra modal se ocupado). */
+  /** Handler de tentativa de ativacao do toggle RF (mostra modal se ocupado). */
   readonly onToggleRFAttempt: (nextValue: boolean) => void;
-  /** Modo edição: readonly no CPF (não permitido alterar após criação). */
+  /** Modo edicao: readonly no CPF (nao permitido alterar apos criacao). */
   readonly cpfReadonly: boolean;
 }
 
 // -----------------------------------------------------------------------
-// Estilos canônicos bit-exact
+// Estilos canonicos bit-exact
 // -----------------------------------------------------------------------
 
 const SECTION_CARD_STYLE = {
@@ -279,7 +290,7 @@ const NOTA_CANONICA_STYLE = {
 };
 
 // -----------------------------------------------------------------------
-// Máscaras
+// Mascaras
 // -----------------------------------------------------------------------
 
 function maskCpf(raw: string): string {
@@ -350,7 +361,7 @@ export function CLevelForm(props: CLevelFormProps): JSX.Element {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* -- Seção 1 — Dados pessoais -- */}
+      {/* -- Secao 1 — Dados pessoais -- */}
       <section style={SECTION_CARD_STYLE}>
         <h2 style={SECTION_TITLE_STYLE}>Dados pessoais</h2>
         <div style={GRID_2_STYLE}>
@@ -453,13 +464,13 @@ export function CLevelForm(props: CLevelFormProps): JSX.Element {
               maxLength={500}
             />
             <div style={NOTA_CANONICA_STYLE}>
-              Upload direto de imagem será integrado em fase futura — informe URL manual.
+              Upload direto de imagem sera integrado em fase futura — informe URL manual.
             </div>
           </div>
         </div>
       </section>
 
-      {/* -- Seção 2 — Vínculo profissional -- */}
+      {/* -- Secao 2 — Vinculo profissional -- */}
       <section style={SECTION_CARD_STYLE}>
         <h2 style={SECTION_TITLE_STYLE}>Vínculo profissional</h2>
         <div style={GRID_2_STYLE}>
@@ -528,7 +539,7 @@ export function CLevelForm(props: CLevelFormProps): JSX.Element {
         </div>
       </section>
 
-      {/* -- Seção 3 — Família de função (grid 3/2/1) -- */}
+      {/* -- Secao 3 — Familia de funcao (grid 3/2/1) -- */}
       <section style={SECTION_CARD_STYLE}>
         <h2 style={SECTION_TITLE_STYLE}>Família de função</h2>
         <div style={GRID_3_STYLE}>
@@ -570,7 +581,7 @@ export function CLevelForm(props: CLevelFormProps): JSX.Element {
         </div>
       </section>
 
-      {/* -- Seção 4 — Escopo de visualização -- */}
+      {/* -- Secao 4 — Escopo de visualizacao -- */}
       <section style={SECTION_CARD_STYLE}>
         <h2 style={SECTION_TITLE_STYLE}>Escopo de visualização</h2>
         {mode === 'create' && isFirstCLevel ? (
@@ -634,9 +645,10 @@ export function CLevelForm(props: CLevelFormProps): JSX.Element {
         )}
       </section>
 
-      {/* -- Seção 5 — Papéis funcionais -- */}
+      {/* -- Secao 5 — Papeis funcionais -- */}
       <section style={SECTION_CARD_STYLE}>
         <h2 style={SECTION_TITLE_STYLE}>Papéis funcionais</h2>
+        {/* Toggle canonico Responsavel financeiro (RF) — §5.5 */}
         <div style={TOGGLE_ROW_STYLE}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: COLORS.text.primary }}>
@@ -688,19 +700,64 @@ export function CLevelForm(props: CLevelFormProps): JSX.Element {
             <span style={TOGGLE_KNOB_STYLE(values.isResponsavelFinanceiro)} />
           </button>
         </div>
-        <div
-          style={{
-            background: COLORS.badge.warningBg,
-            color: COLORS.badge.warningText,
-            padding: '10px 12px',
-            borderRadius: 6,
-            fontSize: 11,
-            lineHeight: 1.5,
-          }}
-        >
-          <strong>Nota canônica — decisão D3:</strong> o toggle &quot;Ativar como RH&quot; NÃO é
-          adicionado ao cadastro do C-level. C-level continua sem acumular papel de RH nesta revisão
-          canônica.
+
+        {/* -----------------------------------------------------------
+         * ME 3.5 D5 patch2 — Toggle canonico "Ativar como RH".
+         *
+         * Substitui a antiga "Nota canonica — decisao D3" (que negava o
+         * toggle no cadastro). D9 aprovada em ME 3.5: apenas Super Admin
+         * pode ativar o flag, semantica herdada via `roleProcedure`
+         * (['super_admin'])` nas procedures `cLevelMembers.create` e
+         * `cLevelMembers.update` — o guard fino de UI e servidor sao
+         * redundantes por design (defense-in-depth).
+         *
+         * Quando `isRH=true`, no proximo login o C-level vera:
+         *   - `/painel-clevel` como landing default (menu C-level);
+         *   - Toggle "Painel C-level / Painel RH" no rodape do Sidebar;
+         *   - Ao alternar para "Painel RH", `/painel-rh` fica acessivel
+         *     e o menu troca para o conjunto canonico do RH.
+         * ----------------------------------------------------------- */}
+        <div style={TOGGLE_ROW_STYLE}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: COLORS.text.primary }}>
+              Ativar como RH{' '}
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: COLORS.badge.infoText,
+                  background: COLORS.badge.infoBg,
+                  padding: '2px 6px',
+                  borderRadius: 4,
+                  marginLeft: 6,
+                }}
+              >
+                Exclusivo Bruno
+              </span>
+            </div>
+            <div style={{ fontSize: 12, color: COLORS.text.tertiary, marginTop: 4 }}>
+              Habilita ao C-level operar como Responsável de RH — acesso ao Painel de RH, cadastro
+              de colaboradores, dados mensais, pendências no portal e onboarding de líderes. O
+              C-level alterna entre os dois papéis via toggle no menu lateral.
+            </div>
+            {values.isRH ? (
+              <div style={NOTA_CANONICA_STYLE}>
+                Toggle &quot;Painel C-level / Painel RH&quot; aparece automaticamente no rodapé do
+                menu no próximo login deste C-level.
+              </div>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const nextValue = !values.isRH;
+              updateField('isRH', nextValue);
+            }}
+            style={TOGGLE_TRACK_STYLE(values.isRH)}
+            aria-label="Ativar como RH"
+          >
+            <span style={TOGGLE_KNOB_STYLE(values.isRH)} />
+          </button>
         </div>
       </section>
     </div>
