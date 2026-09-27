@@ -54,7 +54,8 @@ import {
   leaderOnboardingStageLog,
 } from '../../db/schema';
 import { TRPCError } from '@trpc/server';
-import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import { rhAllowedProcedure } from '../auth/rhAllowedProcedure';
+import { router, type AuthenticatedUser } from '../trpc';
 import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 
 // ============================================================
@@ -245,7 +246,7 @@ export function createLeaderOnboardingRouter(deps: LeaderOnboardingRouterDeps = 
     // --------------------------------------------------------
     // leaderOnboarding.list — RH + Bruno + RH-Lider
     // --------------------------------------------------------
-    list: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    list: rhAllowedProcedure()
       .input(LIST_INPUT_SCHEMA)
       .query(async ({ ctx, input }): Promise<ListCardEntry[]> => {
         assertCompanyScopeOnb(ctx.user, input.companyId);
@@ -395,7 +396,7 @@ export function createLeaderOnboardingRouter(deps: LeaderOnboardingRouterDeps = 
     // --------------------------------------------------------
     // leaderOnboarding.getDetail — RH + Bruno + RH-Lider
     // --------------------------------------------------------
-    getDetail: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    getDetail: rhAllowedProcedure()
       .input(GET_DETAIL_INPUT_SCHEMA)
       .query(async ({ ctx, input }): Promise<GetDetailResult> => {
         // §21.4 bloqueio absoluto — 403 canonico ao proprio titular.
@@ -478,7 +479,7 @@ export function createLeaderOnboardingRouter(deps: LeaderOnboardingRouterDeps = 
     // --------------------------------------------------------
     // leaderOnboarding.updateStage — RH + Bruno + RH-Lider
     // --------------------------------------------------------
-    updateStage: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    updateStage: rhAllowedProcedure()
       .input(UPDATE_STAGE_INPUT_SCHEMA)
       .mutation(async ({ ctx, input }): Promise<UpdateStageResult> => {
         // §21.4 bloqueio absoluto — 403 canonico ao proprio titular.
@@ -589,7 +590,7 @@ export function createLeaderOnboardingRouter(deps: LeaderOnboardingRouterDeps = 
     // --------------------------------------------------------
     // leaderOnboarding.getSummaryCounts — RH + Bruno + RH-Lider
     // --------------------------------------------------------
-    getSummaryCounts: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    getSummaryCounts: rhAllowedProcedure()
       .input(GET_SUMMARY_COUNTS_INPUT_SCHEMA)
       .query(async ({ ctx, input }): Promise<SummaryCounts> => {
         assertCompanyScopeOnb(ctx.user, input.companyId);

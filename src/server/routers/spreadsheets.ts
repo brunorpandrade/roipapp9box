@@ -90,6 +90,7 @@ import { z } from 'zod';
 import type { RoipDatabase } from '../../db/client';
 import { cLevelMembers, companies, employees, employeeLeaderHistory } from '../../db/schema';
 import { listEmployeeVariables } from '../services/employeeVariables';
+import { rhAllowedProcedure } from '../auth/rhAllowedProcedure';
 import { roleProcedure, router } from '../trpc';
 import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 import type { AuthenticatedUser, Context } from '../trpc';
@@ -1028,7 +1029,7 @@ export function createSpreadsheetsRouter(deps: CreateSpreadsheetsRouterDeps = {}
     // ============================================================
     // Proc 1 — downloadRHTemplate (§3.11)
     // ============================================================
-    downloadRHTemplate: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    downloadRHTemplate: rhAllowedProcedure()
       .input(DOWNLOAD_RH_TEMPLATE_INPUT_SCHEMA)
       .mutation(async ({ ctx, input }): Promise<DownloadResult> => {
         assertCompanyScope(ctx.user, input.companyId);
@@ -1045,7 +1046,7 @@ export function createSpreadsheetsRouter(deps: CreateSpreadsheetsRouterDeps = {}
     // ============================================================
     // Proc 2 — uploadRHData (§3.11 — reusa saveMonthlyRHData via S185)
     // ============================================================
-    uploadRHData: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    uploadRHData: rhAllowedProcedure()
       .input(UPLOAD_RH_DATA_INPUT_SCHEMA)
       .mutation(async ({ ctx, input }): Promise<UploadResult> => {
         assertCompanyScope(ctx.user, input.companyId);

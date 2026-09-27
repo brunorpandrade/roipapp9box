@@ -94,6 +94,7 @@ import { resolveLeaderLinkAtMonth } from '../services/employeeLeaderHistory';
 import { listEmployeeVariables } from '../services/employeeVariables';
 import { updatePerformanceDataInputRH } from '../services/performanceData';
 import { updatePerformanceVariableInputLeader } from '../services/performanceVariableData';
+import { rhAllowedProcedure } from '../auth/rhAllowedProcedure';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
 import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 
@@ -729,7 +730,7 @@ export function createMonthlyDataRouter() {
     // ============================================================
     // Proc 2 — saveMonthlyRHData (§3.11 + §3.12)
     // ============================================================
-    saveMonthlyRHData: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    saveMonthlyRHData: rhAllowedProcedure()
       .input(
         z.object({
           companyId: z.number().int().positive(),
@@ -1171,7 +1172,7 @@ export function createMonthlyDataRouter() {
     // ============================================================
     // Proc 4 — getLeadersStatus (§3.11 — RH/Bruno)
     // ============================================================
-    getLeadersStatus: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    getLeadersStatus: rhAllowedProcedure()
       .input(
         z.object({
           companyId: z.number().int().positive(),

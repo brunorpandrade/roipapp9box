@@ -90,6 +90,7 @@ import {
   plenitudeData,
 } from '../../db/schema';
 
+import { rhAllowedProcedure } from '../auth/rhAllowedProcedure';
 import {
   createCallerFactory,
   roleProcedure,
@@ -2306,7 +2307,7 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
     // --------------------------------------------------------
     // employees.create — RH + Bruno
     // --------------------------------------------------------
-    create: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    create: rhAllowedProcedure()
       .input(CREATE_EMPLOYEE_INPUT_SCHEMA)
       .mutation(async ({ ctx, input }): Promise<CreateEmployeeResult> => {
         assertCompanyScope(ctx.user, input.companyId);
@@ -2475,7 +2476,7 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
     // --------------------------------------------------------
     // employees.update — RH + Bruno
     // --------------------------------------------------------
-    update: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    update: rhAllowedProcedure()
       .input(UPDATE_EMPLOYEE_INPUT_SCHEMA)
       .mutation(async ({ ctx, input }): Promise<UpdateEmployeeResult> => {
         const target = await ctx.db
@@ -2606,7 +2607,7 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
     // --------------------------------------------------------
     // employees.inactivate — RH + Bruno
     // --------------------------------------------------------
-    inactivate: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    inactivate: rhAllowedProcedure()
       .input(INACTIVATE_EMPLOYEE_INPUT_SCHEMA)
       .mutation(async ({ ctx, input }): Promise<InactivateEmployeeResult> => {
         const target = await ctx.db
@@ -2708,7 +2709,7 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
     // --------------------------------------------------------
     // employees.reactivate — RH + Bruno
     // --------------------------------------------------------
-    reactivate: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    reactivate: rhAllowedProcedure()
       .input(REACTIVATE_EMPLOYEE_INPUT_SCHEMA)
       .mutation(async ({ ctx, input }): Promise<ReactivateEmployeeResult> => {
         const target = await ctx.db
@@ -2826,7 +2827,7 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
     // --------------------------------------------------------
     // employees.uploadCSV — RH + Bruno (ME-043b, §16.6)
     // --------------------------------------------------------
-    uploadCSV: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    uploadCSV: rhAllowedProcedure()
       .input(UPLOAD_CSV_INPUT_SCHEMA)
       .mutation(async ({ ctx, input }): Promise<UploadCSVResult> => {
         assertCompanyScope(ctx.user, input.companyId);
@@ -2907,7 +2908,7 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
     // RH e RH-Lider (filtra C-levels; ausente na v1 pois `cLevelMembers`
     // NAO participa desta ME por decisao canonica da ficha §3.3 do
     // MASTER_ESCOPO_B8). Guard cruzado §2.4 via `assertCompanyScope`.
-    list: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    list: rhAllowedProcedure()
       .input(LIST_EMPLOYEES_INPUT_SCHEMA)
       .query(async ({ ctx, input }) => {
         assertCompanyScope(ctx.user, input.companyId);
@@ -2940,7 +2941,7 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
     // 14 rotulos exatos de `COLUNAS_CANONICAS_EMPLOYEES` (id-a-id com
     // parser upload). Zero linhas de dados. Sheet protection canonica.
     // Autorizacao id-a-id com `list` / `uploadCSV`. Guard cruzado §2.4.
-    downloadTemplate: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    downloadTemplate: rhAllowedProcedure()
       .input(DOWNLOAD_EMPLOYEES_TEMPLATE_INPUT_SCHEMA)
       .mutation(async ({ ctx, input }): Promise<EmployeesDownloadResult> => {
         assertCompanyScope(ctx.user, input.companyId);
@@ -2962,7 +2963,7 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
     // aplicada via reuso de `listAllEmployeesForExport` (que reusa
     // `listEmployeesPaginated`). Autorizacao id-a-id com `list`. Guard
     // cruzado §2.4. Teto defensivo EXPORT_MAX_ROWS = 10_000.
-    exportSpreadsheet: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    exportSpreadsheet: rhAllowedProcedure()
       .input(EXPORT_EMPLOYEES_SPREADSHEET_INPUT_SCHEMA)
       .mutation(async ({ ctx, input }): Promise<EmployeesDownloadResult> => {
         assertCompanyScope(ctx.user, input.companyId);
@@ -3028,7 +3029,7 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
     // Liderados, hasTerminationEvents, isCurrentRF). Autorizacao
     // canonica §10.9: Bruno + RH da empresa. Guard cruzado §2.4 via
     // `assertCompanyScope` apos leitura para restringir escopo.
-    getById: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    getById: rhAllowedProcedure()
       .input(GET_BY_ID_EMPLOYEE_INPUT_SCHEMA)
       .query(async ({ ctx, input }): Promise<GetByIdEmployeeResult> => {
         const result = await getEmployeeById(ctx.db, input.employeeId);
@@ -3048,7 +3049,7 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
     // inclui colaboradores nao-lider (Grupo 4 exige modal secundario de
     // promocao — canonizado em M2 v2 §13.8, nao aplicavel ao cadastro
     // inicial). Autorizacao canonica §10.9 + §10.3.
-    searchLiderCandidates: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    searchLiderCandidates: rhAllowedProcedure()
       .input(SEARCH_LIDER_CANDIDATES_INPUT_SCHEMA)
       .query(async ({ ctx, input }): Promise<SearchLiderCandidatesResult> => {
         assertCompanyScope(ctx.user, input.companyId);
@@ -3068,7 +3069,7 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
     // no portal falhara com a antiga). Autorizacao canonica §10.9:
     // Bruno + RH da empresa. Retorna a nova matricula em plain text
     // para exibicao unica na UI (RH copia e transmite manualmente).
-    regenerateMatricula: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    regenerateMatricula: rhAllowedProcedure()
       .input(z.object({ employeeId: z.number().int().positive() }))
       .mutation(async ({ ctx, input }): Promise<RegenerateMatriculaResult> => {
         const target = await ctx.db
@@ -3101,7 +3102,7 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
     // a operacao retorna BAD_REQUEST — nao faz sentido gerar senha para
     // quem so acessa o portal (segundo fator do portal e matricula, nao
     // senha). Autorizacao canonica §10.9: Bruno + RH da empresa.
-    regeneratePassword: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    regeneratePassword: rhAllowedProcedure()
       .input(z.object({ employeeId: z.number().int().positive() }))
       .mutation(async ({ ctx, input }): Promise<RegeneratePasswordResult> => {
         const target = await ctx.db
@@ -3157,7 +3158,7 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
     //      (changed=false). Nao lanca; retorna sucesso silencioso.
     //   6. Transacao atomica: `closeLeaderHistoryEntry(historiaAtiva.id)`
     //      + `insertLeaderHistoryEntry` com `transferBatchId` novo UUID.
-    reassignLider: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    reassignLider: rhAllowedProcedure()
       .input(
         z
           .object({

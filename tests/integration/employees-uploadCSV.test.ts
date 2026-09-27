@@ -453,11 +453,13 @@ describe('employees.uploadCSV — matriz canonica de autorizacao', () => {
         caller.uploadCSV({ companyId, contentBase64: b64, contentType: 'xlsx' }),
       ).rejects.toMatchObject({ code: 'FORBIDDEN' });
     }
-    // Nota canonica: role 'clevel' e coberto por FORBIDDEN implicito
-    // via `roleProcedure(['super_admin','rh','rh_lider'])`; testa-lo aqui
-    // exigiria fixture em `cLevelMembers` (o middleware busca a
-    // credencial em `cLevelMembers`, nao em `employees`). Cobertura
-    // formal de 'clevel' fica em ME futura que tenha fixture C-level.
+    // Nota canonica (atualizada ME 3.5 D2): role 'clevel' e decidida por
+    // `rhAllowedProcedure` — aceito quando `cLevelMembers.isRH=true`,
+    // FORBIDDEN em caso contrario. Testa-lo aqui exigiria fixture em
+    // `cLevelMembers` (o middleware busca a credencial em `cLevelMembers`,
+    // nao em `employees`). Cobertura formal de 'clevel' (isRH true+false)
+    // fica na bateria de seguranca da ME 3.5 D6 (§8.11 estendida para
+    // 32/32) que tem fixture C-level e cross-company.
 
     for (const role of ['rh', 'rh_lider'] as PlatformRole[]) {
       const token = await tokenPlatform(role, rhLiderEmp, companyId);

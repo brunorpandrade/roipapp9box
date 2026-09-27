@@ -31,7 +31,7 @@
 // no-op). `employeeLeaderHistory` e a UNICA superficie de auditoria.
 //
 // Convencoes canonicas herdadas de ME-043:
-//   - Guards de perfil por `roleProcedure(['super_admin','rh','rh_lider'])`
+//   - Guards de perfil por `rhAllowedProcedure()`
 //     mapeamento canonico de "Bruno e RH" da §14.12.
 //   - Zod integral do input. Mensagens canonicas literais §14.11
 //     exportadas para asserts verbatim (S145).
@@ -61,7 +61,8 @@ import {
   MSG_FORMULARIO_MOTIVO_DIVERGENTE,
 } from '../../lib/shared/terminationForms';
 import { insertTerminationForm } from '../services/terminationForms';
-import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+import { rhAllowedProcedure } from '../auth/rhAllowedProcedure';
+import { router, type AuthenticatedUser } from '../trpc';
 import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 
 // ============================================================
@@ -407,7 +408,7 @@ export function createLeadershipTransferRouter(deps: LeadershipTransferRouterDep
     // --------------------------------------------------------
     // leadershipTransfer.canInactivate — Bruno + RH
     // --------------------------------------------------------
-    canInactivate: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    canInactivate: rhAllowedProcedure()
       .input(CAN_INACTIVATE_INPUT_SCHEMA)
       .query(async ({ ctx, input }): Promise<CanInactivateResult> => {
         const target = await ctx.db
@@ -437,7 +438,7 @@ export function createLeadershipTransferRouter(deps: LeadershipTransferRouterDep
     // --------------------------------------------------------
     // leadershipTransfer.getCandidates — Bruno + RH
     // --------------------------------------------------------
-    getCandidates: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    getCandidates: rhAllowedProcedure()
       .input(GET_CANDIDATES_INPUT_SCHEMA)
       .query(async ({ ctx, input }): Promise<GetCandidatesResult> => {
         assertCompanyScopeLT(ctx.user, input.companyId);
@@ -630,7 +631,7 @@ export function createLeadershipTransferRouter(deps: LeadershipTransferRouterDep
     // --------------------------------------------------------
     // leadershipTransfer.checkEmailForPromotion — Bruno + RH
     // --------------------------------------------------------
-    checkEmailForPromotion: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    checkEmailForPromotion: rhAllowedProcedure()
       .input(CHECK_EMAIL_INPUT_SCHEMA)
       .query(async ({ ctx, input }): Promise<CheckEmailResult> => {
         const rows = await ctx.db
@@ -657,7 +658,7 @@ export function createLeadershipTransferRouter(deps: LeadershipTransferRouterDep
     // --------------------------------------------------------
     // leadershipTransfer.execute — Bruno + RH (transacao §14.9)
     // --------------------------------------------------------
-    execute: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    execute: rhAllowedProcedure()
       .input(EXECUTE_INPUT_SCHEMA)
       .mutation(async ({ ctx, input }): Promise<ExecuteResult> => {
         // ------ Alvo do lider original ------

@@ -7,14 +7,18 @@
 --
 -- Efeitos:
 --   1. `cLevelMembers` ganha coluna `isRH BOOLEAN NOT NULL DEFAULT FALSE`.
---      Idempotente: usa `ADD COLUMN IF NOT EXISTS` para nao reprovar em
---      re-execucao sobre base ja migrada.
+--      NOTA: sem `IF NOT EXISTS` (MySQL 8 padrao NAO suporta essa clausula
+--      em ADD COLUMN — corrigido em ME 3.5 D2). Idempotencia via checagem
+--      previa pelo integrador (SHOW COLUMNS ... LIKE 'isRH').
 --   2. Nenhum C-level existente e afetado — todos recebem `false` por
 --      default, comportamento identico ao anterior a esta migration.
 --
 -- Aplicacao em producao (Railway Console, RV-11): executar como bloco
 -- unico. Zero risco para as duas empresas demo ja cadastradas (Nativa
 -- companyId=1 e Ubatuba companyId=2).
+--
+-- Estado de producao: aplicada em 2026-09-27 no HEAD 0abba65 pos-push do
+-- Dispatch 1. Registrada aqui como arquivo canonico do schema.
 
 ALTER TABLE `cLevelMembers`
-  ADD COLUMN IF NOT EXISTS `isRH` BOOLEAN NOT NULL DEFAULT FALSE;
+  ADD COLUMN `isRH` BOOLEAN NOT NULL DEFAULT FALSE;

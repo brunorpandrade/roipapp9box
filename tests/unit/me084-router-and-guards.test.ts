@@ -2,10 +2,13 @@
 // guards + defense-in-depth §2.4).
 //
 // Cobre canonicamente:
-//   1. Router `employees` aceita `roleProcedure(['super_admin', 'rh',
-//      'rh_lider'])` em TODAS as procs consumidas pela ME-084 (regressao
-//      protection — se alguma futura ME restringir a super_admin, este
-//      teste reprova).
+//   1. Router `employees` aceita `rhAllowedProcedure()` em TODAS as procs
+//      consumidas pela ME-084 (regressao protection — se alguma futura ME
+//      restringir a super_admin, este teste reprova).
+//      ATUALIZADO ME 3.5 D2: substituto canonico de `roleProcedure(
+//      ['super_admin','rh','rh_lider'])` que tambem aceita
+//      `clevel + isRH=true`, preservando o comportamento historico do
+//      guard antigo para as tres roles originais.
 //   2. Router preserva `assertCompanyScope` (RH nunca opera fora da
 //      propria empresa via input manipulado).
 //   3. Router preserva `assertCanChangeIsRH` (RH nunca ativa isRH em
@@ -27,9 +30,12 @@ function readSrc(rel: string): string {
 describe('ME-084 — router employees preserva role RH/RH-Lider bit-exact', () => {
   const src = readSrc('src/server/routers/employees.ts');
 
-  it('guard roleProcedure aceita array [super_admin, rh, rh_lider] em procs relevantes', () => {
-    // Existencia da string canonica bit-exact em multiplas procs
-    const matches = src.match(/roleProcedure\(\[\s*'super_admin',\s*'rh',\s*'rh_lider'\s*\]\)/g);
+  it('guard rhAllowedProcedure em procs relevantes (ME 3.5 D2)', () => {
+    // Existencia da string canonica bit-exact em multiplas procs (ME 3.5 D2
+    // substitui `roleProcedure(['super_admin','rh','rh_lider'])` por
+    // `rhAllowedProcedure()` — preserva as 3 roles historicas e adiciona
+    // `clevel + isRH=true`, decidido pela funcao pura `decideRhAllowed`).
+    const matches = src.match(/rhAllowedProcedure\(\)/g);
     expect(matches).not.toBeNull();
     // Pelo menos 7 procs devem ter esse guard (create, update, inactivate,
     // reactivate, list, getById, regenerateMatricula/Password ou variantes)
