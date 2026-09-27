@@ -237,7 +237,9 @@ describe('ME-fila6 D1 — lideranca e C-level (MySQL real)', () => {
       expect(ctx?.profileKey).toBe('clevel_full');
       expect(ctx?.isResponsavelFinanceiro).toBe(true);
       expect(ctx?.showNotificationBell).toBe(false);
-      expect(ctx?.cLevel).toEqual({ acessoTotal: true, cLevelCount: 2 });
+      // ME 3.5 D3 — `CLevelMenuFlags` ganhou `isRH` (default false para
+      // C-level pre-ME 3.5). Deep-equal preserva o contrato canonico.
+      expect(ctx?.cLevel).toEqual({ acessoTotal: true, cLevelCount: 2, isRH: false });
       const hrefs = (ctx?.menuItems ?? []).map((i) => (i.type === 'link' ? i.href : '-'));
       expect(hrefs).toContain('/faturamento-mensal');
       expect(hrefs).toContain('/todos-os-colaboradores');
