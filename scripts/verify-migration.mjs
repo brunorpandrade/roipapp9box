@@ -33,9 +33,10 @@ const REPO_ROOT = resolve(__dirname, '..');
 const MIGRATION_PATH = resolve(REPO_ROOT, 'src/db/migrations/0000_canonical.sql');
 const VALIDATE_DB = 'roip_validate';
 
+// ME 3.5 D1 — colunas passa de 721 para 722 (adicao de `cLevelMembers.isRH`).
 const EXPECTED = {
   tables: 55,
-  columns: 721,
+  columns: 722,
   fks: 109,
   departments: 19,
 };

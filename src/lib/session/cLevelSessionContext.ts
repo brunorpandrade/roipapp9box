@@ -20,6 +20,13 @@ import { cLevelMembers } from '../../db/schema';
 export interface CLevelSessionContext {
   readonly acessoTotal: boolean;
   readonly isResponsavelFinanceiro: boolean;
+  /**
+   * ME 3.5 D1 — flag `cLevelMembers.isRH` do C-level autenticado. Consumida
+   * a partir do Dispatch 2 pelo guard `rhAllowedProcedure` (transporte tRPC)
+   * e pelo Dispatch 3 (`loadPlatformMenuContext`) para habilitar o toggle
+   * "Painel C-level / Painel RH" da sidebar.
+   */
+  readonly isRH: boolean;
   readonly cLevelCount: number;
 }
 
@@ -28,6 +35,8 @@ export interface CLevelSessionContext {
  * nao existe (sessao invalida — o consumidor decide o desfecho). `acessoTotal`
  * segue o default do schema (NULL = true); `cLevelCount` conta apenas os
  * C-levels `status = 'ativo'` da empresa (§8.06.6b — cadeia por `ativo`).
+ * `isRH` segue o default do schema (false) — apenas Super Admin ativa (§12
+ * DOC 02 estendida, ME 3.5).
  */
 export async function loadCLevelSessionContext(
   db: RoipDatabase,
@@ -38,6 +47,7 @@ export async function loadCLevelSessionContext(
     .select({
       acessoTotal: cLevelMembers.acessoTotal,
       isResponsavelFinanceiro: cLevelMembers.isResponsavelFinanceiro,
+      isRH: cLevelMembers.isRH,
     })
     .from(cLevelMembers)
     .where(and(eq(cLevelMembers.id, cLevelId), eq(cLevelMembers.companyId, companyId)))
@@ -53,6 +63,7 @@ export async function loadCLevelSessionContext(
   return {
     acessoTotal: member.acessoTotal !== false,
     isResponsavelFinanceiro: member.isResponsavelFinanceiro === true,
+    isRH: member.isRH === true,
     cLevelCount: Number(countRows[0]?.n ?? 0),
   };
 }

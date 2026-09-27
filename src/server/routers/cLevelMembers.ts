@@ -198,6 +198,14 @@ export const CREATE_CLEVEL_INPUT_SCHEMA = z.object({
   custoMensal: custoMensalSchema,
   acessoTotal: z.boolean(),
   /**
+   * ME 3.5 D1 — permite ao Super Admin cadastrar C-level ja com
+   * `isRH=true`. Regua §12 DOC 02 herdada automaticamente pelo guard
+   * `roleProcedure(['super_admin'])` do handler `create` — apenas Bruno
+   * consegue chegar aqui. Default false: cadastro sem esse toggle
+   * mantem comportamento pre-ME 3.5.
+   */
+  isRH: z.boolean().optional().default(false),
+  /**
    * ME-080b Dispatch 2b — matricula opcional. Se ausente: gerada
    * automaticamente. Se presente: validada (formato AA00 uppercase +
    * unicidade). C-level acessa portal (Perfil Individual, Instrumento C
@@ -223,6 +231,12 @@ export const UPDATE_CLEVEL_INPUT_SCHEMA = z
     departamento: z.enum(DEPARTAMENTO_VALUES).optional(),
     custoMensal: custoMensalSchema.optional(),
     acessoTotal: z.boolean().optional(),
+    /**
+     * ME 3.5 D1 — toggle "Ativar como RH" no formulario de edicao do
+     * C-level. Regua §12 DOC 02: apenas Super Admin (herdado do
+     * `roleProcedure(['super_admin'])`) consegue alterar.
+     */
+    isRH: z.boolean().optional(),
   })
   .refine(
     (v) => {
@@ -328,6 +342,12 @@ export interface CLevelListRow {
   readonly departamento: string;
   readonly acessoTotal: boolean;
   readonly isResponsavelFinanceiro: boolean;
+  /**
+   * ME 3.5 D1 — flag `isRH` exposta para permitir badge "RH" na listagem
+   * `/clevel-rh` (consumido a partir do Dispatch 5). Preserva a semantica
+   * do schema (default false) para C-levels pre-ME 3.5.
+   */
+  readonly isRH: boolean;
   readonly status: 'ativo' | 'inativo';
 }
 
@@ -354,6 +374,12 @@ export interface GetByIdCLevelResult {
   readonly custoMensal: string;
   readonly acessoTotal: boolean;
   readonly isResponsavelFinanceiro: boolean;
+  /**
+   * ME 3.5 D1 — exposta para pre-popular o checkbox "Ativar como RH" no
+   * formulario de edicao do C-level (Dispatch 5). Fonte unica de leitura
+   * do flag `cLevelMembers.isRH`.
+   */
+  readonly isRH: boolean;
   readonly status: 'ativo' | 'inativo';
   /**
    * ME-080b Dispatch 2c — matricula atual (formato AA00 uppercase) ou
@@ -484,6 +510,8 @@ export function buildCLevelInsertPayload(
     custoMensal: String(input.custoMensal),
     acessoTotal: input.acessoTotal,
     isResponsavelFinanceiro: false,
+    // ME 3.5 D1 — propaga o toggle do formulario para o INSERT.
+    isRH: input.isRH,
   };
 }
 
@@ -511,6 +539,7 @@ export async function listCLevelsForCompany(
       departamento: cLevelMembers.departamento,
       acessoTotal: cLevelMembers.acessoTotal,
       isResponsavelFinanceiro: cLevelMembers.isResponsavelFinanceiro,
+      isRH: cLevelMembers.isRH,
       status: cLevelMembers.status,
     })
     .from(cLevelMembers)
@@ -528,6 +557,7 @@ export async function listCLevelsForCompany(
       departamento: row.departamento,
       acessoTotal: row.acessoTotal === true,
       isResponsavelFinanceiro: row.isResponsavelFinanceiro,
+      isRH: row.isRH === true,
       status: row.status ?? 'ativo',
     };
     if (normalized.status === 'ativo') {
@@ -576,6 +606,8 @@ export async function findCLevelById(
     custoMensal: row.custoMensal,
     acessoTotal: row.acessoTotal === true,
     isResponsavelFinanceiro: row.isResponsavelFinanceiro,
+    // ME 3.5 D1 — expoe o novo flag para pre-populacao do form.
+    isRH: row.isRH === true,
     status: row.status ?? 'ativo',
     matricula: row.matricula ?? null,
   };
@@ -725,6 +757,9 @@ export function createCLevelMembersRouter(deps: CLevelMembersRouterDeps = {}) {
         if (input.departamento !== undefined) patch.departamento = input.departamento;
         if (input.custoMensal !== undefined) patch.custoMensal = String(input.custoMensal);
         if (input.acessoTotal !== undefined) patch.acessoTotal = input.acessoTotal;
+        // ME 3.5 D1 — propaga o toggle "Ativar como RH" (Bruno-only via
+        // roleProcedure(['super_admin'])).
+        if (input.isRH !== undefined) patch.isRH = input.isRH;
 
         const [result] = await ctx.db
           .update(cLevelMembers)

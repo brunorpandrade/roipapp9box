@@ -87,6 +87,7 @@ CREATE TABLE `cLevelMembers` (
   `custoMensal` DECIMAL(12,2) NOT NULL,
   `acessoTotal` BOOLEAN DEFAULT true,
   `isResponsavelFinanceiro` BOOLEAN NOT NULL DEFAULT false,
+  `isRH` BOOLEAN NOT NULL DEFAULT false,
   `status` ENUM('ativo','inativo') DEFAULT 'ativo',
   `passwordHash` VARCHAR(255) DEFAULT NULL,
   `passwordSet` BOOLEAN DEFAULT false,

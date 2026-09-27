@@ -155,6 +155,12 @@ export const cLevelMembers = mysqlTable(
     custoMensal: decimal('custoMensal', { precision: 12, scale: 2 }).notNull(),
     acessoTotal: boolean('acessoTotal').default(true),
     isResponsavelFinanceiro: boolean('isResponsavelFinanceiro').notNull().default(false),
+    // ME 3.5 D1 — item 3.5 da Etapa 0 (§4 operacao POS_FILA_v14). Permite
+    // que um C-level opere funcoes de RH na plataforma via toggle
+    // "Painel C-level / Painel RH". Regua §12 DOC 02 estendida: apenas
+    // o Super Admin (Bruno) pode setar `true` (guard herdado do
+    // `roleProcedure(['super_admin'])` em cLevelMembers.create/update).
+    isRH: boolean('isRH').notNull().default(false),
     status: mysqlEnum('status', ['ativo', 'inativo']).default('ativo'),
     passwordHash: varchar('passwordHash', { length: 255 }),
     passwordSet: boolean('passwordSet').default(false),

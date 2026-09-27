@@ -436,14 +436,16 @@ function main() {
   console.log(`Total de FKs na migration: ${totalSqlFks}`);
   console.log(`Total de FKs em tables.ts: ${totalTsFks}`);
 
-  // Invariantes (§20). Colunas: 696 em ME-080b; 721 em ME-fila6 D2
+  // Invariantes (§20). Colunas: 696 em ME-080b; 721 em ME-fila6 D2;
+  // 722 em ME 3.5 D1 (adicao de `cLevelMembers.isRH`).
   // Dispatch 1 (adicao de `companies.isDemo` — E-068-11 ME-068;
   // adicao de `employees.cargo` — ME-078b D1;
-  // adicao de `employees.matricula` + `cLevelMembers.matricula` — ME-080b).
-  if (totalSqlCols !== 721) {
+  // adicao de `employees.matricula` + `cLevelMembers.matricula` — ME-080b;
+  // adicao de `cLevelMembers.isRH` — ME 3.5 D1).
+  if (totalSqlCols !== 722) {
     console.log(
       `${YELLOW}AVISO:${RESET} migration tem ${totalSqlCols} colunas; ` +
-        `esperado 721 (ME-fila6 D2).`,
+        `esperado 722 (ME 3.5 D1).`,
     );
   }
   if (totalSqlFks !== 109) {
