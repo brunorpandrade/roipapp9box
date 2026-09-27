@@ -75,6 +75,14 @@ export interface LayoutProps {
    */
   readonly mobileHideSidebar?: boolean;
   /**
+   * ME 3.5 D4 — no de UI opcional renderizado no rodape da `<Sidebar />`,
+   * acima do item "Sair". Consumido tipicamente com um `<PainelToggle />`
+   * quando o `PlatformMenuContext.canToggleMenuMode === true` (C-level
+   * com `cLevelMembers.isRH === true`). Para as demais roles o consumidor
+   * omite a prop e o rodape mantem o padrao historico.
+   */
+  readonly panelToggle?: ReactNode;
+  /**
    * Conteudo canonico da rota corrente (painel, formulario, tela
    * administrativa). Renderizado no slot principal a direita da sidebar
    * e abaixo do header.
@@ -83,7 +91,15 @@ export interface LayoutProps {
 }
 
 export function Layout(props: LayoutProps): JSX.Element {
-  const { menuItems, activeHref, header, superAdminContext, mobileHideSidebar, children } = props;
+  const {
+    menuItems,
+    activeHref,
+    header,
+    superAdminContext,
+    mobileHideSidebar,
+    panelToggle,
+    children,
+  } = props;
   const className =
     mobileHideSidebar === true ? 'roip-platform-shell-mobile-hide-sidebar' : undefined;
 
@@ -96,7 +112,7 @@ export function Layout(props: LayoutProps): JSX.Element {
         background: COLORS.background.page,
       }}
     >
-      <Sidebar items={menuItems} activeHref={activeHref} />
+      <Sidebar items={menuItems} activeHref={activeHref} panelToggle={panelToggle} />
       {/* activeHref undefined → Sidebar resolve via usePathname (ME-056 Bloco E). */}
       <div
         style={{

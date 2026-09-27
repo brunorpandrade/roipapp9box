@@ -33,7 +33,7 @@
 // ordem canonica na lista principal.
 
 import { ArrowLeft as ArrowLeftIcon } from 'lucide-react';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -68,6 +68,13 @@ export interface SidebarProps {
    * (testes, snapshots) passam string literal.
    */
   readonly activeHref?: string;
+  /**
+   * ME 3.5 D4 — no de UI opcional (tipicamente `<PainelToggle />`)
+   * renderizado imediatamente acima do rodape "Sair", separado por uma
+   * borda. Consumido apenas para C-level com `cLevelMembers.isRH=true`
+   * (`PlatformMenuContext.canToggleMenuMode === true`).
+   */
+  readonly panelToggle?: ReactNode;
 }
 
 function isSairItem(item: MenuItem): boolean {
@@ -75,7 +82,7 @@ function isSairItem(item: MenuItem): boolean {
 }
 
 export function Sidebar(props: SidebarProps): JSX.Element {
-  const { items } = props;
+  const { items, panelToggle } = props;
   const pathname = usePathname();
   // Fallback canonico ME-056 Bloco E: pathname corrente quando o
   // consumidor nao forca. String vazia quando nem prop nem hook
@@ -143,6 +150,17 @@ export function Sidebar(props: SidebarProps): JSX.Element {
           />
         ))}
       </nav>
+
+      {panelToggle !== undefined ? (
+        <div
+          style={{
+            padding: 8,
+            borderTop: `1px solid ${DIVIDER_BG}`,
+          }}
+        >
+          {panelToggle}
+        </div>
+      ) : null}
 
       {sairItem !== undefined && sairItem.type === 'link' ? (
         <div
