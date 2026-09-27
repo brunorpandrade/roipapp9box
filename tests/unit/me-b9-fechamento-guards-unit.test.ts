@@ -54,14 +54,16 @@ describe(
       expect(rule.byRole.lider).toBe('deny');
     });
 
-    it('/onboarding-lideres canonicamente allow para super_admin+rh+rh_lider; deny outros', () => {
+    it('/onboarding-lideres: allow super_admin+rh+rh_lider+clevel; deny lider (ME 3.5 D5)', () => {
       const rule = findRouteRule('/onboarding-lideres');
       expect(rule).not.toBe(null);
       if (rule === null) return;
       expect(rule.byRole.super_admin).toBe('allow');
       expect(rule.byRole.rh).toBe('allow');
       expect(rule.byRole.rh_lider).toBe('allow');
-      expect(rule.byRole.clevel).toBe('deny');
+      // ME 3.5 D5: clevel passa no middleware; guard fino de isRH no
+      // server component + `rhAllowedProcedure`.
+      expect(rule.byRole.clevel).toBe('allow');
       expect(rule.byRole.lider).toBe('deny');
     });
 

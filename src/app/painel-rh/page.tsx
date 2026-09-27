@@ -32,7 +32,10 @@ import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
 
 import { Layout } from '../../components/shell/Layout';
+import { PainelToggle } from '../../components/shell/PainelToggle';
 import { closeDbClient, createDbClient } from '../../db/client';
+import { COLORS } from '../../lib/design-tokens/colors';
+import { loadPlatformMenuCtxCookie } from '../../lib/session/platformMenuCookie';
 import { resolveMenuItems } from '../../lib/menu/menuConfig';
 import { countPendenciasEmpresa } from '../../lib/pendencias/pendenciasEngine';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
@@ -73,9 +76,65 @@ export default async function PainelRHPage(): Promise<JSX.Element> {
   if (session.passwordSet === false) {
     redirect('/alterar-senha');
   }
-  // Middleware §10.3 ja bloqueia C-level/Lider aqui — defense-in-depth.
-  if (session.role !== 'rh' && session.role !== 'rh_lider') {
+  // ME 3.5 D5 — matrix.ts agora permite `clevel` na rota; guard fino aqui:
+  // apenas clevel COM `isRH=true` continua adiante (via ramo dedicado
+  // abaixo); as demais roles nao-RH sao bloqueadas.
+  if (session.role !== 'rh' && session.role !== 'rh_lider' && session.role !== 'clevel') {
     redirect('/');
+  }
+
+  // ME 3.5 D5 — ramo dedicado para C-level com `isRH=true`. Consome o
+  // menu RH via `loadPlatformMenuCtxCookie` (que respeita o
+  // cookie `roip.menu.mode`) e renderiza uma landing simples com toggle.
+  // Conteudo completo do painel-rh para C-level (contadores, cards,
+  // secoes) fica como debito documentado para ME futura — o C-level
+  // opera as funcoes de RH acessando as rotas especificas via menu.
+  if (session.role === 'clevel') {
+    const client = createDbClient(resolveDatabaseUrl());
+    try {
+      const menu = await loadPlatformMenuCtxCookie(client.db, session);
+      if (menu === null) {
+        redirect('/');
+      }
+      if (!menu.canToggleMenuMode) {
+        redirect('/painel-clevel');
+      }
+      return (
+        <Layout
+          menuItems={menu.menuItems}
+          panelToggle={<PainelToggle currentMode={menu.menuMode} />}
+          header={{
+            leftMode: 'in_company',
+            companyDisplayName: session.companyDisplayName,
+            companyLogoUrl: session.companyLogoUrl ?? undefined,
+            user: { displayName: session.displayName },
+            showNotificationBell: false,
+          }}
+        >
+          <div style={{ padding: '24px 0' }}>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: COLORS.text.primary, margin: 0 }}>
+              Painel de RH
+            </h1>
+            <p
+              style={{
+                marginTop: 12,
+                fontSize: 14,
+                color: COLORS.text.secondary,
+                maxWidth: 640,
+                lineHeight: 1.5,
+              }}
+            >
+              Voce esta operando como Responsavel de RH neste C-level. Use o menu a esquerda para
+              acessar cadastro de colaboradores, dados mensais, onboarding de lideres, pendencias do
+              portal e demais funcoes canonicas de RH. Para voltar a visao executiva, clique em{' '}
+              <strong>Painel C-level</strong> no rodape do menu.
+            </p>
+          </div>
+        </Layout>
+      );
+    } finally {
+      await closeDbClient(client);
+    }
   }
 
   const client = createDbClient(resolveDatabaseUrl());

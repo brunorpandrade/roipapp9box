@@ -22,13 +22,12 @@ import { and, count, eq } from 'drizzle-orm';
 import type { JSX } from 'react';
 
 import { Layout } from '../../components/shell/Layout';
+import { PainelToggle } from '../../components/shell/PainelToggle';
 import { closeDbClient, createDbClient, type RoipDatabase } from '../../db/client';
 import { cLevelMembers, employees } from '../../db/schema';
 import { COLORS } from '../../lib/design-tokens/colors';
-import {
-  loadPlatformMenuContext,
-  type PlatformSession,
-} from '../../lib/session/platformMenuContext';
+import { loadPlatformMenuCtxCookie } from '../../lib/session/platformMenuCookie';
+import type { PlatformSession } from '../../lib/session/platformMenuContext';
 import { getServerSession } from '../../server/session/serverSession';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
@@ -174,11 +173,11 @@ export default async function PainelCLevelPage(): Promise<JSX.Element> {
   }
 
   const client = createDbClient(resolveDatabaseUrl());
-  let menu: Awaited<ReturnType<typeof loadPlatformMenuContext>>;
+  let menu: Awaited<ReturnType<typeof loadPlatformMenuCtxCookie>>;
   let companyCollaboratorsCount: number;
   let turnoverCard: TurnoverCardData | null = null;
   try {
-    menu = await loadPlatformMenuContext(client.db, session);
+    menu = await loadPlatformMenuCtxCookie(client.db, session);
     companyCollaboratorsCount = await loadCompanyCollaboratorsCount(client.db, session);
     // ME-fila6 D2 — card "Turnover" apenas para C-level com acesso total (§5/§7).
     if (menu !== null && menu.profileKey === 'clevel_full') {
@@ -190,6 +189,13 @@ export default async function PainelCLevelPage(): Promise<JSX.Element> {
   if (menu === null) {
     redirect('/');
   }
+  // ME 3.5 D5 — se o cookie estava setado para 'rh' (toggle ativado
+  // anteriormente), o `loadPlatformMenuCtxCookie` ja resolve o
+  // menu para MENU_RH e o `menu.menuMode` reflete isso. Nesse caso,
+  // redirecionamos para `/painel-rh` (home canonica do modo RH).
+  if (menu.menuMode === 'rh') {
+    redirect('/painel-rh');
+  }
   const { profileKey, menuItems } = menu;
   const data = { companyCollaboratorsCount };
 
@@ -198,6 +204,12 @@ export default async function PainelCLevelPage(): Promise<JSX.Element> {
   return (
     <Layout
       menuItems={menuItems}
+      // ME 3.5 D5 — renderiza toggle no rodape da sidebar apenas quando
+      // o C-level tem `cLevelMembers.isRH=true` (matriz canonica do
+      // `PlatformMenuContext.canToggleMenuMode`, D3).
+      panelToggle={
+        menu.canToggleMenuMode ? <PainelToggle currentMode={menu.menuMode} /> : undefined
+      }
       header={{
         leftMode: 'in_company',
         companyDisplayName: session.companyDisplayName,

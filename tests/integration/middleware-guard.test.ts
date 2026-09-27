@@ -139,13 +139,12 @@ describe('middleware guard — matriz canonica §10 (ME-023)', () => {
     expect(isAllow(res)).toBe(true);
   });
 
-  it('/painel-rh com token C-level → deny (rewrite /access-denied)', async () => {
+  it('/painel-rh com token C-level → allow no middleware (ME 3.5 D5)', async () => {
+    // Atualizado ME 3.5 D5: matrix.ts agora permite clevel na rota;
+    // o guard fino de isRH acontece no server component da page
+    // (`src/app/painel-rh/page.tsx`). O middleware apenas deixa passar.
     const res = await middleware(makeRequest('/painel-rh', tokenClevel));
-    const rewrite = res.headers.get('x-middleware-rewrite');
-    expect(rewrite).not.toBeNull();
-    expect(rewrite).toContain('/access-denied');
-    expect(rewrite).toContain('rota=%2Fpainel-rh');
-    expect(rewrite).toContain('role=clevel');
+    expect(isAllow(res)).toBe(true);
   });
 
   it('/painel-clevel com token C-level → allow', async () => {
@@ -234,9 +233,11 @@ describe('middleware guard — matriz canonica §10 (ME-023)', () => {
     expect(res.headers.get('x-middleware-rewrite')).toContain('/access-denied');
   });
 
-  it('/onboarding-lideres com token C-level → deny (S434 canonico)', async () => {
+  it('/onboarding-lideres com token C-level → allow no middleware (ME 3.5 D5)', async () => {
+    // Atualizado ME 3.5 D5: matrix.ts agora permite clevel; guard fino
+    // por `isRH` migra para o server component + `rhAllowedProcedure`.
     const res = await middleware(makeRequest('/onboarding-lideres', tokenClevel));
-    expect(res.headers.get('x-middleware-rewrite')).toContain('/access-denied');
+    expect(isAllow(res)).toBe(true);
   });
 
   // ---------------------------------------------- Rota fora da matriz

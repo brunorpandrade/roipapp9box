@@ -6,7 +6,8 @@
 //      - super_admin → 'redirect_painel' (para /super-admin).
 //      - rh → 'allow'.
 //      - rh_lider → 'allow'.
-//      - clevel → 'deny'.
+//      - clevel → 'allow' (ATUALIZADO ME 3.5 D5: guard fino server-side
+//        exige `cLevelMembers.isRH=true`; middleware permite passar).
 //      - lider → 'deny'.
 //   2. `/minha-equipe` — matriz §10.4 (stub §5.2 D-ME083-5):
 //      - super_admin → 'redirect_super_admin'.
@@ -46,9 +47,13 @@ describe('ME-083 — matriz de rotas §10 bit-exact para /painel-rh + stubs', ()
       expect(rule?.byRole.rh_lider).toBe('allow');
     });
 
-    it('clevel e lider recebem deny canonico', () => {
+    it('clevel recebe allow (ME 3.5 D5 — guard fino server-side por isRH)', () => {
       const rule = findRouteRule('/painel-rh');
-      expect(rule?.byRole.clevel).toBe('deny');
+      expect(rule?.byRole.clevel).toBe('allow');
+    });
+
+    it('lider recebe deny canonico', () => {
+      const rule = findRouteRule('/painel-rh');
       expect(rule?.byRole.lider).toBe('deny');
     });
   });
