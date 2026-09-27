@@ -1,12 +1,15 @@
-// ROIP APP 9BOX — client component canônico bit-exact da rota Bruno
+// ROIP APP 9BOX — client component canonico bit-exact da rota Bruno
 // `/super-admin/empresa/[id]/clevel/[cLevelId]/editar` (§13.3, ME-078a;
-// refatorado em ME-078b-refactor — fetch tRPC → server actions canônicas).
+// refatorado em ME-078b-refactor — fetch tRPC → server actions canonicas).
 //
 // Thin wrapper sobre `CLevelForm` no modo `edit`. Gerencia modais:
-// - modalInativacao (D8 canônica).
-// - modalDeletar (confirmação de nome — §16.4 deleção canônica).
-// - modalDirty (descartar alterações).
-// - Botão `[Reativar]` quando status='inativo'.
+// - modalInativacao (D8 canonica).
+// - modalDeletar (confirmacao de nome — §16.4 delecao canonica).
+// - modalDirty (descartar alteracoes).
+// - Botao `[Reativar]` quando status='inativo'.
+//
+// ME 3.5 D5 patch2 — pre-popula `isRH` no `initialValues` e envia-o para
+// `atualizarCLevelAction` (persistencia via `cLevelMembers.update`).
 //
 // **RV-13.** Consumido por `page.tsx` (import + render).
 
@@ -34,7 +37,7 @@ import { RegenerateConfirmModal } from '@/components/credentials/RegenerateConfi
 import { ModalTransferenciaRF } from '../../../_shared/ModalTransferenciaRF';
 
 // -----------------------------------------------------------------------
-// Tooltip canônico S503
+// Tooltip canonico S503
 // -----------------------------------------------------------------------
 
 const TRANSFERENCIA_LIDERADOS_TOOLTIP =
@@ -143,6 +146,8 @@ export function CLevelEditarClient(props: Props): JSX.Element {
     jobFamily: 'estrategica_direcao',
     acessoTotal: clevel.acessoTotal,
     isResponsavelFinanceiro: clevel.isResponsavelFinanceiro,
+    // ME 3.5 D5 patch2 — pre-popula o toggle "Ativar como RH".
+    isRH: clevel.isRH,
   };
 
   const [values, setValues] = useState<CLevelFormValues>(initialValues);
@@ -185,6 +190,7 @@ export function CLevelEditarClient(props: Props): JSX.Element {
   // ME-080b Dispatch 3.1 (S517) — fluxo canonico de save com RF.
   // Extrai o UPDATE canonico de dados basicos para poder combinar com
   // ativacao de RF sem duplicar codigo (com ou sem justificativa).
+  // ME 3.5 D5 patch2 — payload passa a incluir `isRH`.
   const performUpdate = useCallback(
     async (rfJustificativa: string | null): Promise<boolean> => {
       const v = valuesRef.current;
@@ -199,6 +205,7 @@ export function CLevelEditarClient(props: Props): JSX.Element {
         departamento: v.departamento,
         custoMensal: Number(v.custoMensal),
         acessoTotal: v.acessoTotal,
+        isRH: v.isRH,
       });
       if (!updResult.ok) {
         setErrorMsg(updResult.message);
@@ -558,7 +565,7 @@ export function CLevelEditarClient(props: Props): JSX.Element {
         </div>
       </div>
 
-      {/* Modal inativar — D8 canônica */}
+      {/* Modal inativar — D8 canonica */}
       {showInativarModal ? (
         <div style={MODAL_OVERLAY_STYLE}>
           <div style={MODAL_BOX_STYLE}>
@@ -715,7 +722,7 @@ export function CLevelEditarClient(props: Props): JSX.Element {
         </div>
       ) : null}
 
-      {/* Modal descartar alterações */}
+      {/* Modal descartar alteracoes */}
       {showDirtyModal ? (
         <div style={MODAL_OVERLAY_STYLE}>
           <div style={MODAL_BOX_STYLE}>

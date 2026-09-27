@@ -1,10 +1,15 @@
-// ROIP APP 9BOX — server actions canônicas da rota Bruno
+// ROIP APP 9BOX — server actions canonicas da rota Bruno
 // `/super-admin/empresa/[id]/clevel/[cLevelId]/editar` (§13.3,
 // ME-078b-refactor).
 //
-// Pattern S315 canônica + padrão híbrido `createCallerFactory`.
+// Pattern S315 canonica + padrao hibrido `createCallerFactory`.
 // 4 procedures delegadas: `cLevelMembers.update`, `.inactivate`,
 // `.reactivate`, `.delete`.
+//
+// ME 3.5 D5 patch2 — `atualizarCLevelAction` passa a aceitar `isRH?:
+// boolean`, encaminhado a procedure `cLevelMembers.update`. Semantica
+// canonica: apenas Super Admin passa no guard `roleProcedure(['super_
+// admin'])`, cumprindo D9 §12 DOC 02 (heranca via role guard).
 //
 // **RV-13.** Todas as 4 actions consumidas por `CLevelEditarClient.tsx`.
 //
@@ -32,7 +37,7 @@ import { createCallerFactory, createContextInner } from '../../../../../../../se
 import { resolveDatabaseUrl } from '../../../../../../../lib/db/resolveDatabaseUrl';
 
 // -----------------------------------------------------------------------
-// Instâncias module-level canônicas bit-exact (padrão S366)
+// Instancias module-level canonicas bit-exact (padrao S366)
 // -----------------------------------------------------------------------
 
 const cLevelRouter = createCLevelMembersRouter();
@@ -42,7 +47,7 @@ const createCompanyCaller = createCallerFactory(companyRouter);
 const actionRateLimiter = createRateLimiter();
 
 // -----------------------------------------------------------------------
-// Helpers locais (não exportados — CC068)
+// Helpers locais (nao exportados — CC068)
 // -----------------------------------------------------------------------
 
 const SESSION_COOKIE = 'session';
@@ -54,14 +59,14 @@ async function resolveRawToken(): Promise<string | null> {
 }
 
 // -----------------------------------------------------------------------
-// Contrato canônico bit-exact
+// Contrato canonico bit-exact
 // -----------------------------------------------------------------------
 
 export type ActionResult<T = null> =
   { readonly ok: true; readonly data: T } | { readonly ok: false; readonly message: string };
 
 // -----------------------------------------------------------------------
-// Action canônica bit-exact — atualizar C-level (§13.3)
+// Action canonica bit-exact — atualizar C-level (§13.3)
 // -----------------------------------------------------------------------
 
 export async function atualizarCLevelAction(input: {
@@ -75,6 +80,7 @@ export async function atualizarCLevelAction(input: {
   readonly departamento?: string;
   readonly custoMensal?: number;
   readonly acessoTotal?: boolean;
+  readonly isRH?: boolean;
 }): Promise<ActionResult<UpdateCLevelResult>> {
   const token = await resolveRawToken();
   if (token === null) {
@@ -104,7 +110,7 @@ export async function atualizarCLevelAction(input: {
 }
 
 // -----------------------------------------------------------------------
-// Action canônica bit-exact — inativar C-level (§12.6)
+// Action canonica bit-exact — inativar C-level (§12.6)
 // -----------------------------------------------------------------------
 
 export async function inativarCLevelAction(input: {
@@ -138,7 +144,7 @@ export async function inativarCLevelAction(input: {
 }
 
 // -----------------------------------------------------------------------
-// Action canônica bit-exact — reativar C-level
+// Action canonica bit-exact — reativar C-level
 // -----------------------------------------------------------------------
 
 export async function reativarCLevelAction(input: {
@@ -172,7 +178,7 @@ export async function reativarCLevelAction(input: {
 }
 
 // -----------------------------------------------------------------------
-// Action canônica bit-exact — excluir C-level (§16.4)
+// Action canonica bit-exact — excluir C-level (§16.4)
 // -----------------------------------------------------------------------
 
 export async function excluirCLevelAction(input: {

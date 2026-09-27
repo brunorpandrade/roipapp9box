@@ -1,14 +1,18 @@
-// ROIP APP 9BOX — server actions canônicas da rota Bruno
+// ROIP APP 9BOX — server actions canonicas da rota Bruno
 // `/super-admin/empresa/[id]/clevel/novo` (§13.2, ME-078b-refactor).
 //
-// Pattern S315 canônica + padrão híbrido `createCallerFactory` (conforme
+// Pattern S315 canonica + padrao hibrido `createCallerFactory` (conforme
 // `src/app/actions.ts` — `forgotPasswordUnifiedAction`). A procedure
-// `cLevelMembers.create` tem lógica transacional complexa embarcada no
-// router; delegar via caller preserva 100% do código sem duplicação.
+// `cLevelMembers.create` tem logica transacional complexa embarcada no
+// router; delegar via caller preserva 100% do codigo sem duplicacao.
 //
 // Guard: token bruto do cookie → `createContextInner` → pipeline tRPC
 // server-side (`authed` + `roleProcedure(['super_admin'])` + procedure).
 // Catch `TRPCError` → `ActionResult` discriminado.
+//
+// ME 3.5 D5 patch2 — assinatura estendida com `isRH?: boolean` para
+// permitir que o form marque o C-level como "Ativar como RH" no cadastro
+// (§12 DOC 02 herdada — apenas Super Admin passa no guard da procedure).
 //
 // **RV-13.** `criarCLevelAction` consumido por `CLevelNovoClient.tsx`
 // (submit do form de cadastro de C-level).
@@ -30,7 +34,7 @@ import { createCallerFactory, createContextInner } from '../../../../../../serve
 import { resolveDatabaseUrl } from '../../../../../../lib/db/resolveDatabaseUrl';
 
 // -----------------------------------------------------------------------
-// Instâncias module-level canônicas bit-exact (padrão S366)
+// Instancias module-level canonicas bit-exact (padrao S366)
 // -----------------------------------------------------------------------
 
 const cLevelRouter = createCLevelMembersRouter();
@@ -38,7 +42,7 @@ const createCLevelCaller = createCallerFactory(cLevelRouter);
 const actionRateLimiter = createRateLimiter();
 
 // -----------------------------------------------------------------------
-// Helpers locais (não exportados — CC068)
+// Helpers locais (nao exportados — CC068)
 // -----------------------------------------------------------------------
 
 const SESSION_COOKIE = 'session';
@@ -50,25 +54,27 @@ async function resolveRawToken(): Promise<string | null> {
 }
 
 // -----------------------------------------------------------------------
-// Contrato canônico bit-exact
+// Contrato canonico bit-exact
 // -----------------------------------------------------------------------
 
 export type ActionResult<T = null> =
   { readonly ok: true; readonly data: T } | { readonly ok: false; readonly message: string };
 
 // -----------------------------------------------------------------------
-// Action canônica bit-exact — criar C-level (§13.2)
+// Action canonica bit-exact — criar C-level (§13.2)
 // -----------------------------------------------------------------------
 
 /**
- * §13.2 canônica bit-exact — server action de cadastro de C-level.
- * Delega à procedure `cLevelMembers.create` via `createCallerFactory`
- * para preservar 100% da lógica transacional (INSERT C-level + INSERT
- * placeholder perfil individual — atomicidade canônica §16.1).
+ * §13.2 canonica bit-exact — server action de cadastro de C-level.
+ * Delega a procedure `cLevelMembers.create` via `createCallerFactory`
+ * para preservar 100% da logica transacional (INSERT C-level + INSERT
+ * placeholder perfil individual — atomicidade canonica §16.1).
  *
- * Input: campos canônicos do form §13.2 (mesma shape do
+ * Input: campos canonicos do form §13.2 (mesma shape do
  * `CREATE_CLEVEL_INPUT_SCHEMA` Zod). O Zod valida server-side dentro
- * da procedure.
+ * da procedure. ME 3.5 D5 patch2 — `isRH` opcional (default false na
+ * procedure Zod), respeitando semantica de nao-quebra para C-levels
+ * pre-ME 3.5.
  */
 export async function criarCLevelAction(input: {
   readonly companyId: number;
@@ -83,6 +89,7 @@ export async function criarCLevelAction(input: {
   readonly departamento: string;
   readonly custoMensal: number;
   readonly acessoTotal: boolean;
+  readonly isRH?: boolean;
 }): Promise<ActionResult<CreateCLevelResult>> {
   const token = await resolveRawToken();
   if (token === null) {

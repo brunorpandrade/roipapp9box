@@ -1,11 +1,13 @@
-// ROIP APP 9BOX — client component canônico bit-exact da rota Bruno
+// ROIP APP 9BOX — client component canonico bit-exact da rota Bruno
 // `/super-admin/empresa/[id]/clevel/novo` (§13.2, ME-078a; refatorado
-// em ME-078b-refactor — fetch tRPC → server action canônica).
+// em ME-078b-refactor — fetch tRPC → server action canonica).
 //
 // Thin wrapper sobre `CLevelForm` no modo `create`. Gerencia estado do
 // form, handler de save via server action `criarCLevelAction`, handler
-// de toggle RF (modal de transferência quando empresa já tem RF), modal
-// "Descartar alterações" (dirty), e navegação pós-sucesso.
+// de toggle RF (modal de transferencia quando empresa ja tem RF), modal
+// "Descartar alteracoes" (dirty), e navegacao pos-sucesso.
+//
+// ME 3.5 D5 patch2 — passa `isRH` do form para a action `criarCLevelAction`.
 //
 // **RV-13.** Consumido por `page.tsx` (import + render).
 
@@ -21,13 +23,13 @@ import { CLevelForm, EMPTY_CLEVEL_FORM_VALUES, type CLevelFormValues } from '../
 import { criarCLevelAction } from './actions';
 
 // -----------------------------------------------------------------------
-// Tooltips canônicos bit-exact (S503)
+// Tooltips canonicos bit-exact (S503)
 // -----------------------------------------------------------------------
 
 const ENVIAR_PRIMEIRO_ACESSO_TOOLTIP = 'Disponivel a partir da ME-Primeiro-Cliente.' as const;
 
 // -----------------------------------------------------------------------
-// Estilos canônicos
+// Estilos canonicos
 // -----------------------------------------------------------------------
 
 const FOOTER_STYLE = {
@@ -121,10 +123,10 @@ export function CLevelNovoClient(props: Props): JSX.Element {
   }, []);
 
   const handleToggleRFAttempt = useCallback((nextValue: boolean) => {
-    // §5.5 canônico — se empresa já tem RF e Bruno tenta ativar,
-    // a transferência real opera via `company.setResponsavelFinanceiro`
-    // (ME-044) APÓS o save do create. Por ora, armazena a intenção.
-    // Modal de transferência com justificativa será disparado no save.
+    // §5.5 canonico — se empresa ja tem RF e Bruno tenta ativar,
+    // a transferencia real opera via `company.setResponsavelFinanceiro`
+    // (ME-044) APOS o save do create. Por ora, armazena a intencao.
+    // Modal de transferencia com justificativa sera disparado no save.
     setValues((prev) => ({ ...prev, isResponsavelFinanceiro: nextValue }));
     setDirty(true);
   }, []);
@@ -164,6 +166,8 @@ export function CLevelNovoClient(props: Props): JSX.Element {
         departamento: v.departamento,
         custoMensal: Number(v.custoMensal),
         acessoTotal: isFirstCLevel ? true : v.acessoTotal,
+        // ME 3.5 D5 patch2 — persiste o flag `isRH` no cadastro.
+        isRH: v.isRH,
       });
       if (!result.ok) {
         setErrorMsg(result.message);
@@ -192,7 +196,7 @@ export function CLevelNovoClient(props: Props): JSX.Element {
     }
   }, [dirty, router, companyId]);
 
-  // Pós-sucesso
+  // Pos-sucesso
   if (saveSuccess) {
     return (
       <>
@@ -284,7 +288,7 @@ export function CLevelNovoClient(props: Props): JSX.Element {
         </button>
       </div>
 
-      {/* Modal descartar alterações */}
+      {/* Modal descartar alteracoes */}
       {showDirtyModal ? (
         <div style={MODAL_OVERLAY_STYLE}>
           <div style={MODAL_BOX_STYLE}>
