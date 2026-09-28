@@ -43,14 +43,16 @@ describe(
   'ME-B9-fechamento — matriz /nr1 e /onboarding-lideres ' +
     '(D-ME088-CENARIO-COLABORADOR-DIFERIDO)',
   () => {
-    it('/nr1 canonicamente allow para super_admin, rh, rh_lider; deny para clevel, lider', () => {
+    it('/nr1: allow super_admin+rh+rh_lider+clevel; deny lider (ME 3.5 D6)', () => {
       const rule = findRouteRule('/nr1');
       expect(rule).not.toBe(null);
       if (rule === null) return;
       expect(rule.byRole.super_admin).toBe('allow');
       expect(rule.byRole.rh).toBe('allow');
       expect(rule.byRole.rh_lider).toBe('allow');
-      expect(rule.byRole.clevel).toBe('deny');
+      // ME 3.5 D6: clevel passa no middleware; guard fino via
+      // `loadRhLikePageContext` no server component exige isRH=true.
+      expect(rule.byRole.clevel).toBe('allow');
       expect(rule.byRole.lider).toBe('deny');
     });
 

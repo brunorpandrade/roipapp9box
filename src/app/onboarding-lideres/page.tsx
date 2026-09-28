@@ -1,25 +1,14 @@
 // ROIP APP 9BOX — rota canônica RH `/onboarding-lideres` (§14.27,
-// ME-080c-patch1). Variante RH da mesma rota implementada pela ME-080c
-// para Bruno super-admin em `/super-admin/empresa/[id]/onboarding-lideres`.
+// ME-080c-patch1; ME 3.5 D6 admite clevel+isRH).
 //
 // Origem canônica:
 // - CAMADA_UI §14.27 (integral).
-// - CAMADA_AUTH §10.6 (RH + RH-Lider acessam; C-level/Líder/Colaborador
-//   bloqueados via matrix.ts + defense-in-depth aqui).
-// - CAMADA_OPERACOES §21 integral (mesmo ciclo de vida canônico).
-// - CAMADA_DADOS §4.5 + §14.3 + §14.4.
-// - Padrão pendencias-portal — Client + actions + internals vivem em
-//   `/onboarding-lideres/` (rota RH raiz); rota super-admin importa
-//   dali via path relativo.
+// - CAMADA_AUTH §10.6 (ampliada ME 3.5 D6 — clevel liberado; guard
+//   fino server-side).
+// - CAMADA_OPERACOES §21 integral.
 //
-// **RV-13.** Cada import consumido:
-//   - `OnboardingLideresClient`, `OnboardingCardInitial` do Client
-//     compartilhado.
-//   - `resolveDatabaseUrl` do internals compartilhado.
-//   - `createLeaderOnboardingRouter` para loader inline SSR.
-//
-// **RV-08.** Nenhuma decisão do Manus — session.companyId vem da JWT do
-// RH autenticado, não do path.
+// ME 3.5 D6: substitui `loadRhSessionFlags`+`resolveProfileKey`+
+// `resolveMenuItems` pelo helper canonico `loadRhLikePageContext`.
 //
 // **RV-14.** Um statement por linha, largura máxima 100 colunas.
 
@@ -27,10 +16,9 @@ import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
 
 import { Layout } from '../../components/shell/Layout';
+import { PainelToggle } from '../../components/shell/PainelToggle';
 import { closeDbClient, createDbClient } from '../../db/client';
-import { resolveMenuItems } from '../../lib/menu/menuConfig';
-import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
-import { loadRhSessionFlags } from '../../lib/session/rhSessionFlags';
+import { loadRhLikePageContext } from '../../lib/session/loadRhLikePageContext';
 import { createRateLimiter } from '../../server/auth/rateLimit';
 import { createLeaderOnboardingRouter } from '../../server/routers/leaderOnboarding';
 import { getServerSession } from '../../server/session/serverSession';
@@ -55,15 +43,9 @@ export default async function OnboardingLideresRHPage(): Promise<JSX.Element> {
     redirect('/');
   }
 
-  // Guard defense-in-depth ao matrix.ts §10.6 + §9.13.
   if (session.kind === 'super_admin') {
     // Bruno usa /super-admin/empresa/[id]/onboarding-lideres.
-    // Rota base sem companyId não faz sentido — redireciona ao painel
-    // global (padrão canônico consolidado ME-057c).
     redirect('/super-admin');
-  }
-  if (session.role !== 'rh' && session.role !== 'rh_lider') {
-    redirect('/access-denied?rota=/onboarding-lideres');
   }
 
   // Token da sessão para o caller SSR (padrão S511 canônica).
@@ -76,30 +58,12 @@ export default async function OnboardingLideresRHPage(): Promise<JSX.Element> {
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    // ME-086 D-086-10: helper canonico consolidado — inclui
-    // `isResponsavelFinanceiro` (correcao do bug hardcoded `false`) e
-    // filtra `status='ativo'` na cadeia.
-    const menuFlags = await loadRhSessionFlags(client.db, session.userId);
-    if (menuFlags === null) {
-      redirect('/');
-    }
-    const profileKey = resolveProfileKey({
-      session,
-      isRH: menuFlags.isRH,
-      isLider: menuFlags.isLider,
-      acessoTotal: false,
-      hasDescendingChain: menuFlags.hasDescendingChain,
-      cLevelCount: 0,
-      isSuperAdminInCompany: false,
-    });
-    const menuItems = resolveMenuItems(profileKey, menuFlags.isResponsavelFinanceiro);
-    if (menuItems === null) {
-      throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
+    // ME 3.5 D6 — helper unico admite rh/rh_lider/clevel+isRH.
+    const rhCtx = await loadRhLikePageContext(client.db, session);
+    if (rhCtx === null) {
+      redirect('/access-denied?rota=/onboarding-lideres');
     }
 
-    // Loader inline: kanban initialCards via caller.list.
-    // §21.4 bloqueio absoluto já é aplicado dentro do router para
-    // rh_lider (não vê próprio card).
     const caller = createLeaderOnboardingCaller(
       createContextInner({
         db: client.db,
@@ -120,13 +84,16 @@ export default async function OnboardingLideresRHPage(): Promise<JSX.Element> {
 
     return (
       <Layout
-        menuItems={menuItems}
+        menuItems={rhCtx.menuItems}
+        panelToggle={
+          rhCtx.canToggleMenuMode ? <PainelToggle currentMode={rhCtx.menuMode} /> : undefined
+        }
         header={{
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
           user: { displayName: session.displayName },
-          showNotificationBell: true,
+          showNotificationBell: !rhCtx.isCLevelActingAsRH,
         }}
       >
         <OnboardingLideresClient

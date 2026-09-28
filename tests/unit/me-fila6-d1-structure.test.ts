@@ -3,7 +3,12 @@
 // 1. `/dados-mensais/meus-liderados` nao monta closures inline para o
 //    client (D-MEUS-LIDERADOS-RSC-500) e as actions de template/upload
 //    derivam o lider da sessao.
-// 2. Pages platform com menu de C-level usam o helper unico.
+// 2. Pages platform com menu de C-level usam o helper unico canonico
+//    de menu — historicamente `loadPlatformMenuContext`, ampliado na
+//    ME 3.5 D6 para o helper irmao `loadPlatformMenuCtxCookie` (mesmo
+//    contrato, com resolucao adicional do cookie `roip.menu.mode` que
+//    habilita o toggle "Painel C-level / Painel RH" em clevel+isRH).
+//    Ambos sao canonicos e satisfazem o contrato desta regressao.
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -49,7 +54,12 @@ describe('ME-fila6 D1 — estrutura', () => {
     'src/app/central-relatorios/page.tsx',
   ])('%s resolve menu pelo helper unico', (rel) => {
     const src = read(rel);
-    expect(src).toContain('loadPlatformMenuContext');
+    // ME 3.5 D6: `loadPlatformMenuCtxCookie` e o helper irmao canonico
+    // que amplia `loadPlatformMenuContext` com resolucao do cookie
+    // `roip.menu.mode`. Ambos sao aceitos como "helper unico" nesta
+    // regressao — a intencao do teste e vetar composicao ad-hoc de
+    // menu por meio de `loadRhSessionFlags` inline nas pages.
+    expect(src).toMatch(/loadPlatformMenuContext|loadPlatformMenuCtxCookie/);
     expect(src).not.toContain('loadRhSessionFlags');
   });
 

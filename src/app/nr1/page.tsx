@@ -1,12 +1,18 @@
+// ROIP APP 9BOX — rota canonica RH `/nr1` (§10.4).
+//
+// ME 3.5 D6: substitui o guard historico `role IN {'rh','rh_lider'}`
+// pelo helper canonico `loadRhLikePageContext`, que admite tambem
+// C-level com `cLevelMembers.isRH=true` (guard fino server-side
+// bit-exact ao matrix.ts §10.4 ampliado).
+
 import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
 import { cookies } from 'next/headers';
 
 import { Layout } from '../../components/shell/Layout';
+import { PainelToggle } from '../../components/shell/PainelToggle';
 import { closeDbClient, createDbClient } from '../../db/client';
-import { resolveMenuItems } from '../../lib/menu/menuConfig';
-import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
-import { loadRhSessionFlags } from '../../lib/session/rhSessionFlags';
+import { loadRhLikePageContext } from '../../lib/session/loadRhLikePageContext';
 import { createRateLimiter } from '../../server/auth/rateLimit';
 import { createNr1Router } from '../../server/routers/nr1';
 import { getServerSession } from '../../server/session/serverSession';
@@ -26,13 +32,8 @@ export default async function Nr1RHPage(): Promise<JSX.Element> {
     redirect('/');
   }
 
-  const isRH =
-    session.kind === 'platform' && (session.role === 'rh' || session.role === 'rh_lider');
   if (session.kind === 'super_admin') {
     redirect('/super-admin');
-  }
-  if (!isRH) {
-    redirect('/access-denied?rota=/nr1');
   }
 
   const cookieStore = await cookies();
@@ -43,27 +44,21 @@ export default async function Nr1RHPage(): Promise<JSX.Element> {
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    const rhFlagsResult = await loadRhSessionFlags(client.db, session.userId);
-    const rhFlags = rhFlagsResult ?? {
-      isRH: true,
-      isLider: session.role === 'rh_lider',
-      isResponsavelFinanceiro: false,
-      hasDescendingChain: false,
-    };
-
-    const profileKey = resolveProfileKey({
-      session,
-      isRH: true,
-      isLider: session.role === 'rh_lider',
-      acessoTotal: false,
-      hasDescendingChain: false,
-      cLevelCount: 0,
-      isSuperAdminInCompany: false,
-    });
-    const menuItems = resolveMenuItems(profileKey, false);
-    if (menuItems === null) {
-      throw new Error('Perfil RH não reconhecido.');
+    // ME 3.5 D6 — helper unico substitui os antigos
+    // `loadRhSessionFlags`+`resolveProfileKey`+`resolveMenuItems`. Admite
+    // rh puro, rh_lider e clevel+isRH=true. Retorna null quando a sessao
+    // nao pode operar como RH nesta rota.
+    const rhCtx = await loadRhLikePageContext(client.db, session);
+    if (rhCtx === null) {
+      redirect('/access-denied?rota=/nr1');
     }
+
+    const rhFlags = {
+      isRH: rhCtx.isRH,
+      isLider: rhCtx.isLider,
+      isResponsavelFinanceiro: rhCtx.isResponsavelFinanceiro,
+      hasDescendingChain: rhCtx.hasDescendingChain,
+    };
 
     const caller = createNr1Caller(
       createContextInner({
@@ -90,13 +85,18 @@ export default async function Nr1RHPage(): Promise<JSX.Element> {
 
     return (
       <Layout
-        menuItems={menuItems}
+        menuItems={rhCtx.menuItems}
+        panelToggle={
+          rhCtx.canToggleMenuMode ? <PainelToggle currentMode={rhCtx.menuMode} /> : undefined
+        }
         header={{
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
           user: { displayName: session.displayName },
-          showNotificationBell: true,
+          // Sino canonico §4.1 — Bruno + RH; C-level operando como RH
+          // segue a regra canonica de C-level (sem sino).
+          showNotificationBell: !rhCtx.isCLevelActingAsRH,
         }}
       >
         <Nr1Client {...clientProps} />

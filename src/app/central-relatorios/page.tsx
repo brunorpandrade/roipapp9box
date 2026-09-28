@@ -1,37 +1,15 @@
 // ROIP APP 9BOX — rota base RH `/central-relatorios` (ME-B9-CR,
-// dual-route L123 canonizado em ME-084 pareado com
-// `/super-admin/empresa/[id]/relatorios-e-exportacoes` ME-079a).
+// dual-route L123; ME 3.5 D6 migra menu para `loadPlatformMenuCtx
+// Cookie` para habilitar o toggle Painel C-level / Painel RH).
 //
 // Origem canonica:
 // - CAMADA_UI §12 integral (Central de Relatorios).
-// - CAMADA_AUTH §9.15 (/central-relatorios — RH/RH-Lider/Bruno; C-level e
-//   Lider bloqueados).
-// - CAMADA_AUTH §10.7 (Bruno usa `/super-admin/empresa/[id]/…`, mas
-//   matriz allow em `/central-relatorios` mantida defense-in-depth).
+// - CAMADA_AUTH §9.15 (RH/RH-Lider/Bruno; C-level `acessoTotal=true`).
 // - CAMADA_NEGOCIO §13 (6 cards + procs).
 //
-// Diferencas canonicas bit-exact vs rota Super Admin:
-// - Rota base (sem prefixo `/super-admin/empresa/[id]`).
-// - `companyId` derivado de `session.companyId` (nao de `params.id`).
-// - Guard defensivo bit-exact ao padrao ME-084 (`/todos-os-colaboradores`):
-//   super_admin redirect `/super-admin`; role fora de rh/rh_lider redirect
-//   `/access-denied?rota=/central-relatorios`.
-// - Header `leftMode: 'in_company'` sem `superAdminContext`.
-// - Menu `MENU_RH` / `MENU_RH_LIDER_C1` / `MENU_RH_LIDER_C2` conforme
-//   `resolveMenuFlagsForRH` derivar do RH autenticado.
-// - `RelatoriosClient` compartilhado bit-exact via import de
-//   `src/components/central-relatorios/RelatoriosClient` com prop
-//   `variant='rh'` + 6 actions RH-facing injetadas.
-// - Board deck one-pager escondido do render (D-CR-3).
-//
-// **RV-13.** Todo import consumido no runtime Next 15:
-// - `getServerSession`, `redirect` → guard + guard cruzado.
-// - `createDbClient`/`closeDbClient` → transacao unica com finally.
-// - `resolveMenuFlagsForRH` → menu §3.3-§3.5.
-// - `resolveProfileKey`, `resolveMenuItems` → gera menu canonico.
-// - `Layout` → shell canonico bit-exact.
-// - `RelatoriosClient` → renderiza a Central compartilhada.
-// - 6 actions RH-facing → props `actions` injetadas.
+// ME 3.5 D6: migracao pontual de `loadPlatformMenuContext` para
+// `loadPlatformMenuCtxCookie` — habilita toggle em C-level+isRH.
+// Guard de admissao pre-existente mantido bit-exact.
 //
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
@@ -40,8 +18,9 @@ import type { JSX } from 'react';
 
 import { RelatoriosClient } from '../../components/central-relatorios/RelatoriosClient';
 import { Layout } from '../../components/shell/Layout';
+import { PainelToggle } from '../../components/shell/PainelToggle';
 import { closeDbClient, createDbClient } from '../../db/client';
-import { loadPlatformMenuContext } from '../../lib/session/platformMenuContext';
+import { loadPlatformMenuCtxCookie } from '../../lib/session/platformMenuCookie';
 import { getServerSession } from '../../server/session/serverSession';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
@@ -66,35 +45,31 @@ export default async function CentralRelatoriosRHPage(): Promise<JSX.Element> {
     redirect('/');
   }
 
-  // §10.3 canonica: Bruno usa `/super-admin` (contexto dentro-de-empresa
-  // via prefixo dedicado); rota base sem `companyId` nao faz sentido para
-  // ele. Padrao bit-exact `/todos-os-colaboradores` (ME-084).
   if (session.kind === 'super_admin') {
     redirect('/super-admin');
   }
-  // Guard defense-in-depth ao middleware `matrix.ts` §10.7 (matriz
-  // canonica ampliada pela ME-B9-CR3 — super_admin/rh/rh_lider/clevel
-  // allow; lider deny). C-level requer `acessoTotal=true` (§12.2 CAMADA_UI
-  // — CF nao acessa) — filtro delegado ao guard interno abaixo.
   if (session.role !== 'rh' && session.role !== 'rh_lider' && session.role !== 'clevel') {
     redirect('/access-denied?rota=/central-relatorios');
   }
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    // ME-fila6 D1 — helper unico: CU/CT passam, CF nega (antes o filtro
-    // era apenas `acessoTotal` e o RF do C-level era ignorado no menu).
-    const menu = await loadPlatformMenuContext(client.db, session);
+    // ME 3.5 D6 — menu via cookie helper (habilita toggle em C-level+isRH).
+    const menu = await loadPlatformMenuCtxCookie(client.db, session);
     if (menu === null) {
       redirect('/');
     }
     if (session.role === 'clevel') {
-      if (menu.profileKey !== 'clevel_full') {
+      // CU/CT/C-level+isRH acessam; CF (`clevel_restricted`) nao.
+      if (menu.profileKey !== 'clevel_full' && menu.profileKey !== 'rh') {
         redirect('/access-denied?rota=/central-relatorios');
       }
       return (
         <Layout
           menuItems={menu.menuItems}
+          panelToggle={
+            menu.canToggleMenuMode ? <PainelToggle currentMode={menu.menuMode} /> : undefined
+          }
           header={{
             leftMode: 'in_company',
             companyDisplayName: session.companyDisplayName,
@@ -123,6 +98,9 @@ export default async function CentralRelatoriosRHPage(): Promise<JSX.Element> {
     return (
       <Layout
         menuItems={menu.menuItems}
+        panelToggle={
+          menu.canToggleMenuMode ? <PainelToggle currentMode={menu.menuMode} /> : undefined
+        }
         header={{
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,

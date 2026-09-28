@@ -1,5 +1,5 @@
 // ROIP APP 9BOX — rota canonica base RH `/organograma` (§14.9,
-// ME-086b). PRIMEIRA das duas rotas RH-facing da ME-086b.
+// ME-086b; ME 3.5 D6 admite clevel+isRH via `loadRhLikePageContext`).
 //
 // Origem canonica:
 // - CAMADA_UI §14.9 (organograma completo — arvore hierarquica +
@@ -12,31 +12,12 @@
 // - CAMADA_AUTH §11.2 PC1b canonica (tooltip literal "Detalhes
 //   restritos ao Super Admin").
 // - CAMADA_NEGOCIO §15.7 (regra visual PC1b).
-// - CAMADA_DADOS §4.4/§4.5/§4.6.
 //
-// D-086b-1 A + D-086b-4 A aprovadas bit-exact: escopo canonico completo
-// bit-exact §14.9 via reutilizacao integral do `OrganogramaClient`
-// da ME-077 (978 linhas — ja expoe `applyPC1b: boolean`, S408).
-//
-// ME §8.06 (dashboard da empresa nativo): o no da empresa recebe
-// `empresaDashboardHref` = `/dashboard-empresa` para RH e C-level total
-// (escopo nulo, ESPEC §8 + DOC 02 §10.4 linha 853), substituindo o botao
-// diferido de Fase 4 por um link real. Lider e C-level restrito nao
-// recebem o href (o no da empresa ja e esmaecido para eles por PC1h).
-//
-// Padrao canonico bit-exact ao precedente `/central-relatorios`
-// (ME-B9-CR) + `/todos-os-colaboradores` (ME-084): guard defensivo
-// canonico 5 checks (redirect super-admin, kind, passwordSet, role,
-// access-denied) + branch canonico por perfil.
-//
-// **RV-13.** Todo import consumido bit-exact:
-//   - `OrganogramaClient` via `_client.ts` shim (RV-14 canonica).
-//   - `loadPlatformMenuContext` (helper unico de menu — ME-fila6 D1).
-//   - `resolveApplyPC1b` (helper canonico ampliado ME-086b RETOMADA
-//     §11.8 PC1g — cobre RH/RH-Lider/Lider/CF).
-//   - Loader `loadFullOrgTree` (service `orgTree`).
-//   - `canViewCompanyAggregate` + `NATIVE_EMPRESA_DASHBOARD_HREF`
-//     (regua unica do agregado da empresa — ME §8.06).
+// ME 3.5 D6: para C-level operando como RH (`isCLevelActingAsRH`),
+// a decisao canonica e tratar como RH puro — herda `applyPC1b=true`
+// e escopo hierarquico irrestrito (bit-exact ao ramo RH puro). Para
+// C-level nao operando como RH, permanece o branch canonico
+// pre-existente (CU/CT/CF via `resolveApplyPC1b` + PC1h).
 //
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
@@ -44,6 +25,7 @@ import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
 
 import { Layout } from '../../components/shell/Layout';
+import { PainelToggle } from '../../components/shell/PainelToggle';
 import { closeDbClient, createDbClient } from '../../db/client';
 import { COLORS } from '../../lib/design-tokens/colors';
 import {
@@ -51,6 +33,7 @@ import {
   NATIVE_EMPRESA_DASHBOARD_HREF,
 } from '../../lib/scope/companyAggregateAccess';
 import { loadPlatformMenuContext } from '../../lib/session/platformMenuContext';
+import { loadRhLikePageContext } from '../../lib/session/loadRhLikePageContext';
 import { resolveApplyPC1b } from '../../server/routers/orgTree';
 import { resolveHierarchicalScope } from '../../server/services/hierarchicalScope';
 import { getServerSession } from '../../server/session/serverSession';
@@ -65,54 +48,78 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
     redirect('/');
   }
 
-  // §10.3 canonica: Bruno usa `/super-admin` (contexto dentro-de-empresa
-  // via prefixo dedicado); rota base sem `companyId` nao faz sentido
-  // para ele. Padrao bit-exact `/central-relatorios` (ME-B9-CR).
   if (session.kind === 'super_admin') {
     redirect('/super-admin');
   }
 
-  // Guard defense-in-depth bit-exact ao middleware §10.4:
-  // super_admin + rh + rh_lider + clevel + lider allow;
-  // colaborador comum (role=colaborador) deny.
-  const ALLOWED_ROLES = ['rh', 'rh_lider', 'clevel', 'lider'] as const;
-  if (!ALLOWED_ROLES.includes(session.role as (typeof ALLOWED_ROLES)[number])) {
-    redirect('/access-denied?rota=/organograma');
-  }
-
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    // Carga da arvore canonica bit-exact (mesma que o super-admin
-    // consome — service compartilhado `orgTree`).
     const root = await loadFullOrgTree(client.db, session.companyId);
     if (root === null) {
-      // Empresa sem arvore montada — CAMADA_UI §14.9 canonicamente
-      // supõe pelo menos 1 C-level para renderizar; retornar redirect
-      // canonico para o painel principal como fallback seguro.
       redirect('/');
     }
 
-    // ME-fila6 D1 — menu/RF/sino via helper unico (antes o ramo C-level
-    // passava RF=false fixo e o ramo Lider exibia o sino, contra §4.1).
+    // ME 3.5 D6 — tentativa RH-like primeiro: admite rh/rh_lider e
+    // clevel+isRH. Se null, cai nos branches canonicos pre-existentes
+    // (clevel sem isRH via `loadPlatformMenuContext` para CU/CT/CF, e
+    // lider puro).
+    const rhCtx = await loadRhLikePageContext(client.db, session);
+    if (rhCtx !== null) {
+      // RH puro, RH-Lider ou clevel operando como RH.
+      // §11.8 PC1g — RH e RH-Lider sempre com PC1b. Para clevel-as-RH,
+      // decisao canonica ME 3.5 D6: herda comportamento RH puro (PC1b).
+      const applyPC1bRh = resolveApplyPC1b({
+        role: 'rh',
+        userId: session.userId,
+        companyId: session.companyId,
+      });
+      return (
+        <Layout
+          menuItems={rhCtx.menuItems}
+          panelToggle={
+            rhCtx.canToggleMenuMode ? <PainelToggle currentMode={rhCtx.menuMode} /> : undefined
+          }
+          header={{
+            leftMode: 'in_company',
+            companyDisplayName: session.companyDisplayName,
+            companyLogoUrl: session.companyLogoUrl ?? undefined,
+            user: { displayName: session.displayName },
+            showNotificationBell: !rhCtx.isCLevelActingAsRH,
+          }}
+        >
+          <OrganogramaPageInner
+            companyId={session.companyId}
+            companyName={session.companyDisplayName}
+            root={root}
+            applyPC1b={applyPC1bRh}
+            selfNodeId={
+              rhCtx.isCLevelActingAsRH ? `clevel-${session.userId}` : `employee-${session.userId}`
+            }
+            empresaDashboardHref={NATIVE_EMPRESA_DASHBOARD_HREF}
+          />
+        </Layout>
+      );
+    }
+
+    // Guard defense-in-depth bit-exact ao middleware §10.4:
+    // clevel sem isRH e lider caem aqui.
+    const ALLOWED_ROLES = ['clevel', 'lider'] as const;
+    if (!ALLOWED_ROLES.includes(session.role as (typeof ALLOWED_ROLES)[number])) {
+      redirect('/access-denied?rota=/organograma');
+    }
+
+    // Menu/RF/sino via helper unico pre-existente (clevel sem isRH e
+    // lider puro).
     const menu = await loadPlatformMenuContext(client.db, session);
     if (menu === null) {
       redirect('/');
     }
 
-    // Branch canonico bit-exact por perfil para resolver menu.
-    // C-level: consulta canonica flags (§12.2 CAMADA_UI). CF entra
-    // canonicamente bit-exact — fix D-086b-CF-ORGANOGRAMA RETOMADA:
-    // matriz §10.4 nao rejeita CF em /organograma; a rejeicao ocorre
-    // canonicamente em /todos-os-colaboradores e /central-relatorios.
     if (session.role === 'clevel') {
       const cFlags = menu.cLevel;
       if (cFlags === null) {
-        // Session bate C-level mas nao existe registro correspondente
-        // em cLevelMembers — inconsistencia de sessao/dados.
         redirect('/access-denied?rota=/organograma');
       }
-      // §11.8 PC1g canonica bit-exact — resolve PC1b com contexto
-      // ampliado: CU=false, CT=false, CF=true.
       const applyPC1b = resolveApplyPC1b(
         {
           role: session.role,
@@ -124,9 +131,6 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
           acessoTotal: cFlags.acessoTotal,
         },
       );
-      // §11.9 PC1h — resolve escopo canônico hierárquico. Para CU/CT
-      // retorna null (sem restrição). Para CF retorna Set com IDs da
-      // cadeia própria + próprio nó.
       const scope = await resolveHierarchicalScope(
         client.db,
         {
@@ -140,8 +144,6 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
         },
       );
       const restrictedNodeIds = scope === null ? undefined : Array.from(scope);
-      // ME §8.06 — no da empresa: href real so para escopo total
-      // (CU/CT). CF nao recebe (o no da empresa ja e esmaecido por PC1h).
       const empresaDashboardHref = canViewCompanyAggregate(scope)
         ? NATIVE_EMPRESA_DASHBOARD_HREF
         : undefined;
@@ -169,57 +171,18 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
       );
     }
 
-    // Branch Lider puro: menu de lider resolvido por
-    // `loadPlatformMenuContext` (ME-fila6 D1).
-    if (session.role === 'lider') {
-      // §11.8 PC1g canonica bit-exact — Lider sempre com PC1b.
-      const applyPC1bLider = resolveApplyPC1b({
-        role: session.role,
-        userId: session.userId,
-        companyId: session.companyId,
-      });
-      // §11.9 PC1h — resolve escopo canônico. Líder puro sempre com
-      // restrição: cadeia = liderados diretos + descendentes + próprio.
-      const scopeLider = await resolveHierarchicalScope(client.db, {
-        role: session.role,
-        userId: session.userId,
-        companyId: session.companyId,
-      });
-      const restrictedNodeIdsLider = scopeLider === null ? undefined : Array.from(scopeLider);
-      // ME §8.06 — Lider nao tem agregado da empresa (ESPEC §8 + §10.4
-      // linha 853): sem href; o no da empresa segue esmaecido por PC1h.
-      return (
-        <Layout
-          menuItems={menu.menuItems}
-          header={{
-            leftMode: 'in_company',
-            companyDisplayName: session.companyDisplayName,
-            companyLogoUrl: session.companyLogoUrl ?? undefined,
-            user: { displayName: session.displayName },
-            showNotificationBell: menu.showNotificationBell,
-          }}
-        >
-          <OrganogramaPageInner
-            companyId={session.companyId}
-            companyName={session.companyDisplayName}
-            root={root}
-            applyPC1b={applyPC1bLider}
-            restrictedNodeIds={restrictedNodeIdsLider}
-            selfNodeId={`employee-${session.userId}`}
-          />
-        </Layout>
-      );
-    }
-
-    // Branch RH puro / RH-Lider: menu resolvido por
-    // `loadPlatformMenuContext` (ME-fila6 D1).
-    // §11.8 PC1g canonica bit-exact — RH e RH-Lider sempre com PC1b
-    // (comportamento bit-exact ao original §11.2, preservado).
-    const applyPC1bRh = resolveApplyPC1b({
+    // Branch Lider puro.
+    const applyPC1bLider = resolveApplyPC1b({
       role: session.role,
       userId: session.userId,
       companyId: session.companyId,
     });
+    const scopeLider = await resolveHierarchicalScope(client.db, {
+      role: session.role,
+      userId: session.userId,
+      companyId: session.companyId,
+    });
+    const restrictedNodeIdsLider = scopeLider === null ? undefined : Array.from(scopeLider);
     return (
       <Layout
         menuItems={menu.menuItems}
@@ -235,9 +198,9 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
           companyId={session.companyId}
           companyName={session.companyDisplayName}
           root={root}
-          applyPC1b={applyPC1bRh}
+          applyPC1b={applyPC1bLider}
+          restrictedNodeIds={restrictedNodeIdsLider}
           selfNodeId={`employee-${session.userId}`}
-          empresaDashboardHref={NATIVE_EMPRESA_DASHBOARD_HREF}
         />
       </Layout>
     );

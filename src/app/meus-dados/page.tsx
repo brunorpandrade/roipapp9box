@@ -1,4 +1,6 @@
-// ROIP APP 9BOX — /meus-dados page canonica (ME-082).
+// ROIP APP 9BOX — /meus-dados page canonica (ME-082; ME 3.5 D6 migra
+// menu para `loadPlatformMenuCtxCookie` para habilitar toggle em
+// C-level+isRH).
 //
 // Origem canonica: DOC 02 §4.6 + DOC 05 §14.5.
 //
@@ -7,34 +9,21 @@
 // condicional H1a (Super Admin) vs H1b (demais perfis administrativos)
 // resolvido pelo payload retornado por `myData.getForCurrentUser`.
 //
-// Pattern S511 canonico (loader inline via createCallerFactory) +
-// pattern §2.1 canonico do MASTER_ESCOPO (Layout + resolveMenuItems +
-// resolveProfileKey).
-//
-// Flags para resolveProfileKey em H1b — RV-09 obrigatoria:
-//   - isRH, isLider: derivados do role platform (rh=>isRH; rh_lider=>
-//     isRH+isLider; lider=>isLider; clevel => ambos false).
-//   - hasDescendingChain: query sobre employeeLeaderHistory para
-//     identificar cenario C1 (falso) vs C2 (verdadeiro) em rh_lider e
-//     lider.
-//   - cLevelCount, acessoTotal: para C-level, distingue clevel_full
-//     (1 C-level OU acessoTotal=true) de clevel_restricted.
-//
-// **RV-13.** Todos os imports consumidos.
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
 import { redirect } from 'next/navigation';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { cookies } from 'next/headers';
 
 import { Layout } from '../../components/shell/Layout';
+import { PainelToggle } from '../../components/shell/PainelToggle';
 import { closeDbClient, createDbClient } from '../../db/client';
 import { findCompanyDisplayInfo } from '../../lib/logs/companyHistoryLog';
 import type { MenuItem } from '../../lib/menu/menuConfig';
 import { resolveMenuItems } from '../../lib/menu/menuConfig';
 // eslint-disable-next-line @stylistic/max-len -- path canonico do guard
 import { requireAuthenticatedNonCollaborator } from '../../lib/routes/requireAuthenticatedNonCollaborator';
-import { loadPlatformMenuContext } from '../../lib/session/platformMenuContext';
+import { loadPlatformMenuCtxCookie } from '../../lib/session/platformMenuCookie';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { createRateLimiter } from '../../server/auth/rateLimit';
 import { myDataRouter } from '../../server/routers/myData';
@@ -52,9 +41,6 @@ export default async function MeusDadosPage(): Promise<JSX.Element> {
   const session = await getServerSession();
   const guard = requireAuthenticatedNonCollaborator(session);
   if (guard.kind === 'unauthenticated') {
-    // Rota transversal — Super Admin cai em /login-super-admin; demais
-    // caem em /. Nao ha cookie valido para distinguir, entao / e o
-    // destino canonico (login unificado inclui link para super-admin).
     redirect('/');
   }
 
@@ -65,8 +51,6 @@ export default async function MeusDadosPage(): Promise<JSX.Element> {
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    // 1. Payload H1a/H1b via caller tRPC (RV-13: myDataRouter tem
-    //    chamador na mesma ME).
     const caller = createMyDataCaller(
       createContextInner({
         db: client.db,
@@ -77,15 +61,13 @@ export default async function MeusDadosPage(): Promise<JSX.Element> {
     );
     const payload = await caller.getForCurrentUser();
 
-    // 2. Resolucao canonica de menu + header conforme perfil.
     let menuItems: readonly MenuItem[] | null = null;
     let companyDisplayName: string | undefined;
     let companyLogoUrl: string | undefined;
     let showNotificationBell = false;
+    let panelToggleNode: ReactNode = undefined;
 
     if (activeSession.kind === 'super_admin') {
-      // Super Admin em rota transversal (fora do contexto in_company).
-      // Menu canonico: MENU_SUPER_ADMIN_GLOBAL (isSuperAdminInCompany=false).
       const profileKey = resolveProfileKey({
         session: activeSession,
         isRH: false,
@@ -102,20 +84,20 @@ export default async function MeusDadosPage(): Promise<JSX.Element> {
       menuItems = items;
       showNotificationBell = true;
     } else {
-      // Platform: rh, rh_lider, clevel ou lider.
       companyDisplayName = activeSession.companyDisplayName;
       companyLogoUrl = activeSession.companyLogoUrl ?? undefined;
-      // ME-fila6 D1 — helper unico (antes a cadeia descendente nao filtrava
-      // `employees.status='ativo'`, inflando o Cenario 2 do menu).
-      const menu = await loadPlatformMenuContext(client.db, activeSession);
+      // ME 3.5 D6 — menu via cookie helper (habilita toggle em C-level+isRH).
+      const menu = await loadPlatformMenuCtxCookie(client.db, activeSession);
       if (menu === null) {
         redirect('/');
       }
       menuItems = menu.menuItems;
       showNotificationBell = menu.showNotificationBell;
+      panelToggleNode = menu.canToggleMenuMode ? (
+        <PainelToggle currentMode={menu.menuMode} />
+      ) : undefined;
     }
 
-    // 3. Company display info para header (in_company perfis).
     let companyLogoResolved: string | null = null;
     if (activeSession.kind === 'platform') {
       const companyInfo = await findCompanyDisplayInfo(client.db, activeSession.companyId);
@@ -131,6 +113,7 @@ export default async function MeusDadosPage(): Promise<JSX.Element> {
     return (
       <Layout
         menuItems={menuItems}
+        panelToggle={panelToggleNode}
         header={{
           leftMode: activeSession.kind === 'super_admin' ? 'super_admin_global' : 'in_company',
           companyDisplayName,
