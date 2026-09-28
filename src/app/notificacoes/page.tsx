@@ -1,5 +1,6 @@
 // ROIP APP 9BOX — rota canonica /notificacoes (ME-057a; ME-070 refactor
-// S366 CC068; ME 3.5 D6 admite clevel+isRH).
+// S366 CC068; ME 3.5 D6 admite clevel+isRH; ME 3.5 D6 patch3 corrige
+// filtro para C-level operando como RH).
 //
 // Origem canonica:
 // - DOC 05 §14.19 (Rota `/notificacoes`) — barra de filtros com 6
@@ -10,8 +11,13 @@
 // - DOC 02 §10.5 + §9.7 (matriz ampliada ME 3.5 D6 — clevel liberado
 //   na rota; guard fino server-side).
 //
-// ME 3.5 D6: substitui a copia local `RhLikeFlags` + `loadFlagsForRh
-// Session` + guard hardcoded por `loadRhLikePageContext` canonico.
+// ME 3.5 D6 patch3: para C-level operando como RH, o filtro
+// `destinatarioEmployeeId` e null (o `session.userId` de um C-level e
+// um cLevelId, nao um employees.id, portanto o filtro exato jamais
+// casaria). Semantica canonica: C-level+isRH ve o feed RH da empresa
+// como qualquer RH veria — notificacoes cujo destinatarioTipo='rh'
+// SEM `destinatarioEmployeeId` (broadcast ao RH) mais o loader tRPC
+// existente (que nao filtra por employee quando o id e null).
 
 import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
@@ -33,31 +39,15 @@ import { loadNotificacoesPage } from './internals';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 // -----------------------------------------------------------------------
-// Guard canonico da rota (defense-in-depth)
-// -----------------------------------------------------------------------
-
-interface RouteContext {
-  readonly destinatarioTipo: 'bruno' | 'rh';
-  readonly destinatarioEmployeeId: number | null;
-}
-
-function resolveRouteContext(session: ServerSession): RouteContext {
-  if (session.kind === 'super_admin') {
-    return { destinatarioTipo: 'bruno', destinatarioEmployeeId: null };
-  }
-  // Roles admitidas: rh, rh_lider e clevel operando como RH (ME 3.5
-  // D6). O destinatarioEmployeeId e o proprio userId da sessao.
-  return { destinatarioTipo: 'rh', destinatarioEmployeeId: session.userId };
-}
-
-// -----------------------------------------------------------------------
-// Presentation payload consolidado
+// Presentation payload consolidado (menu + destinatario canonico)
 // -----------------------------------------------------------------------
 
 interface PagePresentation {
   readonly menuItems: readonly MenuItem[];
   readonly panelToggle: JSX.Element | undefined;
   readonly showNotificationBell: boolean;
+  readonly destinatarioTipo: 'bruno' | 'rh';
+  readonly destinatarioEmployeeId: number | null;
 }
 
 // -----------------------------------------------------------------------
@@ -84,11 +74,10 @@ export default async function NotificacoesPage(props: PageProps): Promise<JSX.El
         ? await resolvePlatformPresentation(client.db, session)
         : resolveSuperAdminPresentation(session);
 
-    const context = resolveRouteContext(session);
     const listResult = await loadNotificacoesPage(
       client.db,
-      context.destinatarioTipo,
-      context.destinatarioEmployeeId,
+      presentation.destinatarioTipo,
+      presentation.destinatarioEmployeeId,
       filters,
     );
 
@@ -156,6 +145,10 @@ async function resolvePlatformPresentation(
   if (rhCtx === null) {
     redirect('/access-denied?rota=/notificacoes');
   }
+  // ME 3.5 D6 patch3 — C-level operando como RH consome feed RH geral
+  // da empresa (destinatarioEmployeeId=null). RH puro e RH-Lider seguem
+  // filtro canonico pelo proprio employee id.
+  const destinatarioEmployeeId = rhCtx.isCLevelActingAsRH ? null : session.userId;
   return {
     menuItems: rhCtx.menuItems,
     panelToggle: rhCtx.canToggleMenuMode ? (
@@ -163,6 +156,8 @@ async function resolvePlatformPresentation(
     ) : undefined,
     // Sino canonico §4.1 — C-level operando como RH nao recebe sino.
     showNotificationBell: !rhCtx.isCLevelActingAsRH,
+    destinatarioTipo: 'rh',
+    destinatarioEmployeeId,
   };
 }
 
@@ -186,5 +181,7 @@ function resolveSuperAdminPresentation(
     menuItems: items,
     panelToggle: undefined,
     showNotificationBell: true,
+    destinatarioTipo: 'bruno',
+    destinatarioEmployeeId: null,
   };
 }

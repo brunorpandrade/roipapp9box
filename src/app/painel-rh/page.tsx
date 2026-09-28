@@ -1,28 +1,28 @@
 // ROIP APP 9BOX — rota canonica `/painel-rh` (Painel RH §5.5, ME-083).
 //
+// ME 3.5 D6 patch3 — unifica o branch clevel+isRH com o branch RH puro:
+// o C-level operando como RH renderiza o PainelRHClient completo com os
+// mesmos cards, contadores e secoes que um RH nativo veria (validacao
+// empirica Michelle/Embrastec S9). A antiga landing simplificada do D5
+// e substituida.
+//
 // Padrao S366 CC068 canonizado: `page.tsx` exporta APENAS o default. Todo
 // helper, tipo e loader vive no `internals.ts` irmao; toda render vive
-// no `PainelRHClient.tsx` (client component). Segregacao canonica bit-
-// exact vs padrao S306 pre-existente (ME-056 mantinha helpers embutidos).
+// no `PainelRHClient.tsx` (client component).
 //
 // Origem canonica:
 // - DOC 05 §5.5 (Painel RH — 5 secoes canonicas com variacao por cenario
 //   RH puro / RH-Lider C1 / RH-Lider C2).
 // - DOC 05 §5.1 (estrutura comum a paineis).
 // - DOC 05 §5.8 (Card resumo "Pendencias no portal" — RH puro/RHL1/RHL2).
-// - DOC 05 §4 (Header canonico `leftMode='in_company'` — DECISAO
-//   D-ME083-3 aprovada bit-exact).
-// - DOC 02 §10.3 linha 808 (matriz Bruno redirect_painel; RH e RH-Lider
-//   allow; C-level e Lider deny — DECISAO D-ME083-4 aprovada bit-exact).
+// - DOC 05 §4 (Header canonico `leftMode='in_company'`).
+// - DOC 02 §10.3 linha 808 (matriz Bruno redirect_painel; RH, RH-Lider
+//   e clevel+isRH allow; Lider deny).
 // - DOC 02 §5.2 (sessao sliding 8h).
 // - DOC 02 §11.3 PC1c (guarda de agregados analiticos — total colaboradores
 //   ativos exibido ao RH INCLUI C-levels).
-// - Mockup canonico primario: `painel_principal_fase7_v5.html`.
 //
 // **RV-13 canonica.** `PainelRHPage` (default) → runtime Next 15.
-// **RV-08 canonica.** Zero decisao de implementacao — todos os loaders
-// sao helpers puros pre-decididos em `internals.ts` + `../super-admin/
-// empresa/[id]/internals.ts` (reuso canonico D-ME083-2).
 // **RV-11 canonica.** Todas as queries executam contra MySQL real via
 // Drizzle tipado.
 // **RV-14 canonica.** Um statement por linha, largura maxima 100 cols.
@@ -34,11 +34,7 @@ import type { JSX } from 'react';
 import { Layout } from '../../components/shell/Layout';
 import { PainelToggle } from '../../components/shell/PainelToggle';
 import { closeDbClient, createDbClient } from '../../db/client';
-import { COLORS } from '../../lib/design-tokens/colors';
-import { loadPlatformMenuCtxCookie } from '../../lib/session/platformMenuCookie';
-import { resolveMenuItems } from '../../lib/menu/menuConfig';
 import { countPendenciasEmpresa } from '../../lib/pendencias/pendenciasEngine';
-import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { getServerSession } from '../../server/session/serverSession';
 import {
   loadDepartmentCounts,
@@ -47,7 +43,7 @@ import {
   loadOnboardingSummaryCounts,
 } from '../super-admin/empresa/[id]/internals';
 
-import { loadRhSessionFlags } from '../../lib/session/rhSessionFlags';
+import { loadRhLikePageContext } from '../../lib/session/loadRhLikePageContext';
 
 import { liberarRetesteAction } from './actions';
 import { PainelRHClient } from './PainelRHClient';
@@ -66,8 +62,7 @@ export default async function PainelRHPage(): Promise<JSX.Element> {
     redirect('/');
   }
   // ME-083 D-ME083-4 aprovado bit-exact — Bruno em `/painel-rh` redirect
-  // para `/super-admin` (matriz DOC 02 §10.3 linha 808). Impersonation
-  // fica em `/painel-rh-preview` (D-RH-IMPERSONATION, fora do B9).
+  // para `/super-admin` (matriz DOC 02 §10.3 linha 808).
   if (session.kind !== 'platform') {
     redirect('/super-admin');
   }
@@ -76,72 +71,14 @@ export default async function PainelRHPage(): Promise<JSX.Element> {
   if (session.passwordSet === false) {
     redirect('/alterar-senha');
   }
-  // ME 3.5 D5 — matrix.ts agora permite `clevel` na rota; guard fino aqui:
-  // apenas clevel COM `isRH=true` continua adiante (via ramo dedicado
-  // abaixo); as demais roles nao-RH sao bloqueadas.
-  if (session.role !== 'rh' && session.role !== 'rh_lider' && session.role !== 'clevel') {
-    redirect('/');
-  }
-
-  // ME 3.5 D5 — ramo dedicado para C-level com `isRH=true`. Consome o
-  // menu RH via `loadPlatformMenuCtxCookie` (que respeita o
-  // cookie `roip.menu.mode`) e renderiza uma landing simples com toggle.
-  // Conteudo completo do painel-rh para C-level (contadores, cards,
-  // secoes) fica como debito documentado para ME futura — o C-level
-  // opera as funcoes de RH acessando as rotas especificas via menu.
-  if (session.role === 'clevel') {
-    const client = createDbClient(resolveDatabaseUrl());
-    try {
-      const menu = await loadPlatformMenuCtxCookie(client.db, session);
-      if (menu === null) {
-        redirect('/');
-      }
-      if (!menu.canToggleMenuMode) {
-        redirect('/painel-clevel');
-      }
-      return (
-        <Layout
-          menuItems={menu.menuItems}
-          panelToggle={<PainelToggle currentMode={menu.menuMode} />}
-          header={{
-            leftMode: 'in_company',
-            companyDisplayName: session.companyDisplayName,
-            companyLogoUrl: session.companyLogoUrl ?? undefined,
-            user: { displayName: session.displayName },
-            showNotificationBell: false,
-          }}
-        >
-          <div style={{ padding: '24px 0' }}>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: COLORS.text.primary, margin: 0 }}>
-              Painel de RH
-            </h1>
-            <p
-              style={{
-                marginTop: 12,
-                fontSize: 14,
-                color: COLORS.text.secondary,
-                maxWidth: 640,
-                lineHeight: 1.5,
-              }}
-            >
-              Voce esta operando como Responsavel de RH neste C-level. Use o menu a esquerda para
-              acessar cadastro de colaboradores, dados mensais, onboarding de lideres, pendencias do
-              portal e demais funcoes canonicas de RH. Para voltar a visao executiva, clique em{' '}
-              <strong>Painel C-level</strong> no rodape do menu.
-            </p>
-          </div>
-        </Layout>
-      );
-    } finally {
-      await closeDbClient(client);
-    }
-  }
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    const flags = await loadRhSessionFlags(client.db, session.userId);
-    if (flags === null) {
-      // Registro deletado entre emissao e verificacao — sessao invalida.
+    // ME 3.5 D6 patch3 — helper unico admite rh puro, rh_lider e
+    // clevel+isRH=true. Retorna null quando a sessao nao pode operar
+    // como RH nesta rota.
+    const rhCtx = await loadRhLikePageContext(client.db, session);
+    if (rhCtx === null) {
       redirect('/');
     }
 
@@ -161,23 +98,16 @@ export default async function PainelRHPage(): Promise<JSX.Element> {
         countPendenciasEmpresa({ db: client.db, companyId: session.companyId, now }),
       ]);
 
-    const profileKey = resolveProfileKey({
-      session,
-      isRH: flags.isRH,
-      isLider: flags.isLider,
-      acessoTotal: false,
-      hasDescendingChain: flags.hasDescendingChain,
-      cLevelCount: 0,
-      isSuperAdminInCompany: false,
-    });
+    const showsMinhaEquipe =
+      rhCtx.profileKey === 'rh_lider_c1' || rhCtx.profileKey === 'rh_lider_c2';
+    const showsCadeiaIndireta = rhCtx.profileKey === 'rh_lider_c2';
 
-    const menuItems = resolveMenuItems(profileKey, flags.isResponsavelFinanceiro);
-    if (menuItems === null) {
-      throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
-    }
-
-    const showsMinhaEquipe = profileKey === 'rh_lider_c1' || profileKey === 'rh_lider_c2';
-    const showsCadeiaIndireta = profileKey === 'rh_lider_c2';
+    // ME 3.5 D6 patch3 — `loadMeuPortalData` recebe `userType='clevel'`
+    // quando a sessao e um C-level operando como RH (a funcao ja aceita
+    // esse discriminador canonico desde a assinatura pre-existente).
+    const meuPortalUserType: 'employee' | 'clevel' = rhCtx.isCLevelActingAsRH
+      ? 'clevel'
+      : 'employee';
 
     const [minhaEquipe, cadeiaIndireta, meuPortal, perfisIndividuaisInconsistentes] =
       await Promise.all([
@@ -185,7 +115,7 @@ export default async function PainelRHPage(): Promise<JSX.Element> {
         showsCadeiaIndireta
           ? loadCadeiaIndiretaData(client.db, session.userId)
           : Promise.resolve(null),
-        loadMeuPortalData(client.db, session.companyId, session.userId),
+        loadMeuPortalData(client.db, session.companyId, session.userId, meuPortalUserType),
         loadPerfisIndividuaisInconsistentes(client.db, session.companyId),
       ]);
 
@@ -193,14 +123,19 @@ export default async function PainelRHPage(): Promise<JSX.Element> {
 
     return (
       <Layout
-        menuItems={menuItems}
+        menuItems={rhCtx.menuItems}
+        panelToggle={
+          rhCtx.canToggleMenuMode ? <PainelToggle currentMode={rhCtx.menuMode} /> : undefined
+        }
         header={{
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: company.logoUrl ?? undefined,
           user: { displayName: session.displayName },
-          // Regra Q1 canonica §4.1: sino para Bruno e RH.
-          showNotificationBell: true,
+          // Sino canonico §4.1 — Bruno + RH puro/RH-Lider recebem sino;
+          // C-level operando como RH segue a regra canonica de C-level
+          // (sem sino).
+          showNotificationBell: !rhCtx.isCLevelActingAsRH,
         }}
       >
         <PainelRHClient

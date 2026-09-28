@@ -1,89 +1,45 @@
 // ROIP APP 9BOX — rota canonica /logs/acesso-individual (RH puro +
-// RH-Lider C1/C2) — ME-057b Bloco B.
+// RH-Lider C1/C2 + clevel+isRH pos ME 3.5 D6 patch3) — ME-057b Bloco B.
 //
 // Origem canonica:
 // - DOC 05 §14.22 + mockup canonico `log_acesso_individual_v1.html`
 //   + CC043 (aprovada em ME-057b).
-// - DOC 02 §10.6 + §9.14 (matriz — RH puro + RH-Lider C1/C2; middleware
-//   redirect_painel para Bruno → /super-admin/logs/…; middleware ja
-//   aplica; este page.tsx faz guard defensivo defense-in-depth).
+// - DOC 02 §10.6 + §9.14 (matriz — RH puro + RH-Lider C1/C2 +
+//   clevel+isRH; middleware redirect_painel para Bruno →
+//   /super-admin/logs/…; middleware ja aplica; este page.tsx faz guard
+//   defensivo defense-in-depth via `loadRhLikePageContext`).
 // - DOC 01 §14.2 (`dataAccessLog`) — append-only, agente polimorfico
 //   padrao B.
-// - Pattern ME-056/ME-057a reutilizado bit-exact.
+// - Pattern canonico bit-exact das 6 pages RH-facing da ME 3.5 D6.
+//
+// ME 3.5 D6 patch3: essa rota estava fora do escopo do D6 monolitico
+// original e continuava com o guard historico `role IN {'rh','rh_lider'}`
+// mais o `loadPlatformMenuContext` implicito via `resolveMenuItems`.
+// Consequencia empirica: clevel+isRH caia em `redirect('/')` que, com
+// o cookie `roip.menu.mode='rh'`, redirecionava de volta para
+// `/painel-rh` (loop visual). Migracao canonica para
+// `loadRhLikePageContext` + `loadPlatformMenuCtxCookie` corrige.
 //
 // **RV-13.** Cada export tem chamador na propria ME:
 //   - default export → runtime Next 15.
+// **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
 import { redirect } from 'next/navigation';
-import { and, eq, isNull } from 'drizzle-orm';
 import type { JSX } from 'react';
 
 import { Layout } from '../../../components/shell/Layout';
-import { closeDbClient, createDbClient, type RoipDatabase } from '../../../db/client';
-import { employees, employeeLeaderHistory } from '../../../db/schema';
+import { PainelToggle } from '../../../components/shell/PainelToggle';
+import { closeDbClient, createDbClient } from '../../../db/client';
 import { COLORS } from '../../../lib/design-tokens/colors';
 import {
   loadDataAccessLogPage,
   parseDALFiltersFromSearchParams,
 } from '../../../lib/logs/dataAccessLog';
-import { resolveMenuItems } from '../../../lib/menu/menuConfig';
-import { resolveProfileKey } from '../../../lib/session/resolveProfileKey';
+import { loadRhLikePageContext } from '../../../lib/session/loadRhLikePageContext';
 import { getServerSession } from '../../../server/session/serverSession';
 
 import { DALLogsClient } from './DALLogsClient';
 import { resolveDatabaseUrl } from '../../../lib/db/resolveDatabaseUrl';
-
-// -----------------------------------------------------------------------
-// Flags do RH (reutiliza pattern ME-057a — necessarias para
-// resolveProfileKey e para o Layout perfil-agnostic).
-// -----------------------------------------------------------------------
-
-interface RhLikeFlags {
-  readonly isRH: boolean;
-  readonly isLider: boolean;
-  readonly isResponsavelFinanceiro: boolean;
-  readonly hasDescendingChain: boolean;
-}
-
-async function loadFlagsForRhSession(
-  db: RoipDatabase,
-  userId: number,
-): Promise<RhLikeFlags | null> {
-  const rows = await db
-    .select({
-      isRH: employees.isRH,
-      isLider: employees.isLider,
-      isResponsavelFinanceiro: employees.isResponsavelFinanceiro,
-    })
-    .from(employees)
-    .where(eq(employees.id, userId))
-    .limit(1);
-  const row = rows[0];
-  if (row === undefined) {
-    return null;
-  }
-
-  const chainRows = await db
-    .select({ liderId: employees.id })
-    .from(employeeLeaderHistory)
-    .innerJoin(employees, eq(employees.id, employeeLeaderHistory.employeeId))
-    .where(
-      and(
-        eq(employeeLeaderHistory.liderId, userId),
-        isNull(employeeLeaderHistory.dataFim),
-        eq(employees.isLider, true),
-        eq(employees.status, 'ativo'),
-      ),
-    )
-    .limit(1);
-
-  return {
-    isRH: row.isRH === true,
-    isLider: row.isLider === true,
-    isResponsavelFinanceiro: row.isResponsavelFinanceiro === true,
-    hasDescendingChain: chainRows.length > 0,
-  };
-}
 
 // -----------------------------------------------------------------------
 // Rota canonica /logs/acesso-individual (§14.22 — RH)
@@ -105,47 +61,38 @@ export default async function DALLogsRHPage(props: PageProps): Promise<JSX.Eleme
   if (session.kind === 'super_admin') {
     redirect('/super-admin/logs/acesso-individual');
   }
-  if (session.role !== 'rh' && session.role !== 'rh_lider') {
-    redirect('/');
-  }
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    // ME 3.5 D6 patch3 — helper unico admite rh puro, rh_lider e
+    // clevel+isRH=true. Retorna null quando a sessao nao pode operar
+    // como RH nesta rota.
+    const rhCtx = await loadRhLikePageContext(client.db, session);
+    if (rhCtx === null) {
+      redirect('/access-denied?rota=/logs/acesso-individual');
+    }
+
     const rawParams = (await props.searchParams) ?? {};
     const filters = parseDALFiltersFromSearchParams(rawParams);
-
-    const flags = await loadFlagsForRhSession(client.db, session.userId);
-    if (flags === null) {
-      redirect('/');
-    }
-
-    const profileKey = resolveProfileKey({
-      session,
-      isRH: flags.isRH,
-      isLider: flags.isLider,
-      acessoTotal: false,
-      hasDescendingChain: flags.hasDescendingChain,
-      cLevelCount: 0,
-      isSuperAdminInCompany: false,
-    });
-
-    const menuItems = resolveMenuItems(profileKey, flags.isResponsavelFinanceiro);
-    if (menuItems === null) {
-      throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
-    }
 
     // Escopo canonico: RH ve apenas propria empresa.
     const listResult = await loadDataAccessLogPage(client.db, session.companyId, filters);
 
     return (
       <Layout
-        menuItems={menuItems}
+        menuItems={rhCtx.menuItems}
+        panelToggle={
+          rhCtx.canToggleMenuMode ? <PainelToggle currentMode={rhCtx.menuMode} /> : undefined
+        }
         header={{
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
           user: { displayName: session.displayName },
-          showNotificationBell: true,
+          // Sino canonico §4.1 — Bruno + RH puro/RH-Lider recebem sino;
+          // C-level operando como RH segue a regra canonica de C-level
+          // (sem sino).
+          showNotificationBell: !rhCtx.isCLevelActingAsRH,
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

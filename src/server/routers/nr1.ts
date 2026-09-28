@@ -61,6 +61,8 @@ import {
   nr1AreaDivergenceAnalysis,
 } from '../../db/schema';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+// ME 3.5 D6 patch3 — clevel+isRH consome os procedures RH via este guard.
+import { rhAllowedProcedure } from '../auth/rhAllowedProcedure';
 import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 import { signPdfEphemeralToken } from '../auth/pdfEphemeralToken';
 import {
@@ -489,7 +491,7 @@ export function createNr1Router(deps: Nr1RouterDeps = {}) {
      * §11.15 — empresa com menos de 5 ativos NAO bloqueia: o aviso
      * canonico volta no campo `aviso` para a UI exibir no modal.
      */
-    configureCycle: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    configureCycle: rhAllowedProcedure()
       .input(CONFIGURE_CYCLE_INPUT_SCHEMA_NR1)
       .mutation(async ({ ctx, input }): Promise<ConfigureCycleResultNr1> => {
         assertCompanyScopeNr1(ctx.user, input.companyId);
@@ -568,7 +570,7 @@ export function createNr1Router(deps: Nr1RouterDeps = {}) {
      * a marca visual permanente do §11.3 e a nota de auditoria do PDF
      * (§11.12).
      */
-    editClosingDate: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    editClosingDate: rhAllowedProcedure()
       .input(EDIT_CLOSING_DATE_INPUT_SCHEMA_NR1)
       .mutation(async ({ ctx, input }): Promise<EditClosingDateResultNr1> => {
         const justificativa = assertJustificativaCanonicaNr1(input.justificativa);
@@ -659,7 +661,7 @@ export function createNr1Router(deps: Nr1RouterDeps = {}) {
      * delete). Ciclo `aberto` nao pode ser cancelado — proibicao
      * canonica literal.
      */
-    cancelCycle: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    cancelCycle: rhAllowedProcedure()
       .input(CANCEL_CYCLE_INPUT_SCHEMA_NR1)
       .mutation(async ({ ctx, input }): Promise<CancelCycleResultNr1> => {
         const [ciclo] = await ctx.db
@@ -710,7 +712,7 @@ export function createNr1Router(deps: Nr1RouterDeps = {}) {
      * contextual (§11.14 `linkDestino`) — nao filtra o payload, para
      * que a tela mantenha o radar completo com o fator em evidencia.
      */
-    getCycleDetails: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    getCycleDetails: rhAllowedProcedure()
       .input(GET_CYCLE_DETAILS_INPUT_SCHEMA_NR1)
       .query(async ({ ctx, input }): Promise<GetCycleDetailsResultNr1> => {
         assertCompanyScopeNr1(ctx.user, input.companyId);
@@ -868,7 +870,7 @@ export function createNr1Router(deps: Nr1RouterDeps = {}) {
      * (sempre 0) para que a UI e uma futura reabertura do debito D057
      * tenham onde se ancorar.
      */
-    getCollectionStatus: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    getCollectionStatus: rhAllowedProcedure()
       .input(GET_COLLECTION_STATUS_INPUT_SCHEMA_NR1)
       .query(async ({ ctx, input }): Promise<GetCollectionStatusResultNr1> => {
         const [ciclo] = await ctx.db
@@ -932,7 +934,7 @@ export function createNr1Router(deps: Nr1RouterDeps = {}) {
      * O token NUNCA carrega o titular do relatorio (o §11.12 nao tem
      * titular individual — o consumidor e a empresa/ciclo).
      */
-    startDownloadToken: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    startDownloadToken: rhAllowedProcedure()
       .input(START_DOWNLOAD_TOKEN_INPUT_SCHEMA_NR1)
       .mutation(async ({ ctx, input }): Promise<StartDownloadTokenResultNr1> => {
         const [ciclo] = await ctx.db
