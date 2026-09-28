@@ -226,6 +226,13 @@ export const UPDATE_CLEVEL_INPUT_SCHEMA = z
     email: emailSchemaCl.optional(),
     photoUrl: z.string().url().max(PHOTO_URL_MAX_LENGTH_CL).optional(),
     dataNascimento: dateFieldSchemaCl.optional(),
+    // Hotfix pós-ME 3.5.1 (28/09/2026) — campo cadastral corrigível pela
+    // mesma superfície §13.3 DOC 05. Ausência canonicamente confirmada
+    // como omissão do autor original (nunca foi decisão): descartado
+    // silenciosamente por `.strip()` default do Zod até este patch. Bug
+    // relatado empiricamente por Bruno durante correção do cadastro dos
+    // 2 C-levels da Embrastec.
+    dataAdmissao: dateFieldSchemaCl.optional(),
     cargo: z.string().min(1).max(CARGO_MAX_LENGTH_CL).optional(),
     descricaoCargo: z.string().min(1).optional(),
     departamento: z.enum(DEPARTAMENTO_VALUES).optional(),
@@ -752,6 +759,9 @@ export function createCLevelMembersRouter(deps: CLevelMembersRouterDeps = {}) {
         if (input.email !== undefined) patch.email = input.email;
         if (input.photoUrl !== undefined) patch.photoUrl = input.photoUrl;
         if (input.dataNascimento !== undefined) patch.dataNascimento = input.dataNascimento;
+        // Hotfix pós-ME 3.5.1 — propaga `dataAdmissao` bit-a-bit ao
+        // padrao canonico de `dataNascimento` acima.
+        if (input.dataAdmissao !== undefined) patch.dataAdmissao = input.dataAdmissao;
         if (input.cargo !== undefined) patch.cargo = input.cargo;
         if (input.descricaoCargo !== undefined) patch.descricaoCargo = input.descricaoCargo;
         if (input.departamento !== undefined) patch.departamento = input.departamento;

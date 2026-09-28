@@ -385,6 +385,11 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
     if (v.dataNascimento !== initialEmployee.dataNascimento.toISOString().slice(0, 10)) {
       patch.dataNascimento = v.dataNascimento;
     }
+    // Hotfix pós-ME 3.5.1 — campo cadastral corrigível bit-a-bit ao
+    // `dataNascimento` acima. Diff comparado contra initialEmployee.
+    if (v.dataAdmissao !== initialEmployee.dataAdmissao.toISOString().slice(0, 10)) {
+      patch.dataAdmissao = v.dataAdmissao;
+    }
     if (v.cargo.trim() !== initialEmployee.cargo) patch.cargo = v.cargo.trim();
     if (v.cbo.trim() !== initialEmployee.cbo) patch.cbo = v.cbo.trim();
     if (v.descricaoCBO.trim() !== initialEmployee.descricaoCBO) {
@@ -406,6 +411,8 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
           name?: string;
           email?: string;
           dataNascimento?: string;
+          // Hotfix pós-ME 3.5.1 — cadastral corrigível.
+          dataAdmissao?: string;
           cargo?: string;
           cbo?: string;
           descricaoCBO?: string;

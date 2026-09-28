@@ -526,6 +526,13 @@ export const UPDATE_EMPLOYEE_INPUT_SCHEMA = z
     email: emailSchema.optional(),
     photoUrl: z.string().url().max(PHOTO_URL_MAX_LENGTH).optional(),
     dataNascimento: dateFieldSchema.optional(),
+    // Hotfix pós-ME 3.5.1 (28/09/2026) — campo cadastral corrigível pela
+    // mesma superfície §13.5 DOC 05. Ausência canonicamente confirmada
+    // como omissão do autor original (nunca foi decisão): descartado
+    // silenciosamente por `.strip()` default do Zod até este patch. Bug
+    // canônico simétrico ao `UPDATE_CLEVEL_INPUT_SCHEMA` de
+    // `cLevelMembers.ts`.
+    dataAdmissao: dateFieldSchema.optional(),
     // ME-078b D1 canonico — Cargo editavel.
     cargo: z.string().min(1).max(CARGO_MAX_LENGTH).optional(),
     cbo: z.string().min(1).max(CBO_MAX_LENGTH).optional(),
@@ -2543,6 +2550,9 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
         if (input.email !== undefined) patch.email = input.email;
         if (input.photoUrl !== undefined) patch.photoUrl = input.photoUrl;
         if (input.dataNascimento !== undefined) patch.dataNascimento = input.dataNascimento;
+        // Hotfix pós-ME 3.5.1 — propaga `dataAdmissao` bit-a-bit ao
+        // padrao canonico de `dataNascimento` acima.
+        if (input.dataAdmissao !== undefined) patch.dataAdmissao = input.dataAdmissao;
         // ME-078b D1 canonico — cargo editavel.
         if (input.cargo !== undefined) patch.cargo = input.cargo;
         if (input.cbo !== undefined) patch.cbo = input.cbo;

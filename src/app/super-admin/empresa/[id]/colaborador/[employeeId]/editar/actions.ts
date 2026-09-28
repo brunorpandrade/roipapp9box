@@ -127,6 +127,10 @@ export async function atualizarColaboradorAction(input: {
   readonly email?: string;
   readonly photoUrl?: string;
   readonly dataNascimento?: string;
+  // Hotfix pós-ME 3.5.1 — campo cadastral corrigível bit-a-bit ao
+  // `dataNascimento` acima. Router `UPDATE_EMPLOYEE_INPUT_SCHEMA`
+  // aceita `dataAdmissao` a partir deste patch.
+  readonly dataAdmissao?: string;
   readonly cargo?: string;
   readonly cbo?: string;
   readonly descricaoCBO?: string;

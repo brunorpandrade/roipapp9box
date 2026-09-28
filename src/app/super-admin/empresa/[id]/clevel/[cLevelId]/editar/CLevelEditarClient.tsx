@@ -200,6 +200,9 @@ export function CLevelEditarClient(props: Props): JSX.Element {
         email: v.email.trim(),
         photoUrl: v.photoUrl.trim().length > 0 ? v.photoUrl.trim() : undefined,
         dataNascimento: v.dataNascimento,
+        // Hotfix pós-ME 3.5.1 — campo cadastral corrigível bit-a-bit ao
+        // `dataNascimento` acima.
+        dataAdmissao: v.dataAdmissao,
         cargo: v.cargo.trim(),
         descricaoCargo: v.descricaoCargo.trim(),
         departamento: v.departamento,
