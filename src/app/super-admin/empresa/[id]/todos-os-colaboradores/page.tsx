@@ -45,6 +45,7 @@ import { carregarFichaCadastralAction } from '../../../../_shared/fichaCadastral
 
 import { TodosColaboradoresClient } from './TodosColaboradoresClient';
 import {
+  downloadMatriculasColaboradoresAction,
   downloadTemplateColaboradoresAction,
   exportSpreadsheetColaboradoresAction,
   listarColaboradoresAction,
@@ -167,6 +168,7 @@ export default async function TodosColaboradoresPage(props: PageProps): Promise<
             downloadTemplateAction={downloadTemplateColaboradoresAction}
             exportSpreadsheetAction={exportSpreadsheetColaboradoresAction}
             uploadCSVAction={uploadCSVColaboradoresAction}
+            downloadMatriculasAction={downloadMatriculasColaboradoresAction}
           />
         </div>
       </Layout>
