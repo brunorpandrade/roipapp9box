@@ -24,6 +24,7 @@ import { createCompanyRouter } from './company';
 import { createCycleUnlockRequestsRouter } from './cycleUnlockRequests';
 import { createAiChatRouter } from './aiChat';
 import { createDashboardRouter } from './dashboard';
+import { createDevelopmentDialogsRouter } from './developmentDialogs';
 import { createExportsRouter } from './exports';
 import { createEconomicDiagnosisRouter } from './economicDiagnosis';
 import { createEmployeesRouter } from './employees';
@@ -135,6 +136,16 @@ const dashboardRouter = createDashboardRouter();
  * default liga o motor real ao wrapper `claudeCall` canonico.
  */
 const aiChatRouter = createAiChatRouter();
+
+/**
+ * Sub-router `developmentDialogs` (ME Etapa 1 — Bloco 2). Superficie
+ * tRPC canonica dos Dialogos de desenvolvimento (DOC 01 §10.1 +
+ * CAMADA_UI §14.26). 5 procs canonicas: `list`, `create`, `update`,
+ * `archive`, `discard`. Matriz de permissoes §14.25.4: super_admin +
+ * lider direto atual escrevem; C-level restrito le sua cadeia; demais
+ * papeis nao aparecem no botao (§14.25.4).
+ */
+const developmentDialogsRouter = createDevelopmentDialogsRouter();
 
 /**
  * Sub-router `exports` (ME-053, Bloco B4). Central de Relatorios
@@ -561,6 +572,7 @@ export const appRouter = router({
   nr1: nr1Router,
   orgTree: orgTreeRouter,
   aiChat: aiChatRouter,
+  developmentDialogs: developmentDialogsRouter,
   exports: exportsRouter,
 });
 

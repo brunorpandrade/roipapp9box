@@ -1,4 +1,5 @@
-// ROIP APP 9BOX — service `developmentDialogs` (ME-017).
+// ROIP APP 9BOX — service `developmentDialogs` (ME-017 + Etapa 1 —
+// Bloco 2, expansao setters granulares).
 //
 // Repositorio tipado da tabela canonica `developmentDialogs`
 // (DOC 01 §10.1). Dialogos informais lider-liderado, nao-estruturados,
@@ -78,6 +79,34 @@ export async function setDevelopmentDialogPendencia(
 }
 
 /**
+ * Atualiza os campos textuais `titulo` e/ou `corpo` do dialogo (Etapa 1
+ * Bloco 2). Aceita atualizacoes parciais bit-a-bit: campos ausentes
+ * (undefined) nao sao tocados; campos com string (mesmo vazia) sobrescrevem.
+ * Retorna linhas afetadas.
+ */
+export async function updateDevelopmentDialogFields(
+  db: RoipDatabase,
+  id: number,
+  patch: { titulo?: string | null; corpo?: string | null },
+): Promise<number> {
+  const set: Record<string, string | null> = {};
+  if (patch.titulo !== undefined) {
+    set.titulo = patch.titulo;
+  }
+  if (patch.corpo !== undefined) {
+    set.corpo = patch.corpo;
+  }
+  if (Object.keys(set).length === 0) {
+    return 0;
+  }
+  const [result] = await db
+    .update(developmentDialogs)
+    .set(set)
+    .where(eq(developmentDialogs.id, id));
+  return result.affectedRows;
+}
+
+/**
  * Arquiva um dialogo (`arquivado = true`). Registros arquivados nao
  * retornam em consultas padrao (§10.1). Sem desarquivamento no MVP.
  */
@@ -86,6 +115,17 @@ export async function archiveDevelopmentDialog(db: RoipDatabase, id: number): Pr
     .update(developmentDialogs)
     .set({ arquivado: true })
     .where(eq(developmentDialogs.id, id));
+  return result.affectedRows;
+}
+
+/**
+ * Descarta um dialogo (DELETE fisico) — canonico exclusivamente antes do
+ * primeiro salvamento (§14.26 CAMADA_UI "elimina sem modal"). O router
+ * valida a pre-condicao `titulo IS NULL/'' AND corpo IS NULL/''` antes de
+ * chamar — este setter e cru. Retorna linhas afetadas.
+ */
+export async function deleteDevelopmentDialogById(db: RoipDatabase, id: number): Promise<number> {
+  const [result] = await db.delete(developmentDialogs).where(eq(developmentDialogs.id, id));
   return result.affectedRows;
 }
 
@@ -118,6 +158,22 @@ export async function listDialogsByLeaderEmployee(
         eq(developmentDialogs.employeeId, employeeId),
         eq(developmentDialogs.arquivado, false),
       ),
+    )
+    .orderBy(desc(developmentDialogs.createdAt), desc(developmentDialogs.id));
+}
+
+/**
+ * Lista todos os dialogos ATIVOS (arquivado=false) de um colaborador,
+ * independentemente do lider (Etapa 1 Bloco 2 — o drawer no dashboard
+ * individual mostra todos os dialogos com o colaborador atual, mesmo os
+ * criados por lideres anteriores). Cobre o indice `idx_dd_emp_arq`.
+ */
+export async function listDialogsByEmployee(db: RoipDatabase, employeeId: number) {
+  return await db
+    .select()
+    .from(developmentDialogs)
+    .where(
+      and(eq(developmentDialogs.employeeId, employeeId), eq(developmentDialogs.arquivado, false)),
     )
     .orderBy(desc(developmentDialogs.createdAt), desc(developmentDialogs.id));
 }

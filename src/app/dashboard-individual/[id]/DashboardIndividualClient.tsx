@@ -7,6 +7,8 @@ import { COLORS } from '../../../lib/design-tokens/colors';
 
 import { FichaCadastralModal } from '../../../components/colaboradores/FichaCadastralModal';
 
+import { AiChatDrawer } from './AiChatDrawer';
+import { DialogosDrawer } from './DialogosDrawer';
 import { PerfilIndividualRelatorioModal } from './PerfilIndividualRelatorioModal';
 import {
   generateDiagnosticoAction,
@@ -525,7 +527,8 @@ function EixoXModal(props: {
 }
 
 export function DashboardIndividualClient(props: DashboardIndividualClientProps): JSX.Element {
-  const { employee, trimestresDisponiveis, fichaLoadAction, editHref, hideRf } = props;
+  const { employee, trimestresDisponiveis, fichaLoadAction, editHref, hideRf, podeVerDialogos } =
+    props;
   const [view, setView] = useState<QuarterView>(props.view);
   const [carregandoNav, setCarregandoNav] = useState<boolean>(false);
   const [gerando, setGerando] = useState<boolean>(false);
@@ -537,6 +540,8 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
   const [eixoXData, setEixoXData] = useState<EixoXDetalhe | null>(null);
   const [eixoXLoading, setEixoXLoading] = useState<boolean>(false);
   const [perfilOpen, setPerfilOpen] = useState<boolean>(false);
+  const [chatIaOpen, setChatIaOpen] = useState<boolean>(false);
+  const [dialogosOpen, setDialogosOpen] = useState<boolean>(false);
 
   const idx = view.trimestre !== null ? trimestresDisponiveis.indexOf(view.trimestre) : -1;
   const temAnterior = idx >= 0 && idx < trimestresDisponiveis.length - 1;
@@ -961,24 +966,45 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
           </div>
 
           <div style={CARD}>
-            <div style={{ ...LABEL, marginBottom: 10 }}>PERFIL INDIVIDUAL</div>
-            <button
-              type="button"
-              onClick={() => setPerfilOpen(true)}
-              style={{
-                width: '100%',
-                padding: '10px 16px',
-                borderRadius: 8,
-                border: 'none',
-                background: COLORS.accent.teal,
-                color: '#FFFFFF',
-                fontWeight: 600,
-                fontSize: 13,
-                cursor: 'pointer',
-              }}
-            >
-              Perfil individual
-            </button>
+            <div style={{ ...LABEL, marginBottom: 10 }}>ACOES</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {podeVerDialogos ? (
+                <button
+                  type="button"
+                  onClick={() => setDialogosOpen(true)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 16px',
+                    borderRadius: 8,
+                    border: `1px solid ${COLORS.border.default}`,
+                    background: COLORS.background.card,
+                    color: COLORS.text.secondary,
+                    fontWeight: 600,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Dialogos de desenvolvimento
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setPerfilOpen(true)}
+                style={{
+                  width: '100%',
+                  padding: '10px 16px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: COLORS.accent.teal,
+                  color: '#FFFFFF',
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}
+              >
+                Perfil individual
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1017,6 +1043,48 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
           hideRf={hideRf}
           onClose={() => setDetalhesOpen(false)}
         />
+      ) : null}
+      {chatIaOpen ? (
+        <AiChatDrawer
+          employeeId={employee.id}
+          employeeName={employee.name}
+          onClose={() => setChatIaOpen(false)}
+        />
+      ) : null}
+      {dialogosOpen && podeVerDialogos ? (
+        <DialogosDrawer
+          employeeId={employee.id}
+          employeeName={employee.name}
+          onClose={() => setDialogosOpen(false)}
+        />
+      ) : null}
+      {!chatIaOpen && !dialogosOpen ? (
+        <button
+          type="button"
+          onClick={() => setChatIaOpen(true)}
+          aria-label="Abrir Chat IA"
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            border: 'none',
+            background: COLORS.accent.teal,
+            color: '#FFFFFF',
+            fontSize: 24,
+            lineHeight: 1,
+            cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+            zIndex: 40,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          💬
+        </button>
       ) : null}
     </div>
   );

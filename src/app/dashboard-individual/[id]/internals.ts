@@ -128,6 +128,13 @@ export interface DashboardIndividualClientProps {
   readonly fichaLoadAction: FichaLoadAction;
   readonly editHref: string | null;
   readonly hideRf: boolean;
+  /**
+   * Flag canonica §14.25.4 — o botao [Dialogos de desenvolvimento] so
+   * aparece quando o usuario logado e lider direto atual do colaborador,
+   * ou super_admin (Bruno). O backend nunca retorna a flag para papeis
+   * sem permissao (canonico §14.25.4).
+   */
+  readonly podeVerDialogos: boolean;
 }
 
 const MESES_QUADRIMESTRE: Readonly<Record<string, string>> = {

@@ -25,6 +25,7 @@ import {
   DASHBOARD_HISTORY_LIMIT_CAP,
   createDashboardRouter,
 } from '../../../server/routers/dashboard';
+import { getActiveLeaderHistoryByEmployee } from '../../../server/services/employeeLeaderHistory';
 import { getServerSession } from '../../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../../server/trpc';
 
@@ -142,6 +143,21 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
         }
       }
     }
+    // Flag canonica §14.25.4 — [Dialogos de desenvolvimento] visivel
+    // apenas para super_admin (Bruno) e lider direto atual do colaborador.
+    // Backend NAO retorna flag `true` para papeis sem permissao (§14.25.4
+    // "Backend nao retorna a flag de renderizacao para botoes sem
+    // permissao"). C-level restrito com read-only nao aparece aqui — o
+    // acesso a leitura acontece via drawer somente-leitura em ME futura.
+    let podeVerDialogos = false;
+    if (isSuper) {
+      podeVerDialogos = true;
+    } else if (session.kind === 'platform' && session.role === 'lider') {
+      const activeLeader = await getActiveLeaderHistoryByEmployee(client.db, dashboard.employee.id);
+      if (activeLeader !== undefined && activeLeader.liderId === session.userId) {
+        podeVerDialogos = true;
+      }
+    }
     const clientProps: DashboardIndividualClientProps = {
       variant: isSuper ? 'super_admin' : 'platform',
       employee: {
@@ -163,6 +179,7 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
       fichaLoadAction: carregarFichaCadastralAction,
       editHref,
       hideRf: !isSuper,
+      podeVerDialogos,
     };
 
     if (session.kind === 'super_admin') {

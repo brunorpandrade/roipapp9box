@@ -1,0 +1,420 @@
+// ROIP APP 9BOX — sub-router `developmentDialogs` (ME Etapa 1 —
+// Bloco 2, NOVO).
+//
+// Superficie tRPC canonica dos Dialogos de desenvolvimento (DOC 01
+// §10.1 + CAMADA_UI §14.26 + CAMADA_UI §14.25.4 — matriz de permissoes
+// dos botoes de acao do dashboard individual).
+//
+// 5 procs canonicas:
+//   - `developmentDialogs.list` — historico ativo do colaborador
+//     (arquivados omitidos por default; §14.26 lista recolhida). Consumida
+//     pelo drawer no dashboard individual.
+//   - `developmentDialogs.create` — cria um dialogo novo com valores
+//     padrao (§14.26 "sem pop-up de confirmacao. Cursor posicionado no
+//     campo de titulo").
+//   - `developmentDialogs.update` — patch parcial: `{titulo?, corpo?,
+//     status?, pendencia?}`. Setter unico por chamada com Zod, backend
+//     roteia para o setter granular canonico do service.
+//   - `developmentDialogs.archive` — arquiva (§14.26 "solicita
+//     confirmacao canonica").
+//   - `developmentDialogs.discard` — DELETE fisico canonico
+//     exclusivamente ANTES do primeiro salvamento (§14.26 "elimina sem
+//     modal"). Guard bit-a-bit: `titulo IS NULL/'' AND corpo IS NULL/''`.
+//
+// Matriz de permissoes canonica (D2.2 desta ME, DOC 05 §14.25.4):
+//   - Super_admin (Bruno): total (list + create + update + archive +
+//     discard sobre qualquer par (lider, colaborador) da empresa).
+//   - Lider direto atual: total sobre os proprios liderados.
+//   - C-level acessoTotal=false: LEITURA (list) somente sobre a cadeia
+//     propria. Nunca cria/edita/arquiva/descarta (§10.1 — C-levels nao
+//     criam dialogos por regra definitiva).
+//   - C-level acessoTotal=true, RH, RH-Lider, colaborador comum:
+//     FORBIDDEN.
+//
+// **RV-13.** Consumido pelas server actions `dialogosActions.ts` do
+// dashboard individual. Chamador do router: `appRouter` em
+// `routers/index.ts`.
+// **RV-14.** Um statement por linha, largura maxima 100 colunas.
+// Testes: `tests/integration/developmentDialogs-router.test.ts`.
+
+import { TRPCError } from '@trpc/server';
+import { z } from 'zod';
+
+import type { RoipDatabase } from '../../db/client';
+import { getActiveLeaderHistoryByEmployee } from '../services/employeeLeaderHistory';
+import { getEmployeeById } from '../services/employees';
+import { loadCLevelSessionContext } from '../../lib/session/cLevelSessionContext';
+import { assertCadeiaDescendente } from '../services/cadeiaScopeGuard';
+import {
+  archiveDevelopmentDialog,
+  deleteDevelopmentDialogById,
+  getDevelopmentDialogById,
+  insertDevelopmentDialog,
+  listDialogsByEmployee,
+  setDevelopmentDialogPendencia,
+  updateDevelopmentDialogFields,
+  updateDevelopmentDialogStatus,
+} from '../services/developmentDialogs';
+import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
+
+// ============================================================
+// Mensagens canonicas exportadas (S206 — assercao literal em teste)
+// ============================================================
+
+/** Mensagem canonica quando o colaborador alvo nao existe / cross-empresa. */
+export const MSG_DIALOGOS_COLABORADOR_NAO_ENCONTRADO =
+  'Colaborador nao encontrado ou fora de escopo.';
+
+/**
+ * Mensagem canonica quando o usuario autenticado (super_admin, lider ou
+ * clevel restrito) nao tem alvo no proprio escopo. Aplicada aos guards
+ * internos APOS o role gate canonico do tRPC. Papeis fora do role gate
+ * (rh/rh_lider em qualquer proc; clevel em procs de escrita) recebem
+ * antes a mensagem canonica generica "Perfil sem permissao para a rota"
+ * — semantica canonica de defesa em profundidade.
+ */
+export const MSG_DIALOGOS_APENAS_LIDER_DIRETO =
+  'Apenas o lider direto atual pode criar ou editar dialogos.';
+
+/** Mensagem canonica quando o dialogo alvo nao existe. */
+export const MSG_DIALOGO_NAO_ENCONTRADO = 'Dialogo nao encontrado.';
+
+/** Mensagem canonica quando o dialogo nao pertence ao par (lider, colaborador). */
+export const MSG_DIALOGO_FORA_DO_ESCOPO = 'Dialogo fora do escopo do usuario.';
+
+/**
+ * Mensagem canonica quando discard e chamado sobre um dialogo que ja
+ * tem titulo ou corpo (violacao da pre-condicao §14.26 "elimina sem
+ * modal ANTES do primeiro salvamento").
+ */
+export const MSG_DISCARD_APENAS_ANTES_DO_PRIMEIRO_SALVAMENTO =
+  'Descarte permitido apenas antes do primeiro salvamento. Use arquivar.';
+
+// ============================================================
+// Constantes canonicas de input
+// ============================================================
+
+/** Corte canonico do titulo (varchar(255) do schema §10.1). */
+export const DIALOGO_TITULO_MAX_CHARS = 255 as const;
+
+/** Corte defensivo do corpo (text no schema — sem limite SQL; cap Zod). */
+export const DIALOGO_CORPO_MAX_CHARS = 10_000 as const;
+
+// ============================================================
+// Schemas Zod canonicos
+// ============================================================
+
+/** Input de `developmentDialogs.list`. */
+export const DIALOGOS_LIST_INPUT_SCHEMA = z.object({
+  employeeId: z.number().int().positive(),
+});
+
+/** Input de `developmentDialogs.create`. */
+export const DIALOGOS_CREATE_INPUT_SCHEMA = z.object({
+  employeeId: z.number().int().positive(),
+});
+
+/**
+ * Input de `developmentDialogs.update`. Patch parcial — pelo menos um
+ * campo obrigatorio. Titulo e corpo podem ser string vazia (limpar).
+ */
+export const DIALOGOS_UPDATE_INPUT_SCHEMA = z
+  .object({
+    id: z.number().int().positive(),
+    titulo: z.string().max(DIALOGO_TITULO_MAX_CHARS).nullable().optional(),
+    corpo: z.string().max(DIALOGO_CORPO_MAX_CHARS).nullable().optional(),
+    status: z.enum(['verde', 'vermelho']).optional(),
+    pendencia: z.boolean().optional(),
+  })
+  .refine(
+    (v) =>
+      v.titulo !== undefined ||
+      v.corpo !== undefined ||
+      v.status !== undefined ||
+      v.pendencia !== undefined,
+    { message: 'Ao menos um campo do patch e obrigatorio.' },
+  );
+
+/** Input de `developmentDialogs.archive` e `developmentDialogs.discard`. */
+export const DIALOGOS_ID_INPUT_SCHEMA = z.object({
+  id: z.number().int().positive(),
+});
+
+// ============================================================
+// Guards canonicos
+// ============================================================
+
+/**
+ * Retorna o `liderId` (employees.id) do usuario autenticado se este for
+ * lider direto do colaborador. `null` caso contrario. Regra canonica
+ * §14.25.4 + §10.1:
+ *   - super_admin: retorna o liderId ATUAL do colaborador (opera como
+ *     lider proxy — pode ler/escrever qualquer par).
+ *   - lider: retorna `user.userId` se `user.userId === active.liderId`.
+ *   - clevel: nunca vira liderId (§10.1). Retorna null.
+ *   - rh, rh_lider: nunca vira liderId nesta superficie. Retorna null.
+ */
+async function resolveLiderIdOrNull(
+  db: RoipDatabase,
+  user: AuthenticatedUser,
+  employeeId: number,
+  companyId: number,
+): Promise<number | null> {
+  void companyId; // check ja aplicado no chamador (assertPodeEscreverOrThrow)
+  const active = await getActiveLeaderHistoryByEmployee(db, employeeId);
+  if (active === undefined) {
+    return null;
+  }
+  const activeLiderId = active.liderId;
+  if (activeLiderId === null) {
+    return null;
+  }
+  if (user.role === 'super_admin') {
+    return activeLiderId;
+  }
+  if (user.role === 'lider' && user.userId === activeLiderId) {
+    return activeLiderId;
+  }
+  return null;
+}
+
+/**
+ * Guard canonico para OPERACOES DE ESCRITA (create/update/archive/discard).
+ * Segunda barreira apos o role gate canonico do tRPC: as procs de escrita
+ * declaram `roleProcedure(['super_admin', 'lider'])` — RH, RH-Lider e
+ * C-level (§10.1) sao rejeitados canonicamente ANTES deste guard, com
+ * mensagem canonica generica "Perfil sem permissao para a rota". Este
+ * guard so recebe super_admin e lider; valida cross-empresa +
+ * lider-direto-atual (S066 + PC1h).
+ * Retorna o `liderId` canonico a gravar em novos INSERTs.
+ */
+async function assertPodeEscreverOrThrow(
+  db: RoipDatabase,
+  user: AuthenticatedUser,
+  employeeId: number,
+): Promise<{ liderId: number; companyId: number }> {
+  const employee = await getEmployeeById(db, employeeId);
+  if (employee === undefined) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: MSG_DIALOGOS_COLABORADOR_NAO_ENCONTRADO,
+    });
+  }
+  if (user.role !== 'super_admin' && user.companyId !== employee.companyId) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: MSG_DIALOGOS_COLABORADOR_NAO_ENCONTRADO,
+    });
+  }
+  const liderId = await resolveLiderIdOrNull(db, user, employeeId, employee.companyId);
+  if (liderId === null) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: MSG_DIALOGOS_APENAS_LIDER_DIRETO,
+    });
+  }
+  return { liderId, companyId: employee.companyId };
+}
+
+/**
+ * Guard canonico para LEITURA (list). Passam: super_admin, lider direto,
+ * C-level restrito (cadeia propria — via assertCadeiaDescendente).
+ * RH/RH-Lider e C-level total nunca aparecem no botao [Dialogos de
+ * desenvolvimento] (§14.25.4) — se chegarem aqui, FORBIDDEN.
+ */
+async function assertPodeLerOrThrow(
+  db: RoipDatabase,
+  user: AuthenticatedUser,
+  employeeId: number,
+): Promise<{ companyId: number }> {
+  const employee = await getEmployeeById(db, employeeId);
+  if (employee === undefined) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: MSG_DIALOGOS_COLABORADOR_NAO_ENCONTRADO,
+    });
+  }
+  if (user.role !== 'super_admin' && user.companyId !== employee.companyId) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: MSG_DIALOGOS_COLABORADOR_NAO_ENCONTRADO,
+    });
+  }
+  if (user.role === 'super_admin') {
+    return { companyId: employee.companyId };
+  }
+  if (user.role === 'lider') {
+    const liderId = await resolveLiderIdOrNull(db, user, employeeId, employee.companyId);
+    if (liderId === null) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: MSG_DIALOGOS_APENAS_LIDER_DIRETO,
+      });
+    }
+    return { companyId: employee.companyId };
+  }
+  // user.role === 'clevel' (unico restante — role gate ja rejeitou
+  // rh/rh_lider antes deste guard). C-level total: nao ve botao
+  // (§14.25.4) — bloqueia via acessoTotal===true. C-level restrito:
+  // cadeia propria via assertCadeiaDescendente.
+  const cctx = await loadCLevelSessionContext(db, user.companyId, user.userId);
+  if (cctx === null) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: MSG_DIALOGOS_APENAS_LIDER_DIRETO,
+    });
+  }
+  if (cctx.acessoTotal === true) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: MSG_DIALOGOS_APENAS_LIDER_DIRETO,
+    });
+  }
+  await assertCadeiaDescendente(db, user, employeeId, MSG_DIALOGOS_APENAS_LIDER_DIRETO);
+  return { companyId: employee.companyId };
+}
+
+/**
+ * Guard canonico de escrita sobre um dialogo existente. Valida:
+ * 1. Dialogo existe.
+ * 2. `assertPodeEscreverOrThrow(employeeId do dialogo)` passa.
+ * 3. O dialogo pertence ao par (liderId do usuario, employeeId).
+ *    Super_admin atravessa o par (opera como lider proxy).
+ */
+async function loadDialogParaEscritaOrThrow(
+  db: RoipDatabase,
+  user: AuthenticatedUser,
+  dialogId: number,
+): Promise<{
+  dialog: NonNullable<Awaited<ReturnType<typeof getDevelopmentDialogById>>>;
+  liderId: number;
+}> {
+  const dialog = await getDevelopmentDialogById(db, dialogId);
+  if (dialog === undefined) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: MSG_DIALOGO_NAO_ENCONTRADO });
+  }
+  const { liderId } = await assertPodeEscreverOrThrow(db, user, dialog.employeeId);
+  if (user.role !== 'super_admin' && dialog.liderId !== liderId) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: MSG_DIALOGO_FORA_DO_ESCOPO });
+  }
+  return { dialog, liderId };
+}
+
+// ============================================================
+// Factory canonica do sub-router
+// ============================================================
+
+/**
+ * Factory canonica do sub-router `developmentDialogs`. Sem `deps` — o
+ * service e infra ja modelam o comportamento; testes de integracao usam
+ * DB real (V3-equivalente com MySQL local).
+ */
+export function createDevelopmentDialogsRouter() {
+  return router({
+    // ============================================================
+    // Proc 1 — list (leitura)
+    // ============================================================
+    list: roleProcedure(['super_admin', 'clevel', 'lider'])
+      .input(DIALOGOS_LIST_INPUT_SCHEMA)
+      .query(async ({ ctx, input }) => {
+        await assertPodeLerOrThrow(ctx.db, ctx.user, input.employeeId);
+        const rows = await listDialogsByEmployee(ctx.db, input.employeeId);
+        return { dialogs: rows };
+      }),
+
+    // ============================================================
+    // Proc 2 — create (escrita: lider direto + super_admin)
+    // ============================================================
+    create: roleProcedure(['super_admin', 'lider'])
+      .input(DIALOGOS_CREATE_INPUT_SCHEMA)
+      .mutation(async ({ ctx, input }) => {
+        const { liderId, companyId } = await assertPodeEscreverOrThrow(
+          ctx.db,
+          ctx.user,
+          input.employeeId,
+        );
+        // Valores padrao canonicos §14.26: titulo='', corpo='',
+        // status='verde', pendencia=false. Schema tem defaults para
+        // status/pendencia/arquivado; explicitos aqui para audit.
+        const id = await insertDevelopmentDialog(ctx.db, {
+          companyId,
+          liderId,
+          employeeId: input.employeeId,
+          titulo: '',
+          corpo: '',
+          status: 'verde',
+          pendencia: false,
+          arquivado: false,
+        });
+        const row = await getDevelopmentDialogById(ctx.db, id);
+        if (row === undefined) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'INSERT retornou id mas SELECT nao encontrou linha.',
+          });
+        }
+        return { dialog: row };
+      }),
+
+    // ============================================================
+    // Proc 3 — update (escrita: patch parcial)
+    // ============================================================
+    update: roleProcedure(['super_admin', 'lider'])
+      .input(DIALOGOS_UPDATE_INPUT_SCHEMA)
+      .mutation(async ({ ctx, input }) => {
+        await loadDialogParaEscritaOrThrow(ctx.db, ctx.user, input.id);
+        // Aplica cada campo via setter granular canonico do service.
+        // Ordem determinista para tornar a operacao auditavel.
+        if (input.titulo !== undefined || input.corpo !== undefined) {
+          await updateDevelopmentDialogFields(ctx.db, input.id, {
+            titulo: input.titulo,
+            corpo: input.corpo,
+          });
+        }
+        if (input.status !== undefined) {
+          await updateDevelopmentDialogStatus(ctx.db, input.id, input.status);
+        }
+        if (input.pendencia !== undefined) {
+          await setDevelopmentDialogPendencia(ctx.db, input.id, input.pendencia);
+        }
+        const row = await getDevelopmentDialogById(ctx.db, input.id);
+        if (row === undefined) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'UPDATE ok mas SELECT pos-update nao encontrou linha.',
+          });
+        }
+        return { dialog: row };
+      }),
+
+    // ============================================================
+    // Proc 4 — archive (escrita)
+    // ============================================================
+    archive: roleProcedure(['super_admin', 'lider'])
+      .input(DIALOGOS_ID_INPUT_SCHEMA)
+      .mutation(async ({ ctx, input }) => {
+        await loadDialogParaEscritaOrThrow(ctx.db, ctx.user, input.id);
+        const affected = await archiveDevelopmentDialog(ctx.db, input.id);
+        return { affected };
+      }),
+
+    // ============================================================
+    // Proc 5 — discard (DELETE fisico canonico §14.26)
+    // ============================================================
+    discard: roleProcedure(['super_admin', 'lider'])
+      .input(DIALOGOS_ID_INPUT_SCHEMA)
+      .mutation(async ({ ctx, input }) => {
+        const { dialog } = await loadDialogParaEscritaOrThrow(ctx.db, ctx.user, input.id);
+        const tituloVazio = dialog.titulo === null || dialog.titulo === '';
+        const corpoVazio = dialog.corpo === null || dialog.corpo === '';
+        if (!tituloVazio || !corpoVazio) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: MSG_DISCARD_APENAS_ANTES_DO_PRIMEIRO_SALVAMENTO,
+          });
+        }
+        const affected = await deleteDevelopmentDialogById(ctx.db, input.id);
+        return { affected };
+      }),
+  });
+}
