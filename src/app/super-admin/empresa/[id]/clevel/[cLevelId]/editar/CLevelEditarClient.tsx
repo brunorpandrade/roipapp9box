@@ -119,12 +119,18 @@ interface Props {
   readonly activeLideradosCount: number;
 }
 
+// Hotfix pós-hotfix `dataAdmissao` (28/09/2026) — bug canônico de timezone
+// no client. Impl anterior usava `getFullYear/getMonth/getDate` (timezone
+// LOCAL do browser), aplicando shift de UTC → BRT (-3h) em Date object
+// que chega como `YYYY-MM-DDT00:00:00Z`, resultando em -1 dia visível no
+// input `<input type="date">`. Ex.: `2018-03-01T00:00:00Z` em BRT vira
+// `2018-02-28T21:00:00-03:00` → getMonth=1, getDate=28 → retorna
+// `'2018-02-28'`. Bug latente também para `dataNascimento` do C-level.
+// Correção canônica bit-a-bit ao padrão `ColaboradorEditarClient.tsx`
+// L278-279: `.toISOString().slice(0, 10)` (UTC).
 function formatDate(d: Date | string): string {
   const dt = typeof d === 'string' ? new Date(d) : d;
-  const y = dt.getFullYear();
-  const m = String(dt.getMonth() + 1).padStart(2, '0');
-  const day = String(dt.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  return dt.toISOString().slice(0, 10);
 }
 
 export function CLevelEditarClient(props: Props): JSX.Element {
@@ -200,9 +206,6 @@ export function CLevelEditarClient(props: Props): JSX.Element {
         email: v.email.trim(),
         photoUrl: v.photoUrl.trim().length > 0 ? v.photoUrl.trim() : undefined,
         dataNascimento: v.dataNascimento,
-        // Hotfix pós-ME 3.5.1 — campo cadastral corrigível bit-a-bit ao
-        // `dataNascimento` acima.
-        dataAdmissao: v.dataAdmissao,
         cargo: v.cargo.trim(),
         descricaoCargo: v.descricaoCargo.trim(),
         departamento: v.departamento,
