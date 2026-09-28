@@ -29,6 +29,7 @@ import {
   validarMetas,
   type MetaRascunho,
 } from '../../lib/shared/employeeGoalsForm';
+import { loadCLevelSessionContext } from '../../lib/session/cLevelSessionContext';
 import type { PlatformSession } from '../../lib/session/platformMenuContext';
 
 const FAMILIA_6: JobFamily = 'lideranca_gestao';
@@ -101,6 +102,17 @@ export async function canViewerDefineGoals(
   }
   if (viewer.kind === 'super_admin' || viewer.role === 'rh' || viewer.role === 'rh_lider') {
     return true;
+  }
+  // ME 3.5.1 D7 (§3.1 operação v15) — C-level operando como RH nativo
+  // via `cLevelMembers.isRH=true` (canonizado pela ME 3.5 D1). Espelha
+  // bit-a-bit o branch de rh/rh_lider acima (retorno true irrestrito
+  // dentro da empresa). Escopo por empresa ja garantido pelo guard de
+  // `viewer.companyId !== companyId` no topo desta funcao (L95-97).
+  if (viewer.kind === 'platform' && viewer.role === 'clevel') {
+    const cctx = await loadCLevelSessionContext(db, viewer.companyId, viewer.userId);
+    if (cctx !== null && cctx.isRH === true) {
+      return true;
+    }
   }
   const vinculo =
     viewer.role === 'clevel'

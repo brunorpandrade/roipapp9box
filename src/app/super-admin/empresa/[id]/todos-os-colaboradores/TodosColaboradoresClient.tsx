@@ -188,6 +188,16 @@ export interface TodosColaboradoresClientProps {
   readonly exportSpreadsheetAction?: typeof exportSpreadsheetColaboradoresAction;
   readonly uploadCSVAction?: typeof uploadCSVColaboradoresAction;
   /**
+   * ME 3.5.1 Debito A — server action canonica bit-exact do botao
+   * `[📇 Baixar matriculas]`. Consumida via `useCallback` no
+   * `handleDownloadMatriculas`. `undefined` desabilita o botao
+   * (contextos read-only como C-level `clevel_full` que usam
+   * `hideActionsButtons=true`).
+   */
+  readonly downloadMatriculasAction?: (
+    companyId: number,
+  ) => Promise<{ readonly filename: string; readonly xlsxBase64: string; readonly bytes: number }>;
+  /**
    * ME-fila6 D1 — DOC 05 §14.10 pop-up de ficha cadastral somente leitura
    * aberto pelo icone 📇. Server action com escopo decidido pela sessao.
    */
@@ -295,28 +305,6 @@ const FILTRO_DATE: CSSProperties = {
   color: COLORS.text.primary,
   background: '#FFFFFF',
   minWidth: 130,
-};
-
-const BTN_RH_ATIVO: CSSProperties = {
-  background: '#FFFFFF',
-  color: COLORS.primary.navy,
-  border: `2px solid ${COLORS.primary.navy}`,
-  padding: '6px 12px',
-  borderRadius: 8,
-  fontSize: 12,
-  fontWeight: 700,
-  cursor: 'pointer',
-};
-
-const BTN_RH_INATIVO: CSSProperties = {
-  background: '#FFFFFF',
-  color: COLORS.text.secondary,
-  border: `1px solid ${COLORS.border.default}`,
-  padding: '7px 12px',
-  borderRadius: 8,
-  fontSize: 12,
-  fontWeight: 500,
-  cursor: 'pointer',
 };
 
 const TABLE_WRAP: CSSProperties = {
@@ -579,6 +567,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
     downloadTemplateAction,
     exportSpreadsheetAction,
     uploadCSVAction,
+    downloadMatriculasAction,
     fichaCadastralAction,
     canEditCadastro = true,
     searchIndex = [],
@@ -641,6 +630,22 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
       setActionToast(msg);
     }
   }, [downloadTemplateAction, companyId]);
+
+  // ME 3.5.1 Debito A — handler canonico `[📇 Baixar matriculas]`.
+  // Bit-exact ao `handleDownloadTemplate` (single-arg proc que retorna
+  // `{filename, xlsxBase64}`); XLSX inclui employees + cLevelMembers
+  // ativos (excecao a PC1a documentada no service).
+  const handleDownloadMatriculas = useCallback(async (): Promise<void> => {
+    if (downloadMatriculasAction === undefined) return;
+    setActionToast(null);
+    try {
+      const res = await downloadMatriculasAction(companyId);
+      triggerXlsxDownload(res.xlsxBase64, res.filename);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Falha ao gerar planilha de matriculas.';
+      setActionToast(msg);
+    }
+  }, [downloadMatriculasAction, companyId]);
 
   // ME-fila5 D2 — handler passado ao modal para chamar template.
   const handleModalDownloadTemplate = useCallback(async () => {
@@ -740,13 +745,10 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
     [filters, refetch],
   );
 
-  // §20 — sincronizacao canonica bit-exact entre botao `[RH]` e opcao
-  // "RH" do dropdown "Papel funcional".
-  const handleBotaoRhClick = useCallback((): void => {
-    const rhAtivo = filters.papelFuncional === 'rh';
-    const novoPapel: PapelFuncional = rhAtivo ? 'todos' : 'rh';
-    void refetch({ ...filters, papelFuncional: novoPapel, page: 1 });
-  }, [filters, refetch]);
+  // ME 3.5.1 Debito C — botao `[RH]` removido (redundante com o
+  // dropdown §20 "Papel funcional"). Sincronizador correspondente
+  // (`handleBotaoRhClick`) removido. Filtro por papel permanece via
+  // dropdown canonico §14.10 (§20 DOC 05).
 
   const handleDataAdmissaoInicioChange = useCallback(
     (v: string): void => {
@@ -870,11 +872,12 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
 
   const isEmpty = result.rows.length === 0;
 
-  const rhAtivo = filters.papelFuncional === 'rh';
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* Toolbar canonica bit-exact — 4 botoes de acao + botao RH */}
+      {/* Toolbar canonica — busca + 5 botoes de acao (ME 3.5.1 Debitos A + C:
+          botao [RH] antigo removido, redundante com dropdown §20 "Papel
+          funcional"; botao "Baixar matriculas" inserido entre Exportar
+          planilha e Baixar planilha modelo). */}
       <div style={CARD_STYLE}>
         <div style={TOOLBAR_ROW}>
           <ColaboradorSearchBox
@@ -885,18 +888,10 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
             onSubmit={handleBuscaSubmit}
             onSelectSuggestion={handleSelectSuggestion}
           />
-          <button
-            type="button"
-            onClick={handleBotaoRhClick}
-            style={rhAtivo ? BTN_RH_ATIVO : BTN_RH_INATIVO}
-            aria-pressed={rhAtivo}
-            aria-label="Filtrar por RH"
-          >
-            RH
-          </button>
           {hideActionsButtons ? null : (
             <>
-              {/* ME-fila5 D2 — 3 botoes canonicos §14 linhas 2113-2115. */}
+              {/* ME 3.5.1 — 5 botoes canonicos (ordem: Exportar,
+                  Baixar matriculas, Baixar modelo, Importar, Cadastrar). */}
               <button
                 type="button"
                 onClick={() => void handleExportSpreadsheet()}
@@ -912,6 +907,22 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                 aria-label="Exportar planilha"
               >
                 📥 Exportar planilha
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleDownloadMatriculas()}
+                disabled={downloadMatriculasAction === undefined}
+                style={
+                  downloadMatriculasAction === undefined ? BTN_OUTLINE_DISABLED : BTN_OUTLINE_ACTIVE
+                }
+                title={
+                  downloadMatriculasAction === undefined
+                    ? 'Download de matriculas indisponivel neste contexto'
+                    : 'Baixar XLSX com Nome, CPF e Matricula de todos os colaboradores ativos'
+                }
+                aria-label="Baixar matriculas"
+              >
+                📇 Baixar matriculas
               </button>
               <button
                 type="button"

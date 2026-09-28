@@ -34,6 +34,7 @@ import { Layout } from '../../../../components/shell/Layout';
 import { closeDbClient, createDbClient } from '../../../../db/client';
 import { COLORS } from '../../../../lib/design-tokens/colors';
 import { resolveMenuItems } from '../../../../lib/menu/menuConfig';
+import { loadCLevelSessionContext } from '../../../../lib/session/cLevelSessionContext';
 import { resolveProfileKey } from '../../../../lib/session/resolveProfileKey';
 import { loadRhSessionFlags } from '../../../../lib/session/rhSessionFlags';
 import { getServerSession } from '../../../../server/session/serverSession';
@@ -71,7 +72,12 @@ export default async function ColaboradorEditarRHPage(props: PageProps): Promise
   if (session.kind === 'super_admin') {
     redirect('/super-admin');
   }
-  if (session.role !== 'rh' && session.role !== 'rh_lider') {
+  // ME 3.5.1 Debito B — admite tambem clevel+isRH (canonizado ME 3.5).
+  // A confirmacao do flag `cLevelMembers.isRH=true` acontece em
+  // `loadCLevelSessionContext` logo apos a admissao inicial (guard
+  // defense-in-depth). Rejeicoes: colaborador comum, lider puro,
+  // C-level sem isRH.
+  if (session.role !== 'rh' && session.role !== 'rh_lider' && session.role !== 'clevel') {
     redirect('/access-denied?rota=/colaborador/editar');
   }
 
@@ -83,21 +89,36 @@ export default async function ColaboradorEditarRHPage(props: PageProps): Promise
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    // ME-086 D-086-10: helper canonico consolidado.
-    const menuFlags = await loadRhSessionFlags(client.db, session.userId);
-    if (menuFlags === null) {
-      redirect('/');
+    // ME 3.5.1 Debito B — clevel+isRH usa branch canonico separado:
+    // resolve context via `loadCLevelSessionContext` e forca profileKey
+    // 'rh' bit-a-bit ao modo Painel RH do menu cookie helper. rh/rh_lider
+    // segue usando `loadRhSessionFlags` (ME-086 D-086-10).
+    let profileKey: import('../../../../lib/menu/menuConfig').ProfileKey;
+    let isRfForMenu: boolean;
+    if (session.role === 'clevel') {
+      const cctx = await loadCLevelSessionContext(client.db, session.companyId, session.userId);
+      if (cctx === null || cctx.isRH !== true) {
+        redirect('/access-denied?rota=/colaborador/editar');
+      }
+      profileKey = 'rh';
+      isRfForMenu = cctx.isResponsavelFinanceiro;
+    } else {
+      const menuFlags = await loadRhSessionFlags(client.db, session.userId);
+      if (menuFlags === null) {
+        redirect('/');
+      }
+      profileKey = resolveProfileKey({
+        session,
+        isRH: menuFlags.isRH,
+        isLider: menuFlags.isLider,
+        acessoTotal: false,
+        hasDescendingChain: menuFlags.hasDescendingChain,
+        cLevelCount: 0,
+        isSuperAdminInCompany: false,
+      });
+      isRfForMenu = menuFlags.isResponsavelFinanceiro;
     }
-    const profileKey = resolveProfileKey({
-      session,
-      isRH: menuFlags.isRH,
-      isLider: menuFlags.isLider,
-      acessoTotal: false,
-      hasDescendingChain: menuFlags.hasDescendingChain,
-      cLevelCount: 0,
-      isSuperAdminInCompany: false,
-    });
-    const menuItems = resolveMenuItems(profileKey, menuFlags.isResponsavelFinanceiro);
+    const menuItems = resolveMenuItems(profileKey, isRfForMenu);
     if (menuItems === null) {
       throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
     }

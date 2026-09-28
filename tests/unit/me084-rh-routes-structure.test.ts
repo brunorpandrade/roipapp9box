@@ -92,12 +92,12 @@ describe('ME-084 rota RH 1 — `/todos-os-colaboradores`', () => {
     expect(src).toContain('export async function loadTodosColaboradoresPageForRH');
   });
 
-  it('actions.ts usa requireRHOrSuperAdmin (nao requireSuperAdmin)', () => {
+  it('actions.ts usa requireRhLikeOrSuperAdmin (ME 3.5.1 substitui requireRHOrSuperAdmin)', () => {
     const src = readSrc(`${dir}/actions.ts`);
     expect(src).toContain(
-      "import { requireRHOrSuperAdmin } from '../../lib/routes/requireRHOrSuperAdmin'",
+      "import { requireRhLikeOrSuperAdmin } from '../../lib/routes/requireRhLikeOrSuperAdmin'",
     );
-    expect(src).toContain('requireRHOrSuperAdmin(session,');
+    expect(src).toContain('requireRhLikeOrSuperAdmin(');
     expect(src).not.toContain('requireSuperAdmin(');
     expect(src).toContain('export async function listarColaboradoresRHAction');
   });
@@ -150,10 +150,10 @@ describe('ME-084 rota RH 2 — `/colaborador/novo`', () => {
     expect(src).toContain('export async function pesquisarLiderCandidatosRHAction');
   });
 
-  it('actions.ts usa requireRHOrSuperAdmin', () => {
+  it('actions.ts usa requireRhLikeOrSuperAdmin (ME 3.5.1)', () => {
     const src = readSrc(`${dir}/actions.ts`);
     expect(src).toContain(
-      "import { requireRHOrSuperAdmin } from '../../../lib/routes/requireRHOrSuperAdmin'",
+      "import { requireRhLikeOrSuperAdmin } from '../../../lib/routes/requireRhLikeOrSuperAdmin'",
     );
   });
 
@@ -220,10 +220,11 @@ describe('ME-084 rota RH 3 — `/colaborador/[employeeId]/editar`', () => {
     }
   });
 
-  it('actions.ts usa requireRHOrSuperAdmin via helper requireRHSessionAndCompanyId', () => {
+  it('actions.ts usa requireRhLikeOrSuperAdmin via helper (ME 3.5.1)', () => {
     const src = readSrc(`${dir}/actions.ts`);
     expect(src).toContain(
-      "import { requireRHOrSuperAdmin } from '../../../../lib/routes/requireRHOrSuperAdmin'",
+      // eslint-disable-next-line @stylistic/max-len
+      "import { requireRhLikeOrSuperAdmin } from '../../../../lib/routes/requireRhLikeOrSuperAdmin'",
     );
     expect(src).toContain('async function requireRHSessionAndCompanyId');
     // Helper e chamado por todas as 13 actions

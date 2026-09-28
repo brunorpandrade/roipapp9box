@@ -25,7 +25,7 @@
 import { cookies } from 'next/headers';
 
 import { closeDbClient, createDbClient } from '../../db/client';
-import { requireRHOrSuperAdmin } from '../../lib/routes/requireRHOrSuperAdmin';
+import { requireRhLikeOrSuperAdmin } from '../../lib/routes/requireRhLikeOrSuperAdmin';
 import { loadPlatformMenuContext } from '../../lib/session/platformMenuContext';
 import { createRateLimiter } from '../../server/auth/rateLimit';
 import {
@@ -68,24 +68,27 @@ export async function listarColaboradoresRHAction(
   filters: ColaboradoresFilters,
 ): Promise<ListEmployeesResult> {
   const session = await getServerSession();
-  const authed = requireRHOrSuperAdmin(session, 'listarColaboradoresRHAction');
-
-  if (authed.kind === 'super_admin') {
-    throw new Error(
-      'listarColaboradoresRHAction: Super Admin deve usar rota /super-admin/empresa/[id]/…',
-    );
-  }
-  const companyId = authed.companyId;
-  if (
-    Number.isInteger(companyIdIgnored) &&
-    companyIdIgnored > 0 &&
-    companyIdIgnored !== companyId
-  ) {
-    throw new Error('listarColaboradoresRHAction: companyId divergente da sessao.');
-  }
-
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    // ME 3.5.1 — helper amplia guard para admitir clevel+isRH.
+    const authed = await requireRhLikeOrSuperAdmin(
+      client.db,
+      session,
+      'listarColaboradoresRHAction',
+    );
+    if (authed.kind === 'super_admin') {
+      throw new Error(
+        'listarColaboradoresRHAction: Super Admin deve usar rota /super-admin/empresa/[id]/…',
+      );
+    }
+    const companyId = authed.companyId;
+    if (
+      Number.isInteger(companyIdIgnored) &&
+      companyIdIgnored > 0 &&
+      companyIdIgnored !== companyId
+    ) {
+      throw new Error('listarColaboradoresRHAction: companyId divergente da sessao.');
+    }
     const serviceInput = colaboradoresFiltersToServiceInput(filters);
     const result = await listEmployeesPaginated(client.db, companyId, serviceInput);
     return result;
@@ -137,14 +140,16 @@ const SESSION_COOKIE_NAME = 'session' as const;
 
 async function buildRHCallerContext(actionName: string) {
   const session = await getServerSession();
-  const authed = requireRHOrSuperAdmin(session, actionName);
+  const client = createDbClient(resolveDatabaseUrl());
+  // ME 3.5.1 — helper amplia guard para admitir clevel+isRH.
+  const authed = await requireRhLikeOrSuperAdmin(client.db, session, actionName);
   if (authed.kind === 'super_admin') {
+    await closeDbClient(client);
     throw new Error(`${actionName}: Super Admin deve usar rota /super-admin/empresa/[id]/…`);
   }
   const cookieStore = await cookies();
   const cookie = cookieStore.get(SESSION_COOKIE_NAME);
   const bearerToken = cookie === undefined ? null : cookie.value;
-  const client = createDbClient(resolveDatabaseUrl());
   const ctx = createContextInner({
     db: client.db,
     rateLimiter: createRateLimiter(),
@@ -245,6 +250,37 @@ export async function uploadCSVColaboradoresRHAction(
       contentBase64: xlsxBase64,
       contentType: UPLOAD_CONTENT_TYPES[0],
     });
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+/**
+ * ME 3.5.1 Debito A — Download XLSX "Baixar matriculas" (variante RH).
+ * Delega bit-exact a proc canonica `employees.downloadMatriculas` que
+ * aplica `rhAllowedProcedure` (admite super_admin + rh + rh_lider +
+ * clevel+isRH) e `assertCompanyScope`. Guard local `requireRhLikeOr-
+ * SuperAdmin` no topo (via `buildRHCallerContext`) preserva defense-in-
+ * depth §2.4.
+ */
+export async function downloadMatriculasColaboradoresRHAction(
+  companyIdIgnored: number,
+): Promise<EmployeesDownloadResult> {
+  const { ctx, client, companyId } = await buildRHCallerContext(
+    'downloadMatriculasColaboradoresRHAction',
+  );
+  if (
+    Number.isInteger(companyIdIgnored) &&
+    companyIdIgnored > 0 &&
+    companyIdIgnored !== companyId
+  ) {
+    await closeDbClient(client);
+    throw new Error('downloadMatriculasColaboradoresRHAction: companyId divergente da sessao.');
+  }
+  try {
+    const factory = createCallerFactory(createEmployeesRouter());
+    const caller = factory(ctx);
+    return await caller.downloadMatriculas({ companyId });
   } finally {
     await closeDbClient(client);
   }

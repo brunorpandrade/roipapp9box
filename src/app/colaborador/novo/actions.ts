@@ -26,7 +26,7 @@ import { TRPCError } from '@trpc/server';
 import { cookies } from 'next/headers';
 
 import { closeDbClient, createDbClient } from '../../../db/client';
-import { requireRHOrSuperAdmin } from '../../../lib/routes/requireRHOrSuperAdmin';
+import { requireRhLikeOrSuperAdmin } from '../../../lib/routes/requireRhLikeOrSuperAdmin';
 import { createRateLimiter } from '../../../server/auth/rateLimit';
 import { createCompanyRouter } from '../../../server/routers/company';
 import type { SetResponsavelFinanceiroResult } from '../../../server/routers/company';
@@ -88,20 +88,24 @@ export async function pesquisarLiderCandidatosRHAction(input: {
   readonly excludeEmployeeId?: number;
 }): Promise<ActionResult<SearchLiderCandidatesResult>> {
   const session = await getServerSession();
-  const authed = requireRHOrSuperAdmin(session, 'pesquisarLiderCandidatosRHAction');
-  if (authed.kind === 'super_admin') {
-    return {
-      ok: false,
-      message: 'Super Admin deve usar rota /super-admin/empresa/[id]/…',
-    };
-  }
-  const companyId = authed.companyId;
-  if (Number.isInteger(input.companyId) && input.companyId > 0 && input.companyId !== companyId) {
-    return { ok: false, message: 'companyId divergente da sessao.' };
-  }
-
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    // ME 3.5.1 — helper amplia guard para admitir clevel+isRH.
+    const authed = await requireRhLikeOrSuperAdmin(
+      client.db,
+      session,
+      'pesquisarLiderCandidatosRHAction',
+    );
+    if (authed.kind === 'super_admin') {
+      return {
+        ok: false,
+        message: 'Super Admin deve usar rota /super-admin/empresa/[id]/…',
+      };
+    }
+    const companyId = authed.companyId;
+    if (Number.isInteger(input.companyId) && input.companyId > 0 && input.companyId !== companyId) {
+      return { ok: false, message: 'companyId divergente da sessao.' };
+    }
     const result = await searchLiderCandidatesForCompany(
       client.db,
       companyId,
@@ -152,25 +156,24 @@ export async function criarColaboradorRHAction(input: {
   readonly matricula?: string;
 }): Promise<ActionResult<CreateEmployeeResult>> {
   const session = await getServerSession();
-  const authed = requireRHOrSuperAdmin(session, 'criarColaboradorRHAction');
-  if (authed.kind === 'super_admin') {
-    return {
-      ok: false,
-      message: 'Super Admin deve usar rota /super-admin/empresa/[id]/…',
-    };
-  }
-  const companyId = authed.companyId;
-  if (Number.isInteger(input.companyId) && input.companyId > 0 && input.companyId !== companyId) {
-    return { ok: false, message: 'companyId divergente da sessao.' };
-  }
-
-  const token = await resolveRawToken();
-  if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
-  }
-
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    // ME 3.5.1 — helper amplia guard para admitir clevel+isRH.
+    const authed = await requireRhLikeOrSuperAdmin(client.db, session, 'criarColaboradorRHAction');
+    if (authed.kind === 'super_admin') {
+      return {
+        ok: false,
+        message: 'Super Admin deve usar rota /super-admin/empresa/[id]/…',
+      };
+    }
+    const companyId = authed.companyId;
+    if (Number.isInteger(input.companyId) && input.companyId > 0 && input.companyId !== companyId) {
+      return { ok: false, message: 'companyId divergente da sessao.' };
+    }
+    const token = await resolveRawToken();
+    if (token === null) {
+      return { ok: false, message: 'Sessao ausente ou expirada.' };
+    }
     const caller = createEmployeesCaller(
       createContextInner({
         db: client.db,
@@ -217,25 +220,24 @@ export async function definirRFRHAction(input: {
   readonly justificativa?: string;
 }): Promise<ActionResult<SetResponsavelFinanceiroResult>> {
   const session = await getServerSession();
-  const authed = requireRHOrSuperAdmin(session, 'definirRFRHAction');
-  if (authed.kind === 'super_admin') {
-    return {
-      ok: false,
-      message: 'Super Admin deve usar rota /super-admin/empresa/[id]/…',
-    };
-  }
-  const companyId = authed.companyId;
-  if (Number.isInteger(input.companyId) && input.companyId > 0 && input.companyId !== companyId) {
-    return { ok: false, message: 'companyId divergente da sessao.' };
-  }
-
-  const token = await resolveRawToken();
-  if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
-  }
-
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    // ME 3.5.1 — helper amplia guard para admitir clevel+isRH.
+    const authed = await requireRhLikeOrSuperAdmin(client.db, session, 'definirRFRHAction');
+    if (authed.kind === 'super_admin') {
+      return {
+        ok: false,
+        message: 'Super Admin deve usar rota /super-admin/empresa/[id]/…',
+      };
+    }
+    const companyId = authed.companyId;
+    if (Number.isInteger(input.companyId) && input.companyId > 0 && input.companyId !== companyId) {
+      return { ok: false, message: 'companyId divergente da sessao.' };
+    }
+    const token = await resolveRawToken();
+    if (token === null) {
+      return { ok: false, message: 'Sessao ausente ou expirada.' };
+    }
     const caller = createCompanyCaller(
       createContextInner({
         db: client.db,

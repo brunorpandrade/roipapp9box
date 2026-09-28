@@ -107,10 +107,12 @@ import {
   LIST_EMPLOYEES_SORT_ORDERS,
   listAllEmployeesForExport,
   listEmployeesPaginated,
+  listMatriculasByCompany,
   MSG_EXPORT_TETO_EXCEDIDO,
   PAPEL_FUNCIONAL_VALUES,
   type EmployeeListRow,
 } from '../services/employees';
+import { buildMatriculasExportBuffer } from '../../lib/shared/matriculasExport';
 import {
   provisionInitialPassword,
   provisionUniqueMatricula,
@@ -2094,6 +2096,16 @@ export const EXPORT_EMPLOYEES_SPREADSHEET_INPUT_SCHEMA = LIST_EMPLOYEES_INPUT_SC
 });
 
 /**
+ * ME 3.5.1 Debito A — input canonico da proc `employees.downloadMatriculas`.
+ * Sem filtros — a proc sempre retorna todos os registros ATIVOS
+ * (`employees` + `cLevelMembers`) da empresa. Bit-exact ao input de
+ * `downloadTemplate` (apenas `companyId`).
+ */
+export const DOWNLOAD_MATRICULAS_INPUT_SCHEMA = z.object({
+  companyId: z.number().int().positive(),
+});
+
+/**
  * ME-fila5 D2 — retorno canonico das 2 procs: buffer XLSX em Base64 +
  * filename + bytes. Padrao bit-exact do `DownloadResult` do
  * `spreadsheets.ts` §3.11.
@@ -2999,6 +3011,36 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
         const buf = await buildEmployeesExportBuffer(rows);
         const dateStr = formatIsoDateForExport(now());
         const filename = `colaboradores_${sanitizeRazaoSocialEmp(razaoSocial)}_${dateStr}.xlsx`;
+        return {
+          filename,
+          xlsxBase64: buf.toString('base64'),
+          bytes: buf.length,
+        };
+      }),
+
+    // --------------------------------------------------------
+    // ME 3.5.1 Debito A — employees.downloadMatriculas — RH + Bruno
+    // --------------------------------------------------------
+    // Gera XLSX canonico contendo Nome / CPF / Matricula de TODOS os
+    // registros ATIVOS da empresa (employees + cLevelMembers). Excecao
+    // canonica explicita a PC1a documentada no service
+    // `listMatriculasByCompany` — RH precisa das matriculas dos
+    // C-levels para distribuir credenciais operacionais (precedente
+    // bit-exact: `credenciais_iniciais_*.xlsx` ME-080b Dispatch 4).
+    // Autorizacao id-a-id com `list` / `exportSpreadsheet` via
+    // `rhAllowedProcedure` (admite super_admin + rh + rh_lider +
+    // clevel+isRH, canonizado ME 3.5 D2). Guard cruzado §2.4 via
+    // `assertCompanyScope`. Nome de arquivo canonico bit-exact ao
+    // padrao `exportSpreadsheet`.
+    downloadMatriculas: rhAllowedProcedure()
+      .input(DOWNLOAD_MATRICULAS_INPUT_SCHEMA)
+      .mutation(async ({ ctx, input }): Promise<EmployeesDownloadResult> => {
+        assertCompanyScope(ctx.user, input.companyId);
+        const razaoSocial = await loadCompanyRazaoSocial(ctx.db, input.companyId);
+        const rows = await listMatriculasByCompany(ctx.db, input.companyId);
+        const buf = await buildMatriculasExportBuffer(rows);
+        const dateStr = formatIsoDateForExport(now());
+        const filename = `matriculas_${sanitizeRazaoSocialEmp(razaoSocial)}_${dateStr}.xlsx`;
         return {
           filename,
           xlsxBase64: buf.toString('base64'),

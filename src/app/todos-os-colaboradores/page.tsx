@@ -29,6 +29,7 @@ import { carregarFichaCadastralAction } from '../_shared/fichaCadastral/actions'
 import { TodosColaboradoresClient } from './_client';
 
 import {
+  downloadMatriculasColaboradoresRHAction,
   downloadTemplateColaboradoresRHAction,
   exportSpreadsheetColaboradoresRHAction,
   listarColaboradoresCLevelAction,
@@ -71,6 +72,13 @@ export default async function TodosColaboradoresRHPage(props: PageProps): Promis
     if (isCLevel && menu.profileKey !== 'clevel_full' && menu.profileKey !== 'rh') {
       redirect('/access-denied?rota=/todos-os-colaboradores');
     }
+    // ME 3.5.1 Debito B (§3.1 operação v15) — C-level+isRH em MODO
+    // Painel RH (menu.profileKey === 'rh') opera como RH nativo:
+    // toolbar completa (4 botoes canonicos §14.10), edicao de cadastro
+    // permitida e listagem sem `hideActionsButtons`. Apenas C-level em
+    // MODO C-level (profileKey === 'clevel_full') mantem o branch
+    // read-only historico da ME-fila6 D1.
+    const isCLevelReadOnly = isCLevel && menu.profileKey === 'clevel_full';
 
     const companyId = session.companyId;
     const rawParams = (await props.searchParams) ?? {};
@@ -124,7 +132,7 @@ export default async function TodosColaboradoresRHPage(props: PageProps): Promis
               {session.companyDisplayName}
             </p>
           </div>
-          {isCLevel ? (
+          {isCLevelReadOnly ? (
             <TodosColaboradoresClient
               companyId={companyId}
               initialResult={pageData.listResult}
@@ -156,6 +164,7 @@ export default async function TodosColaboradoresRHPage(props: PageProps): Promis
               downloadTemplateAction={downloadTemplateColaboradoresRHAction}
               exportSpreadsheetAction={exportSpreadsheetColaboradoresRHAction}
               uploadCSVAction={uploadCSVColaboradoresRHAction}
+              downloadMatriculasAction={downloadMatriculasColaboradoresRHAction}
             />
           )}
         </div>

@@ -704,3 +704,78 @@ export async function listAllEmployeesForExport(
   }
   return allRows;
 }
+
+// =============================================================
+// ME 3.5.1 (Debito A) — listMatriculasByCompany
+// =============================================================
+//
+// UNIAO canonica bit-exact de employees + cLevelMembers ATIVOS da
+// empresa, ordenada por nome (collator pt-BR sensitivity base). Fonte
+// de dados exclusiva do XLSX "Baixar matriculas" servido pela proc
+// `employees.downloadMatriculas`.
+//
+// **Excecao canonica explicita a PC1a §11.1 DOC 02**: RH canonicamente
+// NAO ve C-levels em listagens nominais. AQUI a excecao e justificada
+// empiricamente pela §8.12.2 do operação v15 — RH precisa das
+// matriculas dos C-levels para distribuir credenciais operacionais aos
+// operadores da empresa. Precedente identico no repo:
+// `credenciais_iniciais_*.xlsx` do upload em massa cross-tabela
+// (ME-080b Dispatch 4, `spreadsheets` router) que expoe employees +
+// C-levels na mesma planilha por identica razao operacional.
+//
+// **RV-12.** Zero SQL cru — SELECT Drizzle tipado em ambas as tabelas.
+// **RV-13.** Consumido por `employees.downloadMatriculas` (routers).
+// **RV-14.** Um statement por linha, largura maxima 100 colunas.
+
+/**
+ * Linha canonica de matricula servida ao builder XLSX.
+ * `matricula` NULL preservada (raro pos-ME-080b; C-levels/employees
+ * pre-provisionamento). Estruturalmente identico ao `MatriculaExport-
+ * Row` do modulo puro `src/lib/shared/matriculasExport.ts` — nao
+ * exportado (RV-13: consumido apenas via inferencia do retorno de
+ * `listMatriculasByCompany` no router `employees.downloadMatriculas`).
+ */
+interface MatriculaListRow {
+  readonly name: string;
+  readonly cpf: string;
+  readonly matricula: string | null;
+}
+
+/**
+ * Lista as matriculas de todos os registros ATIVOS da empresa
+ * (`employees` + `cLevelMembers`), ordenados por nome via collator
+ * pt-BR. Inclui C-levels — excecao canonica documentada acima.
+ * Registros inativos ficam de fora (matriculas de desligados nao
+ * distribuidas em credenciais operacionais).
+ */
+export async function listMatriculasByCompany(
+  db: RoipDatabase,
+  companyId: number,
+): Promise<readonly MatriculaListRow[]> {
+  const employeeRows = await db
+    .select({
+      name: employees.name,
+      cpf: employees.cpf,
+      matricula: employees.matricula,
+    })
+    .from(employees)
+    .where(and(eq(employees.companyId, companyId), eq(employees.status, 'ativo')));
+  const clevelRows = await db
+    .select({
+      name: cLevelMembers.name,
+      cpf: cLevelMembers.cpf,
+      matricula: cLevelMembers.matricula,
+    })
+    .from(cLevelMembers)
+    .where(and(eq(cLevelMembers.companyId, companyId), eq(cLevelMembers.status, 'ativo')));
+  const merged: MatriculaListRow[] = [];
+  for (const row of employeeRows) {
+    merged.push({ name: row.name, cpf: row.cpf, matricula: row.matricula ?? null });
+  }
+  for (const row of clevelRows) {
+    merged.push({ name: row.name, cpf: row.cpf, matricula: row.matricula ?? null });
+  }
+  const collator = new Intl.Collator('pt-BR', { sensitivity: 'base' });
+  merged.sort((a, b) => collator.compare(a.name, b.name));
+  return merged;
+}

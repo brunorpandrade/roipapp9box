@@ -17,6 +17,7 @@ import { closeDbClient, createDbClient } from '../../../db/client';
 import { resolveDatabaseUrl } from '../../../lib/db/resolveDatabaseUrl';
 import { findCompanyDisplayInfo } from '../../../lib/logs/companyHistoryLog';
 import { resolveMenuItems } from '../../../lib/menu/menuConfig';
+import { loadCLevelSessionContext } from '../../../lib/session/cLevelSessionContext';
 import { loadPlatformMenuContext } from '../../../lib/session/platformMenuContext';
 import { resolveProfileKey } from '../../../lib/session/resolveProfileKey';
 import { createRateLimiter } from '../../../server/auth/rateLimit';
@@ -121,6 +122,26 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
     const empCompanyId = dashboard.employee.companyId;
     const toIsoDate = (d: Date | null): string | null =>
       d != null ? d.toISOString().slice(0, 10) : null;
+    // ME 3.5.1 Debito B (§3.1 operação v15) — editHref precisa ficar
+    // visivel tambem para RH nativo (rh/rh_lider) e para clevel+isRH
+    // (Michelle/Embrastec pos-ME 3.5). RH-like usa a rota base
+    // `/colaborador/[eid]/editar`; Super Admin usa a variante
+    // super-admin (§10.9 CAMADA_AUTH). Fora dessas duas classes o
+    // botao "Editar cadastro" permanece oculto (guard duro do drawer
+    // ficha cadastral em §14.10).
+    let editHref: string | null = null;
+    if (isSuper) {
+      editHref = `/super-admin/empresa/${empCompanyId}/colaborador/${dashboard.employee.id}/editar`;
+    } else if (session.kind === 'platform') {
+      if (session.role === 'rh' || session.role === 'rh_lider') {
+        editHref = `/colaborador/${dashboard.employee.id}/editar`;
+      } else if (session.role === 'clevel') {
+        const cctx = await loadCLevelSessionContext(client.db, session.companyId, session.userId);
+        if (cctx !== null && cctx.isRH === true) {
+          editHref = `/colaborador/${dashboard.employee.id}/editar`;
+        }
+      }
+    }
     const clientProps: DashboardIndividualClientProps = {
       variant: isSuper ? 'super_admin' : 'platform',
       employee: {
@@ -140,9 +161,7 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
       trimestresDisponiveis,
       view,
       fichaLoadAction: carregarFichaCadastralAction,
-      editHref: isSuper
-        ? `/super-admin/empresa/${empCompanyId}/colaborador/${dashboard.employee.id}/editar`
-        : null,
+      editHref,
       hideRf: !isSuper,
     };
 

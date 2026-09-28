@@ -151,6 +151,29 @@ function renderRFBadge(isRF: boolean): JSX.Element | null {
   return <span style={style}>RF</span>;
 }
 
+// ME 3.5.1 Debito D (§3.1 operação v15) — badge canonico "RH" ao lado
+// do nome na Aba 1 de C-levels. Cores canonicas §14.10.1 DOC 05
+// (`.badge-rh` — `#E6F1FB` / `#0C447C`). Renderiza apenas quando
+// `cLevelMembers.isRH === true` (fonte canonica: ME 3.5 D1, exposta em
+// `CLevelListRow.isRH`). Estilo bit-exact ao `renderRFBadge` (padding,
+// radius, size, weight, marginLeft) — apenas cores e texto divergem.
+function renderRHBadge(isRH: boolean): JSX.Element | null {
+  if (!isRH) {
+    return null;
+  }
+  const style = {
+    display: 'inline-block',
+    padding: '2px 6px',
+    borderRadius: 4,
+    fontSize: 10,
+    fontWeight: 700,
+    background: '#E6F1FB',
+    color: '#0C447C',
+    marginLeft: 6,
+  } as const;
+  return <span style={style}>RH</span>;
+}
+
 function renderBooleanCell(value: boolean, labelTrue: string, labelFalse: string): JSX.Element {
   return (
     <span style={{ fontSize: 12, color: value ? COLORS.text.primary : COLORS.text.quaternary }}>
@@ -230,6 +253,9 @@ function CLevelsTab(props: {
                       }}
                     >
                       {row.name}
+                      {/* §14.10.1: ordem canonica L → RH → RF (L nao
+                          se aplica a C-level; RH vem antes de RF). */}
+                      {renderRHBadge(row.isRH)}
                       {renderRFBadge(row.isResponsavelFinanceiro)}
                     </Link>
                   </td>

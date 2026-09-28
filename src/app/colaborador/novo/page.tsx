@@ -30,6 +30,7 @@ import { Layout } from '../../../components/shell/Layout';
 import { closeDbClient, createDbClient } from '../../../db/client';
 import { COLORS } from '../../../lib/design-tokens/colors';
 import { resolveMenuItems } from '../../../lib/menu/menuConfig';
+import { loadCLevelSessionContext } from '../../../lib/session/cLevelSessionContext';
 import { resolveProfileKey } from '../../../lib/session/resolveProfileKey';
 import { loadRhSessionFlags } from '../../../lib/session/rhSessionFlags';
 import { getServerSession } from '../../../server/session/serverSession';
@@ -53,27 +54,40 @@ export default async function ColaboradorNovoRHPage(): Promise<JSX.Element> {
     // Bruno tem rota canonica dedicada — nao usa base RH.
     redirect('/super-admin');
   }
-  if (session.role !== 'rh' && session.role !== 'rh_lider') {
+  // ME 3.5.1 Debito B — admite tambem clevel+isRH (canonizado ME 3.5).
+  if (session.role !== 'rh' && session.role !== 'rh_lider' && session.role !== 'clevel') {
     redirect('/access-denied?rota=/colaborador/novo');
   }
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    // ME-086 D-086-10: helper canonico consolidado.
-    const menuFlags = await loadRhSessionFlags(client.db, session.userId);
-    if (menuFlags === null) {
-      redirect('/');
+    // ME 3.5.1 Debito B — clevel+isRH branch canonico.
+    let profileKey: import('../../../lib/menu/menuConfig').ProfileKey;
+    let isRfForMenu: boolean;
+    if (session.role === 'clevel') {
+      const cctx = await loadCLevelSessionContext(client.db, session.companyId, session.userId);
+      if (cctx === null || cctx.isRH !== true) {
+        redirect('/access-denied?rota=/colaborador/novo');
+      }
+      profileKey = 'rh';
+      isRfForMenu = cctx.isResponsavelFinanceiro;
+    } else {
+      const menuFlags = await loadRhSessionFlags(client.db, session.userId);
+      if (menuFlags === null) {
+        redirect('/');
+      }
+      profileKey = resolveProfileKey({
+        session,
+        isRH: menuFlags.isRH,
+        isLider: menuFlags.isLider,
+        acessoTotal: false,
+        hasDescendingChain: menuFlags.hasDescendingChain,
+        cLevelCount: 0,
+        isSuperAdminInCompany: false,
+      });
+      isRfForMenu = menuFlags.isResponsavelFinanceiro;
     }
-    const profileKey = resolveProfileKey({
-      session,
-      isRH: menuFlags.isRH,
-      isLider: menuFlags.isLider,
-      acessoTotal: false,
-      hasDescendingChain: menuFlags.hasDescendingChain,
-      cLevelCount: 0,
-      isSuperAdminInCompany: false,
-    });
-    const menuItems = resolveMenuItems(profileKey, menuFlags.isResponsavelFinanceiro);
+    const menuItems = resolveMenuItems(profileKey, isRfForMenu);
     if (menuItems === null) {
       throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
     }

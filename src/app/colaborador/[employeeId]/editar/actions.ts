@@ -30,7 +30,7 @@ import type { FormularioDesligamento } from '../../../../lib/shared/terminationF
 
 import { closeDbClient, createDbClient } from '../../../../db/client';
 import { employeeLeaderHistory, employees } from '../../../../db/schema';
-import { requireRHOrSuperAdmin } from '../../../../lib/routes/requireRHOrSuperAdmin';
+import { requireRhLikeOrSuperAdmin } from '../../../../lib/routes/requireRhLikeOrSuperAdmin';
 import { createRateLimiter } from '../../../../server/auth/rateLimit';
 import { createCompanyRouter } from '../../../../server/routers/company';
 import type { SetResponsavelFinanceiroResult } from '../../../../server/routers/company';
@@ -88,11 +88,19 @@ async function resolveRawToken(): Promise<string | null> {
  */
 async function requireRHSessionAndCompanyId(actionName: string): Promise<number> {
   const session = await getServerSession();
-  const authed = requireRHOrSuperAdmin(session, actionName);
-  if (authed.kind === 'super_admin') {
-    throw new Error(`${actionName}: Super Admin deve usar rota /super-admin/empresa/[id]/…`);
+  // ME 3.5.1 — helper amplia guard para admitir clevel+isRH. Cria
+  // client dedicado apenas para o SELECT em `cLevelMembers.isRH` do
+  // `loadCLevelSessionContext` (cost pago apenas no branch clevel).
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const authed = await requireRhLikeOrSuperAdmin(client.db, session, actionName);
+    if (authed.kind === 'super_admin') {
+      throw new Error(`${actionName}: Super Admin deve usar rota /super-admin/empresa/[id]/…`);
+    }
+    return authed.companyId;
+  } finally {
+    await closeDbClient(client);
   }
-  return authed.companyId;
 }
 
 // -----------------------------------------------------------------------

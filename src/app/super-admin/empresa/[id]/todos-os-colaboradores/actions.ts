@@ -203,3 +203,25 @@ export async function uploadCSVColaboradoresAction(
     await closeDbClient(client);
   }
 }
+
+/**
+ * ME 3.5.1 Debito A — Download XLSX "Baixar matriculas" (variante Bruno).
+ * Delega bit-exact a proc canonica `employees.downloadMatriculas`.
+ * Autorizacao: super_admin exclusivo (aplicado por `requireSuperAdmin`
+ * no topo + `assertCompanyScope` dentro da proc). Consumido pelo botao
+ * canonico `[📇 Baixar matriculas]` da toolbar de `/super-admin/empresa/
+ * [id]/todos-os-colaboradores`.
+ */
+export async function downloadMatriculasColaboradoresAction(
+  companyId: number,
+): Promise<EmployeesDownloadResult> {
+  await requireSuperAdmin('downloadMatriculasColaboradoresAction');
+  const { ctx, client } = await buildAuthenticatedCallerContext();
+  try {
+    const factory = createCallerFactory(createEmployeesRouter());
+    const caller = factory(ctx);
+    return await caller.downloadMatriculas({ companyId });
+  } finally {
+    await closeDbClient(client);
+  }
+}
