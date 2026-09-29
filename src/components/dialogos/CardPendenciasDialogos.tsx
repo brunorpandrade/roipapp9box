@@ -15,10 +15,19 @@
 //   - Lista vazia: card com titulo canonico + mensagem "Nenhuma
 //     pendencia ativa." (texto secundario).
 //   - Lista com itens: card com titulo canonico + ate 5 pendencias
-//     listadas como links canonicos para `/dashboard-individual/[id]`,
-//     cada uma exibindo nome do colaborador (primaria) + titulo do
-//     dialogo (secundaria). Quando N > 5, adiciona link "Ver todas (N)"
-//     abaixo da lista.
+//     listadas como links canonicos para
+//     `/dashboard-individual/[id]?abrir=dialogos&dialogoId=[X]`, com
+//     bolinha de natureza (verde/vermelho) canonica a esquerda do nome
+//     do colaborador (primaria) e titulo do dialogo (secundaria).
+//     Quando N > 5, adiciona link "Ver todas (N)" abaixo da lista.
+//
+// Retomada ME-PAINEL-PENDENCIAS-DIALOGOS:
+//   - D1: bolinha de natureza canonica (verde = positiva, vermelho =
+//     corretiva) renderizada com tokens `COLORS.semantic.success` e
+//     `COLORS.semantic.danger`.
+//   - D2: deep-link com querystring `abrir=dialogos&dialogoId=[X]`
+//     consumida pelo `DashboardIndividualClient` para abrir o
+//     `DialogosDrawer` ja com o dialogo expandido e scrollado.
 //
 // **RV-13.** Consumido canonicamente por:
 //   - `src/app/painel-lider/page.tsx` (secao "Minha equipe")
@@ -44,6 +53,28 @@ export const CARD_PENDENCIAS_TITULO = 'Diálogos de desenvolvimento — pendênc
 
 /** Mensagem canonica exibida quando nao ha pendencias ativas. */
 export const CARD_PENDENCIAS_VAZIO = 'Nenhuma pendência ativa.';
+
+/** Diametro canonico (px) da bolinha de natureza no card (D1). */
+const BOLINHA_DIAMETRO = 10 as const;
+
+/**
+ * Cores canonicas da bolinha de natureza da conversa (D1). Espelham a
+ * mesma paleta usada pelo `DialogosDrawer` na lista lateral do
+ * dashboard individual.
+ */
+const CORES_BOLINHA_NATUREZA = {
+  verde: '#16A34A',
+  vermelho: '#DC2626',
+} as const;
+
+/**
+ * Constroi o deep-link canonico para o dashboard individual do
+ * colaborador com o dialogo especifico ja aberto e expandido (D2).
+ * O `DashboardIndividualClient` le esses dois querystring params.
+ */
+function buildDeepLink(employeeId: number, dialogId: number): string {
+  return `/dashboard-individual/${employeeId}?abrir=dialogos&dialogoId=${dialogId}`;
+}
 
 /**
  * Props canonicas do widget. `pendencias` chega pronto do server
@@ -98,30 +129,56 @@ export function CardPendenciasDialogos(props: CardPendenciasDialogosProps): JSX.
             {visiveis.map((p) => {
               const tituloDialogo =
                 p.titulo === null || p.titulo === '' ? 'Diálogo sem título' : p.titulo;
+              const corBolinha = CORES_BOLINHA_NATUREZA[p.status];
+              const rotuloBolinha =
+                p.status === 'vermelho' ? 'Conversa corretiva' : 'Conversa positiva';
               return (
                 <li key={p.dialogId}>
                   <a
-                    href={`/dashboard-individual/${p.employeeId}`}
-                    aria-label={`Abrir dashboard de ${p.employeeNome}`}
+                    href={buildDeepLink(p.employeeId, p.dialogId)}
+                    aria-label={`Abrir diálogo de ${p.employeeNome} (${rotuloBolinha})`}
                     style={{
-                      display: 'block',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 10,
                       textDecoration: 'none',
                       color: 'inherit',
                     }}
                   >
-                    <div
+                    <span
+                      aria-hidden="true"
                       style={{
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: COLORS.text.primary,
-                        marginBottom: 2,
+                        display: 'inline-block',
+                        flex: '0 0 auto',
+                        width: BOLINHA_DIAMETRO,
+                        height: BOLINHA_DIAMETRO,
+                        borderRadius: '50%',
+                        background: corBolinha,
+                        marginTop: 5,
                       }}
-                    >
-                      {p.employeeNome}
-                    </div>
-                    <div style={{ fontSize: 12, color: COLORS.text.secondary }}>
-                      {tituloDialogo}
-                    </div>
+                    />
+                    <span style={{ display: 'block', flex: '1 1 auto', minWidth: 0 }}>
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: COLORS.text.primary,
+                          marginBottom: 2,
+                        }}
+                      >
+                        {p.employeeNome}
+                      </span>
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: 12,
+                          color: COLORS.text.secondary,
+                        }}
+                      >
+                        {tituloDialogo}
+                      </span>
+                    </span>
                   </a>
                 </li>
               );

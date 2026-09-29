@@ -243,14 +243,20 @@ export async function listPendenciasByCLevel(db: RoipDatabase, clevelId: number)
 /**
  * Linha canonica retornada pelo `getPendenciasCardData`. Contem tudo o
  * que o widget `CardPendenciasDialogos` precisa para renderizar cada
- * pendencia (titulo, nome do colaborador e link para o dashboard
- * individual). Ordem cronologica descendente (mais recente primeiro).
+ * pendencia (titulo, nome do colaborador, natureza da conversa e link
+ * para o dashboard individual). Ordem cronologica descendente.
+ *
+ * O campo `status` reflete a natureza canonica do dialogo (enum
+ * `['verde','vermelho']` — verde = positiva, vermelho = corretiva) e
+ * permite ao card do painel renderizar a bolinha de natureza sem novo
+ * fetch (retomada ME-PAINEL-PENDENCIAS-DIALOGOS — D1).
  */
 export interface PendenciaCardRow {
   dialogId: number;
   titulo: string | null;
   employeeId: number;
   employeeNome: string;
+  status: 'verde' | 'vermelho';
   createdAt: Date;
 }
 
@@ -296,6 +302,7 @@ export async function getPendenciasCardData(
       titulo: developmentDialogs.titulo,
       employeeId: developmentDialogs.employeeId,
       employeeNome: employees.name,
+      status: developmentDialogs.status,
       createdAt: developmentDialogs.createdAt,
     })
     .from(developmentDialogs)

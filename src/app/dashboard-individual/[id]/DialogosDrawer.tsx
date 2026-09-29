@@ -594,18 +594,29 @@ function ResumoIABox(props: {
 export interface DialogosDrawerProps {
   readonly employeeId: number;
   readonly employeeName: string;
+  /**
+   * Retomada ME-PAINEL-PENDENCIAS-DIALOGOS (D2). ID canonico do
+   * dialogo a expandir automaticamente ao abrir o drawer via deep-link
+   * do `CardPendenciasDialogos`. Quando `null`/omitido, mantem o
+   * comportamento canonico (nenhum expandido inicialmente). Se o id
+   * nao existir na lista carregada (dialogo arquivado/removido), o
+   * drawer abre normalmente sem expandir nada — sem erro visivel.
+   */
+  readonly initialExpandedId?: number | null;
   readonly onClose: () => void;
 }
 
 export function DialogosDrawer(props: DialogosDrawerProps): JSX.Element {
+  const initialExpandedId = props.initialExpandedId ?? null;
   const [dialogs, setDialogs] = useState<readonly DialogoRow[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [erroGlobal, setErroGlobal] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(initialExpandedId);
   const [dirtyExpanded, setDirtyExpanded] = useState<boolean>(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialScrollAppliedRef = useRef<boolean>(false);
 
   const [resumoIA, setResumoIA] = useState<ResumoIAState>({
     open: false,
@@ -628,6 +639,37 @@ export function DialogosDrawer(props: DialogosDrawerProps): JSX.Element {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Retomada ME-PAINEL-PENDENCIAS-DIALOGOS (D2). Apos o primeiro load
+  // com dados, se veio deep-link com `initialExpandedId` valido e o
+  // dialogo existe na lista carregada, faz scroll suave ate o item ja
+  // expandido. Aplicado uma unica vez por ciclo de abertura do drawer
+  // (o ref garante idempotencia contra reloads da lista pos-acao).
+  useEffect(() => {
+    if (initialExpandedId === null) {
+      return;
+    }
+    if (initialScrollAppliedRef.current) {
+      return;
+    }
+    if (loading) {
+      return;
+    }
+    const existe = dialogs.some((d) => d.id === initialExpandedId);
+    if (!existe) {
+      initialScrollAppliedRef.current = true;
+      return;
+    }
+    initialScrollAppliedRef.current = true;
+    if (typeof document === 'undefined') {
+      return;
+    }
+    const seletor = `[data-dialog-id="${initialExpandedId}"]`;
+    const el = document.querySelector(seletor);
+    if (el !== null) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [initialExpandedId, loading, dialogs]);
 
   useEffect(() => {
     if (debounceRef.current !== null) {
@@ -743,31 +785,31 @@ export function DialogosDrawer(props: DialogosDrawerProps): JSX.Element {
               : 'Nenhum resultado para a pesquisa.'}
           </p>
         ) : (
-          filtered.map((d) =>
-            expandedId === d.id ? (
-              <DialogoExpandido
-                key={d.id}
-                dialog={d}
-                onCollapse={() => {
-                  setExpandedId(null);
-                  setDirtyExpanded(false);
-                }}
-                onSaved={handleSaved}
-                onDiscarded={handleDiscarded}
-                onArchived={handleArchived}
-                onDirtyChange={setDirtyExpanded}
-              />
-            ) : (
-              <DialogoRecolhido
-                key={d.id}
-                dialog={d}
-                onExpand={() => {
-                  setExpandedId(d.id);
-                  setDirtyExpanded(false);
-                }}
-              />
-            ),
-          )
+          filtered.map((d) => (
+            <div key={d.id} data-dialog-id={d.id}>
+              {expandedId === d.id ? (
+                <DialogoExpandido
+                  dialog={d}
+                  onCollapse={() => {
+                    setExpandedId(null);
+                    setDirtyExpanded(false);
+                  }}
+                  onSaved={handleSaved}
+                  onDiscarded={handleDiscarded}
+                  onArchived={handleArchived}
+                  onDirtyChange={setDirtyExpanded}
+                />
+              ) : (
+                <DialogoRecolhido
+                  dialog={d}
+                  onExpand={() => {
+                    setExpandedId(d.id);
+                    setDirtyExpanded(false);
+                  }}
+                />
+              )}
+            </div>
+          ))
         )}
       </div>
     </div>

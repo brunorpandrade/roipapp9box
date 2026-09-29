@@ -1,7 +1,9 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { CSSProperties, JSX } from 'react';
+
+import { useSearchParams } from 'next/navigation';
 
 import { COLORS } from '../../../lib/design-tokens/colors';
 
@@ -548,6 +550,26 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
   const [perfilOpen, setPerfilOpen] = useState<boolean>(false);
   const [chatIaOpen, setChatIaOpen] = useState<boolean>(false);
   const [dialogosOpen, setDialogosOpen] = useState<boolean>(false);
+  // Retomada ME-PAINEL-PENDENCIAS-DIALOGOS (D2): deep-link canonico
+  // vindo do `CardPendenciasDialogos` dos paineis /painel-lider e
+  // /painel-clevel (querystring `abrir=dialogos&dialogoId=[X]`). O
+  // valor eh consumido pelo `DialogosDrawer` como `initialExpandedId`
+  // para abrir o drawer com o dialogo ja expandido e scrollado.
+  const searchParams = useSearchParams();
+  const [initialDialogoId, setInitialDialogoId] = useState<number | null>(null);
+  useEffect(() => {
+    const abrir = searchParams.get('abrir');
+    const dialogoIdRaw = searchParams.get('dialogoId');
+    if (abrir !== 'dialogos') {
+      return;
+    }
+    if (!podeVerAcoesLiderDireto) {
+      return;
+    }
+    const parsed = dialogoIdRaw === null ? NaN : Number.parseInt(dialogoIdRaw, 10);
+    setInitialDialogoId(Number.isFinite(parsed) && parsed > 0 ? parsed : null);
+    setDialogosOpen(true);
+  }, [searchParams, podeVerAcoesLiderDireto]);
 
   const idx = view.trimestre !== null ? trimestresDisponiveis.indexOf(view.trimestre) : -1;
   const temAnterior = idx >= 0 && idx < trimestresDisponiveis.length - 1;
@@ -1061,6 +1083,7 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
         <DialogosDrawer
           employeeId={employee.id}
           employeeName={employee.name}
+          initialExpandedId={initialDialogoId}
           onClose={() => setDialogosOpen(false)}
         />
       ) : null}

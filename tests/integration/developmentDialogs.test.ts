@@ -323,6 +323,10 @@ describe('service developmentDialogs (ME-017)', { retry: 2 }, () => {
     expect(rows[0]?.titulo).toBe('JOIN lider');
     expect(rows[0]?.employeeId).toBe(liderado1Id);
     expect(rows[0]?.employeeNome).toBe('Liderado 1');
+    // D1 (retomada): SELECT canonico retorna `status` para renderizar
+    // a bolinha de natureza no card sem novo fetch. Default do schema
+    // e 'verde' (§10.1 v6).
+    expect(rows[0]?.status).toBe('verde');
   });
 
   it('getPendenciasCardData({clevelId}) faz JOIN retornando nome do colaborador', async () => {
@@ -341,6 +345,20 @@ describe('service developmentDialogs (ME-017)', { retry: 2 }, () => {
     expect(rows[0]?.titulo).toBe('JOIN clevel');
     expect(rows[0]?.employeeId).toBe(liderado2Id);
     expect(rows[0]?.employeeNome).toBe('Liderado 2');
+    expect(rows[0]?.status).toBe('verde');
+  });
+
+  it('getPendenciasCardData reflete status apos transicao verde->vermelho', async () => {
+    const id = await insertDevelopmentDialog(
+      client.db,
+      buildDialog({ titulo: 'D1 vermelho', employeeId: liderado1Id }),
+    );
+    await setDevelopmentDialogPendencia(client.db, id, true);
+    await updateDevelopmentDialogStatus(client.db, id, 'vermelho');
+    const rows = await getPendenciasCardData(client.db, { liderId });
+    expect(rows.length).toBe(1);
+    expect(rows[0]?.dialogId).toBe(id);
+    expect(rows[0]?.status).toBe('vermelho');
   });
 
   it('getPendenciasCardData ordena por createdAt DESC (mais recente primeiro)', async () => {
