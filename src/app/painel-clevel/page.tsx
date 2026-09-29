@@ -15,6 +15,7 @@
 //   "Cadeia propria"; Radar da empresa com 6 componentes canonicos
 //   estado §5.2 nesta ME (motores Fase 8 vem em MEs futuras).
 
+import { CardPendenciasDialogos } from '../../components/dialogos/CardPendenciasDialogos';
 import { TurnoverIndicatorCard } from '../../components/turnover/TurnoverIndicatorCard';
 import { loadTurnoverCard, type TurnoverCardData } from '../../server/services/turnoverPanel';
 import { redirect } from 'next/navigation';
@@ -30,6 +31,10 @@ import { loadPlatformMenuCtxCookie } from '../../lib/session/platformMenuCookie'
 import type { PlatformSession } from '../../lib/session/platformMenuContext';
 import { getServerSession } from '../../server/session/serverSession';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import {
+  getPendenciasCardData,
+  type PendenciaCardRow,
+} from '../../server/services/developmentDialogs';
 
 /**
  * ME-fila6 D1 — total de colaboradores ativos da empresa (employees +
@@ -176,6 +181,7 @@ export default async function PainelCLevelPage(): Promise<JSX.Element> {
   let menu: Awaited<ReturnType<typeof loadPlatformMenuCtxCookie>>;
   let companyCollaboratorsCount: number;
   let turnoverCard: TurnoverCardData | null = null;
+  let pendencias: PendenciaCardRow[] = [];
   try {
     menu = await loadPlatformMenuCtxCookie(client.db, session);
     companyCollaboratorsCount = await loadCompanyCollaboratorsCount(client.db, session);
@@ -183,6 +189,11 @@ export default async function PainelCLevelPage(): Promise<JSX.Element> {
     if (menu !== null && menu.profileKey === 'clevel_full') {
       turnoverCard = await loadTurnoverCard(client.db, session.companyId);
     }
+    // ME-PAINEL-PENDENCIAS-DIALOGOS — pendencias ativas do C-level lider
+    // direto (clevelId = session.userId no contexto C-level). Padrao v6
+    // liderId XOR clevelId (§10.1). Sempre carrega — o card exibe estado
+    // vazio canonico quando N=0.
+    pendencias = await getPendenciasCardData(client.db, { clevelId: session.userId });
   } finally {
     await closeDbClient(client);
   }
@@ -314,10 +325,13 @@ export default async function PainelCLevelPage(): Promise<JSX.Element> {
             title="Pendências dos meus liderados"
             canonicalText="Coleta de dados em andamento"
           />
-          <ComingSoonBlock
-            title="Diálogos de desenvolvimento — pendências"
-            canonicalText="Coleta de dados em andamento"
-          />
+          {/*
+            ME-PAINEL-PENDENCIAS-DIALOGOS — card canonico substitui o
+            ComingSoonBlock estatico que existia como placeholder. Dados
+            resolvidos via getPendenciasCardData({clevelId}) no server
+            component (JOIN em employees), sem chamada tRPC.
+          */}
+          <CardPendenciasDialogos pendencias={pendencias} />
         </div>
       </section>
 

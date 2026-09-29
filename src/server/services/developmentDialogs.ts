@@ -1,5 +1,7 @@
 // ROIP APP 9BOX — service `developmentDialogs` (ME-017 + Etapa 1 —
-// Bloco 2 setters granulares + patch v6 criador polimorfico).
+// Bloco 2 setters granulares + patch v6 criador polimorfico
+// + ME-PAINEL-PENDENCIAS-DIALOGOS: listPendenciasByCLevel +
+// getPendenciasCardData polimorfico com JOIN em employees).
 //
 // Repositorio tipado da tabela canonica `developmentDialogs`
 // (DOC 01 §10.1 REESCRITO NO PATCH v6). Dialogos informais lider-
@@ -22,11 +24,20 @@
 // Setters granulares por transicao (nunca setter generico). Sem WHERE
 // guard de estado anterior porque, em contraste com `copsoqCycles`, as
 // transicoes aqui sao livres — o caller decide.
+//
+// ME-PAINEL-PENDENCIAS-DIALOGOS adiciona canonicamente:
+// - `listPendenciasByCLevel(db, clevelId)` — espelho simetrico de
+//   `listPendenciasByLeader`, filtra por clevelId + pendencia=true +
+//   arquivado=false. Cobre o indice `idx_dd_clevel_pend`.
+// - `getPendenciasCardData(db, args)` — helper polimorfico com JOIN em
+//   `employees` que retorna dados prontos para renderizar no card
+//   `CardPendenciasDialogos` dos paineis /painel-lider e /painel-clevel.
+//   Aceita `{liderId}` XOR `{clevelId}` (nunca ambos, nunca nenhum).
 
 import { and, desc, eq } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../db/client';
-import { developmentDialogs } from '../../db/schema';
+import { developmentDialogs, employees } from '../../db/schema';
 
 /** Tipo derivado do schema (payload de INSERT). */
 export type NewDevelopmentDialog = typeof developmentDialogs.$inferInsert;
@@ -201,6 +212,103 @@ export async function listPendenciasByLeader(db: RoipDatabase, liderId: number) 
       ),
     )
     .orderBy(desc(developmentDialogs.createdAt), desc(developmentDialogs.id));
+}
+
+/**
+ * Lista as pendencias ativas de um C-level lider direto (todos os seus
+ * liderados). Espelho simetrico de `listPendenciasByLeader`. Cobre o
+ * indice `idx_dd_clevel_pend` (clevelId, pendencia, arquivado). Consumido
+ * pelo painel /painel-clevel via `getPendenciasCardData` (ME-PAINEL-
+ * PENDENCIAS-DIALOGOS).
+ */
+export async function listPendenciasByCLevel(db: RoipDatabase, clevelId: number) {
+  return await db
+    .select()
+    .from(developmentDialogs)
+    .where(
+      and(
+        eq(developmentDialogs.clevelId, clevelId),
+        eq(developmentDialogs.pendencia, true),
+        eq(developmentDialogs.arquivado, false),
+      ),
+    )
+    .orderBy(desc(developmentDialogs.createdAt), desc(developmentDialogs.id));
+}
+
+// ============================================================
+// ME-PAINEL-PENDENCIAS-DIALOGOS — helper polimorfico para os cards
+// dos paineis /painel-lider e /painel-clevel
+// ============================================================
+
+/**
+ * Linha canonica retornada pelo `getPendenciasCardData`. Contem tudo o
+ * que o widget `CardPendenciasDialogos` precisa para renderizar cada
+ * pendencia (titulo, nome do colaborador e link para o dashboard
+ * individual). Ordem cronologica descendente (mais recente primeiro).
+ */
+export interface PendenciaCardRow {
+  dialogId: number;
+  titulo: string | null;
+  employeeId: number;
+  employeeNome: string;
+  createdAt: Date;
+}
+
+/**
+ * Argumentos canonicos polimorficos (liderId XOR clevelId). O helper
+ * seleciona a coluna correta do WHERE conforme o tipo canonico do
+ * criador. Passar ambos ou nenhum eleva excecao (invariante de callsite).
+ */
+export type PendenciaCardArgs = { liderId: number } | { clevelId: number };
+
+/**
+ * Carrega as pendencias ativas de um lider (employee) ou C-level lider
+ * direto, ja com o nome do colaborador resolvido via JOIN canonico em
+ * `employees`. Consumido pelos server components `/painel-lider/page.tsx`
+ * e `/painel-clevel/page.tsx` para renderizar o card canonico
+ * `CardPendenciasDialogos` da secao "Minha equipe".
+ *
+ * Filtros canonicos aplicados (identicos a `listPendenciasByLeader` e
+ * `listPendenciasByCLevel`):
+ *   - `pendencia = true`
+ *   - `arquivado = false`
+ *   - `liderId = <id>` OU `clevelId = <id>` conforme argumento.
+ *
+ * Ordem canonica: `createdAt DESC, id DESC` (mais recente primeiro).
+ */
+export async function getPendenciasCardData(
+  db: RoipDatabase,
+  args: PendenciaCardArgs,
+): Promise<PendenciaCardRow[]> {
+  const isLider = 'liderId' in args;
+  const isCLevel = 'clevelId' in args;
+  if (isLider === isCLevel) {
+    throw new Error(
+      'getPendenciasCardData: exige exatamente um de {liderId, clevelId} (invariante XOR §10.1 v6)',
+    );
+  }
+  const criadorClause = isLider
+    ? eq(developmentDialogs.liderId, args.liderId)
+    : eq(developmentDialogs.clevelId, args.clevelId);
+  const rows = await db
+    .select({
+      dialogId: developmentDialogs.id,
+      titulo: developmentDialogs.titulo,
+      employeeId: developmentDialogs.employeeId,
+      employeeNome: employees.name,
+      createdAt: developmentDialogs.createdAt,
+    })
+    .from(developmentDialogs)
+    .innerJoin(employees, eq(employees.id, developmentDialogs.employeeId))
+    .where(
+      and(
+        criadorClause,
+        eq(developmentDialogs.pendencia, true),
+        eq(developmentDialogs.arquivado, false),
+      ),
+    )
+    .orderBy(desc(developmentDialogs.createdAt), desc(developmentDialogs.id));
+  return rows;
 }
 
 /**

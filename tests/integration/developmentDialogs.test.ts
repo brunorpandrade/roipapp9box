@@ -1,22 +1,33 @@
-// ROIP APP 9BOX — teste de integracao `developmentDialogs` (ME-017).
+// ROIP APP 9BOX — teste de integracao `developmentDialogs` (ME-017
+// + ME-PAINEL-PENDENCIAS-DIALOGOS).
 //
 // Cobre §10.1: INSERT com defaults (status='verde', pendencia=false,
 // arquivado=false); setters granulares por transicao (updateStatus,
 // setPendencia, archive); listagens cobrindo indices canonicos
-// (idx_dd_lider_emp, idx_dd_lider_pend) — arquivados nao retornam por
-// default; FK RESTRICT em liderId/employeeId; delete por company.
+// (idx_dd_lider_emp, idx_dd_lider_pend, idx_dd_clevel_pend) —
+// arquivados nao retornam por default; FK RESTRICT em liderId/
+// employeeId; delete por company.
+//
+// ME-PAINEL-PENDENCIAS-DIALOGOS adiciona canonicamente:
+// - `listPendenciasByCLevel` — filtra pendencias ativas pelo criador
+//   C-level (schema v6, indice idx_dd_clevel_pend).
+// - `getPendenciasCardData` — JOIN canonico em employees resolvendo
+//   nome do colaborador para o card CardPendenciasDialogos dos paineis
+//   /painel-lider e /painel-clevel.
 
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/client';
-import { companies, developmentDialogs, employees } from '../../src/db/schema';
+import { cLevelMembers, companies, developmentDialogs, employees } from '../../src/db/schema';
 import {
   archiveDevelopmentDialog,
   deleteDevelopmentDialogsByCompany,
   getDevelopmentDialogById,
+  getPendenciasCardData,
   insertDevelopmentDialog,
   listDialogsByLeaderEmployee,
+  listPendenciasByCLevel,
   listPendenciasByLeader,
   type NewDevelopmentDialog,
   setDevelopmentDialogPendencia,
@@ -34,6 +45,7 @@ describe('service developmentDialogs (ME-017)', { retry: 2 }, () => {
   let liderId: number;
   let liderado1Id: number;
   let liderado2Id: number;
+  let clevelId: number;
 
   function buildDialog(overrides: Partial<NewDevelopmentDialog> = {}): NewDevelopmentDialog {
     return {
@@ -134,10 +146,32 @@ describe('service developmentDialogs (ME-017)', { retry: 2 }, () => {
       .$returningId();
     if (!lid2) throw new Error('beforeAll: falha ao criar liderado2');
     liderado2Id = lid2.id;
+
+    // ME-PAINEL-PENDENCIAS-DIALOGOS — C-level lider direto para cobrir
+    // listPendenciasByCLevel + getPendenciasCardData({clevelId}).
+    const [clevel] = await client.db
+      .insert(cLevelMembers)
+      .values({
+        companyId,
+        name: 'CLevel DD',
+        cpf: '40404040136',
+        email: 'clevel.dd@roip.local',
+        dataNascimento: new Date('1975-11-20'),
+        dataAdmissao: new Date('2010-02-01'),
+        cargo: 'CEO',
+        descricaoCargo: 'Diretor executivo',
+        departamento: 'Diretoria',
+        custoMensal: '25000.00',
+        status: 'ativo',
+      })
+      .$returningId();
+    if (!clevel) throw new Error('beforeAll: falha ao criar cLevelMember');
+    clevelId = clevel.id;
   });
 
   afterAll(async () => {
     await client.db.delete(developmentDialogs).where(eq(developmentDialogs.companyId, companyId));
+    await client.db.delete(cLevelMembers).where(eq(cLevelMembers.id, clevelId));
     await client.db.delete(employees).where(eq(employees.id, liderado2Id));
     await client.db.delete(employees).where(eq(employees.id, liderado1Id));
     await client.db.delete(employees).where(eq(employees.id, liderId));
@@ -237,5 +271,91 @@ describe('service developmentDialogs (ME-017)', { retry: 2 }, () => {
     await insertDevelopmentDialog(client.db, buildDialog());
     const afetadas = await deleteDevelopmentDialogsByCompany(client.db, companyId);
     expect(afetadas).toBe(2);
+  });
+
+  // ============================================================
+  // ME-PAINEL-PENDENCIAS-DIALOGOS — listPendenciasByCLevel + JOIN
+  // ============================================================
+
+  it('listPendenciasByCLevel retorna so pendencia=true e arquivado=false do clevelId', async () => {
+    const idSem = await insertDevelopmentDialog(client.db, {
+      companyId,
+      liderId: null,
+      clevelId,
+      employeeId: liderado1Id,
+      titulo: 'sem pend',
+      corpo: '',
+    });
+    const idCom = await insertDevelopmentDialog(client.db, {
+      companyId,
+      liderId: null,
+      clevelId,
+      employeeId: liderado2Id,
+      titulo: 'com pend',
+      corpo: '',
+    });
+    await setDevelopmentDialogPendencia(client.db, idCom, true);
+    const idPendArq = await insertDevelopmentDialog(client.db, {
+      companyId,
+      liderId: null,
+      clevelId,
+      employeeId: liderado1Id,
+      titulo: 'p+a',
+      corpo: '',
+    });
+    await setDevelopmentDialogPendencia(client.db, idPendArq, true);
+    await archiveDevelopmentDialog(client.db, idPendArq);
+
+    const rows = await listPendenciasByCLevel(client.db, clevelId);
+    expect(rows.map((d) => d.id)).toEqual([idCom]);
+    expect(idSem).toBeGreaterThan(0);
+  });
+
+  it('getPendenciasCardData({liderId}) faz JOIN retornando nome do colaborador', async () => {
+    const id = await insertDevelopmentDialog(
+      client.db,
+      buildDialog({ titulo: 'JOIN lider', employeeId: liderado1Id }),
+    );
+    await setDevelopmentDialogPendencia(client.db, id, true);
+    const rows = await getPendenciasCardData(client.db, { liderId });
+    expect(rows.length).toBe(1);
+    expect(rows[0]?.dialogId).toBe(id);
+    expect(rows[0]?.titulo).toBe('JOIN lider');
+    expect(rows[0]?.employeeId).toBe(liderado1Id);
+    expect(rows[0]?.employeeNome).toBe('Liderado 1');
+  });
+
+  it('getPendenciasCardData({clevelId}) faz JOIN retornando nome do colaborador', async () => {
+    const id = await insertDevelopmentDialog(client.db, {
+      companyId,
+      liderId: null,
+      clevelId,
+      employeeId: liderado2Id,
+      titulo: 'JOIN clevel',
+      corpo: '',
+    });
+    await setDevelopmentDialogPendencia(client.db, id, true);
+    const rows = await getPendenciasCardData(client.db, { clevelId });
+    expect(rows.length).toBe(1);
+    expect(rows[0]?.dialogId).toBe(id);
+    expect(rows[0]?.titulo).toBe('JOIN clevel');
+    expect(rows[0]?.employeeId).toBe(liderado2Id);
+    expect(rows[0]?.employeeNome).toBe('Liderado 2');
+  });
+
+  it('getPendenciasCardData ordena por createdAt DESC (mais recente primeiro)', async () => {
+    const idA = await insertDevelopmentDialog(client.db, buildDialog({ titulo: 'A' }));
+    const idB = await insertDevelopmentDialog(client.db, buildDialog({ titulo: 'B' }));
+    await setDevelopmentDialogPendencia(client.db, idA, true);
+    await setDevelopmentDialogPendencia(client.db, idB, true);
+    const rows = await getPendenciasCardData(client.db, { liderId });
+    expect(rows.length).toBe(2);
+    expect(rows[0]?.dialogId).toBe(idB);
+    expect(rows[1]?.dialogId).toBe(idA);
+  });
+
+  it('getPendenciasCardData retorna [] quando lider nao tem pendencias ativas', async () => {
+    const rows = await getPendenciasCardData(client.db, { liderId });
+    expect(rows).toEqual([]);
   });
 });

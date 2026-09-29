@@ -19,6 +19,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { JSX } from 'react';
 
 import { Layout } from '../../components/shell/Layout';
+import { CardPendenciasDialogos } from '../../components/dialogos/CardPendenciasDialogos';
 import { createDbClient } from '../../db/client';
 import { companies, employees, employeeLeaderHistory } from '../../db/schema';
 import { COLORS } from '../../lib/design-tokens/colors';
@@ -26,6 +27,10 @@ import { resolveMenuItems } from '../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { getServerSession } from '../../server/session/serverSession';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import {
+  getPendenciasCardData,
+  type PendenciaCardRow,
+} from '../../server/services/developmentDialogs';
 
 interface LiderFlags {
   readonly isRH: boolean;
@@ -38,9 +43,12 @@ interface LiderPanelData {
   readonly liderarDiretosCount: number;
 }
 
-async function loadLiderFlagsAndData(
-  userId: number,
-): Promise<{ flags: LiderFlags; data: LiderPanelData; companyLogoUrl: string | null } | null> {
+async function loadLiderFlagsAndData(userId: number): Promise<{
+  flags: LiderFlags;
+  data: LiderPanelData;
+  companyLogoUrl: string | null;
+  pendencias: PendenciaCardRow[];
+} | null> {
   const client = createDbClient(resolveDatabaseUrl());
   try {
     const rows = await client.db
@@ -93,6 +101,11 @@ async function loadLiderFlagsAndData(
       .where(eq(companies.id, row.companyId))
       .limit(1);
 
+    // ME-PAINEL-PENDENCIAS-DIALOGOS — pendencias ativas do lider (employee
+    // criador) via JOIN canonico com employees para renderizar o
+    // CardPendenciasDialogos na secao "Minha equipe" §5.6.
+    const pendencias = await getPendenciasCardData(client.db, { liderId: userId });
+
     return {
       flags: {
         isRH: row.isRH === true,
@@ -104,6 +117,7 @@ async function loadLiderFlagsAndData(
         liderarDiretosCount: Number(diretosRows[0]?.count ?? 0),
       },
       companyLogoUrl: companyRows[0]?.logoUrl ?? null,
+      pendencias,
     };
   } finally {
     await client.pool.end();
@@ -215,7 +229,7 @@ export default async function PainelLiderPage(): Promise<JSX.Element> {
   if (result === null) {
     redirect('/');
   }
-  const { flags, data, companyLogoUrl } = result;
+  const { flags, data, companyLogoUrl, pendencias } = result;
 
   const profileKey = resolveProfileKey({
     session,
@@ -338,10 +352,13 @@ export default async function PainelLiderPage(): Promise<JSX.Element> {
             title="Pendências dos meus liderados no portal"
             canonicalText="Coleta de dados em andamento"
           />
-          <ComingSoonBlock
-            title="Diálogos de desenvolvimento — pendências"
-            canonicalText="Coleta de dados em andamento"
-          />
+          {/*
+            ME-PAINEL-PENDENCIAS-DIALOGOS — card canonico substitui o
+            ComingSoonBlock estatico que existia como placeholder. Dados
+            resolvidos via getPendenciasCardData no server component
+            (JOIN em employees), sem chamada tRPC.
+          */}
+          <CardPendenciasDialogos pendencias={pendencias} />
         </div>
       </section>
 
