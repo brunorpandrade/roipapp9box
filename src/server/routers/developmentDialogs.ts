@@ -172,7 +172,10 @@ async function resolveLiderIdOrNull(
   if (user.role === 'super_admin') {
     return activeLiderId;
   }
-  if (user.role === 'lider' && user.userId === activeLiderId) {
+  // Patch v5: RH-Lider como lider direto (isRH=true + isLider=true) foi
+  // canonizado empiricamente. Reconhece `rh_lider` como criador legitimo
+  // de dialogos quando activeLeader.liderId === user.userId.
+  if ((user.role === 'lider' || user.role === 'rh_lider') && user.userId === activeLiderId) {
     return activeLiderId;
   }
   return null;
@@ -243,7 +246,10 @@ async function assertPodeLerOrThrow(
   if (user.role === 'super_admin') {
     return { companyId: employee.companyId };
   }
-  if (user.role === 'lider') {
+  // Patch v5: lider e rh_lider validados canonicamente como lider
+  // direto atual do colaborador via resolveLiderIdOrNull (que ja cobre
+  // ambos os roles via employeeLeaderHistory.liderId).
+  if (user.role === 'lider' || user.role === 'rh_lider') {
     const liderId = await resolveLiderIdOrNull(db, user, employeeId, employee.companyId);
     if (liderId === null) {
       throw new TRPCError({
@@ -254,9 +260,16 @@ async function assertPodeLerOrThrow(
     return { companyId: employee.companyId };
   }
   // user.role === 'clevel' (unico restante — role gate ja rejeitou
-  // rh/rh_lider antes deste guard). C-level total: nao ve botao
-  // (§14.25.4) — bloqueia via acessoTotal===true. C-level restrito:
-  // cadeia propria via assertCadeiaDescendente.
+  // rh/rh_lider antes deste guard NAO se aplica pos-v5; rh_lider agora
+  // eh coberto acima). C-level: pode ser lider direto via §4.6 DOC 01
+  // (employeeLeaderHistory.clevelId === user.userId) — passa como leitor
+  // canonico. C-level total sem vinculo direto: canonicamente bloqueia
+  // via acessoTotal===true. C-level restrito com cadeia propria: le via
+  // assertCadeiaDescendente.
+  const activeLeader = await getActiveLeaderHistoryByEmployee(db, employeeId);
+  if (activeLeader !== undefined && activeLeader.clevelId === user.userId) {
+    return { companyId: employee.companyId };
+  }
   const cctx = await loadCLevelSessionContext(db, user.companyId, user.userId);
   if (cctx === null) {
     throw new TRPCError({
@@ -314,7 +327,11 @@ export function createDevelopmentDialogsRouter() {
     // ============================================================
     // Proc 1 — list (leitura)
     // ============================================================
-    list: roleProcedure(['super_admin', 'clevel', 'lider'])
+    // Patch v5: `rh_lider` incluido no role gate (RH-Lider pode ser
+    // lider direto e ver os dialogos que criou como lider). `clevel`
+    // continua no role gate: em v5 apenas para leitura (nunca criou
+    // dialogos ate v6); em v6 o schema clevelId habilita criacao.
+    list: roleProcedure(['super_admin', 'clevel', 'lider', 'rh_lider'])
       .input(DIALOGOS_LIST_INPUT_SCHEMA)
       .query(async ({ ctx, input }) => {
         await assertPodeLerOrThrow(ctx.db, ctx.user, input.employeeId);
@@ -323,9 +340,11 @@ export function createDevelopmentDialogsRouter() {
       }),
 
     // ============================================================
-    // Proc 2 — create (escrita: lider direto + super_admin)
+    // Proc 2 — create (escrita: lider direto employee + super_admin)
     // ============================================================
-    create: roleProcedure(['super_admin', 'lider'])
+    // Patch v5: `rh_lider` incluido no role gate. `clevel` fora de
+    // escrita em v5 — depende de v6 (§10.1 reescrito com clevelId).
+    create: roleProcedure(['super_admin', 'lider', 'rh_lider'])
       .input(DIALOGOS_CREATE_INPUT_SCHEMA)
       .mutation(async ({ ctx, input }) => {
         const { liderId, companyId } = await assertPodeEscreverOrThrow(
@@ -359,7 +378,7 @@ export function createDevelopmentDialogsRouter() {
     // ============================================================
     // Proc 3 — update (escrita: patch parcial)
     // ============================================================
-    update: roleProcedure(['super_admin', 'lider'])
+    update: roleProcedure(['super_admin', 'lider', 'rh_lider'])
       .input(DIALOGOS_UPDATE_INPUT_SCHEMA)
       .mutation(async ({ ctx, input }) => {
         await loadDialogParaEscritaOrThrow(ctx.db, ctx.user, input.id);
@@ -390,7 +409,7 @@ export function createDevelopmentDialogsRouter() {
     // ============================================================
     // Proc 4 — archive (escrita)
     // ============================================================
-    archive: roleProcedure(['super_admin', 'lider'])
+    archive: roleProcedure(['super_admin', 'lider', 'rh_lider'])
       .input(DIALOGOS_ID_INPUT_SCHEMA)
       .mutation(async ({ ctx, input }) => {
         await loadDialogParaEscritaOrThrow(ctx.db, ctx.user, input.id);
@@ -401,7 +420,7 @@ export function createDevelopmentDialogsRouter() {
     // ============================================================
     // Proc 5 — discard (DELETE fisico canonico §14.26)
     // ============================================================
-    discard: roleProcedure(['super_admin', 'lider'])
+    discard: roleProcedure(['super_admin', 'lider', 'rh_lider'])
       .input(DIALOGOS_ID_INPUT_SCHEMA)
       .mutation(async ({ ctx, input }) => {
         const { dialog } = await loadDialogParaEscritaOrThrow(ctx.db, ctx.user, input.id);

@@ -148,9 +148,21 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
     // Chat IA. Regra canonica pos-retomada empirica: aparecem apenas
     // para super_admin (Bruno) e lider direto atual do colaborador. Um
     // lider superior na cadeia (que nao e o direto) NAO ve nenhum dos
-    // dois. Perfis suportados como "lider direto": `lider` e `rh_lider`
-    // (RH-Lider atua tambem como lider quando eh lider direto do alvo).
+    // dois. Perfis suportados como "lider direto":
+    //   - `lider` / `rh_lider` (lider employee): activeLeader.liderId
+    //     === session.userId.
+    //   - `clevel` (lider C-level via §4.6 DOC 01 — liderId XOR
+    //     clevelId): activeLeader.clevelId === session.userId. Canonizado
+    //     no patch v5 apos retomada empirica: C-level Cenario 1/2 e
+    //     canonicamente simetrico a Lider Cenario 1/2 em permissoes.
     // Backend NAO retorna flag `true` para papeis sem permissao.
+    // NOTA canonica v5: Chat IA para C-level lider direto e habilitado
+    // (router aiChat ja aceita clevel). Dialogos para C-level lider
+    // direto AINDA nao — depende de v6 (reescrita §10.1 + schema
+    // clevelId em developmentDialogs). Ate la, flag serve ambos os
+    // botoes mas o router Dialogos rejeita clevel em write; drawer
+    // abriria vazio ate v6. Trade-off aceito canonicamente para
+    // fechamento parcial da RETOMADA.
     let podeVerAcoesLiderDireto = false;
     if (isSuper) {
       podeVerAcoesLiderDireto = true;
@@ -160,6 +172,11 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
     ) {
       const activeLeader = await getActiveLeaderHistoryByEmployee(client.db, dashboard.employee.id);
       if (activeLeader !== undefined && activeLeader.liderId === session.userId) {
+        podeVerAcoesLiderDireto = true;
+      }
+    } else if (session.kind === 'platform' && session.role === 'clevel') {
+      const activeLeader = await getActiveLeaderHistoryByEmployee(client.db, dashboard.employee.id);
+      if (activeLeader !== undefined && activeLeader.clevelId === session.userId) {
         podeVerAcoesLiderDireto = true;
       }
     }
