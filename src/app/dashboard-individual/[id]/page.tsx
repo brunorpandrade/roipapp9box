@@ -143,19 +143,24 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
         }
       }
     }
-    // Flag canonica §14.25.4 — [Dialogos de desenvolvimento] visivel
-    // apenas para super_admin (Bruno) e lider direto atual do colaborador.
-    // Backend NAO retorna flag `true` para papeis sem permissao (§14.25.4
-    // "Backend nao retorna a flag de renderizacao para botoes sem
-    // permissao"). C-level restrito com read-only nao aparece aqui — o
-    // acesso a leitura acontece via drawer somente-leitura em ME futura.
-    let podeVerDialogos = false;
+    // Flag canonica unificada §14.25.4 (estendida) — controla os DOIS
+    // botoes de acao consultiva: [Dialogos de desenvolvimento] E o FAB
+    // Chat IA. Regra canonica pos-retomada empirica: aparecem apenas
+    // para super_admin (Bruno) e lider direto atual do colaborador. Um
+    // lider superior na cadeia (que nao e o direto) NAO ve nenhum dos
+    // dois. Perfis suportados como "lider direto": `lider` e `rh_lider`
+    // (RH-Lider atua tambem como lider quando eh lider direto do alvo).
+    // Backend NAO retorna flag `true` para papeis sem permissao.
+    let podeVerAcoesLiderDireto = false;
     if (isSuper) {
-      podeVerDialogos = true;
-    } else if (session.kind === 'platform' && session.role === 'lider') {
+      podeVerAcoesLiderDireto = true;
+    } else if (
+      session.kind === 'platform' &&
+      (session.role === 'lider' || session.role === 'rh_lider')
+    ) {
       const activeLeader = await getActiveLeaderHistoryByEmployee(client.db, dashboard.employee.id);
       if (activeLeader !== undefined && activeLeader.liderId === session.userId) {
-        podeVerDialogos = true;
+        podeVerAcoesLiderDireto = true;
       }
     }
     const clientProps: DashboardIndividualClientProps = {
@@ -179,7 +184,7 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
       fichaLoadAction: carregarFichaCadastralAction,
       editHref,
       hideRf: !isSuper,
-      podeVerDialogos,
+      podeVerAcoesLiderDireto,
     };
 
     if (session.kind === 'super_admin') {

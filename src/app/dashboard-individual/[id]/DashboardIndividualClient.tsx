@@ -527,8 +527,14 @@ function EixoXModal(props: {
 }
 
 export function DashboardIndividualClient(props: DashboardIndividualClientProps): JSX.Element {
-  const { employee, trimestresDisponiveis, fichaLoadAction, editHref, hideRf, podeVerDialogos } =
-    props;
+  const {
+    employee,
+    trimestresDisponiveis,
+    fichaLoadAction,
+    editHref,
+    hideRf,
+    podeVerAcoesLiderDireto,
+  } = props;
   const [view, setView] = useState<QuarterView>(props.view);
   const [carregandoNav, setCarregandoNav] = useState<boolean>(false);
   const [gerando, setGerando] = useState<boolean>(false);
@@ -968,7 +974,7 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
           <div style={CARD}>
             <div style={{ ...LABEL, marginBottom: 10 }}>ACOES</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {podeVerDialogos ? (
+              {podeVerAcoesLiderDireto ? (
                 <button
                   type="button"
                   onClick={() => setDialogosOpen(true)}
@@ -1044,21 +1050,21 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
           onClose={() => setDetalhesOpen(false)}
         />
       ) : null}
-      {chatIaOpen ? (
+      {chatIaOpen && podeVerAcoesLiderDireto ? (
         <AiChatDrawer
           employeeId={employee.id}
           employeeName={employee.name}
           onClose={() => setChatIaOpen(false)}
         />
       ) : null}
-      {dialogosOpen && podeVerDialogos ? (
+      {dialogosOpen && podeVerAcoesLiderDireto ? (
         <DialogosDrawer
           employeeId={employee.id}
           employeeName={employee.name}
           onClose={() => setDialogosOpen(false)}
         />
       ) : null}
-      {!chatIaOpen && !dialogosOpen ? (
+      {podeVerAcoesLiderDireto && !chatIaOpen && !dialogosOpen ? (
         <button
           type="button"
           onClick={() => setChatIaOpen(true)}

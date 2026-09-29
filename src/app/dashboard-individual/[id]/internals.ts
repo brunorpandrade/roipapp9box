@@ -129,12 +129,19 @@ export interface DashboardIndividualClientProps {
   readonly editHref: string | null;
   readonly hideRf: boolean;
   /**
-   * Flag canonica §14.25.4 — o botao [Dialogos de desenvolvimento] so
-   * aparece quando o usuario logado e lider direto atual do colaborador,
-   * ou super_admin (Bruno). O backend nunca retorna a flag para papeis
-   * sem permissao (canonico §14.25.4).
+   * Flag canonica unificada — controla a visibilidade dos DOIS botoes
+   * de acao consultiva do dashboard individual: [Dialogos de
+   * desenvolvimento] E o FAB do Chat IA. Regra canonica: aparecem apenas
+   * quando o usuario logado e lider direto atual do colaborador (perfis
+   * `lider` ou `rh_lider` com `activeLeader.liderId === session.userId`)
+   * ou super_admin (Bruno). Um lider superior na cadeia (que nao e o
+   * direto) NAO ve nenhum dos dois botoes — §14.25.4 canoniza para
+   * [Dialogos] e a regra e estendida ao Chat IA nesta ME (retomada
+   * pos-validacao empirica). O backend nunca retorna a flag `true` para
+   * papeis sem permissao (§14.25.4 "Backend nao retorna a flag de
+   * renderizacao para botoes sem permissao").
    */
-  readonly podeVerDialogos: boolean;
+  readonly podeVerAcoesLiderDireto: boolean;
 }
 
 const MESES_QUADRIMESTRE: Readonly<Record<string, string>> = {
