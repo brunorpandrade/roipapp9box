@@ -270,10 +270,13 @@ describe('developmentDialogs — happy path do lider direto', () => {
     const list0 = await caller.list({ employeeId: liderado });
     expect(list0.dialogs).toHaveLength(0);
 
-    // create com valores padrao canonicos §14.26
+    // create com valores padrao canonicos §14.26. Patch v6: criador
+    // polimorfico (liderId XOR clevelId) — lider employee grava liderId,
+    // clevelId permanece null.
     const createRes = await caller.create({ employeeId: liderado });
     expect(createRes.dialog.companyId).toBe(companyId);
     expect(createRes.dialog.liderId).toBe(liderId);
+    expect(createRes.dialog.clevelId).toBeNull();
     expect(createRes.dialog.employeeId).toBe(liderado);
     expect(createRes.dialog.titulo).toBe('');
     expect(createRes.dialog.corpo).toBe('');
@@ -418,31 +421,32 @@ describe('developmentDialogs — guards canonicos §14.25.4', () => {
     });
   });
 
-  it('C-level total → FORBIDDEN em list', async () => {
+  it('C-level total (acessoTotal=true) sem vinculo direto → FORBIDDEN em list', async () => {
     const { factory, ctx } = bindRouter();
     const token = await tokenPlatform('clevel', clevelTotalId, companyId);
     const caller = factory(ctx(token));
 
+    // Patch v6: clevel entra no role gate, mas assertPodeLerOrThrow
+    // bloqueia C-level total (acessoTotal=true) sem vinculo direto ao
+    // alvo. C-level lider direto e coberto por teste dedicado no
+    // describe "C-level lider direto (patch v6)" abaixo.
     await expect(caller.list({ employeeId: liderado })).rejects.toMatchObject({
       code: 'FORBIDDEN',
     });
   });
 
-  it('C-level em operacao de escrita → FORBIDDEN (role gate canonico §10.1)', async () => {
+  it('C-level total sem vinculo direto → FORBIDDEN em create (patch v6)', async () => {
     const { factory, ctx } = bindRouter();
     const token = await tokenPlatform('clevel', clevelTotalId, companyId);
     const caller = factory(ctx(token));
 
-    // clevel nao esta em roleProcedure(['super_admin', 'lider']) do
-    // create — role gate canonico do tRPC rejeita ANTES do guard
-    // interno. Realiza canonicamente §10.1 ("C-levels nao criam
-    // dialogos por regra definitiva") na PRIMEIRA barreira, sem
-    // depender de mensagem interna. MSG_DIALOGOS_CLEVEL_READ_ONLY
-    // fica reservado para cenarios em que o role gate deixa passar
-    // (nenhum no MVP — todas as procs de escrita listam apenas
-    // super_admin+lider).
+    // Patch v6: clevel entra no role gate de create, mas
+    // assertPodeEscreverOrThrow via resolveCriadorOrNull retorna null
+    // (C-level total sem vinculo direto ao alvo). MSG canonico
+    // MSG_DIALOGOS_APENAS_LIDER_DIRETO.
     await expect(caller.create({ employeeId: liderado })).rejects.toMatchObject({
       code: 'FORBIDDEN',
+      message: MSG_DIALOGOS_APENAS_LIDER_DIRETO,
     });
   });
 
@@ -518,11 +522,86 @@ describe('developmentDialogs — super_admin (Bruno)', () => {
 
     const createRes = await caller.create({ employeeId: liderado });
     expect(createRes.dialog.liderId).toBe(liderId);
+    expect(createRes.dialog.clevelId).toBeNull();
 
     const list1 = await caller.list({ employeeId: liderado });
     expect(list1.dialogs).toHaveLength(1);
 
     const archiveRes = await caller.archive({ id: createRes.dialog.id });
     expect(archiveRes.affected).toBe(1);
+  });
+});
+
+// ============================================================
+// 6) Patch v6 — C-level lider direto (§10.1 reescrito)
+// ============================================================
+
+describe('developmentDialogs — C-level lider direto (patch v6)', () => {
+  let companyId: number;
+  let clevelDiretoId: number;
+  let liderado: number;
+
+  beforeAll(async () => {
+    companyId = await createCompany('10060000000007');
+    clevelDiretoId = await createCLevel(companyId, false);
+    liderado = await createEmployee(companyId);
+    // Vinculo canonico §4.6 v6: employeeLeaderHistory.clevelId
+    // preenchido, liderId nulo.
+    await client.db.insert(employeeLeaderHistory).values({
+      employeeId: liderado,
+      liderId: null,
+      clevelId: clevelDiretoId,
+      dataInicio: new Date('2024-01-01'),
+      dataFim: null,
+      reason: 'Fixture patch v6 C-level lider direto',
+      transferBatchId: nextTransferBatchId(),
+    });
+  });
+
+  it('C-level lider direto cria dialogo com clevelId preenchido, liderId null', async () => {
+    const { factory, ctx } = bindRouter();
+    const token = await tokenPlatform('clevel', clevelDiretoId, companyId);
+    const caller = factory(ctx(token));
+
+    const list0 = await caller.list({ employeeId: liderado });
+    expect(list0.dialogs).toHaveLength(0);
+
+    const createRes = await caller.create({ employeeId: liderado });
+    // Patch v6: criador polimorfico — C-level grava clevelId,
+    // liderId permanece null (invariante XOR §10.1 v6).
+    expect(createRes.dialog.clevelId).toBe(clevelDiretoId);
+    expect(createRes.dialog.liderId).toBeNull();
+    expect(createRes.dialog.employeeId).toBe(liderado);
+    expect(createRes.dialog.status).toBe('verde');
+    expect(createRes.dialog.pendencia).toBe(false);
+
+    const dialogId = createRes.dialog.id;
+
+    // UPDATE canonico bit-a-bit
+    const updateRes = await caller.update({
+      id: dialogId,
+      titulo: 'Alinhamento C-level',
+      corpo: 'Texto pelo lider direto C-level.',
+      status: 'vermelho',
+      pendencia: true,
+    });
+    expect(updateRes.dialog.titulo).toBe('Alinhamento C-level');
+    expect(updateRes.dialog.corpo).toBe('Texto pelo lider direto C-level.');
+    expect(updateRes.dialog.status).toBe('vermelho');
+    expect(updateRes.dialog.pendencia).toBe(true);
+    expect(updateRes.dialog.clevelId).toBe(clevelDiretoId);
+    expect(updateRes.dialog.liderId).toBeNull();
+
+    // list canonicamente inclui o novo dialogo
+    const list1 = await caller.list({ employeeId: liderado });
+    expect(list1.dialogs).toHaveLength(1);
+    expect(list1.dialogs[0]?.clevelId).toBe(clevelDiretoId);
+
+    // archive canonico
+    const archiveRes = await caller.archive({ id: dialogId });
+    expect(archiveRes.affected).toBe(1);
+
+    const list2 = await caller.list({ employeeId: liderado });
+    expect(list2.dialogs).toHaveLength(0);
   });
 });

@@ -805,9 +805,14 @@ export const developmentDialogs = mysqlTable(
     companyId: int('companyId')
       .notNull()
       .references(() => companies.id, { onDelete: 'restrict' }),
-    liderId: int('liderId')
-      .notNull()
-      .references(() => employees.id, { onDelete: 'restrict' }),
+    // Patch v6 — §10.1 reescrito canonicamente. Precedente §4.6
+    // (employeeLeaderHistory): criador do dialogo e polimorfico
+    // (liderId XOR clevelId). C-level lider direto agora pode criar
+    // dialogos como lider canonico. A restricao XOR e imposta pelo
+    // caller (service/router) — nao ha CHECK constraint SQL (padrao
+    // canonico ROIP).
+    liderId: int('liderId').references(() => employees.id, { onDelete: 'restrict' }),
+    clevelId: int('clevelId').references(() => cLevelMembers.id, { onDelete: 'restrict' }),
     employeeId: int('employeeId')
       .notNull()
       .references(() => employees.id, { onDelete: 'restrict' }),
@@ -823,6 +828,8 @@ export const developmentDialogs = mysqlTable(
     idxDdLiderEmp: index('idx_dd_lider_emp').on(t.liderId, t.employeeId),
     idxDdEmpArq: index('idx_dd_emp_arq').on(t.employeeId, t.arquivado),
     idxDdLiderPend: index('idx_dd_lider_pend').on(t.liderId, t.pendencia, t.arquivado),
+    idxDdClevelEmp: index('idx_dd_clevel_emp').on(t.clevelId, t.employeeId),
+    idxDdClevelPend: index('idx_dd_clevel_pend').on(t.clevelId, t.pendencia, t.arquivado),
   }),
 );
 

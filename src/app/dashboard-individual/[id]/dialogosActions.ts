@@ -45,11 +45,17 @@ async function requireToken(): Promise<string> {
   return token;
 }
 
-/** Adaptador Date->ISO string (canonico Etapa 0). */
+/**
+ * Adaptador Date->ISO string (canonico Etapa 0). Patch v6: aceita
+ * `liderId` e `clevelId` nullable (invariante XOR §10.1 v6). Row do
+ * banco atravessa a fronteira server->client sem transformacao
+ * semantica.
+ */
 function toDialogoRow(row: {
   id: number;
   companyId: number;
-  liderId: number;
+  liderId: number | null;
+  clevelId: number | null;
   employeeId: number;
   titulo: string | null;
   corpo: string | null;
@@ -63,6 +69,7 @@ function toDialogoRow(row: {
     id: row.id,
     companyId: row.companyId,
     liderId: row.liderId,
+    clevelId: row.clevelId,
     employeeId: row.employeeId,
     titulo: row.titulo,
     corpo: row.corpo,

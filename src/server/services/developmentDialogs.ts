@@ -1,10 +1,17 @@
 // ROIP APP 9BOX — service `developmentDialogs` (ME-017 + Etapa 1 —
-// Bloco 2, expansao setters granulares).
+// Bloco 2 setters granulares + patch v6 criador polimorfico).
 //
 // Repositorio tipado da tabela canonica `developmentDialogs`
-// (DOC 01 §10.1). Dialogos informais lider-liderado, nao-estruturados,
-// nao-transferiveis. `liderId` e sempre `employees.id` — C-levels nao
-// criam dialogos por regra definitiva (§10.1).
+// (DOC 01 §10.1 REESCRITO NO PATCH v6). Dialogos informais lider-
+// liderado, nao-estruturados, nao-transferiveis. O criador do dialogo
+// e polimorfico (precedente §4.6 employeeLeaderHistory):
+//   - `liderId INT NULL FK employees.id` — quando o lider direto e um
+//     employee (lider padrao ou RH-lider).
+//   - `clevelId INT NULL FK cLevelMembers.id` — quando o lider direto e
+//     C-level (canonizado no patch v6: C-level Cenario 1/2 e simetrico
+//     a Lider Cenario 1/2 em permissoes).
+//   - Invariante canonica: liderId XOR clevelId (exatamente um
+//     preenchido). Imposta pelo caller (router).
 //
 // Tabela mutavel com estado composto por 3 flags ortogonais:
 // - `status`    ENUM('verde','vermelho') — sinal do dialogo

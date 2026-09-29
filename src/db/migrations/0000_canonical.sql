@@ -592,7 +592,11 @@ CREATE TABLE `climateEngagementData` (
 CREATE TABLE `developmentDialogs` (
   `id` INT PRIMARY KEY AUTO_INCREMENT,
   `companyId` INT NOT NULL,
-  `liderId` INT NOT NULL,
+  -- §10.1 v6 reescrito: criador polimorfico liderId XOR clevelId
+  -- (precedente §4.6 employeeLeaderHistory). Exatamente um preenchido,
+  -- imposto pelo caller (router).
+  `liderId` INT DEFAULT NULL,
+  `clevelId` INT DEFAULT NULL,
   `employeeId` INT NOT NULL,
   `titulo` VARCHAR(255) DEFAULT NULL,
   `corpo` TEXT DEFAULT NULL,
@@ -604,8 +608,11 @@ CREATE TABLE `developmentDialogs` (
   INDEX `idx_dd_lider_emp` (`liderId`, `employeeId`),
   INDEX `idx_dd_emp_arq` (`employeeId`, `arquivado`),
   INDEX `idx_dd_lider_pend` (`liderId`, `pendencia`, `arquivado`),
+  INDEX `idx_dd_clevel_emp` (`clevelId`, `employeeId`),
+  INDEX `idx_dd_clevel_pend` (`clevelId`, `pendencia`, `arquivado`),
   FOREIGN KEY (`companyId`) REFERENCES `companies`(`id`) ON DELETE RESTRICT,
   FOREIGN KEY (`liderId`) REFERENCES `employees`(`id`) ON DELETE RESTRICT,
+  FOREIGN KEY (`clevelId`) REFERENCES `cLevelMembers`(`id`) ON DELETE RESTRICT,
   FOREIGN KEY (`employeeId`) REFERENCES `employees`(`id`) ON DELETE RESTRICT
 );
 

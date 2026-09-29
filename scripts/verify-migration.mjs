@@ -13,8 +13,11 @@
 //   1. Conecta ao server (sem base) e DROP+CREATE da base de validacao.
 //   2. Aplica a migration inteira contra a base.
 //   3. Mede os quatro invariantes contra information_schema.
-//   4. Compara literalmente com 55/721/109/19
-//      (ME-fila6 D2: +2 tabelas de formularios de desligamento).
+//   4. Compara literalmente com 55/723/110/19
+//      (ME-fila6 D2: +2 tabelas de formularios de desligamento;
+//       ME 3.5 D1: +1 coluna cLevelMembers.isRH;
+//       ME Etapa 1 patch v6: +1 coluna developmentDialogs.clevelId
+//       + 1 FK clevelId → cLevelMembers).
 //   5. DROP da base ao fim (sucesso ou falha).
 //
 // Racional: rodar contra base efemera evita colisao com bases de
@@ -34,10 +37,13 @@ const MIGRATION_PATH = resolve(REPO_ROOT, 'src/db/migrations/0000_canonical.sql'
 const VALIDATE_DB = 'roip_validate';
 
 // ME 3.5 D1 — colunas passa de 721 para 722 (adicao de `cLevelMembers.isRH`).
+// ME Etapa 1 patch v6 — colunas passa de 722 para 723 (adicao de
+// `developmentDialogs.clevelId`); FKs passa de 109 para 110 (nova FK
+// `developmentDialogs.clevelId → cLevelMembers.id`).
 const EXPECTED = {
   tables: 55,
-  columns: 722,
-  fks: 109,
+  columns: 723,
+  fks: 110,
   departments: 19,
 };
 

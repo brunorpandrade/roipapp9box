@@ -14,11 +14,18 @@
 export const MSG_ACTION_FALHA_GENERICA_DIALOGOS =
   'Nao foi possivel completar a operacao. Tente novamente.';
 
-/** Formato serializavel de um dialogo atravessando fronteira server->client. */
+/**
+ * Formato serializavel de um dialogo atravessando fronteira
+ * server->client. Patch v6: criador polimorfico (§10.1 reescrito) —
+ * liderId XOR clevelId, exatamente um preenchido (invariante canonica).
+ */
 export interface DialogoRow {
   readonly id: number;
   readonly companyId: number;
-  readonly liderId: number;
+  /** Preenchido quando o criador e employee (lider/rh_lider). null se C-level. */
+  readonly liderId: number | null;
+  /** Preenchido quando o criador e C-level. null se employee. Patch v6. */
+  readonly clevelId: number | null;
   readonly employeeId: number;
   readonly titulo: string | null;
   readonly corpo: string | null;
