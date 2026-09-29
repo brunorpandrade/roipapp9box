@@ -1,5 +1,7 @@
 // ROIP APP 9BOX — teste unitario `services/aiChatService` (ME-052,
-// S267; ME-CHAT-IA-MOTOR-FIX — contrato bit-a-bit DOC 04 §5.7/§8.3).
+// S267; ME-CHAT-IA-MOTOR-FIX — contrato bit-a-bit DOC 04 §5.7/§8.3;
+// ME-CHAT-IA-REPOSICIONAMENTO — system prompt canonico §9.2 reescrito
+// para assistente consultivo alimentado pelo dashboard).
 // Cobre a orquestracao canonica do motor Chat IA:
 //   - Guard S263: rejeita `dashboardLevel` fora do MVP.
 //   - Persistencia §11.2: mensagem `user` gravada SEMPRE (antes da
@@ -11,6 +13,10 @@
 //     (ME-CHAT-IA-MOTOR-FIX): `messages[]` = mensagem inicial de
 //     contexto + historico ativo em ordem cronologica (com a nova
 //     `user` no fim); cap canonico `CHAT_IA_HISTORY_PAIRS_CAP` §2.4.
+//   - Ancoras literais canonicas do system prompt §9.2 reescrito
+//     (ME-CHAT-IA-REPOSICIONAMENTO): abertura "assistente executivo
+//     consultivo", bloco 4 "BARREIRAS INVIOLÁVEIS", bloco 7 permite
+//     roteiros mais longos.
 //
 // Loaders, `claudeCallFacade` e o `db` sao stubbed via injecao. RV-13:
 // o motor e o unico caminho de escrita em `aiConversations` a partir
@@ -480,8 +486,24 @@ describe('constantes canonicas exportadas', () => {
       'Não foi possível processar sua pergunta agora. Tente novamente em alguns instantes.',
     );
   });
-  it('AI_CHAT_SYSTEM_PROMPT abre com a linha canonica §9.2', () => {
-    expect(AI_CHAT_SYSTEM_PROMPT.startsWith('Você é o assistente executivo')).toBe(true);
+  it('AI_CHAT_SYSTEM_PROMPT abre com a linha canonica reescrita (repos.)', () => {
+    expect(AI_CHAT_SYSTEM_PROMPT.startsWith('Você é o assistente executivo consultivo')).toBe(true);
+  });
+  it('AI_CHAT_SYSTEM_PROMPT contem bloco 4 BARREIRAS INVIOLÁVEIS (7 barreiras canonicas)', () => {
+    expect(AI_CHAT_SYSTEM_PROMPT).toContain('4. BARREIRAS INVIOLÁVEIS');
+    expect(AI_CHAT_SYSTEM_PROMPT).toContain('nunca calcula, deriva ou corrige');
+    expect(AI_CHAT_SYSTEM_PROMPT).toContain('nunca faz recomendação binária de RH');
+    expect(AI_CHAT_SYSTEM_PROMPT).toContain('nunca cita nomes de metodologias proprietárias');
+    expect(AI_CHAT_SYSTEM_PROMPT).toContain('nunca prescreve ação clínica ou psicológica');
+  });
+  it('AI_CHAT_SYSTEM_PROMPT autoriza respostas consultivas de estrutura (roteiros, planos)', () => {
+    expect(AI_CHAT_SYSTEM_PROMPT).toContain('Preparação de conversas');
+    expect(AI_CHAT_SYSTEM_PROMPT).toContain('Construção de planos e roteiros');
+    expect(AI_CHAT_SYSTEM_PROMPT).toContain('podem chegar a\n  15-20 linhas');
+  });
+  it('AI_CHAT_SYSTEM_PROMPT declara ancoragem no dashboard como base factual (bloco 2)', () => {
+    expect(AI_CHAT_SYSTEM_PROMPT).toContain('USO DO CONTEXTO DO DASHBOARD COMO BASE FACTUAL');
+    expect(AI_CHAT_SYSTEM_PROMPT).toContain('Sempre que a pergunta admitir personalização');
   });
 });
 
