@@ -54,6 +54,7 @@ import type {
   GenerateRelatorioExecutivoResult,
   LeaderOption,
   NivelEscopo,
+  XlsxDownloadResult,
 } from '../../components/central-relatorios/internals';
 
 // -----------------------------------------------------------------------
@@ -236,6 +237,128 @@ export async function generateRelatorioExecutivoRHAction(input: {
   } finally {
     await closeDbClient(client);
   }
+}
+
+// -----------------------------------------------------------------------
+// 4b. ME-PAINEL-PLANILHAS-OPERACIONAIS — planilhas operacionais xlsx
+//     (§13.3 Resumo dashboard + §13.4 Evolucao trimestral)
+// -----------------------------------------------------------------------
+//
+// Mesmo padrao canonico de `generateRelatorioExecutivoRHAction`: guard
+// RH/Bruno + `resolveEffectiveCompanyId` (D-CR-4) + caller do
+// `exportsRouter` com contexto injetado (db + rateLimiter + bearerToken).
+// Retorna `{filename, contentBase64}` que o client transforma em blob e
+// dispara download local. Sem token efemero — xlsx e gerado
+// sincronicamente e devolvido bit-exact.
+
+export async function generateResumoDashboardXlsxRHAction(input: {
+  readonly companyId: number;
+  readonly trimestre: string;
+  readonly escopoTipo: NivelEscopo;
+  readonly escopoReferencia?: string;
+}): Promise<ActionResult<XlsxDownloadResult>> {
+  const session = requireRHOrSuperAdmin(
+    await getServerSession(),
+    'generateResumoDashboardXlsxRHAction',
+  );
+  const companyId = resolveEffectiveCompanyId(session, input.companyId);
+  const token = await resolveRawToken();
+  if (token === null) {
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
+  }
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const caller = createExportsCaller(
+      createContextInner({
+        db: client.db,
+        rateLimiter: actionRateLimiter,
+        bearerToken: token,
+      }),
+    );
+    const result = await caller.getResumoDashboard({
+      companyId,
+      trimestre: input.trimestre,
+      escopoTipo: input.escopoTipo,
+      escopoReferencia: input.escopoReferencia,
+    });
+    return { ok: true, data: result };
+  } catch (err) {
+    if (err instanceof TRPCError) {
+      return { ok: false, message: err.message };
+    }
+    throw err;
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+export async function generateEvolucaoTrimestralXlsxRHAction(input: {
+  readonly companyId: number;
+  readonly trimestreFinal: string;
+  readonly escopoTipo: NivelEscopo;
+  readonly escopoReferencia?: string;
+}): Promise<ActionResult<XlsxDownloadResult>> {
+  const session = requireRHOrSuperAdmin(
+    await getServerSession(),
+    'generateEvolucaoTrimestralXlsxRHAction',
+  );
+  const companyId = resolveEffectiveCompanyId(session, input.companyId);
+  const token = await resolveRawToken();
+  if (token === null) {
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
+  }
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const caller = createExportsCaller(
+      createContextInner({
+        db: client.db,
+        rateLimiter: actionRateLimiter,
+        bearerToken: token,
+      }),
+    );
+    const result = await caller.getEvolucaoTrimestral({
+      companyId,
+      trimestreFinal: input.trimestreFinal,
+      escopoTipo: input.escopoTipo,
+      escopoReferencia: input.escopoReferencia,
+    });
+    return { ok: true, data: result };
+  } catch (err) {
+    if (err instanceof TRPCError) {
+      return { ok: false, message: err.message };
+    }
+    throw err;
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+// Versoes Clevel canonicas: variant `clevel` NUNCA renderiza os 2 cards
+// de planilhas operacionais (§12.3 matriz `isCardVisibleForVariant`).
+// Estas actions existem apenas para satisfazer o contract compartilhado
+// `RelatoriosClientActions`. Se algum client burlar a matriz e chamar,
+// retornamos erro canonico sem tocar o banco — defense-in-depth.
+
+const MSG_CLEVEL_SEM_PLANILHAS = 'Planilhas operacionais indisponíveis para o perfil C-level.';
+
+export async function generateResumoDashboardXlsxClevelAction(input: {
+  readonly companyId: number;
+  readonly trimestre: string;
+  readonly escopoTipo: NivelEscopo;
+  readonly escopoReferencia?: string;
+}): Promise<ActionResult<XlsxDownloadResult>> {
+  void input;
+  return { ok: false, message: MSG_CLEVEL_SEM_PLANILHAS };
+}
+
+export async function generateEvolucaoTrimestralXlsxClevelAction(input: {
+  readonly companyId: number;
+  readonly trimestreFinal: string;
+  readonly escopoTipo: NivelEscopo;
+  readonly escopoReferencia?: string;
+}): Promise<ActionResult<XlsxDownloadResult>> {
+  void input;
+  return { ok: false, message: MSG_CLEVEL_SEM_PLANILHAS };
 }
 
 // -----------------------------------------------------------------------

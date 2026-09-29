@@ -25,8 +25,12 @@ import { getServerSession } from '../../server/session/serverSession';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 import {
+  generateEvolucaoTrimestralXlsxClevelAction,
+  generateEvolucaoTrimestralXlsxRHAction,
   generateRelatorioExecutivoClevelAction,
   generateRelatorioExecutivoRHAction,
+  generateResumoDashboardXlsxClevelAction,
+  generateResumoDashboardXlsxRHAction,
   listClosedQuartersClevelAction,
   listClosedQuartersRHAction,
   listDepartmentsClevelAction,
@@ -89,6 +93,8 @@ export default async function CentralRelatoriosRHPage(): Promise<JSX.Element> {
               generateRelatorioExecutivo: generateRelatorioExecutivoClevelAction,
               startReportDownloadToken: startReportDownloadTokenClevelAction,
               startExecutiveReportDownloadToken: startExecutiveReportDownloadTokenClevelAction,
+              generateResumoDashboardXlsx: generateResumoDashboardXlsxClevelAction,
+              generateEvolucaoTrimestralXlsx: generateEvolucaoTrimestralXlsxClevelAction,
             }}
           />
         </Layout>
@@ -120,6 +126,8 @@ export default async function CentralRelatoriosRHPage(): Promise<JSX.Element> {
             generateRelatorioExecutivo: generateRelatorioExecutivoRHAction,
             startReportDownloadToken: startReportDownloadTokenRHAction,
             startExecutiveReportDownloadToken: startExecutiveReportDownloadTokenRHAction,
+            generateResumoDashboardXlsx: generateResumoDashboardXlsxRHAction,
+            generateEvolucaoTrimestralXlsx: generateEvolucaoTrimestralXlsxRHAction,
           }}
         />
       </Layout>

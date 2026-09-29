@@ -219,13 +219,16 @@ describe('ME-B9-CR — nova rota base RH /central-relatorios (L123)', () => {
     expect(src).toContain('companyId={session.companyId}');
   });
 
-  it('actions.ts usa requireRHOrSuperAdmin em todas as 6 actions (D-CR-4)', () => {
+  it('actions.ts usa requireRHOrSuperAdmin em todas as 8 actions (D-CR-4)', () => {
     const src = readSrc(`${RH_DIR}/actions.ts`);
     // Import canonico do helper.
     expect(src).toContain("from '../../lib/routes/requireRHOrSuperAdmin'");
-    // 6 chamadas do guard (uma por action).
+    // 8 chamadas do guard: 6 originais (§13 ME-B9-CR) + 2 acrescidas pela
+    // retomada canonica ME-PAINEL-PLANILHAS-OPERACIONAIS
+    // (`generateResumoDashboardXlsxRHAction` §13.3 +
+    // `generateEvolucaoTrimestralXlsxRHAction` §13.4).
     const matches = src.match(/requireRHOrSuperAdmin\(\s*await getServerSession\(\),/g) ?? [];
-    expect(matches.length).toBe(6);
+    expect(matches.length).toBe(8);
   });
 
   it('actions.ts resolve userType canonicamente (employee para RH, super_admin para Bruno)', () => {

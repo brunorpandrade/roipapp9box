@@ -28,7 +28,9 @@ import { getServerSession } from '../../../../../server/session/serverSession';
 
 import { RelatoriosClient } from '../../../../../components/central-relatorios/RelatoriosClient';
 import {
+  generateEvolucaoTrimestralXlsxAction,
   generateRelatorioExecutivoAction,
+  generateResumoDashboardXlsxAction,
   listClosedQuartersAction,
   listDepartmentsAction,
   listLeadersAction,
@@ -105,6 +107,8 @@ export default async function RelatoriosPage(props: PageProps): Promise<JSX.Elem
             generateRelatorioExecutivo: generateRelatorioExecutivoAction,
             startReportDownloadToken: startReportDownloadTokenAction,
             startExecutiveReportDownloadToken: startExecutiveReportDownloadTokenAction,
+            generateResumoDashboardXlsx: generateResumoDashboardXlsxAction,
+            generateEvolucaoTrimestralXlsx: generateEvolucaoTrimestralXlsxAction,
           }}
         />
       </Layout>

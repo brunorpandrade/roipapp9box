@@ -28,6 +28,8 @@ import type {
   ClosedQuarter,
   GenerateRelatorioExecutivoResult,
   LeaderOption,
+  NivelEscopo,
+  XlsxDownloadResult,
 } from '../../../../../components/central-relatorios/internals';
 
 // -----------------------------------------------------------------------
@@ -71,7 +73,13 @@ async function requireSuperAdmin(actionName: string): Promise<void> {
 // os types dali e reexporta para preservar consumidores externos (se
 // houver) — assinaturas das actions preservadas bit-exact.
 
-export type { ActionResult, ClosedQuarter, GenerateRelatorioExecutivoResult, LeaderOption };
+export type {
+  ActionResult,
+  ClosedQuarter,
+  GenerateRelatorioExecutivoResult,
+  LeaderOption,
+  XlsxDownloadResult,
+};
 
 // -----------------------------------------------------------------------
 // 1. Listar trimestres fechados (§12.6)
@@ -335,5 +343,89 @@ export async function startExecutiveReportDownloadTokenAction(input: {
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Erro ao gerar token.';
     return { ok: false, message: msg };
+  }
+}
+
+// -----------------------------------------------------------------------
+// 7. ME-PAINEL-PLANILHAS-OPERACIONAIS — planilhas operacionais xlsx
+//    (§13.3 Resumo dashboard + §13.4 Evolucao trimestral)
+// -----------------------------------------------------------------------
+//
+// Mesmo padrao canonico de `generateRelatorioExecutivoAction`: guard
+// Super Admin + caller do `exportsRouter` com contexto injetado (db +
+// rateLimiter + bearerToken). Retorna `{filename, contentBase64}` que o
+// client transforma em blob e dispara download local. Sem token efemero.
+
+export async function generateResumoDashboardXlsxAction(input: {
+  readonly companyId: number;
+  readonly trimestre: string;
+  readonly escopoTipo: NivelEscopo;
+  readonly escopoReferencia?: string;
+}): Promise<ActionResult<XlsxDownloadResult>> {
+  await requireSuperAdmin('generateResumoDashboardXlsxAction');
+  const token = await resolveRawToken();
+  if (token === null) {
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
+  }
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const caller = createExportsCaller(
+      createContextInner({
+        db: client.db,
+        rateLimiter: actionRateLimiter,
+        bearerToken: token,
+      }),
+    );
+    const result = await caller.getResumoDashboard({
+      companyId: input.companyId,
+      trimestre: input.trimestre,
+      escopoTipo: input.escopoTipo,
+      escopoReferencia: input.escopoReferencia,
+    });
+    return { ok: true, data: result };
+  } catch (err) {
+    if (err instanceof TRPCError) {
+      return { ok: false, message: err.message };
+    }
+    throw err;
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+export async function generateEvolucaoTrimestralXlsxAction(input: {
+  readonly companyId: number;
+  readonly trimestreFinal: string;
+  readonly escopoTipo: NivelEscopo;
+  readonly escopoReferencia?: string;
+}): Promise<ActionResult<XlsxDownloadResult>> {
+  await requireSuperAdmin('generateEvolucaoTrimestralXlsxAction');
+  const token = await resolveRawToken();
+  if (token === null) {
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
+  }
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const caller = createExportsCaller(
+      createContextInner({
+        db: client.db,
+        rateLimiter: actionRateLimiter,
+        bearerToken: token,
+      }),
+    );
+    const result = await caller.getEvolucaoTrimestral({
+      companyId: input.companyId,
+      trimestreFinal: input.trimestreFinal,
+      escopoTipo: input.escopoTipo,
+      escopoReferencia: input.escopoReferencia,
+    });
+    return { ok: true, data: result };
+  } catch (err) {
+    if (err instanceof TRPCError) {
+      return { ok: false, message: err.message };
+    }
+    throw err;
+  } finally {
+    await closeDbClient(client);
   }
 }

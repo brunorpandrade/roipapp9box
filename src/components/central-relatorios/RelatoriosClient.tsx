@@ -200,19 +200,63 @@ export function RelatoriosClient(props: Props): JSX.Element {
     [quarters],
   );
 
-  // Handler de download (D098-2 fix: token-based auth)
+  // Handler de download (D098-2 fix: token-based auth).
+  // ME-PAINEL-PLANILHAS-OPERACIONAIS: religou os dois cards xlsx
+  // (`resumo_dashboard` §13.3 + `evolucao_trimestral` §13.4) por um
+  // fluxo dedicado — invoca a action canonica, extrai base64,
+  // converte em blob e dispara download local. Corrige bit-exact o
+  // bug S502 (branch antigo delegava ao token PDF do `snapshot_9box`).
+  // O guard defensivo `disabled === true` foi removido: apos a
+  // religacao, nenhum card em `CARD_DEFS` esta marcado como disabled;
+  // o TS agora infere `disabled: false` como literal e a comparacao
+  // vira unreachable.
   const handleDownload = useCallback(
     async (cardId: CardId) => {
-      // ME-080d Onda 1d — D11=B: guarda defensiva. Se por alguma razao
-      // o handler for chamado com um card `disabled: true` (bypass do
-      // botao desabilitado da UI), aborta silenciosamente sem disparar
-      // download que resultaria em bug (baixaria snapshot 9-Box no
-      // lugar do relatorio esperado, ver descoberta S502 desta ME).
-      const cardDef = CARD_DEFS.find((c) => c.id === cardId);
-      if (cardDef?.disabled === true) {
+      const cs = getCardState(cardId);
+
+      // ME-PAINEL-PLANILHAS-OPERACIONAIS: fluxo canonico xlsx dos 2
+      // cards de planilhas operacionais. Invoca a action correspondente,
+      // decodifica base64 → Uint8Array → Blob → download programatico.
+      if (cardId === 'resumo_dashboard' || cardId === 'evolucao_trimestral') {
+        const escopoReferencia = cs.nivel !== 'empresa' ? cs.nivelRef : undefined;
+        const result =
+          cardId === 'resumo_dashboard'
+            ? await actions.generateResumoDashboardXlsx({
+                companyId,
+                trimestre: cs.trimestre,
+                escopoTipo: cs.nivel,
+                escopoReferencia,
+              })
+            : await actions.generateEvolucaoTrimestralXlsx({
+                companyId,
+                trimestreFinal: cs.trimestre,
+                escopoTipo: cs.nivel,
+                escopoReferencia,
+              });
+        if (!result.ok) {
+          setToast(result.message ?? 'Falha ao gerar a planilha.');
+          return;
+        }
+        const bin = atob(result.data.contentBase64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i += 1) {
+          bytes[i] = bin.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = result.data.filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+        setToast('Planilha pronta. Download iniciando…');
         return;
       }
-      const cs = getCardState(cardId);
+
       const params = new URLSearchParams({
         trimestre: cs.trimestre,
         escopoTipo: cs.nivel,
@@ -222,12 +266,7 @@ export function RelatoriosClient(props: Props): JSX.Element {
       }
 
       // Token-based routes: snapshot-9box, board-deck
-      if (
-        cardId === 'resumo_dashboard' ||
-        cardId === 'evolucao_trimestral' ||
-        cardId === 'snapshot_9box' ||
-        cardId === 'board_deck'
-      ) {
+      if (cardId === 'snapshot_9box' || cardId === 'board_deck') {
         const scope = cardId === 'board_deck' ? 'board_deck' : 'snapshot_9box';
         const result = await actions.startReportDownloadToken({
           companyId,
@@ -237,11 +276,7 @@ export function RelatoriosClient(props: Props): JSX.Element {
         });
         if (!result.ok) return;
         const url = `${result.data.downloadUrl}${encodeURIComponent(cs.trimestre)}`;
-        if (cardId === 'resumo_dashboard' || cardId === 'evolucao_trimestral') {
-          window.open(`${url}&type=${cardId}`, '_blank');
-        } else {
-          window.open(url, '_blank');
-        }
+        window.open(url, '_blank');
         return;
       }
 
@@ -625,12 +660,15 @@ function ExportCard(props: ExportCardProps): JSX.Element {
   const iconColor = ICON_COLORS[card.iconType];
   const isExecutivo = card.id === 'relatorio_executivo';
   const isClima = card.id === 'clima_engajamento';
-  // ME-080d Onda 1d — D11=B: `card.disabled` (declarado em CARD_DEFS)
-  // desabilita o card por politica (Resumo dashboard + Evolucao trimestral
-  // sem template PDF dedicado, D-REL-RESUMO-EVOLUCAO). Combina com o
-  // `!hasQuarters` pre-existente (desabilita quando nao ha trimestres
-  // fechados para escopo `empresa`).
-  const disabled = card.disabled === true || !hasQuarters;
+  // Apos a religacao ME-PAINEL-PLANILHAS-OPERACIONAIS, nenhum card em
+  // `CARD_DEFS` esta marcado como `disabled: true` — o TS infere o
+  // campo como literal `false` e a comparacao `=== true` vira
+  // unreachable. `disabled` do card deriva apenas do estado dinamico
+  // `!hasQuarters` (desabilita quando nao ha trimestres fechados no
+  // escopo `empresa`). Se uma politica futura precisar recolher um
+  // card de novo (S502-like), religa-se pela marcacao `disabled: true`
+  // em `CARD_DEFS` e volta-se a compor este predicado.
+  const disabled = !hasQuarters;
 
   // Determinar opções de nível disponíveis
   const nivelOpts = card.hasEquipe
@@ -677,27 +715,13 @@ function ExportCard(props: ExportCardProps): JSX.Element {
             }}
           >
             {card.title}
-            {card.disabled === true ? (
-              // ME-080d Onda 1d — D11=B: badge "Em desenvolvimento"
-              // canonizado. Visual alinhado aos badges de status ja
-              // usados em outros pontos do produto (padrao S503).
-              <span
-                data-testid={`card-em-desenvolvimento-${card.id}`}
-                style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                  padding: '2px 8px',
-                  borderRadius: 10,
-                  background: COLORS.background.elevated,
-                  color: COLORS.text.secondary,
-                  border: `1px solid ${COLORS.border.default}`,
-                }}
-              >
-                Em desenvolvimento
-              </span>
-            ) : null}
+            {/* Badge "Em desenvolvimento" removido: apos a religacao
+                ME-PAINEL-PLANILHAS-OPERACIONAIS, nenhum card em
+                `CARD_DEFS` esta marcado como disabled — o TS infere o
+                campo como literal `false` e a condicao `=== true`
+                vira unreachable. Se uma politica futura recolher um
+                card de novo, restaurar este bloco condicionado a
+                `card.disabled === true`. */}
           </div>
           <div
             style={{

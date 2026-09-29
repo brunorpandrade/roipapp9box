@@ -26,35 +26,40 @@
 /** §12.3 — 6 cards canonicos em 2 subsecoes. */
 export const CARD_DEFS = [
   {
-    // ME-080d Onda 1d — D11=B: card mantem visivel mas rotulado como
-    // "Em desenvolvimento". Descoberta em auditoria S502: os botoes
-    // deste card e do `evolucao_trimestral` reusavam a rota de download
-    // do `snapshot_9box` com um parametro `type=` que o backend ignora
-    // — na pratica os 3 cards baixavam o mesmo PDF (bug funcional
-    // grave). Sem template PDF dedicado, esconder e a decisao honesta.
-    // Debito D-REL-RESUMO-EVOLUCAO nomeado para bloco B2/B3 futuro.
+    // ME-PLANILHAS-OPERACIONAIS: religacao canonica do card. Backend
+    // canonico (§13.3) ja implementado em `exports.getResumoDashboard`
+    // com aba unica "Resumo dashboard" + 11 colunas canonicas + filename
+    // canonico + testes cobertos em `spreadsheets-router.test.ts`. O
+    // handler antigo apontava para a rota errada (bug S502); reescrito
+    // canonicamente em `RelatoriosClient.handleDownload` para invocar a
+    // action `generateResumoDashboardXlsx` e disparar download via blob.
+    // Debito D-REL-RESUMO-EVOLUCAO quitado.
     id: 'resumo_dashboard',
     title: 'Resumo dashboard',
-    subtitle: 'Em desenvolvimento — disponível em fase futura',
+    subtitle: 'Planilha xlsx · 1 trimestre',
     section: 'planilhas',
     iconType: 'xlsx' as const,
     hasCascade: true,
     hasEquipe: true,
-    buttonLabel: 'Em breve',
-    disabled: true,
+    buttonLabel: 'Baixar planilha',
+    disabled: false,
   },
   {
-    // ME-080d Onda 1d — D11=B: mesmo tratamento canonico do
-    // resumo_dashboard (D-REL-RESUMO-EVOLUCAO).
+    // ME-PLANILHAS-OPERACIONAIS: religacao canonica do card. Backend
+    // canonico (§13.4) ja implementado em `exports.getEvolucaoTrimestral`
+    // com aba unica + 4 trimestres consecutivos + turnover na mesma
+    // tabela + filename canonico + testes cobertos em
+    // `spreadsheets-router.test.ts`. Mesmo padrao de religacao do
+    // `resumo_dashboard` (bug S502 corrigido no client).
     id: 'evolucao_trimestral',
     title: 'Evolução trimestral',
-    subtitle: 'Em desenvolvimento — disponível em fase futura',
+    subtitle: 'Planilha xlsx · até 4 trimestres',
     section: 'planilhas',
     iconType: 'xlsx' as const,
     hasCascade: true,
     hasEquipe: true,
-    buttonLabel: 'Em breve',
-    disabled: true,
+    buttonLabel: 'Baixar planilha',
+    disabled: false,
   },
   {
     id: 'relatorio_executivo',
@@ -156,6 +161,18 @@ export interface GenerateRelatorioExecutivoResult {
 }
 
 /**
+ * ME-PAINEL-PLANILHAS-OPERACIONAIS — retorno canonico das actions
+ * `generateResumoDashboardXlsx` (§13.3) e `generateEvolucaoTrimestralXlsx`
+ * (§13.4). O contract espelha bit-exact o retorno das procedures tRPC
+ * `exports.getResumoDashboard` e `exports.getEvolucaoTrimestral`: nome
+ * canonico do arquivo + payload xlsx codificado em base64.
+ */
+export interface XlsxDownloadResult {
+  readonly filename: string;
+  readonly contentBase64: string;
+}
+
+/**
  * Assinaturas canonicas das 6 actions injetadas no `RelatoriosClient`
  * (D-CR-5 aprovada). Padrao bit-exact ME-084: componente compartilhado
  * nunca importa actions diretamente — cada rota injeta as suas.
@@ -194,6 +211,23 @@ export interface RelatoriosClientActions {
     readonly companyId: number;
     readonly cacheId: number;
   }) => Promise<ActionResult<{ token: string; downloadUrl: string }>>;
+  // ME-PAINEL-PLANILHAS-OPERACIONAIS: religacao canonica dos 2 cards
+  // xlsx (§13.3 + §13.4). O client invoca a action, extrai base64,
+  // converte em blob e dispara download local com o filename canonico
+  // retornado. Nenhum sistema de token efemero (padrao de PDF); xlsx
+  // e gerado sincronicamente e devolvido bit-exact.
+  readonly generateResumoDashboardXlsx: (input: {
+    readonly companyId: number;
+    readonly trimestre: string;
+    readonly escopoTipo: NivelEscopo;
+    readonly escopoReferencia?: string;
+  }) => Promise<ActionResult<XlsxDownloadResult>>;
+  readonly generateEvolucaoTrimestralXlsx: (input: {
+    readonly companyId: number;
+    readonly trimestreFinal: string;
+    readonly escopoTipo: NivelEscopo;
+    readonly escopoReferencia?: string;
+  }) => Promise<ActionResult<XlsxDownloadResult>>;
 }
 
 // -----------------------------------------------------------------------
