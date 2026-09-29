@@ -1,11 +1,16 @@
 // ROIP APP 9BOX — teste unitario `services/aiChatService` (ME-052,
-// S267). Cobre a orquestracao canonica do motor Chat IA:
+// S267; ME-CHAT-IA-MOTOR-FIX — contrato bit-a-bit DOC 04 §5.7/§8.3).
+// Cobre a orquestracao canonica do motor Chat IA:
 //   - Guard S263: rejeita `dashboardLevel` fora do MVP.
 //   - Persistencia §11.2: mensagem `user` gravada SEMPRE (antes da
 //     chamada a Claude); mensagem `assistant` gravada SO NO SUCESSO.
 //   - Recomposicao do contexto (§5.7): loader chamado a cada mensagem.
 //   - `composeChatIaUserPrompt`: preambulo + JSON + trailer canonicos.
 //   - Fallback §11.2 (mensagem literal exata).
+//   - Contrato canonico do request Claude DOC 04 §8.3
+//     (ME-CHAT-IA-MOTOR-FIX): `messages[]` = mensagem inicial de
+//     contexto + historico ativo em ordem cronologica (com a nova
+//     `user` no fim); cap canonico `CHAT_IA_HISTORY_PAIRS_CAP` §2.4.
 //
 // Loaders, `claudeCallFacade` e o `db` sao stubbed via injecao. RV-13:
 // o motor e o unico caminho de escrita em `aiConversations` a partir
@@ -16,6 +21,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AI_CHAT_MAX_TOKENS,
   AI_CHAT_TEMPERATURE,
+  CHAT_IA_HISTORY_PAIRS_CAP,
   CHAT_IA_LEVELS_MVP,
   CHAT_IA_USER_MESSAGE_MAX_CHARS,
   chatIaSurfaceFromLevel,
@@ -23,6 +29,7 @@ import {
   MSG_CHAT_IA_FALLBACK,
   sendChatMessage,
   type AiChatServiceDeps,
+  type ChatIaHistoryRow,
   type SendChatMessageArgs,
 } from '../../src/server/services/aiChatService';
 import { AI_CHAT_SYSTEM_PROMPT } from '../../src/server/services/aiChatSystemPrompt';
@@ -30,7 +37,11 @@ import type {
   DashboardEquipeContextPayload,
   DashboardIndividualContextPayload,
 } from '../../src/server/services/_shared/dashboardContextTypes';
-import type { ClaudeCallResult } from '../../src/server/services/claudeCall';
+import type {
+  ClaudeCallMessage,
+  ClaudeCallOpts,
+  ClaudeCallResult,
+} from '../../src/server/services/claudeCall';
 
 // ============================================================
 // Fixtures canonicas de payload
@@ -121,7 +132,8 @@ const EQUIPE_PAYLOAD_STUB: DashboardEquipeContextPayload = {
 interface Harness {
   db: unknown;
   insertCalls: Array<{ role: string; content: string }>;
-  counters: { claude: number; loadIndividual: number; loadEquipe: number };
+  counters: { claude: number; loadIndividual: number; loadEquipe: number; loadHistory: number };
+  capturedOpts: ClaudeCallOpts[];
   deps: AiChatServiceDeps;
 }
 
@@ -129,9 +141,17 @@ function buildHarness(overrides: {
   claudeResult?: ClaudeCallResult;
   loadIndividualResult?: DashboardIndividualContextPayload | null;
   loadEquipeResult?: DashboardEquipeContextPayload | null;
+  /**
+   * Historico canonico retornado pelo loader ANTES do INSERT da nova
+   * user. Como no motor real o INSERT roda antes de `loadHistory`, o
+   * harness anexa a nova user ao final para preservar o invariante do
+   * contrato canonico (§11.2 + §8.3).
+   */
+  historyBefore?: ChatIaHistoryRow[];
 }): Harness {
   const insertCalls: Array<{ role: string; content: string }> = [];
-  const counters = { claude: 0, loadIndividual: 0, loadEquipe: 0 };
+  const capturedOpts: ClaudeCallOpts[] = [];
+  const counters = { claude: 0, loadIndividual: 0, loadEquipe: 0, loadHistory: 0 };
   const claudeResult: ClaudeCallResult = overrides.claudeResult ?? {
     ok: true,
     content: 'Resposta canonica da IA.',
@@ -162,11 +182,13 @@ function buildHarness(overrides: {
       }),
     }),
   };
+  const historyBefore = overrides.historyBefore ?? [];
   const deps: AiChatServiceDeps = {
     db: db as unknown as AiChatServiceDeps['db'],
     claudeCallFacade: {
-      claudeCall: async () => {
+      claudeCall: async (opts) => {
         counters.claude += 1;
+        capturedOpts.push(opts);
         return claudeResult;
       },
     },
@@ -182,8 +204,20 @@ function buildHarness(overrides: {
         ? EQUIPE_PAYLOAD_STUB
         : overrides.loadEquipeResult;
     },
+    loadHistory: async () => {
+      counters.loadHistory += 1;
+      // Replica o invariante canonico: a nova mensagem `user` acaba de
+      // ser inserida em `aiConversations`; portanto o loader devolve o
+      // historico previo + a nova user no final. O harness reconstroi
+      // esse invariante a partir de `insertCalls` para permitir cap
+      // testing sem serializar tempo de I/O real.
+      const lastUser = insertCalls[insertCalls.length - 1];
+      const newUserRow: ChatIaHistoryRow | null =
+        lastUser && lastUser.role === 'user' ? { role: 'user', content: lastUser.content } : null;
+      return newUserRow === null ? historyBefore : [...historyBefore, newUserRow];
+    },
   };
-  return { db, insertCalls, counters, deps };
+  return { db, insertCalls, counters, capturedOpts, deps };
 }
 
 const BASE_ARGS: SendChatMessageArgs = {
@@ -296,6 +330,102 @@ describe('sendChatMessage — nivel equipe', () => {
   });
 });
 
+// ============================================================
+// Contrato canonico do request Claude — DOC 04 §5.7 + §8.3
+// (ME-CHAT-IA-MOTOR-FIX)
+// ============================================================
+
+describe('sendChatMessage — contrato canonico DOC 04 §8.3 do request Claude', () => {
+  it('primeira mensagem da conversa: messages[] = [contexto, nova user]', async () => {
+    const h = buildHarness({ historyBefore: [] });
+    await sendChatMessage(h.deps, BASE_ARGS);
+    expect(h.capturedOpts).toHaveLength(1);
+    const opts = h.capturedOpts[0];
+    if (opts === undefined) throw new Error('opts nao capturado');
+    expect(opts.systemPrompt).toBe(AI_CHAT_SYSTEM_PROMPT);
+    // TypeScript narrowing pelo union discriminado do ClaudeCallOpts.
+    if (opts.messages === undefined) throw new Error('modo multi-turn nao usado');
+    const messages: ClaudeCallMessage[] = opts.messages;
+    expect(messages).toHaveLength(2);
+    // messages[0]: contexto canonico do dashboard.
+    expect(messages[0]?.role).toBe('user');
+    expect(messages[0]?.content).toContain('Contexto do dashboard individual do colaborador');
+    expect(messages[0]?.content).toContain('"nome": "Fulano"');
+    // messages[1]: nova pergunta do gestor (ja gravada em aiConversations).
+    expect(messages[1]?.role).toBe('user');
+    expect(messages[1]?.content).toBe(BASE_ARGS.content);
+  });
+
+  it('conversa com historico: messages[] = [contexto, ...historico, nova user]', async () => {
+    const h = buildHarness({
+      historyBefore: [
+        { role: 'user', content: 'Pergunta 1' },
+        { role: 'assistant', content: 'Resposta 1' },
+        { role: 'user', content: 'Pergunta 2' },
+        { role: 'assistant', content: 'Resposta 2' },
+      ],
+    });
+    await sendChatMessage(h.deps, BASE_ARGS);
+    const opts = h.capturedOpts[0];
+    if (opts === undefined) throw new Error('opts nao capturado');
+    if (opts.messages === undefined) throw new Error('modo multi-turn nao usado');
+    const messages: ClaudeCallMessage[] = opts.messages;
+    // 1 contexto + 4 historicas + 1 nova user = 6.
+    expect(messages).toHaveLength(6);
+    expect(messages[0]?.role).toBe('user');
+    expect(messages[0]?.content).toContain('Contexto do dashboard individual do colaborador');
+    expect(messages[1]).toEqual({ role: 'user', content: 'Pergunta 1' });
+    expect(messages[2]).toEqual({ role: 'assistant', content: 'Resposta 1' });
+    expect(messages[3]).toEqual({ role: 'user', content: 'Pergunta 2' });
+    expect(messages[4]).toEqual({ role: 'assistant', content: 'Resposta 2' });
+    expect(messages[5]).toEqual({ role: 'user', content: BASE_ARGS.content });
+  });
+
+  it('respeita cap canonico §2.4 CHAT_IA_HISTORY_PAIRS_CAP no historico', async () => {
+    // Gera 50 pares (100 registros) — cap deve reduzir para os 80 mais
+    // recentes ANTES de acrescentar a nova user; total no messages[] fica
+    // 1 (contexto) + 80 (cap) = 81. A nova user aparece dentro dos 80
+    // mais recentes por ser o registro mais novo cronologicamente.
+    const paresGerados = 50;
+    const historyBefore: ChatIaHistoryRow[] = [];
+    for (let i = 0; i < paresGerados; i += 1) {
+      historyBefore.push({ role: 'user', content: `Pergunta ${i + 1}` });
+      historyBefore.push({ role: 'assistant', content: `Resposta ${i + 1}` });
+    }
+    const h = buildHarness({ historyBefore });
+    await sendChatMessage(h.deps, BASE_ARGS);
+    const opts = h.capturedOpts[0];
+    if (opts === undefined) throw new Error('opts nao capturado');
+    if (opts.messages === undefined) throw new Error('modo multi-turn nao usado');
+    const messages: ClaudeCallMessage[] = opts.messages;
+    // 1 (contexto) + 80 (cap = 40 pares) = 81.
+    expect(messages).toHaveLength(1 + CHAT_IA_HISTORY_PAIRS_CAP * 2);
+    // O primeiro turno de historico dentro do cap deve ser o par
+    // (Pergunta 11 / Resposta 11) — os 10 pares mais antigos ficaram
+    // fora. Contas: 100 registros no historyBefore + 1 nova user = 101
+    // total; cap 80 mantem os ultimos 80; os 21 primeiros ficam fora
+    // (10 pares completos + 1 registro do par 11); o primeiro dentro
+    // do cap e o assistant do par 11.
+    expect(messages[1]).toEqual({ role: 'assistant', content: 'Resposta 11' });
+    // O ultimo elemento e sempre a nova user.
+    expect(messages[messages.length - 1]).toEqual({
+      role: 'user',
+      content: BASE_ARGS.content,
+    });
+  });
+
+  it('propaga temperatura e max_tokens canonicos ao claudeCall', async () => {
+    const h = buildHarness({});
+    await sendChatMessage(h.deps, BASE_ARGS);
+    const opts = h.capturedOpts[0];
+    if (opts === undefined) throw new Error('opts nao capturado');
+    expect(opts.temperature).toBe(AI_CHAT_TEMPERATURE);
+    expect(opts.maxTokens).toBe(AI_CHAT_MAX_TOKENS);
+    expect(opts.jsonExpected).toBe(false);
+    expect(opts.telemetry.surface).toBe('aiChat_individual');
+  });
+});
+
 describe('composeChatIaUserPrompt — estrutura canonica §8.3', () => {
   it('individual: preambulo + JSON + trailer canonicos', () => {
     const prompt = composeChatIaUserPrompt({
@@ -341,6 +471,9 @@ describe('constantes canonicas exportadas', () => {
   });
   it('CHAT_IA_USER_MESSAGE_MAX_CHARS = 2000 (canonico §5.8)', () => {
     expect(CHAT_IA_USER_MESSAGE_MAX_CHARS).toBe(2000);
+  });
+  it('CHAT_IA_HISTORY_PAIRS_CAP = 40 (canonico §2.4)', () => {
+    expect(CHAT_IA_HISTORY_PAIRS_CAP).toBe(40);
   });
   it('MSG_CHAT_IA_FALLBACK e o texto canonico literal §11.2', () => {
     expect(MSG_CHAT_IA_FALLBACK).toBe(

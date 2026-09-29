@@ -1,4 +1,5 @@
-// ROIP APP 9BOX — servico `claudeCall` (ME-050/51, S240-S243 + S258).
+// ROIP APP 9BOX — servico `claudeCall` (ME-050/51, S240-S243 + S258;
+// ME-CHAT-IA-MOTOR-FIX aditivo — modo `messages[]` para Chat IA).
 //
 // Wrapper unico canonico para todas as chamadas a Claude API desta
 // camada (DOC 04 §2 + §10). Consolida os padroes transversais:
@@ -16,6 +17,18 @@
 //   Individual M2 (§3.4) rodam em paralelo via `Promise.all` no
 //   consumidor; o wrapper e chamavel N vezes concorrentemente.
 //
+// Modos canonicos de request (aditivo ME-CHAT-IA-MOTOR-FIX):
+// - Modo single-turn (`userPrompt: string`) — canonico Perfil Individual,
+//   Diagnostico IA e Relatorio Executivo. Wrapper monta
+//   `messages: [{role: 'user', content: userPrompt}]` para a API.
+// - Modo multi-turn (`messages: ClaudeCallMessage[]`) — canonico Chat IA
+//   (DOC 04 §8.3): sequencia `[mensagem inicial com contexto do
+//   dashboard, ...historico ativo, nova mensagem do usuario]`. Wrapper
+//   envia o array literal para a API.
+// Os dois modos sao mutuamente exclusivos por tipagem — o union
+// discriminado `ClaudeCallOpts` garante em tempo de compilacao que
+// consumidor escolhe exatamente um.
+//
 // Politica de retry (§2.2, S448):
 // - Timeout / 5xx / erro de conexao: ate 2 novas tentativas com backoff
 //   fixo 5s / 15s. Total ate 3 tentativas.
@@ -30,12 +43,6 @@
 //   minimalismo de dependencias do projeto).
 // - Testes de integracao substituem o Facade por stub deterministico —
 //   `claudeCall` real e exercitado apenas pelo unit deste modulo.
-//
-// Escopo desta ME: consumido apenas pelo motor IA do Perfil Individual
-// (`individualProfileAI.ts`). O Perfil Individual NAO consome
-// `apiUsageLog` (§2.3) — o wrapper nao faz UPSERT em `apiUsageLog`;
-// isso e responsabilidade do consumidor Relatorio executivo trimestral
-// (ME-053).
 
 import { randomUUID } from 'node:crypto';
 
@@ -87,10 +94,21 @@ export interface ClaudeCallTelemetryContext {
   userType: 'super_admin' | 'employee' | 'clevel';
 }
 
-/** Opcoes canonicas de uma chamada. */
-export interface ClaudeCallOpts {
+/**
+ * Mensagem canonica do modo multi-turn (DOC 04 §8.3). Consumidor
+ * canonico: motor Chat IA (`aiChatService.sendChatMessage`).
+ */
+export interface ClaudeCallMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+/**
+ * Campos comuns aos dois modos canonicos. Nao exportado — parte da
+ * definicao do union `ClaudeCallOpts`.
+ */
+interface ClaudeCallOptsBase {
   systemPrompt: string;
-  userPrompt: string;
   maxTokens: number;
   temperature: number;
   /**
@@ -105,6 +123,20 @@ export interface ClaudeCallOpts {
   /** Timeout canonico do §3.7 (60s). Override so em cenarios calibrados. */
   timeoutMs?: number;
 }
+
+/**
+ * Opcoes canonicas de uma chamada. Union discriminado por modo:
+ *   - Modo single-turn: passa `userPrompt: string` (wrapper monta
+ *     `messages: [{role:'user', content: userPrompt}]`).
+ *   - Modo multi-turn: passa `messages: ClaudeCallMessage[]` (wrapper
+ *     envia o array literal — ordem canonica DOC 04 §8.3).
+ * Os dois campos sao mutuamente exclusivos por tipagem.
+ */
+export type ClaudeCallOpts = ClaudeCallOptsBase &
+  (
+    | { userPrompt: string; messages?: undefined }
+    | { messages: ClaudeCallMessage[]; userPrompt?: undefined }
+  );
 
 /** Status canonico final da chamada (§2.6 — 5 valores canonicos). */
 export type ClaudeCallStatus =
@@ -253,6 +285,21 @@ interface AttemptFailure {
 }
 
 /**
+ * Monta o array `messages` que viaja no body do request Anthropic.
+ * Discriminacao pelo modo canonico do union `ClaudeCallOpts`:
+ *   - Modo multi-turn (`opts.messages` presente): array literal.
+ *   - Modo single-turn (`opts.userPrompt` presente): embrulha em um
+ *     unico turno `user`.
+ * Retorna sempre o formato aceito pela API (`role` + `content`).
+ */
+function buildApiMessages(opts: ClaudeCallOpts): Array<{ role: string; content: string }> {
+  if (opts.messages !== undefined) {
+    return opts.messages.map((m) => ({ role: m.role, content: m.content }));
+  }
+  return [{ role: 'user', content: opts.userPrompt }];
+}
+
+/**
  * Executa UMA tentativa HTTP contra a API. Devolve outcome
  * discriminado — sem retry, sem sleep. Timeout via `AbortSignal`.
  */
@@ -279,7 +326,7 @@ async function performAttempt(
         max_tokens: opts.maxTokens,
         temperature: opts.temperature,
         system: opts.systemPrompt,
-        messages: [{ role: 'user', content: opts.userPrompt }],
+        messages: buildApiMessages(opts),
       }),
       signal: controller.signal,
     });

@@ -1,4 +1,5 @@
-// ROIP APP 9BOX — motor `aiChatService` (ME-052, S267).
+// ROIP APP 9BOX — motor `aiChatService` (ME-052, S267;
+// ME-CHAT-IA-MOTOR-FIX — request Claude bit-a-bit DOC 04 §5.7/§8.3).
 //
 // Motor unico canonico do Chat IA (DOC 04 §5). Composicao do
 // contexto por nivel (§5.5), extensao condicional pelo bloco
@@ -7,6 +8,22 @@
 // canonica via wrapper `claudeCall` (S258 Facade DI), persistencia
 // em `aiConversations` segundo §11.2 (mensagem user sempre gravada;
 // resposta assistant so no sucesso).
+//
+// Contrato canonico do request Claude (DOC 04 §5.7 item 4 + §8.3 —
+// ME-CHAT-IA-MOTOR-FIX):
+//   system:   AI_CHAT_SYSTEM_PROMPT (canonico §9.2)
+//   messages: [
+//     { role: 'user', content: <mensagem inicial com contexto do
+//                               dashboard — composeChatIaUserPrompt> },
+//     ...historico ativo em ordem cronologica (aiConversations com
+//        archivedAt IS NULL, para a chave canonica (userId, userType,
+//        dashboardLevel, contextId), cap de 40 pares §2.4);
+//        a nova mensagem `user` recem-gravada JA E o ultimo elemento
+//        do historico — nao ha injecao adicional.
+//   ]
+// Nenhum turno sintetico de handshake e injetado. DOC 04 §8.3 e
+// literal quanto a sequencia — o modelo responde ao ultimo turno
+// `user` do array conforme instrucao operacional §7 do system prompt.
 //
 // Regime canonico (S263 — MVP):
 //   - Aceita apenas `dashboardLevel ∈ {'equipe', 'individual'}`.
@@ -33,11 +50,12 @@
 // `tests/integration/aiChat-router.test.ts`.
 
 import type { RoipDatabase } from '../../db/client';
-import { insertAiConversation } from './aiConversations';
+import { insertAiConversation, listAiConversationsActive } from './aiConversations';
 import { AI_CHAT_SYSTEM_PROMPT } from './aiChatSystemPrompt';
 import {
   DEFAULT_CLAUDE_CALL_FACADE,
   type ClaudeCallFacade,
+  type ClaudeCallMessage,
   type ClaudeCallResult,
   type ClaudeCallStatus,
   type ClaudeCallSurface,
@@ -81,6 +99,16 @@ export const CHAT_IA_LEVELS_MVP: readonly ChatIaDashboardLevel[] = [
  * antes de gravar em `aiConversations.content` (§5.8 canonico).
  */
 export const CHAT_IA_USER_MESSAGE_MAX_CHARS = 2_000 as const;
+
+/**
+ * Cap canonico do historico ativo enviado a Claude (§2.4 — "40 pares
+ * de historico ativo" para Chat IA individual e equipe). Um par =
+ * 1 turno `user` + 1 turno `assistant`. Cap aplicado sobre a lista
+ * ordenada cronologicamente: `slice(-CHAT_IA_HISTORY_PAIRS_CAP * 2)`
+ * mantem no maximo os 80 registros mais recentes, com a nova
+ * mensagem `user` recem-gravada sempre no final.
+ */
+export const CHAT_IA_HISTORY_PAIRS_CAP = 40 as const;
 
 /**
  * Mensagem canonica exata de fallback §11.2 do DOC 04. Exportada
@@ -142,10 +170,20 @@ export function composeChatIaUserPrompt(input: ChatIaUserPromptInput): string {
 // ============================================================
 
 /**
+ * Linha canonica do historico ativo consumida pelo motor. Subset do
+ * `NewAiConversation` — apenas os campos necessarios para compor o
+ * array `messages[]` do request Claude (DOC 04 §8.3).
+ */
+export interface ChatIaHistoryRow {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+/**
  * Dependencias injetaveis do motor Chat IA. `claudeCallFacade` e
  * substituido por stub deterministico nos testes de integracao. Os
- * loaders de contexto sao injetaveis para permitir teste unit sem
- * banco de dados real.
+ * loaders de contexto e de historico sao injetaveis para permitir
+ * teste unit sem banco de dados real.
  */
 export interface AiChatServiceDeps {
   db: RoipDatabase;
@@ -158,6 +196,13 @@ export interface AiChatServiceDeps {
     db: RoipDatabase,
     args: DashboardEquipeContextArgs,
   ) => Promise<DashboardEquipeContextPayload | null>;
+  loadHistory: (
+    db: RoipDatabase,
+    userId: number,
+    userType: ChatIaUserType,
+    dashboardLevel: ChatIaDashboardLevel,
+    contextId: number,
+  ) => Promise<ChatIaHistoryRow[]>;
 }
 
 /** Factory canonica com defaults reais. */
@@ -167,6 +212,10 @@ export function createDefaultAiChatServiceDeps(db: RoipDatabase): AiChatServiceD
     claudeCallFacade: DEFAULT_CLAUDE_CALL_FACADE,
     loadIndividualContext: loadDashboardIndividualContext,
     loadEquipeContext: loadDashboardEquipeContext,
+    loadHistory: async (db, userId, userType, dashboardLevel, contextId) => {
+      const rows = await listAiConversationsActive(db, userId, userType, dashboardLevel, contextId);
+      return rows.map((r) => ({ role: r.role, content: r.content }));
+    },
   };
 }
 
@@ -232,9 +281,13 @@ export type SendChatMessageOutcome =
  *   3. Recompoe contexto do zero (§5.7).
  *   4. Se contexto = null (colaborador/lider inexistente), retorna
  *      outcome `context_not_found` — router traduz para NOT_FOUND.
- *   5. Chama Claude API via `claudeCallFacade`.
- *   6. Se falha: outcome `failed_claude` — assistant nao e gravado.
- *   7. Se ok: grava mensagem `assistant` e retorna outcome `ok`.
+ *   5. Le historico ativo (§5.7 item 3) e aplica cap canonico
+ *      `CHAT_IA_HISTORY_PAIRS_CAP` (§2.4).
+ *   6. Monta `messages[]` bit-a-bit DOC 04 §8.3: mensagem inicial de
+ *      contexto + historico ativo (que ja contem a nova user no fim).
+ *   7. Chama Claude API via `claudeCallFacade` no modo multi-turn.
+ *   8. Se falha: outcome `failed_claude` — assistant nao e gravado.
+ *   9. Se ok: grava mensagem `assistant` e retorna outcome `ok`.
  */
 export async function sendChatMessage(
   deps: AiChatServiceDeps,
@@ -259,7 +312,7 @@ export async function sendChatMessage(
   });
 
   // 3. Recompoe contexto do zero (§5.7).
-  let userPrompt: string;
+  let contextUserPrompt: string;
   if (args.dashboardLevel === 'individual') {
     const payload = await deps.loadIndividualContext(deps.db, {
       companyId: args.companyId,
@@ -271,7 +324,7 @@ export async function sendChatMessage(
     if (payload === null) {
       return { kind: 'context_not_found', userId: userMessageId };
     }
-    userPrompt = composeChatIaUserPrompt({ level: 'individual', payload });
+    contextUserPrompt = composeChatIaUserPrompt({ level: 'individual', payload });
   } else {
     const payload = await deps.loadEquipeContext(deps.db, {
       companyId: args.companyId,
@@ -283,14 +336,36 @@ export async function sendChatMessage(
     if (payload === null) {
       return { kind: 'context_not_found', userId: userMessageId };
     }
-    userPrompt = composeChatIaUserPrompt({ level: 'equipe', payload });
+    contextUserPrompt = composeChatIaUserPrompt({ level: 'equipe', payload });
   }
 
-  // 4. Chama Claude API via Facade DI. Texto plano (jsonExpected =
-  //    false — §2.2 texto plano corrompido nao dispara retry).
+  // 4. Le historico ativo apos a gravacao da nova user (§5.7 item 3).
+  //    A nova mensagem `user` recem-gravada e o ultimo elemento da
+  //    lista retornada — nenhum append adicional e necessario.
+  const historyRows = await deps.loadHistory(
+    deps.db,
+    args.viewerUserId,
+    args.viewerUserType,
+    args.dashboardLevel,
+    args.contextId,
+  );
+
+  // 5. Aplica cap canonico §2.4 (40 pares = 80 registros ao maximo).
+  //    Slice preserva a ordem cronologica e mantem a nova user no fim.
+  const historyCapped = historyRows.slice(-CHAT_IA_HISTORY_PAIRS_CAP * 2);
+
+  // 6. Monta `messages[]` canonico DOC 04 §8.3.
+  const messages: ClaudeCallMessage[] = [
+    { role: 'user', content: contextUserPrompt },
+    ...historyCapped.map<ClaudeCallMessage>((r) => ({ role: r.role, content: r.content })),
+  ];
+
+  // 7. Chama Claude API via Facade DI no modo multi-turn. Texto plano
+  //    (jsonExpected = false — §2.2 texto plano corrompido nao dispara
+  //    retry).
   const result: ClaudeCallResult = await deps.claudeCallFacade.claudeCall({
     systemPrompt: AI_CHAT_SYSTEM_PROMPT,
-    userPrompt,
+    messages,
     maxTokens: AI_CHAT_MAX_TOKENS,
     temperature: AI_CHAT_TEMPERATURE,
     jsonExpected: false,
@@ -302,7 +377,7 @@ export async function sendChatMessage(
     },
   });
 
-  // 5. Falha canonica §11.2 — assistant nao e gravado.
+  // 8. Falha canonica §11.2 — assistant nao e gravado.
   if (!result.ok) {
     return {
       kind: 'failed_claude',
@@ -312,7 +387,7 @@ export async function sendChatMessage(
     };
   }
 
-  // 6. Sucesso — grava mensagem `assistant`.
+  // 9. Sucesso — grava mensagem `assistant`.
   const assistantMessageId = await insertAiConversation(deps.db, {
     companyId: args.companyId,
     userId: args.viewerUserId,

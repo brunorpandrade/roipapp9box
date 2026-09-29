@@ -1,7 +1,7 @@
 // ROIP APP 9BOX — teste unitario `services/claudeCall` (ME-050/51,
-// S240-S243). Puramente algoritmico: `fetch` e `sleep` injetados
-// (nenhum I/O real, nenhum sleep real). RV-08 — veredito unit
-// pre-decidido.
+// S240-S243; ME-CHAT-IA-MOTOR-FIX aditivo — modo multi-turn).
+// Puramente algoritmico: `fetch` e `sleep` injetados (nenhum I/O real,
+// nenhum sleep real). RV-08 — veredito unit pre-decidido.
 //
 // Cobre a politica canonica de retry §2.2 (S448):
 // - Sucesso no primeiro shot (transporte + parse JSON).
@@ -14,6 +14,11 @@
 // - Payload de telemetria completo (§2.6).
 // - `ANTHROPIC_API_KEY` ausente -> throw explicito (falha de configuracao).
 // - Fallback do modelo canonico via `CLAUDE_MODEL` (S451).
+//
+// ME-CHAT-IA-MOTOR-FIX adiciona cobertura canonica do modo multi-turn
+// `messages[]` (DOC 04 §8.3): o wrapper viaja o array literal ao body
+// do request, sem embrulhar em turno unico. Modo single-turn
+// `userPrompt` continua canonico para os outros consumidores.
 
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -24,6 +29,7 @@ import {
   claudeCall,
   extractJsonPayload,
   type ClaudeCallDeps,
+  type ClaudeCallMessage,
   type ClaudeCallOpts,
   type ClaudeCallTelemetryRecord,
 } from '../../src/server/services/claudeCall';
@@ -293,6 +299,44 @@ describe('services/claudeCall (ME-050/51)', () => {
     expect(body.temperature).toBe(0.3);
     expect(body.system).toBe(CANON_OPTS.systemPrompt);
     expect(body.messages).toEqual([{ role: 'user', content: CANON_OPTS.userPrompt }]);
+  });
+
+  it('config — modo multi-turn: envia messages[] canonico bit-a-bit ao body', async () => {
+    const h = makeHarness();
+    h.fetchImpl.mockResolvedValueOnce(fakeResponse(200, makeApiOkBody('resposta plana')));
+    const messagesCanonicos: ClaudeCallMessage[] = [
+      { role: 'user', content: 'Contexto do dashboard...' },
+      { role: 'user', content: 'Primeira pergunta do gestor' },
+      { role: 'assistant', content: 'Resposta anterior da IA' },
+      { role: 'user', content: 'Nova pergunta do gestor' },
+    ];
+    const multiOpts: ClaudeCallOpts = {
+      systemPrompt: 'system canonico do Chat IA',
+      messages: messagesCanonicos,
+      maxTokens: 2000,
+      temperature: 0.5,
+      jsonExpected: false,
+      telemetry: {
+        companyId: 7,
+        surface: 'aiChat_individual',
+        userId: 900,
+        userType: 'employee',
+      },
+    };
+    await claudeCall(multiOpts, h.deps);
+    const call = h.fetchImpl.mock.calls[0];
+    if (!call) throw new Error('fetch nunca chamado');
+    const init = call[1] as RequestInit;
+    const body = JSON.parse(init.body as string);
+    expect(body.system).toBe('system canonico do Chat IA');
+    expect(body.messages).toEqual([
+      { role: 'user', content: 'Contexto do dashboard...' },
+      { role: 'user', content: 'Primeira pergunta do gestor' },
+      { role: 'assistant', content: 'Resposta anterior da IA' },
+      { role: 'user', content: 'Nova pergunta do gestor' },
+    ]);
+    expect(body.max_tokens).toBe(2000);
+    expect(body.temperature).toBe(0.5);
   });
 
   it('ANTHROPIC_API_KEY ausente -> throw explicito canonico', async () => {
