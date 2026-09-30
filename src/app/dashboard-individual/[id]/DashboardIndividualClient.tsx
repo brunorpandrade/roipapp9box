@@ -1088,31 +1088,44 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
         />
       ) : null}
       {podeVerAcoesLiderDireto && !chatIaOpen && !dialogosOpen ? (
+        // ME-UX-CONSOLIDACAO D2: botao flutuante do Assistente de
+        // lideranca. `aria-label` + `title` (tooltip nativo) canonicos
+        // — sinaliza a natureza do drawer que o botao abre. Rotulo
+        // textual visivel abaixo do icone eleva descoberta canonica
+        // sem exigir hover para o significado.
         <button
           type="button"
           onClick={() => setChatIaOpen(true)}
-          aria-label="Abrir Chat IA"
+          aria-label="Assistente de liderança"
+          title="Assistente de liderança"
           style={{
             position: 'fixed',
             bottom: 24,
             right: 24,
-            width: 56,
-            height: 56,
+            minWidth: 56,
+            padding: '10px 14px',
             borderRadius: 28,
             border: 'none',
             background: COLORS.accent.teal,
             color: '#FFFFFF',
-            fontSize: 24,
-            lineHeight: 1,
+            fontSize: 12,
+            fontWeight: 600,
+            lineHeight: 1.2,
             cursor: 'pointer',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
             zIndex: 40,
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
+            gap: 2,
+            fontFamily: 'inherit',
           }}
         >
-          💬
+          <span aria-hidden="true" style={{ fontSize: 20, lineHeight: 1 }}>
+            💬
+          </span>
+          <span>Assistente</span>
         </button>
       ) : null}
     </div>

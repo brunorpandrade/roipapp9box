@@ -43,6 +43,27 @@ export const CHAT_IA_USER_MESSAGE_MAX_CHARS_CLIENT = 2000;
 /** Placeholder canonico do textarea (§8.1). */
 export const PLACEHOLDER_ENTRADA = 'Faça uma pergunta sobre este dashboard...';
 
+/**
+ * Rotulo canonico do Assistente de lideranca (ME-UX-CONSOLIDACAO D2).
+ * Substitui o titulo generico "Chat IA" nas superficies onde o drawer
+ * atende diretamente o lider (dashboard-individual e futuramente
+ * dashboard-recorte/equipe).
+ */
+export const AI_CHAT_ROTULO_CANONICO = 'Assistente de liderança' as const;
+
+/**
+ * Perguntas canonicas pre-formuladas (chips) do Assistente de lideranca
+ * no dashboard-individual (ME-UX-CONSOLIDACAO D1). Renderizadas como
+ * botoes clicaveis acima do textarea quando NAO ha mensagem alguma na
+ * conversa ativa (primeira interacao). Clicar preenche o input com a
+ * pergunta e dispara o envio imediato.
+ */
+export const AI_CHAT_CHIPS_INDIVIDUAL = [
+  'Monte um roteiro para minha próxima conversa de feedback com esse colaborador.',
+  'Se eu tivesse 15 minutos com este colaborador sobre o que deveria falar?',
+  'Qual a relação entre o perfil individual e o desempenho desse colaborador nesse trimestre?',
+] as const;
+
 /** Largura fixa canonica do drawer (§8.1). */
 const DRAWER_WIDTH = 420;
 
@@ -509,6 +530,17 @@ export function AiChatDrawer(props: AiChatDrawerProps): JSX.Element {
     }
   }, [enviar, lastFailedContent]);
 
+  // ME-UX-CONSOLIDACAO D1: handler dos chips canonicos. Popula o input
+  // com a pergunta canonica selecionada e dispara o envio imediato
+  // (mesma cadeia de `enviar` — validacoes, telemetria, historico).
+  const handleChipClick = useCallback(
+    (pergunta: string): void => {
+      setInputValue(pergunta);
+      void enviar(pergunta);
+    },
+    [enviar],
+  );
+
   const handleKeyDown = useCallback(
     (e: ReactKeyboardEvent<HTMLTextAreaElement>): void => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -522,10 +554,10 @@ export function AiChatDrawer(props: AiChatDrawerProps): JSX.Element {
   const podeEnviar = inputValue.trim().length > 0 && !enviando;
 
   return (
-    <div style={DRAWER_OVERLAY} role="dialog" aria-label="Chat IA">
+    <div style={DRAWER_OVERLAY} role="dialog" aria-label={AI_CHAT_ROTULO_CANONICO}>
       <div style={HEADER}>
         <div>
-          <div style={HEADER_TITLE}>Chat IA</div>
+          <div style={HEADER_TITLE}>{AI_CHAT_ROTULO_CANONICO}</div>
           <div style={HEADER_SUBTITLE}>Individual — {props.employeeName}</div>
           {viewMode === 'active' ? (
             <button
@@ -549,9 +581,46 @@ export function AiChatDrawer(props: AiChatDrawerProps): JSX.Element {
             {loadingInitial ? (
               <p style={{ fontSize: 12, color: COLORS.text.tertiary }}>Carregando historico...</p>
             ) : messages.length === 0 && !enviando && erro === null ? (
-              <p style={{ fontSize: 12, color: COLORS.text.tertiary }}>
-                Sem conversas ativas. Faca a primeira pergunta.
-              </p>
+              <div>
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: COLORS.text.tertiary,
+                    marginBottom: 12,
+                  }}
+                >
+                  Sem conversas ativas. Faça a primeira pergunta ou escolha uma sugestão abaixo.
+                </p>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                  }}
+                >
+                  {AI_CHAT_CHIPS_INDIVIDUAL.map((pergunta) => (
+                    <button
+                      key={pergunta}
+                      type="button"
+                      onClick={() => handleChipClick(pergunta)}
+                      style={{
+                        textAlign: 'left',
+                        padding: '10px 12px',
+                        border: `1px solid ${COLORS.border.default}`,
+                        borderRadius: 8,
+                        background: COLORS.background.card,
+                        color: COLORS.text.primary,
+                        fontSize: 12,
+                        fontFamily: 'inherit',
+                        cursor: 'pointer',
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {pergunta}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ) : (
               messages.map((m) => <MessageBubble key={m.id} message={m} />)
             )}
