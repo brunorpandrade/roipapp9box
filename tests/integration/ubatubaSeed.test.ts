@@ -35,7 +35,7 @@ import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/c
 import { UBATUBA_COMPANY_ID, UBATUBA_EMAIL_DOMAIN } from '../../src/db/seed/ubatuba/constants';
 import {
   UBATUBA_ALERTS_TOTAL_ESPERADO,
-  UBATUBA_CLIMATE_TOTAL_ESPERADO,
+  UBATUBA_CLIMATE_TOTAL_MINIMO,
   UBATUBA_CLEVEL_COUNT,
   UBATUBA_DAL_TOTAL_ESPERADO,
   UBATUBA_EMPLOYEE_COUNT,
@@ -265,11 +265,11 @@ describe('seedUbatuba — invariantes canonicas bit-exact (ME-080b Dispatch 5)',
     expect(Number(rows[0]!.n)).toBe(2);
   });
 
-  it('climateEngagementData: 84 (4+24+56)', async () => {
+  it('climateEngagementData: >= piso canonico (ME-B2-01a.1.3 refactor motor)', async () => {
     const [rows] = await client.pool.query<mysql.RowDataPacket[]>(
       `SELECT COUNT(*) AS n FROM climateEngagementData WHERE companyId = ${UBATUBA_COMPANY_ID}`,
     );
-    expect(Number(rows[0]!.n)).toBe(UBATUBA_CLIMATE_TOTAL_ESPERADO);
+    expect(Number(rows[0]!.n)).toBeGreaterThanOrEqual(UBATUBA_CLIMATE_TOTAL_MINIMO);
   });
 
   it('dataAccessLog: proximo de 200', async () => {

@@ -28,8 +28,8 @@ import {
   type DerivedUbatubaEmployeeRow,
 } from '../../../src/db/seed/ubatuba/deriveUbatubaEmployees';
 import {
+  type UbatubaClimateTrimestre,
   UBATUBA_CLIMATE_TRIMESTRES,
-  deriveClimateEngagementData,
 } from '../../../src/db/seed/ubatuba/deriveClimateEngagementData';
 import {
   UBATUBA_DAL_TOTAL_ESPERADO,
@@ -171,47 +171,25 @@ describe('deriveUbatubaEmployees — 66 canonicos bit-exact', () => {
   });
 });
 
-describe('deriveClimateEngagementData — 84 canonicos bit-exact', () => {
-  it('total = 64 (4 empresa + 24 depto + 36 equipe)', async () => {
-    const employees = await deriveUbatubaEmployees({ hashPassword: HASHER_STUB });
-    const rows = deriveClimateEngagementData(employees);
-    expect(rows.length).toBe(64);
-  });
-
-  it('distribuicao por escopo bate com esperado', async () => {
-    const employees = await deriveUbatubaEmployees({ hashPassword: HASHER_STUB });
-    const rows = deriveClimateEngagementData(employees);
-    const empresa = rows.filter((r) => r.escopo === 'empresa');
-    const departamento = rows.filter((r) => r.escopo === 'departamento');
-    const equipe = rows.filter((r) => r.escopo === 'equipe');
-    expect(empresa.length).toBe(4);
-    expect(departamento.length).toBe(24);
-    expect(equipe.length).toBe(36);
-  });
-
-  it('todos os trimestres canonicos aparecem para escopo empresa', async () => {
-    const employees = await deriveUbatubaEmployees({ hashPassword: HASHER_STUB });
-    const rows = deriveClimateEngagementData(employees);
-    const trimestres = new Set(rows.filter((r) => r.escopo === 'empresa').map((r) => r.trimestre));
-    expect([...trimestres].sort()).toEqual([...UBATUBA_CLIMATE_TRIMESTRES].sort());
-  });
-
-  it('notas canonicas no intervalo [3.00, 4.80]', async () => {
-    const employees = await deriveUbatubaEmployees({ hashPassword: HASHER_STUB });
-    const rows = deriveClimateEngagementData(employees);
-    for (const r of rows) {
-      const nota = Number(r.notaClima);
-      expect(nota).toBeGreaterThanOrEqual(3.0);
-      expect(nota).toBeLessThanOrEqual(4.8);
-    }
-  });
-
-  it('determinismo bit-exact: rodar 2x produz mesmos valores', async () => {
-    const employees = await deriveUbatubaEmployees({ hashPassword: HASHER_STUB });
-    const a = deriveClimateEngagementData(employees);
-    const b = deriveClimateEngagementData(employees);
-    expect(a.map((r) => r.notaClima)).toEqual(b.map((r) => r.notaClima));
-    expect(a.map((r) => r.notaQuestao01)).toEqual(b.map((r) => r.notaQuestao01));
+describe('deriveClimateEngagementData — API antiga aposentada (ME-B2-01a.1.3)', () => {
+  it('reexporta constantes canonicas UBATUBA_CLIMATE_TRIMESTRES', () => {
+    // Refactor ME-B2-01a.1.3: a API pura sync `deriveClimateEngagementData`
+    // foi aposentada em favor do motor real via
+    // `seedClimateEngagementDataViaMotor` (async, exige RoipDatabase).
+    // Testes de agregado canonico foram migrados para
+    // `tests/integration/ubatuba/seedClimateEngagementDataViaMotor.test.ts`.
+    // Este describe preserva apenas a verificacao das constantes
+    // canonicas re-exportadas (RV-13 — chamador vivo das constantes).
+    expect(UBATUBA_CLIMATE_TRIMESTRES.length).toBe(4);
+    expect([...UBATUBA_CLIMATE_TRIMESTRES].sort()).toEqual([
+      '2027Q1',
+      '2027Q2',
+      '2027Q3',
+      '2027Q4',
+    ]);
+    // RV-13: consumidor vivo do type canonico UbatubaClimateTrimestre.
+    const primeiro: UbatubaClimateTrimestre = UBATUBA_CLIMATE_TRIMESTRES[0];
+    expect(primeiro).toBe('2027Q1');
   });
 });
 

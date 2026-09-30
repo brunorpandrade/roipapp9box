@@ -48,7 +48,6 @@ import type { Departamento, JobFamily } from '../../schema/enums';
 import {
   alerts,
   cLevelMembers,
-  climateEngagementData,
   companies,
   companyEconomicDiagnosis,
   companyJobFamilies,
@@ -84,24 +83,33 @@ import {
   UBATUBA_SUPER_ADMIN_ID,
 } from './constants';
 import { deriveAlerts, UBATUBA_ALERTS_TOTAL_ESPERADO } from './deriveAlerts';
-import { deriveClimateEngagementData } from './deriveClimateEngagementData';
+import { seedClimateEngagementDataViaMotor } from './deriveClimateEngagementData';
 import { deriveDataAccessLog, UBATUBA_DAL_TOTAL_ESPERADO } from './deriveDataAccessLog';
 import { deriveNotifications, UBATUBA_NOTIFICATIONS_TOTAL_ESPERADO } from './deriveNotifications';
 import { deriveUbatubaCLevels } from './deriveUbatubaCLevels';
 import { deriveUbatubaEmployees, type PasswordHasher } from './deriveUbatubaEmployees';
 
 /**
- * Volume canonico esperado de climateEngagementData (RV-15, medido).
+ * Piso canonico minimo esperado de climateEngagementData (RV-15,
+ * medido) — ME-B2-01a.1.3 substitui a assercao rigida do valor exato
+ * pela invariante qualitativa canonica, ja que agora os agregados sao
+ * gerados pelo motor real (`recalculateAggregates`) e o total canonico
+ * varia conforme dependencias dinamicas do seed (departamentos ativos,
+ * lideres com cadeia, C-levels com cadeia).
  *
- * Formula canonica bit-exact:
+ * Piso canonico bit-exact:
  *   - escopo empresa: 1 × 4 trimestres = 4
- *   - escopo departamento: 6 deptos × 4 trimestres = 24
- *     (Producao, Comercial, Logistica, Financeiro, Administrativo, Qualidade;
- *      RH excluido — apenas 3 employees, nao gera climate agregado nesta ME)
- *   - escopo equipe: 9 lideres unicos × 4 trimestres = 36
- *   Total: 4 + 24 + 36 = 64
+ *   - escopo departamento (piso — 6 deptos com >= 1 ativo):
+ *     6 × 4 = 24
+ *   Piso minimo: 4 + 24 = 28
+ *
+ * O total real observado apos motor rodar contra fixtures Ubatuba
+ * inclui adicionalmente os escopos 'equipe' de lideres-employee com
+ * cadeia + C-levels com cadeia (§9.10 canonico ME-B2-01a.1.2).
+ * Bit-exact medido pelo teste dedicado
+ * `tests/integration/ubatuba/seedClimateEngagementDataViaMotor.test.ts`.
  */
-export const UBATUBA_CLIMATE_TOTAL_ESPERADO = 64 as const;
+export const UBATUBA_CLIMATE_TOTAL_MINIMO = 28 as const;
 
 /**
  * Re-exports canonicos dos totais das 4 tabelas novas (Dispatch 5). Os
@@ -357,11 +365,13 @@ export async function seedUbatuba(
   }
 
   // ---------------------------------------------------------------------
-  // 11. climateEngagementData (84) — NOVO.
+  // 11. climateEngagementData (ME-B2-01a.1.3 — via motor real).
+  //     Substitui a derivacao via PRNG (bug de escala 0-4) por chamada
+  //     canonica ao motor `climateCalculationEngine.recalculateAggregates`.
+  //     Fonte unica canonica: mesmo motor que roda em producao a cada
+  //     gravacao de `scoreA` (hook §9.10 S170). Zero drift.
   // ---------------------------------------------------------------------
-  const climateRows = deriveClimateEngagementData(employeesDerived);
-  await db.insert(climateEngagementData).values(climateRows);
-  counts.climateEngagementData = climateRows.length;
+  counts.climateEngagementData = await seedClimateEngagementDataViaMotor(db);
 
   // ---------------------------------------------------------------------
   // 12. dataAccessLog (~200) — NOVO.
@@ -397,10 +407,10 @@ export async function seedUbatuba(
   // ---------------------------------------------------------------------
   // Prova canonica de contagens totais esperadas.
   // ---------------------------------------------------------------------
-  if (counts.climateEngagementData !== UBATUBA_CLIMATE_TOTAL_ESPERADO) {
+  if (counts.climateEngagementData < UBATUBA_CLIMATE_TOTAL_MINIMO) {
     throw new Error(
       `seedUbatuba: climateEngagementData=${counts.climateEngagementData}, ` +
-        `esperado=${UBATUBA_CLIMATE_TOTAL_ESPERADO}.`,
+        `esperado piso minimo=${UBATUBA_CLIMATE_TOTAL_MINIMO} (ME-B2-01a.1.3).`,
     );
   }
   if (counts.dataAccessLog !== UBATUBA_DAL_TOTAL_ESPERADO) {
