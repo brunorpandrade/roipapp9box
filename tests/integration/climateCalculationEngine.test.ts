@@ -35,6 +35,7 @@ import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/client';
 import {
+  cLevelMembers,
   climateEngagementData,
   companies,
   employeeLeaderHistory,
@@ -43,6 +44,7 @@ import {
   plenitudeData,
 } from '../../src/db/schema';
 import {
+  buildCLevelSubordinadosMapClimate,
   buildLiderSubordinadosMapClimate,
   type ClimateCalculationResult,
   type ClimateEngineFacade,
@@ -54,6 +56,7 @@ import {
   DEFAULT_CLIMATE_ENGINE,
   DEFAULT_TIMEZONE_CLIMATE,
   expandirCadeiaDescendenteClimate,
+  expandirCadeiaDescendenteClimateCLevel,
   getClimateDia16,
   NUM_DIMENSOES_CLIMATE,
   NUM_ITENS_POR_DIMENSAO_CLIMATE,
@@ -82,6 +85,10 @@ const CNPJ_SNAPSHOT_DIA16 = '10000000000846';
 const CNPJ_IDEMPOTENCIA = '10000000000847';
 const CNPJ_BFS_CADEIA = '10000000000848';
 const CNPJ_ORFAOS = '10000000000849';
+// ME-B2-01a.1.2 — CNPJs canonicos novos para os describes de cadeia
+// C-level (S178 estendido — faixa 850..851 reservada para a 01a.1.2).
+const CNPJ_CLEVEL_HELPERS = '10000000000850';
+const CNPJ_CLEVEL_CASCATA = '10000000000851';
 
 let client: RoipDbClient;
 const createdCompanyIds: number[] = [];
@@ -116,6 +123,9 @@ afterAll(async () => {
         .where(inArray(employeeLeaderHistory.employeeId, empIds));
     }
     await client.db.delete(employees).where(inArray(employees.companyId, createdCompanyIds));
+    await client.db
+      .delete(cLevelMembers)
+      .where(inArray(cLevelMembers.companyId, createdCompanyIds));
     await client.db.delete(companies).where(inArray(companies.id, createdCompanyIds));
   }
   await closeDbClient(client);
@@ -843,5 +853,237 @@ describe('climateCalculationEngine — Facade DI (S168)', () => {
     expect(chamadas).toBe(1);
     expect(ultimo).toEqual({ companyId: 42, trimestre: '2020-Q2', agora: now });
     expect(result.calculadoEm).toBe(now);
+  });
+});
+
+// ============================================================
+// ME-B2-01a.1.2 — cadeia C-level (S176 estendido + XOR-no-caller
+// consolidado na ME-B2-01a.1.1)
+// ============================================================
+
+let clevelCounter = 47000000850;
+function nextClevelCpf(): string {
+  clevelCounter += 1;
+  return String(clevelCounter);
+}
+
+async function createCLevelMember(companyId: number): Promise<number> {
+  const cpf = nextClevelCpf();
+  const [row] = await client.db
+    .insert(cLevelMembers)
+    .values({
+      companyId,
+      name: `CLevel ${cpf}`,
+      cpf,
+      email: `clevel-${cpf}@roip.local`,
+      dataNascimento: new Date('1975-01-01'),
+      dataAdmissao: new Date('2010-01-01'),
+      cargo: 'CEO',
+      descricaoCargo: 'Chief Executive Officer',
+      departamento: 'Diretoria',
+      custoMensal: '50000.00',
+      status: 'ativo',
+    })
+    .$returningId();
+  return row!.id;
+}
+
+async function linkCLevel(
+  employeeId: number,
+  clevelId: number,
+  dataInicio: Date,
+  dataFim: Date | null = null,
+): Promise<void> {
+  await client.db.insert(employeeLeaderHistory).values({
+    employeeId,
+    liderId: null,
+    clevelId,
+    dataInicio,
+    dataFim,
+    reason: 'test-fixture-me-b2-01a12',
+    transferBatchId: '00000000-0000-0000-0000-000000000000',
+  });
+}
+
+async function selectClimateRowCLevel(companyId: number, trimestre: string, clevelId: number) {
+  const rows = await client.db
+    .select()
+    .from(climateEngagementData)
+    .where(
+      and(
+        eq(climateEngagementData.companyId, companyId),
+        eq(climateEngagementData.escopo, 'equipe'),
+        eq(climateEngagementData.trimestre, trimestre),
+        eq(climateEngagementData.clevelId, clevelId),
+      ),
+    );
+  return rows;
+}
+
+describe('climateCalculationEngine — buildCLevelSubordinadosMapClimate (ME-B2-01a.1.2)', () => {
+  let companyId: number;
+  let clevelId: number;
+  const emps: number[] = [];
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_CLEVEL_HELPERS);
+    clevelId = await createCLevelMember(companyId);
+    emps.push(await createEmployee(companyId, { isLider: false }));
+    emps.push(await createEmployee(companyId, { isLider: false }));
+    await linkCLevel(emps[0]!, clevelId, new Date('2020-01-01'));
+    await linkCLevel(emps[1]!, clevelId, new Date('2020-01-01'));
+  });
+
+  it('agrupa employees por clevelId ativo no snapshot dia16', async () => {
+    const dia16 = new Date('2026-12-16T03:00:00Z');
+    const map = await buildCLevelSubordinadosMapClimate(client.db, companyId, dia16);
+    const set = map.get(clevelId);
+    expect(set).toBeDefined();
+    expect(set!.size).toBe(2);
+    for (const empId of emps) {
+      expect(set!.has(empId)).toBe(true);
+    }
+  });
+
+  it('expandirCadeiaDescendenteClimateCLevel cobre nivel 1 (diretos)', () => {
+    const clevelMap = new Map<number, Set<number>>([[1000, new Set([10, 20])]]);
+    const liderMap = new Map<number, Set<number>>();
+    const cadeia = expandirCadeiaDescendenteClimateCLevel(1000, clevelMap, liderMap);
+    expect(cadeia.size).toBe(2);
+    expect(cadeia.has(10)).toBe(true);
+    expect(cadeia.has(20)).toBe(true);
+  });
+
+  it('expandirCadeiaDescendenteClimateCLevel cobre cadeia mista (diretos + indiretos)', () => {
+    const clevelMap = new Map<number, Set<number>>([[1000, new Set([10, 20])]]);
+    const liderMap = new Map<number, Set<number>>([
+      [10, new Set([100, 101])],
+      [100, new Set([1000000])],
+    ]);
+    const cadeia = expandirCadeiaDescendenteClimateCLevel(1000, clevelMap, liderMap);
+    expect(cadeia.size).toBe(5);
+    expect(cadeia.has(10)).toBe(true);
+    expect(cadeia.has(20)).toBe(true);
+    expect(cadeia.has(100)).toBe(true);
+    expect(cadeia.has(101)).toBe(true);
+    expect(cadeia.has(1000000)).toBe(true);
+  });
+
+  it('expandirCadeiaDescendenteClimateCLevel termina em ciclo (defesa DOC 01 §8.9)', () => {
+    const clevelMap = new Map<number, Set<number>>([[1000, new Set([10])]]);
+    const liderMap = new Map<number, Set<number>>([
+      [10, new Set([20])],
+      [20, new Set([10])],
+    ]);
+    const cadeia = expandirCadeiaDescendenteClimateCLevel(1000, clevelMap, liderMap);
+    expect(cadeia.size).toBe(2);
+    expect(cadeia.has(10)).toBe(true);
+    expect(cadeia.has(20)).toBe(true);
+  });
+
+  it('expandirCadeiaDescendenteClimateCLevel retorna vazio para C-level sem cadeia', () => {
+    const clevelMap = new Map<number, Set<number>>();
+    const liderMap = new Map<number, Set<number>>();
+    const cadeia = expandirCadeiaDescendenteClimateCLevel(1000, clevelMap, liderMap);
+    expect(cadeia.size).toBe(0);
+  });
+});
+
+describe('climateCalculationEngine — motor cascata C-level (ME-B2-01a.1.2)', () => {
+  const TRI = '2026-Q4';
+  const DATA_INICIO = new Date('2020-01-01');
+  const DATA_ADMISSAO = new Date('2020-01-01');
+  let companyId: number;
+  let clevelIdComCadeia: number;
+  let clevelIdSemCadeia: number;
+  let empDireto1: number;
+  let empDireto2: number;
+  let empIndireto: number;
+  let subLider: number;
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_CLEVEL_CASCATA);
+    clevelIdComCadeia = await createCLevelMember(companyId);
+    clevelIdSemCadeia = await createCLevelMember(companyId);
+
+    empDireto1 = await createEmployee(companyId, { isLider: false, dataAdmissao: DATA_ADMISSAO });
+    empDireto2 = await createEmployee(companyId, { isLider: false, dataAdmissao: DATA_ADMISSAO });
+    subLider = await createEmployee(companyId, { isLider: true, dataAdmissao: DATA_ADMISSAO });
+    empIndireto = await createEmployee(companyId, { isLider: false, dataAdmissao: DATA_ADMISSAO });
+
+    // C-level 1 tem cadeia mista: empDireto1 + empDireto2 + subLider
+    // (todos diretos) + empIndireto (indireto via subLider).
+    await linkCLevel(empDireto1, clevelIdComCadeia, DATA_INICIO);
+    await linkCLevel(empDireto2, clevelIdComCadeia, DATA_INICIO);
+    await linkCLevel(subLider, clevelIdComCadeia, DATA_INICIO);
+    await linkLider(empIndireto, subLider, DATA_INICIO);
+
+    // C-level 2 (clevelIdSemCadeia) NAO tem vinculo canonico.
+
+    // Plenitude com scoreA para todos os 4 employees (§9.1 S171).
+    await insertPlenitude(companyId, empDireto1, TRI, {
+      scoreA: 80,
+      engajamentoA: 80,
+      desenvolvimentoA: 80,
+      pertencimentoA: 80,
+      realizacaoA: 80,
+    });
+    await insertPlenitude(companyId, empDireto2, TRI, {
+      scoreA: 60,
+      engajamentoA: 60,
+      desenvolvimentoA: 60,
+      pertencimentoA: 60,
+      realizacaoA: 60,
+    });
+    await insertPlenitude(companyId, subLider, TRI, {
+      scoreA: 90,
+      engajamentoA: 90,
+      desenvolvimentoA: 90,
+      pertencimentoA: 90,
+      realizacaoA: 90,
+    });
+    await insertPlenitude(companyId, empIndireto, TRI, {
+      scoreA: 70,
+      engajamentoA: 70,
+      desenvolvimentoA: 70,
+      pertencimentoA: 70,
+      realizacaoA: 70,
+    });
+
+    // Grid canonico do Instrumento A para as 4 respostas por dimensao
+    // dos 4 employees (valor 4 = "Sempre").
+    for (const empId of [empDireto1, empDireto2, subLider, empIndireto]) {
+      await insertRespostasAGrid(companyId, empId, TRI, () => 4);
+    }
+  });
+
+  it('cria linha escopo=equipe com clevelId para C-level cadeia mista', async () => {
+    const now = new Date('2027-01-11T03:00:00Z');
+    await recalculateAggregates(client.db, companyId, TRI, now);
+    const rows = await selectClimateRowCLevel(companyId, TRI, clevelIdComCadeia);
+    expect(rows.length).toBe(1);
+    expect(rows[0]!.escopo).toBe('equipe');
+    expect(rows[0]!.liderId).toBeNull();
+    expect(rows[0]!.clevelId).toBe(clevelIdComCadeia);
+    // Cobertura: 4 employees (empDireto1 + empDireto2 + subLider + empIndireto).
+    expect(rows[0]!.countCobertura).toBe(4);
+    // Nota canonica: media(80+60+90+70)/10 = 75/10 = 7.5.
+    expect(rows[0]!.notaClima).toBe('7.50');
+  });
+
+  it('C-level sem subordinados diretos NAO entra no grid canonico S176', async () => {
+    const now = new Date('2027-01-11T03:00:00Z');
+    await recalculateAggregates(client.db, companyId, TRI, now);
+    const rows = await selectClimateRowCLevel(companyId, TRI, clevelIdSemCadeia);
+    expect(rows.length).toBe(0);
+  });
+
+  it('idempotencia bit-exact — 2 chamadas seguidas produzem MESMA linha C-level', async () => {
+    const now = new Date('2027-01-11T03:00:00Z');
+    await recalculateAggregates(client.db, companyId, TRI, now);
+    await recalculateAggregates(client.db, companyId, TRI, now);
+    const rows = await selectClimateRowCLevel(companyId, TRI, clevelIdComCadeia);
+    expect(rows.length).toBe(1);
+    expect(rows[0]!.countCobertura).toBe(4);
   });
 });

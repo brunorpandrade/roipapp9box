@@ -26,6 +26,7 @@ import {
   deleteClimateEngagementDataById,
   getClimateByDepartamentoQuarter,
   getClimateByEmpresaQuarter,
+  getClimateByEquipeCLevelQuarter,
   getClimateByEquipeQuarter,
   getClimateEngagementDataById,
   insertClimateEngagementData,
@@ -304,5 +305,24 @@ describe('service climateEngagementData (ME-015)', () => {
         trimestre: '2026-Q1',
       }),
     ).rejects.toThrow();
+  });
+
+  it('getClimateByEquipeCLevelQuarter localiza equipe com clevelId (ME-B2-01a.1.2)', async () => {
+    const id = await insertClimateEngagementData(client.db, {
+      companyId,
+      escopo: 'equipe',
+      clevelId: clevelMemberId,
+      trimestre: '2026-Q1',
+    });
+    const row = await getClimateByEquipeCLevelQuarter(
+      client.db,
+      companyId,
+      clevelMemberId,
+      '2026-Q1',
+    );
+    expect(row?.id).toBe(id);
+    expect(row?.escopo).toBe('equipe');
+    expect(row?.clevelId).toBe(clevelMemberId);
+    expect(row?.liderId).toBeNull();
   });
 });

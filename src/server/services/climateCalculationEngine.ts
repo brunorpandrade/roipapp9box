@@ -99,6 +99,7 @@ import { and, eq, gt, isNotNull, isNull, lte, or } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../db/client';
 import {
+  cLevelMembers,
   climateEngagementData,
   employeeLeaderHistory,
   employees,
@@ -167,8 +168,19 @@ export interface ClimateEscopoAggregado {
   escopo: ClimateEscopo;
   /** Preenchido apenas quando `escopo === 'departamento'`. */
   departamento: string | null;
-  /** Preenchido apenas quando `escopo === 'equipe'`. */
+  /**
+   * Preenchido apenas quando `escopo === 'equipe'` e o lider da cadeia
+   * e um employee (`employees.isLider=true`). Mutuamente exclusivo com
+   * `clevelId` (padrao XOR-no-caller ME-B2-01a.1.1: exatamente um dos
+   * dois preenchido em escopo='equipe').
+   */
   liderId: number | null;
+  /**
+   * ME-B2-01a.1.2 — preenchido apenas quando `escopo === 'equipe'` e o
+   * lider da cadeia e um C-level (`cLevelMembers`). Mutuamente exclusivo
+   * com `liderId`. Padrao XOR-no-caller consolidado na ME-B2-01a.1.1.
+   */
+  clevelId: number | null;
   /** Nota geral 0..10. Null quando nenhum respondente valido. */
   notaClima: number | null;
   /** Percentual 0..100. Null quando `countTotal === 0`. */
@@ -428,6 +440,114 @@ export function expandirCadeiaDescendenteClimate(
   return cadeia;
 }
 
+/**
+ * ME-B2-01a.1.2 — constroi o mapa `clevelId -> Set(subordinadoIds)`
+ * a partir do snapshot ATIVO no dia 16 de `employeeLeaderHistory`.
+ * Espelha bit-a-bit `buildLiderSubordinadosMapClimate` (S173) mas
+ * filtra por `clevelId IS NOT NULL` (o outro lado do polimorfismo
+ * canonico §4.6). Reusa o padrao S150 do IQL. Ignora vinculos com
+ * `liderId` (esses ja sao cobertos pelo mapa employee-lider).
+ */
+export async function buildCLevelSubordinadosMapClimate(
+  db: RoipDatabase,
+  companyId: number,
+  dia16: Date | null,
+): Promise<Map<number, Set<number>>> {
+  const map = new Map<number, Set<number>>();
+  const rows =
+    dia16 === null
+      ? await db
+          .select({
+            clevelId: employeeLeaderHistory.clevelId,
+            employeeId: employeeLeaderHistory.employeeId,
+          })
+          .from(employeeLeaderHistory)
+          .innerJoin(employees, eq(employees.id, employeeLeaderHistory.employeeId))
+          .where(
+            and(
+              eq(employees.companyId, companyId),
+              isNotNull(employeeLeaderHistory.clevelId),
+              isNull(employeeLeaderHistory.dataFim),
+            ),
+          )
+      : await db
+          .select({
+            clevelId: employeeLeaderHistory.clevelId,
+            employeeId: employeeLeaderHistory.employeeId,
+          })
+          .from(employeeLeaderHistory)
+          .innerJoin(employees, eq(employees.id, employeeLeaderHistory.employeeId))
+          .where(
+            and(
+              eq(employees.companyId, companyId),
+              isNotNull(employeeLeaderHistory.clevelId),
+              lte(employeeLeaderHistory.dataInicio, dia16),
+              or(isNull(employeeLeaderHistory.dataFim), gt(employeeLeaderHistory.dataFim, dia16)),
+            ),
+          );
+  for (const row of rows) {
+    if (row.clevelId === null) {
+      continue;
+    }
+    const set = map.get(row.clevelId);
+    if (set === undefined) {
+      map.set(row.clevelId, new Set<number>([row.employeeId]));
+    } else {
+      set.add(row.employeeId);
+    }
+  }
+  return map;
+}
+
+/**
+ * ME-B2-01a.1.2 — expande a cadeia descendente MISTA de um C-level
+ * (diretos + indiretos via employee-lideres) via BFS in-memory.
+ * Nivel 1: subordinados diretos do C-level (via `clevelSubordinadosMap`).
+ * Niveis 2+: para cada subordinado direto que tambem seja lider,
+ * cascata via `liderSubordinadosMap` (padrao employee-employee da
+ * S173). Retorna Set de `employeeId` da cadeia (nao inclui o proprio
+ * C-level, que canonicamente nao esta em `employees`). Aplica DEFESA
+ * contra ciclos: cada no e visitado uma unica vez. DOC 01 §8.9
+ * canoniza cadeia como "diretos e indiretos".
+ */
+export function expandirCadeiaDescendenteClimateCLevel(
+  clevelId: number,
+  clevelSubordinadosMap: Map<number, Set<number>>,
+  liderSubordinadosMap: Map<number, Set<number>>,
+): Set<number> {
+  const cadeia = new Set<number>();
+  const fila: number[] = [];
+
+  // Nivel 1: subordinados diretos do C-level.
+  const diretosClevel = clevelSubordinadosMap.get(clevelId);
+  if (diretosClevel === undefined) {
+    return cadeia;
+  }
+  for (const subordinadoId of diretosClevel) {
+    if (!cadeia.has(subordinadoId)) {
+      cadeia.add(subordinadoId);
+      fila.push(subordinadoId);
+    }
+  }
+
+  // Niveis 2+: cascata employee-lider (S173 reusada bit-a-bit).
+  while (fila.length > 0) {
+    const atual = fila.shift() as number;
+    const diretosLider = liderSubordinadosMap.get(atual);
+    if (diretosLider === undefined) {
+      continue;
+    }
+    for (const subordinadoId of diretosLider) {
+      if (!cadeia.has(subordinadoId)) {
+        cadeia.add(subordinadoId);
+        fila.push(subordinadoId);
+      }
+    }
+  }
+
+  return cadeia;
+}
+
 // ============================================================
 // Estruturas internas do motor
 // ============================================================
@@ -471,6 +591,7 @@ function agregaEscopo(
   escopo: ClimateEscopo,
   departamento: string | null,
   liderId: number | null,
+  clevelId: number | null,
   employeesEscopo: readonly EmployeeCanonico[],
   respostasPorEmployee: Map<number, RespostaQuestao[]>,
   dia16: Date | null,
@@ -499,6 +620,7 @@ function agregaEscopo(
       escopo,
       departamento,
       liderId,
+      clevelId,
       notaClima: null,
       adesao: computeAdesao(countCobertura, countTotal),
       countCobertura,
@@ -574,6 +696,7 @@ function agregaEscopo(
     escopo,
     departamento,
     liderId,
+    clevelId,
     notaClima,
     adesao,
     countCobertura,
@@ -613,6 +736,7 @@ function buildClimateInsertValues(
     escopo: agg.escopo,
     departamento: agg.departamento,
     liderId: agg.liderId,
+    clevelId: agg.clevelId,
     trimestre,
     notaClima: notaClimaStr,
     adesao: adesaoStr,
@@ -842,6 +966,23 @@ export async function recalculateAggregates(
   // -------- 4) mapa lider -> subordinados diretos (snapshot dia16) --------
   const liderSubordinadosMap = await buildLiderSubordinadosMapClimate(db, companyId, dia16);
 
+  // -------- 4b) mapa C-level -> subordinados diretos (ME-B2-01a.1.2) --------
+  const clevelSubordinadosMap = await buildCLevelSubordinadosMapClimate(db, companyId, dia16);
+
+  // -------- 4c) C-levels ativos da empresa (ME-B2-01a.1.2) --------
+  //
+  // Q3=A1 canonizado: escopo='equipe' passa a cobrir tambem cadeia
+  // descendente de C-level. C-levels vivem em `cLevelMembers`, tabela
+  // separada de `employees` — busca dedicada. Filtro canonico:
+  // `status='ativo'`. Sem filtro por `acessoTotal` aqui — o motor
+  // grava todos os agregados canonicos; a visibilidade §9.3 (superada
+  // pela §9.3-alinhada-ao-IQL de Q1=A) fica na camada de leitura
+  // (router `climate.getClimateBlock` — ME-B2-01a.2).
+  const rowsClevels = await db
+    .select({ id: cLevelMembers.id })
+    .from(cLevelMembers)
+    .where(and(eq(cLevelMembers.companyId, companyId), eq(cLevelMembers.status, 'ativo')));
+
   // -------- 5) grid canonico de escopos (S176) --------
   //
   // Empresa: constante 1 escopo. Departamentos: DISTINCT
@@ -850,6 +991,11 @@ export async function recalculateAggregates(
   // direto no mapa (escopo 'equipe' faz sentido apenas quando ha
   // ao menos 1 subordinado — cadeia vazia nao produz agregado
   // canonico e polui a tabela com linhas sempre-zero).
+  //
+  // ME-B2-01a.1.2 — S176 estendido: C-levels ativos com pelo menos
+  // 1 subordinado direto no `clevelSubordinadosMap` tambem entram
+  // no grid como escopo='equipe' com discriminador `clevelId`
+  // (padrao XOR-no-caller herdado da ME-B2-01a.1.1).
   const departamentosSet = new Set<string>();
   const lideresElegiveis: number[] = [];
   for (const e of employeesCanon) {
@@ -863,31 +1009,57 @@ export async function recalculateAggregates(
       }
     }
   }
+  const clevelsElegiveis: number[] = [];
+  for (const c of rowsClevels) {
+    const subordinados = clevelSubordinadosMap.get(c.id);
+    if (subordinados !== undefined && subordinados.size > 0) {
+      clevelsElegiveis.push(c.id);
+    }
+  }
   const departamentosList = Array.from(departamentosSet).sort();
   lideresElegiveis.sort((a, b) => a - b);
+  clevelsElegiveis.sort((a, b) => a - b);
 
   // -------- 6/7) calcula agregados por escopo --------
   const escoposAggs: ClimateEscopoAggregado[] = [];
 
   // 6a) empresa
   escoposAggs.push(
-    agregaEscopo('empresa', null, null, employeesCanon, respostasPorEmployee, dia16),
+    agregaEscopo('empresa', null, null, null, employeesCanon, respostasPorEmployee, dia16),
   );
 
   // 6b) departamentos
   for (const dep of departamentosList) {
     const employeesDep = employeesCanon.filter((e) => e.departamento === dep);
     escoposAggs.push(
-      agregaEscopo('departamento', dep, null, employeesDep, respostasPorEmployee, dia16),
+      agregaEscopo('departamento', dep, null, null, employeesDep, respostasPorEmployee, dia16),
     );
   }
 
-  // 6c) equipes (lideres com cadeia)
+  // 6c) equipes (lideres employee com cadeia)
   for (const liderId of lideresElegiveis) {
     const cadeia = expandirCadeiaDescendenteClimate(liderId, liderSubordinadosMap);
     const employeesEq = employeesCanon.filter((e) => cadeia.has(e.id));
     escoposAggs.push(
-      agregaEscopo('equipe', null, liderId, employeesEq, respostasPorEmployee, dia16),
+      agregaEscopo('equipe', null, liderId, null, employeesEq, respostasPorEmployee, dia16),
+    );
+  }
+
+  // 6d) equipes (C-levels com cadeia mista) — ME-B2-01a.1.2
+  //
+  // Grid canonico S176 estendido (Q3=A1): C-levels ativos com >=1
+  // subordinado direto no `clevelSubordinadosMap`. Cadeia expandida
+  // via BFS misto (nivel 1 = subordinados diretos do C-level; niveis
+  // 2+ = cascata employee-lider da S173 reusada).
+  for (const clevelId of clevelsElegiveis) {
+    const cadeia = expandirCadeiaDescendenteClimateCLevel(
+      clevelId,
+      clevelSubordinadosMap,
+      liderSubordinadosMap,
+    );
+    const employeesEq = employeesCanon.filter((e) => cadeia.has(e.id));
+    escoposAggs.push(
+      agregaEscopo('equipe', null, null, clevelId, employeesEq, respostasPorEmployee, dia16),
     );
   }
 
@@ -918,6 +1090,9 @@ export async function recalculateAggregates(
           agg.liderId === null
             ? isNull(climateEngagementData.liderId)
             : eq(climateEngagementData.liderId, agg.liderId),
+          agg.clevelId === null
+            ? isNull(climateEngagementData.clevelId)
+            : eq(climateEngagementData.clevelId, agg.clevelId),
           eq(climateEngagementData.trimestre, trimestre),
         ),
       )

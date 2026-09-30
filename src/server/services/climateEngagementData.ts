@@ -170,6 +170,34 @@ export async function getClimateByEquipeQuarter(
 }
 
 /**
+ * ME-B2-01a.1.2 — busca o agregado de escopo `equipe` de um trimestre
+ * pelo C-level da cadeia (padrao XOR-no-caller consolidado na
+ * ME-B2-01a.1.1). Espelha bit-a-bit `getClimateByEquipeQuarter` mas
+ * filtra pelo discriminador `clevelId` em vez de `liderId`. Retorna
+ * `undefined` se nao existir.
+ */
+export async function getClimateByEquipeCLevelQuarter(
+  db: RoipDatabase,
+  companyId: number,
+  clevelId: number,
+  trimestre: string,
+) {
+  const rows = await db
+    .select()
+    .from(climateEngagementData)
+    .where(
+      and(
+        eq(climateEngagementData.companyId, companyId),
+        eq(climateEngagementData.escopo, 'equipe'),
+        eq(climateEngagementData.clevelId, clevelId),
+        eq(climateEngagementData.trimestre, trimestre),
+      ),
+    )
+    .limit(1);
+  return rows[0];
+}
+
+/**
  * Lista todos os agregados de uma empresa em um trimestre, ordenados
  * por `escopo` (posicao declarada do enum — empresa, departamento,
  * equipe) com desempate por `id` ascendente. Consumida pela tela do
