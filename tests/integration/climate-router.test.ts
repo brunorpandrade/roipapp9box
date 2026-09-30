@@ -1,9 +1,14 @@
-// ROIP APP 9BOX — teste de integracao do sub-router `climate` (ME-047).
+// ROIP APP 9BOX — teste de integracao do sub-router `climate`
+// (ME-047 + ME-B2-01a.2).
 //
 // Exercita as duas procedures canonicas do §9.11 e §19.6 do DOC 03:
 //   - `getClimateBlock` — leitura por (companyId, escopo,
-//     escopoReferencia?, trimestre?). Aplica piso 3 §9.6 (S158, S177)
-//     na camada de leitura. Escopo 'equipe' bloqueado (S174).
+//     escopoReferencia?, liderId?, liderTipo?, trimestre?). Aplica
+//     piso 3 §9.6 (S158, S177) na camada de leitura. Escopo 'equipe'
+//     DESBLOQUEADO (ME-B2-01a.2 canoniza Q4=A1; S174 aposentada) com
+//     polimorfia liderId + liderTipo XOR-no-caller. Cascata
+//     silenciosa canonica: equipe -> departamento -> empresa quando
+//     `countCobertura < 3`.
 //   - `recalculateAggregates` (S175) — reprocessamento manual
 //     super_admin. Chamado via DI Facade.
 //
@@ -15,12 +20,15 @@
 //     `recalculateAggregates` -> super_admin exclusivo (S175);
 //     lider puro FORBIDDEN em ambas (§9.9 literal).
 //   - Guard cross-company (§2.4).
-//   - Zod bloqueia escopo 'equipe' no input (S174).
+//   - Guard C-level acessoTotal (Q1=A canoniza — supera §9.3):
+//     C-level `acessoTotal=false` recebe FORBIDDEN literal.
+//   - Escopo 'equipe' com liderTipo='employee' e liderTipo='clevel'.
+//   - Cascata silenciosa canonica em 3 niveis (Q4=A1).
 //   - Motor Clima real chamado via DI default.
 //
 // Padrao S009/S076 estendido (S178/S178b): uma company local por
-// describe, CNPJ unico da faixa 10000000000850..854 (S178b — faixa
-// estendida da ME-047). L32 cleanup em afterAll. JWT_SECRET fixo.
+// describe, CNPJ unico da faixa 10000000000850..859 (S178c — faixa
+// estendida da ME-B2-01a.2). L32 cleanup em afterAll. JWT_SECRET fixo.
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { inArray } from 'drizzle-orm';
@@ -52,6 +60,10 @@ import {
   ESCOPO_ROUTER_SCHEMA_CLIMATE,
   GET_CLIMATE_BLOCK_INPUT_SCHEMA,
   type GetClimateBlockResult,
+  LIDER_TIPO_SCHEMA_CLIMATE,
+  MSG_CLIMATE_CLEVEL_ACESSO_TOTAL_REQUIRED,
+  MSG_CLIMATE_LIDER_ID_REQUIRED,
+  MSG_CLIMATE_LIDER_TIPO_REQUIRED,
   MSG_EMPRESA_FORA_DO_ESCOPO_CLIMATE,
   MSG_ESCOPO_EQUIPE_INDISPONIVEL,
   MSG_LIDER_PURO_SEM_BLOCO_CLIMA,
@@ -73,14 +85,18 @@ process.env.JWT_SECRET = 'test-secret-roip-me047-climate-router';
 const FIXTURE_SUPER_ADMIN_ID = 1;
 const HASH_CLIMA_ROUTER = 'hash-fixo-me047-climate-router';
 
-// CNPJs canonicos por describe (S178b — faixa 850..857 estendida da
-// ME-047 para o router test; 855..857 usados dentro de describes com
-// mais de uma company).
+// CNPJs canonicos por describe (S178c — faixa 850..870 estendida da
+// ME-B2-01a.2; 855..870 usados dentro de describes com mais de uma
+// company e novos describes de cascata canonica).
 const CNPJ_CONTRATOS = '10000000000850';
 const CNPJ_AUTORIZACAO = '10000000000851';
 const CNPJ_LEITURA = '10000000000852';
 const CNPJ_GUARDS = '10000000000853';
 const CNPJ_RECALC = '10000000000854';
+const CNPJ_CASCATA = '10000000000860';
+const CNPJ_EQUIPE_EMPLOYEE = '10000000000861';
+const CNPJ_EQUIPE_CLEVEL = '10000000000862';
+const CNPJ_CLEVEL_GUARD = '10000000000863';
 
 let client: RoipDbClient;
 const createdCompanyIds: number[] = [];
@@ -198,7 +214,10 @@ async function createEmployee(
   return row!.id;
 }
 
-async function createClevel(companyId: number): Promise<number> {
+async function createClevel(
+  companyId: number,
+  opts: { acessoTotal?: boolean } = {},
+): Promise<number> {
   const cpf = nextCpf();
   const [row] = await client.db
     .insert(cLevelMembers)
@@ -213,7 +232,7 @@ async function createClevel(companyId: number): Promise<number> {
       descricaoCargo: 'CEO da companhia',
       departamento: 'Comercial',
       custoMensal: '10000.00',
-      acessoTotal: true,
+      acessoTotal: opts.acessoTotal ?? true,
       status: 'ativo',
       passwordHash: HASH_CLIMA_ROUTER,
       passwordSet: true,
@@ -228,6 +247,7 @@ async function insertClimateRow(
     escopo: 'empresa' | 'departamento' | 'equipe';
     departamento: string | null;
     liderId: number | null;
+    clevelId?: number | null;
     trimestre: string;
     countCobertura: number;
     countTotal: number;
@@ -249,6 +269,7 @@ async function insertClimateRow(
     escopo: opts.escopo,
     departamento: opts.departamento,
     liderId: opts.liderId,
+    clevelId: opts.clevelId ?? null,
     trimestre: opts.trimestre,
     notaClima: opts.notaClima === null ? null : String(opts.notaClima),
     adesao: opts.adesao === null ? null : String(opts.adesao),
@@ -295,13 +316,15 @@ function callerFor(
 // ============================================================
 
 describe('climate-router — contratos publicos (RV-13)', () => {
-  it('exporta mensagens canonicas literais §9', () => {
+  it('exporta mensagens canonicas literais §9 + ME-B2-01a.2', () => {
     expect(MSG_EMPRESA_FORA_DO_ESCOPO_CLIMATE).toBe('Empresa fora do escopo do titular.');
     expect(MSG_TRIMESTRE_INVALIDO_CLIMATE).toBe(
       'Trimestre canônico deve seguir o formato YYYY-QN (N = 1..4).',
     );
+    // ME-B2-01a.2 — S174 aposentada; mensagem canonizada como
+    // orientacao de validacao fina (liderId + liderTipo XOR-no-caller).
     expect(MSG_ESCOPO_EQUIPE_INDISPONIVEL).toBe(
-      'Escopo equipe indisponível nesta superfície pública.',
+      'Escopo equipe requer liderId + liderTipo (padrão XOR-no-caller).',
     );
     expect(MSG_LIDER_PURO_SEM_BLOCO_CLIMA).toBe('Bloco Clima indisponível para líderes puros.');
     expect(MSG_NENHUM_TRIMESTRE_DISPONIVEL_CLIMATE).toBe(
@@ -310,6 +333,14 @@ describe('climate-router — contratos publicos (RV-13)', () => {
     expect(MSG_PISO_3_INSUFICIENTE_CLIMATE).toBe(
       'Dados insuficientes: menos de 3 respondentes válidos.',
     );
+    // ME-B2-01a.2 — novas mensagens canonicas.
+    expect(MSG_CLIMATE_CLEVEL_ACESSO_TOTAL_REQUIRED).toBe(
+      'C-level com acessoTotal=false não tem visibilidade sobre o Bloco Clima.',
+    );
+    expect(MSG_CLIMATE_LIDER_TIPO_REQUIRED).toBe(
+      'Escopo equipe requer liderTipo (employee ou clevel).',
+    );
+    expect(MSG_CLIMATE_LIDER_ID_REQUIRED).toBe('Escopo equipe requer liderId numérico positivo.');
   });
 
   it('exporta piso canonico PISO_RESPONDENTES_CLIMATE === 3 (§9.6)', () => {
@@ -323,25 +354,41 @@ describe('climate-router — contratos publicos (RV-13)', () => {
     expect(TRIMESTRE_INPUT_SCHEMA_CLIMATE.safeParse('abc').success).toBe(false);
   });
 
-  it('ESCOPO_ROUTER_SCHEMA_CLIMATE aceita apenas empresa|departamento (S174)', () => {
+  it('ESCOPO_ROUTER_SCHEMA_CLIMATE aceita empresa|departamento|equipe (ME-B2-01a.2)', () => {
     expect(ESCOPO_ROUTER_SCHEMA_CLIMATE.safeParse('empresa').success).toBe(true);
     expect(ESCOPO_ROUTER_SCHEMA_CLIMATE.safeParse('departamento').success).toBe(true);
-    // S174: escopo 'equipe' bloqueado — Chat IA le direto do schema
-    // (DOC 04 §5.5 F3B).
-    expect(ESCOPO_ROUTER_SCHEMA_CLIMATE.safeParse('equipe').success).toBe(false);
+    // ME-B2-01a.2 — S174 aposentada; escopo 'equipe' aceito no Zod;
+    // validacao fina (liderId + liderTipo) fica no handler.
+    expect(ESCOPO_ROUTER_SCHEMA_CLIMATE.safeParse('equipe').success).toBe(true);
+    expect(ESCOPO_ROUTER_SCHEMA_CLIMATE.safeParse('foo').success).toBe(false);
   });
 
-  it('GET_CLIMATE_BLOCK_INPUT_SCHEMA rejeita escopo equipe (S174)', () => {
-    const invalido = GET_CLIMATE_BLOCK_INPUT_SCHEMA.safeParse({
+  it('LIDER_TIPO_SCHEMA_CLIMATE aceita employee|clevel (ME-B2-01a.2)', () => {
+    expect(LIDER_TIPO_SCHEMA_CLIMATE.safeParse('employee').success).toBe(true);
+    expect(LIDER_TIPO_SCHEMA_CLIMATE.safeParse('clevel').success).toBe(true);
+    expect(LIDER_TIPO_SCHEMA_CLIMATE.safeParse('outro').success).toBe(false);
+  });
+
+  it('GET_CLIMATE_BLOCK_INPUT_SCHEMA aceita escopo equipe (ME-B2-01a.2)', () => {
+    // ME-B2-01a.2 — Zod aceita escopo=equipe; validacao fina no handler.
+    const equipe = GET_CLIMATE_BLOCK_INPUT_SCHEMA.safeParse({
       companyId: 1,
       escopo: 'equipe',
+      liderId: 42,
+      liderTipo: 'employee',
     });
-    expect(invalido.success).toBe(false);
-    const valido = GET_CLIMATE_BLOCK_INPUT_SCHEMA.safeParse({
+    expect(equipe.success).toBe(true);
+    const empresa = GET_CLIMATE_BLOCK_INPUT_SCHEMA.safeParse({
       companyId: 1,
       escopo: 'empresa',
     });
-    expect(valido.success).toBe(true);
+    expect(empresa.success).toBe(true);
+    // Escopo invalido continua rejeitado.
+    const invalido = GET_CLIMATE_BLOCK_INPUT_SCHEMA.safeParse({
+      companyId: 1,
+      escopo: 'invalid-escopo',
+    });
+    expect(invalido.success).toBe(false);
   });
 
   it('RECALCULATE_CLIMATE_INPUT_SCHEMA exige trimestre canonico', () => {
@@ -414,7 +461,9 @@ describe('climate-router — autorizacao por perfil (§9.9)', () => {
     expect(result.presente).toBe(true);
   });
 
-  it('clevel acessa getClimateBlock (excecao §9.3)', async () => {
+  it('clevel acessoTotal=true acessa getClimateBlock (ME-B2-01a.2 Q1=A)', async () => {
+    // createClevel default cria com acessoTotal=true; Q1=A canoniza
+    // que apenas C-level com acessoTotal=true ve o Bloco Clima.
     const token = await tokenFor('clevel', clevel, companyId);
     const caller = callerFor(token);
     const result = await caller.getClimateBlock({ companyId, escopo: 'empresa', trimestre });
@@ -577,7 +626,12 @@ describe('climate-router — getClimateBlock leitura canonica', () => {
     expect(result.notaClima).toBe(8.9);
   });
 
-  it('piso 3 aplicado na leitura: countCobertura<3 mascara scores (S158/S177)', async () => {
+  it('departamento com countCobertura<3 cascateia para empresa (ME-B2-01a.2 Q4=A1)', async () => {
+    // ME-B2-01a.2 canoniza cascata silenciosa: departamento abaixo
+    // do piso NAO retorna scores mascarados — sobe para empresa,
+    // que tem countCobertura=7 (acima do piso). O escopo requisitado
+    // permanece 'departamento' no payload; escopoEfetivo canoniza
+    // o nivel onde a linha foi obtida.
     const token = await tokenFor('rh', empRH, companyId);
     const caller = callerFor(token);
     const result = await caller.getClimateBlock({
@@ -587,16 +641,22 @@ describe('climate-router — getClimateBlock leitura canonica', () => {
       trimestre: '2020-Q4',
     });
     expect(result.presente).toBe(true);
-    expect(result.dadosInsuficientes).toBe(true);
-    expect(result.notaClima).toBeNull();
-    expect(result.notaEngajamento).toBeNull();
-    // Adesao permanece visivel (metrica de participacao, independe de piso).
-    expect(result.adesao).toBe(50);
-    expect(result.countCobertura).toBe(2);
-    expect(result.countTotal).toBe(4);
+    expect(result.dadosDisponiveis).toBe(true);
+    expect(result.escopo).toBe('departamento');
+    expect(result.escopoReferencia).toBe('Financeiro');
+    expect(result.escopoEfetivo.escopo).toBe('empresa');
+    expect(result.escopoEfetivo.escopoReferencia).toBeNull();
+    expect(result.notaAgregacao).toBe('agregado_empresa');
+    // Retorna scores canonicos da empresa (7 respondentes >= piso).
+    expect(result.notaClima).toBe(8.5);
+    expect(result.notaEngajamento).toBe(8.6);
+    expect(result.countCobertura).toBe(7);
+    expect(result.countTotal).toBe(9);
   });
 
-  it('escopo departamento sem historico retorna presente=false', async () => {
+  it('escopo departamento sem historico cascateia para empresa (ME-B2-01a.2 Q4=A1)', async () => {
+    // ME-B2-01a.2 canoniza: departamento sem linha canonica cascateia
+    // para empresa (mesmo tratamento de departamento abaixo do piso).
     const token = await tokenFor('rh', empRH, companyId);
     const caller = callerFor(token);
     const result = await caller.getClimateBlock({
@@ -605,8 +665,13 @@ describe('climate-router — getClimateBlock leitura canonica', () => {
       escopoReferencia: 'Recursos Humanos',
       trimestre: '2020-Q4',
     });
-    expect(result.presente).toBe(false);
-    expect(result.notaClima).toBeNull();
+    expect(result.presente).toBe(true);
+    expect(result.dadosDisponiveis).toBe(true);
+    expect(result.escopo).toBe('departamento');
+    expect(result.escopoReferencia).toBe('Recursos Humanos');
+    expect(result.escopoEfetivo.escopo).toBe('empresa');
+    expect(result.notaAgregacao).toBe('agregado_empresa');
+    expect(result.notaClima).toBe(8.5);
   });
 });
 
@@ -661,13 +726,343 @@ describe('climate-router — guards canonicos', () => {
     expect(result.notaClima).toBe(9.0);
   });
 
-  it('Zod rejeita escopo equipe no input (S174)', async () => {
+  it('escopo equipe sem liderId retorna BAD_REQUEST (ME-B2-01a.2)', async () => {
     const token = await tokenFor('rh', empRH, companyId);
     const caller = callerFor(token);
     await expect(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      caller.getClimateBlock({ companyId, escopo: 'equipe' as any }),
-    ).rejects.toThrow();
+      caller.getClimateBlock({ companyId, escopo: 'equipe', liderTipo: 'employee' }),
+    ).rejects.toThrow(MSG_CLIMATE_LIDER_ID_REQUIRED);
+  });
+
+  it('escopo equipe sem liderTipo retorna BAD_REQUEST (ME-B2-01a.2)', async () => {
+    const token = await tokenFor('rh', empRH, companyId);
+    const caller = callerFor(token);
+    await expect(
+      caller.getClimateBlock({ companyId, escopo: 'equipe', liderId: 42 }),
+    ).rejects.toThrow(MSG_CLIMATE_LIDER_TIPO_REQUIRED);
+  });
+});
+
+// ============================================================
+// ME-B2-01a.2 — guard canonico C-level acessoTotal (Q1=A)
+// ============================================================
+
+describe('climate-router — C-level acessoTotal guard (ME-B2-01a.2)', () => {
+  let companyId: number;
+  let clevelAcessoTotal: number;
+  let clevelSemAcesso: number;
+  const trimestre = '2020-Q4';
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_CLEVEL_GUARD);
+    clevelAcessoTotal = await createClevel(companyId, { acessoTotal: true });
+    clevelSemAcesso = await createClevel(companyId, { acessoTotal: false });
+    await insertClimateRow(companyId, {
+      escopo: 'empresa',
+      departamento: null,
+      liderId: null,
+      trimestre,
+      countCobertura: 6,
+      countTotal: 8,
+      notaClima: 8.2,
+      adesao: 75,
+    });
+  });
+
+  it('C-level acessoTotal=true acessa (Q1=A canonica)', async () => {
+    const token = await tokenFor('clevel', clevelAcessoTotal, companyId);
+    const caller = callerFor(token);
+    const result = await caller.getClimateBlock({ companyId, escopo: 'empresa', trimestre });
+    expect(result.presente).toBe(true);
+    expect(result.notaClima).toBe(8.2);
+  });
+
+  it('C-level acessoTotal=false recebe FORBIDDEN literal (supera §9.3)', async () => {
+    const token = await tokenFor('clevel', clevelSemAcesso, companyId);
+    const caller = callerFor(token);
+    await expect(
+      caller.getClimateBlock({ companyId, escopo: 'empresa', trimestre }),
+    ).rejects.toThrow(MSG_CLIMATE_CLEVEL_ACESSO_TOTAL_REQUIRED);
+  });
+
+  it('C-level acessoTotal=false recebe FORBIDDEN independente do escopo', async () => {
+    const token = await tokenFor('clevel', clevelSemAcesso, companyId);
+    const caller = callerFor(token);
+    await expect(
+      caller.getClimateBlock({
+        companyId,
+        escopo: 'departamento',
+        escopoReferencia: 'Comercial',
+        trimestre,
+      }),
+    ).rejects.toThrow(MSG_CLIMATE_CLEVEL_ACESSO_TOTAL_REQUIRED);
+  });
+});
+
+// ============================================================
+// ME-B2-01a.2 — escopo=equipe canonico polimorfico
+// ============================================================
+
+describe('climate-router — escopo=equipe liderTipo=employee (ME-B2-01a.2)', () => {
+  let companyId: number;
+  let empRH: number;
+  let lider: number;
+  const trimestre = '2020-Q4';
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_EQUIPE_EMPLOYEE);
+    empRH = await createEmployee(companyId);
+    lider = await createEmployee(companyId, { isLider: true });
+    // Linha canonica equipe com liderId=employee no grid S176 estendido.
+    await insertClimateRow(companyId, {
+      escopo: 'equipe',
+      departamento: null,
+      liderId: lider,
+      trimestre,
+      countCobertura: 4,
+      countTotal: 5,
+      notaClima: 7.5,
+      adesao: 80,
+    });
+  });
+
+  it('retorna linha canonica equipe para liderTipo=employee', async () => {
+    const token = await tokenFor('rh', empRH, companyId);
+    const caller = callerFor(token);
+    const result = await caller.getClimateBlock({
+      companyId,
+      escopo: 'equipe',
+      liderId: lider,
+      liderTipo: 'employee',
+      trimestre,
+    });
+    expect(result.presente).toBe(true);
+    expect(result.escopo).toBe('equipe');
+    expect(result.liderId).toBe(lider);
+    expect(result.liderTipo).toBe('employee');
+    expect(result.notaClima).toBe(7.5);
+    expect(result.dadosDisponiveis).toBe(true);
+    // Escopo efetivo == escopo requisitado (nenhuma cascata).
+    expect(result.escopoEfetivo.escopo).toBe('equipe');
+    expect(result.escopoEfetivo.liderId).toBe(lider);
+    expect(result.escopoEfetivo.liderTipo).toBe('employee');
+    expect(result.notaAgregacao).toBeNull();
+  });
+});
+
+describe('climate-router — escopo=equipe liderTipo=clevel (ME-B2-01a.2)', () => {
+  let companyId: number;
+  let empRH: number;
+  let clevel: number;
+  const trimestre = '2020-Q4';
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_EQUIPE_CLEVEL);
+    empRH = await createEmployee(companyId);
+    clevel = await createClevel(companyId, { acessoTotal: true });
+    // Linha canonica equipe polimorfica clevelId (ME-B2-01a.1.1).
+    await insertClimateRow(companyId, {
+      escopo: 'equipe',
+      departamento: null,
+      liderId: null,
+      clevelId: clevel,
+      trimestre,
+      countCobertura: 5,
+      countTotal: 6,
+      notaClima: 8.4,
+      adesao: 83.33,
+    });
+  });
+
+  it('retorna linha canonica equipe polimorfica para liderTipo=clevel', async () => {
+    const token = await tokenFor('rh', empRH, companyId);
+    const caller = callerFor(token);
+    const result = await caller.getClimateBlock({
+      companyId,
+      escopo: 'equipe',
+      liderId: clevel,
+      liderTipo: 'clevel',
+      trimestre,
+    });
+    expect(result.presente).toBe(true);
+    expect(result.escopo).toBe('equipe');
+    expect(result.liderId).toBe(clevel);
+    expect(result.liderTipo).toBe('clevel');
+    expect(result.notaClima).toBe(8.4);
+    expect(result.dadosDisponiveis).toBe(true);
+    expect(result.escopoEfetivo.escopo).toBe('equipe');
+    expect(result.escopoEfetivo.liderId).toBe(clevel);
+    expect(result.escopoEfetivo.liderTipo).toBe('clevel');
+    expect(result.notaAgregacao).toBeNull();
+  });
+});
+
+// ============================================================
+// ME-B2-01a.2 — cascata silenciosa canonica (Q4=A1)
+// ============================================================
+
+describe('climate-router — cascata silenciosa (ME-B2-01a.2 Q4=A1)', () => {
+  let companyId: number;
+  let empRH: number;
+  let liderComPiso: number;
+  let liderSemPiso: number;
+  const trimestre = '2020-Q4';
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_CASCATA);
+    empRH = await createEmployee(companyId);
+    liderComPiso = await createEmployee(companyId, { isLider: true });
+    liderSemPiso = await createEmployee(companyId, { isLider: true });
+    // Grid canonico S176 estendido: empresa + departamento acima do
+    // piso; equipe abaixo do piso (para acionar cascata).
+    await insertClimateRow(companyId, {
+      escopo: 'empresa',
+      departamento: null,
+      liderId: null,
+      trimestre,
+      countCobertura: 8,
+      countTotal: 10,
+      notaClima: 7.0,
+      adesao: 80,
+    });
+    await insertClimateRow(companyId, {
+      escopo: 'departamento',
+      departamento: 'Comercial',
+      liderId: null,
+      trimestre,
+      countCobertura: 5,
+      countTotal: 6,
+      notaClima: 8.0,
+      adesao: 83.33,
+    });
+    // Equipe com piso ok (nao aciona cascata).
+    await insertClimateRow(companyId, {
+      escopo: 'equipe',
+      departamento: null,
+      liderId: liderComPiso,
+      trimestre,
+      countCobertura: 4,
+      countTotal: 5,
+      notaClima: 9.1,
+      adesao: 80,
+    });
+    // Equipe abaixo do piso (aciona cascata para departamento).
+    await insertClimateRow(companyId, {
+      escopo: 'equipe',
+      departamento: null,
+      liderId: liderSemPiso,
+      trimestre,
+      countCobertura: 2,
+      countTotal: 3,
+      notaClima: 6.0,
+      adesao: 66.67,
+    });
+  });
+
+  it('equipe com piso ok retorna sem cascata (dadosDisponiveis=true)', async () => {
+    const token = await tokenFor('rh', empRH, companyId);
+    const caller = callerFor(token);
+    const result = await caller.getClimateBlock({
+      companyId,
+      escopo: 'equipe',
+      liderId: liderComPiso,
+      liderTipo: 'employee',
+      trimestre,
+    });
+    expect(result.dadosDisponiveis).toBe(true);
+    expect(result.escopoEfetivo.escopo).toBe('equipe');
+    expect(result.notaClima).toBe(9.1);
+    expect(result.notaAgregacao).toBeNull();
+  });
+
+  it('equipe sem piso cascateia p/ depto (notaAgregacao=agregado_departamento)', async () => {
+    const token = await tokenFor('rh', empRH, companyId);
+    const caller = callerFor(token);
+    const result = await caller.getClimateBlock({
+      companyId,
+      escopo: 'equipe',
+      liderId: liderSemPiso,
+      liderTipo: 'employee',
+      trimestre,
+    });
+    expect(result.dadosDisponiveis).toBe(true);
+    // Cascata canonica: escopo requisitado permanece 'equipe' no
+    // input; escopoEfetivo canoniza o nivel onde a linha foi obtida.
+    expect(result.escopo).toBe('equipe');
+    expect(result.liderId).toBe(liderSemPiso);
+    expect(result.escopoEfetivo.escopo).toBe('departamento');
+    expect(result.escopoEfetivo.escopoReferencia).toBe('Comercial');
+    expect(result.notaClima).toBe(8.0);
+    expect(result.notaAgregacao).toBe('agregado_departamento');
+  });
+
+  it('departamento sem piso cascateia para empresa (notaAgregacao=agregado_empresa)', async () => {
+    // Cria empresa nova com departamento abaixo do piso + empresa acima.
+    const companyIdCascataDept = await createCompany('10000000000864');
+    const empRHNovo = await createEmployee(companyIdCascataDept);
+    await insertClimateRow(companyIdCascataDept, {
+      escopo: 'empresa',
+      departamento: null,
+      liderId: null,
+      trimestre,
+      countCobertura: 6,
+      countTotal: 8,
+      notaClima: 7.7,
+      adesao: 75,
+    });
+    await insertClimateRow(companyIdCascataDept, {
+      escopo: 'departamento',
+      departamento: 'Comercial',
+      liderId: null,
+      trimestre,
+      countCobertura: 2,
+      countTotal: 3,
+      notaClima: 5.0,
+      adesao: 66.67,
+    });
+    const token = await tokenFor('rh', empRHNovo, companyIdCascataDept);
+    const caller = callerFor(token);
+    const result = await caller.getClimateBlock({
+      companyId: companyIdCascataDept,
+      escopo: 'departamento',
+      escopoReferencia: 'Comercial',
+      trimestre,
+    });
+    expect(result.dadosDisponiveis).toBe(true);
+    expect(result.escopo).toBe('departamento');
+    expect(result.escopoReferencia).toBe('Comercial');
+    expect(result.escopoEfetivo.escopo).toBe('empresa');
+    expect(result.escopoEfetivo.escopoReferencia).toBeNull();
+    expect(result.notaClima).toBe(7.7);
+    expect(result.notaAgregacao).toBe('agregado_empresa');
+  });
+
+  it('empresa sem piso mantem dadosDisponiveis=false (nem empresa atende)', async () => {
+    const companyIdSemPiso = await createCompany('10000000000865');
+    const empRHSemPiso = await createEmployee(companyIdSemPiso);
+    await insertClimateRow(companyIdSemPiso, {
+      escopo: 'empresa',
+      departamento: null,
+      liderId: null,
+      trimestre,
+      countCobertura: 2,
+      countTotal: 3,
+      notaClima: 6.0,
+      adesao: 66.67,
+    });
+    const token = await tokenFor('rh', empRHSemPiso, companyIdSemPiso);
+    const caller = callerFor(token);
+    const result = await caller.getClimateBlock({
+      companyId: companyIdSemPiso,
+      escopo: 'empresa',
+      trimestre,
+    });
+    expect(result.presente).toBe(true);
+    expect(result.dadosDisponiveis).toBe(false);
+    expect(result.dadosInsuficientes).toBe(true);
+    expect(result.notaClima).toBeNull();
+    expect(result.adesao).toBe(66.67);
+    expect(result.countCobertura).toBe(2);
   });
 });
 

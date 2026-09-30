@@ -52,10 +52,10 @@
 // Testes tRPC: `tests/integration/climate-router.test.ts`.
 
 import { TRPCError } from '@trpc/server';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { climateEngagementData } from '../../db/schema';
+import { cLevelMembers, climateEngagementData, employees } from '../../db/schema';
 import { roleProcedure, router } from '../trpc';
 import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 import {
@@ -92,13 +92,13 @@ export const MSG_TRIMESTRE_INVALIDO_CLIMATE =
   'Trimestre canônico deve seguir o formato YYYY-QN (N = 1..4).';
 
 /**
- * §9.11 — escopo invalido. O Bloco Clima aceita apenas empresa e
- * departamento no router (S174 canoniza bloqueio de equipe no
- * tRPC). Motor grava linha de equipe em `climateEngagementData`;
- * consumo se da via Chat IA (DOC 04 §5.5 F3B, backend direto).
+ * ME-B2-01a.2 — Q4=A1 canoniza cascata silenciosa: o motor sobe
+ * ao nivel hierarquico imediatamente acima quando o escopo pedido
+ * tem <3 respondentes. Mensagem canonica agora aparece apenas
+ * quando nem empresa atende ao piso (dadosDisponiveis=false).
  */
 export const MSG_ESCOPO_EQUIPE_INDISPONIVEL =
-  'Escopo equipe indisponível nesta superfície pública.';
+  'Escopo equipe requer liderId + liderTipo (padrão XOR-no-caller).';
 
 /**
  * §9.9 — Lider puro (Cenario 1 e 2) NAO ve o Bloco Clima literal
@@ -106,6 +106,25 @@ export const MSG_ESCOPO_EQUIPE_INDISPONIVEL =
  * TRPCError FORBIDDEN.
  */
 export const MSG_LIDER_PURO_SEM_BLOCO_CLIMA = 'Bloco Clima indisponível para líderes puros.';
+
+/**
+ * ME-B2-01a.2 — Q1=A canoniza que C-level acessoTotal=false NAO
+ * ve o Bloco Clima (supera §9.3 anterior). Alinha canonicamente
+ * com o IQL (§8.7).
+ */
+export const MSG_CLIMATE_CLEVEL_ACESSO_TOTAL_REQUIRED =
+  'C-level com acessoTotal=false não tem visibilidade sobre o Bloco Clima.';
+
+/**
+ * ME-B2-01a.2 — escopo='equipe' requer liderTipo canonico.
+ */
+export const MSG_CLIMATE_LIDER_TIPO_REQUIRED =
+  'Escopo equipe requer liderTipo (employee ou clevel).';
+
+/**
+ * ME-B2-01a.2 — escopo='equipe' requer liderId canonico.
+ */
+export const MSG_CLIMATE_LIDER_ID_REQUIRED = 'Escopo equipe requer liderId numérico positivo.';
 
 /**
  * §9.7 — quando nao ha nenhum trimestre fechado ainda. Retornado
@@ -138,26 +157,41 @@ export const TRIMESTRE_INPUT_SCHEMA_CLIMATE = z.string().regex(/^\d{4}-Q[1-4]$/,
 });
 
 /**
+/**
  * Enum canonico de escopo aceito pelo router `getClimateBlock`
- * (S174): apenas `empresa` e `departamento`. `equipe` fica no
- * schema do motor / da tabela (§9.2 canonica) mas nao e exposta
- * aqui.
+ * (ME-B2-01a.2 — S174 aposentada com Q4=A1 canonizado): passa a
+ * aceitar `'empresa'`, `'departamento'` e `'equipe'`. Para escopo
+ * `'equipe'`, o discriminador polimorfico e `liderId` + `liderTipo`
+ * (padrao consolidado na ME-B2-01a.1.1).
  */
-export const ESCOPO_ROUTER_SCHEMA_CLIMATE = z.enum(['empresa', 'departamento']);
+export const ESCOPO_ROUTER_SCHEMA_CLIMATE = z.enum(['empresa', 'departamento', 'equipe']);
 
 /**
- * §9.11 — payload canonico de `getClimateBlock`. `escopoReferencia`
- * carrega o discriminante do escopo:
- *   - escopo = 'empresa': `escopoReferencia` opcional/null.
+ * ME-B2-01a.2 — enum canonico do tipo de lider para escopo='equipe'.
+ * Espelha bit-a-bit `AVALIADO_TIPO_SCHEMA_IQL` (§8.7 do IQL) e o
+ * padrao XOR-no-caller da ME-B2-01a.1.1 (§4.6 developmentDialogs).
+ */
+export const LIDER_TIPO_SCHEMA_CLIMATE = z.enum(['employee', 'clevel']);
+
+/**
+ * §9.11 — payload canonico de `getClimateBlock`. Estendido na
+ * ME-B2-01a.2 para suportar escopo='equipe' polimorfico:
+ *   - escopo = 'empresa': `escopoReferencia`, `liderId`, `liderTipo`
+ *     todos opcionais/null.
  *   - escopo = 'departamento': `escopoReferencia` obrigatorio
- *     (nome do departamento — enum de `employees.departamento`).
- * A validacao fina (obrigatorio para departamento) fica no handler
- * — o Zod fica leve e simetrico com o IQL.
+ *     (nome do departamento — enum de `employees.departamento`);
+ *     `liderId`, `liderTipo` nullish.
+ *   - escopo = 'equipe': `liderId` + `liderTipo` obrigatorios;
+ *     `escopoReferencia` nullish.
+ * A validacao fina fica no handler — o Zod fica leve e simetrico
+ * com o IQL.
  */
 export const GET_CLIMATE_BLOCK_INPUT_SCHEMA = z.object({
   companyId: z.number().int().positive(),
   escopo: ESCOPO_ROUTER_SCHEMA_CLIMATE,
   escopoReferencia: z.string().min(1).max(120).nullish(),
+  liderId: z.number().int().positive().nullish(),
+  liderTipo: LIDER_TIPO_SCHEMA_CLIMATE.nullish(),
   trimestre: TRIMESTRE_INPUT_SCHEMA_CLIMATE.optional(),
 });
 
@@ -192,8 +226,41 @@ export const RECALCULATE_CLIMATE_INPUT_SCHEMA = z.object({
  */
 export interface GetClimateBlockResult {
   companyId: number;
-  escopo: 'empresa' | 'departamento';
+  escopo: 'empresa' | 'departamento' | 'equipe';
   escopoReferencia: string | null;
+  liderId: number | null;
+  liderTipo: 'employee' | 'clevel' | null;
+  /**
+   * ME-B2-01a.2 — escopo canonicamente EFETIVO onde a linha foi
+   * encontrada apos cascata silenciosa (Q4=A1). Pode divergir do
+   * escopo requisitado quando o escopo pedido tinha
+   * `countCobertura < 3` (S158, §9.6) — nesse caso, sobe ao nivel
+   * hierarquico imediatamente acima: equipe -> departamento ->
+   * empresa. Quando nao ha divergencia, coincide bit-a-bit com
+   * (escopo, escopoReferencia, liderId, liderTipo).
+   */
+  escopoEfetivo: {
+    escopo: 'empresa' | 'departamento' | 'equipe';
+    escopoReferencia: string | null;
+    liderId: number | null;
+    liderTipo: 'employee' | 'clevel' | null;
+  };
+  /**
+   * ME-B2-01a.2 — rotulo canonico da agregacao (cascata) que gerou
+   * a linha efetiva. Null quando escopo efetivo == escopo
+   * requisitado (nao houve cascata). Valores canonicos:
+   *   - `'agregado_departamento'`: cascata da equipe para o
+   *     departamento do lider.
+   *   - `'agregado_empresa'`: cascata para empresa.
+   */
+  notaAgregacao: string | null;
+  /**
+   * ME-B2-01a.2 — `true` quando algum nivel da cascata tem dados
+   * canonicos utilizaveis (`countCobertura >= 3`). `false` quando
+   * nem empresa atende ao piso — nesse caso, todos os campos de
+   * nota sao null e a UI mostra "Bloco indisponivel" (§9.6 literal).
+   */
+  dadosDisponiveis: boolean;
   trimestre: string | null;
   presente: boolean;
   dadosInsuficientes: boolean;
@@ -249,7 +316,20 @@ function resolveDepsClimate(deps: ClimateRouterDeps): ResolvedDepsClimate {
  * `true`.
  */
 function rowToBlockResult(
-  input: { companyId: number; escopo: 'empresa' | 'departamento'; escopoReferencia: string | null },
+  input: {
+    companyId: number;
+    escopo: 'empresa' | 'departamento' | 'equipe';
+    escopoReferencia: string | null;
+    liderId: number | null;
+    liderTipo: 'employee' | 'clevel' | null;
+    escopoEfetivo: {
+      escopo: 'empresa' | 'departamento' | 'equipe';
+      escopoReferencia: string | null;
+      liderId: number | null;
+      liderTipo: 'employee' | 'clevel' | null;
+    };
+    notaAgregacao: string | null;
+  },
   row: typeof climateEngagementData.$inferSelect,
 ): GetClimateBlockResult {
   const dadosInsuficientes = row.countCobertura < PISO_RESPONDENTES_CLIMATE;
@@ -282,6 +362,11 @@ function rowToBlockResult(
     companyId: input.companyId,
     escopo: input.escopo,
     escopoReferencia: input.escopoReferencia,
+    liderId: input.liderId,
+    liderTipo: input.liderTipo,
+    escopoEfetivo: input.escopoEfetivo,
+    notaAgregacao: input.notaAgregacao,
+    dadosDisponiveis: !dadosInsuficientes,
     trimestre: row.trimestre,
     presente: true,
     dadosInsuficientes,
@@ -307,18 +392,32 @@ function rowToBlockResult(
  * Payload canonico quando NAO ha linha em `climateEngagementData`
  * para o escopo/trimestre requisitado — usado no fluxo "sem
  * trimestre explicito e sem historico" e "escopo+departamento sem
- * historico". Zera contagens; `presente: false`.
+ * historico". Zera contagens; `presente: false`. ME-B2-01a.2 estende
+ * com novos campos canonicos (escopoEfetivo == escopo requisitado
+ * quando nao houve cascata; dadosDisponiveis=false).
  */
 function emptyBlockResult(input: {
   companyId: number;
-  escopo: 'empresa' | 'departamento';
+  escopo: 'empresa' | 'departamento' | 'equipe';
   escopoReferencia: string | null;
+  liderId: number | null;
+  liderTipo: 'employee' | 'clevel' | null;
   trimestre: string | null;
 }): GetClimateBlockResult {
   return {
     companyId: input.companyId,
     escopo: input.escopo,
     escopoReferencia: input.escopoReferencia,
+    liderId: input.liderId,
+    liderTipo: input.liderTipo,
+    escopoEfetivo: {
+      escopo: input.escopo,
+      escopoReferencia: input.escopoReferencia,
+      liderId: input.liderId,
+      liderTipo: input.liderTipo,
+    },
+    notaAgregacao: null,
+    dadosDisponiveis: false,
     trimestre: input.trimestre,
     presente: false,
     dadosInsuficientes: true,
@@ -332,6 +431,134 @@ function emptyBlockResult(input: {
     notaRealizacao: null,
     notasQuestao: Array.from({ length: NUM_QUESTOES_CLIMATE }, () => null),
   };
+}
+
+// ============================================================
+// ME-B2-01a.2 — helpers canonicos da cascata silenciosa
+// ============================================================
+
+/**
+ * ME-B2-01a.2 — resolve o departamento canonico do lider da
+ * cadeia para cascata silenciosa. Consulta `employees.departamento`
+ * para lider employee ou `cLevelMembers.departamento` para C-level.
+ * Retorna `null` quando o lider nao existe.
+ */
+async function resolveLiderDepartamento(
+  db: import('../../db/client').RoipDatabase,
+  companyId: number,
+  liderId: number,
+  liderTipo: 'employee' | 'clevel',
+): Promise<string | null> {
+  if (liderTipo === 'employee') {
+    const [row] = await db
+      .select({ departamento: employees.departamento })
+      .from(employees)
+      .where(and(eq(employees.id, liderId), eq(employees.companyId, companyId)))
+      .limit(1);
+    return row?.departamento ?? null;
+  }
+  const [row] = await db
+    .select({ departamento: cLevelMembers.departamento })
+    .from(cLevelMembers)
+    .where(and(eq(cLevelMembers.id, liderId), eq(cLevelMembers.companyId, companyId)))
+    .limit(1);
+  return row?.departamento ?? null;
+}
+
+/**
+ * ME-B2-01a.2 — resolve o `acessoTotal` do C-level ativo na
+ * empresa. Espelha bit-a-bit `resolveClevelAcessoTotal` do IQL
+ * (§8.7). Retorna `null` quando o C-level nao existe ou nao
+ * pertence a `companyId` — o handler ja tratou como escopo
+ * cruzado antes via `assertUserCompanyScope`.
+ */
+async function resolveAcessoTotalClimate(
+  db: import('../../db/client').RoipDatabase,
+  companyId: number,
+  clevelId: number,
+): Promise<boolean | null> {
+  const [row] = await db
+    .select({ acessoTotal: cLevelMembers.acessoTotal })
+    .from(cLevelMembers)
+    .where(and(eq(cLevelMembers.id, clevelId), eq(cLevelMembers.companyId, companyId)))
+    .limit(1);
+  if (!row) {
+    return null;
+  }
+  return row.acessoTotal ?? false;
+}
+
+/**
+ * ME-B2-01a.2 — SELECT canonico NULL-safe de `climateEngagementData`
+ * por (companyId, escopo, departamento, liderId|clevelId, trimestre).
+ *
+ * Espelha bit-a-bit a chave logica canonica do grid S176 estendido
+ * (§8.9 + ME-B2-01a.1.1 polimorfia): quando o discriminador (liderId
+ * OU clevelId, mapeado por `liderTipo`) esta ausente, aplica-se
+ * `isNull` explicito (padrao S172b do motor `recalculateAggregates`).
+ *
+ * Convencoes canonicas por escopo (grid S176 estendido):
+ *   - `'empresa'`: departamento IS NULL AND liderId IS NULL AND
+ *     clevelId IS NULL.
+ *   - `'departamento'`: departamento = X AND liderId IS NULL AND
+ *     clevelId IS NULL.
+ *   - `'equipe'` + `liderTipo='employee'`: departamento IS NULL AND
+ *     liderId = X AND clevelId IS NULL.
+ *   - `'equipe'` + `liderTipo='clevel'`: departamento IS NULL AND
+ *     liderId IS NULL AND clevelId = X.
+ *
+ * Retorna `null` quando nao ha linha canonica — sinaliza para a
+ * cascata silenciosa (§9.6, Q4=A1) subir ao nivel seguinte.
+ */
+async function selectClimateRow(
+  db: import('../../db/client').RoipDatabase,
+  companyId: number,
+  nivel: {
+    escopo: 'empresa' | 'departamento' | 'equipe';
+    escopoReferencia: string | null;
+    liderId: number | null;
+    liderTipo: 'employee' | 'clevel' | null;
+  },
+  trimestre: string,
+): Promise<typeof climateEngagementData.$inferSelect | null> {
+  const filtros = [
+    eq(climateEngagementData.companyId, companyId),
+    eq(climateEngagementData.escopo, nivel.escopo),
+    eq(climateEngagementData.trimestre, trimestre),
+  ];
+
+  if (nivel.escopo === 'empresa') {
+    filtros.push(isNull(climateEngagementData.departamento));
+    filtros.push(isNull(climateEngagementData.liderId));
+    filtros.push(isNull(climateEngagementData.clevelId));
+  } else if (nivel.escopo === 'departamento') {
+    if (nivel.escopoReferencia === null) {
+      return null;
+    }
+    filtros.push(eq(climateEngagementData.departamento, nivel.escopoReferencia));
+    filtros.push(isNull(climateEngagementData.liderId));
+    filtros.push(isNull(climateEngagementData.clevelId));
+  } else {
+    // escopo === 'equipe' — polimorfia liderId XOR clevelId.
+    if (nivel.liderId === null || nivel.liderTipo === null) {
+      return null;
+    }
+    filtros.push(isNull(climateEngagementData.departamento));
+    if (nivel.liderTipo === 'employee') {
+      filtros.push(eq(climateEngagementData.liderId, nivel.liderId));
+      filtros.push(isNull(climateEngagementData.clevelId));
+    } else {
+      filtros.push(isNull(climateEngagementData.liderId));
+      filtros.push(eq(climateEngagementData.clevelId, nivel.liderId));
+    }
+  }
+
+  const [row] = await db
+    .select()
+    .from(climateEngagementData)
+    .where(and(...filtros))
+    .limit(1);
+  return row ?? null;
 }
 
 // ============================================================
@@ -379,21 +606,46 @@ export function createClimateRouter(deps: ClimateRouterDeps = {}) {
         // §2.4 — guard cruzado companyId (super_admin atravessa).
         assertUserCompanyScope(ctx.user, input.companyId, MSG_EMPRESA_FORA_DO_ESCOPO_CLIMATE);
 
-        // Validacao fina do `escopoReferencia` por escopo.
         const escopoReferencia = input.escopoReferencia ?? null;
+        const liderId = input.liderId ?? null;
+        const liderTipo = input.liderTipo ?? null;
+
+        // ME-B2-01a.2 — Q1=A canoniza: C-level acessoTotal=false NAO
+        // ve o Bloco Clima. Supera §9.3 anterior; alinha com o IQL.
+        if (ctx.user.role === 'clevel') {
+          const acessoTotal = await resolveAcessoTotalClimate(
+            ctx.db,
+            input.companyId,
+            ctx.user.userId,
+          );
+          if (acessoTotal !== true) {
+            throw new TRPCError({
+              code: 'FORBIDDEN',
+              message: MSG_CLIMATE_CLEVEL_ACESSO_TOTAL_REQUIRED,
+            });
+          }
+        }
+
+        // Validacao fina do input por escopo (ME-B2-01a.2 estende).
         if (input.escopo === 'departamento' && escopoReferencia === null) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Escopo departamento requer escopoReferencia (nome do departamento).',
           });
         }
+        if (input.escopo === 'equipe') {
+          if (liderId === null) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_CLIMATE_LIDER_ID_REQUIRED });
+          }
+          if (liderTipo === null) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_CLIMATE_LIDER_TIPO_REQUIRED });
+          }
+        }
 
-        // Resolucao do trimestre efetivo:
-        //   - explicito: usa input.trimestre.
-        //   - implicito: MAX(trimestre) canonico da tabela para o
-        //     escopo escolhido (padrao S177 — "trimestre fechado
-        //     mais recente"). Se nao ha registro, retorna
-        //     `presente: false`.
+        // Resolucao do trimestre efetivo (MAX canonico do escopo
+        // requisitado — padrao S177 "trimestre fechado mais recente").
+        // ME-B2-01a.2: resolucao usa o escopo requisitado; a cascata
+        // silenciosa aplica-se dentro do MESMO trimestre resolvido.
         let trimestreResolvido: string | null = input.trimestre ?? null;
         if (trimestreResolvido === null) {
           const [maxRow] = await ctx.db
@@ -412,52 +664,131 @@ export function createClimateRouter(deps: ClimateRouterDeps = {}) {
           }
         }
 
+        // Fallback canonico: sem trimestre para o escopo requisitado,
+        // tenta MAX(trimestre) do escopo empresa (grid canonico S176
+        // garante que sempre ha empresa quando ha qualquer agregado).
+        if (trimestreResolvido === null) {
+          const [maxEmpresa] = await ctx.db
+            .select({ trimestre: climateEngagementData.trimestre })
+            .from(climateEngagementData)
+            .where(
+              and(
+                eq(climateEngagementData.companyId, input.companyId),
+                eq(climateEngagementData.escopo, 'empresa'),
+              ),
+            )
+            .orderBy(desc(climateEngagementData.trimestre))
+            .limit(1);
+          if (maxEmpresa) {
+            trimestreResolvido = maxEmpresa.trimestre;
+          }
+        }
+
         if (trimestreResolvido === null) {
           return emptyBlockResult({
             companyId: input.companyId,
             escopo: input.escopo,
             escopoReferencia,
+            liderId,
+            liderTipo,
             trimestre: null,
           });
         }
 
-        // SELECT canonico por chave completa.
+        // ME-B2-01a.2 — cascata silenciosa canonica (Q4=A1).
         //
-        // `liderId` da UNIQUE canonica e sempre null para os escopos
-        // deste router (S174). `departamento` e null para escopo
-        // empresa e igual a `escopoReferencia` para departamento.
-        // Aplicacao literal da UNIQUE `uq_climate_escopo`.
-        const [row] =
-          input.escopo === 'empresa'
-            ? await ctx.db
-                .select()
-                .from(climateEngagementData)
-                .where(
-                  and(
-                    eq(climateEngagementData.companyId, input.companyId),
-                    eq(climateEngagementData.escopo, 'empresa'),
-                    eq(climateEngagementData.trimestre, trimestreResolvido),
-                  ),
-                )
-                .limit(1)
-            : await ctx.db
-                .select()
-                .from(climateEngagementData)
-                .where(
-                  and(
-                    eq(climateEngagementData.companyId, input.companyId),
-                    eq(climateEngagementData.escopo, 'departamento'),
-                    eq(climateEngagementData.departamento, escopoReferencia as string),
-                    eq(climateEngagementData.trimestre, trimestreResolvido),
-                  ),
-                )
-                .limit(1);
+        // Algoritmo canonico:
+        //   1. Tenta o escopo requisitado. Se `countCobertura >= 3`
+        //      retorna esse nivel (nenhuma agregacao).
+        //   2. Escopo='equipe' abaixo do piso: cascata para
+        //      escopo='departamento' do lider (resolvido via
+        //      `resolveLiderDepartamento`). notaAgregacao =
+        //      'agregado_departamento'.
+        //   3. Escopo='departamento' abaixo do piso (ou apos cascata
+        //      da equipe): cascata para escopo='empresa'.
+        //      notaAgregacao = 'agregado_empresa'.
+        //   4. Escopo='empresa' abaixo do piso: `dadosDisponiveis=
+        //      false` — nem empresa atende ao piso canonico (§9.6).
+        //
+        // Estrategia canonica: encadear tentativas em ordem
+        // hierarquica; a primeira linha com `countCobertura >= 3`
+        // (ou a ultima quando nada bate) determina o resultado.
+        type Nivel = {
+          escopo: 'empresa' | 'departamento' | 'equipe';
+          escopoReferencia: string | null;
+          liderId: number | null;
+          liderTipo: 'employee' | 'clevel' | null;
+          notaAgregacao: string | null;
+        };
 
-        if (!row) {
+        const cascata: Nivel[] = [];
+        cascata.push({
+          escopo: input.escopo,
+          escopoReferencia,
+          liderId,
+          liderTipo,
+          notaAgregacao: null,
+        });
+
+        if (input.escopo === 'equipe' && liderId !== null && liderTipo !== null) {
+          const departamentoLider = await resolveLiderDepartamento(
+            ctx.db,
+            input.companyId,
+            liderId,
+            liderTipo,
+          );
+          if (departamentoLider !== null) {
+            cascata.push({
+              escopo: 'departamento',
+              escopoReferencia: departamentoLider,
+              liderId: null,
+              liderTipo: null,
+              notaAgregacao: 'agregado_departamento',
+            });
+          }
+        }
+
+        if (input.escopo === 'departamento' || input.escopo === 'equipe') {
+          cascata.push({
+            escopo: 'empresa',
+            escopoReferencia: null,
+            liderId: null,
+            liderTipo: null,
+            notaAgregacao: 'agregado_empresa',
+          });
+        }
+
+        // Iteracao canonica: primeira linha com `countCobertura >= 3`
+        // determina o resultado. Se nenhuma bate, usa a ultima
+        // tentativa (empresa) com `dadosDisponiveis=false`.
+        let escolhida: {
+          nivel: Nivel;
+          row: typeof climateEngagementData.$inferSelect | null;
+        } | null = null;
+
+        for (const nivel of cascata) {
+          const rowNivel = await selectClimateRow(
+            ctx.db,
+            input.companyId,
+            nivel,
+            trimestreResolvido,
+          );
+          if (escolhida === null) {
+            escolhida = { nivel, row: rowNivel };
+          }
+          if (rowNivel !== null && rowNivel.countCobertura >= PISO_RESPONDENTES_CLIMATE) {
+            escolhida = { nivel, row: rowNivel };
+            break;
+          }
+        }
+
+        if (escolhida === null || escolhida.row === null) {
           return emptyBlockResult({
             companyId: input.companyId,
             escopo: input.escopo,
             escopoReferencia,
+            liderId,
+            liderTipo,
             trimestre: trimestreResolvido,
           });
         }
@@ -467,8 +798,17 @@ export function createClimateRouter(deps: ClimateRouterDeps = {}) {
             companyId: input.companyId,
             escopo: input.escopo,
             escopoReferencia,
+            liderId,
+            liderTipo,
+            escopoEfetivo: {
+              escopo: escolhida.nivel.escopo,
+              escopoReferencia: escolhida.nivel.escopoReferencia,
+              liderId: escolhida.nivel.liderId,
+              liderTipo: escolhida.nivel.liderTipo,
+            },
+            notaAgregacao: escolhida.nivel.notaAgregacao,
           },
-          row,
+          escolhida.row,
         );
       }),
 
