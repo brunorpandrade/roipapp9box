@@ -31,6 +31,7 @@
 //
 // **RV-14 canonica.** Um statement por linha, largura maxima 100 cols.
 
+import { listActiveLeaders } from '../../../../server/services/painelNavigation';
 import { loadTurnoverCard } from '../../../../server/services/turnoverPanel';
 import { notFound, redirect } from 'next/navigation';
 import type { JSX } from 'react';
@@ -117,6 +118,10 @@ export default async function SuperAdminCompanyLandingPage(props: PageProps): Pr
     }
 
     const turnoverCard = await loadTurnoverCard(client.db, companyId);
+    // ME-UX-CONSOLIDACAO-P3b D4c — lista canonica de lideres ativos
+    // alimenta o card "Ver equipes" (rota Bruno canonica
+    // `/super-admin/empresa/[id]/dashboard-recorte/equipe/[alvo]`).
+    const activeLeaders = await listActiveLeaders(client.db, companyId);
 
     return (
       <Layout
@@ -139,6 +144,7 @@ export default async function SuperAdminCompanyLandingPage(props: PageProps): Pr
           lastQuarterFaturamentoMedio={lastQuarterFaturamentoMedio}
           mesAtualClosure={mesAtualClosure}
           turnoverCard={turnoverCard}
+          activeLeaders={activeLeaders}
         />
       </Layout>
     );

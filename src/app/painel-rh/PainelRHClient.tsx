@@ -28,7 +28,9 @@ import Link from 'next/link';
 import type { JSX } from 'react';
 
 import { ClickableIndicatorCard } from '../../components/painel/ClickableIndicatorCard';
+import { CardVerEquipes } from '../../components/paineis/CardVerEquipes';
 import { TurnoverIndicatorCard } from '../../components/turnover/TurnoverIndicatorCard';
+import type { ActiveLeaderRow } from '../../server/services/painelNavigation';
 import type { TurnoverCardData } from '../../server/services/turnoverPanel';
 import { OnboardingKanbanMini } from '../../components/painel/OnboardingKanbanMini';
 import {
@@ -116,6 +118,14 @@ export interface PainelRHClientProps {
    * `individualProfile.releaseRetest` (DOC 03 §10.7).
    */
   readonly perfilInconsistenteActions: PerfilInconsistenteBoxActions;
+  /**
+   * ME-UX-CONSOLIDACAO-P3b D4b — lista canonica de lideres ativos da
+   * empresa, ordenada alfabeticamente. Alimenta o card "Ver equipes"
+   * (rota canonica `/dashboard-recorte/equipe/${liderTipo}-${liderId}`).
+   * Preview de super-admin recebe a mesma lista, mas o card usa
+   * `hrefPrefix` diferente para atender a rota Bruno.
+   */
+  readonly activeLeaders: readonly ActiveLeaderRow[];
   readonly variant?: PainelRHVariant;
 }
 
@@ -351,6 +361,7 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
     meuPortal,
     perfisIndividuaisInconsistentes,
     perfilInconsistenteActions,
+    activeLeaders,
     variant = 'rh',
   } = props;
 
@@ -823,6 +834,21 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
           companyId={company.id}
           linhas={perfisIndividuaisInconsistentes}
           actions={perfilInconsistenteActions}
+        />
+      </section>
+
+      {/*
+        ME-UX-CONSOLIDACAO-P3b D4b — card canonico "Ver equipes". Lista
+        alfabetica de lideres ativos, cada linha e um link direto para
+        `/dashboard-recorte/equipe/${liderTipo}-${liderId}`. Preview
+        de super-admin usa `hrefPrefix` no `basePath` para atender a
+        rota Bruno canonica.
+      */}
+      <section aria-label="Ver equipes" style={{ marginTop: 32 }}>
+        <SectionTitle>Ver equipes</SectionTitle>
+        <CardVerEquipes
+          leaders={activeLeaders}
+          basePath={`${hrefPrefix}/dashboard-recorte/equipe`}
         />
       </section>
     </div>

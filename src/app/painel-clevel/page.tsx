@@ -16,7 +16,9 @@
 //   estado §5.2 nesta ME (motores Fase 8 vem em MEs futuras).
 
 import { CardPendenciasDialogos } from '../../components/dialogos/CardPendenciasDialogos';
+import { Card9BoxEquipeDireta } from '../../components/paineis/Card9BoxEquipeDireta';
 import { TurnoverIndicatorCard } from '../../components/turnover/TurnoverIndicatorCard';
+import { countCLevelDiretos } from '../../server/services/painelNavigation';
 import { loadTurnoverCard, type TurnoverCardData } from '../../server/services/turnoverPanel';
 import { redirect } from 'next/navigation';
 import { and, count, eq } from 'drizzle-orm';
@@ -182,6 +184,7 @@ export default async function PainelCLevelPage(): Promise<JSX.Element> {
   let companyCollaboratorsCount: number;
   let turnoverCard: TurnoverCardData | null = null;
   let pendencias: PendenciaCardRow[] = [];
+  let cLevelDiretosCount = 0;
   try {
     menu = await loadPlatformMenuCtxCookie(client.db, session);
     companyCollaboratorsCount = await loadCompanyCollaboratorsCount(client.db, session);
@@ -194,6 +197,11 @@ export default async function PainelCLevelPage(): Promise<JSX.Element> {
     // liderId XOR clevelId (§10.1). Sempre carrega — o card exibe estado
     // vazio canonico quando N=0.
     pendencias = await getPendenciasCardData(client.db, { clevelId: session.userId });
+    // ME-UX-CONSOLIDACAO-P3b D4a-clevel — contagem canonica dos
+    // liderados diretos do C-level (employees ativos vinculados via
+    // `employeeLeaderHistory.clevelId=X + dataFim IS NULL`). Alimenta
+    // o card "9-Box equipe direta" quando count >= 1.
+    cLevelDiretosCount = await countCLevelDiretos(client.db, session.userId);
   } finally {
     await closeDbClient(client);
   }
@@ -283,16 +291,29 @@ export default async function PainelCLevelPage(): Promise<JSX.Element> {
               isFullScope ? 'Coleta de dados em andamento' : 'Coleta de dados em andamento'
             }
           />
-          <ComingSoonBlock
-            title="9-Box"
-            canonicalText={
-              isFullScope
-                ? 'Disponível a partir da Fase 3. Esta zona se tornará o ponto de entrada do ' +
-                  'dashboard global da empresa.'
-                : 'Disponível a partir da Fase 3. Esta zona se tornará o ponto de entrada do ' +
-                  'dashboard da sua equipe.'
-            }
-          />
+          {/* ME-UX-CONSOLIDACAO-P3b D4a-clevel: card canonico "9-Box
+              equipe direta" ativo para C-level com liderados diretos.
+              Sem liderados diretos (count=0), o ComingSoonBlock
+              canonico da secao "9-Box global" (Fase 3, escopo total)
+              e preservado bit-a-bit. */}
+          {cLevelDiretosCount >= 1 ? (
+            <Card9BoxEquipeDireta
+              liderId={session.userId}
+              liderTipo="clevel"
+              count={cLevelDiretosCount}
+            />
+          ) : (
+            <ComingSoonBlock
+              title="9-Box"
+              canonicalText={
+                isFullScope
+                  ? 'Disponível a partir da Fase 3. Esta zona se tornará o ponto de entrada do ' +
+                    'dashboard global da empresa.'
+                  : 'Disponível a partir da Fase 3. Esta zona se tornará o ponto de entrada do ' +
+                    'dashboard da sua equipe.'
+              }
+            />
+          )}
         </div>
       </section>
 

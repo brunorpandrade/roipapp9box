@@ -30,6 +30,7 @@
 // `/super-admin/empresa/[id]/internals.ts`).
 // **RV-14 canonica.** Um statement por linha, largura maxima 100 cols.
 
+import { listActiveLeaders } from '../../../../../server/services/painelNavigation';
 import { loadTurnoverCard } from '../../../../../server/services/turnoverPanel';
 import { notFound, redirect } from 'next/navigation';
 import type { JSX } from 'react';
@@ -126,6 +127,11 @@ export default async function PainelRHPreviewPage(props: PageProps): Promise<JSX
     }
 
     const turnoverCard = await loadTurnoverCard(client.db, companyId);
+    // ME-UX-CONSOLIDACAO-P3b D4b/D4c — preview do super-admin recebe
+    // a mesma lista canonica de lideres ativos. O `hrefPrefix` do
+    // `PainelRHClient` (variant='super_admin_preview') roteia os
+    // links para a rota Bruno canonica automaticamente.
+    const activeLeaders = await listActiveLeaders(client.db, companyId);
 
     return (
       <Layout
@@ -153,6 +159,7 @@ export default async function PainelRHPreviewPage(props: PageProps): Promise<JSX
           meuPortal={null}
           perfisIndividuaisInconsistentes={perfisIndividuaisInconsistentes}
           perfilInconsistenteActions={{ liberarReteste: liberarRetesteAction }}
+          activeLeaders={activeLeaders}
           variant="super_admin_preview"
         />
       </Layout>

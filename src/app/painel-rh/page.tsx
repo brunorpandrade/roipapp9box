@@ -27,6 +27,7 @@
 // Drizzle tipado.
 // **RV-14 canonica.** Um statement por linha, largura maxima 100 cols.
 
+import { listActiveLeaders } from '../../server/services/painelNavigation';
 import { loadTurnoverCard } from '../../server/services/turnoverPanel';
 import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
@@ -120,6 +121,10 @@ export default async function PainelRHPage(): Promise<JSX.Element> {
       ]);
 
     const turnoverCard = await loadTurnoverCard(client.db, session.companyId);
+    // ME-UX-CONSOLIDACAO-P3b D4b — lista canonica de lideres ativos
+    // alimenta o card "Ver equipes" (rota nativa `/dashboard-recorte/
+    // equipe/[alvo]`). Ordem alfabetica preservada bit-a-bit.
+    const activeLeaders = await listActiveLeaders(client.db, session.companyId);
 
     return (
       <Layout
@@ -153,6 +158,7 @@ export default async function PainelRHPage(): Promise<JSX.Element> {
           meuPortal={meuPortal}
           perfisIndividuaisInconsistentes={perfisIndividuaisInconsistentes}
           perfilInconsistenteActions={{ liberarReteste: liberarRetesteAction }}
+          activeLeaders={activeLeaders}
         />
       </Layout>
     );

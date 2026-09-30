@@ -21,7 +21,9 @@ import Link from 'next/link';
 import type { JSX } from 'react';
 
 import { ClickableIndicatorCard } from '../../../../components/painel/ClickableIndicatorCard';
+import { CardVerEquipes } from '../../../../components/paineis/CardVerEquipes';
 import { TurnoverIndicatorCard } from '../../../../components/turnover/TurnoverIndicatorCard';
+import type { ActiveLeaderRow } from '../../../../server/services/painelNavigation';
 import type { TurnoverCardData } from '../../../../server/services/turnoverPanel';
 import { OnboardingKanbanMini } from '../../../../components/painel/OnboardingKanbanMini';
 import { ZonaPlaceholder } from '../../../../components/painel/ZonaPlaceholder';
@@ -50,6 +52,12 @@ export interface CompanyLandingClientProps {
   readonly mesAtualClosure: MesAtualClosureStatus;
   /** ME-fila6 D2 — card "Turnover" (especificacao §5). */
   readonly turnoverCard: TurnoverCardData | null;
+  /**
+   * ME-UX-CONSOLIDACAO-P3b D4c — lista canonica de lideres ativos.
+   * Alimenta o card "Ver equipes" com links para a rota Bruno
+   * `/super-admin/empresa/${company.id}/dashboard-recorte/equipe/[alvo]`.
+   */
+  readonly activeLeaders: readonly ActiveLeaderRow[];
 }
 
 // -----------------------------------------------------------------------
@@ -349,6 +357,7 @@ export function CompanyLandingClient(props: CompanyLandingClientProps): JSX.Elem
     lastQuarter,
     lastQuarterFaturamentoMedio,
     mesAtualClosure,
+    activeLeaders,
   } = props;
 
   const totalColaboradoresHref = `/super-admin/empresa/${company.id}/todos-os-colaboradores`;
@@ -478,6 +487,19 @@ export function CompanyLandingClient(props: CompanyLandingClientProps): JSX.Elem
       >
         <ZonaPlaceholder title="9-Box" texto={ZONA_9BOX_TEXTO} />
         <ZonaPlaceholder title="Status da plataforma" texto="Coleta de dados em andamento" />
+      </section>
+
+      {/*
+        ME-UX-CONSOLIDACAO-P3b D4c — card canonico "Ver equipes" para
+        Bruno navegando dentro de uma empresa. `basePath` aponta para a
+        rota Bruno `/super-admin/empresa/${companyId}/dashboard-recorte/
+        equipe` bit-a-bit.
+      */}
+      <section aria-label="Ver equipes" style={{ marginTop: 32 }}>
+        <CardVerEquipes
+          leaders={activeLeaders}
+          basePath={`/super-admin/empresa/${company.id}/dashboard-recorte/equipe`}
+        />
       </section>
     </div>
   );
