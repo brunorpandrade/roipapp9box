@@ -1,0 +1,55 @@
+-- ROIP APP 9BOX — migration incremental 0007 (ME-B2-01a.1.1).
+--
+-- Escopo canonico: fundacao de schema do Bloco B2 (Clima e Engajamento
+-- respondendo a decisao Q3=A1 canonizada em 30/09/2026 — schema
+-- polimorfico para permitir agregado de escopo='equipe' cuja lideranca
+-- e C-level, alinhando `climateEngagementData` ao padrao canonico ja
+-- adotado por `iqlData` (S422) e `developmentDialogs` (patch v6).
+--
+-- Precedente canonico: migration 0006 (padrao XOR-no-caller do
+-- `developmentDialogs`) e schema §8.5/§8.7 do `iqlData` (polimorfismo
+-- via padrao A com CHECK). Nesta migration adotamos o padrao MODERNO
+-- ROIP (developmentDialogs): XOR imposto pelo caller
+-- (motor/service/router), SEM CHECK constraint SQL. Isso porque:
+--   - `climateEngagementData.escopo` ja discrimina o tipo do agregado
+--     (empresa/departamento/equipe) — CHECK duplicaria a restricao
+--     logica ja governada pelo enum.
+--   - Precedente canonico do developmentDialogs (§10.1 v6) fixou o
+--     padrao pos-B4: XOR e responsabilidade do caller.
+--
+-- Efeitos:
+--   1. `climateEngagementData` ganha coluna `clevelId INT NULL FK
+--      cLevelMembers(id) ON DELETE RESTRICT`.
+--
+-- Restricao canonica XOR imposta pelo caller (motor + service + router):
+--   - escopo='empresa' → liderId=NULL, clevelId=NULL, departamento=NULL.
+--   - escopo='departamento' → liderId=NULL, clevelId=NULL, departamento
+--     preenchido.
+--   - escopo='equipe' → EXATAMENTE UM entre liderId e clevelId
+--     preenchido, o outro NULL, departamento=NULL.
+--
+-- Semantica canonica da UNIQUE `uq_climate_escopo`:
+--   A UNIQUE existente (companyId, escopo, departamento, liderId,
+--   trimestre) permanece como esta. Nao inclui `clevelId` na UNIQUE
+--   porque o motor canonico (ME-047 S172b) ja usa SELECT-canonico +
+--   UPDATE/INSERT NULL-safe para garantir idempotencia bit-a-bit,
+--   independente da unicidade fisica do banco. A ME-B2-01a.1.2
+--   estende o SELECT canonico do motor com `clevelId` no WHERE
+--   NULL-safe. Padrao S172b preservado.
+--
+-- Compatibilidade retroativa:
+--   - Linhas existentes tem `clevelId` NULL por default. Semantica
+--     preservada: escopo='empresa'/'departamento' continuam com
+--     ambos polimorficos NULL; escopo='equipe' continua com liderId
+--     preenchido + clevelId NULL — invariante bit-a-bit do padrao
+--     XOR-no-caller pre-B4.
+--   - Nenhuma migracao de dados necessaria.
+--
+-- Aplicacao em producao (Railway Console, RV-11): executar como bloco
+-- unico. Zero risco para as empresas demo Nativa (companyId=1) e
+-- Ubatuba (companyId=2) — nenhum agregado existente e afetado.
+
+ALTER TABLE `climateEngagementData`
+  ADD COLUMN `clevelId` INT NULL,
+  ADD CONSTRAINT `climateEngagementData_clevelId_cLevelMembers_id_fk`
+    FOREIGN KEY (`clevelId`) REFERENCES `cLevelMembers`(`id`) ON DELETE RESTRICT;

@@ -439,22 +439,25 @@ function main() {
   // Invariantes (§20). Colunas: 696 em ME-080b; 721 em ME-fila6 D2;
   // 722 em ME 3.5 D1 (adicao de `cLevelMembers.isRH`);
   // 723 em ME Etapa 1 patch v6 (adicao de `developmentDialogs.clevelId`).
+  // 724 em ME-B2-01a.1.1 (adicao de `climateEngagementData.clevelId`).
   // Dispatch 1 (adicao de `companies.isDemo` — E-068-11 ME-068;
   // adicao de `employees.cargo` — ME-078b D1;
   // adicao de `employees.matricula` + `cLevelMembers.matricula` — ME-080b;
   // adicao de `cLevelMembers.isRH` — ME 3.5 D1;
   // adicao de `developmentDialogs.clevelId` + FK → cLevelMembers —
-  // ME Etapa 1 patch v6 §10.1 reescrito).
-  if (totalSqlCols !== 723) {
+  // ME Etapa 1 patch v6 §10.1 reescrito;
+  // adicao de `climateEngagementData.clevelId` + FK → cLevelMembers —
+  // ME-B2-01a.1.1).
+  if (totalSqlCols !== 724) {
     console.log(
       `${YELLOW}AVISO:${RESET} migration tem ${totalSqlCols} colunas; ` +
-        `esperado 723 (ME Etapa 1 patch v6).`,
+        `esperado 724 (ME-B2-01a.1.1).`,
     );
   }
-  if (totalSqlFks !== 110) {
+  if (totalSqlFks !== 111) {
     console.log(
       `${YELLOW}AVISO:${RESET} migration tem ${totalSqlFks} FKs; ` +
-        `esperado 110 (ME Etapa 1 patch v6).`,
+        `esperado 111 (ME-B2-01a.1.1).`,
     );
   }
 

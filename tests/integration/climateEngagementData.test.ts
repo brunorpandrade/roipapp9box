@@ -21,7 +21,7 @@ import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/client';
-import { climateEngagementData, companies, employees } from '../../src/db/schema';
+import { cLevelMembers, climateEngagementData, companies, employees } from '../../src/db/schema';
 import {
   deleteClimateEngagementDataById,
   getClimateByDepartamentoQuarter,
@@ -56,6 +56,7 @@ describe('service climateEngagementData (ME-015)', () => {
   let client: RoipDbClient;
   let companyId: number;
   let liderEmployeeId: number;
+  let clevelMemberId: number;
 
   beforeAll(async () => {
     client = createDbClient(TEST_URL);
@@ -105,6 +106,27 @@ describe('service climateEngagementData (ME-015)', () => {
       .$returningId();
     if (!lider) throw new Error('beforeAll: falha ao criar employee lider');
     liderEmployeeId = lider.id;
+
+    // ME-B2-01a.1.1 — cLevelMember canonico para escopo='equipe'
+    // polimorfico (`clevelId`). Estende o setup existente da ME-015
+    // com o segundo tipo de lider canonico (§9.2 + Q3=A1).
+    const [clevel] = await client.db
+      .insert(cLevelMembers)
+      .values({
+        companyId,
+        name: 'CLevel Climate',
+        cpf: '20202020226',
+        email: 'clevel.climate@roip.local',
+        dataNascimento: new Date('1975-03-15'),
+        dataAdmissao: new Date('2010-05-01'),
+        cargo: 'CEO',
+        descricaoCargo: 'Chief Executive Officer',
+        departamento: 'Diretoria',
+        custoMensal: '50000.00',
+      })
+      .$returningId();
+    if (!clevel) throw new Error('beforeAll: falha ao criar cLevelMember');
+    clevelMemberId = clevel.id;
   });
 
   afterAll(async () => {
@@ -112,6 +134,7 @@ describe('service climateEngagementData (ME-015)', () => {
       .delete(climateEngagementData)
       .where(eq(climateEngagementData.companyId, companyId));
     await client.db.delete(employees).where(eq(employees.companyId, companyId));
+    await client.db.delete(cLevelMembers).where(eq(cLevelMembers.companyId, companyId));
     await client.db.delete(companies).where(eq(companies.id, companyId));
     await closeDbClient(client);
   });
@@ -244,5 +267,42 @@ describe('service climateEngagementData (ME-015)', () => {
 
     const row = await getClimateEngagementDataById(client.db, id);
     expect(row).toBeUndefined();
+  });
+
+  // ==================================================================
+  // ME-B2-01a.1.1 — smoke da nova coluna `clevelId` (fundacao de
+  // schema polimorfico para escopo='equipe' com lider tipo C-level).
+  // RV-13: dois it() abaixo sao os chamadores canonicos da coluna
+  // nascida nesta ME. Motor e router estendidos vem nas MEs
+  // sequenciais 01a.1.2 e 01a.2.
+  // ==================================================================
+
+  it('insere agregado equipe com clevelId (padrao XOR-no-caller ME-B2-01a.1.1)', async () => {
+    const id = await insertClimateEngagementData(client.db, {
+      companyId,
+      escopo: 'equipe',
+      clevelId: clevelMemberId,
+      trimestre: '2026-Q1',
+    });
+    expect(id).toBeGreaterThan(0);
+
+    const row = await getClimateEngagementDataById(client.db, id);
+    expect(row?.escopo).toBe('equipe');
+    expect(row?.clevelId).toBe(clevelMemberId);
+    expect(row?.liderId).toBeNull();
+    expect(row?.departamento).toBeNull();
+    expect(row?.countCobertura).toBe(0);
+    expect(row?.countTotal).toBe(0);
+  });
+
+  it('FK RESTRICT reprova clevelId invalido em escopo equipe (ME-B2-01a.1.1)', async () => {
+    await expect(
+      insertClimateEngagementData(client.db, {
+        companyId,
+        escopo: 'equipe',
+        clevelId: 99999,
+        trimestre: '2026-Q1',
+      }),
+    ).rejects.toThrow();
   });
 });

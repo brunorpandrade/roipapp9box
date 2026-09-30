@@ -548,6 +548,7 @@ CREATE TABLE `climateEngagementData` (
   `escopo` ENUM('empresa','departamento','equipe') NOT NULL,
   `departamento` VARCHAR(120) DEFAULT NULL,
   `liderId` INT DEFAULT NULL,
+  `clevelId` INT DEFAULT NULL,
   `trimestre` VARCHAR(7) NOT NULL,
   `notaClima` DECIMAL(4,2) DEFAULT NULL,
   `adesao` DECIMAL(5,2) DEFAULT NULL,
@@ -582,7 +583,8 @@ CREATE TABLE `climateEngagementData` (
   `updatedAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY `uq_climate_escopo` (`companyId`, `escopo`, `departamento`, `liderId`, `trimestre`),
   FOREIGN KEY (`companyId`) REFERENCES `companies`(`id`) ON DELETE RESTRICT,
-  FOREIGN KEY (`liderId`) REFERENCES `employees`(`id`) ON DELETE RESTRICT
+  FOREIGN KEY (`liderId`) REFERENCES `employees`(`id`) ON DELETE RESTRICT,
+  FOREIGN KEY (`clevelId`) REFERENCES `cLevelMembers`(`id`) ON DELETE RESTRICT
 );
 
 -- =====================================================================

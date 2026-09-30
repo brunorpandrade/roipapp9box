@@ -40,10 +40,13 @@ const VALIDATE_DB = 'roip_validate';
 // ME Etapa 1 patch v6 — colunas passa de 722 para 723 (adicao de
 // `developmentDialogs.clevelId`); FKs passa de 109 para 110 (nova FK
 // `developmentDialogs.clevelId → cLevelMembers.id`).
+// ME-B2-01a.1.1 — colunas passa de 723 para 724 (adicao de
+// `climateEngagementData.clevelId`); FKs passa de 110 para 111 (nova FK
+// `climateEngagementData.clevelId → cLevelMembers.id`).
 const EXPECTED = {
   tables: 55,
-  columns: 723,
-  fks: 110,
+  columns: 724,
+  fks: 111,
   departments: 19,
 };
 

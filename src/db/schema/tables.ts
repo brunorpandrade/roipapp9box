@@ -750,6 +750,7 @@ export const climateEngagementData = mysqlTable(
     escopo: mysqlEnum('escopo', ['empresa', 'departamento', 'equipe']).notNull(),
     departamento: varchar('departamento', { length: 120 }),
     liderId: int('liderId').references(() => employees.id, { onDelete: 'restrict' }),
+    clevelId: int('clevelId').references(() => cLevelMembers.id, { onDelete: 'restrict' }),
     trimestre: varchar('trimestre', { length: 7 }).notNull(),
     notaClima: decimal('notaClima', { precision: 4, scale: 2 }),
     adesao: decimal('adesao', { precision: 5, scale: 2 }),
