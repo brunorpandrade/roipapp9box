@@ -20,6 +20,7 @@ import type { JSX } from 'react';
 
 import { Layout } from '../../components/shell/Layout';
 import { CardPendenciasDialogos } from '../../components/dialogos/CardPendenciasDialogos';
+import { Card9BoxEquipeDireta } from '../../components/paineis/Card9BoxEquipeDireta';
 import { createDbClient } from '../../db/client';
 import { companies, employees, employeeLeaderHistory } from '../../db/schema';
 import { COLORS } from '../../lib/design-tokens/colors';
@@ -298,16 +299,7 @@ export default async function PainelLiderPage(): Promise<JSX.Element> {
             title="Status da plataforma"
             canonicalText="Coleta de dados em andamento"
           />
-          <ComingSoonBlock
-            title="9-Box"
-            canonicalText={
-              isCenario2
-                ? 'Disponível a partir da Fase 3. Esta zona se tornará o ponto de entrada do ' +
-                  'dashboard da sua equipe (com navegação para a cadeia abaixo).'
-                : 'Disponível a partir da Fase 3. Esta zona se tornará o ponto de entrada do ' +
-                  'dashboard da sua equipe direta.'
-            }
-          />
+          <Card9BoxEquipeDireta liderId={session.userId} count={data.liderarDiretosCount} />
           {isCenario2 ? (
             <>
               <ComingSoonBlock
