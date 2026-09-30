@@ -30,6 +30,7 @@ import { getServerSession } from '../../../../server/session/serverSession';
 import {
   RecorteDashboardClient, // rota Bruno reaproveitada (RV-14 — §8.06.6b)
 } from '../../../super-admin/empresa/[id]/dashboard-recorte/[tipo]/[alvo]/RecorteDashboardClient';
+import { AiChatLauncherEquipe } from './AiChatLauncherEquipe';
 
 interface PageProps {
   readonly params: Promise<{ tipo: string; alvo: string }>;
@@ -129,6 +130,17 @@ export default async function DashboardRecorteNativoPage(props: PageProps): Prom
           </div>
           <RecorteDashboardClient data={data} basePath={basePath} />
         </div>
+        {/* ME-UX-CONSOLIDACAO-P3a D3: Assistente de lideranca no
+            dashboard-recorte/equipe. Restrito canonicamente a alvos
+            com lider tipo `employee` (contrato bit-a-bit do
+            `sendChatMessage` — DOC 04 §5.3 espera
+            `contextId=employees.id`). Alvo com lider `clevel` fica
+            como debito para P3b/futuro (loader canonico do employees.id
+            correspondente quando aplicavel; hoje simplesmente nao
+            renderiza para preservar contrato). */}
+        {alvo.tipo === 'equipe' && alvo.leader.tipo === 'employee' ? (
+          <AiChatLauncherEquipe leaderId={alvo.leader.id} leaderName={resolvido.nomeAlvo} />
+        ) : null}
       </Layout>
     );
   } finally {

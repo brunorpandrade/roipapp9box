@@ -26,6 +26,11 @@ import { getServerSession } from '../../../../../../../server/session/serverSess
 import { parseCompanyIdParam } from '../../../organograma/internals';
 
 import { RecorteDashboardClient } from './RecorteDashboardClient';
+// RV-14: path canonico do launcher ultrapassa 100 colunas em uma unica
+// linha; disable pontual da regra para o import — Prettier respeita a
+// comparativa quando ha 1 so especificador.
+// eslint-disable-next-line @stylistic/max-len
+import { AiChatLauncherEquipe } from '../../../../../../dashboard-recorte/[tipo]/[alvo]/AiChatLauncherEquipe';
 
 interface PageProps {
   readonly params: Promise<{ id: string; tipo: string; alvo: string }>;
@@ -111,6 +116,9 @@ export default async function DashboardRecortePage(props: PageProps): Promise<JS
           </div>
           <RecorteDashboardClient data={data} basePath={basePath} />
         </div>
+        {alvo.tipo === 'equipe' && alvo.leader.tipo === 'employee' ? (
+          <AiChatLauncherEquipe leaderId={alvo.leader.id} leaderName={resolvido.nomeAlvo} />
+        ) : null}
       </Layout>
     );
   } finally {

@@ -32,6 +32,15 @@ import { listDepartmentEmployeeIds } from './recorteScope';
 interface RecorteAlvoResolvido {
   readonly alvo: RecorteAlvo;
   readonly titulo: string;
+  /**
+   * Nome do lider/departamento resolvido, para consumo pelos client
+   * components que precisam exibir o rotulo separadamente do titulo
+   * completo (ex.: subtitulo do drawer do Assistente de lideranca no
+   * dashboard-recorte/equipe — ME-UX-CONSOLIDACAO-P3a D3).
+   *   - Departamento: string do nome do departamento.
+   *   - Equipe/cadeia: `name` do employee/cLevelMember resolvido.
+   */
+  readonly nomeAlvo: string;
 }
 
 function isDepartamento(v: string): v is Departamento {
@@ -58,6 +67,7 @@ export async function resolveRecorteAlvo(
     return {
       alvo: { tipo: 'departamento', departamento: dept },
       titulo: `Departamento — ${dept}`,
+      nomeAlvo: dept,
     };
   }
   const m = /^(employee|clevel)-(\d+)$/.exec(alvoRaw);
@@ -77,6 +87,7 @@ export async function resolveRecorteAlvo(
   return {
     alvo: { tipo, leader: { tipo: leaderTipo, id: leaderId } },
     titulo: `${rotulo} — ${registro.name}`,
+    nomeAlvo: registro.name,
   };
 }
 

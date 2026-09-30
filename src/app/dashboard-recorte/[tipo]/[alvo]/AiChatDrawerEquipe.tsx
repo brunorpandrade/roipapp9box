@@ -1,7 +1,14 @@
 'use client';
 
-// ROIP APP 9BOX — drawer canonico do Chat IA no dashboard individual
-// (ME Etapa 1 — Bloco 1). Reproduz bit-a-bit CAMADA_UI §8:
+// ROIP APP 9BOX — drawer canonico do Assistente de lideranca no
+// dashboard-recorte/equipe (ME-UX-CONSOLIDACAO-P3a D3). Duplica
+// bit-a-bit o AiChatDrawer do dashboard-individual com apenas 4
+// mudancas canonicas: chips (AI_CHAT_CHIPS_EQUIPE), subtitulo do
+// header ("Equipe — {leaderName}"), actions consumidas
+// (`chatIaEquipeActions` com dashboardLevel='equipe'), e a chave do
+// contexto (`leaderId` no lugar de `employeeId`).
+//
+// Reproduz bit-a-bit CAMADA_UI §8:
 //   §8.1  Layout do drawer (largura 420px, borda esquerda teal #14B8A6,
 //         cabecalho com titulo + subtitulo, area de mensagens, area de
 //         entrada com textarea auto-resize e botao Enviar).
@@ -10,28 +17,26 @@
 //         redirect da action).
 //   §8.3  Historico ativo (default) + sub-visualizacao "Ver conversas
 //         arquivadas" (somente-leitura, paginada).
-//   §8.4  Subtitulo do cabecalho sinaliza escopo ativo (Individual X).
+//   §8.4  Subtitulo do cabecalho sinaliza escopo ativo (Equipe X).
 //
-// Nivel canonico fixo `individual`. Rate limit: sem throttle client-side
-// alem do CHAT_IA_USER_MESSAGE_MAX_CHARS = 2000 aplicado no Zod do
-// router — decisao D1.2 desta ME. Streaming: nao (decisao D1.1).
+// Nivel canonico fixo `equipe`. Debito de deduplicacao registrado
+// para P3b/futuro: extrair `AiChatDrawerCore` compartilhado com o
+// individual apos o D3 estabilizar em producao.
 //
-// **RV-13.** Componente consumido em `DashboardIndividualClient.tsx`
-// (Bloco 1) e em `ClevelPerfilClient.tsx` (dual-route L123, Bloco 2 —
-// simetria de props verificada por grep pos-empacotamento).
+// **RV-13.** Consumido por `AiChatLauncherEquipe.tsx` (mesmo diretorio).
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, JSX, KeyboardEvent as ReactKeyboardEvent } from 'react';
 
-import { COLORS } from '../../../lib/design-tokens/colors';
+import { COLORS } from '../../../../lib/design-tokens/colors';
 
 import {
-  chatIaGetArchivedHistoryAction,
-  chatIaGetHistoryAction,
-  chatIaSendMessageAction,
-} from './chatIaActions';
-import type { ChatIaMessage } from './chatIaTypes';
+  chatIaEquipeGetArchivedHistoryAction,
+  chatIaEquipeGetHistoryAction,
+  chatIaEquipeSendMessageAction,
+} from './chatIaEquipeActions';
+import type { ChatIaMessage } from '../../../dashboard-individual/[id]/chatIaTypes';
 
 /** Mensagem canonica literal §11.2 (fallback de falha Claude). */
 export const MSG_CHAT_IA_FALLBACK_LITERAL =
@@ -55,9 +60,9 @@ export const AI_CHAT_ROTULO_CANONICO = 'Assistente de liderança' as const;
 // `src/lib/chat-ia/chatIaChips.ts` para consumo compartilhado com o
 // drawer da equipe. Re-exportacao aqui preserva callsites e testes
 // existentes (ME-UX-CONSOLIDACAO-P1) que importam de AiChatDrawer.
-import { AI_CHAT_CHIPS_INDIVIDUAL } from '../../../lib/chat-ia/chatIaChips';
+import { AI_CHAT_CHIPS_EQUIPE } from '../../../../lib/chat-ia/chatIaChips';
 
-export { AI_CHAT_CHIPS_INDIVIDUAL };
+export { AI_CHAT_CHIPS_EQUIPE };
 
 /** Largura fixa canonica do drawer (§8.1). */
 const DRAWER_WIDTH = 420;
@@ -320,7 +325,7 @@ interface ArchivedViewState {
 
 const ARCHIVED_PAGE_SIZE = 20;
 
-function ArchivedView(props: { employeeId: number; onBack: () => void }): JSX.Element {
+function ArchivedView(props: { leaderId: number; onBack: () => void }): JSX.Element {
   const [state, setState] = useState<ArchivedViewState>({
     messages: [],
     page: 1,
@@ -332,8 +337,8 @@ function ArchivedView(props: { employeeId: number; onBack: () => void }): JSX.El
   const load = useCallback(
     async (page: number): Promise<void> => {
       setState((s) => ({ ...s, loading: true, error: null }));
-      const res = await chatIaGetArchivedHistoryAction({
-        employeeId: props.employeeId,
+      const res = await chatIaEquipeGetArchivedHistoryAction({
+        leaderId: props.leaderId,
         page,
         pageSize: ARCHIVED_PAGE_SIZE,
       });
@@ -355,7 +360,7 @@ function ArchivedView(props: { employeeId: number; onBack: () => void }): JSX.El
         error: null,
       });
     },
-    [props.employeeId],
+    [props.leaderId],
   );
 
   useEffect(() => {
@@ -446,13 +451,13 @@ function ArchivedView(props: { employeeId: number; onBack: () => void }): JSX.El
   );
 }
 
-export interface AiChatDrawerProps {
-  readonly employeeId: number;
-  readonly employeeName: string;
+export interface AiChatDrawerEquipeProps {
+  readonly leaderId: number;
+  readonly leaderName: string;
   readonly onClose: () => void;
 }
 
-export function AiChatDrawer(props: AiChatDrawerProps): JSX.Element {
+export function AiChatDrawerEquipe(props: AiChatDrawerEquipeProps): JSX.Element {
   const [messages, setMessages] = useState<readonly ChatIaMessage[]>([]);
   const [inputValue, setInputValue] = useState<string>('');
   const [loadingInitial, setLoadingInitial] = useState<boolean>(true);
@@ -465,7 +470,7 @@ export function AiChatDrawer(props: AiChatDrawerProps): JSX.Element {
   useEffect(() => {
     let cancelled = false;
     async function loadHistory(): Promise<void> {
-      const res = await chatIaGetHistoryAction({ employeeId: props.employeeId });
+      const res = await chatIaEquipeGetHistoryAction({ leaderId: props.leaderId });
       if (cancelled) {
         return;
       }
@@ -478,7 +483,7 @@ export function AiChatDrawer(props: AiChatDrawerProps): JSX.Element {
     return (): void => {
       cancelled = true;
     };
-  }, [props.employeeId]);
+  }, [props.leaderId]);
 
   useEffect(() => {
     if (messagesEndRef.current !== null) {
@@ -499,8 +504,8 @@ export function AiChatDrawer(props: AiChatDrawerProps): JSX.Element {
       setEnviando(true);
       setErro(null);
       setLastFailedContent(null);
-      const res = await chatIaSendMessageAction({
-        employeeId: props.employeeId,
+      const res = await chatIaEquipeSendMessageAction({
+        leaderId: props.leaderId,
         content: trimmed,
       });
       setEnviando(false);
@@ -512,7 +517,7 @@ export function AiChatDrawer(props: AiChatDrawerProps): JSX.Element {
       setMessages((prev) => [...prev, res.userMessage!, res.assistantMessage!]);
       setInputValue('');
     },
-    [props.employeeId],
+    [props.leaderId],
   );
 
   const handleSend = useCallback((): void => {
@@ -553,7 +558,7 @@ export function AiChatDrawer(props: AiChatDrawerProps): JSX.Element {
       <div style={HEADER}>
         <div>
           <div style={HEADER_TITLE}>{AI_CHAT_ROTULO_CANONICO}</div>
-          <div style={HEADER_SUBTITLE}>Individual — {props.employeeName}</div>
+          <div style={HEADER_SUBTITLE}>Equipe — {props.leaderName}</div>
           {viewMode === 'active' ? (
             <button
               type="button"
@@ -569,7 +574,7 @@ export function AiChatDrawer(props: AiChatDrawerProps): JSX.Element {
         </button>
       </div>
       {viewMode === 'archived' ? (
-        <ArchivedView employeeId={props.employeeId} onBack={() => setViewMode('active')} />
+        <ArchivedView leaderId={props.leaderId} onBack={() => setViewMode('active')} />
       ) : (
         <>
           <div style={MESSAGES_AREA}>
@@ -593,7 +598,7 @@ export function AiChatDrawer(props: AiChatDrawerProps): JSX.Element {
                     gap: 8,
                   }}
                 >
-                  {AI_CHAT_CHIPS_INDIVIDUAL.map((pergunta) => (
+                  {AI_CHAT_CHIPS_EQUIPE.map((pergunta) => (
                     <button
                       key={pergunta}
                       type="button"
