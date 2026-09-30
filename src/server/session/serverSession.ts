@@ -66,6 +66,7 @@ import { createDbClient, type RoipDatabase } from '../../db/client';
 import { cLevelMembers, companies, employees, superAdmins } from '../../db/schema';
 import { verifyToken } from '../auth/jwt';
 import { currentCredentialVersion } from '../../lib/session/credentialVersion';
+import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 
 // -----------------------------------------------------------------------
 // Tipos canonicos
@@ -251,19 +252,12 @@ export async function resolveServerSession(
 // -----------------------------------------------------------------------
 // Helper de conveniencia (wrapper)
 // -----------------------------------------------------------------------
-
-/**
- * Resolve `DATABASE_URL` do ambiente. Falha ruidosa se ausente — o
- * server component em producao nao pode operar sem base configurada.
- * Padrao canonico do repo (trpc.ts, route handlers de reports).
- */
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
+//
+// ME-D-DIRTY-CONSOLIDACAO: a copia local de `resolveDatabaseUrl` foi
+// removida e substituida pelo import canonico de
+// `src/lib/db/resolveDatabaseUrl.ts` — mesma semantica bit-a-bit (falha
+// ruidosa se `DATABASE_URL` ausente ou vazia). Fecha divergencia de
+// leitura de env entre trpc.ts, serverSession.ts e o helper canonico.
 
 /**
  * Wrapper canonico consumido pelos server components e Route Handlers.

@@ -45,6 +45,7 @@ import { verifyToken, type PlatformRole } from './auth/jwt';
 import { createRateLimiter, type RateLimiter } from './auth/rateLimit';
 import { getCompanyById } from './services/companies';
 import { currentCredentialVersion } from '../lib/session/credentialVersion';
+import { resolveDatabaseUrl } from '../lib/db/resolveDatabaseUrl';
 
 /** Enum canonico completo do claim `role` (DOC 02 §2.2) — 5 valores. */
 export const ALL_ROLES = ['super_admin', 'rh', 'rh_lider', 'clevel', 'lider'] as const;
@@ -77,15 +78,6 @@ export type AuthenticatedUser =
  * memoria perde sentido se instanciado por request — D003).
  */
 const rateLimiter: RateLimiter = createRateLimiter();
-
-/** Resolve a URL de conexao da aplicacao a partir do ambiente. */
-function resolveDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (!url || url.length === 0) {
-    throw new Error('DATABASE_URL ausente no ambiente — configure .env (ver .env.example)');
-  }
-  return url;
-}
 
 /**
  * Cliente de banco singleton por processo. O pool `mysql2` e caro para
