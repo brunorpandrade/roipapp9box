@@ -299,7 +299,11 @@ export default async function PainelLiderPage(): Promise<JSX.Element> {
             title="Status da plataforma"
             canonicalText="Coleta de dados em andamento"
           />
-          <Card9BoxEquipeDireta liderId={session.userId} count={data.liderarDiretosCount} />
+          <Card9BoxEquipeDireta
+            liderId={session.userId}
+            liderTipo="employee"
+            count={data.liderarDiretosCount}
+          />
           {isCenario2 ? (
             <>
               <ComingSoonBlock

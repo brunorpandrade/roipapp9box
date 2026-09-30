@@ -45,16 +45,25 @@ export const CARD_9BOX_EQUIPE_DIRETA_TITULO = '9-Box equipe direta' as const;
 export const CARD_9BOX_EQUIPE_DIRETA_UNIDADE = 'colaboradores' as const;
 
 export interface Card9BoxEquipeDiretaProps {
-  /** ID do lider (`employees.id` ou `cLevelMembers.id`) — vira `[alvo]`
-   *  na rota canonica `/dashboard-recorte/equipe/[alvo]`. */
+  /** ID do lider (`employees.id` ou `cLevelMembers.id`). */
   readonly liderId: number;
+  /**
+   * Tipo canonico do lider — vira o prefixo do `[alvo]` da rota
+   * `/dashboard-recorte/equipe/[alvo]`, que exige bit-a-bit o padrao
+   * `employee-N` ou `clevel-N` (contrato canonico do
+   * `resolveRecorteAlvo` em `src/server/services/recorteAccess.ts`).
+   * Painel-lider passa sempre `'employee'` (unica rota canonica de
+   * lider tipo 1); painel-clevel (P3 desta ME) passa `'clevel'` para
+   * C-level canonico.
+   */
+  readonly liderTipo: 'employee' | 'clevel';
   /** Total de liderados diretos do lider. Sempre >= 1 canonicamente. */
   readonly count: number;
 }
 
 export function Card9BoxEquipeDireta(props: Card9BoxEquipeDiretaProps): JSX.Element {
-  const { liderId, count } = props;
-  const href = `/dashboard-recorte/equipe/${liderId}`;
+  const { liderId, liderTipo, count } = props;
+  const href = `/dashboard-recorte/equipe/${liderTipo}-${liderId}`;
   return (
     <a
       href={href}

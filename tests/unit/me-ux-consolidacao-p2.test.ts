@@ -35,9 +35,13 @@ describe('ME-UX-CONSOLIDACAO-P2 — D4a card "9-Box equipe direta"', () => {
     expect(CARD_9BOX_EQUIPE_DIRETA_UNIDADE).toBe('colaboradores');
   });
 
-  it('componente monta href canonico `/dashboard-recorte/equipe/[id]`', () => {
+  it('componente monta href canonico com prefixo `employee-N` ou `clevel-N`', () => {
+    // Contrato canonico do `resolveRecorteAlvo` em
+    // src/server/services/recorteAccess.ts: `[alvo]` para tipo=equipe
+    // e o padrao `${liderTipo}-${liderId}` (regex `/^(employee|clevel)-(\d+)$/`).
+    // ID puro sem prefixo falha com "Pagina nao encontrada" (hotfix v2).
     const src = readSrc('src/components/paineis/Card9BoxEquipeDireta.tsx');
-    expect(src).toContain('`/dashboard-recorte/equipe/${liderId}`');
+    expect(src).toContain('`/dashboard-recorte/equipe/${liderTipo}-${liderId}`');
   });
 
   it('painel-lider importa Card9BoxEquipeDireta', () => {
@@ -47,11 +51,13 @@ describe('ME-UX-CONSOLIDACAO-P2 — D4a card "9-Box equipe direta"', () => {
     );
   });
 
-  it('painel-lider consome o card com session.userId e liderarDiretosCount', () => {
+  it('painel-lider consome o card com session.userId + liderTipo="employee"', () => {
+    // Painel-lider e canonicamente acessado apenas por lider (role
+    // === 'lider'), cujo `session.userId` sempre e `employees.id`.
     const src = readSrc('src/app/painel-lider/page.tsx');
-    expect(src).toContain(
-      '<Card9BoxEquipeDireta liderId={session.userId} count={data.liderarDiretosCount} />',
-    );
+    expect(src).toContain('liderId={session.userId}');
+    expect(src).toContain('liderTipo="employee"');
+    expect(src).toContain('count={data.liderarDiretosCount}');
   });
 
   it('painel-lider NAO renderiza mais o ComingSoonBlock title="9-Box"', () => {
