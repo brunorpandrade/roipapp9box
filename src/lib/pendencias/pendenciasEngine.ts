@@ -440,6 +440,30 @@ export async function loadPendenciasPage(
     employeesById.set(e.id, e);
   }
 
+  // Consulta 2.5: todos os cLevelMembers ativos da empresa.
+  //
+  // ME-PROD-01: necessario para materializar canonicamente a pendencia
+  // meuPerfil de C-levels no Bloco 1 abaixo. Sem JOIN de lider — C-level
+  // nao e "liderado" em `employeeLeaderHistory` (campos canonicos
+  // `liderNome` e `liderId` ficam `null` para pendencias de meuPerfil
+  // emitidas sobre C-level, alinhado a DOC 03 §10.11).
+  const cLevelMembersRows = await db
+    .select({
+      id: cLevelMembers.id,
+      nome: cLevelMembers.name,
+      cpf: cLevelMembers.cpf,
+      photoUrl: cLevelMembers.photoUrl,
+      cargo: cLevelMembers.cargo,
+      departamento: cLevelMembers.departamento,
+    })
+    .from(cLevelMembers)
+    .where(and(eq(cLevelMembers.companyId, companyId), eq(cLevelMembers.status, 'ativo')));
+
+  const cLevelMembersById = new Map<number, (typeof cLevelMembersRows)[number]>();
+  for (const c of cLevelMembersRows) {
+    cLevelMembersById.set(c.id, c);
+  }
+
   // Consulta 3: individualProfilePlaceholders pendentes (employees +
   // cLevels).
   //
@@ -579,32 +603,64 @@ export async function loadPendenciasPage(
   const rowsMateralizadas: PendenciaRow[] = [];
 
   // Bloco 1: meuPerfil (via placeholders).
+  //
+  // ME-PROD-01: a Consulta 3 traz placeholders de employees e cLevels.
+  // Materializamos ambos canonicamente. Para C-level, lookup via
+  // `cLevelMembersById` (Consulta 2.5); `liderNome` e `liderId` sao `null`
+  // (C-level nao e liderado em `employeeLeaderHistory` como respondente).
+  // Esta emissao desbloqueia bit-a-bit o acesso ao Perfil Individual no
+  // painel executivo via `/meu-portal/perfil-individual`, que depende do
+  // card via `loadMeuPortalData` → `pendenciasEngine`. RH e super_admin
+  // passam a ver canonicamente a pendencia de C-level em
+  // `/pendencias-portal` (visao transversal da empresa — DOC 03 §10.11
+  // + CAMADA_UI §5.8 restringe acesso a Bruno/RH/RHL1/RHL2, nunca
+  // C-level, portanto nao ha regressao de visibilidade).
   for (const p of placeholdersPendentes) {
-    // Perfil individual pode ser de cLevel — nesse caso `employees` nao
-    // tem entrada. Motor renderiza apenas placeholders de `employee`
-    // (renderizacao de cLevels em `/pendencias-portal` fica fora do
-    // escopo canonico desta ME — DOC 05 §14.23 fala de "colaboradores"
-    // no plural sem especificar C-levels; C-levels tem tela propria).
-    if (p.userType !== 'employee') {
-      continue;
-    }
-    const emp = employeesById.get(p.userId);
-    if (emp === undefined) {
-      continue;
+    let nome: string;
+    let cpf: string;
+    let photoUrl: string | null;
+    let cargo: string;
+    let departamento: string;
+    let liderNome: string | null;
+    let liderId: number | null;
+    if (p.userType === 'employee') {
+      const emp = employeesById.get(p.userId);
+      if (emp === undefined) {
+        continue;
+      }
+      nome = emp.nome;
+      cpf = emp.cpf;
+      photoUrl = emp.photoUrl;
+      cargo = emp.cargo;
+      departamento = emp.departamento;
+      liderNome = emp.liderEmpNome ?? emp.liderClNome ?? null;
+      liderId = emp.liderEmpId;
+    } else {
+      const cl = cLevelMembersById.get(p.userId);
+      if (cl === undefined) {
+        continue;
+      }
+      nome = cl.nome;
+      cpf = cl.cpf;
+      photoUrl = cl.photoUrl;
+      cargo = cl.cargo;
+      departamento = cl.departamento;
+      liderNome = null;
+      liderId = null;
     }
     const prazoDerivado = derivarPrazoMeuPerfil(p.createdAt);
     const cooldownUntil = cooldownUntilByKey.get(cooldownKey(p.userId, 'meuPerfil', null)) ?? null;
     rowsMateralizadas.push({
-      key: buildRowKey('meuPerfil', 'employee', p.userId, null),
-      userType: 'employee',
+      key: buildRowKey('meuPerfil', p.userType, p.userId, null),
+      userType: p.userType,
       userId: p.userId,
-      nome: emp.nome,
-      cpf: emp.cpf,
-      photoUrl: emp.photoUrl,
-      cargo: emp.cargo,
-      departamento: emp.departamento,
-      liderNome: emp.liderEmpNome ?? emp.liderClNome ?? null,
-      liderId: emp.liderEmpId,
+      nome,
+      cpf,
+      photoUrl,
+      cargo,
+      departamento,
+      liderNome,
+      liderId,
       instrumento: 'meuPerfil',
       status: resolveStatusMeuPerfil(p.createdAt, now),
       prazoOriginal: prazoDerivado,
