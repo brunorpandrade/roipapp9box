@@ -12,7 +12,9 @@ import type { JSX } from 'react';
 import { COLORS } from '../../../../../lib/design-tokens/colors';
 import { zonaFolhaPercentual, type ZonaFolha } from '../../../../../lib/folhaFaturamento';
 import type { StatusDiagnostico } from '../../../../../lib/roiFormulas';
+import type { BlocoClimaDashboardData } from '../../../../../server/services/blocoClimaDashboard';
 import type { CompanyAggregatePage } from '../../../../../server/services/companyAggregate';
+import { BlocoClimaCard } from '../_agregado/BlocoClimaCard';
 import {
   CARD,
   ColetivoCard,
@@ -30,6 +32,13 @@ import {
 export interface EmpresaDashboardClientProps {
   readonly data: CompanyAggregatePage;
   readonly basePath: string;
+  /**
+   * ME-B2-01b Fase 2 — payload canonico do Bloco Clima e Engajamento.
+   * `null` quando o caller nao tem acesso canonico (C-level
+   * acessoTotal=false — Q1=A) OU quando nao ha scoreA canonicamente
+   * gravado para a empresa.
+   */
+  readonly blocoClima: BlocoClimaDashboardData | null;
 }
 
 function brl(v: number | null): string {
@@ -117,7 +126,7 @@ function FinanceiroCard(props: { readonly data: CompanyAggregatePage }): JSX.Ele
 }
 
 export function EmpresaDashboardClient(props: EmpresaDashboardClientProps): JSX.Element {
-  const { data, basePath } = props;
+  const { data, basePath, blocoClima } = props;
   if (data.trimestre === null || data.aggregate === null) {
     return <MensagemVazio />;
   }
@@ -153,6 +162,14 @@ export function EmpresaDashboardClient(props: EmpresaDashboardClientProps): JSX.
           <TurnoverCard turnover={data.turnover} />
         </div>
       </div>
+      {/*
+        ME-B2-01b Fase 2 — Bloco Clima e Engajamento canonico.
+        Full-width abaixo do grid principal (acomoda a timeline
+        canonica dos trimestres sem comprimir). Renderizado apenas
+        quando o caller tem acesso canonico (page.tsx aplica o guard
+        C-level acessoTotal Q1=A antes de carregar os dados).
+      */}
+      <BlocoClimaCard data={blocoClima} />
     </div>
   );
 }

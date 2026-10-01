@@ -27,6 +27,7 @@ import {
   NATIVE_EMPRESA_DASHBOARD_HREF,
 } from '../../lib/scope/companyAggregateAccess';
 import { loadPlatformMenuContext } from '../../lib/session/platformMenuContext';
+import { loadBlocoClimaDashboardData } from '../../server/services/blocoClimaDashboard';
 import { loadCompanyAggregatePage } from '../../server/services/companyAggregate';
 import { resolveHierarchicalScope } from '../../server/services/hierarchicalScope';
 import { getServerSession } from '../../server/session/serverSession';
@@ -92,6 +93,18 @@ export default async function DashboardEmpresaNativoPage(props: PageProps): Prom
 
     const data = await loadCompanyAggregatePage(client.db, companyId, trimestrePedido ?? null);
 
+    // ME-B2-01b Fase 2 — Bloco Clima canonico. Guard §9.9 + Q1=A ja
+    // aplicado pelo `canViewCompanyAggregate` acima: so chega aqui
+    // quem tem escopo total canonico (RH/RH-Lider ou C-level
+    // acessoTotal=true). Lider puro foi barrado antes.
+    const blocoClima = await loadBlocoClimaDashboardData(client.db, {
+      companyId,
+      escopo: 'empresa',
+      escopoReferencia: null,
+      liderId: null,
+      liderTipo: null,
+    });
+
     return (
       <Layout
         menuItems={menu.menuItems}
@@ -112,7 +125,11 @@ export default async function DashboardEmpresaNativoPage(props: PageProps): Prom
               {session.companyDisplayName}
             </p>
           </div>
-          <EmpresaDashboardClient data={data} basePath={NATIVE_EMPRESA_DASHBOARD_HREF} />
+          <EmpresaDashboardClient
+            data={data}
+            basePath={NATIVE_EMPRESA_DASHBOARD_HREF}
+            blocoClima={blocoClima}
+          />
         </div>
       </Layout>
     );

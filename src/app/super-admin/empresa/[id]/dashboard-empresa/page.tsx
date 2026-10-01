@@ -16,6 +16,7 @@ import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 import { findCompanyDisplayInfo } from '../../../../../lib/logs/companyHistoryLog';
 import { resolveMenuItems } from '../../../../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../../../../lib/session/resolveProfileKey';
+import { loadBlocoClimaDashboardData } from '../../../../../server/services/blocoClimaDashboard';
 import { loadCompanyAggregatePage } from '../../../../../server/services/companyAggregate';
 import { getServerSession } from '../../../../../server/session/serverSession';
 
@@ -52,6 +53,16 @@ export default async function DashboardEmpresaPage(props: PageProps): Promise<JS
     }
 
     const data = await loadCompanyAggregatePage(client.db, companyId, trimestrePedido ?? null);
+
+    // ME-B2-01b Fase 2 — Bloco Clima canonico. Super_admin (Bruno)
+    // atravessa qualquer guard §9.9/Q1=A por definicao canonica.
+    const blocoClima = await loadBlocoClimaDashboardData(client.db, {
+      companyId,
+      escopo: 'empresa',
+      escopoReferencia: null,
+      liderId: null,
+      liderTipo: null,
+    });
 
     const profileKey = resolveProfileKey({
       session,
@@ -91,6 +102,7 @@ export default async function DashboardEmpresaPage(props: PageProps): Promise<JS
           <EmpresaDashboardClient
             data={data}
             basePath={`/super-admin/empresa/${companyId}/dashboard-empresa`}
+            blocoClima={blocoClima}
           />
         </div>
       </Layout>
