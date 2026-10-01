@@ -9,6 +9,16 @@
 //
 // Aplica shift +1000. Replica mappers Nativa (loadFixtures.ts linhas
 // 773-874).
+//
+// ME-B2-01c (01/10/2026) — correcao canonica do bug 1 do Clima: o
+// shape `DerivedUbatubaPlenitudeRow` e o map abaixo persistem agora as
+// 8 colunas de dimensao da plenitude (engajamento/desenvolvimento/
+// pertencimento/realizacao, A e C), nao apenas engajamento. O fixture
+// `plenitude_completa.json` ja contem todas as 8 colunas; o seed
+// Ubatuba simplesmente nao as transportava — regressao do clone do
+// mapper Nativa (que esta correto desde ME-068). Sem a correcao, o
+// card de dimensoes do Bloco Clima mostra 3 de 4 dimensoes como "—"
+// na Ubatuba (producao companyId=2).
 
 import { loadFixture } from '../nativa/loadJsonFixtures';
 
@@ -30,6 +40,12 @@ interface PlenitudeJsonRow {
   readonly alertaDivergencia: boolean;
   readonly engajamentoA?: number | null;
   readonly engajamentoC?: number | null;
+  readonly desenvolvimentoA?: number | null;
+  readonly desenvolvimentoC?: number | null;
+  readonly pertencimentoA?: number | null;
+  readonly pertencimentoC?: number | null;
+  readonly realizacaoA?: number | null;
+  readonly realizacaoC?: number | null;
 }
 
 interface NineBoxJsonRow {
@@ -56,7 +72,7 @@ interface IqlJsonRow {
   readonly countRespondentes: number;
 }
 
-/** Shape INSERT plenitudeData. */
+/** Shape INSERT plenitudeData — 8 colunas de dimensao canonicas (§6.4). */
 export interface DerivedUbatubaPlenitudeRow {
   readonly companyId: number;
   readonly employeeId: number;
@@ -69,6 +85,12 @@ export interface DerivedUbatubaPlenitudeRow {
   readonly alertaDivergencia: boolean;
   readonly engajamentoA: string | null;
   readonly engajamentoC: string | null;
+  readonly desenvolvimentoA: string | null;
+  readonly desenvolvimentoC: string | null;
+  readonly pertencimentoA: string | null;
+  readonly pertencimentoC: string | null;
+  readonly realizacaoA: string | null;
+  readonly realizacaoC: string | null;
 }
 
 /** Union canonica dos 9 quadrantes do 9-Box (bit-exact ao schema). */
@@ -112,6 +134,15 @@ export interface DerivedUbatubaIqlRow {
   readonly countRespondentesElegiveis: number;
 }
 
+/**
+ * Helper canonico interno: converte um valor opcional da plenitude (A
+ * ou C, por dimensao) em string decimal com 2 casas, ou `null`. Aplica
+ * a convencao canonica MySQL para colunas `decimal(5,2)` nullable.
+ */
+function fmtDecimalOpt(v: number | null | undefined): string | null {
+  return v != null ? v.toFixed(2) : null;
+}
+
 export function deriveUbatubaPlenitude(): readonly DerivedUbatubaPlenitudeRow[] {
   const fixture = loadFixture<PlenitudeJsonRow[]>('plenitude_completa.json');
   const rows: DerivedUbatubaPlenitudeRow[] = fixture.data.map((r) => ({
@@ -124,8 +155,14 @@ export function deriveUbatubaPlenitude(): readonly DerivedUbatubaPlenitudeRow[] 
     faixaPlenitude: r.faixaPlenitude ?? 'media',
     divergencia: r.divergencia.toFixed(2),
     alertaDivergencia: r.alertaDivergencia,
-    engajamentoA: r.engajamentoA != null ? r.engajamentoA.toFixed(2) : null,
-    engajamentoC: r.engajamentoC != null ? r.engajamentoC.toFixed(2) : null,
+    engajamentoA: fmtDecimalOpt(r.engajamentoA),
+    engajamentoC: fmtDecimalOpt(r.engajamentoC),
+    desenvolvimentoA: fmtDecimalOpt(r.desenvolvimentoA),
+    desenvolvimentoC: fmtDecimalOpt(r.desenvolvimentoC),
+    pertencimentoA: fmtDecimalOpt(r.pertencimentoA),
+    pertencimentoC: fmtDecimalOpt(r.pertencimentoC),
+    realizacaoA: fmtDecimalOpt(r.realizacaoA),
+    realizacaoC: fmtDecimalOpt(r.realizacaoC),
   }));
   return Object.freeze(rows);
 }

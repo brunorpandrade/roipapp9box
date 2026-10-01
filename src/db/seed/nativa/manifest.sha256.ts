@@ -3,6 +3,13 @@
 // Fonte de proveniencia: gerador Python S362 preservado no zip D077 (Cenario A
 // canonizado bit-exact em ME-068 via E-068-2 aprovado).
 //
+// ME-B2-01c (01/10/2026) — atualizados os pins SHA-256 de
+// `instrumento_a_respostas.json` e `instrumento_c_respostas.json` apos
+// normalizacao canonica do `itemIndex` de linear 1..20 para 1..5 local por
+// dimensao (grid 4x5 canonico §9.4). Conteudo preservado bit-a-bit nas demais
+// chaves (nome, trimestre, dimensao, valor); so o `itemIndex` foi recalculado
+// via `itemIndex -= (dimensao-1)*5`. Contagens inalteradas (8020 rows cada).
+//
 // Regra canonica RV-02: qualquer divergencia SHA-256 no loader = ABORT (fixture
 // corrompida ou editada). O loader `loadFixtures.ts` valida cada JSON antes de
 // deserializar; SHA-256 mismatch dispara throw canonico bit-exact.
@@ -13,7 +20,8 @@
 // Estes valores foram medidos por `sha256sum` durante geracao em ME-068 e sao
 // imutaveis para todo o escopo canonico Nativa 2026-2027. Extensoes anuais via
 // reseed incremental (D079) geram entradas adicionais com sufixo do ano; entradas
-// existentes NUNCA sao alteradas (append-only estrito — regra canonica).
+// existentes NUNCA sao alteradas (append-only estrito — regra canonica),
+// EXCETO em correcao canonica declarada de bug estrutural (como a ME-B2-01c).
 
 export interface FixtureHashEntry {
   /** Nome do arquivo relativo a tests/fixtures/nativa/. */
@@ -134,7 +142,7 @@ export const NATIVA_FIXTURE_MANIFEST = [
   },
   {
     filename: 'instrumento_c_respostas.json',
-    sha256: '3f5f70be77b1b2452f6dda965e66a38f75620a9dea9ea6648dbdbab14c2a573b',
+    sha256: 'ad15371b2762e1275565807630749ca9791cf763a4a6fbc3985589e5fa5216c2',
     recordCount: 8020,
     destinationTable: 'instrumentC_assessments',
   },
@@ -152,7 +160,7 @@ export const NATIVA_FIXTURE_MANIFEST = [
   },
   {
     filename: 'instrumento_a_respostas.json',
-    sha256: '7e4851adc7ead398fc553c09cbac5cbc8313f143f66f36b8c1c251612a30b377',
+    sha256: '001ccb7fdac16057878296cf728505dda98550e8cf337ad6211aac0c21b5956d',
     recordCount: 8020,
     destinationTable: 'instrumentA_responses',
   },
