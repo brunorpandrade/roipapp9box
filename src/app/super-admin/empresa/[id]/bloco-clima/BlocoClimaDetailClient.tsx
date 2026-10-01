@@ -215,7 +215,7 @@ function TimelineBarrasLinha(props: {
       width="100%"
       height={H}
       role="img"
-      aria-label="Histórico canônico"
+      aria-label="Evolução trimestral"
     >
       {[0, 2.5, 5, 7.5, 10].map((marca) => {
         const y = yFor(marca);
@@ -725,8 +725,7 @@ export function BlocoClimaDetailClient(props: BlocoClimaDetailClientProps): JSX.
         lineHeight: 1.4,
       }}
     >
-      Mínimo de {PISO_RESPONDENTES_CLIMATE} respondentes para exibir dados de um departamento
-      (anonimato §7.6). Departamentos abaixo do piso aparecem atenuados.
+      Mínimo de {PISO_RESPONDENTES_CLIMATE} respondentes para exibir dados de um departamento.
     </span>
   );
 
@@ -894,7 +893,7 @@ export function BlocoClimaDetailClient(props: BlocoClimaDetailClientProps): JSX.
                 marginBottom: 6,
               }}
             >
-              Histórico canônico
+              Evolução trimestral
             </div>
             <TimelineBarrasLinha historico={props.data.historico} />
           </div>
@@ -933,7 +932,7 @@ export function BlocoClimaDetailClient(props: BlocoClimaDetailClientProps): JSX.
             color: COLORS.text.tertiary,
           }}
         >
-          Dimensões canônicas (clique para expandir questões)
+          Dimensões (clique para expandir questões)
         </span>
         <button
           type="button"
