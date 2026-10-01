@@ -72,6 +72,7 @@ function toChatIaMessage(row: {
  */
 export async function chatIaEquipeGetHistoryAction(input: {
   leaderId: number;
+  leaderType: 'employee' | 'clevel';
 }): Promise<ChatIaGetHistoryResult> {
   const token = await requireToken();
   const client = createDbClient(resolveDatabaseUrl());
@@ -86,6 +87,7 @@ export async function chatIaEquipeGetHistoryAction(input: {
     const res = await caller.getHistory({
       dashboardLevel: 'equipe',
       contextId: input.leaderId,
+      contextType: input.leaderType,
     });
     return {
       ok: true,
@@ -106,6 +108,7 @@ export async function chatIaEquipeGetHistoryAction(input: {
  */
 export async function chatIaEquipeSendMessageAction(input: {
   leaderId: number;
+  leaderType: 'employee' | 'clevel';
   content: string;
 }): Promise<ChatIaSendMessageResult> {
   const token = await requireToken();
@@ -122,6 +125,7 @@ export async function chatIaEquipeSendMessageAction(input: {
     const res = await caller.sendMessage({
       dashboardLevel: 'equipe',
       contextId: input.leaderId,
+      contextType: input.leaderType,
       content: input.content,
     });
     return {
@@ -153,6 +157,7 @@ export async function chatIaEquipeSendMessageAction(input: {
  */
 export async function chatIaEquipeGetArchivedHistoryAction(input: {
   leaderId: number;
+  leaderType: 'employee' | 'clevel';
   page: number;
   pageSize: number;
 }): Promise<ChatIaGetArchivedHistoryResult> {
@@ -169,6 +174,7 @@ export async function chatIaEquipeGetArchivedHistoryAction(input: {
     const res = await caller.getArchivedHistory({
       dashboardLevel: 'equipe',
       contextId: input.leaderId,
+      contextType: input.leaderType,
       page: input.page,
       pageSize: input.pageSize,
     });

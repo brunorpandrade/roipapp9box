@@ -130,16 +130,18 @@ export default async function DashboardRecorteNativoPage(props: PageProps): Prom
           </div>
           <RecorteDashboardClient data={data} basePath={basePath} />
         </div>
-        {/* ME-UX-CONSOLIDACAO-P3a D3: Assistente de lideranca no
-            dashboard-recorte/equipe. Restrito canonicamente a alvos
-            com lider tipo `employee` (contrato bit-a-bit do
-            `sendChatMessage` — DOC 04 §5.3 espera
-            `contextId=employees.id`). Alvo com lider `clevel` fica
-            como debito para P3b/futuro (loader canonico do employees.id
-            correspondente quando aplicavel; hoje simplesmente nao
-            renderiza para preservar contrato). */}
-        {alvo.tipo === 'equipe' && alvo.leader.tipo === 'employee' ? (
-          <AiChatLauncherEquipe leaderId={alvo.leader.id} leaderName={resolvido.nomeAlvo} />
+        {/* ME-UX-CONSOLIDACAO-P3a D3 + ME-ORG-01-A: Assistente de
+            lideranca no dashboard-recorte/equipe. Lider employee
+            (contextId=employees.id) e lider clevel (contextId=
+            cLevelMembers.id) suportados canonicamente pelo motor
+            `sendChatMessage` polimorfico via contextType. Fecha
+            D-CHAT-EQUIPE-CLEVEL. */}
+        {alvo.tipo === 'equipe' ? (
+          <AiChatLauncherEquipe
+            leaderId={alvo.leader.id}
+            leaderType={alvo.leader.tipo}
+            leaderName={resolvido.nomeAlvo}
+          />
         ) : null}
       </Layout>
     );

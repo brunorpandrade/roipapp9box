@@ -230,6 +230,7 @@ const BASE_ARGS: SendChatMessageArgs = {
   companyId: 100,
   dashboardLevel: 'individual',
   contextId: 10,
+  contextType: 'employee',
   content: 'Como esta o desempenho deste colaborador?',
   viewerRole: 'rh',
   viewerUserId: 900,

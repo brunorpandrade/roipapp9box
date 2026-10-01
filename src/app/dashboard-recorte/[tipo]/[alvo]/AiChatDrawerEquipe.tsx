@@ -325,7 +325,11 @@ interface ArchivedViewState {
 
 const ARCHIVED_PAGE_SIZE = 20;
 
-function ArchivedView(props: { leaderId: number; onBack: () => void }): JSX.Element {
+function ArchivedView(props: {
+  leaderId: number;
+  leaderType: 'employee' | 'clevel';
+  onBack: () => void;
+}): JSX.Element {
   const [state, setState] = useState<ArchivedViewState>({
     messages: [],
     page: 1,
@@ -339,6 +343,7 @@ function ArchivedView(props: { leaderId: number; onBack: () => void }): JSX.Elem
       setState((s) => ({ ...s, loading: true, error: null }));
       const res = await chatIaEquipeGetArchivedHistoryAction({
         leaderId: props.leaderId,
+        leaderType: props.leaderType,
         page,
         pageSize: ARCHIVED_PAGE_SIZE,
       });
@@ -453,6 +458,7 @@ function ArchivedView(props: { leaderId: number; onBack: () => void }): JSX.Elem
 
 export interface AiChatDrawerEquipeProps {
   readonly leaderId: number;
+  readonly leaderType: 'employee' | 'clevel';
   readonly leaderName: string;
   readonly onClose: () => void;
 }
@@ -470,7 +476,10 @@ export function AiChatDrawerEquipe(props: AiChatDrawerEquipeProps): JSX.Element 
   useEffect(() => {
     let cancelled = false;
     async function loadHistory(): Promise<void> {
-      const res = await chatIaEquipeGetHistoryAction({ leaderId: props.leaderId });
+      const res = await chatIaEquipeGetHistoryAction({
+        leaderId: props.leaderId,
+        leaderType: props.leaderType,
+      });
       if (cancelled) {
         return;
       }
@@ -506,6 +515,7 @@ export function AiChatDrawerEquipe(props: AiChatDrawerEquipeProps): JSX.Element 
       setLastFailedContent(null);
       const res = await chatIaEquipeSendMessageAction({
         leaderId: props.leaderId,
+        leaderType: props.leaderType,
         content: trimmed,
       });
       setEnviando(false);
@@ -574,7 +584,11 @@ export function AiChatDrawerEquipe(props: AiChatDrawerEquipeProps): JSX.Element 
         </button>
       </div>
       {viewMode === 'archived' ? (
-        <ArchivedView leaderId={props.leaderId} onBack={() => setViewMode('active')} />
+        <ArchivedView
+          leaderId={props.leaderId}
+          leaderType={props.leaderType}
+          onBack={() => setViewMode('active')}
+        />
       ) : (
         <>
           <div style={MESSAGES_AREA}>

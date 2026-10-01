@@ -314,6 +314,7 @@ describe('loadDashboardEquipeContext — §5.6 e D059', () => {
     const args: DashboardEquipeContextArgs = {
       companyId: 100,
       liderId: 15,
+      liderTipo: 'employee',
       viewerRole: 'lider',
       viewerUserId: 15, // autovisualizacao (o proprio lider)
       viewerUserType: 'employee',
@@ -338,6 +339,7 @@ describe('loadDashboardEquipeContext — §5.6 e D059', () => {
     const args: DashboardEquipeContextArgs = {
       companyId: 100,
       liderId: 25,
+      liderTipo: 'employee',
       viewerRole: 'rh',
       viewerUserId: 999,
       viewerUserType: 'employee',
@@ -362,6 +364,7 @@ describe('loadDashboardEquipeContext — §5.6 e D059', () => {
     const args: DashboardEquipeContextArgs = {
       companyId: 100,
       liderId: 9999,
+      liderTipo: 'employee',
       viewerRole: 'rh',
       viewerUserId: 999,
       viewerUserType: 'employee',
@@ -376,6 +379,7 @@ describe('loadDashboardEquipeContext — §5.6 e D059', () => {
     const args: DashboardEquipeContextArgs = {
       companyId: 100,
       liderId: 30,
+      liderTipo: 'employee',
       viewerRole: 'rh',
       viewerUserId: 999,
       viewerUserType: 'employee',

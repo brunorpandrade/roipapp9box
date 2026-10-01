@@ -105,11 +105,16 @@ describe('ME-UX-CONSOLIDACAO-P3a — AiChatDrawerEquipe + AiChatLauncherEquipe',
 });
 
 describe('ME-UX-CONSOLIDACAO-P3a — integracao pages de recorte', () => {
-  it('page.tsx nativo renderiza launcher quando equipe + leader employee', () => {
+  it('page.tsx nativo renderiza launcher para equipe (employee ou clevel, ME-ORG-01-A)', () => {
     const src = readSrc('src/app/dashboard-recorte/[tipo]/[alvo]/page.tsx');
     expect(src).toContain("import { AiChatLauncherEquipe } from './AiChatLauncherEquipe';");
-    expect(src).toContain("alvo.tipo === 'equipe' && alvo.leader.tipo === 'employee'");
+    // ME-ORG-01-A: restricao canonica anterior
+    // (`alvo.leader.tipo === 'employee'`) foi removida bit-a-bit.
+    // Agora o launcher renderiza para QUALQUER lider de equipe, com
+    // `leaderType` polimorfico propagado ao motor Chat IA.
+    expect(src).toContain("alvo.tipo === 'equipe'");
     expect(src).toContain('leaderId={alvo.leader.id}');
+    expect(src).toContain('leaderType={alvo.leader.tipo}');
     expect(src).toContain('leaderName={resolvido.nomeAlvo}');
   });
 
@@ -118,7 +123,10 @@ describe('ME-UX-CONSOLIDACAO-P3a — integracao pages de recorte', () => {
       'src/app/super-admin/empresa/[id]/dashboard-recorte/[tipo]/[alvo]/page.tsx',
     );
     expect(src).toContain('AiChatLauncherEquipe');
-    expect(src).toContain("alvo.tipo === 'equipe' && alvo.leader.tipo === 'employee'");
+    // ME-ORG-01-A: mesmo padrao polimorfico canonicamente aplicado a
+    // rota Bruno (defense-in-depth e simetria com a rota nativa).
+    expect(src).toContain("alvo.tipo === 'equipe'");
+    expect(src).toContain('leaderType={alvo.leader.tipo}');
     expect(src).toContain('leaderName={resolvido.nomeAlvo}');
   });
 

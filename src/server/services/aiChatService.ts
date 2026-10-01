@@ -224,16 +224,24 @@ export function createDefaultAiChatServiceDeps(db: RoipDatabase): AiChatServiceD
 // ============================================================
 
 /**
- * Argumentos canonicos de `sendChatMessage`. `contextId` interpretado
- * pelo motor conforme §10.2 do DOC 01:
- *   - `individual` → `employees.id` do colaborador visualizado.
- *   - `equipe`     → `employees.id` do lider.
+ * Argumentos canonicos de `sendChatMessage`. `contextId` + `contextType`
+ * sao polimorficos conforme §10.2 do DOC 01:
+ *   - `individual` → `contextId=employees.id` (contextType sempre
+ *     'employee'; individual nao se aplica a C-level).
+ *   - `equipe` → `(contextId, contextType)`:
+ *     - `contextType='employee'`: `contextId=employees.id` do lider.
+ *     - `contextType='clevel'`: `contextId=cLevelMembers.id` do lider.
  * `viewerUserId` e `viewerUserType` sao usados para bloqueios §5.6.
+ *
+ * ME-ORG-01-A: `contextType` adicionado canonicamente (defaulting
+ * `'employee'` em callers legados). Desbloqueia Chat IA de equipe para
+ * lider tipo C-level (D-CHAT-EQUIPE-CLEVEL encerrado).
  */
 export interface SendChatMessageArgs {
   companyId: number;
   dashboardLevel: ChatIaDashboardLevel;
   contextId: number;
+  contextType: 'employee' | 'clevel';
   content: string;
   viewerRole: 'super_admin' | 'rh' | 'rh_lider' | 'clevel' | 'lider';
   viewerUserId: number;
@@ -329,6 +337,7 @@ export async function sendChatMessage(
     const payload = await deps.loadEquipeContext(deps.db, {
       companyId: args.companyId,
       liderId: args.contextId,
+      liderTipo: args.contextType,
       viewerRole: args.viewerRole,
       viewerUserId: args.viewerUserId,
       viewerUserType: args.viewerUserType,

@@ -28,6 +28,7 @@ import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../../db/client';
 import {
+  cLevelMembers,
   employees,
   employeeLeaderHistory,
   nineBoxClassifications,
@@ -36,7 +37,7 @@ import {
   plenitudeData,
 } from '../../../db/schema';
 import { computeClimateBlock } from '../climateCalculationEngine';
-import { getIqlDataByLiderQuarter } from '../iqlData';
+import { getIqlDataByClevelQuarter, getIqlDataByLiderQuarter } from '../iqlData';
 
 import {
   NINE_BOX_QUADRANTE_TO_KEY,
@@ -46,6 +47,27 @@ import {
   type DashboardEquipeIdentificacao,
 } from './dashboardContextTypes';
 import { mediaDosPresentes, mesesDoTrimestre } from './dashboardPeriods';
+
+// ============================================================
+// Helper canonico polimorfico lider (ME-ORG-01-A)
+// ============================================================
+
+/**
+ * Padrao canonico XOR polimorfico (§2.3): o vinculo ativo em
+ * `employeeLeaderHistory` aponta ou para `liderId` (lider tipo employee)
+ * ou para `clevelId` (lider tipo clevel). Este helper devolve a
+ * condition SQL canonica correspondente, consumida por TODAS as queries
+ * de "diretos ativos do lider" neste modulo e no motor de agregacao.
+ *
+ * Mantida como funcao sem db-escape para preservar RV-12 (chamadores
+ * compoem com `and(...)` tipado do drizzle).
+ */
+function matchLiderAtivo(liderId: number, liderTipo: 'employee' | 'clevel') {
+  if (liderTipo === 'clevel') {
+    return and(eq(employeeLeaderHistory.clevelId, liderId), isNull(employeeLeaderHistory.dataFim));
+  }
+  return and(eq(employeeLeaderHistory.liderId, liderId), isNull(employeeLeaderHistory.dataFim));
+}
 
 // ============================================================
 // Cortes canonicos §2.4 (defensivos)
@@ -75,7 +97,7 @@ function num(value: string | null | undefined): number | null {
 // ============================================================
 
 function isAutoVisualizacaoLider(args: DashboardEquipeContextArgs): boolean {
-  if (args.viewerUserType !== 'employee') {
+  if (args.viewerUserType !== args.liderTipo) {
     return false;
   }
   return args.viewerUserId === args.liderId;
@@ -94,33 +116,61 @@ function shouldBlockFinanceiroEquipe(
 interface EquipeIdentificacaoInput {
   db: RoipDatabase;
   liderId: number;
+  liderTipo: 'employee' | 'clevel';
 }
 
 async function composeEquipeIdentificacao(input: EquipeIdentificacaoInput): Promise<{
   identificacao: DashboardEquipeIdentificacao;
   liderExiste: boolean;
 } | null> {
-  const [liderRow] = await input.db
-    .select({
-      name: employees.name,
-      departamento: employees.departamento,
-      isLider: employees.isLider,
-    })
-    .from(employees)
-    .where(eq(employees.id, input.liderId))
-    .limit(1);
+  // ME-ORG-01-A: lookup polimorfico canonico. C-level nao tem campo
+  // `isLider` (todo C-level e lider por natureza no DOC); hidrata
+  // sempre com `isLider=true` para preservar o contrato do caller.
+  let liderRow: { name: string; departamento: string | null; isLider: boolean } | undefined;
+  if (input.liderTipo === 'clevel') {
+    const [row] = await input.db
+      .select({
+        name: cLevelMembers.name,
+        departamento: cLevelMembers.departamento,
+      })
+      .from(cLevelMembers)
+      .where(eq(cLevelMembers.id, input.liderId))
+      .limit(1);
+    if (row) {
+      liderRow = {
+        name: row.name,
+        departamento: row.departamento,
+        isLider: true,
+      };
+    }
+  } else {
+    const [row] = await input.db
+      .select({
+        name: employees.name,
+        departamento: employees.departamento,
+        isLider: employees.isLider,
+      })
+      .from(employees)
+      .where(eq(employees.id, input.liderId))
+      .limit(1);
+    if (row) {
+      liderRow = {
+        name: row.name,
+        departamento: row.departamento,
+        isLider: row.isLider === true,
+      };
+    }
+  }
   if (!liderRow) {
     return null;
   }
   // Contagem canonica de diretos (`vinculo` ativo no dia corrente:
   // `dataInicio <= hoje` e `dataFim IS NULL`). Consistente com o
-  // padrao S066 do router dashboard.
+  // padrao S066 do router dashboard. Polimorfico via matchLiderAtivo.
   const diretosRows = await input.db
     .select({ id: employeeLeaderHistory.employeeId })
     .from(employeeLeaderHistory)
-    .where(
-      and(eq(employeeLeaderHistory.liderId, input.liderId), isNull(employeeLeaderHistory.dataFim)),
-    );
+    .where(matchLiderAtivo(input.liderId, input.liderTipo));
   const diretos = diretosRows.length;
   return {
     identificacao: {
@@ -140,6 +190,7 @@ async function composeEquipeIdentificacao(input: EquipeIdentificacaoInput): Prom
 interface ListaColaboradoresInput {
   db: RoipDatabase;
   liderId: number;
+  liderTipo: 'employee' | 'clevel';
   bloqueiaFinanceiro: boolean;
 }
 
@@ -149,9 +200,7 @@ async function composeListaColaboradores(
   const vinculos = await input.db
     .select({ employeeId: employeeLeaderHistory.employeeId })
     .from(employeeLeaderHistory)
-    .where(
-      and(eq(employeeLeaderHistory.liderId, input.liderId), isNull(employeeLeaderHistory.dataFim)),
-    )
+    .where(matchLiderAtivo(input.liderId, input.liderTipo))
     .limit(EQUIPE_LISTA_COLABORADORES_CAP);
   if (vinculos.length === 0) {
     return [];
@@ -202,6 +251,7 @@ interface EquipeIqlBlockInput {
   db: RoipDatabase;
   companyId: number;
   liderId: number;
+  liderTipo: 'employee' | 'clevel';
   trimestre: string | null;
   autoVisualizacao: boolean;
 }
@@ -212,12 +262,12 @@ async function composeEquipeIqlBlock(
   if (input.autoVisualizacao || input.trimestre === null) {
     return null;
   }
-  const row = await getIqlDataByLiderQuarter(
-    input.db,
-    input.companyId,
-    input.liderId,
-    input.trimestre,
-  );
+  // ME-ORG-01-A: lookup polimorfico canonico (`uq_iqlData_lider` vs
+  // `uq_iqlData_clevel`). Mesmo contrato de retorno (iql + count).
+  const row =
+    input.liderTipo === 'clevel'
+      ? await getIqlDataByClevelQuarter(input.db, input.companyId, input.liderId, input.trimestre)
+      : await getIqlDataByLiderQuarter(input.db, input.companyId, input.liderId, input.trimestre);
   if (!row) {
     return null;
   }
@@ -239,6 +289,7 @@ interface EquipeClimaBlockInput {
   db: RoipDatabase;
   companyId: number;
   liderId: number;
+  liderTipo: 'employee' | 'clevel';
   trimestre: string | null;
 }
 
@@ -249,14 +300,14 @@ async function composeEquipeClimaBlock(
     return { nota_clima: null, adesao: null };
   }
   // ME-B2-01b Q1=D — calcula sob demanda direto de plenitudeData
-  // (motor puro, sem cache). liderTipo='employee' porque o context
-  // canonico do dashboard de equipe e sempre lider employee.
+  // (motor puro, sem cache). ME-ORG-01-A: liderTipo passa a ser
+  // propagado do caller (antes era presumido 'employee').
   const payload = await computeClimateBlock(input.db, {
     companyId: input.companyId,
     escopo: 'equipe',
     escopoReferencia: null,
     liderId: input.liderId,
-    liderTipo: 'employee',
+    liderTipo: input.liderTipo,
     trimestre: input.trimestre,
   });
   if (payload === null) {
@@ -273,11 +324,15 @@ async function composeEquipeClimaBlock(
 // ============================================================
 
 /** Ids dos diretos ativos do lider (vinculo `dataFim IS NULL`). */
-async function listDiretosAtivos(db: RoipDatabase, liderId: number): Promise<number[]> {
+async function listDiretosAtivos(
+  db: RoipDatabase,
+  liderId: number,
+  liderTipo: 'employee' | 'clevel',
+): Promise<number[]> {
   const vinculos = await db
     .select({ employeeId: employeeLeaderHistory.employeeId })
     .from(employeeLeaderHistory)
-    .where(and(eq(employeeLeaderHistory.liderId, liderId), isNull(employeeLeaderHistory.dataFim)))
+    .where(matchLiderAtivo(liderId, liderTipo))
     .limit(EQUIPE_LISTA_COLABORADORES_CAP);
   return vinculos.map((v) => v.employeeId);
 }
@@ -400,6 +455,7 @@ interface HistoricoEquipeInput {
   db: RoipDatabase;
   companyId: number;
   liderId: number;
+  liderTipo: 'employee' | 'clevel';
   employeeIds: number[];
   bloqueiaFinanceiro: boolean;
 }
@@ -446,13 +502,14 @@ async function composeHistoricoEquipe(
         ),
       );
     // ME-B2-01b Q1=D — nota_clima calculada sob demanda pelo motor
-    // puro para cada trimestre historico.
+    // puro para cada trimestre historico. ME-ORG-01-A: liderTipo
+    // propagado do caller (antes era presumido 'employee').
     const climaPayload = await computeClimateBlock(input.db, {
       companyId: input.companyId,
       escopo: 'equipe',
       escopoReferencia: null,
       liderId: input.liderId,
-      liderTipo: 'employee',
+      liderTipo: input.liderTipo,
       trimestre,
     });
     historico.push({
@@ -488,6 +545,7 @@ export async function loadDashboardEquipeContext(
   const idResult = await composeEquipeIdentificacao({
     db,
     liderId: args.liderId,
+    liderTipo: args.liderTipo,
   });
   if (idResult === null) {
     return null;
@@ -498,13 +556,11 @@ export async function loadDashboardEquipeContext(
 
   // 2. Trimestre atual — derivado do performanceQuarterlyData mais
   //    recente de qualquer colaborador direto do lider. Sem diretos,
-  //    trimestre_atual = null.
+  //    trimestre_atual = null. Polimorfico via matchLiderAtivo.
   const [primeiroDireto] = await db
     .select({ employeeId: employeeLeaderHistory.employeeId })
     .from(employeeLeaderHistory)
-    .where(
-      and(eq(employeeLeaderHistory.liderId, args.liderId), isNull(employeeLeaderHistory.dataFim)),
-    )
+    .where(matchLiderAtivo(args.liderId, args.liderTipo))
     .limit(1);
   let trimestreAtual: string | null = null;
   if (primeiroDireto) {
@@ -526,6 +582,7 @@ export async function loadDashboardEquipeContext(
     db,
     companyId: args.companyId,
     liderId: args.liderId,
+    liderTipo: args.liderTipo,
     trimestre: trimestreAtual,
     autoVisualizacao,
   });
@@ -533,16 +590,18 @@ export async function loadDashboardEquipeContext(
     db,
     companyId: args.companyId,
     liderId: args.liderId,
+    liderTipo: args.liderTipo,
     trimestre: trimestreAtual,
   });
   const listaColaboradores = await composeListaColaboradores({
     db,
     liderId: args.liderId,
+    liderTipo: args.liderTipo,
     bloqueiaFinanceiro,
   });
 
   // 5. Motor de agregacao canonico (ME-054 — fecha D059).
-  const employeeIds = await listDiretosAtivos(db, args.liderId);
+  const employeeIds = await listDiretosAtivos(db, args.liderId, args.liderTipo);
   const agregados = await composeAgregadosEquipe({
     db,
     employeeIds,
@@ -554,6 +613,7 @@ export async function loadDashboardEquipeContext(
     db,
     companyId: args.companyId,
     liderId: args.liderId,
+    liderTipo: args.liderTipo,
     employeeIds,
     bloqueiaFinanceiro,
   });

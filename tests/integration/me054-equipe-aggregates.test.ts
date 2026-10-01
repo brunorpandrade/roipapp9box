@@ -313,6 +313,7 @@ describe('loadDashboardEquipeContext — agregacao canonica (ME-054)', () => {
     const ctx = await loadDashboardEquipeContext(client.db, {
       companyId,
       liderId,
+      liderTipo: 'employee',
       viewerRole: 'rh',
       viewerUserId: 999,
       viewerUserType: 'super_admin',
@@ -334,6 +335,7 @@ describe('loadDashboardEquipeContext — agregacao canonica (ME-054)', () => {
     const ctx = await loadDashboardEquipeContext(client.db, {
       companyId,
       liderId,
+      liderTipo: 'employee',
       viewerRole: 'rh',
       viewerUserId: 999,
       viewerUserType: 'super_admin',
@@ -349,6 +351,7 @@ describe('loadDashboardEquipeContext — agregacao canonica (ME-054)', () => {
     const ctx = await loadDashboardEquipeContext(client.db, {
       companyId,
       liderId,
+      liderTipo: 'employee',
       viewerRole: 'rh',
       viewerUserId: 999,
       viewerUserType: 'super_admin',
@@ -368,6 +371,7 @@ describe('loadDashboardEquipeContext — agregacao canonica (ME-054)', () => {
     const ctx = await loadDashboardEquipeContext(client.db, {
       companyId,
       liderId,
+      liderTipo: 'employee',
       viewerRole: 'lider',
       viewerUserId: liderId,
       viewerUserType: 'employee',
@@ -392,6 +396,7 @@ describe('loadDashboardEquipeContext — lider sem diretos (ME-054)', () => {
     const ctx = await loadDashboardEquipeContext(client.db, {
       companyId,
       liderId,
+      liderTipo: 'employee',
       viewerRole: 'rh',
       viewerUserId: 999,
       viewerUserType: 'super_admin',

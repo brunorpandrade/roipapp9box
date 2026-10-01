@@ -270,11 +270,19 @@ export interface DashboardIndividualContextArgs {
 
 /**
  * Argumentos canonicos para o loader do contexto de equipe (§8.3.2).
- * `contextId` e o `employeeId` do lider (§10.2 do DOC 01).
+ * `liderId` + `liderTipo` sao polimorficos (§2.3 — padrao A XOR):
+ *   - `liderTipo='employee'`: `liderId` e `employees.id` (DOC 01 §10.2).
+ *   - `liderTipo='clevel'`: `liderId` e `cLevelMembers.id`.
+ *
+ * ME-ORG-01-A: `liderTipo` adicionado canonicamente para desbloquear o
+ * Assistente de lideranca no painel C-level de equipe direta (D-CHAT-
+ * EQUIPE-CLEVEL). Antes desta ME, o loader presumia bit-a-bit
+ * `liderTipo='employee'` (debito prospectivo da ME-UX-CONSOLIDACAO-P3a).
  */
 export interface DashboardEquipeContextArgs {
   companyId: number;
   liderId: number;
+  liderTipo: 'employee' | 'clevel';
   viewerRole: 'super_admin' | 'rh' | 'rh_lider' | 'clevel' | 'lider';
   viewerUserId: number;
   viewerUserType: ChatIaUserType;

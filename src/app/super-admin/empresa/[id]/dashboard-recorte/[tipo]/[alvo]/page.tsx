@@ -116,8 +116,12 @@ export default async function DashboardRecortePage(props: PageProps): Promise<JS
           </div>
           <RecorteDashboardClient data={data} basePath={basePath} />
         </div>
-        {alvo.tipo === 'equipe' && alvo.leader.tipo === 'employee' ? (
-          <AiChatLauncherEquipe leaderId={alvo.leader.id} leaderName={resolvido.nomeAlvo} />
+        {alvo.tipo === 'equipe' ? (
+          <AiChatLauncherEquipe
+            leaderId={alvo.leader.id}
+            leaderType={alvo.leader.tipo}
+            leaderName={resolvido.nomeAlvo}
+          />
         ) : null}
       </Layout>
     );

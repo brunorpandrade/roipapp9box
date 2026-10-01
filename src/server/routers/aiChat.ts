@@ -29,7 +29,7 @@ import { and, desc, eq, isNotNull, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { RoipDatabase } from '../../db/client';
-import { aiConversations, employees } from '../../db/schema';
+import { aiConversations, cLevelMembers, employees } from '../../db/schema';
 import type { ChatIaUserType } from '../services/_shared/dashboardContextTypes';
 import {
   CHAT_IA_LEVELS_MVP,
@@ -68,10 +68,20 @@ export const MSG_CHAT_IA_CONTEXTO_NAO_ENCONTRADO =
 /** Nivel canonico aceito (S263). Zod bloqueia global/departamento. */
 export const CHAT_IA_LEVEL_SCHEMA = z.enum(CHAT_IA_LEVELS_MVP);
 
+/**
+ * Tipo polimorfico canonico do contextId (ME-ORG-01-A). Default
+ * `'employee'` preserva compatibilidade retroativa dos callers legados
+ * (dashboard-individual + dashboard-recorte/equipe para lider employee).
+ * `'clevel'` desbloqueia bit-a-bit o dashboard-recorte/equipe para
+ * lider tipo C-level.
+ */
+export const CHAT_IA_CONTEXT_TYPE_SCHEMA = z.enum(['employee', 'clevel']).default('employee');
+
 /** Input canonico de `aiChat.sendMessage`. */
 export const SEND_MESSAGE_INPUT_SCHEMA = z.object({
   dashboardLevel: CHAT_IA_LEVEL_SCHEMA,
   contextId: z.number().int().positive(),
+  contextType: CHAT_IA_CONTEXT_TYPE_SCHEMA,
   content: z.string().min(1).max(CHAT_IA_USER_MESSAGE_MAX_CHARS),
 });
 
@@ -79,6 +89,7 @@ export const SEND_MESSAGE_INPUT_SCHEMA = z.object({
 export const GET_HISTORY_INPUT_SCHEMA = z.object({
   dashboardLevel: CHAT_IA_LEVEL_SCHEMA,
   contextId: z.number().int().positive(),
+  contextType: CHAT_IA_CONTEXT_TYPE_SCHEMA,
 });
 
 /** Corte canonico da paginacao do historico arquivado. */
@@ -88,6 +99,7 @@ export const CHAT_IA_ARCHIVED_PAGE_SIZE_CAP = 50 as const;
 export const GET_ARCHIVED_HISTORY_INPUT_SCHEMA = z.object({
   dashboardLevel: CHAT_IA_LEVEL_SCHEMA,
   contextId: z.number().int().positive(),
+  contextType: CHAT_IA_CONTEXT_TYPE_SCHEMA,
   page: z.number().int().min(1).default(1),
   pageSize: z.number().int().min(1).max(CHAT_IA_ARCHIVED_PAGE_SIZE_CAP).default(20),
 });
@@ -180,10 +192,11 @@ interface ResolvedScope {
 }
 
 /**
- * Resolve o `companyId` real e valida cross-empresa. Cobre os dois
- * casos canonicos:
- *   - `individual`: `contextId` e `employees.id` do colaborador.
- *   - `equipe`: `contextId` e `employees.id` do lider.
+ * Resolve o `companyId` real e valida cross-empresa. Cobre os casos
+ * canonicos (ME-ORG-01-A: lookup polimorfico pelo `contextType`):
+ *   - `individual` + `contextType='employee'`: `contextId` em `employees`.
+ *   - `equipe`     + `contextType='employee'`: `contextId` em `employees`.
+ *   - `equipe`     + `contextType='clevel'`: `contextId` em `cLevelMembers`.
  * Super_admin atravessa (le do banco); demais roles cruzam contra o
  * proprio `ctx.user.companyId`.
  */
@@ -191,17 +204,32 @@ async function resolveScopeOrThrow(
   db: RoipDatabase,
   user: AuthenticatedUser,
   contextId: number,
+  contextType: 'employee' | 'clevel',
 ): Promise<ResolvedScope> {
-  const [row] = await db
-    .select({
-      id: employees.id,
-      companyId: employees.companyId,
-      status: employees.status,
-      isLider: employees.isLider,
-    })
-    .from(employees)
-    .where(eq(employees.id, contextId))
-    .limit(1);
+  let row: { id: number; companyId: number; status: 'ativo' | 'inativo' | null } | undefined;
+  if (contextType === 'clevel') {
+    const [cRow] = await db
+      .select({
+        id: cLevelMembers.id,
+        companyId: cLevelMembers.companyId,
+        status: cLevelMembers.status,
+      })
+      .from(cLevelMembers)
+      .where(eq(cLevelMembers.id, contextId))
+      .limit(1);
+    row = cRow;
+  } else {
+    const [eRow] = await db
+      .select({
+        id: employees.id,
+        companyId: employees.companyId,
+        status: employees.status,
+      })
+      .from(employees)
+      .where(eq(employees.id, contextId))
+      .limit(1);
+    row = eRow;
+  }
   if (!row) {
     throw new TRPCError({
       code: 'NOT_FOUND',
@@ -217,7 +245,7 @@ async function resolveScopeOrThrow(
     }
   }
   // Guard §3.13 do dashboard base: colaborador inativo → apenas Bruno
-  // e RH.
+  // e RH. Aplica canonicamente tanto a employee quanto a clevel.
   if (row.status === 'inativo') {
     const allowsInactive =
       user.role === 'super_admin' || user.role === 'rh' || user.role === 'rh_lider';
@@ -238,19 +266,25 @@ async function resolveScopeOrThrow(
  * Guard de escopo PC1h (substitui S066): lider conversa sobre o proprio
  * dashboard/equipe e sobre a cadeia descendente; C-level restrito
  * apenas sobre a propria cadeia. Chamado apos `resolveScope`.
+ *
+ * ME-ORG-01-A: C-level viewer com `dashboardLevel='equipe'` +
+ * `contextType='clevel'` + `user.userId === contextId` passa como
+ * autovisualizacao canonica (o proprio C-level consultando a propria
+ * equipe direta via Assistente de lideranca).
  */
 async function assertLiderScopeOrThrow(
   db: RoipDatabase,
   user: AuthenticatedUser,
   dashboardLevel: 'equipe' | 'individual',
   contextId: number,
+  contextType: 'employee' | 'clevel',
 ): Promise<void> {
   if (user.role !== 'lider' && user.role !== 'clevel') {
     return;
   }
   if (user.role === 'lider') {
     if (dashboardLevel === 'equipe') {
-      if (user.userId !== contextId) {
+      if (user.userId !== contextId || contextType !== 'employee') {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: MSG_CHAT_IA_CONTEXTO_NAO_ENCONTRADO,
@@ -258,6 +292,11 @@ async function assertLiderScopeOrThrow(
       }
       return;
     }
+    if (user.userId === contextId) {
+      return;
+    }
+  }
+  if (user.role === 'clevel' && dashboardLevel === 'equipe' && contextType === 'clevel') {
     if (user.userId === contextId) {
       return;
     }
@@ -290,13 +329,25 @@ export function createAiChatRouter(deps: AiChatRouterDeps = {}) {
     sendMessage: roleProcedure(['super_admin', 'rh', 'rh_lider', 'clevel', 'lider'])
       .input(SEND_MESSAGE_INPUT_SCHEMA)
       .mutation(async ({ ctx, input }) => {
-        const scope = await resolveScopeOrThrow(ctx.db, ctx.user, input.contextId);
-        await assertLiderScopeOrThrow(ctx.db, ctx.user, input.dashboardLevel, input.contextId);
+        const scope = await resolveScopeOrThrow(
+          ctx.db,
+          ctx.user,
+          input.contextId,
+          input.contextType,
+        );
+        await assertLiderScopeOrThrow(
+          ctx.db,
+          ctx.user,
+          input.dashboardLevel,
+          input.contextId,
+          input.contextType,
+        );
         const facade = routerDeps.serviceFactory(ctx.db);
         const outcome = await facade.sendChatMessage({
           companyId: scope.companyId,
           dashboardLevel: input.dashboardLevel,
           contextId: input.contextId,
+          contextType: input.contextType,
           content: input.content,
           viewerRole: ctx.user.role,
           viewerUserId: deriveUserIdFromCtx(ctx.user),
@@ -327,8 +378,14 @@ export function createAiChatRouter(deps: AiChatRouterDeps = {}) {
     getHistory: roleProcedure(['super_admin', 'rh', 'rh_lider', 'clevel', 'lider'])
       .input(GET_HISTORY_INPUT_SCHEMA)
       .query(async ({ ctx, input }) => {
-        await resolveScopeOrThrow(ctx.db, ctx.user, input.contextId);
-        await assertLiderScopeOrThrow(ctx.db, ctx.user, input.dashboardLevel, input.contextId);
+        await resolveScopeOrThrow(ctx.db, ctx.user, input.contextId, input.contextType);
+        await assertLiderScopeOrThrow(
+          ctx.db,
+          ctx.user,
+          input.dashboardLevel,
+          input.contextId,
+          input.contextType,
+        );
         const userId = deriveUserIdFromCtx(ctx.user);
         const userType = deriveUserTypeFromCtx(ctx.user);
         const rows = await ctx.db
@@ -353,8 +410,14 @@ export function createAiChatRouter(deps: AiChatRouterDeps = {}) {
     getArchivedHistory: roleProcedure(['super_admin', 'rh', 'rh_lider', 'clevel', 'lider'])
       .input(GET_ARCHIVED_HISTORY_INPUT_SCHEMA)
       .query(async ({ ctx, input }) => {
-        await resolveScopeOrThrow(ctx.db, ctx.user, input.contextId);
-        await assertLiderScopeOrThrow(ctx.db, ctx.user, input.dashboardLevel, input.contextId);
+        await resolveScopeOrThrow(ctx.db, ctx.user, input.contextId, input.contextType);
+        await assertLiderScopeOrThrow(
+          ctx.db,
+          ctx.user,
+          input.dashboardLevel,
+          input.contextId,
+          input.contextType,
+        );
         const userId = deriveUserIdFromCtx(ctx.user);
         const userType = deriveUserTypeFromCtx(ctx.user);
         const offset = (input.page - 1) * input.pageSize;

@@ -29,14 +29,14 @@ import { COLORS } from '../../../../lib/design-tokens/colors';
 import { AiChatDrawerEquipe } from './AiChatDrawerEquipe';
 
 export interface AiChatLauncherEquipeProps {
-  /** `employees.id` do lider dono da equipe (contextId canonico
-   *  `dashboardLevel='equipe'`). Casos `clevel-N` sao acessados
-   *  via ID `employees.id` correspondente do lider tipo employee
-   *  quando aplicavel; C-level puro sem entrada `employees` fica
-   *  para P3b (loader canonico para leaderId=cLevelMembers.id
-   *  quando o contract do `sendChatMessage` do aiChatService
-   *  aceitar). */
+  /** `employees.id` ou `cLevelMembers.id` do lider dono da equipe
+   *  (contextId canonico `dashboardLevel='equipe'`). Interpretado
+   *  conforme `leaderType`. */
   readonly leaderId: number;
+  /** Tipo canonico do lider — ME-ORG-01-A: polimorfismo propagado
+   *  end-to-end (contextType do router aiChat). `'employee'` =
+   *  `employees.id`; `'clevel'` = `cLevelMembers.id`. */
+  readonly leaderType: 'employee' | 'clevel';
   /** Nome do lider — vai para o subtitulo do drawer (§8.4). */
   readonly leaderName: string;
 }
@@ -48,6 +48,7 @@ export function AiChatLauncherEquipe(props: AiChatLauncherEquipeProps): JSX.Elem
       {open ? (
         <AiChatDrawerEquipe
           leaderId={props.leaderId}
+          leaderType={props.leaderType}
           leaderName={props.leaderName}
           onClose={() => setOpen(false)}
         />
