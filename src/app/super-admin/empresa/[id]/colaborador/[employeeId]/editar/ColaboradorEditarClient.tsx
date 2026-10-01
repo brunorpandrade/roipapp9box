@@ -46,6 +46,7 @@ import type {
   atualizarColaboradorAction,
   buscarCandidatosTransferenciaAction,
   definirRFEditarAction,
+  desmarcarComoLiderAction,
   excluirColaboradorAction,
   listarLideradosAction,
   pesquisarLiderCandidatosEditarAction,
@@ -75,6 +76,7 @@ export interface ColaboradorEditarActions {
   readonly atualizarColaborador: typeof atualizarColaboradorAction;
   readonly buscarCandidatosTransferencia: typeof buscarCandidatosTransferenciaAction;
   readonly definirRFEditar: typeof definirRFEditarAction;
+  readonly desmarcarComoLider: typeof desmarcarComoLiderAction;
   readonly excluirColaborador: typeof excluirColaboradorAction;
   readonly listarLiderados: typeof listarLideradosAction;
   readonly pesquisarLiderCandidatosEditar: typeof pesquisarLiderCandidatosEditarAction;
@@ -324,6 +326,13 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
 
   const [showMotivoModal, setShowMotivoModal] = useState(false);
   const [showBlockerModal, setShowBlockerModal] = useState(false);
+  // ME-ORG-01-B D3 — modal canonico que bloqueia inativacao enquanto o
+  // colaborador for lider ativo (independente de ter liderados).
+  const [showBlockerDesmarcarLiderModal, setShowBlockerDesmarcarLiderModal] = useState(false);
+  // ME-ORG-01-B D4 — modal M2 v2 reusado para desmarcar como lider
+  // (desacoplado do fluxo de inativacao).
+  const [showDesmarcarM2Modal, setShowDesmarcarM2Modal] = useState(false);
+  const [desmarcarM2Error, setDesmarcarM2Error] = useState<string | null>(null);
 
   const [showM2Modal, setShowM2Modal] = useState(false);
   const [m2Candidates, setM2Candidates] = useState<readonly CandidateOption[]>([]);
@@ -350,10 +359,109 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
   const valuesRef = useRef(values);
   valuesRef.current = values;
 
-  const handleValuesChange = useCallback((next: ColaboradorFormValues) => {
-    setValues(next);
-    setSuccessMsg(null);
-  }, []);
+  const handleValuesChange = useCallback(
+    (next: ColaboradorFormValues) => {
+      // ME-ORG-01-B D4 — intercepta canonicamente a transicao
+      // `isLider: true → false` quando o colaborador tem liderados
+      // ativos: dispara o fluxo M2 v2 (reatribuicao em massa ou 1-a-1)
+      // SEM aplicar a mudanca localmente — a persistencia e atomica no
+      // backend via `employees.unmarkAsLeader`. Pos-sucesso, `router.
+      // refresh()` recarrega o `initialEmployee` com `isLider=false` e
+      // `countActiveLiderados=0`. Lider sem liderados: aplica canonic-
+      // amente a mudanca; o botao Salvar persiste via patch.isLider.
+      if (
+        values.isLider === true &&
+        next.isLider === false &&
+        initialEmployee.countActiveLiderados > 0
+      ) {
+        void (async () => {
+          setDesmarcarM2Error(null);
+          setSaving(true);
+          try {
+            const [candResult, liderResult] = await Promise.all([
+              actions.buscarCandidatosTransferencia({
+                employeeId: initialEmployee.id,
+                companyId,
+                tentativaLiderados: [],
+              }),
+              actions.listarLiderados({ employeeId: initialEmployee.id }),
+            ]);
+            if (!candResult.ok) {
+              setErrorMsg(candResult.message);
+              return;
+            }
+            if (!liderResult.ok) {
+              setErrorMsg(liderResult.message);
+              return;
+            }
+            // Flatten dos grupos canonicos (padrao bit-a-bit do fluxo
+            // de inativacao original).
+            const g = candResult.data;
+            const flat: CandidateOption[] = [];
+            for (const item of g.grupo1_cLevelsAtivos) {
+              flat.push({
+                tipo: 'clevel',
+                id: item.id,
+                name: item.name,
+                cargo: item.cargo,
+                departamento: item.departamento,
+                group: 'clevel_ativo',
+                countLiderados: item.liderados,
+              });
+            }
+            for (const item of g.grupo2_mesmoDepartamento) {
+              flat.push({
+                tipo: 'employee',
+                id: item.id,
+                name: item.name,
+                cargo: item.cargo,
+                departamento: item.departamento,
+                group: 'mesmo_departamento',
+                countLiderados: item.liderados,
+              });
+            }
+            for (const item of g.grupo3_demaisLideres) {
+              flat.push({
+                tipo: 'employee',
+                id: item.id,
+                name: item.name,
+                cargo: item.cargo,
+                departamento: item.departamento,
+                group: 'demais_lideres',
+                countLiderados: item.liderados,
+              });
+            }
+            for (const item of g.grupo4_colaboradoresNaoLideres) {
+              flat.push({
+                tipo: 'employee',
+                id: item.id,
+                name: item.name,
+                cargo: item.cargo,
+                departamento: item.departamento,
+                group: 'nao_lider',
+                countLiderados: item.liderados,
+              });
+            }
+            setM2Candidates(flat);
+            const liderados: LideradoToTransfer[] = liderResult.data.map((r) => ({
+              employeeId: r.employeeId,
+              name: r.name,
+              cargo: r.cargo,
+              departamento: r.departamento,
+            }));
+            setM2Liderados(liderados);
+            setShowDesmarcarM2Modal(true);
+          } finally {
+            setSaving(false);
+          }
+        })();
+        return;
+      }
+      setValues(next);
+      setSuccessMsg(null);
+    },
+    [values.isLider, initialEmployee, companyId, actions],
+  );
 
   const handleToggleRFAttempt = useCallback((nextValue: boolean) => {
     setValues((prev) => ({ ...prev, isResponsavelFinanceiro: nextValue }));
@@ -515,22 +623,21 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
 
   const handleTryInativar = useCallback(async () => {
     setErrorMsg(null);
+    // ME-ORG-01-B D3 — guard canonico primeiro: se o colaborador e
+    // lider ativo (independente de ter liderados), bloqueia a
+    // inativacao com texto literal "Desmarque como lider antes de
+    // inativar colaborador". O usuario precisa desligar o toggle
+    // "Permitir acesso como Lider" para prosseguir — fluxo canonico
+    // dispara ModalTransferenciaLiderados (M2 v2) via caminho de
+    // handleValuesChange quando ha liderados ativos (D4), ou aplica
+    // isLider=false direto via Salvar quando nao ha.
+    if (initialEmployee.isLider) {
+      setShowBlockerDesmarcarLiderModal(true);
+      return;
+    }
     if (initialEmployee.isCurrentRF) {
       setShowMotivoModal(true);
       return;
-    }
-    if (initialEmployee.isLider && initialEmployee.countActiveLiderados > 0) {
-      const canResult = await actions.verificarInativacao({
-        employeeId: initialEmployee.id,
-      });
-      if (!canResult.ok) {
-        setErrorMsg('Falha ao verificar elegibilidade da transferencia de liderados.');
-        return;
-      }
-      if (canResult.data.canInactivate !== true) {
-        setShowBlockerModal(true);
-        return;
-      }
     }
     setShowMotivoModal(true);
   }, [initialEmployee]);
@@ -685,6 +792,52 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
       guardarTransferenciaENavegar(mappings, justificativa, m2MotivoSelecionado);
     },
     [guardarTransferenciaENavegar, m2MotivoSelecionado],
+  );
+
+  // ME-ORG-01-B D4 — handler canonico do fluxo "Desmarcar como lider":
+  // recebe o mapeamento confirmado no M2 v2 (modal reusado bit-a-bit),
+  // chama a action nova `desmarcarComoLider` (procedure atomica
+  // `employees.unmarkAsLeader`) e, ao sucesso, dispara `router.refresh`
+  // para recarregar o server component com `isLider=false` e
+  // `countActiveLiderados=0` canonicamente.
+  const handleConfirmDesmarcarM2 = useCallback(
+    async (mappings: readonly TransferMapping[], justificativa: string): Promise<void> => {
+      setDesmarcarM2Error(null);
+      setSaving(true);
+      try {
+        const mapeamento = mappings.map((m) => ({
+          lideradoId: m.liderado_employeeId,
+          novoLiderId: m.novo_lider_id,
+          novoLiderTipo: (m.novo_lider_tipo === 'clevel' ? 'cLevel' : 'employee') as
+            'employee' | 'cLevel',
+        }));
+        const g4Ids = new Set<number>();
+        for (const m of mappings) {
+          if (m.novo_lider_tipo === 'employee') {
+            const cand = m2Candidates.find(
+              (c) => c.id === m.novo_lider_id && c.tipo === 'employee' && c.group === 'nao_lider',
+            );
+            if (cand) g4Ids.add(cand.id);
+          }
+        }
+        const res = await actions.desmarcarComoLider({
+          employeeId: initialEmployee.id,
+          mapeamento,
+          candidatosGrupo4: [...g4Ids].map((id) => ({ candidatoId: id })),
+          reason: justificativa,
+        });
+        if (!res.ok) {
+          setDesmarcarM2Error(res.message);
+          return;
+        }
+        setShowDesmarcarM2Modal(false);
+        setSuccessMsg('Colaborador desmarcado como lider; liderados reatribuidos.');
+        router.refresh();
+      } finally {
+        setSaving(false);
+      }
+    },
+    [actions, initialEmployee.id, m2Candidates, router],
   );
 
   const handleReactivate = useCallback(async () => {
@@ -967,6 +1120,43 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
           onConfirm={handleConfirmM2}
           submitting={saving}
           errorMessage={m2Error}
+        />
+      ) : null}
+
+      {showBlockerDesmarcarLiderModal ? (
+        <div style={BLOCKER_MODAL_OVERLAY_STYLE} role="dialog" aria-modal="true">
+          <div style={BLOCKER_MODAL_BOX_STYLE}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: COLORS.text.primary }}>
+              Não é possível inativar
+            </div>
+            <div style={{ fontSize: 13, color: COLORS.text.secondary, lineHeight: 1.5 }}>
+              Desmarque como líder antes de inativar colaborador.
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setShowBlockerDesmarcarLiderModal(false)}
+                style={BTN_PRIMARY_STYLE}
+              >
+                Entendi
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showDesmarcarM2Modal ? (
+        <ModalTransferenciaLiderados
+          liderName={initialEmployee.name}
+          liderados={m2Liderados}
+          candidates={m2Candidates}
+          onCancel={() => {
+            setShowDesmarcarM2Modal(false);
+            setDesmarcarM2Error(null);
+          }}
+          onConfirm={handleConfirmDesmarcarM2}
+          submitting={saving}
+          errorMessage={desmarcarM2Error}
         />
       ) : null}
 

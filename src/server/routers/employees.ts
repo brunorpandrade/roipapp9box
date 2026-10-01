@@ -3304,6 +3304,207 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           };
         });
       }),
+
+    // ========================================================
+    // Proc — unmarkAsLeader (ME-ORG-01-B D3+D4)
+    // ========================================================
+    //
+    // Desmarca canonicamente um colaborador como lider, aplicando
+    // reatribuicoes de liderados (quando houver) em transacao atomica.
+    // Reaproveita o padrao canonico de redistribuicao do
+    // `leadershipTransfer.execute` (Passos 4+5), sem desligamento.
+    //
+    // Fluxo canonico:
+    //   1. Carrega colaborador; `assertCompanyScope`; valida ativo +
+    //      isLider=true.
+    //   2. Carrega liderados ativos atuais; valida mapeamento canonico
+    //      cobrindo bit-a-bit todos eles (set equality).
+    //   3. Transacao atomica:
+    //      a) Para cada mapping: fecha vinculo ativo em
+    //         `employeeLeaderHistory` (dataFim=today) + INSERT novo
+    //         com transferBatchId canonico.
+    //      b) UPDATE isLider=true nos candidatos Grupo 4 promovidos.
+    //      c) UPDATE isLider=false no colaborador original.
+    //
+    // RV-11 integral: teste de integracao em
+    // `tests/integration/me-org-01-b-unmark-as-leader.test.ts`.
+    unmarkAsLeader: rhAllowedProcedure()
+      .input(
+        z.object({
+          employeeId: z.number().int().positive(),
+          mapeamento: z.array(
+            z.object({
+              lideradoId: z.number().int().positive(),
+              novoLiderId: z.number().int().positive(),
+              novoLiderTipo: z.enum(['employee', 'cLevel']),
+            }),
+          ),
+          candidatosGrupo4: z.array(
+            z.object({
+              candidatoId: z.number().int().positive(),
+            }),
+          ),
+          reason: z.string().min(100).max(500),
+        }),
+      )
+      .mutation(
+        async ({
+          ctx,
+          input,
+        }): Promise<{
+          readonly employeeId: number;
+          readonly transferBatchId: string;
+          readonly fechados: number;
+          readonly inseridos: number;
+          readonly promovidos: number;
+        }> => {
+          // Passo 1 — carrega colaborador e valida pre-condicoes.
+          const [row] = await ctx.db
+            .select({
+              id: employees.id,
+              companyId: employees.companyId,
+              status: employees.status,
+              isLider: employees.isLider,
+            })
+            .from(employees)
+            .where(eq(employees.id, input.employeeId))
+            .limit(1);
+          if (!row) {
+            throw new TRPCError({
+              code: 'NOT_FOUND',
+              message: MSG_EMPLOYEE_NAO_ENCONTRADO,
+            });
+          }
+          assertCompanyScope(ctx.user, row.companyId);
+          if (row.status !== 'ativo') {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Colaborador inativo nao pode ser desmarcado como lider.',
+            });
+          }
+          if (row.isLider !== true) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Colaborador nao e lider ativo.',
+            });
+          }
+
+          // Passo 2 — carrega liderados ativos e valida mapeamento
+          // canonico (set equality bit-a-bit).
+          const liderados = await ctx.db
+            .select({ employeeId: employeeLeaderHistory.employeeId })
+            .from(employeeLeaderHistory)
+            .where(
+              and(
+                eq(employeeLeaderHistory.liderId, input.employeeId),
+                isNull(employeeLeaderHistory.dataFim),
+              ),
+            );
+          const lideradosIds = new Set(liderados.map((l) => l.employeeId));
+          const mappingIds = new Set(input.mapeamento.map((m) => m.lideradoId));
+          if (lideradosIds.size !== mappingIds.size) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Mapeamento nao cobre todos os liderados ativos.',
+            });
+          }
+          for (const id of lideradosIds) {
+            if (!mappingIds.has(id)) {
+              throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: `Liderado ${id} nao mapeado.`,
+              });
+            }
+          }
+
+          // Valida novos lideres (defense-in-depth canonico).
+          for (const m of input.mapeamento) {
+            if (m.novoLiderTipo === 'employee') {
+              await assertLiderAtivoDaEmpresa(ctx.db, row.companyId, m.novoLiderId);
+            } else {
+              await assertClevelAtivoDaEmpresa(ctx.db, row.companyId, m.novoLiderId);
+            }
+          }
+
+          // Passo 3 — transacao atomica canonica.
+          const transferBatchId = crypto.randomUUID();
+          const dataInicio = new Date(now().toISOString().slice(0, 10));
+          return await ctx.db.transaction(async (tx) => {
+            let fechados = 0;
+            let inseridos = 0;
+            for (const m of input.mapeamento) {
+              const [active] = await tx
+                .select({ id: employeeLeaderHistory.id })
+                .from(employeeLeaderHistory)
+                .where(
+                  and(
+                    eq(employeeLeaderHistory.employeeId, m.lideradoId),
+                    isNull(employeeLeaderHistory.dataFim),
+                  ),
+                )
+                .limit(1);
+              if (active) {
+                await tx
+                  .update(employeeLeaderHistory)
+                  .set({ dataFim: dataInicio })
+                  .where(eq(employeeLeaderHistory.id, active.id));
+                fechados += 1;
+              }
+              const newLiderId = m.novoLiderTipo === 'employee' ? m.novoLiderId : null;
+              const newCLevelId = m.novoLiderTipo === 'cLevel' ? m.novoLiderId : null;
+              const [inserted] = await tx
+                .insert(employeeLeaderHistory)
+                .values({
+                  employeeId: m.lideradoId,
+                  liderId: newLiderId,
+                  clevelId: newCLevelId,
+                  dataInicio,
+                  dataFim: null,
+                  reason: input.reason,
+                  transferBatchId,
+                })
+                .$returningId();
+              if (!inserted) {
+                throw new TRPCError({
+                  code: 'INTERNAL_SERVER_ERROR',
+                  message: 'INSERT employeeLeaderHistory retornou sem id.',
+                });
+              }
+              inseridos += 1;
+            }
+
+            let promovidos = 0;
+            for (const c of input.candidatosGrupo4) {
+              const [res] = await tx
+                .update(employees)
+                .set({ isLider: true })
+                .where(eq(employees.id, c.candidatoId));
+              if (res.affectedRows === 1) {
+                promovidos += 1;
+              }
+            }
+
+            const [updateIsLider] = await tx
+              .update(employees)
+              .set({ isLider: false })
+              .where(eq(employees.id, input.employeeId));
+            if (updateIsLider.affectedRows !== 1) {
+              throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'UPDATE employees.isLider=false affectedRows != 1.',
+              });
+            }
+
+            return {
+              employeeId: input.employeeId,
+              transferBatchId,
+              fechados,
+              inseridos,
+              promovidos,
+            };
+          });
+        },
+      ),
   });
 }
 

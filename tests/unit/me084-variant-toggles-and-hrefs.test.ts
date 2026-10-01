@@ -159,7 +159,15 @@ describe('ME-084 D-ME084-1/3 — ColaboradorEditarClient (refactor bag de action
     expect(src).toMatch(/^import type \{[\s\S]*?\}\s+from\s+'\.\/actions'/m);
   });
 
-  it('todos 11 callsites usam actions.X(...) (nao mais xxxAction(...))', () => {
+  it('todos 10 callsites ativos usam actions.X(...) (nao mais xxxAction(...))', () => {
+    // ME-ORG-01-B D3: a chamada `actions.verificarInativacao(` foi
+    // removida canonicamente do `handleTryInativar` pelo guard de
+    // bloqueio pre-inativacao (texto literal "Desmarque como lider
+    // antes de inativar colaborador"), que impede o fluxo antes da
+    // verificacao de elegibilidade. A action continua exportada e
+    // disponivel no bag canonico (para outras superficies futuras),
+    // mas o cliente ja nao a invoca aqui. Verificado separadamente
+    // abaixo.
     for (const [old, next] of [
       ['atualizarColaboradorAction(', 'actions.atualizarColaborador('],
       ['buscarCandidatosTransferenciaAction(', 'actions.buscarCandidatosTransferencia('],
@@ -171,11 +179,19 @@ describe('ME-084 D-ME084-1/3 — ColaboradorEditarClient (refactor bag de action
       ['reatribuirLiderColaboradorAction(', 'actions.reatribuirLiderColaborador('],
       ['regenerarMatriculaColaboradorAction(', 'actions.regenerarMatriculaColaborador('],
       ['regenerarSenhaColaboradorAction(', 'actions.regenerarSenhaColaborador('],
-      ['verificarInativacaoAction(', 'actions.verificarInativacao('],
     ] as const) {
       expect(src, `oldCall="${old}" newCall="${next}"`).not.toContain(old);
       expect(src, `newCall="${next}"`).toContain(next);
     }
+  });
+
+  it('verificarInativacaoAction nao e mais chamada diretamente (ME-ORG-01-B D3)', () => {
+    // Guard D3 removeu bit-a-bit a chamada canonica
+    // `actions.verificarInativacao(` do fluxo de inativacao. A action
+    // continua exportada do bag canonico de actions (preserva contrato
+    // publico), mas o cliente ja nao a invoca.
+    expect(src).not.toContain('verificarInativacaoAction(');
+    expect(src).not.toContain('actions.verificarInativacao(');
   });
 
   it('hrefs hardcoded /super-admin/…/todos-os-colaboradores substituidos', () => {

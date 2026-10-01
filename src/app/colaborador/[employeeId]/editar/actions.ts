@@ -655,3 +655,64 @@ export async function reatribuirLiderColaboradorRHAction(input: {
     await closeDbClient(client);
   }
 }
+
+// -----------------------------------------------------------------------
+// 14-RH. Desmarcar colaborador como lider — RH-facing (ME-ORG-01-B)
+// -----------------------------------------------------------------------
+
+/**
+ * Wrapper RH canonico de `employees.unmarkAsLeader` (ME-ORG-01-B).
+ * Mesmo contrato bit-a-bit da versao Bruno (`desmarcarComoLiderAction`),
+ * com guard `requireRHSessionAndCompanyId` em vez de `requireSuperAdmin`.
+ */
+export async function desmarcarComoLiderRHAction(input: {
+  readonly employeeId: number;
+  readonly mapeamento: readonly {
+    readonly lideradoId: number;
+    readonly novoLiderId: number;
+    readonly novoLiderTipo: 'employee' | 'cLevel';
+  }[];
+  readonly candidatosGrupo4: readonly {
+    readonly candidatoId: number;
+  }[];
+  readonly reason: string;
+}): Promise<ActionResult<{ employeeId: number; transferBatchId: string }>> {
+  await requireRHSessionAndCompanyId('desmarcarComoLiderRHAction');
+
+  const token = await resolveRawToken();
+  if (token === null) {
+    return { ok: false, message: 'Sessao ausente ou expirada.' };
+  }
+
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const caller = createEmployeesCaller(
+      createContextInner({
+        db: client.db,
+        rateLimiter: actionRateLimiter,
+        bearerToken: token,
+        ip: null,
+      }),
+    );
+    const result = await caller.unmarkAsLeader({
+      employeeId: input.employeeId,
+      mapeamento: [...input.mapeamento].map((m) => ({ ...m })),
+      candidatosGrupo4: [...input.candidatosGrupo4].map((c) => ({ ...c })),
+      reason: input.reason,
+    });
+    return {
+      ok: true,
+      data: {
+        employeeId: result.employeeId,
+        transferBatchId: result.transferBatchId,
+      },
+    };
+  } catch (err) {
+    if (err instanceof TRPCError) {
+      return { ok: false, message: err.message };
+    }
+    throw err;
+  } finally {
+    await closeDbClient(client);
+  }
+}

@@ -638,3 +638,65 @@ export async function reatribuirLiderColaboradorAction(input: {
     await closeDbClient(client);
   }
 }
+
+// -----------------------------------------------------------------------
+// 14. Desmarcar colaborador como lider (ME-ORG-01-B D3+D4)
+// -----------------------------------------------------------------------
+
+/**
+ * Wrapper canonico de `employees.unmarkAsLeader` (ME-ORG-01-B). Aplica
+ * reatribuicoes de liderados em transacao atomica e seta `isLider=false`
+ * no colaborador, sem desligamento. Disparado quando o usuario desativa
+ * o toggle "Permitir acesso como Lider" para um lider com liderados
+ * ativos; o modal `ModalTransferenciaLiderados` (M2 v2) e reusado para
+ * capturar o mapeamento canonico (massa ou 1-a-1).
+ */
+export async function desmarcarComoLiderAction(input: {
+  readonly employeeId: number;
+  readonly mapeamento: readonly {
+    readonly lideradoId: number;
+    readonly novoLiderId: number;
+    readonly novoLiderTipo: 'employee' | 'cLevel';
+  }[];
+  readonly candidatosGrupo4: readonly {
+    readonly candidatoId: number;
+  }[];
+  readonly reason: string;
+}): Promise<ActionResult<{ employeeId: number; transferBatchId: string }>> {
+  const token = await resolveRawToken();
+  if (token === null) {
+    return { ok: false, message: 'Sessao ausente ou expirada.' };
+  }
+
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const caller = createEmployeesCaller(
+      createContextInner({
+        db: client.db,
+        rateLimiter: actionRateLimiter,
+        bearerToken: token,
+        ip: null,
+      }),
+    );
+    const result = await caller.unmarkAsLeader({
+      employeeId: input.employeeId,
+      mapeamento: [...input.mapeamento].map((m) => ({ ...m })),
+      candidatosGrupo4: [...input.candidatosGrupo4].map((c) => ({ ...c })),
+      reason: input.reason,
+    });
+    return {
+      ok: true,
+      data: {
+        employeeId: result.employeeId,
+        transferBatchId: result.transferBatchId,
+      },
+    };
+  } catch (err) {
+    if (err instanceof TRPCError) {
+      return { ok: false, message: err.message };
+    }
+    throw err;
+  } finally {
+    await closeDbClient(client);
+  }
+}

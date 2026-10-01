@@ -227,9 +227,10 @@ describe('ME-084 rota RH 3 — `/colaborador/[employeeId]/editar`', () => {
       "import { requireRhLikeOrSuperAdmin } from '../../../../lib/routes/requireRhLikeOrSuperAdmin'",
     );
     expect(src).toContain('async function requireRHSessionAndCompanyId');
-    // Helper e chamado por todas as 13 actions
+    // Helper e chamado por todas as actions RH (ME-ORG-01-B: +1 action
+    // nova `desmarcarComoLiderRHAction`, total 14).
     const matches = src.match(/await requireRHSessionAndCompanyId\(/g) ?? [];
-    expect(matches.length).toBe(13);
+    expect(matches.length).toBe(14);
   });
 
   it('actions.ts NAO usa requireSuperAdmin (canaliza para /super-admin em vez)', () => {
