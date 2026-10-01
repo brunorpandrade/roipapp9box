@@ -8,6 +8,11 @@
 //
 // Fonte unica: motor puro `computeClimateBlock` da ME-B2-01b Fase 1
 // (sob demanda, sem cache). Zero drift permanente.
+//
+// ME-B2-01d (01/10/2026) — `listDepartamentosAtivosClimate` passa a
+// retornar contagem de respondentes e total elegiveis do ultimo
+// trimestre canonico, por departamento, para a UI do filtro de escopo
+// (pills com "(N)" + bloqueio por piso canonico §9.6).
 
 import { and, eq } from 'drizzle-orm';
 
@@ -189,17 +194,107 @@ export async function loadBlocoClimaIndicatorData(
 }
 
 /**
- * ME-B2-01b Fase 2 hotfix2 — lista canonica dos departamentos ativos
- * da empresa (employees com `status='ativo'`). Consumido pelo filtro
- * de escopo da tela de detalhamento. Ordenacao alfabetica canonica.
+ * ME-B2-01d — entrada canonica do filtro de escopo da tela
+ * `/bloco-clima`: nome do departamento + contagem de respondentes
+ * (countCobertura canonico §9.4) + total de elegiveis (countTotal
+ * canonico §9.4) no ultimo trimestre fechado. A UI usa `respondentes`
+ * para rotular o pill ("Nome (N)") e para decidir o bloqueio por
+ * piso canonico §9.6 (quando `respondentes < 3` o pill continua
+ * visivel mas o clique abre tela de insuficiencia).
+ */
+export interface DepartamentoAtivoClimateEntry {
+  nome: string;
+  respondentes: number;
+  total: number;
+}
+
+/**
+ * ME-B2-01d — payload canonico do pill "Empresa toda" do filtro de
+ * escopo: contagens agregadas da empresa inteira no ultimo trimestre
+ * fechado. Permite rotular o pill com "Empresa toda (N)" sem precisar
+ * aguardar o payload do escopo requisitado.
+ */
+export interface EmpresaScopeClimateEntry {
+  respondentes: number;
+  total: number;
+}
+
+/**
+ * ME-B2-01d — lista canonica dos departamentos ativos da empresa
+ * (employees com `status='ativo'`) acompanhada das contagens canonicas
+ * de respondentes e elegiveis do ultimo trimestre fechado. Consumido
+ * pelo filtro de escopo da tela de detalhamento (pills "Nome (N)" +
+ * bloqueio por piso canonico §9.6).
+ *
+ * Mecanica canonica: delega ao motor puro `computeClimateBlock` para
+ * cada departamento no trimestre atual, extraindo apenas
+ * `countCobertura` e `countTotal`. Preserva a origem canonica unica
+ * da contagem (motor §9.4) — zero duplicacao de regra. Quando nao ha
+ * trimestre canonico, retorna lista com `respondentes=0` e `total=0`
+ * para cada departamento.
  */
 export async function listDepartamentosAtivosClimate(
   db: RoipDatabase,
   companyId: number,
-): Promise<readonly string[]> {
+): Promise<readonly DepartamentoAtivoClimateEntry[]> {
   const rows = await db
     .selectDistinct({ departamento: employees.departamento })
     .from(employees)
     .where(and(eq(employees.companyId, companyId), eq(employees.status, 'ativo')));
-  return rows.map((r) => r.departamento).sort();
+  const nomes = rows.map((r) => r.departamento).sort();
+  const trimestres = await listClimateTrimestres(db, companyId, 'desc');
+  const trimestreAtual = trimestres[0];
+  if (trimestreAtual === undefined) {
+    return nomes.map((nome) => ({ nome, respondentes: 0, total: 0 }));
+  }
+  const entries: DepartamentoAtivoClimateEntry[] = [];
+  for (const nome of nomes) {
+    const payload = await computeClimateBlock(db, {
+      companyId,
+      escopo: 'departamento',
+      escopoReferencia: nome,
+      liderId: null,
+      liderTipo: null,
+      trimestre: trimestreAtual,
+    });
+    entries.push({
+      nome,
+      respondentes: payload?.countCobertura ?? 0,
+      total: payload?.countTotal ?? 0,
+    });
+  }
+  return entries;
+}
+
+/**
+ * ME-B2-01d — contagens canonicas de respondentes e elegiveis da
+ * empresa inteira no ultimo trimestre fechado. Consumido pelo pill
+ * "Empresa toda" do filtro de escopo e pelas chamadas de UI que
+ * precisam da contagem agregada sem resolver o payload inteiro.
+ * Retorna `null` canonico quando nao ha trimestre com `scoreA` gravado.
+ */
+export async function loadEmpresaScopeClimateCounts(
+  db: RoipDatabase,
+  companyId: number,
+): Promise<EmpresaScopeClimateEntry | null> {
+  const trimestres = await listClimateTrimestres(db, companyId, 'desc');
+  const trimestreAtual = trimestres[0];
+  if (trimestreAtual === undefined) {
+    return null;
+  }
+  const payload = await computeClimateBlock(db, {
+    companyId,
+    escopo: 'empresa',
+    escopoReferencia: null,
+    liderId: null,
+    liderTipo: null,
+    trimestre: trimestreAtual,
+  });
+  if (payload === null) {
+    return null;
+  }
+  return {
+    respondentes: payload.countCobertura,
+    total: payload.countTotal,
+  };
 }

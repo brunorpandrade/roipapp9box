@@ -9,7 +9,8 @@
 // Pattern canonico bit-exact herdado da landing (§2.1 do MASTER
 // B8). Loader puro: `loadBlocoClimaDashboardData` (motor sob
 // demanda) + `listDepartamentosAtivosClimate` (lista canonica para o
-// filtro).
+// filtro) + `loadEmpresaScopeClimateCounts` (pill "Empresa toda" —
+// ME-B2-01d).
 
 import { notFound, redirect } from 'next/navigation';
 import type { JSX } from 'react';
@@ -23,6 +24,7 @@ import { resolveProfileKey } from '../../../../../lib/session/resolveProfileKey'
 import {
   listDepartamentosAtivosClimate,
   loadBlocoClimaDashboardData,
+  loadEmpresaScopeClimateCounts,
 } from '../../../../../server/services/blocoClimaDashboard';
 import { getServerSession } from '../../../../../server/session/serverSession';
 
@@ -60,6 +62,7 @@ export default async function BlocoClimaDetailPage(props: PageProps): Promise<JS
     }
 
     const departamentosAtivos = await listDepartamentosAtivosClimate(client.db, companyId);
+    const empresaScope = await loadEmpresaScopeClimateCounts(client.db, companyId);
     const data = await loadBlocoClimaDashboardData(client.db, {
       companyId,
       escopo: departamento === null ? 'empresa' : 'departamento',
@@ -98,6 +101,7 @@ export default async function BlocoClimaDetailPage(props: PageProps): Promise<JS
           data={data}
           companyId={companyId}
           departamentosAtivos={departamentosAtivos}
+          empresaScope={empresaScope}
           departamentoAtual={departamento}
         />
       </Layout>

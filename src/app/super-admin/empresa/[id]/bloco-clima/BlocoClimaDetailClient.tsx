@@ -1,40 +1,52 @@
 'use client';
 
 // ROIP APP 9BOX — client component canonico da tela de detalhamento
-// Clima e Engajamento (ME-B2-01b Fase 2 hotfix3).
+// Clima e Engajamento (ME-B2-01b Fase 2 hotfix3 + ME-B2-01d).
 //
-// Diferencas canonicas do hotfix3 vs hotfix2:
-//   - Titulo sem "Bloco" (preferencia executiva): "Clima e engajamento
-//     — Empresa" / "Clima e engajamento — <Departamento>".
-//   - Questoes com texto canonico por extenso (CAMADA_NEGOCIO §6.2,
-//     redacao fixa dos 20 itens do Instrumento A). Numeracao
-//     "Questao N" removida.
-//   - Layout da questao em 2 linhas: texto por extenso ACIMA da
-//     barra; barra + nota na linha de baixo. Elimina a coluna rigida
-//     que truncava o texto nas larguras tipicas do viewport.
-//   - 4 dimensoes canonicas sempre renderizadas (Engajamento,
-//     Desenvolvimento, Pertencimento, Realizacao) com `data-dim`
-//     para auditoria visual, independente de haver nota (null
-//     expande a sanfona com as 5 questoes vazias).
+// ME-B2-01d (01/10/2026) — 4 ajustes canonicos de UX, zero motor:
+//   - Pills do filtro: cada pill exibe "(N)" com o countCobertura do
+//     ultimo trimestre fechado. "Empresa toda (N)" + "Dep (N)" para
+//     cada departamento ativo. Pills com `respondentes < 3` ficam com
+//     estilo atenuado (opacidade reduzida).
+//   - Nota de ajuda fixa abaixo do filtro: linha pequena explicando o
+//     piso canonico §9.6 (3 respondentes para anonimato §7.6).
+//   - Bloqueio por piso: ao filtrar um departamento com respondentes
+//     abaixo do piso, a UI renderiza tela de "insuficiencia" em vez
+//     do agregado da empresa que a cascata silenciosa produz. Botao
+//     Link volta para o escopo empresa. Preserva a semantica canonica
+//     do motor (cascata continua funcionando para outros consumidores
+//     — relatorio executivo, PDF, IA).
+//   - Taxa de adesao visivel: abaixo do "SCORE GERAL · N respondentes",
+//     adiciona linha "ADESAO · X%" com o `payload.adesao` canonico §9.4
+//     (0-100 em percentual).
 //
-// Layout canonico mantido do hotfix2:
-//   - Filtro de escopo no topo (pills Link SSR — URL `?dep=<nome>`).
-//   - Gauge donut + Timeline barras+linha (do escopo filtrado).
-//   - Lista das 4 dimensoes com sanfona canonica.
-//   - Toggle "Expandir todas / Recolher todas".
+// Hotfix3 (30/09/2026) preservado:
+//   - Titulo sem "Bloco": "Clima e engajamento — Empresa" ou
+//     "Clima e engajamento — <Departamento>".
+//   - 20 questoes canonicas por extenso (CAMADA_NEGOCIO §6.2).
+//   - Layout 2 linhas por questao (texto acima, barra+nota abaixo).
+//   - 4 dimensoes canonicas sempre renderizadas, com `data-dim` para
+//     auditoria visual.
 //
 // Client component canonico pela interatividade (useState para
 // sanfona). Grafico (gauge + timeline) e barras renderizados como
-// SVG inline server-safe (reusados do padrao do card).
+// SVG inline server-safe.
 
 import Link from 'next/link';
 import type { JSX } from 'react';
 import { useState } from 'react';
 
 import { COLORS } from '../../../../../lib/design-tokens/colors';
-import type { BlocoClimaDashboardData } from '../../../../../server/services/blocoClimaDashboard';
+import type {
+  BlocoClimaDashboardData,
+  DepartamentoAtivoClimateEntry,
+  EmpresaScopeClimateEntry,
+} from '../../../../../server/services/blocoClimaDashboard';
 
 const SCALE = COLORS.scoreScale;
+
+/** §9.6 — piso canonico de respondentes para exibir departamento. */
+const PISO_RESPONDENTES_CLIMATE = 3 as const;
 
 function corClima(nota: number | null): string {
   if (nota === null) return COLORS.text.quaternary;
@@ -46,6 +58,11 @@ function corClima(nota: number | null): string {
 function fmt1(v: number | null): string {
   if (v === null) return '—';
   return v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+function fmtPct0(v: number | null): string {
+  if (v === null) return '—';
+  return Math.round(v).toLocaleString('pt-BR') + '%';
 }
 
 function hexToRgba(hex: string, alpha: number): string {
@@ -66,12 +83,14 @@ function labelTrimestre(trimestre: string): string {
 /**
  * Props canonicas do client. Recebe o payload canonico ja resolvido
  * pelo server component (page.tsx), a lista canonica de departamentos
- * ativos para popular o filtro, e o departamento atual (null = empresa).
+ * ativos (com contagens — ME-B2-01d), as contagens agregadas da
+ * empresa (ME-B2-01d) e o departamento atual (null = empresa).
  */
 export interface BlocoClimaDetailClientProps {
   readonly data: BlocoClimaDashboardData | null;
   readonly companyId: number;
-  readonly departamentosAtivos: readonly string[];
+  readonly departamentosAtivos: readonly DepartamentoAtivoClimateEntry[];
+  readonly empresaScope: EmpresaScopeClimateEntry | null;
   readonly departamentoAtual: string | null;
 }
 
@@ -504,12 +523,18 @@ function DimensaoSanfona(props: {
 }
 
 /**
- * Dropdown canonico de escopo. Default: "Empresa". Opcoes: cada
- * departamento ativo. Troca via Link (SSR — nova request com `?dep=`).
+ * Dropdown canonico de escopo (ME-B2-01d — pills com contagens).
+ * Default: "Empresa toda (N)". Opcoes: "Dep (N)" para cada
+ * departamento ativo. Pills com `respondentes < 3` recebem atenuacao
+ * visual (opacidade reduzida + rotulo auxiliar "sem relatorio") mas
+ * continuam clicaveis — o clique abre a tela de insuficiencia
+ * canonica no componente pai. Troca via Link (SSR — nova request com
+ * `?dep=`).
  */
 function FiltroEscopo(props: {
   readonly companyId: number;
-  readonly departamentosAtivos: readonly string[];
+  readonly departamentosAtivos: readonly DepartamentoAtivoClimateEntry[];
+  readonly empresaScope: EmpresaScopeClimateEntry | null;
   readonly atual: string | null;
 }): JSX.Element {
   const base = `/super-admin/empresa/${props.companyId}/bloco-clima`;
@@ -521,6 +546,9 @@ function FiltroEscopo(props: {
     fontSize: 12,
     fontWeight: 600,
     whiteSpace: 'nowrap' as const,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
   };
   const pillAtivo = {
     ...pillBase,
@@ -533,6 +561,10 @@ function FiltroEscopo(props: {
     background: COLORS.background.card,
     color: COLORS.text.secondary,
   };
+  const empresaLabel =
+    props.empresaScope === null
+      ? 'Empresa toda'
+      : `Empresa toda (${props.empresaScope.respondentes})`;
   return (
     <div
       style={{
@@ -555,26 +587,119 @@ function FiltroEscopo(props: {
         Escopo:
       </span>
       <Link href={base} style={props.atual === null ? pillAtivo : pillInativo}>
-        Empresa toda
+        {empresaLabel}
       </Link>
-      {props.departamentosAtivos.map((dep) => (
-        <Link
-          key={dep}
-          href={`${base}?dep=${encodeURIComponent(dep)}`}
-          style={props.atual === dep ? pillAtivo : pillInativo}
-        >
-          {dep}
-        </Link>
-      ))}
+      {props.departamentosAtivos.map((dep) => {
+        const abaixoPiso = dep.respondentes < PISO_RESPONDENTES_CLIMATE;
+        const estiloBase = props.atual === dep.nome ? pillAtivo : pillInativo;
+        const estilo = abaixoPiso ? { ...estiloBase, opacity: 0.6 } : estiloBase;
+        return (
+          <Link
+            key={dep.nome}
+            href={`${base}?dep=${encodeURIComponent(dep.nome)}`}
+            style={estilo}
+            title={abaixoPiso ? 'Abaixo do piso canônico de 3 respondentes' : undefined}
+          >
+            {dep.nome} ({dep.respondentes})
+          </Link>
+        );
+      })}
     </div>
   );
 }
 
 /**
+ * Estado canonico de bloqueio por piso canonico §9.6 (ME-B2-01d).
+ * Exibido quando o usuario filtra um departamento com `respondentes <
+ * 3` — em vez de mostrar o agregado da empresa que a cascata silenciosa
+ * do motor produz, a UI bloqueia explicitamente e informa o motivo
+ * (anonimato §7.6). Oferece Link de retorno ao escopo empresa.
+ */
+function TelaInsuficienciaPorPiso(props: {
+  readonly companyId: number;
+  readonly departamentoAtual: string;
+  readonly respondentes: number;
+}): JSX.Element {
+  const base = `/super-admin/empresa/${props.companyId}/bloco-clima`;
+  const plural = props.respondentes === 1 ? 'respondente' : 'respondentes';
+  const frasePiso =
+    `tem ${props.respondentes} ${plural} no último trimestre, abaixo do piso canônico de ` +
+    `3 respondentes exigido para preservar o anonimato individual.`;
+  return (
+    <div
+      style={{
+        padding: '48px 24px',
+        textAlign: 'center',
+        border: `1px solid ${COLORS.border.default}`,
+        borderRadius: 8,
+        background: COLORS.background.card,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 12,
+      }}
+    >
+      <span
+        style={{
+          fontSize: 14,
+          fontWeight: 700,
+          color: COLORS.text.primary,
+        }}
+      >
+        Dados insuficientes para gerar relatório
+      </span>
+      <span
+        style={{
+          fontSize: 13,
+          color: COLORS.text.secondary,
+          maxWidth: 520,
+          lineHeight: 1.5,
+        }}
+      >
+        O departamento <strong>{props.departamentoAtual}</strong> {frasePiso}
+      </span>
+      <Link
+        href={base}
+        style={{
+          marginTop: 8,
+          padding: '10px 18px',
+          borderRadius: 20,
+          border: `1px solid ${COLORS.accent.teal}`,
+          color: COLORS.accent.teal,
+          background: COLORS.background.card,
+          fontSize: 12,
+          fontWeight: 600,
+          textDecoration: 'none',
+        }}
+      >
+        ← Voltar para o Clima da empresa
+      </Link>
+    </div>
+  );
+}
+
+/**
+ * Determina a contagem canonica de respondentes do departamento
+ * requisitado. Usado para decidir o bloqueio por piso canonico §9.6
+ * (ME-B2-01d). Retorna `null` quando o departamento nao esta na lista
+ * (nome digitado manualmente na URL, por exemplo).
+ */
+function respondentesDoDepartamento(
+  departamentoAtual: string,
+  departamentos: readonly DepartamentoAtivoClimateEntry[],
+): number | null {
+  const entry = departamentos.find((d) => d.nome === departamentoAtual);
+  return entry === undefined ? null : entry.respondentes;
+}
+
+/**
  * Componente canonico da tela de detalhamento Clima e Engajamento.
- * Layout: titulo (sem "Bloco") + filtro + topo (gauge + timeline) +
- * lista das 4 dimensoes (sanfonas canonicas, texto da questao por
- * extenso acima da barra) com toggle "Expandir todas / Recolher todas".
+ * Layout: titulo (sem "Bloco") + filtro com contagens + nota de ajuda
+ * canonica + topo (gauge + timeline + adesao) + lista das 4 dimensoes
+ * (sanfonas canonicas, texto da questao por extenso acima da barra)
+ * com toggle "Expandir todas / Recolher todas". Bloqueio por piso
+ * canonico quando o departamento filtrado tem respondentes abaixo
+ * do piso §9.6.
  */
 export function BlocoClimaDetailClient(props: BlocoClimaDetailClientProps): JSX.Element {
   const [abertas, setAbertas] = useState<readonly boolean[]>([false, false, false, false]);
@@ -592,17 +717,62 @@ export function BlocoClimaDetailClient(props: BlocoClimaDetailClientProps): JSX.
       ? 'Clima e engajamento — Empresa'
       : `Clima e engajamento — ${props.departamentoAtual}`;
 
+  const notaAjudaPiso = (
+    <span
+      style={{
+        fontSize: 11,
+        color: COLORS.text.tertiary,
+        lineHeight: 1.4,
+      }}
+    >
+      Mínimo de {PISO_RESPONDENTES_CLIMATE} respondentes para exibir dados de um departamento
+      (anonimato §7.6). Departamentos abaixo do piso aparecem atenuados.
+    </span>
+  );
+
+  const filtroBloco = (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <FiltroEscopo
+        companyId={props.companyId}
+        departamentosAtivos={props.departamentosAtivos}
+        empresaScope={props.empresaScope}
+        atual={props.departamentoAtual}
+      />
+      {notaAjudaPiso}
+    </div>
+  );
+
+  // ME-B2-01d — bloqueio por piso canonico §9.6 na UI do departamento.
+  // Quando o departamento requisitado tem respondentes abaixo do piso,
+  // a UI exibe tela de insuficiencia em vez do agregado da empresa que
+  // a cascata silenciosa do motor produz. Preserva a semantica canonica
+  // do motor para outros consumidores (relatorio executivo, PDF, IA).
+  if (props.departamentoAtual !== null) {
+    const resp = respondentesDoDepartamento(props.departamentoAtual, props.departamentosAtivos);
+    if (resp !== null && resp < PISO_RESPONDENTES_CLIMATE) {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: COLORS.text.primary, margin: 0 }}>
+            {titulo}
+          </h1>
+          {filtroBloco}
+          <TelaInsuficienciaPorPiso
+            companyId={props.companyId}
+            departamentoAtual={props.departamentoAtual}
+            respondentes={resp}
+          />
+        </div>
+      );
+    }
+  }
+
   if (props.data === null) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: COLORS.text.primary, margin: 0 }}>
           {titulo}
         </h1>
-        <FiltroEscopo
-          companyId={props.companyId}
-          departamentosAtivos={props.departamentosAtivos}
-          atual={props.departamentoAtual}
-        />
+        {filtroBloco}
         <div
           style={{
             padding: '48px 16px',
@@ -638,11 +808,7 @@ export function BlocoClimaDetailClient(props: BlocoClimaDetailClientProps): JSX.
         {titulo}
       </h1>
 
-      <FiltroEscopo
-        companyId={props.companyId}
-        departamentosAtivos={props.departamentosAtivos}
-        atual={props.departamentoAtual}
-      />
+      {filtroBloco}
 
       {notaAgregacao !== null ? (
         <div
@@ -690,6 +856,31 @@ export function BlocoClimaDetailClient(props: BlocoClimaDetailClientProps): JSX.
             </span>
             <span style={{ marginTop: 2, fontSize: 11, color: COLORS.text.tertiary }}>
               {payload.countCobertura} respondente{payload.countCobertura === 1 ? '' : 's'}
+            </span>
+            <span
+              style={{
+                marginTop: 6,
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: COLORS.text.tertiary,
+              }}
+            >
+              Adesão
+            </span>
+            <span
+              style={{
+                marginTop: 2,
+                fontSize: 13,
+                fontWeight: 700,
+                color: COLORS.text.secondary,
+              }}
+            >
+              {fmtPct0(payload.adesao)}
+            </span>
+            <span style={{ marginTop: 2, fontSize: 10, color: COLORS.text.quaternary }}>
+              {payload.countCobertura} de {payload.countTotal} elegíveis
             </span>
           </div>
           <div>
