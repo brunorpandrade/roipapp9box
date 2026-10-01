@@ -1,40 +1,89 @@
 // ROIP APP 9BOX — entry TypeScript reset+reseed Bebidas Ubatuba
-// (ME-080b Dispatch 5, CC075).
+// (ME-B2-01e — paridade canonica com reset-reseed-nativa.ts).
 //
-// Executa DELETE canonico das tabelas populadas pelo seed Ubatuba (restrito
-// por companyId=2) e reaplica o seed. FOREIGN_KEY_CHECKS=0 apenas dentro
-// da janela do DELETE, rehabilitado antes do reseed.
+// Apaga TODOS os dados da empresa companyId=2 (Bebidas Ubatuba) e reaplica
+// o seed a partir dos fixtures canonicos. Pattern canonico espelhado da
+// Nativa — inclui as 20 tabelas operacionais que o script anterior nao
+// cobria (plenitudeData, instrumentos A/C/D, 9-Box, IQL, CoPSoQ, perfil
+// individual, performance mensal/trimestral, employee leader history,
+// employee goals, radarNR1 etc.). Isso elimina o workaround manual que
+// a ME-B2-01c precisou (wipe via mysql2 inline no SSH do container
+// Railway) e torna reseed Ubatuba um comando unico.
 //
-// RV-12 canonica: DELETE via API tipada do Drizzle (nao SQL cru). A unica
-// primitiva SQL literal aqui e SET FOREIGN_KEY_CHECKS — Drizzle nao expoe
-// helper para variavel de sessao MySQL. Exceção canonica pontual e
-// justificavel: o valor e literal fixo, sem interpolacao externa, isolado
-// a este script standalone de operacao.
+// Recorte por tabela:
+//   - companyId=2 direto (lote `deletions`).
+//   - por employeeId dos employees da Ubatuba: employeeGoals,
+//     employeeLeaderHistory, performanceMultiplierLog, portalReminderLog;
+//     e accessTokens por userId.
+//   - por FK do pai: performanceVariableData (performanceDataId),
+//     terminationInvoluntaryJustifications (terminationEventId).
+//   - companies por id=2.
+// `departments` nao e populada pelo seed Ubatuba e nao tem escopo de
+// empresa: ignorada.
 //
-// Ordem canonica de DELETE (inversa da ordem de INSERT do seed):
-// notifications -> alerts -> dataAccessLog ->
-// responsavelFinanceiroTransferLog -> lgpdConsents -> cycleSchedule ->
-// companyEconomicDiagnosis -> monthlyClosureStatus -> companyMonthlyData ->
-// companyJobFamilies -> employees -> cLevelMembers -> companies.
+// NAO TOCA na Nativa Alimentos (companyId=1) nem no super-admin.
+//
+// RV-12: DELETE via API tipada do Drizzle. Unica primitiva SQL literal:
+// SET FOREIGN_KEY_CHECKS (variavel de sessao MySQL) — literal fixo,
+// isolado. Prerrequisito: DATABASE_URL obrigatoria; aborta com RC=2 se
+// ausente. Uso: `npm run reset-reseed:ubatuba`.
 
 import bcrypt from 'bcryptjs';
-import { eq, sql } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 
 import { closeDbClient, createDbClient } from '../src/db/client';
 import {
+  accessTokens,
+  aiConversations,
   alerts,
+  apiUsageLog,
   cLevelMembers,
   companies,
   companyEconomicDiagnosis,
   companyJobFamilies,
   companyMonthlyData,
+  copsoqCycleSnapshot,
+  copsoqCycles,
+  copsoqFactorScores,
+  copsoq_responses,
   cycleSchedule,
+  cycleUnlockRequests,
   dataAccessLog,
+  developmentDialogs,
+  digestExecutionLog,
+  emailNotifications,
+  emailQueue,
+  employeeGoals,
+  employeeLeaderHistory,
+  employeeTerminationEvents,
   employees,
+  executiveReportCache,
+  individualProfileAssessments,
+  individualProfilePlaceholders,
+  individualProfileScores,
+  instrumentA_responses,
+  instrumentC_assessments,
+  instrumentD_responses,
+  instrumentUnlockLog,
+  iqlData,
+  leaderOnboardingNotes,
+  leaderOnboardingStageLog,
   lgpdConsents,
   monthlyClosureStatus,
+  monthlyUnlockLog,
+  nineBoxCalculationLog,
+  nineBoxClassifications,
+  nr1AreaDivergenceAnalysis,
   notifications,
+  performanceData,
+  performanceMultiplierLog,
+  performanceQuarterlyData,
+  performanceVariableData,
+  plenitudeData,
+  portalReminderLog,
+  radarNR1Reports,
   responsavelFinanceiroTransferLog,
+  terminationInvoluntaryJustifications,
 } from '../src/db/schema';
 import { UBATUBA_COMPANY_ID } from '../src/db/seed/ubatuba/constants';
 import { seedUbatuba } from '../src/db/seed/ubatuba/loadUbatubaFixtures';
@@ -52,81 +101,288 @@ async function main(): Promise<void> {
     `[reset-reseed-ubatuba] Iniciando. Company alvo: id=${UBATUBA_COMPANY_ID} (Bebidas Ubatuba).`,
   );
   const client = createDbClient(url);
+  const ID = UBATUBA_COMPANY_ID;
+
+  // Tabelas com companyId=2 direto.
+  const deletions: ReadonlyArray<{ name: string; run: () => Promise<unknown> }> = [
+    {
+      name: 'notifications',
+      run: () => client.db.delete(notifications).where(eq(notifications.companyId, ID)),
+    },
+    { name: 'alerts', run: () => client.db.delete(alerts).where(eq(alerts.companyId, ID)) },
+    {
+      name: 'emailQueue',
+      run: () => client.db.delete(emailQueue).where(eq(emailQueue.companyId, ID)),
+    },
+    {
+      name: 'emailNotifications',
+      run: () => client.db.delete(emailNotifications).where(eq(emailNotifications.companyId, ID)),
+    },
+    {
+      name: 'digestExecutionLog',
+      run: () => client.db.delete(digestExecutionLog).where(eq(digestExecutionLog.companyId, ID)),
+    },
+    {
+      name: 'dataAccessLog',
+      run: () => client.db.delete(dataAccessLog).where(eq(dataAccessLog.companyId, ID)),
+    },
+    {
+      name: 'apiUsageLog',
+      run: () => client.db.delete(apiUsageLog).where(eq(apiUsageLog.companyId, ID)),
+    },
+    {
+      name: 'executiveReportCache',
+      run: () =>
+        client.db.delete(executiveReportCache).where(eq(executiveReportCache.companyId, ID)),
+    },
+    {
+      name: 'aiConversations',
+      run: () => client.db.delete(aiConversations).where(eq(aiConversations.companyId, ID)),
+    },
+    {
+      name: 'developmentDialogs',
+      run: () => client.db.delete(developmentDialogs).where(eq(developmentDialogs.companyId, ID)),
+    },
+    // ME-B2-01b Q1=D — climateEngagementData APOSENTADA (tabela nao
+    // existe mais). DELETE removido.
+    {
+      name: 'radarNR1Reports',
+      run: () => client.db.delete(radarNR1Reports).where(eq(radarNR1Reports.companyId, ID)),
+    },
+    {
+      name: 'nr1AreaDivergenceAnalysis',
+      run: () =>
+        client.db
+          .delete(nr1AreaDivergenceAnalysis)
+          .where(eq(nr1AreaDivergenceAnalysis.companyId, ID)),
+    },
+    {
+      name: 'copsoqFactorScores',
+      run: () => client.db.delete(copsoqFactorScores).where(eq(copsoqFactorScores.companyId, ID)),
+    },
+    {
+      name: 'copsoq_responses',
+      run: () => client.db.delete(copsoq_responses).where(eq(copsoq_responses.companyId, ID)),
+    },
+    {
+      name: 'copsoqCycleSnapshot',
+      run: () => client.db.delete(copsoqCycleSnapshot).where(eq(copsoqCycleSnapshot.companyId, ID)),
+    },
+    {
+      name: 'copsoqCycles',
+      run: () => client.db.delete(copsoqCycles).where(eq(copsoqCycles.companyId, ID)),
+    },
+    { name: 'iqlData', run: () => client.db.delete(iqlData).where(eq(iqlData.companyId, ID)) },
+    {
+      name: 'instrumentD_responses',
+      run: () =>
+        client.db.delete(instrumentD_responses).where(eq(instrumentD_responses.companyId, ID)),
+    },
+    {
+      name: 'nineBoxCalculationLog',
+      run: () =>
+        client.db.delete(nineBoxCalculationLog).where(eq(nineBoxCalculationLog.companyId, ID)),
+    },
+    {
+      name: 'nineBoxClassifications',
+      run: () =>
+        client.db.delete(nineBoxClassifications).where(eq(nineBoxClassifications.companyId, ID)),
+    },
+    {
+      name: 'plenitudeData',
+      run: () => client.db.delete(plenitudeData).where(eq(plenitudeData.companyId, ID)),
+    },
+    {
+      name: 'instrumentC_assessments',
+      run: () =>
+        client.db.delete(instrumentC_assessments).where(eq(instrumentC_assessments.companyId, ID)),
+    },
+    {
+      name: 'instrumentA_responses',
+      run: () =>
+        client.db.delete(instrumentA_responses).where(eq(instrumentA_responses.companyId, ID)),
+    },
+    {
+      name: 'instrumentUnlockLog',
+      run: () => client.db.delete(instrumentUnlockLog).where(eq(instrumentUnlockLog.companyId, ID)),
+    },
+    {
+      name: 'performanceQuarterlyData',
+      run: () =>
+        client.db
+          .delete(performanceQuarterlyData)
+          .where(eq(performanceQuarterlyData.companyId, ID)),
+    },
+    {
+      name: 'performanceData',
+      run: () => client.db.delete(performanceData).where(eq(performanceData.companyId, ID)),
+    },
+    {
+      name: 'individualProfileScores',
+      run: () =>
+        client.db.delete(individualProfileScores).where(eq(individualProfileScores.companyId, ID)),
+    },
+    {
+      name: 'individualProfileAssessments',
+      run: () =>
+        client.db
+          .delete(individualProfileAssessments)
+          .where(eq(individualProfileAssessments.companyId, ID)),
+    },
+    {
+      name: 'individualProfilePlaceholders',
+      run: () =>
+        client.db
+          .delete(individualProfilePlaceholders)
+          .where(eq(individualProfilePlaceholders.companyId, ID)),
+    },
+    {
+      name: 'cycleUnlockRequests',
+      run: () => client.db.delete(cycleUnlockRequests).where(eq(cycleUnlockRequests.companyId, ID)),
+    },
+    {
+      name: 'monthlyUnlockLog',
+      run: () => client.db.delete(monthlyUnlockLog).where(eq(monthlyUnlockLog.companyId, ID)),
+    },
+    {
+      name: 'cycleSchedule',
+      run: () => client.db.delete(cycleSchedule).where(eq(cycleSchedule.companyId, ID)),
+    },
+    {
+      name: 'companyEconomicDiagnosis',
+      run: () =>
+        client.db
+          .delete(companyEconomicDiagnosis)
+          .where(eq(companyEconomicDiagnosis.companyId, ID)),
+    },
+    {
+      name: 'monthlyClosureStatus',
+      run: () =>
+        client.db.delete(monthlyClosureStatus).where(eq(monthlyClosureStatus.companyId, ID)),
+    },
+    {
+      name: 'companyMonthlyData',
+      run: () => client.db.delete(companyMonthlyData).where(eq(companyMonthlyData.companyId, ID)),
+    },
+    {
+      name: 'employeeTerminationEvents',
+      run: () =>
+        client.db
+          .delete(employeeTerminationEvents)
+          .where(eq(employeeTerminationEvents.companyId, ID)),
+    },
+    {
+      name: 'leaderOnboardingStageLog',
+      run: () =>
+        client.db
+          .delete(leaderOnboardingStageLog)
+          .where(eq(leaderOnboardingStageLog.companyId, ID)),
+    },
+    {
+      name: 'leaderOnboardingNotes',
+      run: () =>
+        client.db.delete(leaderOnboardingNotes).where(eq(leaderOnboardingNotes.companyId, ID)),
+    },
+    {
+      name: 'responsavelFinanceiroTransferLog',
+      run: () =>
+        client.db
+          .delete(responsavelFinanceiroTransferLog)
+          .where(eq(responsavelFinanceiroTransferLog.companyId, ID)),
+    },
+    {
+      name: 'lgpdConsents',
+      run: () => client.db.delete(lgpdConsents).where(eq(lgpdConsents.companyId, ID)),
+    },
+    {
+      name: 'companyJobFamilies',
+      run: () => client.db.delete(companyJobFamilies).where(eq(companyJobFamilies.companyId, ID)),
+    },
+    {
+      name: 'employees',
+      run: () => client.db.delete(employees).where(eq(employees.companyId, ID)),
+    },
+    {
+      name: 'cLevelMembers',
+      run: () => client.db.delete(cLevelMembers).where(eq(cLevelMembers.companyId, ID)),
+    },
+  ];
 
   try {
-    console.log('[reset-reseed-ubatuba] Fase 1: DELETE canonico (FK_CHECKS=0).');
-    // Excecao canonica pontual RV-12: SET FOREIGN_KEY_CHECKS = 0 e um
-    // literal fixo, seguro contra injecao (nao interpola input externo).
+    console.log('[reset-reseed-ubatuba] Fase 1: capturar ids-pai (antes de apagar).');
+    const empIds = (
+      await client.db
+        .select({ id: employees.id })
+        .from(employees)
+        .where(eq(employees.companyId, ID))
+    ).map((e) => e.id);
+    const perfIds = (
+      await client.db
+        .select({ id: performanceData.id })
+        .from(performanceData)
+        .where(eq(performanceData.companyId, ID))
+    ).map((r) => r.id);
+    const termIds = (
+      await client.db
+        .select({ id: employeeTerminationEvents.id })
+        .from(employeeTerminationEvents)
+        .where(eq(employeeTerminationEvents.companyId, ID))
+    ).map((r) => r.id);
+    console.log(`  ids: emp=${empIds.length} perf=${perfIds.length} term=${termIds.length}`);
+
+    console.log('[reset-reseed-ubatuba] Fase 2: DELETE (FK_CHECKS=0).');
     await client.db.execute(sql`SET FOREIGN_KEY_CHECKS = 0`);
     try {
-      // Ordem canonica: cada DELETE via API tipada do Drizzle.
-      await client.db.delete(notifications).where(eq(notifications.companyId, UBATUBA_COMPANY_ID));
-      console.log(`  DELETE notifications WHERE companyId=${UBATUBA_COMPANY_ID} OK`);
+      // Filhos por id capturado (nao tem companyId).
+      if (perfIds.length > 0) {
+        await client.db
+          .delete(performanceVariableData)
+          .where(inArray(performanceVariableData.performanceDataId, perfIds));
+      }
+      console.log('  DELETE performanceVariableData OK');
+      if (termIds.length > 0) {
+        await client.db
+          .delete(terminationInvoluntaryJustifications)
+          .where(inArray(terminationInvoluntaryJustifications.terminationEventId, termIds));
+      }
+      console.log('  DELETE terminationInvoluntaryJustifications OK');
+      if (empIds.length > 0) {
+        await client.db.delete(employeeGoals).where(inArray(employeeGoals.employeeId, empIds));
+        await client.db
+          .delete(performanceMultiplierLog)
+          .where(inArray(performanceMultiplierLog.employeeId, empIds));
+        await client.db
+          .delete(portalReminderLog)
+          .where(inArray(portalReminderLog.employeeId, empIds));
+        await client.db.delete(accessTokens).where(inArray(accessTokens.userId, empIds));
+        await client.db
+          .delete(employeeLeaderHistory)
+          .where(inArray(employeeLeaderHistory.employeeId, empIds));
+      }
+      console.log('  DELETE tabelas por employeeId/userId/FK-pai OK');
 
-      await client.db.delete(alerts).where(eq(alerts.companyId, UBATUBA_COMPANY_ID));
-      console.log(`  DELETE alerts WHERE companyId=${UBATUBA_COMPANY_ID} OK`);
+      // Lote companyId=2.
+      for (const d of deletions) {
+        await d.run();
+        console.log(`  DELETE ${d.name} WHERE companyId=${ID} OK`);
+      }
 
-      await client.db.delete(dataAccessLog).where(eq(dataAccessLog.companyId, UBATUBA_COMPANY_ID));
-      console.log(`  DELETE dataAccessLog WHERE companyId=${UBATUBA_COMPANY_ID} OK`);
-
-      // ME-B2-01b Q1=D — climateEngagementData APOSENTADA (tabela nao
-      // existe mais). DELETE removido.
-
-      await client.db
-        .delete(responsavelFinanceiroTransferLog)
-        .where(eq(responsavelFinanceiroTransferLog.companyId, UBATUBA_COMPANY_ID));
-      console.log(`  DELETE responsavelFinanceiroTransferLog OK`);
-
-      await client.db.delete(lgpdConsents).where(eq(lgpdConsents.companyId, UBATUBA_COMPANY_ID));
-      console.log(`  DELETE lgpdConsents OK`);
-
-      await client.db.delete(cycleSchedule).where(eq(cycleSchedule.companyId, UBATUBA_COMPANY_ID));
-      console.log(`  DELETE cycleSchedule OK`);
-
-      await client.db
-        .delete(companyEconomicDiagnosis)
-        .where(eq(companyEconomicDiagnosis.companyId, UBATUBA_COMPANY_ID));
-      console.log(`  DELETE companyEconomicDiagnosis OK`);
-
-      await client.db
-        .delete(monthlyClosureStatus)
-        .where(eq(monthlyClosureStatus.companyId, UBATUBA_COMPANY_ID));
-      console.log(`  DELETE monthlyClosureStatus OK`);
-
-      await client.db
-        .delete(companyMonthlyData)
-        .where(eq(companyMonthlyData.companyId, UBATUBA_COMPANY_ID));
-      console.log(`  DELETE companyMonthlyData OK`);
-
-      await client.db
-        .delete(companyJobFamilies)
-        .where(eq(companyJobFamilies.companyId, UBATUBA_COMPANY_ID));
-      console.log(`  DELETE companyJobFamilies OK`);
-
-      await client.db.delete(employees).where(eq(employees.companyId, UBATUBA_COMPANY_ID));
-      console.log(`  DELETE employees OK`);
-
-      await client.db.delete(cLevelMembers).where(eq(cLevelMembers.companyId, UBATUBA_COMPANY_ID));
-      console.log(`  DELETE cLevelMembers OK`);
-
-      await client.db.delete(companies).where(eq(companies.id, UBATUBA_COMPANY_ID));
-      console.log(`  DELETE companies WHERE id=${UBATUBA_COMPANY_ID} OK`);
+      await client.db.delete(companies).where(eq(companies.id, ID));
+      console.log(`  DELETE companies WHERE id=${ID} OK`);
     } finally {
       await client.db.execute(sql`SET FOREIGN_KEY_CHECKS = 1`);
     }
 
-    console.log('[reset-reseed-ubatuba] Fase 2: reseed canonico.');
+    console.log('[reset-reseed-ubatuba] Fase 3: reseed canonico (loader corrigido).');
     const result = await seedUbatuba(client.db, {
       hashPassword: (plain: string) => bcrypt.hash(plain, BCRYPT_COST_PRODUCTION),
     });
-
     if (!result.applied) {
       console.error(
         `[reset-reseed-ubatuba] INESPERADO: seed nao aplicou. Reason: ${result.reason}`,
       );
       process.exit(3);
     }
-
     console.log('[reset-reseed-ubatuba] Contagens por tabela:');
     for (const [table, count] of Object.entries(result.counts ?? {})) {
       console.log(`  ${table}: ${count}`);
