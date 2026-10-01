@@ -1,16 +1,27 @@
 'use client';
 
 // ROIP APP 9BOX — client component canonico da tela de detalhamento
-// do Bloco Clima e Engajamento (ME-B2-01b Fase 2 hotfix2).
+// Clima e Engajamento (ME-B2-01b Fase 2 hotfix3).
 //
-// Layout canonico:
-//   - Filtro no topo (dropdown de escopo: Empresa | cada departamento
-//     ativo). Default: Empresa toda. Troca via Link (SSR — URL
-//     `?dep=<nome>`).
+// Diferencas canonicas do hotfix3 vs hotfix2:
+//   - Titulo sem "Bloco" (preferencia executiva): "Clima e engajamento
+//     — Empresa" / "Clima e engajamento — <Departamento>".
+//   - Questoes com texto canonico por extenso (CAMADA_NEGOCIO §6.2,
+//     redacao fixa dos 20 itens do Instrumento A). Numeracao
+//     "Questao N" removida.
+//   - Layout da questao em 2 linhas: texto por extenso ACIMA da
+//     barra; barra + nota na linha de baixo. Elimina a coluna rigida
+//     que truncava o texto nas larguras tipicas do viewport.
+//   - 4 dimensoes canonicas sempre renderizadas (Engajamento,
+//     Desenvolvimento, Pertencimento, Realizacao) com `data-dim`
+//     para auditoria visual, independente de haver nota (null
+//     expande a sanfona com as 5 questoes vazias).
+//
+// Layout canonico mantido do hotfix2:
+//   - Filtro de escopo no topo (pills Link SSR — URL `?dep=<nome>`).
 //   - Gauge donut + Timeline barras+linha (do escopo filtrado).
-//   - Lista de 4 dimensoes ROIP em barras horizontais. Cada dimensao
-//     clicavel → expande sanfona com as 5 notas por questao.
-//   - Botoes "Expandir todas" / "Recolher todas" acima das dimensoes.
+//   - Lista das 4 dimensoes com sanfona canonica.
+//   - Toggle "Expandir todas / Recolher todas".
 //
 // Client component canonico pela interatividade (useState para
 // sanfona). Grafico (gauge + timeline) e barras renderizados como
@@ -84,7 +95,7 @@ function GaugeDonut(props: { readonly nota: number | null }): JSX.Element {
       width="160"
       height="160"
       role="img"
-      aria-label="Score do Bloco Clima"
+      aria-label="Score do Clima e engajamento"
     >
       <circle
         cx="70"
@@ -297,14 +308,49 @@ const DIMENSOES_CANONICAS = [
 ] as const;
 
 /**
+ * Textos canonicos literais das 20 questoes do Instrumento A — fonte
+ * primaria CAMADA_NEGOCIO §6.2 (redacao fixa, autoavaliacao). Ordem
+ * canonica (dim-1)*5+item identica a `plenitudeData.notasQuestao`.
+ */
+const TEXTOS_QUESTOES: readonly string[] = [
+  // Dimensao 1 — Engajamento (questoes 1..5)
+  'Sinto energia e disposição para o trabalho.',
+  'Tenho entusiasmo com o que faço.',
+  'Sinto-me comprometido com os resultados da área.',
+  'Consigo manter o foco e a concentração nas minhas atividades.',
+  'Mesmo diante de dificuldades, mantenho minha dedicação ao trabalho.',
+  // Dimensao 2 — Desenvolvimento (questoes 6..10)
+  'Tenho aprendido e evoluído na função.',
+  'Vejo oportunidades de crescimento aqui.',
+  'Recebo desafios que me desenvolvem.',
+  'Tenho clareza sobre o que preciso desenvolver para crescer na empresa.',
+  'Sinto que minhas habilidades estão sendo bem aproveitadas no trabalho.',
+  // Dimensao 3 — Pertencimento (questoes 11..15)
+  'Sinto que faço parte do time e da empresa.',
+  'Sinto-me valorizado pelo que entrego.',
+  'Tenho boas relações com quem trabalho.',
+  'Sinto que posso ser eu mesmo no ambiente de trabalho.',
+  'Sinto que minha opinião é ouvida e considerada pela equipe.',
+  // Dimensao 4 — Realizacao (questoes 16..20)
+  'Meu trabalho tem sentido para mim.',
+  'Sinto satisfação com o que realizo.',
+  'Termino a maior parte das semanas com sensação de realização.',
+  'Sinto que meu trabalho contribui de forma relevante para a empresa.',
+  'Tenho orgulho do que produzo e entrego.',
+] as const;
+
+/**
  * Sanfona canonica de uma dimensao. Cabecalho sempre visivel (nome +
  * barra + nota + icone expandir); corpo expandido mostra as 5 notas
- * por questao (0-10) em lista.
+ * por questao em layout de 2 linhas (texto da questao por extenso
+ * ACIMA da barra; barra + nota ABAIXO).
  */
 function DimensaoSanfona(props: {
   readonly label: string;
+  readonly chave: string;
   readonly nota: number | null;
   readonly notasQuestao: readonly (number | null)[];
+  readonly textosQuestao: readonly string[];
   readonly expandida: boolean;
   readonly onToggle: () => void;
 }): JSX.Element {
@@ -313,6 +359,7 @@ function DimensaoSanfona(props: {
   const pct = nota === null ? 0 : Math.max(0, Math.min(100, (nota / 10) * 100));
   return (
     <div
+      data-dim={props.chave}
       style={{
         border: `1px solid ${COLORS.border.default}`,
         borderRadius: 8,
@@ -352,7 +399,7 @@ function DimensaoSanfona(props: {
         <span
           style={{
             flex: '0 0 180px',
-            fontSize: 13,
+            fontSize: 14,
             color: COLORS.text.secondary,
             fontWeight: 600,
           }}
@@ -382,7 +429,7 @@ function DimensaoSanfona(props: {
           style={{
             flex: '0 0 56px',
             textAlign: 'right',
-            fontSize: 14,
+            fontSize: 15,
             fontWeight: 700,
             color: cor,
           }}
@@ -394,55 +441,59 @@ function DimensaoSanfona(props: {
         <div
           style={{
             borderTop: `1px solid ${COLORS.border.divider}`,
-            padding: '10px 16px 14px 42px',
+            padding: '12px 16px 16px 42px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 6,
+            gap: 12,
           }}
         >
           {props.notasQuestao.map((n, i) => {
             const corQ = corClima(n);
             const pctQ = n === null ? 0 : Math.max(0, Math.min(100, (n / 10) * 100));
+            const texto = props.textosQuestao[i] ?? '';
             return (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12 }}>
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <span
                   style={{
-                    flex: '0 0 100px',
-                    color: COLORS.text.tertiary,
-                    fontWeight: 500,
+                    fontSize: 13,
+                    color: COLORS.text.secondary,
+                    lineHeight: 1.35,
                   }}
                 >
-                  Questão {i + 1}
+                  {texto}
                 </span>
-                <span
-                  style={{
-                    flex: 1,
-                    height: 8,
-                    background: COLORS.border.divider,
-                    borderRadius: 4,
-                    overflow: 'hidden',
-                  }}
-                >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span
                     style={{
-                      display: 'block',
-                      width: `${pctQ.toFixed(1)}%`,
-                      height: '100%',
-                      background: hexToRgba(corQ, 0.65),
+                      flex: 1,
+                      height: 8,
+                      background: COLORS.border.divider,
                       borderRadius: 4,
+                      overflow: 'hidden',
                     }}
-                  />
-                </span>
-                <span
-                  style={{
-                    flex: '0 0 44px',
-                    textAlign: 'right',
-                    fontWeight: 700,
-                    color: corQ,
-                  }}
-                >
-                  {fmt1(n)}
-                </span>
+                  >
+                    <span
+                      style={{
+                        display: 'block',
+                        width: `${pctQ.toFixed(1)}%`,
+                        height: '100%',
+                        background: hexToRgba(corQ, 0.65),
+                        borderRadius: 4,
+                      }}
+                    />
+                  </span>
+                  <span
+                    style={{
+                      flex: '0 0 48px',
+                      textAlign: 'right',
+                      fontWeight: 700,
+                      color: corQ,
+                      fontSize: 13,
+                    }}
+                  >
+                    {fmt1(n)}
+                  </span>
+                </div>
               </div>
             );
           })}
@@ -520,10 +571,10 @@ function FiltroEscopo(props: {
 }
 
 /**
- * Componente canonico da tela de detalhamento do Bloco Clima e
- * Engajamento. Layout: filtro + topo (gauge + timeline) + lista das
- * 4 dimensoes (sanfonas canonicas) com toggle "Expandir todas /
- * Recolher todas".
+ * Componente canonico da tela de detalhamento Clima e Engajamento.
+ * Layout: titulo (sem "Bloco") + filtro + topo (gauge + timeline) +
+ * lista das 4 dimensoes (sanfonas canonicas, texto da questao por
+ * extenso acima da barra) com toggle "Expandir todas / Recolher todas".
  */
 export function BlocoClimaDetailClient(props: BlocoClimaDetailClientProps): JSX.Element {
   const [abertas, setAbertas] = useState<readonly boolean[]>([false, false, false, false]);
@@ -538,8 +589,8 @@ export function BlocoClimaDetailClient(props: BlocoClimaDetailClientProps): JSX.
 
   const titulo =
     props.departamentoAtual === null
-      ? 'Bloco Clima e Engajamento — Empresa'
-      : `Bloco Clima e Engajamento — ${props.departamentoAtual}`;
+      ? 'Clima e engajamento — Empresa'
+      : `Clima e engajamento — ${props.departamentoAtual}`;
 
   if (props.data === null) {
     return (
@@ -669,7 +720,7 @@ export function BlocoClimaDetailClient(props: BlocoClimaDetailClientProps): JSX.
             background: COLORS.background.card,
           }}
         >
-          Dados insuficientes para exibir o Bloco Clima no escopo selecionado (piso de 3
+          Dados insuficientes para exibir o Clima e engajamento no escopo selecionado (piso de 3
           respondentes).
         </div>
       )}
@@ -715,12 +766,15 @@ export function BlocoClimaDetailClient(props: BlocoClimaDetailClientProps): JSX.
         {DIMENSOES_CANONICAS.map((d, i) => {
           const inicio = (d.dim - 1) * 5;
           const notasQ = notasPorQuestao.slice(inicio, inicio + 5);
+          const textosQ = TEXTOS_QUESTOES.slice(inicio, inicio + 5);
           return (
             <DimensaoSanfona
               key={d.chave}
               label={d.label}
+              chave={d.chave}
               nota={notasPorDimensao[i] ?? null}
               notasQuestao={notasQ}
+              textosQuestao={textosQ}
               expandida={abertas[i] ?? false}
               onToggle={() => toggle(i)}
             />
