@@ -83,8 +83,10 @@ const FORBIDDEN_TERM_CLIMATE_AGGREGATION = ['climate', 'Aggregation', 'Engine'].
 const FORBIDDEN_TERM_FECHAMENTO_MANUAL_SRC = FORBIDDEN_TERM_FECHAMENTO_MANUAL;
 
 // ---------------------------------------------------------------------
-// Inventario nominal das 55 tabelas (DOC 01 §3 / schema real; ME-fila6 D2
-// acrescentou os 2 formularios de desligamento).
+// Inventario nominal das 54 tabelas (DOC 01 §3 / schema real).
+// ME-fila6 D2 acrescentou os 2 formularios de desligamento.
+// ME-B2-01b Q1=D removeu `climateEngagementData` (cache aposentado —
+// agregados agora computados sob demanda pelo motor puro).
 // Ordem alfabetica para comparacao por conjunto (a ordem no schema e
 // funcional, nao canonica).
 // ---------------------------------------------------------------------
@@ -95,7 +97,6 @@ const CANONIC_TABLE_NAMES = new Set([
   'alerts',
   'apiUsageLog',
   'cLevelMembers',
-  'climateEngagementData',
   'companies',
   'companyEconomicDiagnosis',
   'companyJobFamilies',
@@ -401,7 +402,7 @@ function runModeRepo(repoRoot) {
     }
   }
 
-  // ---- A5: inventario nominal fechado das 55 tabelas -----------------
+  // ---- A5: inventario nominal fechado das 54 tabelas -----------------
   if (fileExists(tablesPath)) {
     const s = readFileSafe(tablesPath);
     const found = new Set();
@@ -411,7 +412,7 @@ function runModeRepo(repoRoot) {
     const missing = [...CANONIC_TABLE_NAMES].filter((n) => !found.has(n));
     const extra = [...found].filter((n) => !CANONIC_TABLE_NAMES.has(n));
     if (missing.length === 0 && extra.length === 0 && found.size === CANONIC_TABLE_NAMES.size) {
-      record('A5', true, `55 tabelas presentes por nome, sem extras`);
+      record('A5', true, `54 tabelas presentes por nome, sem extras`);
     } else {
       record(
         'A5',

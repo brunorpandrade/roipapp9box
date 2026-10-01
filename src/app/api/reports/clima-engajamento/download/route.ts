@@ -27,16 +27,10 @@
 
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { jwtVerify } from 'jose';
 
-import { type RoipDbClient } from '../../../../../db/client';
-import {
-  cLevelMembers,
-  climateEngagementData,
-  companies,
-  employees,
-} from '../../../../../db/schema';
+import { cLevelMembers, companies, employees } from '../../../../../db/schema';
 import { sanitizeRazaoSocial } from '../../../../../server/routers/spreadsheets';
 import {
   composeClimaEngajamentoFilename,
@@ -45,7 +39,12 @@ import {
   type ClimaBlocoEscopo,
 } from '../../../../../server/pdf-templates/climaEngajamentoTemplate';
 import {
-  EXEC_REPORT_CLIMA_PISO_RESPONDENTES,
+  type ClimateBlockPayload,
+  computeClimateBlock,
+  listClimateTrimestres,
+  PISO_RESPONDENTES_CLIMATE,
+} from '../../../../../server/services/climateCalculationEngine';
+import {
   EXEC_REPORT_NOTA_AGREGACAO_DEPARTAMENTO,
   EXEC_REPORT_NOTA_AGREGACAO_EMPRESA,
 } from '../../../../../server/services/executiveReportEngine';
@@ -158,35 +157,27 @@ export async function GET(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'empresa_nao_encontrada' }, { status: 404 });
   }
 
-  const trimestreRows = await db
-    .select({ trimestre: climateEngagementData.trimestre })
-    .from(climateEngagementData)
-    .where(eq(climateEngagementData.companyId, companyId))
-    .orderBy(desc(climateEngagementData.trimestre))
-    .limit(1);
-  const trimestre = trimestreRows[0]?.trimestre;
+  // ME-B2-01b Q1=D — trimestre canonico via motor puro (sob demanda,
+  // sem cache). Substitui a leitura da tabela derivada aposentada.
+  const trimestres = await listClimateTrimestres(db, companyId, 'desc');
+  const trimestre = trimestres[0];
   if (!trimestre) {
     return NextResponse.json({ error: 'sem_agregados_clima' }, { status: 404 });
   }
 
-  // Bloco empresa.
-  const rowEmpresa = await getClimaRowByLevel(db, companyId, 'empresa', null, null, trimestre);
+  // Bloco empresa (sob demanda).
+  const payloadEmpresa = await computeClimateBlock(db, {
+    companyId,
+    escopo: 'empresa',
+    escopoReferencia: null,
+    liderId: null,
+    liderTipo: null,
+    trimestre,
+  });
   const blocoEmpresa: ClimaBlocoEscopo =
-    rowEmpresa === null
-      ? {
-          titulo: 'Empresa',
-          respondentes: 0,
-          notaClima: null,
-          adesao: null,
-          porDimensao: {
-            engajamento: null,
-            desenvolvimento: null,
-            pertencimento: null,
-            realizacao: null,
-          },
-          notaAgregacao: null,
-        }
-      : rowToBloco('Empresa', rowEmpresa, null);
+    payloadEmpresa === null
+      ? emptyBloco('Empresa', 0, null)
+      : payloadToBloco('Empresa', payloadEmpresa, null);
 
   // Blocos por departamento com equipes internas.
   const deptRows = await db
@@ -197,32 +188,25 @@ export async function GET(req: Request): Promise<NextResponse> {
 
   const blocosDepartamentos: ClimaBlocoDepartamento[] = [];
   for (const d of deptRows) {
-    const rowDept = await getClimaRowByLevel(
-      db,
+    const payloadDept = await computeClimateBlock(db, {
       companyId,
-      'departamento',
-      d.departamento,
-      null,
+      escopo: 'departamento',
+      escopoReferencia: d.departamento,
+      liderId: null,
+      liderTipo: null,
       trimestre,
-    );
+    });
     const blocoDept: ClimaBlocoEscopo =
-      rowDept === null || rowDept.countCobertura < EXEC_REPORT_CLIMA_PISO_RESPONDENTES
-        ? {
-            titulo: d.departamento,
-            respondentes: rowDept?.countCobertura ?? 0,
-            notaClima: null,
-            adesao: null,
-            porDimensao: {
-              engajamento: null,
-              desenvolvimento: null,
-              pertencimento: null,
-              realizacao: null,
-            },
-            notaAgregacao: EXEC_REPORT_NOTA_AGREGACAO_EMPRESA,
-          }
-        : rowToBloco(d.departamento, rowDept, null);
+      payloadDept === null || payloadDept.countCobertura < PISO_RESPONDENTES_CLIMATE
+        ? emptyBloco(
+            d.departamento,
+            payloadDept?.countCobertura ?? 0,
+            EXEC_REPORT_NOTA_AGREGACAO_EMPRESA,
+          )
+        : payloadToBloco(d.departamento, payloadDept, null);
 
-    // Equipes do departamento — busca lideres ativos e climas por lider.
+    // Equipes do departamento — lideres employee ativos + payload
+    // canonico via motor puro por lider.
     const lideres = await db
       .select({ id: employees.id, name: employees.name })
       .from(employees)
@@ -237,23 +221,24 @@ export async function GET(req: Request): Promise<NextResponse> {
       );
     const equipes: ClimaBlocoEscopo[] = [];
     for (const l of lideres) {
-      const rowEq = await getClimaRowByLevel(db, companyId, 'equipe', null, l.id, trimestre);
-      if (rowEq === null || rowEq.countCobertura < EXEC_REPORT_CLIMA_PISO_RESPONDENTES) {
-        equipes.push({
-          titulo: `Equipe: ${l.name}`,
-          respondentes: rowEq?.countCobertura ?? 0,
-          notaClima: null,
-          adesao: null,
-          porDimensao: {
-            engajamento: null,
-            desenvolvimento: null,
-            pertencimento: null,
-            realizacao: null,
-          },
-          notaAgregacao: EXEC_REPORT_NOTA_AGREGACAO_DEPARTAMENTO,
-        });
+      const payloadEq = await computeClimateBlock(db, {
+        companyId,
+        escopo: 'equipe',
+        escopoReferencia: null,
+        liderId: l.id,
+        liderTipo: 'employee',
+        trimestre,
+      });
+      if (payloadEq === null || payloadEq.countCobertura < PISO_RESPONDENTES_CLIMATE) {
+        equipes.push(
+          emptyBloco(
+            `Equipe: ${l.name}`,
+            payloadEq?.countCobertura ?? 0,
+            EXEC_REPORT_NOTA_AGREGACAO_DEPARTAMENTO,
+          ),
+        );
       } else {
-        equipes.push(rowToBloco(`Equipe: ${l.name}`, rowEq, null));
+        equipes.push(payloadToBloco(`Equipe: ${l.name}`, payloadEq, null));
       }
     }
     blocosDepartamentos.push({ ...blocoDept, equipes });
@@ -297,66 +282,51 @@ export async function GET(req: Request): Promise<NextResponse> {
 // Agregacao auxiliar
 // ============================================================
 
-interface ClimaRawRow {
-  notaClima: string | null;
-  adesao: string | null;
-  countCobertura: number;
-  notaEngajamento: string | null;
-  notaDesenvolvimento: string | null;
-  notaPertencimento: string | null;
-  notaRealizacao: string | null;
-}
-
-async function getClimaRowByLevel(
-  db: RoipDbClient['db'],
-  companyId: number,
-  escopo: 'empresa' | 'departamento' | 'equipe',
-  departamento: string | null,
-  liderId: number | null,
-  trimestre: string,
-): Promise<ClimaRawRow | null> {
-  const where = [
-    eq(climateEngagementData.companyId, companyId),
-    eq(climateEngagementData.escopo, escopo),
-    eq(climateEngagementData.trimestre, trimestre),
-  ];
-  if (departamento !== null) {
-    where.push(eq(climateEngagementData.departamento, departamento));
-  }
-  if (liderId !== null) {
-    where.push(eq(climateEngagementData.liderId, liderId));
-  }
-  const rows = await db
-    .select({
-      notaClima: climateEngagementData.notaClima,
-      adesao: climateEngagementData.adesao,
-      countCobertura: climateEngagementData.countCobertura,
-      notaEngajamento: climateEngagementData.notaEngajamento,
-      notaDesenvolvimento: climateEngagementData.notaDesenvolvimento,
-      notaPertencimento: climateEngagementData.notaPertencimento,
-      notaRealizacao: climateEngagementData.notaRealizacao,
-    })
-    .from(climateEngagementData)
-    .where(and(...where))
-    .limit(1);
-  return rows[0] ?? null;
-}
-
-function rowToBloco(
+/**
+ * ME-B2-01b Q1=D — converte o payload canonico do motor puro no
+ * shape esperado pelo template PDF. Substitui o antigo `rowToBloco`
+ * que lia da tabela derivada aposentada.
+ */
+function payloadToBloco(
   titulo: string,
-  row: ClimaRawRow,
+  payload: ClimateBlockPayload,
   notaAgregacao: string | null,
 ): ClimaBlocoEscopo {
   return {
     titulo,
-    respondentes: row.countCobertura,
-    notaClima: row.notaClima ? Number(row.notaClima) : null,
-    adesao: row.adesao ? Number(row.adesao) : null,
+    respondentes: payload.countCobertura,
+    notaClima: payload.notaClima,
+    adesao: payload.adesao,
     porDimensao: {
-      engajamento: row.notaEngajamento ? Number(row.notaEngajamento) : null,
-      desenvolvimento: row.notaDesenvolvimento ? Number(row.notaDesenvolvimento) : null,
-      pertencimento: row.notaPertencimento ? Number(row.notaPertencimento) : null,
-      realizacao: row.notaRealizacao ? Number(row.notaRealizacao) : null,
+      engajamento: payload.notaEngajamento,
+      desenvolvimento: payload.notaDesenvolvimento,
+      pertencimento: payload.notaPertencimento,
+      realizacao: payload.notaRealizacao,
+    },
+    notaAgregacao,
+  };
+}
+
+/**
+ * ME-B2-01b Q1=D — bloco canonicamente vazio (escopo sem cobertura
+ * suficiente). Usado quando o piso 3 nao e atingido, canonizando a
+ * mensagem de agregacao ao nivel superior.
+ */
+function emptyBloco(
+  titulo: string,
+  respondentes: number,
+  notaAgregacao: string | null,
+): ClimaBlocoEscopo {
+  return {
+    titulo,
+    respondentes,
+    notaClima: null,
+    adesao: null,
+    porDimensao: {
+      engajamento: null,
+      desenvolvimento: null,
+      pertencimento: null,
+      realizacao: null,
     },
     notaAgregacao,
   };

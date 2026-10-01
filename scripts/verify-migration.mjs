@@ -43,10 +43,14 @@ const VALIDATE_DB = 'roip_validate';
 // ME-B2-01a.1.1 — colunas passa de 723 para 724 (adicao de
 // `climateEngagementData.clevelId`); FKs passa de 110 para 111 (nova FK
 // `climateEngagementData.clevelId → cLevelMembers.id`).
+// ME-B2-01b Q1=D — climateEngagementData APOSENTADA (DROP TABLE via
+// migration 0008). Tabelas: 55 → 54; colunas: 724 → 686 (removidas
+// 38: 7 id + 4 contagens + 4 dimensoes + 20 questoes + 3 timestamps);
+// FKs: 111 → 108 (removidas 3: companyId, liderId, clevelId).
 const EXPECTED = {
-  tables: 55,
-  columns: 724,
-  fks: 111,
+  tables: 54,
+  columns: 686,
+  fks: 108,
   departments: 19,
 };
 

@@ -12,7 +12,7 @@
 // a este script standalone de operacao.
 //
 // Ordem canonica de DELETE (inversa da ordem de INSERT do seed):
-// notifications -> alerts -> dataAccessLog -> climateEngagementData ->
+// notifications -> alerts -> dataAccessLog ->
 // responsavelFinanceiroTransferLog -> lgpdConsents -> cycleSchedule ->
 // companyEconomicDiagnosis -> monthlyClosureStatus -> companyMonthlyData ->
 // companyJobFamilies -> employees -> cLevelMembers -> companies.
@@ -24,7 +24,6 @@ import { closeDbClient, createDbClient } from '../src/db/client';
 import {
   alerts,
   cLevelMembers,
-  climateEngagementData,
   companies,
   companyEconomicDiagnosis,
   companyJobFamilies,
@@ -70,10 +69,8 @@ async function main(): Promise<void> {
       await client.db.delete(dataAccessLog).where(eq(dataAccessLog.companyId, UBATUBA_COMPANY_ID));
       console.log(`  DELETE dataAccessLog WHERE companyId=${UBATUBA_COMPANY_ID} OK`);
 
-      await client.db
-        .delete(climateEngagementData)
-        .where(eq(climateEngagementData.companyId, UBATUBA_COMPANY_ID));
-      console.log(`  DELETE climateEngagementData WHERE companyId=${UBATUBA_COMPANY_ID} OK`);
+      // ME-B2-01b Q1=D — climateEngagementData APOSENTADA (tabela nao
+      // existe mais). DELETE removido.
 
       await client.db
         .delete(responsavelFinanceiroTransferLog)

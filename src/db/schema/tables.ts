@@ -740,60 +740,13 @@ export const iqlData = mysqlTable(
   }),
 );
 
-export const climateEngagementData = mysqlTable(
-  'climateEngagementData',
-  {
-    id: int('id').autoincrement().primaryKey(),
-    companyId: int('companyId')
-      .notNull()
-      .references(() => companies.id, { onDelete: 'restrict' }),
-    escopo: mysqlEnum('escopo', ['empresa', 'departamento', 'equipe']).notNull(),
-    departamento: varchar('departamento', { length: 120 }),
-    liderId: int('liderId').references(() => employees.id, { onDelete: 'restrict' }),
-    clevelId: int('clevelId').references(() => cLevelMembers.id, { onDelete: 'restrict' }),
-    trimestre: varchar('trimestre', { length: 7 }).notNull(),
-    notaClima: decimal('notaClima', { precision: 4, scale: 2 }),
-    adesao: decimal('adesao', { precision: 5, scale: 2 }),
-    countCobertura: int('countCobertura').notNull().default(0),
-    countTotal: int('countTotal').notNull().default(0),
-    notaEngajamento: decimal('notaEngajamento', { precision: 4, scale: 2 }),
-    notaDesenvolvimento: decimal('notaDesenvolvimento', { precision: 4, scale: 2 }),
-    notaPertencimento: decimal('notaPertencimento', { precision: 4, scale: 2 }),
-    notaRealizacao: decimal('notaRealizacao', { precision: 4, scale: 2 }),
-    notaQuestao01: decimal('notaQuestao01', { precision: 4, scale: 2 }),
-    notaQuestao02: decimal('notaQuestao02', { precision: 4, scale: 2 }),
-    notaQuestao03: decimal('notaQuestao03', { precision: 4, scale: 2 }),
-    notaQuestao04: decimal('notaQuestao04', { precision: 4, scale: 2 }),
-    notaQuestao05: decimal('notaQuestao05', { precision: 4, scale: 2 }),
-    notaQuestao06: decimal('notaQuestao06', { precision: 4, scale: 2 }),
-    notaQuestao07: decimal('notaQuestao07', { precision: 4, scale: 2 }),
-    notaQuestao08: decimal('notaQuestao08', { precision: 4, scale: 2 }),
-    notaQuestao09: decimal('notaQuestao09', { precision: 4, scale: 2 }),
-    notaQuestao10: decimal('notaQuestao10', { precision: 4, scale: 2 }),
-    notaQuestao11: decimal('notaQuestao11', { precision: 4, scale: 2 }),
-    notaQuestao12: decimal('notaQuestao12', { precision: 4, scale: 2 }),
-    notaQuestao13: decimal('notaQuestao13', { precision: 4, scale: 2 }),
-    notaQuestao14: decimal('notaQuestao14', { precision: 4, scale: 2 }),
-    notaQuestao15: decimal('notaQuestao15', { precision: 4, scale: 2 }),
-    notaQuestao16: decimal('notaQuestao16', { precision: 4, scale: 2 }),
-    notaQuestao17: decimal('notaQuestao17', { precision: 4, scale: 2 }),
-    notaQuestao18: decimal('notaQuestao18', { precision: 4, scale: 2 }),
-    notaQuestao19: decimal('notaQuestao19', { precision: 4, scale: 2 }),
-    notaQuestao20: decimal('notaQuestao20', { precision: 4, scale: 2 }),
-    calculadoEm: timestamp('calculadoEm').defaultNow(),
-    createdAt: timestamp('createdAt').defaultNow(),
-    updatedAt: timestamp('updatedAt').defaultNow().onUpdateNow(),
-  },
-  (t) => ({
-    uqClimateEscopo: uniqueIndex('uq_climate_escopo').on(
-      t.companyId,
-      t.escopo,
-      t.departamento,
-      t.liderId,
-      t.trimestre,
-    ),
-  }),
-);
+// climateEngagementData APOSENTADA na ME-B2-01b Q1=D. A tabela
+// derivada (cache de agregados de Clima) foi apagada por completo:
+// os agregados agora sao computados sob demanda pelo motor puro
+// `climateCalculationEngine.computeClimateBlock` a cada leitura,
+// direto de `plenitudeData` + `instrumentA_responses` +
+// `employeeLeaderHistory`. Migration 0008_drop_climate_engagement_data
+// aplica o DROP TABLE em producao.
 
 // =====================================================================
 // M007 — Dialogos e IA

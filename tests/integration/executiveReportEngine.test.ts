@@ -14,13 +14,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { inArray } from 'drizzle-orm';
 
 import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/client';
-import {
-  climateEngagementData,
-  companies,
-  employees,
-  performanceQuarterlyData,
-  plenitudeData,
-} from '../../src/db/schema';
+import { companies, employees, performanceQuarterlyData, plenitudeData } from '../../src/db/schema';
 import { buildExecutiveReportPayload } from '../../src/server/services/executiveReportEngine';
 
 const TEST_URL =
@@ -105,9 +99,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (createdCompanyIds.length > 0) {
-    await db
-      .delete(climateEngagementData)
-      .where(inArray(climateEngagementData.companyId, createdCompanyIds));
+    // ME-B2-01b Q1=D: climateEngagementData aposentada, sem DELETE.
     await db
       .delete(performanceQuarterlyData)
       .where(inArray(performanceQuarterlyData.companyId, createdCompanyIds));
@@ -208,16 +200,35 @@ describe('executiveReportEngine — escopo departamento e piso Clima', () => {
         percMetaAtingida: '90.00',
       },
     ]);
-    // Clima abaixo do piso (2 respondentes).
-    await db.insert(climateEngagementData).values({
-      companyId,
-      escopo: 'empresa',
-      trimestre: '2026-Q1',
-      notaClima: '3.50',
-      adesao: '50.00',
-      countCobertura: 2,
-      countTotal: 4,
-    });
+    // ME-B2-01b Q1=D — Clima calculado sob demanda pelo motor puro.
+    // 2 employees em Marketing (FORA do escopo Comercial avaliado)
+    // com scoreA canonico gravado. Comercial tem 0 plenitudes →
+    // cascata canonica para empresa; empresa tem 2 plenitudes (abaixo
+    // do piso 3) → `dadosDisponiveis=false` canonicamente.
+    const emp2Clima = await seedEmployee(companyId, 'Emp2Clima', 'Marketing');
+    const emp3Clima = await seedEmployee(companyId, 'Emp3Clima', 'Marketing');
+    await db.insert(plenitudeData).values([
+      {
+        companyId,
+        employeeId: emp2Clima,
+        trimestre: '2026-Q1',
+        scoreA: '35.00',
+        engajamentoA: '35.00',
+        desenvolvimentoA: '35.00',
+        pertencimentoA: '35.00',
+        realizacaoA: '35.00',
+      },
+      {
+        companyId,
+        employeeId: emp3Clima,
+        trimestre: '2026-Q1',
+        scoreA: '35.00',
+        engajamentoA: '35.00',
+        desenvolvimentoA: '35.00',
+        pertencimentoA: '35.00',
+        realizacaoA: '35.00',
+      },
+    ]);
     const payload = await buildExecutiveReportPayload(db, {
       companyId,
       nomeFantasia: 'FiltroDept',

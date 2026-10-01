@@ -366,8 +366,11 @@ function main() {
   console.log(`Schema TS: ${tsTables.size} tabelas`);
 
   // Nivel 1: contagem
-  if (sqlTables.size !== 55) {
-    fail(`Migration tem ${sqlTables.size} tabelas, esperado 55.`);
+  if (sqlTables.size !== 54) {
+    fail(
+      `Migration tem ${sqlTables.size} tabelas, esperado 54 ` +
+        `(ME-B2-01b — climateEngagementData aposentada).`,
+    );
   }
   if (tsTables.size !== sqlTables.size) {
     fail(`tables.ts tem ${tsTables.size} tabelas; migration tem ${sqlTables.size}.`);
@@ -437,27 +440,22 @@ function main() {
   console.log(`Total de FKs em tables.ts: ${totalTsFks}`);
 
   // Invariantes (§20). Colunas: 696 em ME-080b; 721 em ME-fila6 D2;
-  // 722 em ME 3.5 D1 (adicao de `cLevelMembers.isRH`);
-  // 723 em ME Etapa 1 patch v6 (adicao de `developmentDialogs.clevelId`).
-  // 724 em ME-B2-01a.1.1 (adicao de `climateEngagementData.clevelId`).
-  // Dispatch 1 (adicao de `companies.isDemo` — E-068-11 ME-068;
-  // adicao de `employees.cargo` — ME-078b D1;
-  // adicao de `employees.matricula` + `cLevelMembers.matricula` — ME-080b;
-  // adicao de `cLevelMembers.isRH` — ME 3.5 D1;
-  // adicao de `developmentDialogs.clevelId` + FK → cLevelMembers —
-  // ME Etapa 1 patch v6 §10.1 reescrito;
-  // adicao de `climateEngagementData.clevelId` + FK → cLevelMembers —
-  // ME-B2-01a.1.1).
-  if (totalSqlCols !== 724) {
+  // 722 em ME 3.5 D1; 723 em ME Etapa 1 patch v6; 724 em ME-B2-01a.1.1.
+  // 686 em ME-B2-01b Q1=D — aposentadoria da tabela `climateEngagementData`
+  // (38 colunas removidas: 7 identificadoras + 4 contagens/adesao + 4
+  // dimensoes + 20 questoes + 3 timestamps).
+  if (totalSqlCols !== 686) {
     console.log(
       `${YELLOW}AVISO:${RESET} migration tem ${totalSqlCols} colunas; ` +
-        `esperado 724 (ME-B2-01a.1.1).`,
+        `esperado 686 (ME-B2-01b Q1=D — aposenta climateEngagementData).`,
     );
   }
-  if (totalSqlFks !== 111) {
+  // FKs: 111 em ME-B2-01a.1.1. 108 em ME-B2-01b Q1=D (removidas 3 FKs
+  // da tabela aposentada: companyId, liderId, clevelId).
+  if (totalSqlFks !== 108) {
     console.log(
       `${YELLOW}AVISO:${RESET} migration tem ${totalSqlFks} FKs; ` +
-        `esperado 111 (ME-B2-01a.1.1).`,
+        `esperado 108 (ME-B2-01b Q1=D).`,
     );
   }
 
@@ -467,7 +465,7 @@ function main() {
     process.exit(1);
   }
 
-  console.log(`\n${GREEN}OK${RESET} — schema conforme. Tabelas: 55/55; colunas: ${totalTsCols}.`);
+  console.log(`\n${GREEN}OK${RESET} — schema conforme. Tabelas: 54/54; colunas: ${totalTsCols}.`);
   process.exit(0);
 }
 

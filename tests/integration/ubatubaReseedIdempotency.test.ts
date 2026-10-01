@@ -56,7 +56,7 @@ const UBATUBA_TABLES: readonly { name: string; orderBy: string }[] = [
   { name: 'cycleSchedule', orderBy: 'id' },
   { name: 'lgpdConsents', orderBy: 'id' },
   { name: 'responsavelFinanceiroTransferLog', orderBy: 'id' },
-  { name: 'climateEngagementData', orderBy: 'id' },
+  // ME-B2-01b Q1=D: climateEngagementData APOSENTADA (tabela nao existe).
   { name: 'dataAccessLog', orderBy: 'id' },
   { name: 'alerts', orderBy: 'id' },
   { name: 'notifications', orderBy: 'id' },

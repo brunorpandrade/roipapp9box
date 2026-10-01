@@ -35,7 +35,7 @@ import {
   performanceQuarterlyData,
   plenitudeData,
 } from '../../../db/schema';
-import { getClimateByEquipeQuarter } from '../climateEngagementData';
+import { computeClimateBlock } from '../climateCalculationEngine';
 import { getIqlDataByLiderQuarter } from '../iqlData';
 
 import {
@@ -248,18 +248,23 @@ async function composeEquipeClimaBlock(
   if (input.trimestre === null) {
     return { nota_clima: null, adesao: null };
   }
-  const row = await getClimateByEquipeQuarter(
-    input.db,
-    input.companyId,
-    input.liderId,
-    input.trimestre,
-  );
-  if (!row) {
+  // ME-B2-01b Q1=D — calcula sob demanda direto de plenitudeData
+  // (motor puro, sem cache). liderTipo='employee' porque o context
+  // canonico do dashboard de equipe e sempre lider employee.
+  const payload = await computeClimateBlock(input.db, {
+    companyId: input.companyId,
+    escopo: 'equipe',
+    escopoReferencia: null,
+    liderId: input.liderId,
+    liderTipo: 'employee',
+    trimestre: input.trimestre,
+  });
+  if (payload === null) {
     return { nota_clima: null, adesao: null };
   }
   return {
-    nota_clima: num((row as { notaClima?: string | null }).notaClima ?? null),
-    adesao: num((row as { adesao?: string | null }).adesao ?? null),
+    nota_clima: payload.notaClima,
+    adesao: payload.adesao,
   };
 }
 
@@ -440,12 +445,16 @@ async function composeHistoricoEquipe(
           inArray(plenitudeData.employeeId, input.employeeIds),
         ),
       );
-    const climaRow = await getClimateByEquipeQuarter(
-      input.db,
-      input.companyId,
-      input.liderId,
+    // ME-B2-01b Q1=D — nota_clima calculada sob demanda pelo motor
+    // puro para cada trimestre historico.
+    const climaPayload = await computeClimateBlock(input.db, {
+      companyId: input.companyId,
+      escopo: 'equipe',
+      escopoReferencia: null,
+      liderId: input.liderId,
+      liderTipo: 'employee',
       trimestre,
-    );
+    });
     historico.push({
       trimestre,
       score_desempenho_medio: mediaDosPresentes(quarterlyRows.map((r) => num(r.scoreDesempenho))),
@@ -453,7 +462,7 @@ async function composeHistoricoEquipe(
       roi_medio: input.bloqueiaFinanceiro
         ? null
         : mediaDosPresentes(quarterlyRows.map((r) => num(r.roiEstimado))),
-      nota_clima: num((climaRow as { notaClima?: string | null } | null)?.notaClima ?? null),
+      nota_clima: climaPayload?.notaClima ?? null,
     });
   }
   return historico;

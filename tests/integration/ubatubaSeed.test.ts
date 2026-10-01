@@ -35,7 +35,6 @@ import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/c
 import { UBATUBA_COMPANY_ID, UBATUBA_EMAIL_DOMAIN } from '../../src/db/seed/ubatuba/constants';
 import {
   UBATUBA_ALERTS_TOTAL_ESPERADO,
-  UBATUBA_CLIMATE_TOTAL_MINIMO,
   UBATUBA_CLEVEL_COUNT,
   UBATUBA_DAL_TOTAL_ESPERADO,
   UBATUBA_EMPLOYEE_COUNT,
@@ -265,12 +264,10 @@ describe('seedUbatuba — invariantes canonicas bit-exact (ME-080b Dispatch 5)',
     expect(Number(rows[0]!.n)).toBe(2);
   });
 
-  it('climateEngagementData: >= piso canonico (ME-B2-01a.1.3 refactor motor)', async () => {
-    const [rows] = await client.pool.query<mysql.RowDataPacket[]>(
-      `SELECT COUNT(*) AS n FROM climateEngagementData WHERE companyId = ${UBATUBA_COMPANY_ID}`,
-    );
-    expect(Number(rows[0]!.n)).toBeGreaterThanOrEqual(UBATUBA_CLIMATE_TOTAL_MINIMO);
-  });
+  // ME-B2-01b Q1=D — climateEngagementData APOSENTADA. Nao ha
+  // mais assercao de piso canonico (tabela nao existe). Agregados
+  // canonicos sao computados sob demanda pelo motor puro
+  // `computeClimateBlock` a cada leitura.
 
   it('dataAccessLog: proximo de 200', async () => {
     const [rows] = await client.pool.query<mysql.RowDataPacket[]>(

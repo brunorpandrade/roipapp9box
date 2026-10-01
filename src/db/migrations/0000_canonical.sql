@@ -542,50 +542,15 @@ CREATE TABLE `iqlData` (
   )
 );
 
-CREATE TABLE `climateEngagementData` (
-  `id` INT PRIMARY KEY AUTO_INCREMENT,
-  `companyId` INT NOT NULL,
-  `escopo` ENUM('empresa','departamento','equipe') NOT NULL,
-  `departamento` VARCHAR(120) DEFAULT NULL,
-  `liderId` INT DEFAULT NULL,
-  `clevelId` INT DEFAULT NULL,
-  `trimestre` VARCHAR(7) NOT NULL,
-  `notaClima` DECIMAL(4,2) DEFAULT NULL,
-  `adesao` DECIMAL(5,2) DEFAULT NULL,
-  `countCobertura` INT NOT NULL DEFAULT 0,
-  `countTotal` INT NOT NULL DEFAULT 0,
-  `notaEngajamento` DECIMAL(4,2) DEFAULT NULL,
-  `notaDesenvolvimento` DECIMAL(4,2) DEFAULT NULL,
-  `notaPertencimento` DECIMAL(4,2) DEFAULT NULL,
-  `notaRealizacao` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao01` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao02` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao03` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao04` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao05` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao06` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao07` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao08` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao09` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao10` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao11` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao12` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao13` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao14` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao15` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao16` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao17` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao18` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao19` DECIMAL(4,2) DEFAULT NULL,
-  `notaQuestao20` DECIMAL(4,2) DEFAULT NULL,
-  `calculadoEm` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updatedAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY `uq_climate_escopo` (`companyId`, `escopo`, `departamento`, `liderId`, `trimestre`),
-  FOREIGN KEY (`companyId`) REFERENCES `companies`(`id`) ON DELETE RESTRICT,
-  FOREIGN KEY (`liderId`) REFERENCES `employees`(`id`) ON DELETE RESTRICT,
-  FOREIGN KEY (`clevelId`) REFERENCES `cLevelMembers`(`id`) ON DELETE RESTRICT
-);
+-- climateEngagementData APOSENTADA na ME-B2-01b Q1=D. A tabela
+-- derivada (cache de agregados de Clima) foi apagada por completo:
+-- os agregados agora sao computados sob demanda pelo motor puro
+-- `climateCalculationEngine.computeClimateBlock` a cada leitura,
+-- direto de `plenitudeData` + `instrumentA_responses` +
+-- `employeeLeaderHistory`. Migration 0008_drop_climate_engagement_data
+-- aplica o DROP TABLE em ambientes que ja tinham a tabela criada.
+-- Reconciliacao no 0000_canonical: bloco CREATE TABLE removido para
+-- que roip_test (base efemera do vitest) suba pos-Q1=D sem a tabela.
 
 -- =====================================================================
 -- M007 — Diálogos e IA

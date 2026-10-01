@@ -30,7 +30,6 @@ import { z } from 'zod';
 import type { RoipDatabase } from '../../db/client';
 import {
   cLevelMembers,
-  climateEngagementData,
   companies,
   employees,
   monthlyClosureStatus,
@@ -39,6 +38,7 @@ import {
   performanceQuarterlyData,
   plenitudeData,
 } from '../../db/schema';
+import { listClimateTrimestres } from '../services/climateCalculationEngine';
 import { DEPARTAMENTO_VALUES } from '../../db/schema/enums';
 import { signPdfEphemeralToken } from '../auth/pdfEphemeralToken';
 import { getExecutiveReportCacheByChave } from '../services/executiveReportCache';
@@ -389,26 +389,17 @@ export function createExportsRouter(deps: ExportsRouterDeps = {}) {
         }> => {
           assertCompanyScopeExports(ctx.user, input.companyId);
           await assertAcessoTotalIfClevel(ctx.db, ctx.user);
-          // Resolve o ultimo trimestre com agregados em climateEngagementData.
-          const trimestreRow = await ctx.db
-            .select({ trimestre: climateEngagementData.trimestre })
-            .from(climateEngagementData)
-            .where(eq(climateEngagementData.companyId, input.companyId))
-            .orderBy(climateEngagementData.trimestre)
-            .limit(1);
-          if (trimestreRow.length === 0) {
-            return {
-              trimestreResolvido: null,
-              pdfPath: null,
-              message: 'Sem agregados de clima disponiveis para a empresa.',
-            };
-          }
-          const trimestre = trimestreRow[0]?.trimestre ?? null;
+          // ME-B2-01b Q1=D — resolve o ultimo trimestre canonico com
+          // `scoreA IS NOT NULL` gravado em `plenitudeData` (sob demanda,
+          // sem cache). Substitui o SELECT DISTINCT da tabela derivada
+          // aposentada `climateEngagementData`.
+          const trimestres = await listClimateTrimestres(ctx.db, input.companyId, 'desc');
+          const trimestre = trimestres[0] ?? null;
           if (trimestre === null) {
             return {
               trimestreResolvido: null,
               pdfPath: null,
-              message: 'Sem agregados de clima disponiveis para a empresa.',
+              message: 'Sem dados de clima disponiveis para a empresa.',
             };
           }
           // No MVP a proc retorna metadados canonicos; a materializacao

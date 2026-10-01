@@ -44,13 +44,13 @@ import { and, avg, eq, inArray, isNotNull } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../db/client';
 import {
-  climateEngagementData,
   companyEconomicDiagnosis,
   employees,
   performanceData,
   performanceQuarterlyData,
   plenitudeData,
 } from '../../db/schema';
+import { type ClimateLiderTipo, resolveClimateBlockComCascata } from './climateCalculationEngine';
 import {
   formatTrimestreCicloReferencia,
   getPreviousTrimestre,
@@ -755,8 +755,15 @@ async function buildBlocoClima(
 ): Promise<ExecReportBlocoClima> {
   const escopoRotulo = args.escopo.rotulo;
 
-  // Cascata canonica §7.6: equipe -> departamento -> empresa.
-  const cascata = await resolveClimaComPisoAnonimato(db, args, args.trimestre);
+  // Cascata canonica §7.6 (motor puro sob demanda — ME-B2-01b Q1=D):
+  // equipe -> departamento -> empresa. `resolveClimateBlockComCascata`
+  // encapsula toda a logica canonica de piso + fallback.
+  const cascata = await resolveClimateBlockComCascataForEscopo(
+    db,
+    args.companyId,
+    args.escopo,
+    args.trimestre,
+  );
 
   const escopoBloco = {
     tipo: args.escopo.tipo,
@@ -764,7 +771,7 @@ async function buildBlocoClima(
     trimestre: args.trimestre,
   };
 
-  if (cascata === null) {
+  if (!cascata.dadosDisponiveis) {
     return {
       escopo: escopoBloco,
       trimestreReferencia: args.trimestre,
@@ -776,193 +783,94 @@ async function buildBlocoClima(
   }
 
   // Comparativo com o trimestre anterior — usa o MESMO nivel de
-  // agregacao efetivo do trimestre atual.
-  const anterior = await getClimaRowByLevel(
+  // agregacao efetivo do trimestre atual (bit-a-bit canonico).
+  const anterior = await resolveClimateBlockComCascataForEscopo(
     db,
     args.companyId,
-    cascata.effectiveScope,
-    cascata.effectiveDepartamento,
-    cascata.effectiveLiderId,
+    args.escopo,
     trimestreAnt,
   );
+
+  const notaAgregacaoAnonimato =
+    cascata.notaAgregacao === 'agregado_departamento'
+      ? EXEC_REPORT_NOTA_AGREGACAO_DEPARTAMENTO
+      : cascata.notaAgregacao === 'agregado_empresa'
+        ? EXEC_REPORT_NOTA_AGREGACAO_EMPRESA
+        : null;
 
   return {
     escopo: escopoBloco,
     trimestreReferencia: args.trimestre,
     disponivel: true,
     trimestreAtual: {
-      notaClima: toNumberOrNull(cascata.row.notaClima),
-      adesao: toNumberOrNull(cascata.row.adesao),
+      notaClima: cascata.payload.notaClima,
+      adesao: cascata.payload.adesao,
       porDimensaoAgregada: {
-        engajamento: toNumberOrNull(cascata.row.notaEngajamento),
-        desenvolvimento: toNumberOrNull(cascata.row.notaDesenvolvimento),
-        pertencimento: toNumberOrNull(cascata.row.notaPertencimento),
-        realizacao: toNumberOrNull(cascata.row.notaRealizacao),
+        engajamento: cascata.payload.notaEngajamento,
+        desenvolvimento: cascata.payload.notaDesenvolvimento,
+        pertencimento: cascata.payload.notaPertencimento,
+        realizacao: cascata.payload.notaRealizacao,
       },
-      respondentes: cascata.row.countCobertura,
+      respondentes: cascata.payload.countCobertura,
     },
-    comparativoTrimestreAnterior:
-      anterior === null
-        ? null
-        : {
-            notaClima: toNumberOrNull(anterior.notaClima),
-            variacaoPercentual: variacaoPct(
-              toNumberOrNull(cascata.row.notaClima),
-              toNumberOrNull(anterior.notaClima),
-            ),
-          },
-    notaAgregacaoAnonimato: cascata.notaAgregacao,
+    comparativoTrimestreAnterior: !anterior.dadosDisponiveis
+      ? null
+      : {
+          notaClima: anterior.payload.notaClima,
+          variacaoPercentual: variacaoPct(cascata.payload.notaClima, anterior.payload.notaClima),
+        },
+    notaAgregacaoAnonimato,
   };
 }
 
-interface ClimaCascataResult {
-  row: {
-    notaClima: string | null;
-    adesao: string | null;
-    countCobertura: number;
-    notaEngajamento: string | null;
-    notaDesenvolvimento: string | null;
-    notaPertencimento: string | null;
-    notaRealizacao: string | null;
-  };
-  effectiveScope: 'empresa' | 'departamento' | 'equipe';
-  effectiveDepartamento: string | null;
-  effectiveLiderId: number | null;
-  notaAgregacao: string | null;
-}
-
-async function resolveClimaComPisoAnonimato(
+/**
+ * Adaptador canonico: converte o tipo interno de escopo do exec
+ * report para o params canonico do motor Clima e delega a
+ * `resolveClimateBlockComCascata`. Encapsula o parse de `referencia`
+ * quando o escopo e `'equipe'` (que carrega o liderId serializado).
+ */
+async function resolveClimateBlockComCascataForEscopo(
   db: RoipDatabase,
-  args: BuildExecutiveReportArgs,
+  companyId: number,
+  escopo: BuildExecutiveReportArgs['escopo'],
   trimestre: string,
-): Promise<ClimaCascataResult | null> {
-  // Tentativa 1: escopo original.
-  if (args.escopo.tipo === 'equipe' && args.escopo.referencia !== null) {
-    const liderId = Number.parseInt(args.escopo.referencia, 10);
+): ReturnType<typeof resolveClimateBlockComCascata> {
+  if (escopo.tipo === 'equipe' && escopo.referencia !== null) {
+    const liderId = Number.parseInt(escopo.referencia, 10);
     if (Number.isFinite(liderId)) {
-      const row = await getClimaRowByLevel(db, args.companyId, 'equipe', null, liderId, trimestre);
-      if (row !== null && row.countCobertura >= EXEC_REPORT_CLIMA_PISO_RESPONDENTES) {
-        return {
-          row,
-          effectiveScope: 'equipe',
-          effectiveDepartamento: null,
-          effectiveLiderId: liderId,
-          notaAgregacao: null,
-        };
-      }
-      // Fallback para departamento do lider.
-      const liderDept = await getEmployeeDepartamento(db, liderId);
-      if (liderDept !== null) {
-        const rowDept = await getClimaRowByLevel(
-          db,
-          args.companyId,
-          'departamento',
-          liderDept,
-          null,
-          trimestre,
-        );
-        if (rowDept !== null && rowDept.countCobertura >= EXEC_REPORT_CLIMA_PISO_RESPONDENTES) {
-          return {
-            row: rowDept,
-            effectiveScope: 'departamento',
-            effectiveDepartamento: liderDept,
-            effectiveLiderId: null,
-            notaAgregacao: EXEC_REPORT_NOTA_AGREGACAO_DEPARTAMENTO,
-          };
-        }
-      }
-      // Fallback ate empresa.
-      return await tryEmpresaFallback(db, args.companyId, trimestre, true);
+      // Assumimos liderTipo='employee' aqui (padrao canonico do
+      // exec report vigente; ME-B2-01a.1.2 estende para C-level nas
+      // superficies especificas). Consumidores C-level do exec
+      // report ainda nao existem — quando existirem, o adaptador
+      // recebe liderTipo por parametro.
+      return await resolveClimateBlockComCascata(db, {
+        companyId,
+        escopo: 'equipe',
+        escopoReferencia: null,
+        liderId,
+        liderTipo: 'employee' satisfies ClimateLiderTipo,
+        trimestre,
+      });
     }
   }
-  if (args.escopo.tipo === 'departamento' && args.escopo.referencia !== null) {
-    const row = await getClimaRowByLevel(
-      db,
-      args.companyId,
-      'departamento',
-      args.escopo.referencia,
-      null,
+  if (escopo.tipo === 'departamento' && escopo.referencia !== null) {
+    return await resolveClimateBlockComCascata(db, {
+      companyId,
+      escopo: 'departamento',
+      escopoReferencia: escopo.referencia,
+      liderId: null,
+      liderTipo: null,
       trimestre,
-    );
-    if (row !== null && row.countCobertura >= EXEC_REPORT_CLIMA_PISO_RESPONDENTES) {
-      return {
-        row,
-        effectiveScope: 'departamento',
-        effectiveDepartamento: args.escopo.referencia,
-        effectiveLiderId: null,
-        notaAgregacao: null,
-      };
-    }
-    return await tryEmpresaFallback(db, args.companyId, trimestre, true);
+    });
   }
-  // Escopo empresa.
-  return await tryEmpresaFallback(db, args.companyId, trimestre, false);
-}
-
-async function tryEmpresaFallback(
-  db: RoipDatabase,
-  companyId: number,
-  trimestre: string,
-  comAgregacao: boolean,
-): Promise<ClimaCascataResult | null> {
-  const row = await getClimaRowByLevel(db, companyId, 'empresa', null, null, trimestre);
-  if (row === null || row.countCobertura < EXEC_REPORT_CLIMA_PISO_RESPONDENTES) {
-    return null;
-  }
-  return {
-    row,
-    effectiveScope: 'empresa',
-    effectiveDepartamento: null,
-    effectiveLiderId: null,
-    notaAgregacao: comAgregacao ? EXEC_REPORT_NOTA_AGREGACAO_EMPRESA : null,
-  };
-}
-
-async function getClimaRowByLevel(
-  db: RoipDatabase,
-  companyId: number,
-  escopo: 'empresa' | 'departamento' | 'equipe',
-  departamento: string | null,
-  liderId: number | null,
-  trimestre: string,
-): Promise<ClimaCascataResult['row'] | null> {
-  const where = [
-    eq(climateEngagementData.companyId, companyId),
-    eq(climateEngagementData.escopo, escopo),
-    eq(climateEngagementData.trimestre, trimestre),
-  ];
-  if (departamento !== null) {
-    where.push(eq(climateEngagementData.departamento, departamento));
-  }
-  if (liderId !== null) {
-    where.push(eq(climateEngagementData.liderId, liderId));
-  }
-  const rows = await db
-    .select({
-      notaClima: climateEngagementData.notaClima,
-      adesao: climateEngagementData.adesao,
-      countCobertura: climateEngagementData.countCobertura,
-      notaEngajamento: climateEngagementData.notaEngajamento,
-      notaDesenvolvimento: climateEngagementData.notaDesenvolvimento,
-      notaPertencimento: climateEngagementData.notaPertencimento,
-      notaRealizacao: climateEngagementData.notaRealizacao,
-    })
-    .from(climateEngagementData)
-    .where(and(...where))
-    .limit(1);
-  return rows[0] ?? null;
-}
-
-async function getEmployeeDepartamento(
-  db: RoipDatabase,
-  employeeId: number,
-): Promise<string | null> {
-  const rows = await db
-    .select({ departamento: employees.departamento })
-    .from(employees)
-    .where(eq(employees.id, employeeId))
-    .limit(1);
-  return rows[0]?.departamento ?? null;
+  return await resolveClimateBlockComCascata(db, {
+    companyId,
+    escopo: 'empresa',
+    escopoReferencia: null,
+    liderId: null,
+    liderTipo: null,
+    trimestre,
+  });
 }
 
 // ============================================================
@@ -1092,17 +1000,22 @@ async function buildDetalhamentoCapilar(
     }
     const desemp = await computeDesempenhoAgregado(db, args.companyId, args.trimestre, empIds);
     const plen = await computePlenitudeAgregado(db, args.companyId, args.trimestre, empIds);
-    const climaRow = await getClimaRowByLevel(
-      db,
-      args.companyId,
-      'departamento',
-      dept,
-      null,
-      args.trimestre,
-    );
-    const climaAcima =
-      climaRow !== null && climaRow.countCobertura >= EXEC_REPORT_CLIMA_PISO_RESPONDENTES;
-    const notaClima = climaAcima ? toNumberOrNull(climaRow?.notaClima ?? null) : null;
+    // ME-B2-01b Q1=D — nota_clima do departamento via motor puro sob
+    // demanda. Substitui o antigo `getClimaRowByLevel` (que lia da
+    // tabela aposentada `climateEngagementData`).
+    const climaCascata = await resolveClimateBlockComCascata(db, {
+      companyId: args.companyId,
+      escopo: 'departamento',
+      escopoReferencia: dept,
+      liderId: null,
+      liderTipo: null,
+      trimestre: args.trimestre,
+    });
+    // Apenas notas do proprio departamento contam aqui — cascata para
+    // empresa nao entra na linha por departamento (semantica canonica
+    // de "nota do departamento na tabela §7.4").
+    const climaAcima = climaCascata.dadosDisponiveis && climaCascata.notaAgregacao === null;
+    const notaClima = climaAcima ? climaCascata.payload.notaClima : null;
     let turnoverTri: number | null = null;
     try {
       const t = await computeTurnoverByDepartamento(

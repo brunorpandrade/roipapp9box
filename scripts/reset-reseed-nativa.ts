@@ -32,7 +32,6 @@ import {
   alerts,
   apiUsageLog,
   cLevelMembers,
-  climateEngagementData,
   companies,
   companyEconomicDiagnosis,
   companyJobFamilies,
@@ -137,11 +136,8 @@ async function main(): Promise<void> {
       name: 'developmentDialogs',
       run: () => client.db.delete(developmentDialogs).where(eq(developmentDialogs.companyId, ID)),
     },
-    {
-      name: 'climateEngagementData',
-      run: () =>
-        client.db.delete(climateEngagementData).where(eq(climateEngagementData.companyId, ID)),
-    },
+    // ME-B2-01b Q1=D — climateEngagementData APOSENTADA (tabela nao
+    // existe mais). DELETE removido.
     {
       name: 'radarNR1Reports',
       run: () => client.db.delete(radarNR1Reports).where(eq(radarNR1Reports.companyId, ID)),

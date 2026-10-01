@@ -83,33 +83,15 @@ import {
   UBATUBA_SUPER_ADMIN_ID,
 } from './constants';
 import { deriveAlerts, UBATUBA_ALERTS_TOTAL_ESPERADO } from './deriveAlerts';
-import { seedClimateEngagementDataViaMotor } from './deriveClimateEngagementData';
 import { deriveDataAccessLog, UBATUBA_DAL_TOTAL_ESPERADO } from './deriveDataAccessLog';
 import { deriveNotifications, UBATUBA_NOTIFICATIONS_TOTAL_ESPERADO } from './deriveNotifications';
 import { deriveUbatubaCLevels } from './deriveUbatubaCLevels';
 import { deriveUbatubaEmployees, type PasswordHasher } from './deriveUbatubaEmployees';
 
-/**
- * Piso canonico minimo esperado de climateEngagementData (RV-15,
- * medido) — ME-B2-01a.1.3 substitui a assercao rigida do valor exato
- * pela invariante qualitativa canonica, ja que agora os agregados sao
- * gerados pelo motor real (`recalculateAggregates`) e o total canonico
- * varia conforme dependencias dinamicas do seed (departamentos ativos,
- * lideres com cadeia, C-levels com cadeia).
- *
- * Piso canonico bit-exact:
- *   - escopo empresa: 1 × 4 trimestres = 4
- *   - escopo departamento (piso — 6 deptos com >= 1 ativo):
- *     6 × 4 = 24
- *   Piso minimo: 4 + 24 = 28
- *
- * O total real observado apos motor rodar contra fixtures Ubatuba
- * inclui adicionalmente os escopos 'equipe' de lideres-employee com
- * cadeia + C-levels com cadeia (§9.10 canonico ME-B2-01a.1.2).
- * Bit-exact medido pelo teste dedicado
- * `tests/integration/ubatuba/seedClimateEngagementDataViaMotor.test.ts`.
- */
-export const UBATUBA_CLIMATE_TOTAL_MINIMO = 28 as const;
+// ME-B2-01b Q1=D — piso canonico de climateEngagementData APOSENTADO
+// permanentemente. O cache foi apagado; agregados de Clima sao
+// computados sob demanda pelo motor puro `computeClimateBlock` a cada
+// leitura, sem persistencia.
 
 /**
  * Re-exports canonicos dos totais das 4 tabelas novas (Dispatch 5). Os
@@ -365,13 +347,11 @@ export async function seedUbatuba(
   }
 
   // ---------------------------------------------------------------------
-  // 11. climateEngagementData (ME-B2-01a.1.3 — via motor real).
-  //     Substitui a derivacao via PRNG (bug de escala 0-4) por chamada
-  //     canonica ao motor `climateCalculationEngine.recalculateAggregates`.
-  //     Fonte unica canonica: mesmo motor que roda em producao a cada
-  //     gravacao de `scoreA` (hook §9.10 S170). Zero drift.
+  // 11. climateEngagementData — APOSENTADO permanentemente na ME-B2-01b
+  //     Q1=D. Nao ha mais tabela derivada nem seed correspondente; o
+  //     motor `computeClimateBlock` computa sob demanda direto de
+  //     `plenitudeData` + `instrumentA_responses`.
   // ---------------------------------------------------------------------
-  counts.climateEngagementData = await seedClimateEngagementDataViaMotor(db);
 
   // ---------------------------------------------------------------------
   // 12. dataAccessLog (~200) — NOVO.
@@ -407,12 +387,8 @@ export async function seedUbatuba(
   // ---------------------------------------------------------------------
   // Prova canonica de contagens totais esperadas.
   // ---------------------------------------------------------------------
-  if (counts.climateEngagementData < UBATUBA_CLIMATE_TOTAL_MINIMO) {
-    throw new Error(
-      `seedUbatuba: climateEngagementData=${counts.climateEngagementData}, ` +
-        `esperado piso minimo=${UBATUBA_CLIMATE_TOTAL_MINIMO} (ME-B2-01a.1.3).`,
-    );
-  }
+  // ME-B2-01b Q1=D — assercao canonica de climateEngagementData
+  // aposentada permanentemente (tabela nao existe mais).
   if (counts.dataAccessLog !== UBATUBA_DAL_TOTAL_ESPERADO) {
     throw new Error(
       `seedUbatuba: dataAccessLog=${counts.dataAccessLog}, ` +

@@ -21,7 +21,6 @@ import { inArray } from 'drizzle-orm';
 
 import { closeDbClient, createDbClient, type RoipDbClient } from '../../src/db/client';
 import {
-  climateEngagementData,
   companies,
   employeeLeaderHistory,
   employees,
@@ -83,9 +82,7 @@ afterAll(async () => {
         .where(inArray(performanceQuarterlyData.employeeId, empIds));
       await client.db.delete(performanceData).where(inArray(performanceData.employeeId, empIds));
     }
-    await client.db
-      .delete(climateEngagementData)
-      .where(inArray(climateEngagementData.companyId, createdCompanyIds));
+    // ME-B2-01b Q1=D: climateEngagementData aposentada, sem DELETE.
     await client.db.delete(employees).where(inArray(employees.companyId, createdCompanyIds));
     await client.db.delete(companies).where(inArray(companies.id, createdCompanyIds));
   }
@@ -231,21 +228,12 @@ async function assiduidadeMes(employeeId: number, companyId: number, mes: string
   });
 }
 
-async function climaEquipe(
-  companyId: number,
-  liderId: number,
-  notaClima: string,
-  trimestre = TRIMESTRE,
-) {
-  await client.db.insert(climateEngagementData).values({
-    companyId,
-    escopo: 'equipe',
-    liderId,
-    trimestre,
-    notaClima,
-    adesao: '80.00',
-  });
-}
+// ME-B2-01b Q1=D — helper `climaEquipe` aposentado. `nota_clima`
+// agora e calculado sob demanda pelo motor puro
+// `computeClimateBlock` a partir dos plenitudes canonicos dos
+// subordinados diretos do lider. Nao ha mais controle externo do
+// valor — as assertivas de nota_clima refletem media(scoreA)/10 dos
+// subordinados semeados pelo helper `plenitude`.
 
 // ============================================================
 // Cenario principal — 1 lider + 3 diretos com dados completos
@@ -315,8 +303,10 @@ describe('loadDashboardEquipeContext — agregacao canonica (ME-054)', () => {
     });
     await plenitude(d1, companyId, '45.00', '40.00', TRIMESTRE_ANTERIOR);
     await plenitude(d2, companyId, '55.00', '60.00', TRIMESTRE_ANTERIOR);
-    await climaEquipe(companyId, liderId, '7.50');
-    await climaEquipe(companyId, liderId, '7.00', TRIMESTRE_ANTERIOR);
+    // ME-B2-01b Q1=D — nota_clima calculada sob demanda pelo motor
+    // puro. Plenitudes canonicos ja semeados acima produzem:
+    //   Trimestre atual: media(scoreA d1=55, d2=65) / 10 = 6.0
+    //   Trimestre anterior: media(scoreA d1=45, d2=55) / 10 = 5.0
   });
 
   it('computa as medias canonicas dos diretos (viewer RH)', async () => {
@@ -369,9 +359,9 @@ describe('loadDashboardEquipeContext — agregacao canonica (ME-054)', () => {
     const anterior = hist.find((h) => h.trimestre === TRIMESTRE_ANTERIOR);
     expect(atual?.score_desempenho_medio).toBe(80);
     expect(atual?.plenitude_score_medio).toBe(60);
-    expect(atual?.nota_clima).toBe(7.5);
+    expect(atual?.nota_clima).toBe(6);
     expect(anterior?.score_desempenho_medio).toBe(50);
-    expect(anterior?.nota_clima).toBe(7);
+    expect(anterior?.nota_clima).toBe(5);
   });
 
   it('bloqueia financeiro para viewer lider (§5.6): roi null em medias e historico', async () => {

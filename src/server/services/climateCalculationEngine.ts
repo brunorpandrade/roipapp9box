@@ -1,106 +1,70 @@
-// ROIP APP 9BOX — motor canonico `climateCalculationEngine` (ME-047).
+// ROIP APP 9BOX — motor canonico puro `climateCalculationEngine`
+// (reescrito na ME-B2-01b — aposenta cache `climateEngagementData`).
 //
-// Consolida o hook canonico do DOC 03 §9 (Bloco Clima e Engajamento).
-// Motor puro no sentido canonico (§18.2 e S106): zero resolver tRPC,
-// chamado pelo router `climate` (via DI Facade — padrao S060/S105/S152
-// herdado) e pelo `plenitudeCalculationEngine` (via DI opcional, hook
-// in-band FORA da transacao apos o UPSERT em `plenitudeData` — padrao
-// S104/S112 do 9-Box replicado sobre o Clima). Nome canonico
-// `climateCalculationEngine.ts` — canonizado pela CC031 (D11 da regua
-// modo docs). O nome antigo `climateAggregationEngine` esta superado
-// e bloqueado pelo check-forbidden-terms.
+// Refactor canonico de 30/09/2026 (Q1=D — aposentar cache): a tabela
+// derivada `climateEngagementData` foi aposentada; o motor computa
+// os agregados SOB DEMANDA a cada leitura, direto das fontes
+// primarias (`plenitudeData`, `instrumentA_responses`,
+// `employeeLeaderHistory`, `employees`, `cLevelMembers`). Zero cache,
+// zero drift entre codigo e dados, zero hook §9.10, zero proc admin
+// de reprocessamento — todos permanentemente eliminados por
+// construcao.
 //
-// Fonte unica canonica (§9.1, S171): `plenitudeData.scoreA IS NOT
-// NULL` dos colaboradores no escopo do trimestre. Instrumento C NAO
-// entra (S160 canoniza a Opcao B) e Instrumento D NAO entra (a
-// leitura de qualidade de lideranca segue integralmente representada
-// pelo IQL da ME-046). Consulta a `instrumentA_responses` para a
-// nota por questao (§9.4 — "media aritmetica do valor da questao
-// nas respostas do Instrumento A / 4 x 10"); consulta a
-// `plenitudeData` para o scoreA agregado e para os 4 scores por
-// dimensao ja calculados pelo motor de plenitude (§6.4).
+// Consequencias canonicas:
+//   - Bug de escala 0-4 → 0-10 e todos os bugs futuros de escala
+//     ficam eliminados por construcao (nao ha mais dados persistidos
+//     que possam divergir do codigo).
+//   - Nao ha mais migration de dados quando a formula muda.
+//   - Nao ha mais botao admin, script one-shot ou reset canonico
+//     para regravar agregados.
+//   - Custo canonico: cada leitura executa ~4 queries agregadas
+//     (employees + LEFT JOIN plenitudeData + instrumentA_responses
+//     + employeeLeaderHistory + cLevelMembers). Payload PME
+//     (dezenas de employees, dezenas de escopos) → milissegundos.
 //
-// Convencoes canonicas desta ME:
-//   - `now` sempre parametro explicito. Determinismo total (S044/L38).
-//   - Zero SQL cru: 100% Drizzle tipado (RV-12). UPSERT canonico via
-//     `.onDuplicateKeyUpdate({ set: {...} })` — padrao ja consolidado
-//     em `roiCalculationEngine`, `plenitudeCalculationEngine`,
-//     `nineBoxCalculationEngine`, `iqlCalculationEngine`. UPSERT sem
-//     delete de orfaos (S172): escopos historicos que deixam de
-//     existir (departamento renomeado, lider inativado) permanecem
-//     na tabela; a camada de leitura filtra por escopo vigente.
-//   - Zero code dead (RV-13): cada export tem chamador em
-//     `tests/integration/climateCalculationEngine.test.ts` e
-//     `tests/integration/climate-router.test.ts`. A Facade e o
-//     DEFAULT sao consumidos pelo router `climate` e pelo
-//     `plenitudeCalculationEngine` via DI opcional.
-//   - Idempotencia canonica (§9.10 "reexecucao idempotente"): cada
-//     chamada recalcula do zero e sobrescreve via UPSERT. Nenhum
-//     estado interno persiste entre chamadas.
-//   - Sincronismo canonico: motor chamado in-band, FORA da transacao
-//     do plenitude (S170, precedente S102/S110/S157). Se o motor
-//     falhar, a excecao propaga ao caller do plenitude (S117
-//     replicado); o UPSERT em `plenitudeData` ja foi commitado.
-//   - Piso 3 respondentes (§9.6): APLICADO NA LEITURA (S158, S177),
-//     nunca na gravacao. Motor sempre grava a linha do escopo;
-//     `countCobertura < 3` sinaliza para a camada de leitura decidir
-//     entre exibir e badge canonica "Dados insuficientes".
+// Funcoes canonicas publicas:
+//   - `computeClimateBlock(db, params)` — computa o payload canonico
+//     para UM escopo especifico (empresa | departamento | equipe).
+//     Retorna `null` quando o escopo nao produz dados canonicos
+//     (departamento inexistente, lider sem cadeia, etc.).
+//   - `resolveClimateBlockComCascata(db, params)` — aplica cascata
+//     silenciosa canonica (§9.6, Q4=A1): tenta o escopo requisitado;
+//     se `countCobertura < 3`, sobe para o proximo nivel canonico
+//     (equipe -> departamento do lider -> empresa). Sempre retorna
+//     um payload (ate mesmo com `dadosDisponiveis=false` quando nem
+//     empresa atende ao piso).
+//   - `listClimateTrimestres(db, companyId)` — lista os trimestres
+//     canonicos que tem `plenitudeData.scoreA IS NOT NULL` para a
+//     empresa. Substitui o SELECT DISTINCT trimestre que antes vinha
+//     da tabela derivada.
+//
+// Convencoes canonicas preservadas:
+//   - Zero SQL cru: 100% Drizzle tipado (RV-12).
+//   - Piso 3 respondentes (§9.6): APLICADO NA LEITURA. O motor devolve
+//     `countCobertura` bruto; a cascata canonica em
+//     `resolveClimateBlockComCascata` aplica o piso.
 //   - Snapshot canonico dia 16 (§9.5, S181): elegibilidade do
 //     denominador `countTotal` verificada em tempo real via
-//     `employees.dataAdmissao <= dia16`. Colaboradores admitidos
-//     apos o dia 16 do ultimo mes do trimestre NAO entram no
-//     denominador. Colaboradores inativados durante o trimestre com
-//     `scoreA IS NOT NULL` entram normalmente (§9.5 literal). Reusa
-//     `getInstrumentoABDataAbertura` compartilhado com A/C/D
-//     (mesmo dia 16 canonico do IQL — S150).
-//   - Cadeia descendente (§9.2 / DOC 01 §8.9): S173 canonizada como
-//     loop Drizzle in-memory (BFS sobre `employeeLeaderHistory`
-//     ativo). Sem CTE recursivo (RV-12: Drizzle 0.45 nao o expoe
-//     tipado). Custo O(N) por empresa por chamada. Cadeia inclui
-//     diretos e indiretos (DOC 01 §8.9 canonico).
-//   - Escopo do recalculo (S169): uma chamada recalcula TODOS os
-//     escopos da empresa no trimestre (empresa + N departamentos
-//     ativos + M lideres com cadeia). Escolha canonica: idempotencia
-//     absoluta e simplicidade do gatilho §9.10. Custo aceitavel para
-//     PMEs (dezenas de escopos por empresa).
-//
-// Decisoes de autor RV-08 desta ME (indice §7):
-//   - S168 — naming: `ClimateEngineFacade` + `DEFAULT_CLIMATE_ENGINE`
-//     + metodo unico `recalculateAggregates`.
-//   - S169 — assinatura `recalculateAggregates(db, companyId,
-//     trimestre, now)` cobre TODOS os escopos vigentes.
-//   - S170 — ponto de hook: dentro do `if (motivo ===
-//     'ambos_completos')` do plenitude, APOS o hook do 9-Box.
-//     Excecao propaga.
-//   - S171 — filtro canonico: `plenitudeData.scoreA IS NOT NULL`
-//     (leitura literal do §9.1).
-//   - S172 — UPSERT sem delete de orfaos.
-//   - S173 — cadeia descendente via loop Drizzle (BFS), sem CTE
-//     recursivo.
-//   - S176 — grid de escopo: DISTINCT `employees.departamento` de
-//     empresa ativa + employees `isLider=true` ativos com >= 1
-//     subordinado direto.
-//   - S177 — mensagens §9.6-9.7 sao superficie de UI; motor apenas
-//     grava contagens e notas.
-//   - S180 — precisao numerica interna `round2`.
-//   - S181 — snapshot dia 16 reusa `getInstrumentoABDataAbertura`
-//     com timezone default `America/Sao_Paulo` (padrao S150 do IQL).
+//     `employees.dataAdmissao <= dia16`. Reusa
+//     `getInstrumentoABDataAbertura` compartilhado com A/C/D.
+//   - Cadeia descendente (§9.2 / DOC 01 §8.9): loop Drizzle in-memory
+//     (BFS sobre `employeeLeaderHistory`). Sem CTE recursivo.
+//   - Escala canonica §9.4: notaClima = media(scoreA)/10, notaDimensao
+//     = media(scoreDimensaoA)/10, notaQuestao = media(valor)/4 * 10.
+//     Todas em 0-10.
+//   - Polimorfia liderId XOR clevelId em escopo='equipe' (padrao
+//     XOR-no-caller ME-B2-01a.1.1 preservado).
 //
 // Convencao interna de mapeamento questao -> coluna canonica:
-//   `notaQuestaoNN` com NN = (dimensao - 1) * 5 + itemIndex, range
-//   1..20. Assim: dimensao=1 -> notaQuestao01..05; dimensao=2 ->
-//   notaQuestao06..10; dimensao=3 -> notaQuestao11..15; dimensao=4 ->
-//   notaQuestao16..20. Convencao canonizada aqui — nao ha texto
-//   literal no §9.4 que a fixe, mas e a unica que preserva ordem
-//   canonica das dimensoes (Engajamento, Desenvolvimento,
-//   Pertencimento, Realizacao) e itens crescentes.
+//   `questaoIndex = (dimensao - 1) * 5 + itemIndex`, range 1..20.
+//   Dimensao 1 = Engajamento (questoes 1..5); 2 = Desenvolvimento
+//   (6..10); 3 = Pertencimento (11..15); 4 = Realizacao (16..20).
 
-import { and, eq, gt, isNotNull, isNull, lte, or } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, isNotNull, isNull, lte, or } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../db/client';
 import {
   cLevelMembers,
-  climateEngagementData,
   employeeLeaderHistory,
   employees,
   instrumentA_responses,
@@ -116,158 +80,140 @@ import {
 // Constantes canonicas
 // ============================================================
 
-/** §9.4 — 4 dimensoes canonicas do Instrumento A (compartilhadas com C). */
-export const NUM_DIMENSOES_CLIMATE = 4 as const;
+/** §9.4 — 4 dimensoes canonicas do Instrumento A. */
+const NUM_DIMENSOES_CLIMATE = 4 as const;
 
-/** §9.4 — 5 itens por dimensao (grid 4x5 canonico). */
-export const NUM_ITENS_POR_DIMENSAO_CLIMATE = 5 as const;
+/** §9.4 — 5 itens por dimensao (grid 4x5). */
+const NUM_ITENS_POR_DIMENSAO_CLIMATE = 5 as const;
 
-/** §9.4 — total de 20 questoes por trimestre por escopo. */
+/** §9.4 — total de 20 questoes canonicas. */
 export const NUM_QUESTOES_CLIMATE = 20 as const;
 
 /** §6.2 / §9.4 — teto canonico da escala do Instrumento A (0..4). */
-export const VALOR_MAX_INSTRUMENTO_A = 4 as const;
+const VALOR_MAX_INSTRUMENTO_A = 4 as const;
 
 /**
  * §9.6 — piso canonico de respondentes para EXIBIR o Bloco Clima.
- * Aplicado na leitura (S158, S177), nunca na gravacao. Motor upserta
- * sempre; camada de leitura consulta `countCobertura` e decide entre
- * exibir e badge "Dados insuficientes".
+ * Aplicado em `resolveClimateBlockComCascata` (cascata silenciosa
+ * canonica). Escopos com `countCobertura < 3` cascatam para o nivel
+ * imediatamente superior.
  */
 export const PISO_RESPONDENTES_CLIMATE = 3 as const;
 
 /**
- * Timezone default canonico para o snapshot dia 16. Paralelo S150
- * do IQL: `America/Sao_Paulo` cobre 100% do MVP e nao tem DST desde
- * 2019. Callers com fuso especifico injetam via wrapper — o motor
- * mantem-se stateless quanto a metadata da empresa.
+ * Timezone default canonico para o snapshot dia 16 (§9.5).
+ * `America/Sao_Paulo` cobre 100% do MVP e nao tem DST desde 2019.
  */
-export const DEFAULT_TIMEZONE_CLIMATE = 'America/Sao_Paulo';
+const DEFAULT_TIMEZONE_CLIMATE = 'America/Sao_Paulo';
 
 // ============================================================
 // Tipos publicos
 // ============================================================
 
-/**
- * §9.2 — enum canonico dos 3 escopos do Bloco Clima. Casa
- * exatamente com o enum `escopo` de `climateEngagementData` (DOC 01
- * §8.9) e com D10 da regua canonic-consistency.
- */
+/** §9.2 — enum canonico dos 3 escopos do Bloco Clima. */
 type ClimateEscopo = 'empresa' | 'departamento' | 'equipe';
 
+/** ME-B2-01a.1.1 — enum canonico do tipo de lider para escopo='equipe'. */
+export type ClimateLiderTipo = 'employee' | 'clevel';
+
 /**
- * §9.4/§9.10 — agregado canonico gravado em `climateEngagementData`
- * para um escopo especifico. Mesma escala de saida das colunas
- * decimal(4,2) e int das persistencias — a UPSERT converte para
- * `String(number)` (padrao S###/plenitude).
- *
- * `notasQuestao` e um array de 20 posicoes (indices 0..19 mapeando
- * `notaQuestao01..20` — convencao (dimensao-1)*5+itemIndex).
+ * Parametros canonicos de `computeClimateBlock` — identificam um
+ * escopo unico dentro de (companyId, trimestre). Regras:
+ *   - `escopo = 'empresa'`: `escopoReferencia`, `liderId`, `liderTipo`
+ *     ignorados.
+ *   - `escopo = 'departamento'`: `escopoReferencia` obrigatorio (nome
+ *     canonico do departamento); `liderId`, `liderTipo` ignorados.
+ *   - `escopo = 'equipe'`: `liderId` + `liderTipo` obrigatorios (padrao
+ *     XOR-no-caller ME-B2-01a.1.1); `escopoReferencia` ignorado.
  */
-export interface ClimateEscopoAggregado {
+interface ComputeClimateBlockParams {
+  companyId: number;
   escopo: ClimateEscopo;
-  /** Preenchido apenas quando `escopo === 'departamento'`. */
-  departamento: string | null;
-  /**
-   * Preenchido apenas quando `escopo === 'equipe'` e o lider da cadeia
-   * e um employee (`employees.isLider=true`). Mutuamente exclusivo com
-   * `clevelId` (padrao XOR-no-caller ME-B2-01a.1.1: exatamente um dos
-   * dois preenchido em escopo='equipe').
-   */
+  escopoReferencia: string | null;
   liderId: number | null;
-  /**
-   * ME-B2-01a.1.2 — preenchido apenas quando `escopo === 'equipe'` e o
-   * lider da cadeia e um C-level (`cLevelMembers`). Mutuamente exclusivo
-   * com `liderId`. Padrao XOR-no-caller consolidado na ME-B2-01a.1.1.
-   */
-  clevelId: number | null;
-  /** Nota geral 0..10. Null quando nenhum respondente valido. */
+  liderTipo: ClimateLiderTipo | null;
+  trimestre: string;
+}
+
+/**
+ * Payload canonico do agregado por escopo (§9.4/§9.10). Escala
+ * canonica em todas as notas:
+ *   - notaClima, notaEngajamento, notaDesenvolvimento,
+ *     notaPertencimento, notaRealizacao, notasQuestao[0..19]: 0-10.
+ *   - adesao: 0-100.
+ *   - countCobertura, countTotal: contagens inteiras.
+ *
+ * `notasQuestao` sempre com 20 posicoes (convencao (dim-1)*5+item).
+ */
+export interface ClimateBlockPayload {
+  escopo: ClimateEscopo;
+  escopoReferencia: string | null;
+  liderId: number | null;
+  liderTipo: ClimateLiderTipo | null;
+  trimestre: string;
   notaClima: number | null;
-  /** Percentual 0..100. Null quando `countTotal === 0`. */
   adesao: number | null;
-  /** Colaboradores no escopo com `plenitudeData.scoreA IS NOT NULL`. */
   countCobertura: number;
-  /**
-   * Colaboradores elegiveis no escopo (denominador da adesao):
-   * `dataAdmissao <= dia16` E (`status = 'ativo'` OU `scoreA IS NOT
-   * NULL`). C-levels excluidos por construcao (nao estao em
-   * `employees`).
-   */
   countTotal: number;
-  /** Nota da dimensao 1 (Engajamento). 0..10. Null quando cobertura 0. */
   notaEngajamento: number | null;
-  /** Nota da dimensao 2 (Desenvolvimento). 0..10. */
   notaDesenvolvimento: number | null;
-  /** Nota da dimensao 3 (Pertencimento). 0..10. */
   notaPertencimento: number | null;
-  /** Nota da dimensao 4 (Realizacao). 0..10. */
   notaRealizacao: number | null;
-  /**
-   * Notas por questao — 20 posicoes, indice = questaoIndex-1. Cada
-   * posicao carrega o valor 0..10 ou null quando aquela questao nao
-   * teve resposta no escopo (grade parcial).
-   */
   notasQuestao: readonly (number | null)[];
 }
 
 /**
- * Resultado canonico de `recalculateAggregates`. Espelha a operacao:
- * quais escopos foram recalculados no (companyId, trimestre) e o
- * `calculadoEm` gravado em todas as linhas.
+ * Resultado canonico de `resolveClimateBlockComCascata`. O payload
+ * canonico do escopo EFETIVO (onde os dados foram achados) mais
+ * metadados canonicos da cascata:
+ *   - `escopoRequisitado` — parametros originais passados pelo caller.
+ *   - `escopoEfetivo` — nivel onde os dados foram achados (pode
+ *     divergir quando houve cascata).
+ *   - `notaAgregacao` — rotulo canonico da agregacao aplicada:
+ *     `null` quando escopo efetivo == requisitado,
+ *     `'agregado_departamento'` para cascata equipe -> departamento,
+ *     `'agregado_empresa'` para cascata para empresa.
+ *   - `dadosDisponiveis` — `true` quando algum nivel da cascata tem
+ *     `countCobertura >= PISO_RESPONDENTES_CLIMATE`; `false` quando
+ *     nem empresa atende ao piso.
  */
-export interface ClimateCalculationResult {
-  companyId: number;
-  trimestre: string;
-  escopos: readonly ClimateEscopoAggregado[];
-  calculadoEm: Date;
+export interface ClimateBlockCascataResult {
+  escopoRequisitado: {
+    escopo: ClimateEscopo;
+    escopoReferencia: string | null;
+    liderId: number | null;
+    liderTipo: ClimateLiderTipo | null;
+  };
+  escopoEfetivo: {
+    escopo: ClimateEscopo;
+    escopoReferencia: string | null;
+    liderId: number | null;
+    liderTipo: ClimateLiderTipo | null;
+  };
+  notaAgregacao: 'agregado_departamento' | 'agregado_empresa' | null;
+  dadosDisponiveis: boolean;
+  payload: ClimateBlockPayload;
 }
-
-/**
- * Facade canonica do motor Clima. Contrato minimo que o router
- * `climate` e o hook do `plenitudeCalculationEngine` consomem.
- * Producao aponta para `recalculateAggregates` desta ME. Teste
- * injeta mock que apenas conta chamadas / valida input (padrao
- * S105/S152 replicado).
- */
-export interface ClimateEngineFacade {
-  recalculateAggregates: (
-    db: RoipDatabase,
-    companyId: number,
-    trimestre: string,
-    now: Date,
-  ) => Promise<ClimateCalculationResult>;
-}
-
-/**
- * DI default canonica: aponta para o motor real desta ME. O router
- * `climate` e o `plenitudeCalculationEngine` usam este default;
- * testes que injetam mock passam `climateEngine` explicito.
- */
-export const DEFAULT_CLIMATE_ENGINE: ClimateEngineFacade = {
-  recalculateAggregates,
-};
 
 // ============================================================
 // Formulas canonicas puras (§9.4 literal)
 // ============================================================
 
 /**
- * Arredonda para 2 casas decimais deterministicamente (S180). As
- * colunas `climateEngagementData.*` sao `decimal(4,2)` para notas
- * (0..10) e `decimal(5,2)` para adesao (0..100). Round consistente
- * lado-cliente evita drift com o rounding server-side.
+ * Arredonda para 2 casas decimais deterministicamente. As colunas
+ * de nota foram `decimal(4,2)` (0..10) e adesao foi `decimal(5,2)`
+ * (0..100). Round consistente cliente-side preserva coerencia com
+ * qualquer camada de exibicao.
  */
-export function round2(v: number): number {
+function round2(v: number): number {
   return Math.round(v * 100) / 100;
 }
 
 /**
  * §9.4 canonica — `notaClima = media aritmetica(scoreA) / 10`.
- * `scoreA` esta em escala 0..100 (§6.4); `notaClima` em 0..10.
- * Retorna `null` quando a lista esta vazia (semantica canonica —
- * sem respondente valido, sem nota).
+ * `scoreA` em escala 0..100 (§6.4); `notaClima` em 0..10.
  */
-export function computeNotaClima(scoresA: readonly number[]): number | null {
+function computeNotaClima(scoresA: readonly number[]): number | null {
   if (scoresA.length === 0) {
     return null;
   }
@@ -280,11 +226,9 @@ export function computeNotaClima(scoresA: readonly number[]): number | null {
 
 /**
  * §9.4 canonica — `adesao = (cobertura / total) x 100`. Retorna
- * `null` quando `total === 0` (evita divisao por zero e sinaliza
- * a leitura de que o denominador e vazio — escopo sem elegiveis).
- * Range 0..100.
+ * `null` quando `total === 0` (evita divisao por zero).
  */
-export function computeAdesao(cobertura: number, total: number): number | null {
+function computeAdesao(cobertura: number, total: number): number | null {
   if (total === 0) {
     return null;
   }
@@ -293,11 +237,10 @@ export function computeAdesao(cobertura: number, total: number): number | null {
 
 /**
  * §9.4 canonica — `notaDimensao = media aritmetica(scoreDimensaoA)
- * / 10`. Consumida com os valores de `plenitudeData.engajamentoA`,
- * `desenvolvimentoA`, `pertencimentoA` ou `realizacaoA` (escala
- * 0..100). Retorna `null` para lista vazia.
+ * / 10`. Consumida com `plenitudeData.engajamentoA`,
+ * `desenvolvimentoA`, `pertencimentoA` ou `realizacaoA` (0..100).
  */
-export function computeNotaDimensao(scoresDimensaoA: readonly number[]): number | null {
+function computeNotaDimensao(scoresDimensaoA: readonly number[]): number | null {
   if (scoresDimensaoA.length === 0) {
     return null;
   }
@@ -310,11 +253,10 @@ export function computeNotaDimensao(scoresDimensaoA: readonly number[]): number 
 
 /**
  * §9.4 canonica — `notaQuestao = media(valor) / 4 x 10`. `valor`
- * vem de `instrumentA_responses.valor` em escala 0..4 (§6.2);
- * `notaQuestao` em 0..10. Retorna `null` para lista vazia (a
- * questao nao teve resposta no escopo).
+ * vem de `instrumentA_responses.valor` em 0..4 (§6.2); `notaQuestao`
+ * em 0..10.
  */
-export function computeNotaQuestao(valores: readonly number[]): number | null {
+function computeNotaQuestao(valores: readonly number[]): number | null {
   if (valores.length === 0) {
     return null;
   }
@@ -326,24 +268,23 @@ export function computeNotaQuestao(valores: readonly number[]): number | null {
 }
 
 /**
- * Convencao canonica de mapeamento questao -> indice linear:
+ * Convencao canonica de mapeamento questao -> indice linear.
  * `questaoIndex = (dimensao - 1) * 5 + itemIndex`, range 1..20.
- * Reusado pelo motor e pelos testes.
  */
-export function questaoIndex(dimensao: number, itemIndex: number): number {
+function questaoIndex(dimensao: number, itemIndex: number): number {
   return (dimensao - 1) * NUM_ITENS_POR_DIMENSAO_CLIMATE + itemIndex;
 }
 
 // ============================================================
-// Helpers privados de estrutura
+// Helpers de estrutura (snapshot dia 16, cadeia canonica)
 // ============================================================
 
 /**
  * §9.5 (S181) — resolve o dia 16 canonico do trimestre no fuso
- * default do Clima. Paralelismo S150 do IQL. Retorna `null` quando
- * o trimestre nao pode ser parseado (input invalido do caller).
+ * canonico do Clima. Retorna `null` quando o trimestre nao pode
+ * ser parseado.
  */
-export function getClimateDia16(trimestre: string, timeZone: string): Date | null {
+function getClimateDia16(trimestre: string, timeZone: string): Date | null {
   const parsed = parseTrimestreCicloReferencia(trimestre);
   if (!parsed) {
     return null;
@@ -352,15 +293,12 @@ export function getClimateDia16(trimestre: string, timeZone: string): Date | nul
 }
 
 /**
- * S173 — constroi o mapa `liderId -> Set(subordinadoIds)` a partir
- * do snapshot ATIVO no dia 16 de `employeeLeaderHistory`. Vinculo
- * ativo: `dataInicio <= dia16` E (`dataFim IS NULL` OU `dataFim >
- * dia16`). Reusa o padrao S150 do IQL. Ignora vinculos com
- * `clevelId` (Clima nao considera lideranca de C-level por §9.9 —
- * escopo equipe e sempre chefiada por employee-lider; C-level
- * aparece como visualizador, nao como lider avaliado).
+ * Constroi o mapa `liderId -> Set(subordinadoIds)` a partir do
+ * snapshot ATIVO no dia 16 de `employeeLeaderHistory` (S173).
+ * Vinculo ativo: `dataInicio <= dia16` E (`dataFim IS NULL` OU
+ * `dataFim > dia16`). Ignora vinculos com `clevelId`.
  */
-export async function buildLiderSubordinadosMapClimate(
+async function buildLiderSubordinadosMapClimate(
   db: RoipDatabase,
   companyId: number,
   dia16: Date | null,
@@ -412,13 +350,12 @@ export async function buildLiderSubordinadosMapClimate(
 }
 
 /**
- * S173 — expande a cadeia descendente completa de um lider (diretos
- * + indiretos) via BFS in-memory sobre o mapa de subordinados.
- * Retorna Set de `employeeId` da cadeia (nao inclui o proprio
- * lider). Aplica DEFESA contra ciclos: cada no e visitado uma unica
- * vez. DOC 01 §8.9 canoniza cadeia como "diretos e indiretos".
+ * Expande a cadeia descendente completa de um lider employee (diretos
+ * + indiretos) via BFS in-memory. Aplica defesa contra ciclos (cada
+ * no visitado uma unica vez). DOC 01 §8.9 canoniza cadeia como
+ * "diretos e indiretos".
  */
-export function expandirCadeiaDescendenteClimate(
+function expandirCadeiaDescendenteClimate(
   liderId: number,
   liderSubordinadosMap: Map<number, Set<number>>,
 ): Set<number> {
@@ -441,14 +378,11 @@ export function expandirCadeiaDescendenteClimate(
 }
 
 /**
- * ME-B2-01a.1.2 — constroi o mapa `clevelId -> Set(subordinadoIds)`
- * a partir do snapshot ATIVO no dia 16 de `employeeLeaderHistory`.
- * Espelha bit-a-bit `buildLiderSubordinadosMapClimate` (S173) mas
- * filtra por `clevelId IS NOT NULL` (o outro lado do polimorfismo
- * canonico §4.6). Reusa o padrao S150 do IQL. Ignora vinculos com
- * `liderId` (esses ja sao cobertos pelo mapa employee-lider).
+ * Constroi o mapa `clevelId -> Set(subordinadoIds)` a partir do
+ * snapshot ATIVO no dia 16 de `employeeLeaderHistory`. Filtra por
+ * `clevelId IS NOT NULL` (padrao XOR-no-caller ME-B2-01a.1.1).
  */
-export async function buildCLevelSubordinadosMapClimate(
+async function buildCLevelSubordinadosMapClimate(
   db: RoipDatabase,
   companyId: number,
   dia16: Date | null,
@@ -500,17 +434,11 @@ export async function buildCLevelSubordinadosMapClimate(
 }
 
 /**
- * ME-B2-01a.1.2 — expande a cadeia descendente MISTA de um C-level
- * (diretos + indiretos via employee-lideres) via BFS in-memory.
- * Nivel 1: subordinados diretos do C-level (via `clevelSubordinadosMap`).
- * Niveis 2+: para cada subordinado direto que tambem seja lider,
- * cascata via `liderSubordinadosMap` (padrao employee-employee da
- * S173). Retorna Set de `employeeId` da cadeia (nao inclui o proprio
- * C-level, que canonicamente nao esta em `employees`). Aplica DEFESA
- * contra ciclos: cada no e visitado uma unica vez. DOC 01 §8.9
- * canoniza cadeia como "diretos e indiretos".
+ * Expande a cadeia descendente MISTA de um C-level (diretos +
+ * indiretos via employee-lideres) via BFS in-memory. Nivel 1:
+ * subordinados diretos do C-level. Niveis 2+: cascata employee-lider.
  */
-export function expandirCadeiaDescendenteClimateCLevel(
+function expandirCadeiaDescendenteClimateCLevel(
   clevelId: number,
   clevelSubordinadosMap: Map<number, Set<number>>,
   liderSubordinadosMap: Map<number, Set<number>>,
@@ -518,7 +446,6 @@ export function expandirCadeiaDescendenteClimateCLevel(
   const cadeia = new Set<number>();
   const fila: number[] = [];
 
-  // Nivel 1: subordinados diretos do C-level.
   const diretosClevel = clevelSubordinadosMap.get(clevelId);
   if (diretosClevel === undefined) {
     return cadeia;
@@ -530,7 +457,6 @@ export function expandirCadeiaDescendenteClimateCLevel(
     }
   }
 
-  // Niveis 2+: cascata employee-lider (S173 reusada bit-a-bit).
   while (fila.length > 0) {
     const atual = fila.shift() as number;
     const diretosLider = liderSubordinadosMap.get(atual);
@@ -552,10 +478,6 @@ export function expandirCadeiaDescendenteClimateCLevel(
 // Estruturas internas do motor
 // ============================================================
 
-/**
- * Registro interno do motor: employee da empresa no trimestre com
- * todos os atributos necessarios para os agregados.
- */
 interface EmployeeCanonico {
   id: number;
   departamento: string;
@@ -569,10 +491,6 @@ interface EmployeeCanonico {
   realizacaoA: number | null;
 }
 
-/**
- * Registro interno: resposta canonica de uma questao (dimensao,
- * itemIndex, valor) — pertence a algum employee.
- */
 interface RespostaQuestao {
   employeeId: number;
   dimensao: number;
@@ -580,28 +498,29 @@ interface RespostaQuestao {
   valor: number;
 }
 
+// ============================================================
+// Agregacao pura (in-memory, sem I/O)
+// ============================================================
+
 /**
- * Agrega os employees do escopo em um `ClimateEscopoAggregado`.
- * Espera:
- *   - `employeesEscopo`: employees canonicos do escopo (ja filtrados).
- *   - `respostasPorEmployee`: mapa employeeId -> respostas do
- *      Instrumento A (para o calculo das notas por questao).
+ * Agrega os employees do escopo em um payload canonico. Funcao pura:
+ * recebe dados ja carregados, nao faz I/O. Reusada por
+ * `computeClimateBlock` para os 3 escopos canonicos.
  */
-function agregaEscopo(
+function agregaEscopoPuro(
   escopo: ClimateEscopo,
-  departamento: string | null,
+  escopoReferencia: string | null,
   liderId: number | null,
-  clevelId: number | null,
+  liderTipo: ClimateLiderTipo | null,
+  trimestre: string,
   employeesEscopo: readonly EmployeeCanonico[],
   respostasPorEmployee: Map<number, RespostaQuestao[]>,
   dia16: Date | null,
-): ClimateEscopoAggregado {
+): ClimateBlockPayload {
   const notasQuestaoNull: (number | null)[] = new Array(NUM_QUESTOES_CLIMATE).fill(null);
 
   // Elegiveis (denominador da adesao — S181):
   //   dataAdmissao <= dia16 E (status = 'ativo' OU scoreA IS NOT NULL).
-  //   dia16 = null (input invalido): fallback conservador — usa
-  //   apenas o filtro de status/scoreA.
   const elegiveis = employeesEscopo.filter((e) => {
     const admitidoAntesOuNoDia16 = dia16 === null || e.dataAdmissao.getTime() <= dia16.getTime();
     const ativoOuComScoreA = e.status === 'ativo' || e.scoreA !== null;
@@ -609,7 +528,7 @@ function agregaEscopo(
   });
 
   // Cobertura (numerador da nota geral e da adesao):
-  //   subset dos elegiveis com plenitudeData.scoreA IS NOT NULL (S171).
+  //   subset dos elegiveis com plenitudeData.scoreA IS NOT NULL (§9.1).
   const cobertura = elegiveis.filter((e) => e.scoreA !== null);
 
   const countTotal = elegiveis.length;
@@ -618,9 +537,10 @@ function agregaEscopo(
   if (countCobertura === 0) {
     return {
       escopo,
-      departamento,
+      escopoReferencia,
       liderId,
-      clevelId,
+      liderTipo,
+      trimestre,
       notaClima: null,
       adesao: computeAdesao(countCobertura, countTotal),
       countCobertura,
@@ -633,14 +553,10 @@ function agregaEscopo(
     };
   }
 
-  // Nota geral do Clima (§9.4).
   const scoresA = cobertura.map((e) => e.scoreA as number);
   const notaClima = computeNotaClima(scoresA);
   const adesao = computeAdesao(countCobertura, countTotal);
 
-  // Notas por dimensao (§9.4). scoreDimensaoA vem de plenitudeData
-  // ja calculado pelo motor de plenitude (§6.4 canonica — quando
-  // scoreA e gravado, os 4 scores por dimensao tambem sao).
   const engajamentoValues: number[] = [];
   const desenvolvimentoValues: number[] = [];
   const pertencimentoValues: number[] = [];
@@ -656,9 +572,6 @@ function agregaEscopo(
   const notaPertencimento = computeNotaDimensao(pertencimentoValues);
   const notaRealizacao = computeNotaDimensao(realizacaoValues);
 
-  // Notas por questao (§9.4): media aritmetica dos `valor` do
-  // Instrumento A por (dimensao, itemIndex) restrita aos employees
-  // da cobertura. Consumo do mapa `respostasPorEmployee`.
   const bucketsPorQuestao: number[][] = Array.from({ length: NUM_QUESTOES_CLIMATE }, () => []);
   const coberturaIds = new Set<number>(cobertura.map((e) => e.id));
   for (const e of cobertura) {
@@ -667,10 +580,6 @@ function agregaEscopo(
       continue;
     }
     for (const r of respostas) {
-      // Defesa canonica: a query ja filtra por employees do escopo;
-      // este check preserva o invariante quando o mapa e reusado
-      // entre escopos (S169 — recalcula todos os escopos em uma
-      // chamada). Sem coberturaIds seria O(N) inseguro por questao.
       if (!coberturaIds.has(r.employeeId)) {
         continue;
       }
@@ -694,9 +603,10 @@ function agregaEscopo(
 
   return {
     escopo,
-    departamento,
+    escopoReferencia,
     liderId,
-    clevelId,
+    liderTipo,
+    trimestre,
     notaClima,
     adesao,
     countCobertura,
@@ -709,198 +619,27 @@ function agregaEscopo(
   };
 }
 
-/**
- * Constroi o `.values(...)` canonico para UPSERT de uma linha de
- * `climateEngagementData`. Converte number -> String (padrao S###
- * decimal Drizzle -> MySQL) e distribui as 20 notas por questao
- * nas colunas `notaQuestao01..20`.
- */
-function buildClimateInsertValues(
-  companyId: number,
-  agg: ClimateEscopoAggregado,
-  trimestre: string,
-  now: Date,
-): typeof climateEngagementData.$inferInsert {
-  const notaClimaStr = agg.notaClima === null ? null : String(agg.notaClima);
-  const adesaoStr = agg.adesao === null ? null : String(agg.adesao);
-  const notaEngStr = agg.notaEngajamento === null ? null : String(agg.notaEngajamento);
-  const notaDesStr = agg.notaDesenvolvimento === null ? null : String(agg.notaDesenvolvimento);
-  const notaPerStr = agg.notaPertencimento === null ? null : String(agg.notaPertencimento);
-  const notaRealStr = agg.notaRealizacao === null ? null : String(agg.notaRealizacao);
-  const q = (idx: number): string | null => {
-    const value = agg.notasQuestao[idx];
-    return value === null || value === undefined ? null : String(value);
-  };
-  return {
-    companyId,
-    escopo: agg.escopo,
-    departamento: agg.departamento,
-    liderId: agg.liderId,
-    clevelId: agg.clevelId,
-    trimestre,
-    notaClima: notaClimaStr,
-    adesao: adesaoStr,
-    countCobertura: agg.countCobertura,
-    countTotal: agg.countTotal,
-    notaEngajamento: notaEngStr,
-    notaDesenvolvimento: notaDesStr,
-    notaPertencimento: notaPerStr,
-    notaRealizacao: notaRealStr,
-    notaQuestao01: q(0),
-    notaQuestao02: q(1),
-    notaQuestao03: q(2),
-    notaQuestao04: q(3),
-    notaQuestao05: q(4),
-    notaQuestao06: q(5),
-    notaQuestao07: q(6),
-    notaQuestao08: q(7),
-    notaQuestao09: q(8),
-    notaQuestao10: q(9),
-    notaQuestao11: q(10),
-    notaQuestao12: q(11),
-    notaQuestao13: q(12),
-    notaQuestao14: q(13),
-    notaQuestao15: q(14),
-    notaQuestao16: q(15),
-    notaQuestao17: q(16),
-    notaQuestao18: q(17),
-    notaQuestao19: q(18),
-    notaQuestao20: q(19),
-    calculadoEm: now,
-  };
-}
-
-/**
- * Constroi o `.onDuplicateKeyUpdate({ set })` canonico para uma
- * linha de `climateEngagementData` — reusa as colunas atualizaveis
- * do INSERT (menos as identificadoras da UNIQUE, que ficam fora do
- * SET por definicao).
- */
-function buildClimateUpdateSet(
-  agg: ClimateEscopoAggregado,
-  now: Date,
-): Parameters<
-  ReturnType<ReturnType<RoipDatabase['insert']>['values']>['onDuplicateKeyUpdate']
->[0]['set'] {
-  const notaClimaStr = agg.notaClima === null ? null : String(agg.notaClima);
-  const adesaoStr = agg.adesao === null ? null : String(agg.adesao);
-  const notaEngStr = agg.notaEngajamento === null ? null : String(agg.notaEngajamento);
-  const notaDesStr = agg.notaDesenvolvimento === null ? null : String(agg.notaDesenvolvimento);
-  const notaPerStr = agg.notaPertencimento === null ? null : String(agg.notaPertencimento);
-  const notaRealStr = agg.notaRealizacao === null ? null : String(agg.notaRealizacao);
-  const q = (idx: number): string | null => {
-    const value = agg.notasQuestao[idx];
-    return value === null || value === undefined ? null : String(value);
-  };
-  return {
-    notaClima: notaClimaStr,
-    adesao: adesaoStr,
-    countCobertura: agg.countCobertura,
-    countTotal: agg.countTotal,
-    notaEngajamento: notaEngStr,
-    notaDesenvolvimento: notaDesStr,
-    notaPertencimento: notaPerStr,
-    notaRealizacao: notaRealStr,
-    notaQuestao01: q(0),
-    notaQuestao02: q(1),
-    notaQuestao03: q(2),
-    notaQuestao04: q(3),
-    notaQuestao05: q(4),
-    notaQuestao06: q(5),
-    notaQuestao07: q(6),
-    notaQuestao08: q(7),
-    notaQuestao09: q(8),
-    notaQuestao10: q(9),
-    notaQuestao11: q(10),
-    notaQuestao12: q(11),
-    notaQuestao13: q(12),
-    notaQuestao14: q(13),
-    notaQuestao15: q(14),
-    notaQuestao16: q(15),
-    notaQuestao17: q(16),
-    notaQuestao18: q(17),
-    notaQuestao19: q(18),
-    notaQuestao20: q(19),
-    calculadoEm: now,
-  };
-}
-
 // ============================================================
-// Motor canonico
+// Carregadores canonicos (I/O direto contra fontes primarias)
 // ============================================================
 
 /**
- * §9.10 (S168/S169) — recalcula os agregados do Bloco Clima e
- * Engajamento para (companyId, trimestre) em TODOS os escopos
- * vigentes:
- *
- *   1. Empresa inteira: 1 linha (escopo = 'empresa').
- *   2. Cada departamento com >= 1 employee ativo: 1 linha por
- *      departamento (escopo = 'departamento').
- *   3. Cada lider ativo com cadeia descendente >= 1 subordinado:
- *      1 linha por lider (escopo = 'equipe').
- *
- * Fluxo canonico:
- *
- *   1. Resolve dia16 canonico (S181) via `getClimateDia16` no fuso
- *      default `America/Sao_Paulo`. Consumido pelo filtro de
- *      elegibilidade `dataAdmissao <= dia16` e pelo snapshot da
- *      cadeia via `employeeLeaderHistory`.
- *   2. Carrega os employees canonicos da empresa (union tipada com
- *      `plenitudeData` para trazer scoreA e os 4 scores por dimensao
- *      pre-calculados). Exclui admitidos apos dia16 (defesa em
- *      profundidade — o filtro de elegibilidade em `agregaEscopo`
- *      ja aplica, mas restringir aqui reduz payload).
- *   3. Carrega as respostas do Instrumento A do trimestre para a
- *      empresa (JOIN com employees para filtrar por companyId).
- *      Agrupa por employeeId em Map.
- *   4. Constroi o mapa `liderId -> subordinados diretos` no dia16
- *      via `employeeLeaderHistory` (S173).
- *   5. Grid canonico de escopos (S176):
- *      - Empresa: 1.
- *      - Departamentos: DISTINCT `departamento` dos employees ativos.
- *      - Lideres: employees `isLider=true` ativos com >= 1
- *        subordinado direto no mapa.
- *   6. Para cada escopo, filtra os employees pertinentes:
- *      - empresa: todos.
- *      - departamento: employees com `departamento === X`.
- *      - equipe: cadeia descendente expandida do lider (BFS via
- *        `expandirCadeiaDescendenteClimate` — S173).
- *   7. Calcula o agregado via `agregaEscopo` (aplica S171 e S181).
- *   8. UPSERT canonico em `climateEngagementData` (S172): sem
- *      delete de orfaos, `.onDuplicateKeyUpdate({ set })` na
- *      UNIQUE canonica `uq_climate_escopo`.
- *   9. Retorna `ClimateCalculationResult` tipado.
- *
- * Motor NUNCA lanca por logica canonica. Lanca apenas por defeito
- * de infraestrutura (banco fora, FK invalida). Caller propaga
- * (S117 replicado — no plenitude, o UPSERT em `plenitudeData` ja
- * foi commitado antes do hook do Clima, assim a excecao nao
- * desfaz o plenitude ja gravado).
+ * Carrega os employees canonicos da empresa com LEFT JOIN em
+ * `plenitudeData` do trimestre. Union canonica dos atributos
+ * necessarios para todos os escopos.
  */
-export async function recalculateAggregates(
+async function loadEmployeesCanonicos(
   db: RoipDatabase,
   companyId: number,
   trimestre: string,
-  now: Date,
-): Promise<ClimateCalculationResult> {
-  // -------- 1) dia16 canonico (S181) --------
-  const dia16 = getClimateDia16(trimestre, DEFAULT_TIMEZONE_CLIMATE);
-
-  // -------- 2) employees canonicos (LEFT JOIN plenitudeData) --------
-  //
-  // Uma unica query traz tudo o que os agregados por escopo precisam:
-  // atributos identificadores + scoreA e 4 scores de dimensao ja
-  // calculados. `left join` porque nem todo employee tem `plenitudeData`
-  // (colaborador sem A/C completos ainda esta ausente do plenitude).
-  const rowsEmployees = await db
+): Promise<EmployeeCanonico[]> {
+  const rows = await db
     .select({
       id: employees.id,
       departamento: employees.departamento,
       status: employees.status,
       dataAdmissao: employees.dataAdmissao,
       isLider: employees.isLider,
-      plenTrimestre: plenitudeData.trimestre,
       scoreA: plenitudeData.scoreA,
       engajamentoA: plenitudeData.engajamentoA,
       desenvolvimentoA: plenitudeData.desenvolvimentoA,
@@ -914,7 +653,7 @@ export async function recalculateAggregates(
     )
     .where(eq(employees.companyId, companyId));
 
-  const employeesCanon: EmployeeCanonico[] = rowsEmployees.map((r) => ({
+  return rows.map((r) => ({
     id: r.id,
     departamento: r.departamento,
     status: (r.status as 'ativo' | 'inativo' | null) ?? 'ativo',
@@ -926,13 +665,19 @@ export async function recalculateAggregates(
     pertencimentoA: r.pertencimentoA === null ? null : Number(r.pertencimentoA),
     realizacaoA: r.realizacaoA === null ? null : Number(r.realizacaoA),
   }));
+}
 
-  // -------- 3) respostas canonicas do Instrumento A --------
-  //
-  // Reusa o filtro por `instrumentA_responses.companyId` (FK ja
-  // canoniza cross-company via DOC 01 §8.1 — coluna companyId
-  // esta na tabela). Zero SQL cru (RV-12).
-  const rowsRespostas = await db
+/**
+ * Carrega as respostas canonicas do Instrumento A da empresa no
+ * trimestre. Agrupa por `employeeId` em Map para consumo canonico
+ * do agregador puro.
+ */
+async function loadRespostasPorEmployee(
+  db: RoipDatabase,
+  companyId: number,
+  trimestre: string,
+): Promise<Map<number, RespostaQuestao[]>> {
+  const rows = await db
     .select({
       employeeId: instrumentA_responses.employeeId,
       dimensao: instrumentA_responses.dimensao,
@@ -947,173 +692,293 @@ export async function recalculateAggregates(
       ),
     );
 
-  const respostasPorEmployee = new Map<number, RespostaQuestao[]>();
-  for (const r of rowsRespostas) {
+  const map = new Map<number, RespostaQuestao[]>();
+  for (const r of rows) {
     const item: RespostaQuestao = {
       employeeId: r.employeeId,
       dimensao: r.dimensao,
       itemIndex: r.itemIndex,
       valor: r.valor,
     };
-    const list = respostasPorEmployee.get(r.employeeId);
+    const list = map.get(r.employeeId);
     if (list === undefined) {
-      respostasPorEmployee.set(r.employeeId, [item]);
+      map.set(r.employeeId, [item]);
     } else {
       list.push(item);
     }
   }
+  return map;
+}
 
-  // -------- 4) mapa lider -> subordinados diretos (snapshot dia16) --------
-  const liderSubordinadosMap = await buildLiderSubordinadosMapClimate(db, companyId, dia16);
+// ============================================================
+// Motor canonico publico — computa UM escopo sob demanda
+// ============================================================
 
-  // -------- 4b) mapa C-level -> subordinados diretos (ME-B2-01a.1.2) --------
-  const clevelSubordinadosMap = await buildCLevelSubordinadosMapClimate(db, companyId, dia16);
-
-  // -------- 4c) C-levels ativos da empresa (ME-B2-01a.1.2) --------
-  //
-  // Q3=A1 canonizado: escopo='equipe' passa a cobrir tambem cadeia
-  // descendente de C-level. C-levels vivem em `cLevelMembers`, tabela
-  // separada de `employees` — busca dedicada. Filtro canonico:
-  // `status='ativo'`. Sem filtro por `acessoTotal` aqui — o motor
-  // grava todos os agregados canonicos; a visibilidade §9.3 (superada
-  // pela §9.3-alinhada-ao-IQL de Q1=A) fica na camada de leitura
-  // (router `climate.getClimateBlock` — ME-B2-01a.2).
-  const rowsClevels = await db
-    .select({ id: cLevelMembers.id })
-    .from(cLevelMembers)
-    .where(and(eq(cLevelMembers.companyId, companyId), eq(cLevelMembers.status, 'ativo')));
-
-  // -------- 5) grid canonico de escopos (S176) --------
-  //
-  // Empresa: constante 1 escopo. Departamentos: DISTINCT
-  // `departamento` dos employees canonicos ATIVOS. Lideres:
-  // employees `isLider=true` ATIVOS com pelo menos 1 subordinado
-  // direto no mapa (escopo 'equipe' faz sentido apenas quando ha
-  // ao menos 1 subordinado — cadeia vazia nao produz agregado
-  // canonico e polui a tabela com linhas sempre-zero).
-  //
-  // ME-B2-01a.1.2 — S176 estendido: C-levels ativos com pelo menos
-  // 1 subordinado direto no `clevelSubordinadosMap` tambem entram
-  // no grid como escopo='equipe' com discriminador `clevelId`
-  // (padrao XOR-no-caller herdado da ME-B2-01a.1.1).
-  const departamentosSet = new Set<string>();
-  const lideresElegiveis: number[] = [];
-  for (const e of employeesCanon) {
-    if (e.status === 'ativo') {
-      departamentosSet.add(e.departamento);
+/**
+ * Computa o payload canonico do Bloco Clima para UM escopo
+ * especifico. Sob demanda, sem cache. Retorna `null` quando o
+ * escopo requisitado nao pode ser resolvido canonicamente:
+ *   - `escopo='departamento'` sem `escopoReferencia`.
+ *   - `escopo='equipe'` sem `liderId` OU sem `liderTipo`.
+ *   - `escopo='equipe'` cujo `liderId` nao existe canonicamente.
+ *
+ * Escopos VALIDOS com `countCobertura === 0` retornam payload valido
+ * com notas null e adesao canonica (a cascata em
+ * `resolveClimateBlockComCascata` decide se sobe de nivel).
+ */
+export async function computeClimateBlock(
+  db: RoipDatabase,
+  params: ComputeClimateBlockParams,
+): Promise<ClimateBlockPayload | null> {
+  // Validacao canonica dos params por escopo.
+  if (params.escopo === 'departamento' && params.escopoReferencia === null) {
+    return null;
+  }
+  if (params.escopo === 'equipe') {
+    if (params.liderId === null || params.liderTipo === null) {
+      return null;
     }
-    if (e.status === 'ativo' && e.isLider) {
-      const subordinados = liderSubordinadosMap.get(e.id);
-      if (subordinados !== undefined && subordinados.size > 0) {
-        lideresElegiveis.push(e.id);
+  }
+
+  const dia16 = getClimateDia16(params.trimestre, DEFAULT_TIMEZONE_CLIMATE);
+  const employeesCanon = await loadEmployeesCanonicos(db, params.companyId, params.trimestre);
+  const respostasPorEmployee = await loadRespostasPorEmployee(
+    db,
+    params.companyId,
+    params.trimestre,
+  );
+
+  // Filtro canonico por escopo:
+  //   - empresa: todos os employees canonicos.
+  //   - departamento: employees com `departamento === X`.
+  //   - equipe: cadeia descendente (BFS) do lider.
+  let employeesEscopo: EmployeeCanonico[];
+  if (params.escopo === 'empresa') {
+    employeesEscopo = employeesCanon;
+  } else if (params.escopo === 'departamento') {
+    employeesEscopo = employeesCanon.filter((e) => e.departamento === params.escopoReferencia);
+  } else {
+    // equipe — polimorfia liderId XOR clevelId.
+    if (params.liderTipo === 'employee') {
+      const liderMap = await buildLiderSubordinadosMapClimate(db, params.companyId, dia16);
+      const cadeia = expandirCadeiaDescendenteClimate(params.liderId as number, liderMap);
+      if (cadeia.size === 0) {
+        // Cadeia vazia — lider inexistente OU sem subordinados no dia16.
+        return null;
+      }
+      employeesEscopo = employeesCanon.filter((e) => cadeia.has(e.id));
+    } else {
+      // clevel.
+      const liderMap = await buildLiderSubordinadosMapClimate(db, params.companyId, dia16);
+      const clevelMap = await buildCLevelSubordinadosMapClimate(db, params.companyId, dia16);
+      const cadeia = expandirCadeiaDescendenteClimateCLevel(
+        params.liderId as number,
+        clevelMap,
+        liderMap,
+      );
+      if (cadeia.size === 0) {
+        return null;
+      }
+      employeesEscopo = employeesCanon.filter((e) => cadeia.has(e.id));
+    }
+  }
+
+  return agregaEscopoPuro(
+    params.escopo,
+    params.escopoReferencia,
+    params.liderId,
+    params.liderTipo,
+    params.trimestre,
+    employeesEscopo,
+    respostasPorEmployee,
+    dia16,
+  );
+}
+
+// ============================================================
+// Cascata silenciosa canonica (Q4=A1)
+// ============================================================
+
+/**
+ * Resolve o departamento canonico do lider da equipe. Consulta
+ * `employees.departamento` para lider employee ou
+ * `cLevelMembers.departamento` para C-level. Retorna `null` quando
+ * o lider nao existe canonicamente.
+ */
+async function resolveLiderDepartamento(
+  db: RoipDatabase,
+  companyId: number,
+  liderId: number,
+  liderTipo: ClimateLiderTipo,
+): Promise<string | null> {
+  if (liderTipo === 'employee') {
+    const [row] = await db
+      .select({ departamento: employees.departamento })
+      .from(employees)
+      .where(and(eq(employees.id, liderId), eq(employees.companyId, companyId)))
+      .limit(1);
+    return row?.departamento ?? null;
+  }
+  const [row] = await db
+    .select({ departamento: cLevelMembers.departamento })
+    .from(cLevelMembers)
+    .where(and(eq(cLevelMembers.id, liderId), eq(cLevelMembers.companyId, companyId)))
+    .limit(1);
+  return row?.departamento ?? null;
+}
+
+/**
+ * Cascata silenciosa canonica (§9.6, Q4=A1):
+ *   1. Tenta escopo requisitado. Se `countCobertura >= PISO`,
+ *      retorna esse nivel (`notaAgregacao=null`, `dadosDisponiveis=
+ *      true`).
+ *   2. Se abaixo do piso e escopo='equipe', sobe para departamento
+ *      do lider (`notaAgregacao='agregado_departamento'`).
+ *   3. Se abaixo do piso e escopo='departamento' (ou apos cascata
+ *      da equipe), sobe para empresa (`notaAgregacao=
+ *      'agregado_empresa'`).
+ *   4. Se nem empresa atende ao piso, retorna o payload da empresa
+ *      com `dadosDisponiveis=false`.
+ *
+ * Sempre retorna um resultado canonico (mesmo com dados
+ * indisponiveis) — a UI decide a superficie de mensagem canonica.
+ */
+export async function resolveClimateBlockComCascata(
+  db: RoipDatabase,
+  params: ComputeClimateBlockParams,
+): Promise<ClimateBlockCascataResult> {
+  const escopoRequisitado = {
+    escopo: params.escopo,
+    escopoReferencia: params.escopoReferencia,
+    liderId: params.liderId,
+    liderTipo: params.liderTipo,
+  } as const;
+
+  // Tentativa 1: escopo requisitado.
+  const tentativa1 = await computeClimateBlock(db, params);
+  if (tentativa1 !== null && tentativa1.countCobertura >= PISO_RESPONDENTES_CLIMATE) {
+    return {
+      escopoRequisitado,
+      escopoEfetivo: { ...escopoRequisitado },
+      notaAgregacao: null,
+      dadosDisponiveis: true,
+      payload: tentativa1,
+    };
+  }
+
+  // Tentativa 2: se escopo='equipe', sobe para departamento do lider.
+  if (params.escopo === 'equipe' && params.liderId !== null && params.liderTipo !== null) {
+    const dept = await resolveLiderDepartamento(
+      db,
+      params.companyId,
+      params.liderId,
+      params.liderTipo,
+    );
+    if (dept !== null) {
+      const tentativa2 = await computeClimateBlock(db, {
+        companyId: params.companyId,
+        escopo: 'departamento',
+        escopoReferencia: dept,
+        liderId: null,
+        liderTipo: null,
+        trimestre: params.trimestre,
+      });
+      if (tentativa2 !== null && tentativa2.countCobertura >= PISO_RESPONDENTES_CLIMATE) {
+        return {
+          escopoRequisitado,
+          escopoEfetivo: {
+            escopo: 'departamento',
+            escopoReferencia: dept,
+            liderId: null,
+            liderTipo: null,
+          },
+          notaAgregacao: 'agregado_departamento',
+          dadosDisponiveis: true,
+          payload: tentativa2,
+        };
       }
     }
   }
-  const clevelsElegiveis: number[] = [];
-  for (const c of rowsClevels) {
-    const subordinados = clevelSubordinadosMap.get(c.id);
-    if (subordinados !== undefined && subordinados.size > 0) {
-      clevelsElegiveis.push(c.id);
-    }
-  }
-  const departamentosList = Array.from(departamentosSet).sort();
-  lideresElegiveis.sort((a, b) => a - b);
-  clevelsElegiveis.sort((a, b) => a - b);
 
-  // -------- 6/7) calcula agregados por escopo --------
-  const escoposAggs: ClimateEscopoAggregado[] = [];
-
-  // 6a) empresa
-  escoposAggs.push(
-    agregaEscopo('empresa', null, null, null, employeesCanon, respostasPorEmployee, dia16),
-  );
-
-  // 6b) departamentos
-  for (const dep of departamentosList) {
-    const employeesDep = employeesCanon.filter((e) => e.departamento === dep);
-    escoposAggs.push(
-      agregaEscopo('departamento', dep, null, null, employeesDep, respostasPorEmployee, dia16),
-    );
+  // Tentativa 3: sobe para empresa.
+  const tentativa3 = await computeClimateBlock(db, {
+    companyId: params.companyId,
+    escopo: 'empresa',
+    escopoReferencia: null,
+    liderId: null,
+    liderTipo: null,
+    trimestre: params.trimestre,
+  });
+  if (tentativa3 !== null && tentativa3.countCobertura >= PISO_RESPONDENTES_CLIMATE) {
+    return {
+      escopoRequisitado,
+      escopoEfetivo: {
+        escopo: 'empresa',
+        escopoReferencia: null,
+        liderId: null,
+        liderTipo: null,
+      },
+      notaAgregacao: params.escopo === 'empresa' ? null : 'agregado_empresa',
+      dadosDisponiveis: true,
+      payload: tentativa3,
+    };
   }
 
-  // 6c) equipes (lideres employee com cadeia)
-  for (const liderId of lideresElegiveis) {
-    const cadeia = expandirCadeiaDescendenteClimate(liderId, liderSubordinadosMap);
-    const employeesEq = employeesCanon.filter((e) => cadeia.has(e.id));
-    escoposAggs.push(
-      agregaEscopo('equipe', null, liderId, null, employeesEq, respostasPorEmployee, dia16),
-    );
-  }
+  // Ultimo recurso: empresa mesmo sem piso (dadosDisponiveis=false).
+  const payloadFinal =
+    tentativa3 ??
+    ({
+      escopo: 'empresa',
+      escopoReferencia: null,
+      liderId: null,
+      liderTipo: null,
+      trimestre: params.trimestre,
+      notaClima: null,
+      adesao: null,
+      countCobertura: 0,
+      countTotal: 0,
+      notaEngajamento: null,
+      notaDesenvolvimento: null,
+      notaPertencimento: null,
+      notaRealizacao: null,
+      notasQuestao: Array.from({ length: NUM_QUESTOES_CLIMATE }, () => null),
+    } satisfies ClimateBlockPayload);
 
-  // 6d) equipes (C-levels com cadeia mista) — ME-B2-01a.1.2
-  //
-  // Grid canonico S176 estendido (Q3=A1): C-levels ativos com >=1
-  // subordinado direto no `clevelSubordinadosMap`. Cadeia expandida
-  // via BFS misto (nivel 1 = subordinados diretos do C-level; niveis
-  // 2+ = cascata employee-lider da S173 reusada).
-  for (const clevelId of clevelsElegiveis) {
-    const cadeia = expandirCadeiaDescendenteClimateCLevel(
-      clevelId,
-      clevelSubordinadosMap,
-      liderSubordinadosMap,
-    );
-    const employeesEq = employeesCanon.filter((e) => cadeia.has(e.id));
-    escoposAggs.push(
-      agregaEscopo('equipe', null, null, clevelId, employeesEq, respostasPorEmployee, dia16),
-    );
-  }
-
-  // -------- 8) UPSERT canonico NULL-safe em climateEngagementData --------
-  //
-  // Padrao S172b (correcao S172 aprovada): MySQL trata NULL como
-  // distinto em UNIQUE constraint — duas linhas com `departamento
-  // IS NULL` ou `liderId IS NULL` NAO colidem em `uq_climate_escopo`.
-  // Isso quebraria a idempotencia canonica do §9.10. Solucao:
-  // SELECT canonico por chave completa (usando `isNull` para os
-  // discriminadores nullable) seguido de UPDATE ou INSERT, dentro
-  // do fluxo determinístico do motor. Sem race relevante: motor
-  // Clima e chamado in-band do plenitude (unico caller sincrono
-  // per-employee); reprocessamento manual via `climate.
-  // recalculateAggregates` e Bruno exclusivo (S175). RV-12 preservado.
-  // Padrao S157 herdado — sem delete de orfaos.
-  for (const agg of escoposAggs) {
-    const existingRows = await db
-      .select({ id: climateEngagementData.id })
-      .from(climateEngagementData)
-      .where(
-        and(
-          eq(climateEngagementData.companyId, companyId),
-          eq(climateEngagementData.escopo, agg.escopo),
-          agg.departamento === null
-            ? isNull(climateEngagementData.departamento)
-            : eq(climateEngagementData.departamento, agg.departamento),
-          agg.liderId === null
-            ? isNull(climateEngagementData.liderId)
-            : eq(climateEngagementData.liderId, agg.liderId),
-          agg.clevelId === null
-            ? isNull(climateEngagementData.clevelId)
-            : eq(climateEngagementData.clevelId, agg.clevelId),
-          eq(climateEngagementData.trimestre, trimestre),
-        ),
-      )
-      .limit(1);
-    if (existingRows.length > 0) {
-      await db
-        .update(climateEngagementData)
-        .set(buildClimateUpdateSet(agg, now))
-        .where(eq(climateEngagementData.id, existingRows[0]!.id));
-    } else {
-      await db
-        .insert(climateEngagementData)
-        .values(buildClimateInsertValues(companyId, agg, trimestre, now));
-    }
-  }
-
-  // -------- 9) retorno canonico tipado --------
   return {
-    companyId,
-    trimestre,
-    escopos: escoposAggs,
-    calculadoEm: now,
+    escopoRequisitado,
+    escopoEfetivo: {
+      escopo: 'empresa',
+      escopoReferencia: null,
+      liderId: null,
+      liderTipo: null,
+    },
+    notaAgregacao: params.escopo === 'empresa' ? null : 'agregado_empresa',
+    dadosDisponiveis: false,
+    payload: payloadFinal,
   };
+}
+
+// ============================================================
+// Descoberta canonica de trimestres (substitui SELECT da tabela)
+// ============================================================
+
+/**
+ * Lista os trimestres canonicos que tem pelo menos 1 `scoreA IS NOT
+ * NULL` gravado em `plenitudeData` para a empresa. Ordena
+ * canonicamente asc (mais antigo primeiro) por default; passe
+ * `order='desc'` para inverter (mais recente primeiro). Consumido
+ * pela UI do card (linha do tempo) e pelo endpoint de download do
+ * PDF do Bloco Clima.
+ */
+export async function listClimateTrimestres(
+  db: RoipDatabase,
+  companyId: number,
+  order: 'asc' | 'desc' = 'asc',
+): Promise<string[]> {
+  const rows = await db
+    .selectDistinct({ trimestre: plenitudeData.trimestre })
+    .from(plenitudeData)
+    .where(and(eq(plenitudeData.companyId, companyId), isNotNull(plenitudeData.scoreA)))
+    .orderBy(order === 'asc' ? asc(plenitudeData.trimestre) : desc(plenitudeData.trimestre));
+  return rows.map((r) => r.trimestre);
 }

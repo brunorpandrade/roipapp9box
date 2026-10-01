@@ -30,6 +30,8 @@ interface FakeSelectChain {
   select: (fields?: unknown) => FakeSelectChain;
   selectDistinct: (fields?: unknown) => FakeSelectChain;
   from: (t: unknown) => FakeSelectChain;
+  leftJoin: (t: unknown, on: unknown) => FakeSelectChain;
+  innerJoin: (t: unknown, on: unknown) => FakeSelectChain;
   where: (c: unknown) => FakeSelectChain;
   orderBy: (...args: unknown[]) => FakeSelectChain;
   limit: (n: number) => Promise<StubRow[]>;
@@ -48,6 +50,12 @@ function buildFakeDb(queue: StubRow[][]) {
       select: () => chain,
       selectDistinct: () => chain,
       from: () => chain,
+      // ME-B2-01b Q1=D — motor puro `computeClimateBlock` usa
+      // leftJoin (employees ⟕ plenitudeData) e innerJoin
+      // (employeeLeaderHistory ⟕ employees). Fake retorna chain
+      // intocado para preservar o padrao terminal.
+      leftJoin: () => chain,
+      innerJoin: () => chain,
       where: () => chain,
       orderBy: () => chain,
       limit: async (n: number) => {
