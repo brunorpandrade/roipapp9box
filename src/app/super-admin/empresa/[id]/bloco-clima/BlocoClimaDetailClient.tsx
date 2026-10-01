@@ -1,32 +1,32 @@
 'use client';
 
 // ROIP APP 9BOX — client component canonico da tela de detalhamento
-// Clima e Engajamento (ME-B2-01b Fase 2 hotfix3 + ME-B2-01d).
+// Clima e Engajamento (ME-B2-01b Fase 2 hotfix3 + ME-B2-01d + ME-B2-01f).
 //
-// ME-B2-01d (01/10/2026) — 4 ajustes canonicos de UX, zero motor:
-//   - Pills do filtro: cada pill exibe "(N)" com o countCobertura do
-//     ultimo trimestre fechado. "Empresa toda (N)" + "Dep (N)" para
-//     cada departamento ativo. Pills com `respondentes < 3` ficam com
-//     estilo atenuado (opacidade reduzida).
-//   - Nota de ajuda fixa abaixo do filtro: linha pequena explicando o
-//     piso canonico §9.6 (3 respondentes para anonimato §7.6).
-//   - Bloqueio por piso: ao filtrar um departamento com respondentes
-//     abaixo do piso, a UI renderiza tela de "insuficiencia" em vez
-//     do agregado da empresa que a cascata silenciosa produz. Botao
-//     Link volta para o escopo empresa. Preserva a semantica canonica
-//     do motor (cascata continua funcionando para outros consumidores
-//     — relatorio executivo, PDF, IA).
-//   - Taxa de adesao visivel: abaixo do "SCORE GERAL · N respondentes",
-//     adiciona linha "ADESAO · X%" com o `payload.adesao` canonico §9.4
-//     (0-100 em percentual).
+// ME-B2-01f (01/10/2026) — navegacao temporal canonica, zero motor:
+//   - Setas < > no card do gauge para navegar entre trimestres canonicos
+//     (lista vem do loader via `data.trimestresDisponiveis`).
+//   - Rotulo central por extenso: "4º Trimestre de 2027" (vs. "Q4/27"
+//     da timeline). Facilita leitura executiva.
+//   - Timeline canonica: barra do trimestre SELECIONADO em destaque
+//     (opacidade 0.5 + borda mais grossa) para marcar o foco visual.
+//   - URL ortogonal: `?dep=X` e `?tri=YYYY-QN` combinam livremente.
+//     Setas preservam `?dep`; filtro de escopo preserva `?tri`.
+//   - Tela de insuficiencia por piso referencia o trimestre selecionado
+//     (nao mais "ultimo trimestre") — consistencia canonica com a
+//     navegacao temporal.
+//
+// ME-B2-01d (01/10/2026) preservado:
+//   - Pills do filtro com contagens (Nome N) + atenuacao < 3.
+//   - Nota de ajuda do piso canonico §9.6.
+//   - Bloqueio por piso ao filtrar departamento abaixo do piso.
+//   - Taxa de adesao visivel §9.4.
 //
 // Hotfix3 (30/09/2026) preservado:
-//   - Titulo sem "Bloco": "Clima e engajamento — Empresa" ou
-//     "Clima e engajamento — <Departamento>".
+//   - Titulo sem "Bloco": "Clima e engajamento — Empresa|<Dep>".
 //   - 20 questoes canonicas por extenso (CAMADA_NEGOCIO §6.2).
 //   - Layout 2 linhas por questao (texto acima, barra+nota abaixo).
-//   - 4 dimensoes canonicas sempre renderizadas, com `data-dim` para
-//     auditoria visual.
+//   - 4 dimensoes canonicas sempre renderizadas, com `data-dim`.
 //
 // Client component canonico pela interatividade (useState para
 // sanfona). Grafico (gauge + timeline) e barras renderizados como
@@ -78,6 +78,29 @@ function labelTrimestre(trimestre: string): string {
   if (!match) return trimestre;
   const [, ano, q] = match;
   return `Q${q}/${ano!.slice(2)}`;
+}
+
+/**
+ * Rotulo por extenso canonico (ME-B2-01f) para o header do gauge.
+ * "2027-Q4" → "4º Trimestre de 2027". Fallback: a propria string.
+ */
+function labelTrimestreExtenso(trimestre: string): string {
+  const match = trimestre.match(/^(\d{4})-?Q([1-4])$/);
+  if (!match) return trimestre;
+  const [, ano, q] = match;
+  return `${q}º Trimestre de ${ano}`;
+}
+
+/**
+ * Monta a URL canonica da tela preservando `?dep` e `?tri` quando
+ * presentes. Omite parametros vazios para manter URL limpa.
+ */
+function buildUrl(companyId: number, dep: string | null, tri: string | null): string {
+  const base = `/super-admin/empresa/${companyId}/bloco-clima`;
+  const params: string[] = [];
+  if (dep !== null) params.push(`dep=${encodeURIComponent(dep)}`);
+  if (tri !== null) params.push(`tri=${encodeURIComponent(tri)}`);
+  return params.length > 0 ? `${base}?${params.join('&')}` : base;
 }
 
 /**
@@ -167,9 +190,14 @@ function GaugeDonut(props: { readonly nota: number | null }): JSX.Element {
  * Timeline canonica barras + linha (modelo Pulses adaptado). Barras
  * claras com fill rgba 0.22 na cor do semaforo + linha teal conectando
  * os topos. Eixo Y fixo 0-10.
+ *
+ * ME-B2-01f — a barra do trimestre `selecionado` recebe destaque
+ * canonico (fill rgba 0.55, stroke 2px, rotulo em bold) para marcar
+ * o foco temporal da visualizacao atual.
  */
 function TimelineBarrasLinha(props: {
   readonly historico: readonly { trimestre: string; notaClima: number | null }[];
+  readonly selecionado: string;
 }): JSX.Element {
   const h = props.historico;
   if (h.length === 0) {
@@ -248,6 +276,10 @@ function TimelineBarrasLinha(props: {
         const y = yFor(ponto.notaClima);
         const alt = padTop + graficoH - y;
         const x = xCentro(i) - barW / 2;
+        const isSelecionado = ponto.trimestre === props.selecionado;
+        const fill = hexToRgba(cor, isSelecionado ? 0.55 : 0.22);
+        const stroke = hexToRgba(cor, isSelecionado ? 0.9 : 0.5);
+        const strokeW = isSelecionado ? 2 : 1;
         return (
           <rect
             key={ponto.trimestre}
@@ -255,9 +287,9 @@ function TimelineBarrasLinha(props: {
             y={y}
             width={barW}
             height={alt}
-            fill={hexToRgba(cor, 0.22)}
-            stroke={hexToRgba(cor, 0.5)}
-            strokeWidth={1}
+            fill={fill}
+            stroke={stroke}
+            strokeWidth={strokeW}
             rx={2}
           />
         );
@@ -283,19 +315,23 @@ function TimelineBarrasLinha(props: {
           strokeWidth={2}
         />
       ))}
-      {h.map((ponto, i) => (
-        <text
-          key={`lbl-${ponto.trimestre}`}
-          x={xCentro(i)}
-          y={H - 10}
-          textAnchor="middle"
-          fontSize="10"
-          fill={COLORS.text.tertiary}
-          fontFamily="system-ui, sans-serif"
-        >
-          {labelTrimestre(ponto.trimestre)}
-        </text>
-      ))}
+      {h.map((ponto, i) => {
+        const isSelecionado = ponto.trimestre === props.selecionado;
+        return (
+          <text
+            key={`lbl-${ponto.trimestre}`}
+            x={xCentro(i)}
+            y={H - 10}
+            textAnchor="middle"
+            fontSize="10"
+            fontWeight={isSelecionado ? 700 : 400}
+            fill={isSelecionado ? COLORS.text.primary : COLORS.text.tertiary}
+            fontFamily="system-ui, sans-serif"
+          >
+            {labelTrimestre(ponto.trimestre)}
+          </text>
+        );
+      })}
       {pontos.map((p, i) => (
         <text
           key={`val-${i}`}
@@ -311,6 +347,91 @@ function TimelineBarrasLinha(props: {
         </text>
       ))}
     </svg>
+  );
+}
+
+/**
+ * ME-B2-01f — navegador canonico temporal exibido acima do gauge.
+ * Setas < > sao Links SSR que preservam `?dep` e trocam `?tri`.
+ * Setas desabilitadas quando no limite da `trimestresDisponiveis`.
+ * Rotulo central por extenso ("4º Trimestre de 2027").
+ */
+function NavegadorTemporal(props: {
+  readonly companyId: number;
+  readonly departamentoAtual: string | null;
+  readonly selecionado: string;
+  readonly disponiveis: readonly string[];
+}): JSX.Element {
+  // `disponiveis` vem desc (mais recente primeiro). Indice 0 = mais
+  // recente; indice length-1 = mais antigo.
+  const idx = props.disponiveis.indexOf(props.selecionado);
+  const temProx = idx > 0;
+  const temAnt = idx >= 0 && idx < props.disponiveis.length - 1;
+  const prox = temProx ? (props.disponiveis[idx - 1] as string) : null;
+  const ant = temAnt ? (props.disponiveis[idx + 1] as string) : null;
+  const btnBase = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    border: `1px solid ${COLORS.border.default}`,
+    background: COLORS.background.card,
+    color: COLORS.accent.teal,
+    fontSize: 16,
+    fontWeight: 700,
+    textDecoration: 'none',
+    cursor: 'pointer',
+  };
+  const btnDisabled = {
+    ...btnBase,
+    color: COLORS.text.quaternary,
+    cursor: 'not-allowed',
+    pointerEvents: 'none' as const,
+    opacity: 0.5,
+  };
+  const anteriorHref = ant === null ? '#' : buildUrl(props.companyId, props.departamentoAtual, ant);
+  const proximoHref =
+    prox === null ? '#' : buildUrl(props.companyId, props.departamentoAtual, prox);
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+        marginBottom: 8,
+      }}
+    >
+      <Link
+        href={anteriorHref}
+        style={ant === null ? btnDisabled : btnBase}
+        aria-label="Trimestre anterior"
+        aria-disabled={ant === null}
+      >
+        ‹
+      </Link>
+      <span
+        style={{
+          fontSize: 15,
+          fontWeight: 700,
+          color: COLORS.text.primary,
+          minWidth: 190,
+          textAlign: 'center',
+        }}
+      >
+        {labelTrimestreExtenso(props.selecionado)}
+      </span>
+      <Link
+        href={proximoHref}
+        style={prox === null ? btnDisabled : btnBase}
+        aria-label="Próximo trimestre"
+        aria-disabled={prox === null}
+      >
+        ›
+      </Link>
+    </div>
   );
 }
 
@@ -524,20 +645,15 @@ function DimensaoSanfona(props: {
 
 /**
  * Dropdown canonico de escopo (ME-B2-01d — pills com contagens).
- * Default: "Empresa toda (N)". Opcoes: "Dep (N)" para cada
- * departamento ativo. Pills com `respondentes < 3` recebem atenuacao
- * visual (opacidade reduzida + rotulo auxiliar "sem relatorio") mas
- * continuam clicaveis — o clique abre a tela de insuficiencia
- * canonica no componente pai. Troca via Link (SSR — nova request com
- * `?dep=`).
+ * ME-B2-01f — preserva `?tri` quando troca de departamento.
  */
 function FiltroEscopo(props: {
   readonly companyId: number;
   readonly departamentosAtivos: readonly DepartamentoAtivoClimateEntry[];
   readonly empresaScope: EmpresaScopeClimateEntry | null;
   readonly atual: string | null;
+  readonly trimestreSelecionado: string | null;
 }): JSX.Element {
-  const base = `/super-admin/empresa/${props.companyId}/bloco-clima`;
   const pillBase = {
     padding: '8px 14px',
     borderRadius: 20,
@@ -565,6 +681,7 @@ function FiltroEscopo(props: {
     props.empresaScope === null
       ? 'Empresa toda'
       : `Empresa toda (${props.empresaScope.respondentes})`;
+  const hrefEmpresa = buildUrl(props.companyId, null, props.trimestreSelecionado);
   return (
     <div
       style={{
@@ -586,17 +703,18 @@ function FiltroEscopo(props: {
       >
         Escopo:
       </span>
-      <Link href={base} style={props.atual === null ? pillAtivo : pillInativo}>
+      <Link href={hrefEmpresa} style={props.atual === null ? pillAtivo : pillInativo}>
         {empresaLabel}
       </Link>
       {props.departamentosAtivos.map((dep) => {
         const abaixoPiso = dep.respondentes < PISO_RESPONDENTES_CLIMATE;
         const estiloBase = props.atual === dep.nome ? pillAtivo : pillInativo;
         const estilo = abaixoPiso ? { ...estiloBase, opacity: 0.6 } : estiloBase;
+        const hrefDep = buildUrl(props.companyId, dep.nome, props.trimestreSelecionado);
         return (
           <Link
             key={dep.nome}
-            href={`${base}?dep=${encodeURIComponent(dep.nome)}`}
+            href={hrefDep}
             style={estilo}
             title={abaixoPiso ? 'Abaixo do piso canônico de 3 respondentes' : undefined}
           >
@@ -614,16 +732,24 @@ function FiltroEscopo(props: {
  * 3` — em vez de mostrar o agregado da empresa que a cascata silenciosa
  * do motor produz, a UI bloqueia explicitamente e informa o motivo
  * (anonimato §7.6). Oferece Link de retorno ao escopo empresa.
+ *
+ * ME-B2-01f — referencia o trimestre selecionado em vez de "ultimo
+ * trimestre" (consistencia canonica com a navegacao temporal).
  */
 function TelaInsuficienciaPorPiso(props: {
   readonly companyId: number;
   readonly departamentoAtual: string;
   readonly respondentes: number;
+  readonly trimestreSelecionado: string | null;
 }): JSX.Element {
-  const base = `/super-admin/empresa/${props.companyId}/bloco-clima`;
+  const hrefVoltar = buildUrl(props.companyId, null, props.trimestreSelecionado);
   const plural = props.respondentes === 1 ? 'respondente' : 'respondentes';
+  const triLabel =
+    props.trimestreSelecionado === null
+      ? 'no trimestre selecionado'
+      : `em ${labelTrimestreExtenso(props.trimestreSelecionado)}`;
   const frasePiso =
-    `tem ${props.respondentes} ${plural} no último trimestre, abaixo do piso canônico de ` +
+    `tem ${props.respondentes} ${plural} ${triLabel}, abaixo do piso canônico de ` +
     `3 respondentes exigido para preservar o anonimato individual.`;
   return (
     <div
@@ -659,7 +785,7 @@ function TelaInsuficienciaPorPiso(props: {
         O departamento <strong>{props.departamentoAtual}</strong> {frasePiso}
       </span>
       <Link
-        href={base}
+        href={hrefVoltar}
         style={{
           marginTop: 8,
           padding: '10px 18px',
@@ -695,11 +821,11 @@ function respondentesDoDepartamento(
 /**
  * Componente canonico da tela de detalhamento Clima e Engajamento.
  * Layout: titulo (sem "Bloco") + filtro com contagens + nota de ajuda
- * canonica + topo (gauge + timeline + adesao) + lista das 4 dimensoes
- * (sanfonas canonicas, texto da questao por extenso acima da barra)
- * com toggle "Expandir todas / Recolher todas". Bloqueio por piso
- * canonico quando o departamento filtrado tem respondentes abaixo
- * do piso §9.6.
+ * canonica + navegador temporal (ME-B2-01f) + topo (gauge + timeline
+ * destacada + adesao) + lista das 4 dimensoes (sanfonas canonicas,
+ * texto da questao por extenso acima da barra) com toggle "Expandir
+ * todas / Recolher todas". Bloqueio por piso canonico quando o
+ * departamento filtrado tem respondentes abaixo do piso §9.6.
  */
 export function BlocoClimaDetailClient(props: BlocoClimaDetailClientProps): JSX.Element {
   const [abertas, setAbertas] = useState<readonly boolean[]>([false, false, false, false]);
@@ -716,6 +842,8 @@ export function BlocoClimaDetailClient(props: BlocoClimaDetailClientProps): JSX.
     props.departamentoAtual === null
       ? 'Clima e engajamento — Empresa'
       : `Clima e engajamento — ${props.departamentoAtual}`;
+
+  const trimestreSelecionado = props.data?.trimestreSelecionado ?? null;
 
   const notaAjudaPiso = (
     <span
@@ -736,6 +864,7 @@ export function BlocoClimaDetailClient(props: BlocoClimaDetailClientProps): JSX.
         departamentosAtivos={props.departamentosAtivos}
         empresaScope={props.empresaScope}
         atual={props.departamentoAtual}
+        trimestreSelecionado={trimestreSelecionado}
       />
       {notaAjudaPiso}
     </div>
@@ -759,6 +888,7 @@ export function BlocoClimaDetailClient(props: BlocoClimaDetailClientProps): JSX.
             companyId={props.companyId}
             departamentoAtual={props.departamentoAtual}
             respondentes={resp}
+            trimestreSelecionado={trimestreSelecionado}
           />
         </div>
       );
@@ -829,73 +959,89 @@ export function BlocoClimaDetailClient(props: BlocoClimaDetailClientProps): JSX.
       {dadosDisponiveis ? (
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'auto 1fr',
-            gap: 24,
-            alignItems: 'center',
+            display: 'flex',
+            flexDirection: 'column',
             padding: 20,
             border: `1px solid ${COLORS.border.default}`,
             borderRadius: 8,
             background: COLORS.background.card,
           }}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <GaugeDonut nota={payload.notaClima} />
-            <span
-              style={{
-                marginTop: 4,
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                color: COLORS.text.tertiary,
-              }}
-            >
-              Score geral
-            </span>
-            <span style={{ marginTop: 2, fontSize: 11, color: COLORS.text.tertiary }}>
-              {payload.countCobertura} respondente{payload.countCobertura === 1 ? '' : 's'}
-            </span>
-            <span
-              style={{
-                marginTop: 6,
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                color: COLORS.text.tertiary,
-              }}
-            >
-              Adesão
-            </span>
-            <span
-              style={{
-                marginTop: 2,
-                fontSize: 13,
-                fontWeight: 700,
-                color: COLORS.text.secondary,
-              }}
-            >
-              {fmtPct0(payload.adesao)}
-            </span>
-            <span style={{ marginTop: 2, fontSize: 10, color: COLORS.text.quaternary }}>
-              {payload.countCobertura} de {payload.countTotal} elegíveis
-            </span>
-          </div>
-          <div>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                color: COLORS.text.tertiary,
-                marginBottom: 6,
-              }}
-            >
-              Evolução trimestral
+          <NavegadorTemporal
+            companyId={props.companyId}
+            departamentoAtual={props.departamentoAtual}
+            selecionado={props.data.trimestreSelecionado}
+            disponiveis={props.data.trimestresDisponiveis}
+          />
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'auto 1fr',
+              gap: 24,
+              alignItems: 'center',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <GaugeDonut nota={payload.notaClima} />
+              <span
+                style={{
+                  marginTop: 4,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  color: COLORS.text.tertiary,
+                }}
+              >
+                Score geral
+              </span>
+              <span style={{ marginTop: 2, fontSize: 11, color: COLORS.text.tertiary }}>
+                {payload.countCobertura} respondente{payload.countCobertura === 1 ? '' : 's'}
+              </span>
+              <span
+                style={{
+                  marginTop: 6,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  color: COLORS.text.tertiary,
+                }}
+              >
+                Adesão
+              </span>
+              <span
+                style={{
+                  marginTop: 2,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: COLORS.text.secondary,
+                }}
+              >
+                {fmtPct0(payload.adesao)}
+              </span>
+              <span style={{ marginTop: 2, fontSize: 10, color: COLORS.text.quaternary }}>
+                {payload.countCobertura} de {payload.countTotal} elegíveis
+              </span>
             </div>
-            <TimelineBarrasLinha historico={props.data.historico} />
+            <div>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  color: COLORS.text.tertiary,
+                  marginBottom: 6,
+                }}
+              >
+                Evolução trimestral
+              </div>
+              <TimelineBarrasLinha
+                historico={props.data.historico}
+                selecionado={props.data.trimestreSelecionado}
+              />
+            </div>
           </div>
         </div>
       ) : (

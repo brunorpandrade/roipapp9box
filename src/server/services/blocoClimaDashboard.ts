@@ -13,6 +13,15 @@
 // retornar contagem de respondentes e total elegiveis do ultimo
 // trimestre canonico, por departamento, para a UI do filtro de escopo
 // (pills com "(N)" + bloqueio por piso canonico §9.6).
+//
+// ME-B2-01f (01/10/2026) — navegacao temporal canonica. O loader
+// aceita um `trimestreSelecionado?` opcional e retorna a lista
+// canonica completa de trimestres canonicos para a UI resolver as
+// setas prev/next. A timeline canonica passa a ser uma janela
+// deslizante de 4 trimestres com o selecionado como ponto mais
+// recente (visao "evolucao ate esse ponto"). As contagens dos pills
+// do filtro refletem o trimestre selecionado — nao mais sempre o
+// mais recente.
 
 import { and, eq } from 'drizzle-orm';
 
@@ -45,19 +54,26 @@ interface BlocoClimaTimelinePoint {
 
 /**
  * Payload canonico consumido pelo `BlocoClimaCard`. Inclui o payload
- * atual (cascata canonica resolvida) e o historico canonico dos
- * ultimos N trimestres.
+ * do trimestre selecionado (cascata canonica resolvida), o historico
+ * canonico da janela deslizante de 4 trimestres, e a lista canonica
+ * completa de trimestres disponiveis + o trimestre selecionado
+ * resolvido — ME-B2-01f para navegacao temporal.
  */
 export interface BlocoClimaDashboardData {
   escopoRequisitado: ClimateBlockCascataResult['escopoRequisitado'];
   cascata: ClimateBlockCascataResult;
   historico: readonly BlocoClimaTimelinePoint[];
+  trimestreSelecionado: string;
+  trimestresDisponiveis: readonly string[];
 }
 
 /**
  * Parametros canonicos do loader. Espelha os parametros do motor
- * puro (`ComputeClimateBlockParams`) mas sem `trimestre` — o loader
- * resolve o trimestre canonico mais recente via `listClimateTrimestres`.
+ * puro (`ComputeClimateBlockParams`) mas sem `trimestre` obrigatorio
+ * — o loader resolve o trimestre canonico mais recente via
+ * `listClimateTrimestres` quando `trimestreSelecionado` nao e passado,
+ * ou valida o trimestre pedido contra a lista canonica (fallback para
+ * o mais recente quando o pedido nao existe canonicamente).
  */
 interface LoadBlocoClimaDashboardArgs {
   companyId: number;
@@ -65,6 +81,44 @@ interface LoadBlocoClimaDashboardArgs {
   escopoReferencia: string | null;
   liderId: number | null;
   liderTipo: ClimateLiderTipo | null;
+  trimestreSelecionado?: string | null;
+}
+
+/**
+ * Resolve o trimestre canonico efetivo a partir do pedido do caller
+ * (ME-B2-01f). Fallback canonico para o mais recente quando o pedido
+ * esta ausente ou nao existe na lista canonica (sanitiza input de URL
+ * `?tri=` externo).
+ */
+function resolveTrimestreCanonic(
+  pedido: string | null | undefined,
+  disponiveis: readonly string[],
+): string | null {
+  const atual = disponiveis[0];
+  if (atual === undefined) {
+    return null;
+  }
+  if (pedido === null || pedido === undefined || pedido === '') {
+    return atual;
+  }
+  return disponiveis.includes(pedido) ? pedido : atual;
+}
+
+/**
+ * Resolve a janela canonica de 4 trimestres para a timeline, com o
+ * selecionado como o mais recente da janela (visao "evolucao ate
+ * esse ponto"). `disponiveis` e desc (mais recente primeiro). Retorna
+ * desc; o caller inverte para asc antes de exibir.
+ */
+function resolveJanelaTimeline(
+  selecionado: string,
+  disponiveis: readonly string[],
+): readonly string[] {
+  const idx = disponiveis.indexOf(selecionado);
+  if (idx < 0) {
+    return disponiveis.slice(0, BLOCO_CLIMA_HISTORICO_MAX_TRIMESTRES);
+  }
+  return disponiveis.slice(idx, idx + BLOCO_CLIMA_HISTORICO_MAX_TRIMESTRES);
 }
 
 /**
@@ -72,15 +126,12 @@ interface LoadBlocoClimaDashboardArgs {
  * requisitado. Resolve:
  *   1. Lista canonica de trimestres com `scoreA IS NOT NULL`
  *      (`listClimateTrimestres`, desc).
- *   2. Trimestre atual = mais recente; se nao houver, retorna `null`
- *      (ausencia canonica — a UI exibe estado vazio).
+ *   2. Trimestre efetivo = `trimestreSelecionado` quando canonico, ou
+ *      mais recente como fallback (ME-B2-01f).
  *   3. Cascata silenciosa canonica (§9.6 Q4=A1) para o trimestre
- *      atual via `resolveClimateBlockComCascata`.
- *   4. Historico canonico dos ultimos N trimestres: para cada
- *      trimestre historico, computa SEM cascata (nota do escopo
- *      requisitado puro — `null` quando abaixo do piso). Isso
- *      preserva a semantica canonica da timeline (series temporais
- *      do MESMO escopo).
+ *      efetivo via `resolveClimateBlockComCascata`.
+ *   4. Janela deslizante da timeline — 4 trimestres com o selecionado
+ *      como mais recente da janela (ME-B2-01f).
  *
  * Retorno `null` canonico quando nao ha trimestres canonicos para a
  * empresa — a UI do card trata o estado vazio.
@@ -90,8 +141,8 @@ export async function loadBlocoClimaDashboardData(
   args: LoadBlocoClimaDashboardArgs,
 ): Promise<BlocoClimaDashboardData | null> {
   const trimestres = await listClimateTrimestres(db, args.companyId, 'desc');
-  const trimestreAtual = trimestres[0];
-  if (trimestreAtual === undefined) {
+  const trimestreEfetivo = resolveTrimestreCanonic(args.trimestreSelecionado, trimestres);
+  if (trimestreEfetivo === null) {
     return null;
   }
 
@@ -101,15 +152,15 @@ export async function loadBlocoClimaDashboardData(
     escopoReferencia: args.escopoReferencia,
     liderId: args.liderId,
     liderTipo: args.liderTipo,
-    trimestre: trimestreAtual,
+    trimestre: trimestreEfetivo,
   });
 
-  // Historico canonico: ultimos N trimestres canonicos (asc para a
-  // timeline fluir da esquerda para a direita).
-  // Slice + sort separados para respeitar max-len 100 canonico (RV-14).
-  const trimestresHistorico = trimestres.slice(0, BLOCO_CLIMA_HISTORICO_MAX_TRIMESTRES).sort();
+  // Historico canonico — janela deslizante com selecionado como mais
+  // recente. desc internamente; asc na saida para fluxo esquerda->direita.
+  const trimestresJanela = resolveJanelaTimeline(trimestreEfetivo, trimestres);
+  const trimestresHistoricoAsc = [...trimestresJanela].sort();
   const historico: BlocoClimaTimelinePoint[] = [];
-  for (const tri of trimestresHistorico) {
+  for (const tri of trimestresHistoricoAsc) {
     const payload = await computeClimateBlockForTimeline(db, {
       companyId: args.companyId,
       escopo: args.escopo,
@@ -128,6 +179,8 @@ export async function loadBlocoClimaDashboardData(
     escopoRequisitado: cascata.escopoRequisitado,
     cascata,
     historico,
+    trimestreSelecionado: trimestreEfetivo,
+    trimestresDisponiveis: trimestres,
   };
 }
 
@@ -167,8 +220,8 @@ export interface BlocoClimaIndicatorData {
 /**
  * ME-B2-01b Fase 2 hotfix2 — loader rapido do indicador. Chama o
  * motor puro para o escopo 'empresa' no trimestre canonico mais
- * recente. Retorna `null` quando nao ha trimestre canonico com
- * `scoreA` gravado.
+ * recente. Retorna `null` canonico quando nao ha trimestre canonico
+ * com `scoreA` gravado.
  */
 export async function loadBlocoClimaIndicatorData(
   db: RoipDatabase,
@@ -197,7 +250,7 @@ export async function loadBlocoClimaIndicatorData(
  * ME-B2-01d — entrada canonica do filtro de escopo da tela
  * `/bloco-clima`: nome do departamento + contagem de respondentes
  * (countCobertura canonico §9.4) + total de elegiveis (countTotal
- * canonico §9.4) no ultimo trimestre fechado. A UI usa `respondentes`
+ * canonico §9.4) no trimestre contextual. A UI usa `respondentes`
  * para rotular o pill ("Nome (N)") e para decidir o bloqueio por
  * piso canonico §9.6 (quando `respondentes < 3` o pill continua
  * visivel mas o clique abre tela de insuficiencia).
@@ -210,9 +263,8 @@ export interface DepartamentoAtivoClimateEntry {
 
 /**
  * ME-B2-01d — payload canonico do pill "Empresa toda" do filtro de
- * escopo: contagens agregadas da empresa inteira no ultimo trimestre
- * fechado. Permite rotular o pill com "Empresa toda (N)" sem precisar
- * aguardar o payload do escopo requisitado.
+ * escopo: contagens agregadas da empresa inteira no trimestre
+ * contextual.
  */
 export interface EmpresaScopeClimateEntry {
   respondentes: number;
@@ -222,20 +274,24 @@ export interface EmpresaScopeClimateEntry {
 /**
  * ME-B2-01d — lista canonica dos departamentos ativos da empresa
  * (employees com `status='ativo'`) acompanhada das contagens canonicas
- * de respondentes e elegiveis do ultimo trimestre fechado. Consumido
- * pelo filtro de escopo da tela de detalhamento (pills "Nome (N)" +
+ * de respondentes e elegiveis no trimestre contextual. Consumido pelo
+ * filtro de escopo da tela de detalhamento (pills "Nome (N)" +
  * bloqueio por piso canonico §9.6).
  *
- * Mecanica canonica: delega ao motor puro `computeClimateBlock` para
- * cada departamento no trimestre atual, extraindo apenas
- * `countCobertura` e `countTotal`. Preserva a origem canonica unica
- * da contagem (motor §9.4) — zero duplicacao de regra. Quando nao ha
- * trimestre canonico, retorna lista com `respondentes=0` e `total=0`
- * para cada departamento.
+ * ME-B2-01f (01/10/2026) — passa a aceitar `trimestreSelecionado?`
+ * opcional para refletir as contagens no trimestre em visualizacao
+ * (consistencia canonica com a navegacao temporal). Default: ultimo
+ * trimestre canonico. Mecanica canonica: delega ao motor puro
+ * `computeClimateBlock` para cada departamento no trimestre
+ * contextual, extraindo apenas `countCobertura` e `countTotal`.
+ * Preserva a origem canonica unica da contagem (motor §9.4) — zero
+ * duplicacao de regra. Quando nao ha trimestre canonico, retorna
+ * lista com `respondentes=0` e `total=0` para cada departamento.
  */
 export async function listDepartamentosAtivosClimate(
   db: RoipDatabase,
   companyId: number,
+  trimestreSelecionado?: string | null,
 ): Promise<readonly DepartamentoAtivoClimateEntry[]> {
   const rows = await db
     .selectDistinct({ departamento: employees.departamento })
@@ -243,8 +299,8 @@ export async function listDepartamentosAtivosClimate(
     .where(and(eq(employees.companyId, companyId), eq(employees.status, 'ativo')));
   const nomes = rows.map((r) => r.departamento).sort();
   const trimestres = await listClimateTrimestres(db, companyId, 'desc');
-  const trimestreAtual = trimestres[0];
-  if (trimestreAtual === undefined) {
+  const trimestreContextual = resolveTrimestreCanonic(trimestreSelecionado, trimestres);
+  if (trimestreContextual === null) {
     return nomes.map((nome) => ({ nome, respondentes: 0, total: 0 }));
   }
   const entries: DepartamentoAtivoClimateEntry[] = [];
@@ -255,7 +311,7 @@ export async function listDepartamentosAtivosClimate(
       escopoReferencia: nome,
       liderId: null,
       liderTipo: null,
-      trimestre: trimestreAtual,
+      trimestre: trimestreContextual,
     });
     entries.push({
       nome,
@@ -268,18 +324,22 @@ export async function listDepartamentosAtivosClimate(
 
 /**
  * ME-B2-01d — contagens canonicas de respondentes e elegiveis da
- * empresa inteira no ultimo trimestre fechado. Consumido pelo pill
+ * empresa inteira no trimestre contextual. Consumido pelo pill
  * "Empresa toda" do filtro de escopo e pelas chamadas de UI que
  * precisam da contagem agregada sem resolver o payload inteiro.
  * Retorna `null` canonico quando nao ha trimestre com `scoreA` gravado.
+ *
+ * ME-B2-01f (01/10/2026) — passa a aceitar `trimestreSelecionado?`
+ * opcional para refletir as contagens no trimestre em visualizacao.
  */
 export async function loadEmpresaScopeClimateCounts(
   db: RoipDatabase,
   companyId: number,
+  trimestreSelecionado?: string | null,
 ): Promise<EmpresaScopeClimateEntry | null> {
   const trimestres = await listClimateTrimestres(db, companyId, 'desc');
-  const trimestreAtual = trimestres[0];
-  if (trimestreAtual === undefined) {
+  const trimestreContextual = resolveTrimestreCanonic(trimestreSelecionado, trimestres);
+  if (trimestreContextual === null) {
     return null;
   }
   const payload = await computeClimateBlock(db, {
@@ -288,7 +348,7 @@ export async function loadEmpresaScopeClimateCounts(
     escopoReferencia: null,
     liderId: null,
     liderTipo: null,
-    trimestre: trimestreAtual,
+    trimestre: trimestreContextual,
   });
   if (payload === null) {
     return null;

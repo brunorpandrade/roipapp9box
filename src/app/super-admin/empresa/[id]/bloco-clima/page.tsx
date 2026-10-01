@@ -6,11 +6,10 @@
 // timeline barras+linha dos ultimos trimestres + 4 dimensoes ROIP
 // com sanfona canonica (notas por questao 0-10).
 //
-// Pattern canonico bit-exact herdado da landing (§2.1 do MASTER
-// B8). Loader puro: `loadBlocoClimaDashboardData` (motor sob
-// demanda) + `listDepartamentosAtivosClimate` (lista canonica para o
-// filtro) + `loadEmpresaScopeClimateCounts` (pill "Empresa toda" —
-// ME-B2-01d).
+// ME-B2-01f (01/10/2026) — searchParam `tri=<YYYY-QN>` ortogonal ao
+// `dep=` para navegacao temporal canonica. Loader sanitiza input e
+// faz fallback para o trimestre mais recente quando o pedido nao
+// existe canonicamente.
 
 import { notFound, redirect } from 'next/navigation';
 import type { JSX } from 'react';
@@ -33,7 +32,7 @@ import { BlocoClimaDetailClient } from './BlocoClimaDetailClient';
 
 interface PageProps {
   readonly params: Promise<{ id: string }>;
-  readonly searchParams: Promise<{ dep?: string }>;
+  readonly searchParams: Promise<{ dep?: string; tri?: string }>;
 }
 
 export default async function BlocoClimaDetailPage(props: PageProps): Promise<JSX.Element> {
@@ -51,8 +50,9 @@ export default async function BlocoClimaDetailPage(props: PageProps): Promise<JS
     notFound();
   }
 
-  const { dep: depParam } = await props.searchParams;
+  const { dep: depParam, tri: triParam } = await props.searchParams;
   const departamento = depParam === undefined || depParam.trim() === '' ? null : depParam;
+  const trimestrePedido = triParam === undefined || triParam.trim() === '' ? null : triParam;
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
@@ -61,15 +61,25 @@ export default async function BlocoClimaDetailPage(props: PageProps): Promise<JS
       notFound();
     }
 
-    const departamentosAtivos = await listDepartamentosAtivosClimate(client.db, companyId);
-    const empresaScope = await loadEmpresaScopeClimateCounts(client.db, companyId);
     const data = await loadBlocoClimaDashboardData(client.db, {
       companyId,
       escopo: departamento === null ? 'empresa' : 'departamento',
       escopoReferencia: departamento,
       liderId: null,
       liderTipo: null,
+      trimestreSelecionado: trimestrePedido,
     });
+    const trimestreContextual = data?.trimestreSelecionado ?? trimestrePedido;
+    const departamentosAtivos = await listDepartamentosAtivosClimate(
+      client.db,
+      companyId,
+      trimestreContextual,
+    );
+    const empresaScope = await loadEmpresaScopeClimateCounts(
+      client.db,
+      companyId,
+      trimestreContextual,
+    );
 
     const profileKey = resolveProfileKey({
       session,
