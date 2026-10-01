@@ -31,6 +31,7 @@
 //
 // **RV-14 canonica.** Um statement por linha, largura maxima 100 cols.
 
+import { loadBlocoClimaIndicatorData } from '../../../../server/services/blocoClimaDashboard';
 import { listActiveLeaders } from '../../../../server/services/painelNavigation';
 import { loadTurnoverCard } from '../../../../server/services/turnoverPanel';
 import { notFound, redirect } from 'next/navigation';
@@ -122,6 +123,10 @@ export default async function SuperAdminCompanyLandingPage(props: PageProps): Pr
     // alimenta o card "Ver equipes" (rota Bruno canonica
     // `/super-admin/empresa/[id]/dashboard-recorte/equipe/[alvo]`).
     const activeLeaders = await listActiveLeaders(client.db, companyId);
+    // ME-B2-01b Fase 2 hotfix2 — payload MINIMO do indicador do Bloco
+    // Clima: nota geral do ultimo trimestre fechado + rotulo. Clica no
+    // card → tela de detalhamento canonica `/bloco-clima`.
+    const blocoClima = await loadBlocoClimaIndicatorData(client.db, companyId);
 
     return (
       <Layout
@@ -145,6 +150,7 @@ export default async function SuperAdminCompanyLandingPage(props: PageProps): Pr
           mesAtualClosure={mesAtualClosure}
           turnoverCard={turnoverCard}
           activeLeaders={activeLeaders}
+          blocoClima={blocoClima}
         />
       </Layout>
     );

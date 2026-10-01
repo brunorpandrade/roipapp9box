@@ -9,7 +9,10 @@
 // Fonte unica: motor puro `computeClimateBlock` da ME-B2-01b Fase 1
 // (sob demanda, sem cache). Zero drift permanente.
 
+import { and, eq } from 'drizzle-orm';
+
 import type { RoipDatabase } from '../../db/client';
+import { employees } from '../../db/schema';
 import {
   type ClimateBlockCascataResult,
   type ClimateBlockPayload,
@@ -142,4 +145,61 @@ async function computeClimateBlockForTimeline(
     liderTipo: args.liderTipo,
     trimestre: args.trimestre,
   });
+}
+
+/**
+ * ME-B2-01b Fase 2 hotfix2 — payload canonico MINIMO para o card
+ * indicador do painel: so a nota geral do ultimo trimestre fechado +
+ * o rotulo do trimestre. Sem historico, sem dimensoes — a tela de
+ * detalhamento (`/super-admin/empresa/[id]/bloco-clima`) carrega o
+ * resto sob demanda.
+ */
+export interface BlocoClimaIndicatorData {
+  notaGeral: number | null;
+  trimestre: string;
+}
+
+/**
+ * ME-B2-01b Fase 2 hotfix2 — loader rapido do indicador. Chama o
+ * motor puro para o escopo 'empresa' no trimestre canonico mais
+ * recente. Retorna `null` quando nao ha trimestre canonico com
+ * `scoreA` gravado.
+ */
+export async function loadBlocoClimaIndicatorData(
+  db: RoipDatabase,
+  companyId: number,
+): Promise<BlocoClimaIndicatorData | null> {
+  const trimestres = await listClimateTrimestres(db, companyId, 'desc');
+  const trimestreAtual = trimestres[0];
+  if (trimestreAtual === undefined) {
+    return null;
+  }
+  const payload = await computeClimateBlock(db, {
+    companyId,
+    escopo: 'empresa',
+    escopoReferencia: null,
+    liderId: null,
+    liderTipo: null,
+    trimestre: trimestreAtual,
+  });
+  return {
+    notaGeral: payload?.notaClima ?? null,
+    trimestre: trimestreAtual,
+  };
+}
+
+/**
+ * ME-B2-01b Fase 2 hotfix2 — lista canonica dos departamentos ativos
+ * da empresa (employees com `status='ativo'`). Consumido pelo filtro
+ * de escopo da tela de detalhamento. Ordenacao alfabetica canonica.
+ */
+export async function listDepartamentosAtivosClimate(
+  db: RoipDatabase,
+  companyId: number,
+): Promise<readonly string[]> {
+  const rows = await db
+    .selectDistinct({ departamento: employees.departamento })
+    .from(employees)
+    .where(and(eq(employees.companyId, companyId), eq(employees.status, 'ativo')));
+  return rows.map((r) => r.departamento).sort();
 }

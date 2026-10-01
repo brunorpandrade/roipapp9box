@@ -1,33 +1,40 @@
-// ROIP APP 9BOX — rota Bruno `/super-admin/empresa/[id]/dashboard-empresa`
-// (ESPEC §7 empresa + §10 + §14.25; ME §8.06.4). Primeiro dashboard
-// agregado. Segue o pattern das rotas dentro-de-empresa (CAMADA_AUTH
-// §10.3/§10.9 — exclusivo de Bruno; guard defense-in-depth ao
-// middleware). Loaders puros em `companyAggregate`.
+// ROIP APP 9BOX — rota canonica Bruno
+// `/super-admin/empresa/[id]/bloco-clima` (ME-B2-01b Fase 2 hotfix2).
 //
-// **RV-13.** Todo import consumido. **RV-14.** 100 colunas.
+// Tela de detalhamento canonica do Bloco Clima e Engajamento: filtro
+// de escopo (Empresa | Departamento) + gauge donut nota geral +
+// timeline barras+linha dos ultimos trimestres + 4 dimensoes ROIP
+// com sanfona canonica (notas por questao 0-10).
+//
+// Pattern canonico bit-exact herdado da landing (§2.1 do MASTER
+// B8). Loader puro: `loadBlocoClimaDashboardData` (motor sob
+// demanda) + `listDepartamentosAtivosClimate` (lista canonica para o
+// filtro).
 
 import { notFound, redirect } from 'next/navigation';
 import type { JSX } from 'react';
 
 import { Layout } from '../../../../../components/shell/Layout';
 import { closeDbClient, createDbClient } from '../../../../../db/client';
-import { COLORS } from '../../../../../lib/design-tokens/colors';
 import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 import { findCompanyDisplayInfo } from '../../../../../lib/logs/companyHistoryLog';
 import { resolveMenuItems } from '../../../../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../../../../lib/session/resolveProfileKey';
-import { loadCompanyAggregatePage } from '../../../../../server/services/companyAggregate';
+import {
+  listDepartamentosAtivosClimate,
+  loadBlocoClimaDashboardData,
+} from '../../../../../server/services/blocoClimaDashboard';
 import { getServerSession } from '../../../../../server/session/serverSession';
 
-import { EmpresaDashboardClient } from './EmpresaDashboardClient';
 import { parseCompanyIdParam } from '../organograma/internals';
+import { BlocoClimaDetailClient } from './BlocoClimaDetailClient';
 
 interface PageProps {
   readonly params: Promise<{ id: string }>;
-  readonly searchParams: Promise<{ trimestre?: string }>;
+  readonly searchParams: Promise<{ dep?: string }>;
 }
 
-export default async function DashboardEmpresaPage(props: PageProps): Promise<JSX.Element> {
+export default async function BlocoClimaDetailPage(props: PageProps): Promise<JSX.Element> {
   const session = await getServerSession();
   if (session === null) {
     redirect('/login-super-admin');
@@ -42,7 +49,8 @@ export default async function DashboardEmpresaPage(props: PageProps): Promise<JS
     notFound();
   }
 
-  const { trimestre: trimestrePedido } = await props.searchParams;
+  const { dep: depParam } = await props.searchParams;
+  const departamento = depParam === undefined || depParam.trim() === '' ? null : depParam;
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
@@ -51,7 +59,14 @@ export default async function DashboardEmpresaPage(props: PageProps): Promise<JS
       notFound();
     }
 
-    const data = await loadCompanyAggregatePage(client.db, companyId, trimestrePedido ?? null);
+    const departamentosAtivos = await listDepartamentosAtivosClimate(client.db, companyId);
+    const data = await loadBlocoClimaDashboardData(client.db, {
+      companyId,
+      escopo: departamento === null ? 'empresa' : 'departamento',
+      escopoReferencia: departamento,
+      liderId: null,
+      liderTipo: null,
+    });
 
     const profileKey = resolveProfileKey({
       session,
@@ -79,20 +94,12 @@ export default async function DashboardEmpresaPage(props: PageProps): Promise<JS
         }}
         superAdminContext={{ companyDisplayName: company.nomeFantasia }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: COLORS.text.primary, margin: 0 }}>
-              Dashboard da empresa
-            </h1>
-            <p style={{ fontSize: 13, color: COLORS.text.secondary, margin: '4px 0 0 0' }}>
-              {company.nomeFantasia}
-            </p>
-          </div>
-          <EmpresaDashboardClient
-            data={data}
-            basePath={`/super-admin/empresa/${companyId}/dashboard-empresa`}
-          />
-        </div>
+        <BlocoClimaDetailClient
+          data={data}
+          companyId={companyId}
+          departamentosAtivos={departamentosAtivos}
+          departamentoAtual={departamento}
+        />
       </Layout>
     );
   } finally {

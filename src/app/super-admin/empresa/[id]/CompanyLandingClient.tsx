@@ -24,6 +24,7 @@ import { ClickableIndicatorCard } from '../../../../components/painel/ClickableI
 import { CardVerEquipes } from '../../../../components/paineis/CardVerEquipes';
 import { TurnoverIndicatorCard } from '../../../../components/turnover/TurnoverIndicatorCard';
 import type { ActiveLeaderRow } from '../../../../server/services/painelNavigation';
+import type { BlocoClimaIndicatorData } from '../../../../server/services/blocoClimaDashboard';
 import type { TurnoverCardData } from '../../../../server/services/turnoverPanel';
 import { OnboardingKanbanMini } from '../../../../components/painel/OnboardingKanbanMini';
 import { ZonaPlaceholder } from '../../../../components/painel/ZonaPlaceholder';
@@ -58,6 +59,13 @@ export interface CompanyLandingClientProps {
    * `/super-admin/empresa/${company.id}/dashboard-recorte/equipe/[alvo]`.
    */
   readonly activeLeaders: readonly ActiveLeaderRow[];
+  /**
+   * ME-B2-01b Fase 2 hotfix2 — payload canonico MINIMO do indicador
+   * do Bloco Clima (nota geral do ultimo trimestre fechado). `null`
+   * quando a empresa nao tem `plenitudeData.scoreA` canonicamente
+   * gravado. O card redireciona para a tela de detalhamento canonica.
+   */
+  readonly blocoClima: BlocoClimaIndicatorData | null;
 }
 
 // -----------------------------------------------------------------------
@@ -358,6 +366,7 @@ export function CompanyLandingClient(props: CompanyLandingClientProps): JSX.Elem
     lastQuarterFaturamentoMedio,
     mesAtualClosure,
     activeLeaders,
+    blocoClima,
   } = props;
 
   const totalColaboradoresHref = `/super-admin/empresa/${company.id}/todos-os-colaboradores`;
@@ -365,6 +374,20 @@ export function CompanyLandingClient(props: CompanyLandingClientProps): JSX.Elem
   const rhSub = mesAtualClosure.rhPreenchido
     ? `Preenchido (limite ${mesAtualClosure.dataLimiteRh})`
     : `Pendente (limite ${mesAtualClosure.dataLimiteRh})`;
+
+  // ME-B2-01b Fase 2 hotfix2 — card indicador "Clima e engajamento"
+  // canonico: nota geral do ultimo trimestre fechado (formato pt-BR
+  // 1 casa decimal) + rotulo do trimestre. `—` quando a empresa nao
+  // tem `scoreA` canonicamente gravado ainda.
+  const climaValor =
+    blocoClima === null || blocoClima.notaGeral === null
+      ? '—'
+      : blocoClima.notaGeral.toLocaleString('pt-BR', {
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 1,
+        });
+  const climaSub =
+    blocoClima === null ? undefined : `Último trimestre: ${formatTrimestre(blocoClima.trimestre)}`;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -423,6 +446,20 @@ export function CompanyLandingClient(props: CompanyLandingClientProps): JSX.Elem
         <TurnoverIndicatorCard
           data={props.turnoverCard}
           href={`/super-admin/empresa/${company.id}/turnover`}
+        />
+        {/*
+          ME-B2-01b Fase 2 hotfix2 — card canonico "Clima e engajamento"
+          no painel. Nota geral do ultimo trimestre fechado + rotulo do
+          trimestre. Clicavel → tela de detalhamento canonica em
+          `/super-admin/empresa/[id]/bloco-clima` (gauge + timeline +
+          4 dimensoes com sanfona de questoes).
+        */}
+        <ClickableIndicatorCard
+          title="Clima e engajamento"
+          value={climaValor}
+          sub={climaSub}
+          href={`/super-admin/empresa/${company.id}/bloco-clima`}
+          ariaLabel="Abrir detalhamento do Bloco Clima e Engajamento"
         />
       </section>
 
