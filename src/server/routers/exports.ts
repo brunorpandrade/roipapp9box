@@ -790,6 +790,19 @@ async function buildEvolucaoTrimestralRows(
   return out;
 }
 
+// ME-EVOLUCAO-WIDE-FORMAT — a planilha "Evolucao trimestral" passa a ter
+// uma linha por colaborador (wide format). O long format anterior
+// (4 linhas por pessoa) era adequado para auditoria mas inutil para
+// leitura de evolucao. Novo layout:
+//   - Colunas fixas de identidade (6): Nome, Cargo, Departamento,
+//     Senioridade, Nivel hierarquico, Lider direto — valor do trimestre
+//     mais recente em que a pessoa aparece.
+//   - Blocos por metrica (5), cada um com N colunas em ordem
+//     cronologica dos trimestres solicitados. Ordem canonica:
+//     scoreDesempenho, plenitudeScore, % da meta atingida, Assiduidade,
+//     Ociosidade. Cada bloco traz "<metrica> <trimestre>" como header.
+//   - Celulas vazias (colaborador sem registro naquele trimestre)
+//     renderizam como "—", convencao canonica da §13.3.
 async function composeEvolucaoTrimestralXlsx(
   rows: Array<ResumoDashboardRow & { trimestre: string }>,
   razaoSocial: string,
@@ -802,40 +815,87 @@ async function composeEvolucaoTrimestralXlsx(
       `${trimestres.length} de 4 trimestres solicitados.`,
   ]);
   ws.addRow([]);
-  // ME-PLANILHAS-COLUNA-LIDER — adiciona "Líder direto" ao header
-  // canonico da planilha Evolucao trimestral (paridade bit-a-bit com
-  // Resumo dashboard, que ja tem a coluna). ResumoDashboardRow ja
-  // expoe `liderDireto`; so faltava expor no header + row.push.
-  ws.addRow([
-    'Trimestre',
+
+  const METRICAS: ReadonlyArray<{
+    key: Exclude<
+      keyof ResumoDashboardRow,
+      | 'employeeId'
+      | 'nome'
+      | 'cargo'
+      | 'departamento'
+      | 'senioridade'
+      | 'nivelHierarquico'
+      | 'liderDireto'
+    >;
+    label: string;
+  }> = [
+    { key: 'scoreDesempenho', label: 'scoreDesempenho' },
+    { key: 'plenitudeScore', label: 'plenitudeScore' },
+    { key: 'percMetaAtingida', label: '% da meta atingida' },
+    { key: 'assiduidade', label: 'Assiduidade' },
+    { key: 'capacidadeOciosa', label: 'Ociosidade' },
+  ];
+
+  const header: string[] = [
     'Nome',
     'Cargo',
     'Departamento',
     'Senioridade',
     'Nível hierárquico',
     'Líder direto',
-    'scoreDesempenho',
-    'plenitudeScore',
-    '% da meta atingida',
-    'Assiduidade',
-    'Ociosidade',
-  ]);
-  for (const r of rows) {
-    ws.addRow([
-      r.trimestre,
-      r.nome,
-      r.cargo,
-      r.departamento,
-      r.senioridade,
-      r.nivelHierarquico,
-      r.liderDireto ?? '—',
-      r.scoreDesempenho ?? '—',
-      r.plenitudeScore ?? '—',
-      r.percMetaAtingida ?? '—',
-      r.assiduidade ?? '—',
-      r.capacidadeOciosa ?? '—',
-    ]);
+  ];
+  for (const m of METRICAS) {
+    for (const t of trimestres) header.push(`${m.label} ${t}`);
   }
+  ws.addRow(header);
+
+  // Agrupa linhas por colaborador. A ordem de aparicao preserva a ordem
+  // original de `rows` (que vem de `buildEvolucaoTrimestralRows`
+  // iterando trimestres em ordem cronologica e, dentro de cada
+  // trimestre, employees na ordem canonica do SELECT).
+  const byEmployee = new Map<number, Map<string, ResumoDashboardRow & { trimestre: string }>>();
+  const ordemEmployees: number[] = [];
+  for (const r of rows) {
+    let bucket = byEmployee.get(r.employeeId);
+    if (bucket === undefined) {
+      bucket = new Map();
+      byEmployee.set(r.employeeId, bucket);
+      ordemEmployees.push(r.employeeId);
+    }
+    bucket.set(r.trimestre, r);
+  }
+
+  for (const employeeId of ordemEmployees) {
+    const bucket = byEmployee.get(employeeId);
+    if (bucket === undefined) continue;
+    // Identidade do trimestre mais recente em que o colaborador aparece.
+    let identidade: (ResumoDashboardRow & { trimestre: string }) | undefined;
+    for (let i = trimestres.length - 1; i >= 0; i -= 1) {
+      const r = bucket.get(trimestres[i] ?? '');
+      if (r !== undefined) {
+        identidade = r;
+        break;
+      }
+    }
+    if (identidade === undefined) continue;
+    const linha: (string | number)[] = [
+      identidade.nome,
+      identidade.cargo,
+      identidade.departamento,
+      identidade.senioridade,
+      identidade.nivelHierarquico,
+      identidade.liderDireto ?? '—',
+    ];
+    for (const m of METRICAS) {
+      for (const t of trimestres) {
+        const r = bucket.get(t);
+        const v = r === undefined ? null : r[m.key];
+        linha.push(v === null || v === undefined ? '—' : v);
+      }
+    }
+    ws.addRow(linha);
+  }
+
   const buf = await wb.xlsx.writeBuffer();
   return Buffer.from(buf);
 }
