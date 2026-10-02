@@ -744,6 +744,10 @@ async function composeEvolucaoTrimestralXlsx(
       `${trimestres.length} de 4 trimestres solicitados.`,
   ]);
   ws.addRow([]);
+  // ME-PLANILHAS-COLUNA-LIDER — adiciona "Líder direto" ao header
+  // canonico da planilha Evolucao trimestral (paridade bit-a-bit com
+  // Resumo dashboard, que ja tem a coluna). ResumoDashboardRow ja
+  // expoe `liderDireto`; so faltava expor no header + row.push.
   ws.addRow([
     'Trimestre',
     'Nome',
@@ -751,6 +755,7 @@ async function composeEvolucaoTrimestralXlsx(
     'Departamento',
     'Senioridade',
     'Nível hierárquico',
+    'Líder direto',
     'scoreDesempenho',
     'plenitudeScore',
     '% da meta atingida',
@@ -765,6 +770,7 @@ async function composeEvolucaoTrimestralXlsx(
       r.departamento,
       r.senioridade,
       r.nivelHierarquico,
+      r.liderDireto ?? '—',
       r.scoreDesempenho ?? '—',
       r.plenitudeScore ?? '—',
       r.percMetaAtingida ?? '—',
