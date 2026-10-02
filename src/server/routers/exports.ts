@@ -23,7 +23,7 @@
 // para permitir stub deterministico em teste de integracao.
 
 import { TRPCError } from '@trpc/server';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import ExcelJS from 'exceljs';
 import { z } from 'zod';
 
@@ -31,6 +31,7 @@ import type { RoipDatabase } from '../../db/client';
 import {
   cLevelMembers,
   companies,
+  employeeLeaderHistory,
   employees,
   monthlyClosureStatus,
   nineBoxClassifications,
@@ -639,6 +640,63 @@ async function buildResumoDashboardRows(
     assiduidadeByEmp.set(p.employeeId, acc);
   }
 
+  // ME-PLANILHAS-POPULA-LIDER — resolve `liderDireto` a partir do vinculo
+  // ATIVO (dataFim IS NULL) de `employeeLeaderHistory`. O schema e
+  // polimorfico canonico (ME-ORG-01-A): liderId XOR clevelId; o nome do
+  // lider vem de `employees.name` ou de `cLevelMembers.name` conforme o
+  // ramo. Dois lookups por empresa/trimestre — RV-11, zero N+1.
+  const liderByEmp = new Map<number, string>();
+  if (employeeIds.length > 0) {
+    const activeVinculos = await db
+      .select({
+        employeeId: employeeLeaderHistory.employeeId,
+        liderId: employeeLeaderHistory.liderId,
+        clevelId: employeeLeaderHistory.clevelId,
+      })
+      .from(employeeLeaderHistory)
+      .where(
+        and(
+          inArray(employeeLeaderHistory.employeeId, employeeIds),
+          isNull(employeeLeaderHistory.dataFim),
+        ),
+      );
+    const liderEmployeeIds = Array.from(
+      new Set(
+        activeVinculos.map((v) => v.liderId).filter((id): id is number => typeof id === 'number'),
+      ),
+    );
+    const liderClevelIds = Array.from(
+      new Set(
+        activeVinculos.map((v) => v.clevelId).filter((id): id is number => typeof id === 'number'),
+      ),
+    );
+    const liderEmployeeNameById = new Map<number, string>();
+    if (liderEmployeeIds.length > 0) {
+      const liderEmployeeRows = await db
+        .select({ id: employees.id, name: employees.name })
+        .from(employees)
+        .where(inArray(employees.id, liderEmployeeIds));
+      for (const r of liderEmployeeRows) liderEmployeeNameById.set(r.id, r.name);
+    }
+    const liderClevelNameById = new Map<number, string>();
+    if (liderClevelIds.length > 0) {
+      const liderClevelRows = await db
+        .select({ id: cLevelMembers.id, name: cLevelMembers.name })
+        .from(cLevelMembers)
+        .where(inArray(cLevelMembers.id, liderClevelIds));
+      for (const r of liderClevelRows) liderClevelNameById.set(r.id, r.name);
+    }
+    for (const v of activeVinculos) {
+      if (typeof v.liderId === 'number') {
+        const nome = liderEmployeeNameById.get(v.liderId);
+        if (nome !== undefined) liderByEmp.set(v.employeeId, nome);
+      } else if (typeof v.clevelId === 'number') {
+        const nome = liderClevelNameById.get(v.clevelId);
+        if (nome !== undefined) liderByEmp.set(v.employeeId, nome);
+      }
+    }
+  }
+
   const out: ResumoDashboardRow[] = rows.map((emp) => {
     const pq = perfQuarterByEmp.get(emp.id);
     const pl = plenByEmp.get(emp.id);
@@ -650,7 +708,7 @@ async function buildResumoDashboardRows(
       departamento: emp.departamento,
       senioridade: emp.senioridade,
       nivelHierarquico: emp.nivelHierarquico,
-      liderDireto: null,
+      liderDireto: liderByEmp.get(emp.id) ?? null,
       scoreDesempenho: pq?.scoreDesempenho ? Number(pq.scoreDesempenho) : null,
       plenitudeScore: pl?.plenitudeScore ? Number(pl.plenitudeScore) : null,
       percMetaAtingida: pq?.percMetaAtingida ? Number(pq.percMetaAtingida) : null,
