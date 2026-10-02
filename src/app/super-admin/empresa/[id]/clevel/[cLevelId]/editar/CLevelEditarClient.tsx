@@ -206,6 +206,13 @@ export function CLevelEditarClient(props: Props): JSX.Element {
         email: v.email.trim(),
         photoUrl: v.photoUrl.trim().length > 0 ? v.photoUrl.trim() : undefined,
         dataNascimento: v.dataNascimento,
+        // ME-CLEVEL-DATAADMISSAO — fix canonico: `dataAdmissao` passa a
+        // ser propagada no payload. Antes, o campo estava declarado no
+        // input da action e aceito pelo router (`UPDATE_CLEVEL_INPUT_
+        // SCHEMA` + patch router linha 764), mas o cliente nao o
+        // incluia no payload — resultando em alteracoes de dataAdmissao
+        // que nao persistiam canonicamente (observado na Embrastec).
+        dataAdmissao: v.dataAdmissao,
         cargo: v.cargo.trim(),
         descricaoCargo: v.descricaoCargo.trim(),
         departamento: v.departamento,
