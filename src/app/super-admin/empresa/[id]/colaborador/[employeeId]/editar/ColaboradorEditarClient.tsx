@@ -333,6 +333,14 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
   // (desacoplado do fluxo de inativacao).
   const [showDesmarcarM2Modal, setShowDesmarcarM2Modal] = useState(false);
   const [desmarcarM2Error, setDesmarcarM2Error] = useState<string | null>(null);
+  // ME-ORG-01-B D4 FIX3 — contador canonico de reset do form. Quando o
+  // usuario desliga o toggle "Permitir acesso como Lider" e cancela o
+  // modal D4, incrementamos este contador para forcar remontagem do
+  // `ColaboradorForm` via `key` canonica — o estado interno `useState`
+  // do form reinicializa com `initialValues` e o toggle visual volta
+  // bit-a-bit ao estado anterior (isLider=true). Sem isso, o toggle
+  // visual ficaria divergente do estado real do colaborador no banco.
+  const [formResetKey, setFormResetKey] = useState(0);
 
   const [showM2Modal, setShowM2Modal] = useState(false);
   const [m2Candidates, setM2Candidates] = useState<readonly CandidateOption[]>([]);
@@ -374,6 +382,14 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
         next.isLider === false &&
         initialEmployee.countActiveLiderados > 0
       ) {
+        // ME-ORG-01-B D4 FIX3 — helper canonico de reversao do toggle
+        // ao cancelar ou falhar o carregamento. Reinicializa o
+        // `ColaboradorForm` via remontagem (key++), devolvendo o toggle
+        // visual ao estado original (`initialEmployee.isLider`).
+        const reverterToggle = (): void => {
+          setValues(initialFormValues);
+          setFormResetKey((k) => k + 1);
+        };
         void (async () => {
           setDesmarcarM2Error(null);
           setSaving(true);
@@ -388,14 +404,18 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
             ]);
             if (!candResult.ok) {
               setErrorMsg(candResult.message);
+              reverterToggle();
               return;
             }
             if (!liderResult.ok) {
               setErrorMsg(liderResult.message);
+              reverterToggle();
               return;
             }
             // Flatten dos grupos canonicos (padrao bit-a-bit do fluxo
-            // de inativacao original).
+            // de inativacao original). ME-ORG-01-B D4 FIX2 — grupo4
+            // (nao-lideres) omitido canonicamente: o fluxo de desmarcar
+            // como lider nao promove nao-lideres.
             const g = candResult.data;
             const flat: CandidateOption[] = [];
             for (const item of g.grupo1_cLevelsAtivos) {
@@ -431,17 +451,13 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
                 countLiderados: item.liderados,
               });
             }
-            for (const item of g.grupo4_colaboradoresNaoLideres) {
-              flat.push({
-                tipo: 'employee',
-                id: item.id,
-                name: item.name,
-                cargo: item.cargo,
-                departamento: item.departamento,
-                group: 'nao_lider',
-                countLiderados: item.liderados,
-              });
-            }
+            // ME-ORG-01-B D4 FIX2 — fluxo "Desmarcar como lider" NAO
+            // promove colaboradores nao-lideres a lider (diferentemente
+            // do fluxo original de inativacao+desligamento, que preserva
+            // o Grupo 4 canonicamente). Dropdown deve exibir apenas
+            // candidatos canonicos ja habilitados a liderar: C-levels
+            // ativos + lideres ativos. Loop sobre grupo4 omitido bit-a-
+            // bit; apenas o fluxo de inativacao preserva o Grupo 4.
             setM2Candidates(flat);
             const liderados: LideradoToTransfer[] = liderResult.data.map((r) => ({
               employeeId: r.employeeId,
@@ -948,6 +964,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
         />
       ) : null}
       <ColaboradorForm
+        key={formResetKey}
         mode="editar"
         initialValues={values}
         onValuesChange={handleValuesChange}
@@ -1151,8 +1168,16 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
           liderados={m2Liderados}
           candidates={m2Candidates}
           onCancel={() => {
+            // ME-ORG-01-B D4 FIX3 — ao cancelar o modal de reatribuicao,
+            // reverter canonicamente o toggle `isLider` no form (que ja
+            // foi visualmente desligado pelo clique do usuario antes da
+            // intercepcao). Incrementar `formResetKey` forca remontagem
+            // do ColaboradorForm via `key`, reinicializando o estado
+            // interno com `initialValues` (isLider=true original).
             setShowDesmarcarM2Modal(false);
             setDesmarcarM2Error(null);
+            setValues(initialFormValues);
+            setFormResetKey((k) => k + 1);
           }}
           onConfirm={handleConfirmDesmarcarM2}
           submitting={saving}

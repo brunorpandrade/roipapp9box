@@ -328,6 +328,24 @@ export function ModalTransferenciaLiderados(props: ModalTransferenciaLideradosPr
     }));
   }
 
+  // ME-ORG-01-B D4 FIX1 — opcao canonica "transferir todos para um
+  // unico lider". Dropdown no topo permite escolher um candidato e
+  // preencher automaticamente TODOS os seletores individuais abaixo
+  // com o mesmo alvo. A lista 1-a-1 permanece bit-a-bit abaixo para
+  // ajuste fino individual se o usuario desejar diferenciar.
+  const [massaTarget, setMassaTarget] = useState<TargetKey | ''>('');
+  function handleAplicarTodos(target: TargetKey | ''): void {
+    setMassaTarget(target);
+    if (target === '') return;
+    setMappings((prev) => {
+      const next: Record<number, TargetKey | ''> = { ...prev };
+      for (const l of liderados) {
+        next[l.employeeId] = target;
+      }
+      return next;
+    });
+  }
+
   function handleConfirm(): void {
     if (!canSubmit) return;
     const output: TransferMapping[] = [];
@@ -356,6 +374,50 @@ export function ModalTransferenciaLiderados(props: ModalTransferenciaLideradosPr
           {liderName} tem <strong>{liderados.length} liderado(s) direto(s) ativo(s)</strong>.
           Selecione um novo líder para cada um antes de prosseguir. C-levels e demais líderes da
           empresa são elegíveis. Colaboradores não-líderes exigem confirmação de promoção.
+        </div>
+        {/* ME-ORG-01-B D4 FIX1 — seção canônica "transferir todos para
+            um único líder". Dropdown aplica o mesmo alvo a todos os
+            seletores individuais abaixo em um clique. A lista 1-a-1
+            logo após permanece bit-a-bit para ajustes individuais. */}
+        <div
+          style={{
+            background: COLORS.background.elevated,
+            border: `1px solid ${COLORS.border.default}`,
+            borderRadius: 6,
+            padding: 12,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}
+        >
+          <label style={LABEL_STYLE} htmlFor="m2v2-massa">
+            Transferir todos para um único líder
+          </label>
+          <select
+            id="m2v2-massa"
+            value={massaTarget}
+            onChange={(e) => handleAplicarTodos(e.target.value as TargetKey | '')}
+            style={SELECT_STYLE}
+            disabled={isSubmitting}
+          >
+            <option value="">Selecione um líder e aplicar a todos...</option>
+            {GROUP_ORDER.map((group) => {
+              const items = candidatesByGroup[group];
+              if (items.length === 0) return null;
+              return (
+                <optgroup key={group} label={GROUP_LABELS[group]}>
+                  {items.map((c) => (
+                    <option key={optionKey(c)} value={optionKey(c)}>
+                      {c.name} · {c.cargo} · {c.departamento} ({c.countLiderados} liderados)
+                    </option>
+                  ))}
+                </optgroup>
+              );
+            })}
+          </select>
+          <div style={{ fontSize: 11, color: COLORS.text.tertiary }}>
+            Ou escolha individualmente abaixo (1-a-1).
+          </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {liderados.map((l) => (
