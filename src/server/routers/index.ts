@@ -21,6 +21,7 @@ import { myDataRouter } from './myData';
 import { createCLevelMembersRouter } from './cLevelMembers';
 import { createClimateRouter } from './climate';
 import { createCompanyRouter } from './company';
+import { createCycleManagementListingsRouter } from './cycleManagementListings';
 import { createCycleUnlockRequestsRouter } from './cycleUnlockRequests';
 import { createAiChatRouter } from './aiChat';
 import { createDashboardRouter } from './dashboard';
@@ -97,6 +98,23 @@ const adminRouter = router({
 const cycleUnlockRequestsRouter = createCycleUnlockRequestsRouter({
   evaluateAdminAlertsFactory: createAdminUnlockAlertHook,
 });
+
+/**
+ * Sub-router `cycleManagementListings` (ME-B9.1, Bloco B9). Procs
+ * canonicas de leitura da tela `/cycle-management` (DOC 05 §14.18):
+ *   - `listPendingUnlockByCompany` — Area 3, bloco Pendentes.
+ *   - `listHistoricoUnlockByCompany` — Area 3, bloco Historico (90d).
+ *   - `listCycleScheduleByCompany` — Area 2, tabela paginada.
+ *   - `listCalendarioByCompany` — Area 1, calendario trimestre
+ *     corrente+proximo.
+ *
+ * Decisao canonica de desenho (ME-B9.1 RV-08): manter as listagens em
+ * router separado do `cycleUnlockRequests` (focado em mutations CRUD
+ * de uma solicitacao) e sem criar um router dedicado `cycleSchedule`
+ * (uma unica proc publica de leitura — nao justifica entidade propria).
+ * Autorizacao: super_admin, rh, rh_lider.
+ */
+const cycleManagementListingsRouter = createCycleManagementListingsRouter();
 
 /**
  * Sub-router `quarterlyCalculation` (ME-034, Bloco B3). Factory instanciada
@@ -546,6 +564,7 @@ export const appRouter = router({
   auth: authRouter,
   myData: myDataRouter,
   cycleUnlockRequests: cycleUnlockRequestsRouter,
+  cycleManagementListings: cycleManagementListingsRouter,
   quarterlyCalculation: quarterlyCalculationRouter,
   economicDiagnosis: economicDiagnosisRouter,
   dashboard: dashboardRouter,
