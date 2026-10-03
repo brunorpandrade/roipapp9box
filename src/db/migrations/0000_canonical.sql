@@ -24,7 +24,7 @@ CREATE TABLE `companies` (
   `endereco` VARCHAR(255) NOT NULL,
   `cidade` VARCHAR(100) NOT NULL,
   `estado` CHAR(2) NOT NULL,
-  `logoUrl` VARCHAR(500) DEFAULT NULL,
+  `logoUrl` MEDIUMTEXT DEFAULT NULL,
   `contatoPrincipalNome` VARCHAR(255) NOT NULL,
   `contatoPrincipalEmail` VARCHAR(255) NOT NULL,
   `contatoRHNome` VARCHAR(255) NOT NULL,

@@ -19,6 +19,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition, type JSX } from 'react';
 
+import { LogoUploader } from '../../../../../components/forms/LogoUploader';
+
 import { saveParametrosAction, setCompanyStatusAction } from './actions';
 import {
   MES_KICKOFF_PADRAO_OPCOES,
@@ -294,11 +296,10 @@ export function ParametrosClient(props: ParametrosClientProps): JSX.Element {
               ))}
             </select>
           </Field>
-          <Field label="URL do logo (opcional)">
-            <input
-              value={state.values.logoUrl ?? ''}
-              onChange={(e) => update('logoUrl', e.target.value === '' ? null : e.target.value)}
-              style={inputStyle}
+          <Field label="Logo da empresa (opcional)">
+            <LogoUploader
+              value={state.values.logoUrl}
+              onChange={(next) => update('logoUrl', next)}
             />
           </Field>
         </Grid2>

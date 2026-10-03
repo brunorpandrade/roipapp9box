@@ -36,6 +36,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { LogoUploader } from '../../../../components/forms/LogoUploader';
 import { COLORS } from '../../../../lib/design-tokens/colors';
 import {
   MES_KICKOFF_PADRAO_PERMITIDO,
@@ -481,11 +482,10 @@ export function NovaEmpresaClient(): JSX.Element {
             </select>
           </div>
           <div>
-            <label style={labelStyle}>Logo da empresa (URL — opcional)</label>
-            <input
-              style={inputStyle}
-              value={form.logoUrl}
-              onChange={(e) => updateField('logoUrl', e.target.value)}
+            <label style={labelStyle}>Logo da empresa (opcional)</label>
+            <LogoUploader
+              value={form.logoUrl === '' ? null : form.logoUrl}
+              onChange={(next) => updateField('logoUrl', next ?? '')}
             />
           </div>
         </div>

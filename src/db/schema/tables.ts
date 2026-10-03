@@ -70,7 +70,7 @@ export const companies = mysqlTable('companies', {
   endereco: varchar('endereco', { length: 255 }).notNull(),
   cidade: varchar('cidade', { length: 100 }).notNull(),
   estado: char('estado', { length: 2 }).notNull(),
-  logoUrl: varchar('logoUrl', { length: 500 }),
+  logoUrl: mediumtext('logoUrl'),
   contatoPrincipalNome: varchar('contatoPrincipalNome', { length: 255 }).notNull(),
   contatoPrincipalEmail: varchar('contatoPrincipalEmail', { length: 255 }).notNull(),
   contatoRHNome: varchar('contatoRHNome', { length: 255 }).notNull(),

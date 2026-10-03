@@ -17,7 +17,6 @@ import Image from 'next/image';
 
 import { NotificationBell, type NotificationItem } from './NotificationBell';
 import { UserMenuDropdown } from './UserMenuDropdown';
-import { initialsFromName } from '../../lib/avatar/initials';
 import { COLORS } from '../../lib/design-tokens/colors';
 
 /**
@@ -168,26 +167,15 @@ export function Header(props: HeaderProps): JSX.Element {
                 height={32}
                 style={{ width: 32, height: 32, objectFit: 'contain' }}
               />
-            ) : (
-              <span
-                aria-hidden="true"
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 4,
-                  background: COLORS.background.elevated,
-                  border: `1px solid ${COLORS.border.default}`,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: COLORS.text.tertiary,
-                }}
-              >
-                {initialsFromName(companyDisplayName ?? '')}
-              </span>
-            )}
+            ) : null}
+            {/*
+              ME-B9.2 (fallback canônico): quando `companyLogoUrl` está
+              vazio, o nome da empresa fica EM TEXTO no lugar do logo
+              (escopo B9.2). Quando o logo está presente, o nome continua
+              aparecendo ao lado do logo. Fecha débito D-LOGO-UPLOAD +
+              remove o quadradinho de iniciais anterior (ME-080d) que
+              servia como placeholder visual.
+            */}
             <span
               style={{
                 fontSize: 14,

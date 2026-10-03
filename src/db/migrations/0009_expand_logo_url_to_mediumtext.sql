@@ -1,0 +1,24 @@
+-- ROIP APP 9BOX — migration 0009: expande companies.logoUrl para MEDIUMTEXT
+-- (ME-B9.2 Bloco B9 — upload de logo da empresa, débito D-LOGO-UPLOAD).
+--
+-- O campo canônico `companies.logoUrl` nasceu em M001 como `VARCHAR(500)`
+-- para suportar apenas URLs externas (ex.: CDN público). A ME-B9.2
+-- introduz armazenamento canônico INLINE de imagens via data URL base64
+-- (sem dependência de storage externo — Railway sem volume configurado,
+-- zero bucket S3/Supabase/Cloudinary).
+--
+-- Decisão canônica (D1 da ME-B9.2): base64 inline no próprio campo
+-- `logoUrl`, armazenado como data URL (`data:image/png;base64,...`).
+-- Fallback canônico preservado: `logoUrl IS NULL` → Header exibe nome
+-- da empresa como texto.
+--
+-- MEDIUMTEXT suporta até 16MB — suficiente para logos (<300KB após
+-- compressão client-side futura; cap atual canônico server-side 300KB
+-- raw bytes, equivalente a ~400KB em base64).
+--
+-- Reversibilidade: tecnicamente reversível (VARCHAR(500) continua
+-- aceitando URLs externas), mas qualquer linha com data URL base64
+-- seria truncada no downgrade. Rollback canônico: NULL em todas as
+-- linhas antes de downgrade.
+
+ALTER TABLE `companies` MODIFY COLUMN `logoUrl` MEDIUMTEXT NULL;
