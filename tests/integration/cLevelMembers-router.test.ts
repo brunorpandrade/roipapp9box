@@ -318,7 +318,11 @@ describe('cLevelMembers — contratos publicos exportados', () => {
     expect(CPF_LENGTH_CL).toBe(11);
     expect(NAME_MAX_LENGTH_CL).toBe(255);
     expect(CARGO_MAX_LENGTH_CL).toBe(100);
-    expect(PHOTO_URL_MAX_LENGTH_CL).toBe(500);
+    // ME-B9.3 — coluna canonicamente elevada para MEDIUMTEXT (migration
+    // 0010); cap passou de 500 (VARCHAR legado) para 400*1024 bytes
+    // (300KB raw + overhead base64 ≈ 400KB), paridade bit-exact com
+    // ME-B9.2 patch1 em `companies.logoUrl`.
+    expect(PHOTO_URL_MAX_LENGTH_CL).toBe(400 * 1024);
     expect(MYSQL_ERR_DUP_ENTRY_CL).toBe(1062);
     expect(MYSQL_ERR_ROW_IS_REFERENCED_CL).toBe(1451);
   });
