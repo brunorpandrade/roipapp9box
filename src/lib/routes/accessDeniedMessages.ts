@@ -92,7 +92,7 @@ export const MSG_ALTERAR_EMAIL: AccessDeniedMessage = {
   canonicalRef: 'DOC 02 §9.5',
 };
 
-/** §9.6 `/cycle-management` — Perfis que recebem: C-level, Lider. */
+/** §9.6 `/cycle-management` — Perfis que recebem: C-level sem isRH, Lider. */
 export const MSG_CYCLE_MANAGEMENT: AccessDeniedMessage = {
   key: '/cycle-management',
   message:

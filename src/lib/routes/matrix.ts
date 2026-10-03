@@ -353,7 +353,7 @@ export const ROUTE_MATRIX: readonly RouteRule[] = [
       super_admin: 'allow',
       rh: 'allow',
       rh_lider: 'allow',
-      clevel: 'deny',
+      clevel: 'allow', // ME 3.5 D6 — clevel+isRH acessa; guard fino server-side
       lider: 'deny',
     },
   },

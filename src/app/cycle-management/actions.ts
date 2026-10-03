@@ -2,7 +2,9 @@
 // (ME-B9.1 §14.18).
 //
 // Padrao canonico L123 (dual-route) + CallerFactory (ME-084/086b):
-//   - `requireRHOrSuperAdmin` guard no topo.
+//   - `requireRhLikeOrSuperAdmin` guard apos abrir `client.db` (async;
+//     admite rh/rh_lider/clevel+isRH/super_admin — bit-exact a matrix
+//     canonica §10.5 pos-ME-3.5-D6).
 //   - `createCallerFactory` para delegar as procs via router.
 //   - CompanyId derivado de `session.companyId` (platform) ou do input
 //     canonico `companyId` quando super_admin atravessa.
@@ -35,7 +37,7 @@ import { cookies } from 'next/headers';
 import { closeDbClient, createDbClient } from '../../db/client';
 import { monthlyClosureStatus } from '../../db/schema';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
-import { requireRHOrSuperAdmin } from '../../lib/routes/requireRHOrSuperAdmin';
+import { requireRhLikeOrSuperAdmin } from '../../lib/routes/requireRhLikeOrSuperAdmin';
 import { createRateLimiter } from '../../server/auth/rateLimit';
 import {
   createCycleUnlockRequestsRouter,
@@ -91,11 +93,11 @@ async function resolveRawToken(): Promise<string | null> {
 
 /**
  * Resolve `companyId` efetivo:
- *   - rh / rh_lider → session.companyId (ignora override).
+ *   - rh / rh_lider / clevel+isRH → session.companyId (ignora override).
  *   - super_admin → companyIdOverride obrigatorio.
  */
 function resolveEffectiveCompanyId(
-  session: ReturnType<typeof requireRHOrSuperAdmin>,
+  session: Awaited<ReturnType<typeof requireRhLikeOrSuperAdmin>>,
   companyIdOverride: number | undefined,
 ): number {
   if (session.kind === 'platform') {
@@ -167,8 +169,6 @@ export async function listCycleScheduleAction(
   input: ListCycleScheduleInput,
 ): Promise<CycleActionResult<CycleSchedulePage>> {
   try {
-    const session = requireRHOrSuperAdmin(await getServerSession(), 'listCycleSchedule');
-    const companyId = resolveEffectiveCompanyId(session, input.companyIdOverride);
     const token = await resolveRawToken();
     if (token === null) {
       return errResult('Sessão ausente ou expirada.');
@@ -176,6 +176,12 @@ export async function listCycleScheduleAction(
 
     const client = createDbClient(resolveDatabaseUrl());
     try {
+      const session = await requireRhLikeOrSuperAdmin(
+        client.db,
+        await getServerSession(),
+        'listCycleSchedule',
+      );
+      const companyId = resolveEffectiveCompanyId(session, input.companyIdOverride);
       const caller = createListingsCaller(
         createContextInner({ db: client.db, rateLimiter: actionRateLimiter, bearerToken: token }),
       );
@@ -211,8 +217,6 @@ export async function listPendingUnlockRequestsAction(
   input: ListPendingInput,
 ): Promise<CycleActionResult<readonly UnlockRequestRow[]>> {
   try {
-    const session = requireRHOrSuperAdmin(await getServerSession(), 'listPendingUnlockRequests');
-    const companyId = resolveEffectiveCompanyId(session, input.companyIdOverride);
     const token = await resolveRawToken();
     if (token === null) {
       return errResult('Sessão ausente ou expirada.');
@@ -220,6 +224,12 @@ export async function listPendingUnlockRequestsAction(
 
     const client = createDbClient(resolveDatabaseUrl());
     try {
+      const session = await requireRhLikeOrSuperAdmin(
+        client.db,
+        await getServerSession(),
+        'listPendingUnlockRequests',
+      );
+      const companyId = resolveEffectiveCompanyId(session, input.companyIdOverride);
       const caller = createListingsCaller(
         createContextInner({ db: client.db, rateLimiter: actionRateLimiter, bearerToken: token }),
       );
@@ -246,8 +256,6 @@ export async function listHistoricoUnlockRequestsAction(
   input: ListHistoricoInput,
 ): Promise<CycleActionResult<readonly UnlockRequestRow[]>> {
   try {
-    const session = requireRHOrSuperAdmin(await getServerSession(), 'listHistoricoUnlockRequests');
-    const companyId = resolveEffectiveCompanyId(session, input.companyIdOverride);
     const token = await resolveRawToken();
     if (token === null) {
       return errResult('Sessão ausente ou expirada.');
@@ -255,6 +263,12 @@ export async function listHistoricoUnlockRequestsAction(
 
     const client = createDbClient(resolveDatabaseUrl());
     try {
+      const session = await requireRhLikeOrSuperAdmin(
+        client.db,
+        await getServerSession(),
+        'listHistoricoUnlockRequests',
+      );
+      const companyId = resolveEffectiveCompanyId(session, input.companyIdOverride);
       const caller = createListingsCaller(
         createContextInner({ db: client.db, rateLimiter: actionRateLimiter, bearerToken: token }),
       );
@@ -283,8 +297,6 @@ export async function listCalendarioAction(
   input: ListCalendarioInput,
 ): Promise<CycleActionResult<readonly CalendarioEvento[]>> {
   try {
-    const session = requireRHOrSuperAdmin(await getServerSession(), 'listCalendario');
-    const companyId = resolveEffectiveCompanyId(session, input.companyIdOverride);
     const token = await resolveRawToken();
     if (token === null) {
       return errResult('Sessão ausente ou expirada.');
@@ -302,6 +314,12 @@ export async function listCalendarioAction(
 
     const client = createDbClient(resolveDatabaseUrl());
     try {
+      const session = await requireRhLikeOrSuperAdmin(
+        client.db,
+        await getServerSession(),
+        'listCalendario',
+      );
+      const companyId = resolveEffectiveCompanyId(session, input.companyIdOverride);
       const caller = createListingsCaller(
         createContextInner({ db: client.db, rateLimiter: actionRateLimiter, bearerToken: token }),
       );
@@ -341,7 +359,6 @@ export async function cancelUnlockRequestAction(
   input: CancelInput,
 ): Promise<CycleActionResult<{ readonly id: number }>> {
   try {
-    requireRHOrSuperAdmin(await getServerSession(), 'cancelUnlockRequest');
     const token = await resolveRawToken();
     if (token === null) {
       return errResult('Sessão ausente ou expirada.');
@@ -349,6 +366,7 @@ export async function cancelUnlockRequestAction(
 
     const client = createDbClient(resolveDatabaseUrl());
     try {
+      await requireRhLikeOrSuperAdmin(client.db, await getServerSession(), 'cancelUnlockRequest');
       const caller = createCycleUnlockCaller(
         createContextInner({ db: client.db, rateLimiter: actionRateLimiter, bearerToken: token }),
       );
@@ -379,7 +397,6 @@ export async function criarSolicitacaoDesbloqueioAction(
   input: CriarSolicitacaoInput,
 ): Promise<CycleActionResult<{ readonly id: number }>> {
   try {
-    requireRHOrSuperAdmin(await getServerSession(), 'criarSolicitacaoDesbloqueio');
     const token = await resolveRawToken();
     if (token === null) {
       return errResult('Sessão ausente ou expirada.');
@@ -387,6 +404,11 @@ export async function criarSolicitacaoDesbloqueioAction(
 
     const client = createDbClient(resolveDatabaseUrl());
     try {
+      await requireRhLikeOrSuperAdmin(
+        client.db,
+        await getServerSession(),
+        'criarSolicitacaoDesbloqueio',
+      );
       const caller = createCycleUnlockCaller(
         createContextInner({ db: client.db, rateLimiter: actionRateLimiter, bearerToken: token }),
       );
@@ -424,13 +446,17 @@ export async function listMesesFechadosAction(
   input: ListMesesFechadosInput,
 ): Promise<CycleActionResult<readonly MesFechadoOption[]>> {
   try {
-    const session = requireRHOrSuperAdmin(await getServerSession(), 'listMesesFechados');
-    if (session.kind === 'platform' && session.companyId !== input.companyId) {
-      throw new TRPCError({ code: 'FORBIDDEN', message: 'Empresa fora do escopo.' });
-    }
-
     const client = createDbClient(resolveDatabaseUrl());
     try {
+      const session = await requireRhLikeOrSuperAdmin(
+        client.db,
+        await getServerSession(),
+        'listMesesFechados',
+      );
+      if (session.kind === 'platform' && session.companyId !== input.companyId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Empresa fora do escopo.' });
+      }
+
       const rows = await client.db
         .select({ mes: monthlyClosureStatus.mes })
         .from(monthlyClosureStatus)
@@ -474,13 +500,17 @@ export async function listCompanyLeadersAction(
   input: ListLeadersInput,
 ): Promise<CycleActionResult<readonly LeaderOption[]>> {
   try {
-    const session = requireRHOrSuperAdmin(await getServerSession(), 'listCompanyLeaders');
-    if (session.kind === 'platform' && session.companyId !== input.companyId) {
-      throw new TRPCError({ code: 'FORBIDDEN', message: 'Empresa fora do escopo.' });
-    }
-
     const client = createDbClient(resolveDatabaseUrl());
     try {
+      const session = await requireRhLikeOrSuperAdmin(
+        client.db,
+        await getServerSession(),
+        'listCompanyLeaders',
+      );
+      if (session.kind === 'platform' && session.companyId !== input.companyId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Empresa fora do escopo.' });
+      }
+
       const rows = await listActiveLeadersAndClevelsByCompany(client.db, input.companyId);
       return okResult(rows.map((r) => ({ id: r.id, name: r.name, tipo: r.tipo })));
     } finally {
