@@ -15,11 +15,13 @@
 //   - `listCalendarioByCompany` — Area 1, calendario trimestre
 //     corrente+proximo.
 //
-// Perfis admitidos (DOC 02 §10.5 — matrix.ts linha 350):
+// Perfis admitidos (DOC 02 §10.5 — matrix.ts linha 350, pos ME-B9.1 patch2):
 //   - super_admin — atravessa (passa `companyId` explicito).
 //   - rh / rh_lider — operam APENAS na propria `companyId` (defense in
 //     depth: `assertUserCompanyScope`).
-//   - clevel / lider — rejeitados por `roleProcedure`.
+//   - clevel+isRH — padrao canonico ME 3.5 D6 via `rhAllowedProcedure`;
+//     guard fino de `cLevelMembers.isRH=true` resolvido server-side.
+//   - clevel sem isRH / lider — rejeitados por `rhAllowedProcedure`.
 //
 // Resolucao canonica de nomes (PC1d DOC 05 §14.18 — RH ve agregado nao
 // nominal): `cycleUnlockRequests` ja grava `solicitanteTipo` + `liderTipo`
@@ -50,7 +52,8 @@ import {
 } from '../../db/schema';
 import { TIPO_CICLO_VALUES, type TipoCiclo } from '../../db/schema/enums';
 import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
-import { roleProcedure, router } from '../trpc';
+import { rhAllowedProcedure } from '../auth/rhAllowedProcedure';
+import { router } from '../trpc';
 
 // ============================================================
 // Constantes canonicas exportadas (RV-13 — consumidas em teste)
@@ -226,7 +229,7 @@ export function createCycleManagementListingsRouter() {
     // --------------------------------------------------------
     // listPendingUnlockByCompany — Area 3 Pendentes §14.18
     // --------------------------------------------------------
-    listPendingUnlockByCompany: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    listPendingUnlockByCompany: rhAllowedProcedure()
       .input(listPendingInput)
       .query(async ({ ctx, input }): Promise<readonly UnlockRequestWithNames[]> => {
         assertUserCompanyScope(ctx.user, input.companyId);
@@ -249,7 +252,7 @@ export function createCycleManagementListingsRouter() {
     // --------------------------------------------------------
     // listHistoricoUnlockByCompany — Area 3 Historico 90 dias §14.18
     // --------------------------------------------------------
-    listHistoricoUnlockByCompany: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    listHistoricoUnlockByCompany: rhAllowedProcedure()
       .input(listHistoricoInput)
       .query(async ({ ctx, input }): Promise<readonly UnlockRequestWithNames[]> => {
         assertUserCompanyScope(ctx.user, input.companyId);
@@ -276,7 +279,7 @@ export function createCycleManagementListingsRouter() {
     // --------------------------------------------------------
     // listCycleScheduleByCompany — Area 2 tabela paginada §14.18
     // --------------------------------------------------------
-    listCycleScheduleByCompany: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    listCycleScheduleByCompany: rhAllowedProcedure()
       .input(listCycleScheduleInput)
       .query(async ({ ctx, input }): Promise<CycleSchedulePageOut> => {
         assertUserCompanyScope(ctx.user, input.companyId);
@@ -333,7 +336,7 @@ export function createCycleManagementListingsRouter() {
     // --------------------------------------------------------
     // listCalendarioByCompany — Area 1 §14.18
     // --------------------------------------------------------
-    listCalendarioByCompany: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    listCalendarioByCompany: rhAllowedProcedure()
       .input(listCalendarioInput)
       .query(async ({ ctx, input }): Promise<readonly CycleScheduleRowOut[]> => {
         assertUserCompanyScope(ctx.user, input.companyId);
