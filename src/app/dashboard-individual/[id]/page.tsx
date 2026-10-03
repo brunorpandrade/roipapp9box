@@ -195,6 +195,7 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
         dataNascimento: toIsoDate(dashboard.employee.dataNascimento),
         dataAdmissao: toIsoDate(dashboard.employee.dataAdmissao),
         liderDireto: dashboard.employee.liderDireto,
+        photoUrl: dashboard.employee.photoUrl,
       },
       trimestresDisponiveis,
       view,

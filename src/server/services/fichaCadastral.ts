@@ -38,6 +38,12 @@ export interface FichaCadastral {
   readonly name: string;
   readonly cpf: string;
   readonly email: string | null;
+  /**
+   * ME-B9.3 Fase A2 — foto canonica (base64 inline em MEDIUMTEXT quando
+   * presente, URL externa quando legada). Null = sem foto, UI exibe
+   * fallback canonico de iniciais via `initialsFromName`.
+   */
+  readonly photoUrl: string | null;
   readonly dataNascimento: Date;
   readonly dataAdmissao: Date;
   readonly cargo: string;
@@ -112,6 +118,7 @@ export async function loadFichaCadastralForViewer(
       name: employees.name,
       cpf: employees.cpf,
       email: employees.email,
+      photoUrl: employees.photoUrl,
       dataNascimento: employees.dataNascimento,
       dataAdmissao: employees.dataAdmissao,
       cargo: employees.cargo,
@@ -159,6 +166,7 @@ export async function loadFichaCadastralForViewer(
     name: row.name,
     cpf: row.cpf,
     email: row.email,
+    photoUrl: row.photoUrl,
     dataNascimento: toDate(row.dataNascimento),
     dataAdmissao: toDate(row.dataAdmissao),
     cargo: row.cargo,

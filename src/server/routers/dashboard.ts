@@ -142,6 +142,12 @@ export interface EmployeeDashboardResult {
     dataNascimento: Date;
     dataAdmissao: Date;
     liderDireto: string | null;
+    /**
+     * ME-B9.3 Fase A2 — foto canonica para o card de identidade do
+     * dashboard individual (§14.25.4). Null = sem foto, UI exibe
+     * fallback de iniciais via `initialsOf`.
+     */
+    photoUrl: string | null;
   };
   latestQuarterly: typeof performanceQuarterlyData.$inferSelect | null;
   history: (typeof performanceQuarterlyData.$inferSelect)[];
@@ -351,6 +357,7 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
             isLider: employees.isLider,
             dataNascimento: employees.dataNascimento,
             dataAdmissao: employees.dataAdmissao,
+            photoUrl: employees.photoUrl,
           })
           .from(employees)
           .where(eq(employees.id, input.employeeId))
@@ -539,6 +546,7 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
             dataNascimento: emp.dataNascimento,
             dataAdmissao: emp.dataAdmissao,
             liderDireto,
+            photoUrl: emp.photoUrl,
           },
           latestQuarterly,
           history,

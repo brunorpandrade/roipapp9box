@@ -1382,12 +1382,24 @@ function renderRow(
   const nivelStyle = getNivelBadgeStyle(row.nivelHierarquico);
   const statusStyle = row.status === 'ativo' ? STATUS_BADGE_ATIVO : STATUS_BADGE_INATIVO;
   const piStyle = getProfileIndividualBadgeStyle(row.profileIndividualStatus);
+  const hasPhoto = row.photoUrl !== null && row.photoUrl !== '';
   return (
     <tr key={row.id}>
       <td style={TD_STYLE}>
-        <span style={{ ...AVATAR_STYLE, background: avatarColor }} aria-hidden="true">
-          {iniciais}
-        </span>
+        {/* ME-B9.3 Fase A2 — foto canonica na coluna FOTO quando
+            presente; fallback bit-exact mantem o avatar colorido com
+            iniciais via hashNameToColor + getIniciaisFromName. */}
+        {hasPhoto ? (
+          <img
+            src={row.photoUrl ?? ''}
+            alt={`Foto de ${row.name}`}
+            style={{ ...AVATAR_STYLE, objectFit: 'cover', padding: 0 }}
+          />
+        ) : (
+          <span style={{ ...AVATAR_STYLE, background: avatarColor }} aria-hidden="true">
+            {iniciais}
+          </span>
+        )}
       </td>
       <td style={{ ...TD_STYLE, minWidth: 200 }}>
         <Link

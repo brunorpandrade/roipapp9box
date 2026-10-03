@@ -685,23 +685,40 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={CARD}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: '50%',
-                  background: COLORS.primary.navy,
-                  color: '#FFFFFF',
-                  fontSize: 16,
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                {initialsOf(employee.name)}
-              </div>
+              {/* ME-B9.3 Fase A2 — foto canonica do colaborador no card
+                  de identidade (§14.25.4). Fallback de iniciais em navy
+                  mantido bit-exact quando `photoUrl` vazio. */}
+              {employee.photoUrl !== null && employee.photoUrl !== '' ? (
+                <img
+                  src={employee.photoUrl}
+                  alt={`Foto de ${employee.name}`}
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    flexShrink: 0,
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '50%',
+                    background: COLORS.primary.navy,
+                    color: '#FFFFFF',
+                    fontSize: 16,
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  {initialsOf(employee.name)}
+                </div>
+              )}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 16, fontWeight: 600, color: COLORS.text.primary }}>
                   {employee.name}

@@ -47,6 +47,12 @@ export interface EmployeeHeader {
   readonly dataNascimento: string | null;
   readonly dataAdmissao: string | null;
   readonly liderDireto: string | null;
+  /**
+   * ME-B9.3 Fase A2 — foto canonica para o card de identidade do
+   * dashboard individual (§14.25.4). Null = sem foto, UI exibe
+   * fallback de iniciais via `initialsOf`.
+   */
+  readonly photoUrl: string | null;
 }
 
 export interface EixoX {

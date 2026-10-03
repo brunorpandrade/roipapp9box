@@ -994,6 +994,8 @@ describe('dashboard — contratos publicos', () => {
         dataNascimento: new Date('1990-01-01'),
         dataAdmissao: new Date('2023-01-01'),
         liderDireto: null,
+        // ME-B9.3 Fase A2 (L113) — campo canonico novo no shape publico.
+        photoUrl: null,
       },
       latestQuarterly: null,
       history: [],

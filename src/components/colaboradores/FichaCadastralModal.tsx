@@ -30,6 +30,7 @@ import {
   formatCpfMasked,
   formatDateBR,
 } from '../../app/super-admin/empresa/[id]/todos-os-colaboradores/internals';
+import { initialsFromName } from '../../lib/avatar/initials';
 import { COLORS } from '../../lib/design-tokens/colors';
 import { DefinirMetasControl } from '../metas/DefinirMetasControl';
 import type { FichaCadastral } from '../../server/services/fichaCadastral';
@@ -208,6 +209,63 @@ export function FichaCadastralModal(props: FichaCadastralModalProps): JSX.Elemen
           {error === null && ficha === null ? (
             <div role="status" style={{ color: COLORS.text.tertiary, fontSize: 14 }}>
               Carregando ficha cadastral...
+            </div>
+          ) : null}
+          {ficha !== null ? (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 16,
+                marginBottom: 20,
+                paddingBottom: 16,
+                borderBottom: `1px solid ${COLORS.border.divider}`,
+              }}
+            >
+              {/* ME-B9.3 Fase A2 — avatar canonico no header do pop-up
+                  (§14.10 ampliado). Preview circular 72x72 com foto base64
+                  inline quando presente; fallback de iniciais em teal
+                  bit-exact ao padrao canonico de listagens. */}
+              {ficha.photoUrl !== null && ficha.photoUrl !== '' ? (
+                <img
+                  src={ficha.photoUrl}
+                  alt={`Foto de ${ficha.name}`}
+                  style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    flexShrink: 0,
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: '50%',
+                    background: COLORS.accent.teal,
+                    color: '#FFFFFF',
+                    fontSize: 22,
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                  aria-hidden="true"
+                >
+                  {initialsFromName(ficha.name)}
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{ fontSize: 16, fontWeight: 600, color: COLORS.text.primary }}>
+                  {ficha.name}
+                </div>
+                <div style={{ fontSize: 13, color: COLORS.text.tertiary }}>
+                  {ficha.cargo === '' ? '—' : ficha.cargo}
+                </div>
+              </div>
             </div>
           ) : null}
           {ficha !== null ? (
