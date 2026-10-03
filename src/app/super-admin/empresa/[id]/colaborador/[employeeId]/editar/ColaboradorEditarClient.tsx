@@ -277,6 +277,9 @@ function toFormValues(e: GetByIdEmployeeResult): ColaboradorFormValues {
     name: e.name,
     cpf: e.cpf,
     email: e.email ?? '',
+    // ME-B9.3 — photoUrl canonico (base64 inline em MEDIUMTEXT; D-B9.3-1
+    // sobrepoe D3 do ME-078b).
+    photoUrl: e.photoUrl,
     dataNascimento: e.dataNascimento.toISOString().slice(0, 10),
     dataAdmissao: e.dataAdmissao.toISOString().slice(0, 10),
     cargo: e.cargo,
@@ -515,6 +518,9 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
       patch.dataAdmissao = v.dataAdmissao;
     }
     if (v.cargo.trim() !== initialEmployee.cargo) patch.cargo = v.cargo.trim();
+    // ME-B9.3 — diff canonico da foto (base64 inline em MEDIUMTEXT). null
+    // = remocao canonica; string = nova foto (base64 ou URL externa).
+    if (v.photoUrl !== initialEmployee.photoUrl) patch.photoUrl = v.photoUrl;
     if (v.cbo.trim() !== initialEmployee.cbo) patch.cbo = v.cbo.trim();
     if (v.descricaoCBO.trim() !== initialEmployee.descricaoCBO) {
       patch.descricaoCBO = v.descricaoCBO.trim();
@@ -538,6 +544,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
           // Hotfix pós-ME 3.5.1 — cadastral corrigível.
           dataAdmissao?: string;
           cargo?: string;
+          photoUrl?: string | null;
           cbo?: string;
           descricaoCBO?: string;
           jobFamily?: string;

@@ -148,8 +148,16 @@ export const CBO_MAX_LENGTH = 10 as const;
 /** §4.5 — VARCHAR(255) canonico da descricao CBO. */
 export const DESCRICAO_CBO_MAX_LENGTH = 255 as const;
 
-/** §4.5 — VARCHAR(500) canonico da photoUrl. */
-export const PHOTO_URL_MAX_LENGTH = 500 as const;
+/**
+ * §4.5 — cap canonico de bytes do payload de `photoUrl`.
+ *
+ * ME-B9.3 (03/10/2026): coluna canonicamente elevada para MEDIUMTEXT
+ * (migration 0010) para comportar data URL base64 inline da foto do
+ * colaborador (cap raw 300KB + ~33% overhead base64 ≈ 400KB). Antes de
+ * B9.3 era VARCHAR(500), compativel apenas com URL externa — modelo
+ * descartado em paridade com ME-B9.2 patch1 (logoUrl).
+ */
+export const PHOTO_URL_MAX_LENGTH = 400 * 1024;
 
 /**
  * §4.6 — VARCHAR(500) do `reason` de `employeeLeaderHistory`. No cadastro
@@ -477,7 +485,7 @@ export const CREATE_EMPLOYEE_INPUT_SCHEMA = z
     name: z.string().min(1).max(NAME_MAX_LENGTH),
     cpf: CPF_SCHEMA_EMP,
     email: emailSchema.optional(),
-    photoUrl: z.string().url().max(PHOTO_URL_MAX_LENGTH).optional(),
+    photoUrl: z.string().trim().max(PHOTO_URL_MAX_LENGTH).nullable().optional(),
     dataNascimento: dateFieldSchema,
     dataAdmissao: dateFieldSchema,
     // ME-078b D1 canonico — Cargo obrigatorio (mockup §13.4 + CAMADA_UI §13.4
@@ -524,7 +532,7 @@ export const UPDATE_EMPLOYEE_INPUT_SCHEMA = z
     employeeId: z.number().int().positive(),
     name: z.string().min(1).max(NAME_MAX_LENGTH).optional(),
     email: emailSchema.optional(),
-    photoUrl: z.string().url().max(PHOTO_URL_MAX_LENGTH).optional(),
+    photoUrl: z.string().trim().max(PHOTO_URL_MAX_LENGTH).nullable().optional(),
     dataNascimento: dateFieldSchema.optional(),
     // Hotfix pós-ME 3.5.1 (28/09/2026) — campo cadastral corrigível pela
     // mesma superfície §13.5 DOC 05. Ausência canonicamente confirmada

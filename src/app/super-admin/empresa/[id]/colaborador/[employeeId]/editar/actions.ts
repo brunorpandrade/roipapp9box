@@ -125,7 +125,8 @@ export async function atualizarColaboradorAction(input: {
   readonly employeeId: number;
   readonly name?: string;
   readonly email?: string;
-  readonly photoUrl?: string;
+  // ME-B9.3 — `null` canonico = remocao da foto (patch limpa coluna).
+  readonly photoUrl?: string | null;
   readonly dataNascimento?: string;
   // Hotfix pós-ME 3.5.1 — campo cadastral corrigível bit-a-bit ao
   // `dataNascimento` acima. Router `UPDATE_EMPLOYEE_INPUT_SCHEMA`

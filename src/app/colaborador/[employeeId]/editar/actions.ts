@@ -146,7 +146,8 @@ export async function atualizarColaboradorRHAction(input: {
   readonly employeeId: number;
   readonly name?: string;
   readonly email?: string;
-  readonly photoUrl?: string;
+  // ME-B9.3 — `null` canonico = remocao da foto (patch limpa coluna).
+  readonly photoUrl?: string | null;
   readonly dataNascimento?: string;
   readonly cargo?: string;
   readonly cbo?: string;

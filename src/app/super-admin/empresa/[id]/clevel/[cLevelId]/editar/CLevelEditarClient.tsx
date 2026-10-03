@@ -204,7 +204,10 @@ export function CLevelEditarClient(props: Props): JSX.Element {
         cLevelId: clevel.id,
         name: v.name.trim(),
         email: v.email.trim(),
-        photoUrl: v.photoUrl.trim().length > 0 ? v.photoUrl.trim() : undefined,
+        // ME-B9.3 — `null` canonico quando vazio (remocao explicita da
+        // coluna) substitui o padrao antigo de `undefined` (que mantinha
+        // o valor DB antigo). O Zod canonico aceita `.nullable()`.
+        photoUrl: v.photoUrl.trim().length > 0 ? v.photoUrl.trim() : null,
         dataNascimento: v.dataNascimento,
         // ME-CLEVEL-DATAADMISSAO — fix canonico: `dataAdmissao` passa a
         // ser propagada no payload. Antes, o campo estava declarado no

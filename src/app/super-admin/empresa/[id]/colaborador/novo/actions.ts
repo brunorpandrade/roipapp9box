@@ -126,6 +126,8 @@ export async function criarColaboradorAction(input: {
   readonly name: string;
   readonly cpf: string;
   readonly email?: string;
+  // ME-B9.3 — foto canonica base64 inline (opcional no cadastro).
+  readonly photoUrl?: string;
   readonly dataNascimento: string;
   readonly dataAdmissao: string;
   readonly cargo: string;

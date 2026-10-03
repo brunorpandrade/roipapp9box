@@ -28,6 +28,7 @@
 
 import { useState, type ChangeEvent, type JSX } from 'react';
 
+import { ImageUploader } from '../../../../../components/forms/ImageUploader';
 import { COLORS } from '../../../../../lib/design-tokens/colors';
 
 // -----------------------------------------------------------------------
@@ -452,20 +453,20 @@ export function CLevelForm(props: CLevelFormProps): JSX.Element {
           </div>
           <div style={{ gridColumn: 'span 2' }}>
             <label style={FIELD_LABEL_STYLE} htmlFor="cl-photo">
-              Foto (URL da imagem)
+              Foto
             </label>
-            <input
-              id="cl-photo"
-              type="url"
-              value={values.photoUrl}
-              onChange={handleTextChange('photoUrl')}
-              style={FIELD_INPUT_STYLE}
-              placeholder="https://exemplo.com/foto.jpg"
-              maxLength={500}
+            {/* ME-B9.3 — upload inline base64 (MEDIUMTEXT), paridade bit-exact
+                com o ColaboradorForm. Substitui o input de URL manual
+                anterior. */}
+            <ImageUploader
+              value={values.photoUrl === '' ? null : values.photoUrl}
+              onChange={(next) => updateField('photoUrl', next ?? '')}
+              labelRemover="Remover foto"
+              textoVazio="Sem foto."
+              hintText="PNG, JPEG, WebP ou SVG. Máximo 300KB."
+              previewVariant="circle"
+              previewSize={72}
             />
-            <div style={NOTA_CANONICA_STYLE}>
-              Upload direto de imagem sera integrado em fase futura — informe URL manual.
-            </div>
           </div>
         </div>
       </section>

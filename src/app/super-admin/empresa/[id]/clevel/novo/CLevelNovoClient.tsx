@@ -158,6 +158,9 @@ export function CLevelNovoClient(props: Props): JSX.Element {
         name: v.name.trim(),
         cpf: v.cpf,
         email: v.email.trim(),
+        // ME-B9.3 — no cadastro novo, foto vazia simplesmente nao envia
+        // (optional). Null tambem seria aceito pelo Zod `.nullable()`,
+        // mas undefined mantem a semantica canonica de "campo ausente".
         photoUrl: v.photoUrl.trim().length > 0 ? v.photoUrl.trim() : undefined,
         dataNascimento: v.dataNascimento,
         dataAdmissao: v.dataAdmissao,

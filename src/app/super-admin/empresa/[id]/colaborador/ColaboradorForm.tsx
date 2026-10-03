@@ -9,7 +9,13 @@
 // Decisoes canonicas ME-078b aplicadas bit-exact:
 //   D1  — Cargo obrigatorio (VARCHAR(100)) integrado ao schema.
 //   D2  — Telefone omitido (mockup + schema alinhados sem telefone).
-//   D3  — Foto como avatar auto-gerado por iniciais (mockup literal).
+//   D3  — [SUPERADA EM 03/10/2026 PELO ME-B9.3] Era: "Foto como avatar
+//         auto-gerado por iniciais (mockup literal)". ME-B9.3 abre o
+//         upload de foto do colaborador (base64 inline em MEDIUMTEXT),
+//         Seção 1 agora exibe `ImageUploader` circular (preview 72);
+//         fallback de iniciais permanece canônico nas listagens via
+//         `Avatar.tsx` (que consome `initialsFromName` canônico — este
+//         form não precisa mais do helper local `getIniciais`, removido).
 //   D5  — [Enviar primeiro acesso] disabled S503 com tooltip canonico.
 //   D6  — Autocomplete lider direto polimorfico (employee | clevel).
 //   D7  — [Definir metas]: slot `metasSlot` (ME-fila6 D3); sem slot (cadastro novo)
@@ -32,6 +38,7 @@ import {
   type ReactNode,
 } from 'react';
 
+import { ImageUploader } from '../../../../../components/forms/ImageUploader';
 import { COLORS } from '../../../../../lib/design-tokens/colors';
 
 /** §13.4 canonizado — 6 familias hard-coded (DOC canonico documental). */
@@ -101,6 +108,7 @@ export interface ColaboradorFormValues {
   name: string;
   cpf: string;
   email: string;
+  photoUrl: string | null;
   dataNascimento: string;
   dataAdmissao: string;
   cargo: string;
@@ -120,6 +128,7 @@ export const EMPTY_COLABORADOR_FORM_VALUES: ColaboradorFormValues = {
   name: '',
   cpf: '',
   email: '',
+  photoUrl: null,
   dataNascimento: '',
   dataAdmissao: '',
   cargo: '',
@@ -292,20 +301,6 @@ const NOTA_STYLE = {
   marginTop: 4,
 };
 
-const AVATAR_STYLE = {
-  width: 64,
-  height: 64,
-  borderRadius: '50%',
-  background: COLORS.accent.teal,
-  color: '#FFFFFF',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontSize: 22,
-  fontWeight: 600,
-  flexShrink: 0,
-};
-
 const AUTOCOMPLETE_LIST_STYLE = {
   border: `1px solid ${COLORS.border.default}`,
   borderTop: 'none',
@@ -348,18 +343,6 @@ function maskCpf(raw: string): string {
   if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
   if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
-}
-
-function getIniciais(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 0) return '?';
-  const first = parts[0] ?? '';
-  if (first === '') return '?';
-  if (parts.length === 1) return first.slice(0, 2).toUpperCase();
-  const last = parts[parts.length - 1] ?? '';
-  const firstChar = first[0] ?? '';
-  const lastChar = last[0] ?? '';
-  return (firstChar + lastChar).toUpperCase();
 }
 
 // ============================================================
@@ -447,19 +430,28 @@ export function ColaboradorForm(props: ColaboradorFormProps): JSX.Element {
   }
 
   const showPrimeiroAcesso = values.isRH || values.isLider;
-  const iniciais = getIniciais(values.name);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* Seção 1 — Dados pessoais */}
+      {/* Seção 1 — Dados pessoais (ME-B9.3 D-B9.3-1/8: supera D3 do
+          ME-078b; foto do colaborador vira upload base64 inline em
+          MEDIUMTEXT; fallback de iniciais permanece canônico em
+          listagens/dashboards via `Avatar.tsx`). */}
       <section style={SECTION_CARD_STYLE}>
         <h2 style={SECTION_TITLE_STYLE}>Dados pessoais</h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={AVATAR_STYLE} aria-label="Avatar por iniciais">
-            {iniciais}
-          </div>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+          <ImageUploader
+            value={values.photoUrl}
+            onChange={(next) => updateField('photoUrl', next)}
+            labelRemover="Remover foto"
+            textoVazio="Sem foto."
+            hintText="PNG, JPEG, WebP ou SVG. Máximo 300KB."
+            previewVariant="circle"
+            previewSize={72}
+          />
           <div style={{ fontSize: 12, color: COLORS.text.tertiary, fontStyle: 'italic' }}>
-            Avatar gerado automaticamente pelas iniciais do nome — sem upload de foto nesta versão.
+            Prerrogativa do RH. Quando sem foto, listagens exibem o avatar canônico de iniciais do
+            nome.
           </div>
         </div>
         <div style={GRID_2_STYLE}>

@@ -19,7 +19,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition, type JSX } from 'react';
 
-import { LogoUploader } from '../../../../../components/forms/LogoUploader';
+import { ImageUploader } from '../../../../../components/forms/ImageUploader';
 
 import { saveParametrosAction, setCompanyStatusAction } from './actions';
 import {
@@ -297,9 +297,11 @@ export function ParametrosClient(props: ParametrosClientProps): JSX.Element {
             </select>
           </Field>
           <Field label="Logo da empresa (opcional)">
-            <LogoUploader
+            <ImageUploader
               value={state.values.logoUrl}
               onChange={(next) => update('logoUrl', next)}
+              labelRemover="Remover logo"
+              textoVazio="Nenhum logo definido."
             />
           </Field>
         </Grid2>

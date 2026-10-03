@@ -89,8 +89,15 @@ export const EMAIL_MAX_LENGTH_CL = 255 as const;
 /** §4.4 — VARCHAR(100) canonico do cargo do C-level. */
 export const CARGO_MAX_LENGTH_CL = 100 as const;
 
-/** §4.4 — VARCHAR(500) canonico da photoUrl. */
-export const PHOTO_URL_MAX_LENGTH_CL = 500 as const;
+/**
+ * §4.4 — cap canonico de bytes do payload de `photoUrl` do C-level.
+ *
+ * ME-B9.3 (03/10/2026): coluna canonicamente elevada para MEDIUMTEXT
+ * (migration 0010) para comportar data URL base64 inline da foto (cap
+ * raw 300KB + ~33% overhead base64 ≈ 400KB). Paridade bit-exact com
+ * `PHOTO_URL_MAX_LENGTH` de employees — ME-B9.3 cobre ambas tabelas.
+ */
+export const PHOTO_URL_MAX_LENGTH_CL = 400 * 1024;
 
 // ============================================================
 // Mensagens canonicas literais (testadas verbatim)
@@ -189,7 +196,7 @@ export const CREATE_CLEVEL_INPUT_SCHEMA = z.object({
   name: z.string().min(1).max(NAME_MAX_LENGTH_CL),
   cpf: CPF_SCHEMA_CL,
   email: emailSchemaCl,
-  photoUrl: z.string().url().max(PHOTO_URL_MAX_LENGTH_CL).optional(),
+  photoUrl: z.string().trim().max(PHOTO_URL_MAX_LENGTH_CL).nullable().optional(),
   dataNascimento: dateFieldSchemaCl,
   dataAdmissao: dateFieldSchemaCl,
   cargo: z.string().min(1).max(CARGO_MAX_LENGTH_CL),
@@ -224,7 +231,7 @@ export const UPDATE_CLEVEL_INPUT_SCHEMA = z
     cLevelId: z.number().int().positive(),
     name: z.string().min(1).max(NAME_MAX_LENGTH_CL).optional(),
     email: emailSchemaCl.optional(),
-    photoUrl: z.string().url().max(PHOTO_URL_MAX_LENGTH_CL).optional(),
+    photoUrl: z.string().trim().max(PHOTO_URL_MAX_LENGTH_CL).nullable().optional(),
     dataNascimento: dateFieldSchemaCl.optional(),
     // Hotfix pós-ME 3.5.1 (28/09/2026) — campo cadastral corrigível pela
     // mesma superfície §13.3 DOC 05. Ausência canonicamente confirmada

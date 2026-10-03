@@ -278,6 +278,9 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
       isRH: v.isRH,
       isLider: v.isLider,
       ...(v.email.trim().length > 0 ? { email: v.email.trim() } : {}),
+      // ME-B9.3 — foto canonica base64 inline. Omite quando null (optional
+      // + nullable no Zod canonico `createEmployeeInput`).
+      ...(v.photoUrl !== null ? { photoUrl: v.photoUrl } : {}),
       ...(v.liderInicial !== null
         ? v.liderInicial.tipo === 'employee'
           ? { liderInicialId: v.liderInicial.id }
