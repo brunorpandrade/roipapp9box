@@ -115,7 +115,14 @@ export const UpdateCompanyParametersInputSchema = z.object({
   endereco: z.string().trim().min(1).max(255),
   cidade: z.string().trim().min(1).max(100),
   estado: z.string().trim().regex(UF_REGEX, { message: 'UF inválida.' }),
-  logoUrl: z.string().trim().max(500).nullable().optional(),
+  // ME-B9.2 patch1: cap canonico base64 (~400KB — bate com o cap raw
+  // 300KB do LogoUploader; apos base64 encoding fica ~400KB).
+  logoUrl: z
+    .string()
+    .trim()
+    .max(400 * 1024)
+    .nullable()
+    .optional(),
 
   // --- Secao 2 — Contatos ---
   contatoPrincipalNome: z.string().trim().min(1).max(255),
