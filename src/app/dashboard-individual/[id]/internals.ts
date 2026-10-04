@@ -435,19 +435,20 @@ export function faixaAssiduidadeLabel(f: FaixaAssiduidade | null): string {
 }
 
 /**
- * Cor canônica da faixa de assiduidade (ME-B9.9b) alinhada à paleta
- * oficial DOC 05 §2.1. Ótima e Boa compartilham a família verde
- * (success escuro + success base), conforme decisão canônica de que a
- * faixa Boa permanece no verde:
- *   - Ótima   -> verde escuro (success texto) #166534
- *   - Boa     -> verde base (success)         #16A34A
- *   - Regular -> amarelo (warning)            #F2A900 (ME 8.06.4)
- *   - Ruim    -> vermelho (danger)            #DC2626
+ * Cor canônica da faixa de assiduidade (ME-B9.9c) alinhada à paleta
+ * oficial DOC 05 §2.1. Semáforo clássico de 3 cores (verde / amarelo
+ * / vermelho) — Ótima e Boa compartilham EXATAMENTE o mesmo verde
+ * canônico (success base). A diferenciação entre as duas se dá pelo
+ * label textual, não pela cor:
+ *   - Ótima   -> verde (success)   #16A34A
+ *   - Boa     -> verde (success)   #16A34A (idêntico à Ótima)
+ *   - Regular -> amarelo (warning) #F2A900 (ME 8.06.4)
+ *   - Ruim    -> vermelho (danger) #DC2626
  * Faixa nula devolve `COLORS.text.primary` (fallback neutro).
  */
 export function assiduidadeColor(f: FaixaAssiduidade | null): string {
   if (f === 'otima') {
-    return '#166534';
+    return COLORS.semantic.success;
   }
   if (f === 'boa') {
     return COLORS.semantic.success;
