@@ -92,6 +92,52 @@ export function computeAssiduidade(diasUteis: number, faltas: number): number | 
 }
 
 // ============================================================
+// Passo 1.5 — Classificacao canonica de assiduidade (ME-B9.9)
+// ============================================================
+
+/**
+ * Faixa canonica de assiduidade (ME-B9.9).
+ */
+export type FaixaAssiduidade = 'otimo' | 'bom' | 'regular' | 'ruim';
+
+/**
+ * Cutoffs canonicos da escala de assiduidade (ME-B9.9).
+ *
+ * Convertidos da especificacao canonica em percentual de **ausencia**
+ * (B9.9 em OPERACAO_POS_B8_V1) para percentual de **presenca**
+ * (`computeAssiduidade` retorna presenca 0..100):
+ *   - Otimo:   presenca >= 99%   (ausencia <= 1%)
+ *   - Bom:     97% <= presenca < 99%  (1% < ausencia <= 3%)
+ *   - Regular: 95% <= presenca < 97%  (3% < ausencia <= 5%)
+ *   - Ruim:    presenca < 95%  (ausencia > 5%)
+ */
+export const ASSIDUIDADE_CUTOFFS = {
+  otimo: 99.0,
+  bom: 97.0,
+  regular: 95.0,
+} as const;
+
+/**
+ * Classifica a assiduidade (percentual de presenca 0..100) em uma das
+ * 4 faixas canonicas. Retorna `null` quando o valor e `null` ou NaN.
+ */
+export function classifyAssiduidade(presenca: number | null): FaixaAssiduidade | null {
+  if (presenca === null || Number.isNaN(presenca)) {
+    return null;
+  }
+  if (presenca >= ASSIDUIDADE_CUTOFFS.otimo) {
+    return 'otimo';
+  }
+  if (presenca >= ASSIDUIDADE_CUTOFFS.bom) {
+    return 'bom';
+  }
+  if (presenca >= ASSIDUIDADE_CUTOFFS.regular) {
+    return 'regular';
+  }
+  return 'ruim';
+}
+
+// ============================================================
 // Passo 2 — Desempenho por variavel (§3.4)
 // ============================================================
 

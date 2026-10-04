@@ -20,8 +20,11 @@ import {
 import {
   NINE_BOX_GRID,
   QUADRANTE_LEGENDA,
+  assiduidadeColor,
+  classifyAssiduidade,
   colIndexFor,
   derivarSeta,
+  faixaAssiduidadeLabel,
   faixaDesempenhoLabel,
   faixaPlenitudeLabel,
   formatBRLInt,
@@ -805,21 +808,43 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
                   seta={seta.char}
                   setaColor={seta.color}
                 />
-                {view.assiduidadeMedia !== null ? (
-                  <div style={{ marginTop: 12 }}>
-                    <div style={{ ...LABEL, fontSize: 10 }}>ASSIDUIDADE MÉDIA</div>
-                    <div
-                      style={{
-                        fontSize: 18,
-                        fontWeight: 700,
-                        color: COLORS.semantic.success,
-                        marginTop: 2,
-                      }}
-                    >
-                      {formatPercent(view.assiduidadeMedia)}
-                    </div>
-                  </div>
-                ) : null}
+                {view.assiduidadeMedia !== null
+                  ? (() => {
+                      const presenca = Number(view.assiduidadeMedia);
+                      const faixa = Number.isFinite(presenca)
+                        ? classifyAssiduidade(presenca)
+                        : null;
+                      const cor = assiduidadeColor(faixa);
+                      const label = faixaAssiduidadeLabel(faixa);
+                      return (
+                        <div style={{ marginTop: 12 }}>
+                          <div style={{ ...LABEL, fontSize: 10 }}>ASSIDUIDADE MÉDIA</div>
+                          <div
+                            style={{
+                              fontSize: 18,
+                              fontWeight: 700,
+                              color: cor,
+                              marginTop: 2,
+                            }}
+                          >
+                            {formatPercent(view.assiduidadeMedia)}
+                          </div>
+                          {faixa !== null ? (
+                            <div
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 600,
+                                color: cor,
+                                marginTop: 2,
+                              }}
+                            >
+                              {label}
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })()
+                  : null}
                 <div style={{ marginTop: 12 }}>
                   <div style={{ ...LABEL, fontSize: 10 }}>QUADRANTE ATUAL</div>
                   <div

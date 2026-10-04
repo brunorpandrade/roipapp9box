@@ -19,12 +19,24 @@ import {
   type PosicaoX,
   type PosicaoY,
 } from '../../../lib/nineBoxSeta';
+import {
+  ASSIDUIDADE_CUTOFFS,
+  classifyAssiduidade,
+  type FaixaAssiduidade,
+} from '../../../lib/roiFormulas';
+import { COLORS } from '../../../lib/design-tokens/colors';
 
 // Régua de seta e índices de posição vivem em `lib/nineBoxSeta` (RV-14):
 // uma cópia só, compartilhada com os dashboards agregados. Reexportados
 // aqui para os consumidores que já importam de `internals`.
 export { colIndexFor, derivarSeta, rowIndexFor };
 export type { PosicaoX, PosicaoY };
+
+// Classificação canônica de assiduidade vive em `lib/roiFormulas` (RV-14):
+// motor puro, zero import de UI. Reexportado aqui para o cliente do
+// Dashboard individual (ME-B9.9).
+export { ASSIDUIDADE_CUTOFFS, classifyAssiduidade };
+export type { FaixaAssiduidade };
 
 export type FichaLoadAction = (
   companyId: number,
@@ -399,6 +411,51 @@ export function faixaPlenitudeLabel(f: FaixaPlenitude | null): string {
     return 'Baixa plenitude';
   }
   return '—';
+}
+
+/**
+ * Label canônico da faixa de assiduidade (ME-B9.9). Primeira letra
+ * maiúscula conforme preferência de registro executivo canônico.
+ */
+export function faixaAssiduidadeLabel(f: FaixaAssiduidade | null): string {
+  if (f === 'otimo') {
+    return 'Ótimo';
+  }
+  if (f === 'bom') {
+    return 'Bom';
+  }
+  if (f === 'regular') {
+    return 'Regular';
+  }
+  if (f === 'ruim') {
+    return 'Ruim';
+  }
+  return '—';
+}
+
+/**
+ * Cor canônica da faixa de assiduidade (ME-B9.9) alinhada à paleta
+ * oficial DOC 05 §2.1:
+ *   - Ótimo   -> success (verde)   #16A34A
+ *   - Bom     -> teal §2.1 (acento) #14B8A6
+ *   - Regular -> warning (amarelo) #F2A900 (ME 8.06.4)
+ *   - Ruim    -> danger (vermelho) #DC2626
+ * Faixa nula devolve `COLORS.text.primary` (fallback neutro).
+ */
+export function assiduidadeColor(f: FaixaAssiduidade | null): string {
+  if (f === 'otimo') {
+    return COLORS.semantic.success;
+  }
+  if (f === 'bom') {
+    return '#14B8A6';
+  }
+  if (f === 'regular') {
+    return COLORS.semantic.warning;
+  }
+  if (f === 'ruim') {
+    return COLORS.semantic.danger;
+  }
+  return COLORS.text.primary;
 }
 
 /** Percentual a partir de fracao 0–1 (ex.: `0.9840` -> `98,4%`). Usado no
