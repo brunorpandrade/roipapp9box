@@ -128,6 +128,7 @@ function mkPlatform(
     displayName: 'Test',
     companyDisplayName: 'Test Ltd',
     companyLogoUrl: null,
+    userPhotoUrl: null,
     passwordSet: true,
   };
 }

@@ -29,6 +29,7 @@ describe('resolveDestClauseFromSession — narrowing canonico §10.1', () => {
       displayName: 'RH da empresa',
       companyDisplayName: 'Empresa X',
       companyLogoUrl: null,
+      userPhotoUrl: null,
       passwordSet: true,
     };
     const res = resolveDestClauseFromSession(session);
@@ -47,6 +48,7 @@ describe('resolveDestClauseFromSession — narrowing canonico §10.1', () => {
       displayName: 'RH+Lider',
       companyDisplayName: 'Empresa X',
       companyLogoUrl: null,
+      userPhotoUrl: null,
       passwordSet: true,
     };
     const res = resolveDestClauseFromSession(session);
@@ -65,6 +67,7 @@ describe('resolveDestClauseFromSession — narrowing canonico §10.1', () => {
       displayName: 'C-level',
       companyDisplayName: 'Empresa X',
       companyLogoUrl: null,
+      userPhotoUrl: null,
       passwordSet: true,
     };
     const res = resolveDestClauseFromSession(session);
@@ -80,6 +83,7 @@ describe('resolveDestClauseFromSession — narrowing canonico §10.1', () => {
       displayName: 'Lider',
       companyDisplayName: 'Empresa X',
       companyLogoUrl: null,
+      userPhotoUrl: null,
       passwordSet: true,
     };
     const res = resolveDestClauseFromSession(session);

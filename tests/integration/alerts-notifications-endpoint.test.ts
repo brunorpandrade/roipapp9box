@@ -147,6 +147,7 @@ describe('/api/notifications — GET + PATCH canonicos §10.2/§10.4', () => {
         displayName: 'C',
         companyDisplayName: 'X',
         companyLogoUrl: null,
+        userPhotoUrl: null,
         passwordSet: true,
       };
       const res = await GET(new Request('http://localhost/api/notifications?mode=count'));
@@ -164,6 +165,7 @@ describe('/api/notifications — GET + PATCH canonicos §10.2/§10.4', () => {
         displayName: 'L',
         companyDisplayName: 'X',
         companyLogoUrl: null,
+        userPhotoUrl: null,
         passwordSet: true,
       };
       const res = await GET(new Request('http://localhost/api/notifications?mode=count'));
@@ -208,6 +210,7 @@ describe('/api/notifications — GET + PATCH canonicos §10.2/§10.4', () => {
         displayName: 'RH',
         companyDisplayName: 'X',
         companyLogoUrl: null,
+        userPhotoUrl: null,
         passwordSet: true,
       };
       const res = await GET(new Request('http://localhost/api/notifications?mode=count'));
@@ -246,6 +249,7 @@ describe('/api/notifications — GET + PATCH canonicos §10.2/§10.4', () => {
         displayName: 'RH',
         companyDisplayName: 'X',
         companyLogoUrl: null,
+        userPhotoUrl: null,
         passwordSet: true,
       };
       const res = await GET(new Request('http://localhost/api/notifications?mode=count'));
@@ -275,6 +279,7 @@ describe('/api/notifications — GET + PATCH canonicos §10.2/§10.4', () => {
         displayName: 'RH',
         companyDisplayName: 'X',
         companyLogoUrl: null,
+        userPhotoUrl: null,
         passwordSet: true,
       };
       const res = await GET(new Request('http://localhost/api/notifications?mode=unread'));
@@ -295,6 +300,7 @@ describe('/api/notifications — GET + PATCH canonicos §10.2/§10.4', () => {
         displayName: 'RH',
         companyDisplayName: 'X',
         companyLogoUrl: null,
+        userPhotoUrl: null,
         passwordSet: true,
       };
       const res = await GET(new Request('http://localhost/api/notifications?mode=unread'));
@@ -315,6 +321,7 @@ describe('/api/notifications — GET + PATCH canonicos §10.2/§10.4', () => {
         displayName: 'RH',
         companyDisplayName: 'X',
         companyLogoUrl: null,
+        userPhotoUrl: null,
         passwordSet: true,
       };
       const res = await PATCH(
@@ -353,6 +360,7 @@ describe('/api/notifications — GET + PATCH canonicos §10.2/§10.4', () => {
         displayName: 'RH',
         companyDisplayName: 'X',
         companyLogoUrl: null,
+        userPhotoUrl: null,
         passwordSet: true,
       };
       const res = await PATCH(

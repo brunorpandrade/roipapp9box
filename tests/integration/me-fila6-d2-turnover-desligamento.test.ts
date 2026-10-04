@@ -104,6 +104,7 @@ describe('ME-fila6 D2 — turnover e desligamento (MySQL real)', () => {
       displayName: 'Teste',
       companyDisplayName: 'Empresa Teste',
       companyLogoUrl: null,
+      userPhotoUrl: null,
       passwordSet: true,
     } as ServerSession;
   }

@@ -50,6 +50,7 @@ const PLATFORM_BASE = {
   displayName: 'Test User',
   companyDisplayName: 'Test Co',
   companyLogoUrl: null,
+  userPhotoUrl: null,
 };
 
 describe('ME 3.5.1 — requireRhLikeOrSuperAdmin', () => {

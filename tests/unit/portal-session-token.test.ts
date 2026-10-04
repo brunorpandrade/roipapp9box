@@ -93,6 +93,7 @@ describe('POST /api/portal/session-token — guards canonicos (S252)', () => {
       displayName: 'Fulana da Silva',
       companyDisplayName: 'Nativa Alimentos',
       companyLogoUrl: null,
+      userPhotoUrl: null,
       passwordSet: true,
     };
     const { POST } = await importarHandler();
@@ -129,6 +130,7 @@ describe('POST /api/portal/session-token — guards canonicos (S252)', () => {
       displayName: 'CEO Exemplo',
       companyDisplayName: 'Bebidas Ubatuba',
       companyLogoUrl: null,
+      userPhotoUrl: null,
       passwordSet: true,
     };
     const { POST } = await importarHandler();
@@ -155,6 +157,7 @@ describe('POST /api/portal/session-token — guards canonicos (S252)', () => {
       displayName: 'RH Exemplo',
       companyDisplayName: 'Nativa Alimentos',
       companyLogoUrl: null,
+      userPhotoUrl: null,
       passwordSet: true,
     };
     const { POST } = await importarHandler();
@@ -180,6 +183,7 @@ describe('POST /api/portal/session-token — guards canonicos (S252)', () => {
       displayName: 'RH Lider Exemplo',
       companyDisplayName: 'Nativa Alimentos',
       companyLogoUrl: null,
+      userPhotoUrl: null,
       passwordSet: true,
     };
     const { POST } = await importarHandler();

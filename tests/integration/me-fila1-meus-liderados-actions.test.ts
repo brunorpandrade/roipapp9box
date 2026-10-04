@@ -320,6 +320,7 @@ describe('ME-fila1-01 · requireLiderRHLiderOrClevel (unit puro)', () => {
       displayName: 'Test',
       companyDisplayName: 'Empresa Test',
       companyLogoUrl: null,
+      userPhotoUrl: null,
       passwordSet: true,
     };
   }
