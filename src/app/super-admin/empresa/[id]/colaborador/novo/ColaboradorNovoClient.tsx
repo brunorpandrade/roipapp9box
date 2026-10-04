@@ -440,12 +440,7 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
         <button type="button" onClick={handleCancel} style={BTN_OUTLINE_STYLE} disabled={saving}>
           Cancelar
         </button>
-        <button
-          type="button"
-          onClick={handleSave}
-          style={BTN_PRIMARY_STYLE}
-          disabled={saving || values.liderInicial === null}
-        >
+        <button type="button" onClick={handleSave} style={BTN_PRIMARY_STYLE} disabled={saving}>
           {saving ? 'Salvando...' : 'Salvar colaborador'}
         </button>
       </div>

@@ -1091,7 +1091,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
             type="button"
             onClick={handleSave}
             style={BTN_PRIMARY_STYLE}
-            disabled={saving || isInativo || values.liderInicial === null}
+            disabled={saving || isInativo}
           >
             {saving ? 'Salvando...' : 'Salvar alterações'}
           </button>
