@@ -10,9 +10,13 @@
 // chaves (nome, trimestre, dimensao, valor); so o `itemIndex` foi recalculado
 // via `itemIndex -= (dimensao-1)*5`. Contagens inalteradas (8020 rows cada).
 //
-// ME-B9.12 (04/10/2026) — fixture v1.2 -> v1.3: recalibracao canonica da curva
-// de demanda por quadrante 9-Box dominante do colaborador (Opcao B). Atualizados
-// os pins SHA-256 de `performance_mensal.json` (demanda recalibrada) e de
+// ME-B9.12 + patch1 (04/10/2026) — fixture v1.2 -> v1.3: recalibracao canonica
+// da curva de demanda por quadrante 9-Box dominante do colaborador (Opcao B).
+// Patch1: reformatacao `performance_mensal.json` via `prettier --write` para
+// alinhar bit-exact ao estilo canonico do repo (arrays internos em linha unica),
+// SHA-256 atualizado de `116d8788...` para `7d719a05...`. Conteudo semantico
+// bit-exact preservado — somente formatacao. Atualizados os pins SHA-256 de
+// `performance_mensal.json` (demanda recalibrada + prettier) e de
 // `performance_trimestral.json` (campo `capacidadeOciosa` recomputado via regra
 // S056). Preservado bit-exact: `desempenho_i` em todas as 3976 variaveis
 // afetadas, logo `indiceDesempenho`, `scoreDesempenho`, `faixaDesempenho` e
@@ -168,7 +172,7 @@ export const NATIVA_FIXTURE_MANIFEST = [
   },
   {
     filename: 'performance_mensal.json',
-    sha256: '116d87882f8c2fe046d10738e15babffeaa9408d9ca9910d115dfcb899358288',
+    sha256: '7d719a052d0194d59a481bae064b88a2dd4abeec080507428bc28a688ffa2640',
     recordCount: 1210,
     destinationTable: 'performanceData',
   },
