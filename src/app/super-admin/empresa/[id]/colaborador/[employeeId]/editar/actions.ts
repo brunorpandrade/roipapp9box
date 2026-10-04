@@ -397,6 +397,12 @@ export interface LideradoItem {
   readonly name: string;
   readonly cargo: string;
   readonly departamento: string;
+  /**
+   * ME-B9.3 Fase A2 dispatch 2 — foto do liderado propagada para o
+   * `ModalTransferenciaLiderados`. Null = sem foto, UI mantem fallback
+   * de iniciais no AVATAR_STYLE canonico.
+   */
+  readonly photoUrl: string | null;
 }
 
 /**
@@ -424,6 +430,7 @@ export async function listarLideradosAction(input: {
         name: employees.name,
         cargo: employees.cargo,
         departamento: employees.departamento,
+        photoUrl: employees.photoUrl,
       })
       .from(employeeLeaderHistory)
       .innerJoin(employees, eq(employeeLeaderHistory.employeeId, employees.id))

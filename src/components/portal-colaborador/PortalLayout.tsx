@@ -25,8 +25,25 @@ import { PrivacyModal } from './PrivacyModal';
 export interface PortalLayoutProps {
   readonly children: ReactNode;
   readonly userName?: string | null;
+  /**
+   * ME-B9.3 Fase A2 dispatch 2 — foto canonica do titular logado. Null
+   * ou vazio = exibe avatar canonico de iniciais via `initialsFromName`.
+   */
+  readonly userPhotoUrl?: string | null;
   readonly onSair?: () => void;
   readonly showHeader?: boolean;
+}
+
+function initialsFromPortalName(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 0) return '?';
+  const first = parts[0] ?? '';
+  if (first === '') return '?';
+  if (parts.length === 1) return first.slice(0, 2).toUpperCase();
+  const last = parts[parts.length - 1] ?? '';
+  const firstChar = first[0] ?? '';
+  const lastChar = last[0] ?? '';
+  return (firstChar + lastChar).toUpperCase();
 }
 
 const BG = '#F9FAFB';
@@ -38,9 +55,10 @@ const TEXT_2 = '#374151';
 const TEXT_3 = '#6B7280';
 
 export function PortalLayout(props: PortalLayoutProps): JSX.Element {
-  const { children, userName, onSair, showHeader } = props;
+  const { children, userName, userPhotoUrl, onSair, showHeader } = props;
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const renderUserBar = showHeader === true && userName !== undefined && userName !== null;
+  const hasPhoto = userPhotoUrl !== undefined && userPhotoUrl !== null && userPhotoUrl.length > 0;
 
   return (
     <div
@@ -95,6 +113,43 @@ export function PortalLayout(props: PortalLayoutProps): JSX.Element {
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+            {/* ME-B9.3 Fase A2 dispatch 2 — avatar canonico do titular
+                logado. Foto quando disponivel (base64 persistida pela
+                Fase A), fallback de iniciais em teal. */}
+            {hasPhoto ? (
+              <img
+                src={userPhotoUrl ?? ''}
+                alt={`Foto de ${userName}`}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  flexShrink: 0,
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  background: TEAL,
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  flexShrink: 0,
+                }}
+                aria-hidden="true"
+              >
+                {userName !== undefined && userName !== null
+                  ? initialsFromPortalName(userName)
+                  : '?'}
+              </div>
+            )}
             <span
               className="roip-portal-user-name"
               style={{

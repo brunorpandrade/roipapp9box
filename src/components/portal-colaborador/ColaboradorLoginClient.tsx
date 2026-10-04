@@ -62,9 +62,21 @@ const MSG_OFFLINE = 'Sem conexão. Verifique sua internet.';
 
 const MATRICULA_UI_REGEX = /^[A-Za-z]{2}[0-9]{2}$/;
 
+interface LoginSuccessUser {
+  id: number;
+  name: string;
+  type: 'employee' | 'clevel';
+  /**
+   * ME-B9.3 Fase A2 dispatch 2 — foto canonica do colaborador logado.
+   * Null = sem foto; o `PortalLayout` exibe o avatar canonico de
+   * iniciais via `initialsFromName`.
+   */
+  photoUrl: string | null;
+}
+
 interface LoginSuccess {
   portalToken: string;
-  user: { id: number; name: string; type: 'employee' | 'clevel' };
+  user: LoginSuccessUser;
   gateStep: 'lgpd_consent' | 'pendencias';
 }
 
@@ -165,6 +177,10 @@ export function ColaboradorLoginClient(): JSX.Element {
         window.sessionStorage.setItem('portalToken', success.portalToken);
         window.sessionStorage.setItem('portalUserName', success.user.name);
         window.sessionStorage.setItem('portalUserType', success.user.type);
+        // ME-B9.3 Fase A2 dispatch 2 — foto do titular propagada ao
+        // PortalLayout. Grava string vazia quando ausente (lida pelo
+        // `pendencias/page.tsx` + outros responder pages do portal).
+        window.sessionStorage.setItem('portalUserPhoto', success.user.photoUrl ?? '');
         if (success.gateStep === 'lgpd_consent') {
           router.replace('/colaborador/gate-lgpd');
         } else {

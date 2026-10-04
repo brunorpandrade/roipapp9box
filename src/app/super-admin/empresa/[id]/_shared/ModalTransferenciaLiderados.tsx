@@ -231,6 +231,12 @@ export interface LideradoToTransfer {
   readonly name: string;
   readonly cargo: string;
   readonly departamento: string;
+  /**
+   * ME-B9.3 Fase A2 dispatch 2 — foto canonica propagada ao modal de
+   * transferencia de liderados. Null = sem foto, UI mantem fallback de
+   * iniciais no AVATAR_STYLE canonico.
+   */
+  readonly photoUrl: string | null;
 }
 
 /** Chave canonica do target (tipo + id — polimorfismo §14.3 Grupo 1/2/3). */
@@ -423,7 +429,15 @@ export function ModalTransferenciaLiderados(props: ModalTransferenciaLideradosPr
           {liderados.map((l) => (
             <div key={l.employeeId} style={LIDERADO_CARD_STYLE}>
               <div style={LIDERADO_ROW_STYLE}>
-                <div style={AVATAR_STYLE}>{getIniciais(l.name)}</div>
+                {l.photoUrl !== null && l.photoUrl !== '' ? (
+                  <img
+                    src={l.photoUrl}
+                    alt={`Foto de ${l.name}`}
+                    style={{ ...AVATAR_STYLE, objectFit: 'cover', padding: 0 }}
+                  />
+                ) : (
+                  <div style={AVATAR_STYLE}>{getIniciais(l.name)}</div>
+                )}
                 <div style={LIDERADO_INFO_STYLE}>
                   <span style={LIDERADO_NAME_STYLE}>{l.name}</span>
                   <span style={LIDERADO_META_STYLE}>

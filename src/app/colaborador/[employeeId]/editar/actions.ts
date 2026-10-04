@@ -429,6 +429,12 @@ export interface LideradoItem {
   readonly name: string;
   readonly cargo: string;
   readonly departamento: string;
+  /**
+   * ME-B9.3 Fase A2 dispatch 2 — paridade bit-exact com `LideradoItem` da
+   * variante super-admin. Foto do liderado propagada ao modal de
+   * transferencia (§14.2). Null = sem foto, fallback de iniciais.
+   */
+  readonly photoUrl: string | null;
 }
 
 export async function listarLideradosRHAction(input: {
@@ -448,6 +454,7 @@ export async function listarLideradosRHAction(input: {
         name: employees.name,
         cargo: employees.cargo,
         departamento: employees.departamento,
+        photoUrl: employees.photoUrl,
       })
       .from(employeeLeaderHistory)
       .innerJoin(employees, eq(employeeLeaderHistory.employeeId, employees.id))

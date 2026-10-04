@@ -467,6 +467,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
               name: r.name,
               cargo: r.cargo,
               departamento: r.departamento,
+              photoUrl: r.photoUrl,
             }));
             setM2Liderados(liderados);
             setShowDesmarcarM2Modal(true);
@@ -791,6 +792,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
               name: r.name,
               cargo: r.cargo,
               departamento: r.departamento,
+              photoUrl: r.photoUrl,
             }));
             setM2Liderados(liderados);
           }

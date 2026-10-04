@@ -18,6 +18,10 @@ import { PortalLayout } from '../../../components/portal-colaborador/PortalLayou
 export default function PendenciasPage(): JSX.Element {
   const router = useRouter();
   const [userName, setUserName] = useState<string | null>(null);
+  // ME-B9.3 Fase A2 dispatch 2 — foto do titular logado lida do
+  // sessionStorage (chave `portalUserPhoto`, gravada pelo
+  // `ColaboradorLoginClient` apos login bem sucedido).
+  const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -30,6 +34,8 @@ export default function PendenciasPage(): JSX.Element {
     }
     const nome = window.sessionStorage.getItem('portalUserName');
     setUserName(nome);
+    const foto = window.sessionStorage.getItem('portalUserPhoto');
+    setUserPhotoUrl(foto !== null && foto.length > 0 ? foto : null);
   }, [router]);
 
   function handleSair(): void {
@@ -39,12 +45,18 @@ export default function PendenciasPage(): JSX.Element {
     window.sessionStorage.removeItem('portalToken');
     window.sessionStorage.removeItem('portalUserName');
     window.sessionStorage.removeItem('portalUserType');
+    window.sessionStorage.removeItem('portalUserPhoto');
     window.sessionStorage.removeItem('portalLgpdSeen');
     router.replace('/colaborador');
   }
 
   return (
-    <PortalLayout showHeader={true} userName={userName} onSair={handleSair}>
+    <PortalLayout
+      showHeader={true}
+      userName={userName}
+      userPhotoUrl={userPhotoUrl}
+      onSair={handleSair}
+    >
       <PendenciasClient />
     </PortalLayout>
   );

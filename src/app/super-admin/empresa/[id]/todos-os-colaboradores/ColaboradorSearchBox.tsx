@@ -219,7 +219,15 @@ export function ColaboradorSearchBox(props: ColaboradorSearchBoxProps): JSX.Elem
                   onSelectSuggestion(entry.name);
                 }}
               >
-                <div style={avatarStyle(entry.name)}>{getIniciaisFromName(entry.name)}</div>
+                {entry.photoUrl !== null && entry.photoUrl !== '' ? (
+                  <img
+                    src={entry.photoUrl}
+                    alt={`Foto de ${entry.name}`}
+                    style={{ ...avatarStyle(entry.name), objectFit: 'cover', padding: 0 }}
+                  />
+                ) : (
+                  <div style={avatarStyle(entry.name)}>{getIniciaisFromName(entry.name)}</div>
+                )}
                 <span>
                   {entry.name}
                   {entry.cargo.length > 0 ? ` · ${entry.cargo}` : ''}

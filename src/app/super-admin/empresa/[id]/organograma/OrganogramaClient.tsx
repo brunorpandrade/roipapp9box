@@ -299,12 +299,20 @@ interface SearchIndexEntry {
   readonly name: string;
   readonly cargo: string;
   readonly type: OrgTreeNodeType;
+  /** ME-B9.3 Fase A2 dispatch 2 — foto propagada do OrgTreeNode. */
+  readonly photoUrl: string | null;
 }
 
 function buildSearchIndex(root: OrgTreeNode): readonly SearchIndexEntry[] {
   const flat: SearchIndexEntry[] = [];
   function visit(node: OrgTreeNode): void {
-    flat.push({ id: node.id, name: node.name, cargo: node.cargo, type: node.type });
+    flat.push({
+      id: node.id,
+      name: node.name,
+      cargo: node.cargo,
+      type: node.type,
+      photoUrl: node.photoUrl,
+    });
     for (const child of node.children) {
       visit(child);
     }
@@ -463,7 +471,15 @@ function RenderedNode(props: RenderedNodeProps): JSX.Element {
         data-node-type={node.type}
         style={{ ...containerStyle, ...shadowStyle, position: 'relative' }}
       >
-        <div style={nodeAvatarStyle(node.type)}>{getIniciaisFromName(node.name)}</div>
+        {node.photoUrl !== null && node.photoUrl !== '' ? (
+          <img
+            src={node.photoUrl}
+            alt={`Foto de ${node.name}`}
+            style={{ ...nodeAvatarStyle(node.type), objectFit: 'cover', padding: 0 }}
+          />
+        ) : (
+          <div style={nodeAvatarStyle(node.type)}>{getIniciaisFromName(node.name)}</div>
+        )}
         <div
           style={{
             fontSize: 11,
@@ -629,23 +645,37 @@ function ResumoDrawer(props: ResumoDrawerProps): JSX.Element {
 
       {/* Conteúdo do drawer */}
       <div style={{ padding: 18, overflowY: 'auto', flex: 1 }}>
-        <div
-          style={{
-            width: 52,
-            height: 52,
-            borderRadius: '50%',
-            background: COLORS.primary.navy,
-            color: COLORS.background.card,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 16,
-            fontWeight: 600,
-            marginBottom: 10,
-          }}
-        >
-          {getIniciaisFromName(selectedNode.name)}
-        </div>
+        {selectedNode.photoUrl !== null && selectedNode.photoUrl !== '' ? (
+          <img
+            src={selectedNode.photoUrl}
+            alt={`Foto de ${selectedNode.name}`}
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: '50%',
+              objectFit: 'cover',
+              marginBottom: 10,
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: '50%',
+              background: COLORS.primary.navy,
+              color: COLORS.background.card,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 16,
+              fontWeight: 600,
+              marginBottom: 10,
+            }}
+          >
+            {getIniciaisFromName(selectedNode.name)}
+          </div>
+        )}
         <div style={{ fontSize: 15, fontWeight: 700, color: COLORS.text.primary }}>
           {selectedNode.name}
         </div>
@@ -1107,22 +1137,35 @@ export function OrganogramaClient(props: OrganogramaClientProps): JSX.Element {
                     color: COLORS.text.primary,
                   }}
                 >
-                  <div
-                    style={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: '50%',
-                      background: COLORS.primary.navy,
-                      color: COLORS.background.card,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 9,
-                      fontWeight: 600,
-                    }}
-                  >
-                    {getIniciaisFromName(entry.name)}
-                  </div>
+                  {entry.photoUrl !== null && entry.photoUrl !== '' ? (
+                    <img
+                      src={entry.photoUrl}
+                      alt={`Foto de ${entry.name}`}
+                      style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: '50%',
+                        background: COLORS.primary.navy,
+                        color: COLORS.background.card,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 9,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {getIniciaisFromName(entry.name)}
+                    </div>
+                  )}
                   <span>
                     {entry.name}
                     {entry.cargo.length > 0 ? ` · ${entry.cargo}` : ''}
@@ -1594,6 +1637,7 @@ function AnalyticView(props: AnalyticViewProps): JSX.Element {
                           name={node.name}
                           cargo={node.cargo}
                           isLider={isLider}
+                          photoUrl={node.photoUrl}
                         />
                       </div>
                     ) : isLider ? (
@@ -1617,6 +1661,7 @@ function AnalyticView(props: AnalyticViewProps): JSX.Element {
                           name={node.name}
                           cargo={node.cargo}
                           isLider
+                          photoUrl={node.photoUrl}
                         />
                       </button>
                     ) : (
@@ -1639,6 +1684,7 @@ function AnalyticView(props: AnalyticViewProps): JSX.Element {
                           name={node.name}
                           cargo={node.cargo}
                           isLider={false}
+                          photoUrl={node.photoUrl}
                         />
                       </Link>
                     )}
@@ -1750,29 +1796,45 @@ interface AnalyticPersonBodyProps {
   readonly name: string;
   readonly cargo: string;
   readonly isLider: boolean;
+  /** ME-B9.3 Fase A2 dispatch 2 — foto canonica (null = usa iniciais). */
+  readonly photoUrl: string | null;
 }
 
 function AnalyticPersonBody(props: AnalyticPersonBodyProps): JSX.Element {
-  const { iniciais, name, cargo, isLider } = props;
+  const { iniciais, name, cargo, isLider, photoUrl } = props;
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <div
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: '50%',
-          flexShrink: 0,
-          background: isLider ? COLORS.accent.teal : COLORS.background.elevated,
-          color: isLider ? COLORS.background.card : COLORS.text.secondary,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 12,
-          fontWeight: 700,
-        }}
-      >
-        {iniciais}
-      </div>
+      {photoUrl !== null && photoUrl !== '' ? (
+        <img
+          src={photoUrl}
+          alt={`Foto de ${name}`}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            flexShrink: 0,
+            objectFit: 'cover',
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            flexShrink: 0,
+            background: isLider ? COLORS.accent.teal : COLORS.background.elevated,
+            color: isLider ? COLORS.background.card : COLORS.text.secondary,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        >
+          {iniciais}
+        </div>
+      )}
       <div style={{ minWidth: 0 }}>
         <div
           style={{

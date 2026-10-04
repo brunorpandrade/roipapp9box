@@ -282,6 +282,12 @@ export interface EmployeeSearchEntry {
   readonly id: number;
   readonly name: string;
   readonly cargo: string;
+  /**
+   * ME-B9.3 Fase A2 dispatch 2 — foto canonica propagada ao autocomplete
+   * do `/todos-os-colaboradores`. Null = sem foto, UI mantem fallback
+   * de iniciais colorido via hashNameToColor + getIniciaisFromName.
+   */
+  readonly photoUrl: string | null;
 }
 
 /**
@@ -293,10 +299,15 @@ export interface EmployeeSearchEntry {
  * segue independente ao aplicar a `busca` selecionada.
  */
 export function buildEmployeeSearchIndex(
-  rows: readonly { readonly id: number; readonly name: string; readonly cargo: string }[],
+  rows: readonly {
+    readonly id: number;
+    readonly name: string;
+    readonly cargo: string;
+    readonly photoUrl: string | null;
+  }[],
 ): readonly EmployeeSearchEntry[] {
   return rows
-    .map((r) => ({ id: r.id, name: r.name, cargo: r.cargo }))
+    .map((r) => ({ id: r.id, name: r.name, cargo: r.cargo, photoUrl: r.photoUrl }))
     .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 }
 

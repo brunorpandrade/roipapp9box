@@ -67,7 +67,17 @@ interface RequestBody {
 
 interface PortalLoginSuccess {
   portalToken: string;
-  user: { id: number; name: string; type: 'employee' | 'clevel' };
+  user: {
+    id: number;
+    name: string;
+    type: 'employee' | 'clevel';
+    /**
+     * ME-B9.3 Fase A2 dispatch 2 — foto canonica do colaborador logado,
+     * propagada ao `PortalLayout` via sessionStorage (`portalUserPhoto`).
+     * Null = sem foto, UI mantem fallback de iniciais.
+     */
+    photoUrl: string | null;
+  };
   gateStep: 'lgpd_consent' | 'pendencias';
 }
 
@@ -150,17 +160,23 @@ export async function POST(req: Request): Promise<NextResponse> {
   let titularId: number;
   let name: string;
   let userStatus: 'ativo' | 'inativo';
+  // ME-B9.3 Fase A2 dispatch 2 — foto canonica do titular (null quando
+  // nunca uploaded; coluna MEDIUMTEXT ja consolidada em producao via
+  // migration 0010).
+  let userPhotoUrl: string | null;
 
   if (clevel !== undefined) {
     titularType = 'clevel';
     titularId = clevel.id;
     name = clevel.name;
     userStatus = clevel.status ?? 'ativo';
+    userPhotoUrl = clevel.photoUrl ?? null;
   } else if (employee !== undefined) {
     titularType = 'employee';
     titularId = employee.id;
     name = employee.name;
     userStatus = employee.status ?? 'ativo';
+    userPhotoUrl = employee.photoUrl ?? null;
   } else {
     // Nunca deve ocorrer (candidato agregado exige um dos dois preenchido),
     // mas guard defensivo para o narrowing do TS.
@@ -192,7 +208,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   const body200: PortalLoginSuccess = {
     portalToken,
-    user: { id: titularId, name, type: titularType },
+    user: { id: titularId, name, type: titularType, photoUrl: userPhotoUrl },
     gateStep,
   };
 
