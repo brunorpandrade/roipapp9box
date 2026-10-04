@@ -2,9 +2,9 @@
 // da Bebidas Ubatuba (ME-080e Dispatch 2).
 //
 // Estrategia canonica (mesma D1/D2 performanceData): consome o JSON pinado
-// por SHA-256 `performance_trimestral.json` (SHA `c0b4e1c7...` apos
-// ME-B9.12 v1.2->v1.3, recordCount=415 preservado) como fonte da verdade
-// e aplica shift
+// por SHA-256 `performance_trimestral.json` (SHA `822d936e...` apos
+// ME-B9.12 v1.2->v1.3 patch2 RV-16, recordCount=415 preservado) como
+// fonte da verdade e aplica shift
 // +UBATUBA_EMPLOYEE_ID_SHIFT (=1000, D5.9) sobre `employeeId`.
 // companyId = UBATUBA_COMPANY_ID (=2).
 //

@@ -10,14 +10,28 @@
 // chaves (nome, trimestre, dimensao, valor); so o `itemIndex` foi recalculado
 // via `itemIndex -= (dimensao-1)*5`. Contagens inalteradas (8020 rows cada).
 //
-// ME-B9.12 + patch1 (04/10/2026) — fixture v1.2 -> v1.3: recalibracao canonica
-// da curva de demanda por quadrante 9-Box dominante do colaborador (Opcao B).
-// Patch1: reformatacao `performance_mensal.json` via `prettier --write` para
-// alinhar bit-exact ao estilo canonico do repo (arrays internos em linha unica),
-// SHA-256 atualizado de `116d8788...` para `7d719a05...`. Conteudo semantico
-// bit-exact preservado — somente formatacao. Atualizados os pins SHA-256 de
-// `performance_mensal.json` (demanda recalibrada + prettier) e de
-// `performance_trimestral.json` (campo `capacidadeOciosa` recomputado via regra
+// ME-B9.12 + patch1 + patch2 (04/10/2026) — fixture v1.2 -> v1.3: recalibracao
+// canonica da curva de demanda por quadrante 9-Box dominante do colaborador
+// (Opcao B).
+// Patch1: reformatacao prettier do mensal (SHA 116d8788 -> 7d719a05).
+// Patch2 (RV-16 — correcao canonica da interpretacao de formato): patch1
+// alterou a coluna errada do JSON (interpretei formato como
+// [idx, goal, demanda, desempenho, peso] mas formato real do loader e
+// [idx, demanda, executado, desempenho, peso]). Consequencia: patch1
+// alterou `executado` em vez de `demanda`, deixando ociosidade inalterada
+// e contaminando o executado. Patch2 reverte ao v1.2 e aplica transformacao
+// correta: `demanda_nova = goal × fator` (goal vem de employeeGoals via
+// deriveNativaEmployeeGoals.ts, nao do JSON), `executado_novo = demanda_nova
+// × desempenho_antigo` (preserva Eixo X bit-exact), desempenho preservado.
+// Para os 18 colaboradores pos-kickoff (ids 52-69) sem employeeGoals no
+// snapshot inicial, variaveis preservadas v1.2 bit-exact (sem goal
+// cadastrado, backend nao calcula ociosidade). Novos SHA-256:
+// performance_mensal `d0f0e243...` e performance_trimestral `822d936e...`.
+// Distribuicao canonica medida pos-patch2: 93.5% verde (de 31.8%), 2.7%
+// vermelho (de 45.9%), 3.8% amarelo (de 22.2%). Atualizados os pins
+// SHA-256 de `performance_mensal.json` (demanda canonica recalibrada
+// corretamente) e `performance_trimestral.json` (campo `capacidadeOciosa`
+// recomputado via regra
 // S056). Preservado bit-exact: `desempenho_i` em todas as 3976 variaveis
 // afetadas, logo `indiceDesempenho`, `scoreDesempenho`, `faixaDesempenho` e
 // 9-Box completo inalterados. F6 (lideranca_gestao) nao tocada por regra
@@ -100,7 +114,7 @@ export const NATIVA_FIXTURE_MANIFEST = [
   },
   {
     filename: 'performance_trimestral.json',
-    sha256: 'c0b4e1c7509a6ad83b664b6d15bdcffe0112ec557b27b980bf7dd215ca8f5d52',
+    sha256: '822d936e215d270f995bcf547c7b331a50903f3c2033f5c7e11462058ccc3a64',
     recordCount: 415,
     destinationTable: 'performanceQuarterlyData',
   },
@@ -172,7 +186,7 @@ export const NATIVA_FIXTURE_MANIFEST = [
   },
   {
     filename: 'performance_mensal.json',
-    sha256: '7d719a052d0194d59a481bae064b88a2dd4abeec080507428bc28a688ffa2640',
+    sha256: 'd0f0e2436f590aa135ed0ecddfa27e41063bf533366af93d0c6621a6d5f1a76d',
     recordCount: 1210,
     destinationTable: 'performanceData',
   },
