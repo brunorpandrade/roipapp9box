@@ -605,9 +605,23 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
     return true;
   }
 
+  // ME-B9.11 — D-LIDER-OBRIGATORIO-CADASTRO: regra canonica equivalente a
+  // `validateForm` do ColaboradorNovoClient, restrita a lider direto. Sem
+  // lider, a hierarquia da qual 9-Box e motores de agregacao (ROI,
+  // assiduidade, plenitude, IQL) dependem fica quebrada.
+  function validateForm(v: ColaboradorFormValues): string | null {
+    if (v.liderInicial === null) return 'Selecione o lider direto.';
+    return null;
+  }
+
   const handleSave = useCallback(async () => {
     setErrorMsg(null);
     const v = valuesRef.current;
+    const validationError = validateForm(v);
+    if (validationError !== null) {
+      setErrorMsg(validationError);
+      return;
+    }
     const rfChangedToTrue = v.isResponsavelFinanceiro && !initialEmployee.isResponsavelFinanceiro;
     if (rfChangedToTrue && currentRFName !== null) {
       setShowRFModal(true);
@@ -1077,7 +1091,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
             type="button"
             onClick={handleSave}
             style={BTN_PRIMARY_STYLE}
-            disabled={saving || isInativo}
+            disabled={saving || isInativo || values.liderInicial === null}
           >
             {saving ? 'Salvando...' : 'Salvar alterações'}
           </button>

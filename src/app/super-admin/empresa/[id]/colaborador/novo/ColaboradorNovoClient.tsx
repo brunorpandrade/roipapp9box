@@ -254,6 +254,10 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
     if (v.senioridade === '') return 'Selecione a senioridade.';
     if (v.nivelHierarquico === '') return 'Selecione o nivel hierarquico.';
     if (v.jobFamily === '') return 'Selecione a familia de funcao.';
+    // ME-B9.11 — D-LIDER-OBRIGATORIO-CADASTRO: lider direto obrigatorio.
+    // Sem lider, a hierarquia da qual 9-Box e motores de agregacao (ROI,
+    // assiduidade, plenitude, IQL) dependem fica quebrada.
+    if (v.liderInicial === null) return 'Selecione o lider direto.';
     return null;
   }
 
@@ -436,7 +440,12 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
         <button type="button" onClick={handleCancel} style={BTN_OUTLINE_STYLE} disabled={saving}>
           Cancelar
         </button>
-        <button type="button" onClick={handleSave} style={BTN_PRIMARY_STYLE} disabled={saving}>
+        <button
+          type="button"
+          onClick={handleSave}
+          style={BTN_PRIMARY_STYLE}
+          disabled={saving || values.liderInicial === null}
+        >
           {saving ? 'Salvando...' : 'Salvar colaborador'}
         </button>
       </div>
