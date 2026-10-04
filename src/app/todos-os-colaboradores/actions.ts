@@ -32,6 +32,7 @@ import {
   createEmployeesRouter,
   UPLOAD_CONTENT_TYPES,
   type EmployeesDownloadResult,
+  type UpdatePhotosBulkResult,
   type UploadCSVResult,
 } from '../../server/routers/employees';
 import { listEmployeesPaginated, type ListEmployeesResult } from '../../server/services/employees';
@@ -281,6 +282,38 @@ export async function downloadMatriculasColaboradoresRHAction(
     const factory = createCallerFactory(createEmployeesRouter());
     const caller = factory(ctx);
     return await caller.downloadMatriculas({ companyId });
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+/**
+ * ME-B9.3 Fase B — upload em massa de fotos (variante RH). Delega
+ * bit-exact a proc canonica `employees.updatePhotosBulk` que aplica
+ * `rhAllowedProcedure` + `assertCompanyScope`. Guard local
+ * `requireRhLikeOrSuperAdmin` no topo (via `buildRHCallerContext`)
+ * preserva defense-in-depth §2.4.
+ */
+export async function uploadFotosEmMassaRHAction(
+  companyIdIgnored: number,
+  items: readonly { readonly cpf: string; readonly photoUrl: string }[],
+): Promise<UpdatePhotosBulkResult> {
+  const { ctx, client, companyId } = await buildRHCallerContext('uploadFotosEmMassaRHAction');
+  if (
+    Number.isInteger(companyIdIgnored) &&
+    companyIdIgnored > 0 &&
+    companyIdIgnored !== companyId
+  ) {
+    await closeDbClient(client);
+    throw new Error('uploadFotosEmMassaRHAction: companyId divergente da sessao.');
+  }
+  try {
+    const factory = createCallerFactory(createEmployeesRouter());
+    const caller = factory(ctx);
+    return await caller.updatePhotosBulk({
+      companyId,
+      items: items.map((i) => ({ cpf: i.cpf, photoUrl: i.photoUrl })),
+    });
   } finally {
     await closeDbClient(client);
   }

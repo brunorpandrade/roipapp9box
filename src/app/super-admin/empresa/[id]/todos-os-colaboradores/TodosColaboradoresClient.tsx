@@ -62,6 +62,10 @@ import type {
 } from './actions';
 import { ColaboradorSearchBox } from './ColaboradorSearchBox';
 import { FichaCadastralModal } from '../../../../../components/colaboradores/FichaCadastralModal';
+import {
+  FotosEmMassaModal,
+  type FotosEmMassaResult,
+} from '../../../../../components/import-mass/FotosEmMassaModal';
 import { ImportarPlanilhaModal } from '../../../../../components/import-mass/ImportarPlanilhaModal';
 import type { carregarFichaCadastralAction } from '../../../../_shared/fichaCadastral/actions';
 import { triggerXlsxDownload } from '../../../../../components/import-mass/downloadXlsxBase64';
@@ -197,6 +201,16 @@ export interface TodosColaboradoresClientProps {
   readonly downloadMatriculasAction?: (
     companyId: number,
   ) => Promise<{ readonly filename: string; readonly xlsxBase64: string; readonly bytes: number }>;
+  /**
+   * ME-B9.3 Fase B — action canonica do botao `[📸 Fotos em massa]`.
+   * `undefined` desabilita o botao (consistente com `uploadCSVAction` em
+   * contextos read-only). Consome `uploadFotosEmMassaAction` (Bruno) ou
+   * `uploadFotosEmMassaRHAction` (RH), injetadas pela page.tsx.
+   */
+  readonly uploadFotosEmMassaAction?: (
+    companyId: number,
+    items: readonly { readonly cpf: string; readonly photoUrl: string }[],
+  ) => Promise<FotosEmMassaResult>;
   /**
    * ME-fila6 D1 — DOC 05 §14.10 pop-up de ficha cadastral somente leitura
    * aberto pelo icone 📇. Server action com escopo decidido pela sessao.
@@ -568,6 +582,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
     exportSpreadsheetAction,
     uploadCSVAction,
     downloadMatriculasAction,
+    uploadFotosEmMassaAction,
     fichaCadastralAction,
     canEditCadastro = true,
     searchIndex = [],
@@ -584,6 +599,26 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
   const [buscaDraft, setBuscaDraft] = useState<string>(initialFilters.busca);
   // ME-fila5 D2 — estado do modal Importar em massa + toast simples.
   const [importarOpen, setImportarOpen] = useState<boolean>(false);
+  // ME-B9.3 Fase B — estado do modal `[📸 Fotos em massa]` + toast.
+  const [fotosEmMassaOpen, setFotosEmMassaOpen] = useState<boolean>(false);
+  const [fotosEmMassaToast, setFotosEmMassaToast] = useState<string | null>(null);
+
+  const handleUploadFotosEmMassa = useCallback(
+    async (
+      items: readonly { readonly cpf: string; readonly photoUrl: string }[],
+    ): Promise<FotosEmMassaResult> => {
+      if (uploadFotosEmMassaAction === undefined) {
+        return { ok: false, matched: 0, notFound: 0, cpfsNotFound: [] };
+      }
+      const result = await uploadFotosEmMassaAction(companyId, items);
+      if (result.matched > 0) {
+        setFotosEmMassaToast(`${result.matched} foto(s) atualizada(s) com sucesso.`);
+        setTimeout(() => setFotosEmMassaToast(null), 4000);
+      }
+      return result;
+    },
+    [uploadFotosEmMassaAction, companyId],
+  );
   const [actionToast, setActionToast] = useState<string | null>(null);
   // ME-fila6 D1 — alvo do pop-up de ficha cadastral (§14.10).
   const [fichaAlvo, setFichaAlvo] = useState<{ id: number; name: string } | null>(null);
@@ -957,6 +992,24 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                 aria-label="Importar em massa"
               >
                 📤 Importar em massa
+              </button>
+              {/* ME-B9.3 Fase B — botao canonico `[📸 Fotos em massa]`
+                  (upload de fotos de colaboradores por CPF). */}
+              <button
+                type="button"
+                onClick={() => setFotosEmMassaOpen(true)}
+                disabled={uploadFotosEmMassaAction === undefined}
+                style={
+                  uploadFotosEmMassaAction === undefined ? BTN_OUTLINE_DISABLED : BTN_OUTLINE_ACTIVE
+                }
+                title={
+                  uploadFotosEmMassaAction === undefined
+                    ? 'Upload de fotos em massa indisponivel neste contexto'
+                    : 'Upload em massa de fotos (matching por CPF no nome do arquivo)'
+                }
+                aria-label="Fotos em massa"
+              >
+                📸 Fotos em massa
               </button>
               <Link
                 href={novoColaboradorHref}
@@ -1338,6 +1391,36 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
           hideRf={hideRfBadgeAndFilter}
           onClose={() => setFichaAlvo(null)}
         />
+      ) : null}
+
+      {/* ME-B9.3 Fase B — modal canonico `[📸 Fotos em massa]`. */}
+      {uploadFotosEmMassaAction !== undefined ? (
+        <FotosEmMassaModal
+          open={fotosEmMassaOpen}
+          onClose={() => setFotosEmMassaOpen(false)}
+          onUpload={handleUploadFotosEmMassa}
+        />
+      ) : null}
+
+      {fotosEmMassaToast !== null ? (
+        <div
+          role="status"
+          style={{
+            position: 'fixed',
+            bottom: 20,
+            right: 20,
+            padding: '12px 20px',
+            background: COLORS.semantic.success,
+            color: '#FFFFFF',
+            borderRadius: 8,
+            fontSize: 14,
+            fontWeight: 500,
+            zIndex: 500,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          }}
+        >
+          {fotosEmMassaToast}
+        </div>
       ) : null}
     </div>
   );

@@ -597,6 +597,37 @@ export const UPLOAD_CSV_INPUT_SCHEMA = z.object({
   contentType: z.enum(UPLOAD_CONTENT_TYPES),
 });
 
+/**
+ * ME-B9.3 Fase B — Zod canonico de `employees.updatePhotosBulk`. RH
+ * canonicamente seleciona ate 100 fotos em um unico envio; cada item
+ * carrega o CPF canonico (11 digitos puros) + o `photoUrl` em base64
+ * inline (ou URL externa) ja validados pelo widget `ImageUploader`.
+ * Cap 100 bate com cap do `uploadCSV` existente para colaboradores.
+ */
+export const UPDATE_PHOTOS_BULK_INPUT_SCHEMA = z.object({
+  companyId: z.number().int().positive(),
+  items: z
+    .array(
+      z.object({
+        cpf: z.string().regex(/^\d{11}$/),
+        photoUrl: z.string().trim().min(1).max(PHOTO_URL_MAX_LENGTH),
+      }),
+    )
+    .min(1)
+    .max(100),
+});
+
+/** ME-B9.3 Fase B — retorno canonico do `updatePhotosBulk`. */
+export interface UpdatePhotosBulkResult {
+  readonly ok: boolean;
+  /** Itens cujo CPF foi encontrado na empresa e cuja foto foi gravada. */
+  readonly matched: number;
+  /** Itens cujo CPF nao foi encontrado em `employees` da empresa. */
+  readonly notFound: number;
+  /** CPFs nao encontrados (ordem canonica = ordem do input). */
+  readonly cpfsNotFound: readonly string[];
+}
+
 // ============================================================
 // Tipos publicos exportados (RV-13 — exercitados nos testes)
 // ============================================================
@@ -2922,6 +2953,59 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           linhasErro,
           erros,
           ...(credenciaisXlsxBase64 !== undefined ? { credenciaisXlsxBase64 } : {}),
+        };
+      }),
+
+    // --------------------------------------------------------
+    // employees.updatePhotosBulk — ME-B9.3 Fase B
+    // --------------------------------------------------------
+    // Upload em massa de fotos pelo RH via modal `[📸 Fotos em massa]`
+    // em `/todos-os-colaboradores`. Matching por CPF embutido no nome
+    // do arquivo (`12345678900.png` ou `123.456.789-00.png` — o modal
+    // normaliza para 11 digitos antes de enviar). Guard canonico
+    // `rhAllowedProcedure` (super_admin + rh + rh_lider + clevel+isRH)
+    // + `assertCompanyScope`. Cada item inexistente em `employees`
+    // dessa empresa vira entrada em `cpfsNotFound`; itens matcheados
+    // sao gravados via UPDATE Drizzle tipado (RV-12). Semantica
+    // canonica alinhada ao `uploadCSV` existente ("processa todos").
+    updatePhotosBulk: rhAllowedProcedure()
+      .input(UPDATE_PHOTOS_BULK_INPUT_SCHEMA)
+      .mutation(async ({ ctx, input }): Promise<UpdatePhotosBulkResult> => {
+        assertCompanyScope(ctx.user, input.companyId);
+
+        // Carrega mapa (cpf -> id) dos employees da empresa alvo. Uma
+        // unica query evita N+1 e preserva atomicidade canonica do
+        // batch — mesmo pattern dos consumidores de `listEmployees-
+        // ByCompany` nos SearchIndex (RV-14).
+        const empRows = await ctx.db
+          .select({ id: employees.id, cpf: employees.cpf })
+          .from(employees)
+          .where(eq(employees.companyId, input.companyId));
+        const cpfToId = new Map<string, number>();
+        for (const r of empRows) {
+          cpfToId.set(r.cpf, r.id);
+        }
+
+        const cpfsNotFound: string[] = [];
+        let matched = 0;
+        for (const item of input.items) {
+          const id = cpfToId.get(item.cpf);
+          if (id === undefined) {
+            cpfsNotFound.push(item.cpf);
+            continue;
+          }
+          await ctx.db
+            .update(employees)
+            .set({ photoUrl: item.photoUrl })
+            .where(eq(employees.id, id));
+          matched += 1;
+        }
+
+        return {
+          ok: matched > 0,
+          matched,
+          notFound: cpfsNotFound.length,
+          cpfsNotFound,
         };
       }),
 

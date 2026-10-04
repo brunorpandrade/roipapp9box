@@ -35,6 +35,7 @@ import {
   listarColaboradoresCLevelAction,
   listarColaboradoresRHAction,
   uploadCSVColaboradoresRHAction,
+  uploadFotosEmMassaRHAction,
 } from './actions';
 import {
   colaboradoresFiltersToServiceInput,
@@ -166,6 +167,7 @@ export default async function TodosColaboradoresRHPage(props: PageProps): Promis
               exportSpreadsheetAction={exportSpreadsheetColaboradoresRHAction}
               uploadCSVAction={uploadCSVColaboradoresRHAction}
               downloadMatriculasAction={downloadMatriculasColaboradoresRHAction}
+              uploadFotosEmMassaAction={uploadFotosEmMassaRHAction}
             />
           )}
         </div>

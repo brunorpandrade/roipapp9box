@@ -28,6 +28,7 @@ import {
   createEmployeesRouter,
   UPLOAD_CONTENT_TYPES,
   type EmployeesDownloadResult,
+  type UpdatePhotosBulkResult,
   type UploadCSVResult,
 } from '../../../../../server/routers/employees';
 import {
@@ -221,6 +222,34 @@ export async function downloadMatriculasColaboradoresAction(
     const factory = createCallerFactory(createEmployeesRouter());
     const caller = factory(ctx);
     return await caller.downloadMatriculas({ companyId });
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+/**
+ * ME-B9.3 Fase B — upload em massa de fotos de colaboradores (variante
+ * Bruno). Delega bit-exact a proc canonica
+ * `employees.updatePhotosBulk`. Guard canonico defense-in-depth:
+ * `requireSuperAdmin` no topo + `assertCompanyScope` dentro da proc.
+ * Consumido pelo modal `[📸 Fotos em massa]` da toolbar de
+ * `/super-admin/empresa/[id]/todos-os-colaboradores`.
+ */
+export async function uploadFotosEmMassaAction(
+  companyId: number,
+  items: readonly { readonly cpf: string; readonly photoUrl: string }[],
+): Promise<UpdatePhotosBulkResult> {
+  await requireSuperAdmin('uploadFotosEmMassaAction');
+  const { ctx, client } = await buildAuthenticatedCallerContext();
+  try {
+    const factory = createCallerFactory(createEmployeesRouter());
+    const caller = factory(ctx);
+    // Spread para converter readonly<readonly<...>> em mutable (o Zod
+    // infere o input como mutable; cast seguro, nao ha mutacao).
+    return await caller.updatePhotosBulk({
+      companyId,
+      items: items.map((i) => ({ cpf: i.cpf, photoUrl: i.photoUrl })),
+    });
   } finally {
     await closeDbClient(client);
   }

@@ -50,6 +50,7 @@ import {
   exportSpreadsheetColaboradoresAction,
   listarColaboradoresAction,
   uploadCSVColaboradoresAction,
+  uploadFotosEmMassaAction,
 } from './actions';
 import {
   colaboradoresFiltersToServiceInput,
@@ -170,6 +171,7 @@ export default async function TodosColaboradoresPage(props: PageProps): Promise<
             exportSpreadsheetAction={exportSpreadsheetColaboradoresAction}
             uploadCSVAction={uploadCSVColaboradoresAction}
             downloadMatriculasAction={downloadMatriculasColaboradoresAction}
+            uploadFotosEmMassaAction={uploadFotosEmMassaAction}
           />
         </div>
       </Layout>
