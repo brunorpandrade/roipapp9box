@@ -38,6 +38,7 @@ import { getServerSession } from '../../../server/session/serverSession';
 import { ColaboradorNovoClient } from './_client';
 import { loadColaboradorNovoPage } from '../../super-admin/empresa/[id]/colaborador/novo/internals';
 import { resolveDatabaseUrl } from '../../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../../lib/session/headerUser';
 
 import {
   criarColaboradorRHAction,
@@ -103,7 +104,7 @@ export default async function ColaboradorNovoRHPage(): Promise<JSX.Element> {
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
       >

@@ -27,6 +27,7 @@ import { loadPlatformMenuContext } from '../../../lib/session/platformMenuContex
 import { getServerSession } from '../../../server/session/serverSession';
 
 import { loadCompanyForRhPanel, loadMeuPortalData } from '../../painel-rh/internals';
+import { headerUserFromSession } from '../../../lib/session/headerUser';
 
 const HREF_PENDENCIAS = '/meu-portal';
 
@@ -70,7 +71,7 @@ export default async function LiderancaDiretaPlatformPage(): Promise<JSX.Element
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: company.logoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: menu.showNotificationBell,
         }}
       >

@@ -27,6 +27,7 @@ import { getServerSession } from '../../../../../server/session/serverSession';
 import { PendenciasClient } from '../../../../pendencias-portal/PendenciasClient';
 import { parsePendenciasFilters } from '../../../../pendencias-portal/filters';
 import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../../../../lib/session/headerUser';
 
 function parseCompanyIdParam(raw: string): number | null {
   if (raw === '') return null;
@@ -99,7 +100,7 @@ export default async function SuperAdminPendenciasPortalPage(
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
           companyLogoUrl: company.logoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
         superAdminContext={{ companyDisplayName: company.nomeFantasia }}

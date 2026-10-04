@@ -25,6 +25,7 @@ import { getServerSession } from '../../server/session/serverSession';
 import { PendenciasClient } from './PendenciasClient';
 import { parsePendenciasFilters } from './filters';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 
 interface PageProps {
   readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -70,7 +71,7 @@ export default async function PendenciasPortalPage(props: PageProps): Promise<JS
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: !rhCtx.isCLevelActingAsRH,
         }}
       >

@@ -32,6 +32,7 @@ import { createCallerFactory, createContextInner } from '../../../server/trpc';
 import { carregarFichaCadastralAction } from '../../_shared/fichaCadastral/actions';
 import { translateDashboardCallerError } from './callerErrorRedirect';
 import { DashboardIndividualClient } from './DashboardIndividualClient';
+import { headerUserFromSession } from '../../../lib/session/headerUser';
 import {
   buildQuarterView,
   currentTrimestreUTC,
@@ -231,7 +232,7 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
             leftMode: 'in_company',
             companyDisplayName: company.nomeFantasia,
             companyLogoUrl: company.logoUrl ?? undefined,
-            user: { displayName: session.displayName },
+            user: headerUserFromSession(session),
             showNotificationBell: true,
           }}
           superAdminContext={{ companyDisplayName: company.nomeFantasia }}
@@ -252,7 +253,7 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: menuCtx.showNotificationBell,
         }}
       >

@@ -49,6 +49,7 @@ import { loadRhLikePageContext } from '../../lib/session/loadRhLikePageContext';
 import { liberarRetesteAction } from './actions';
 import { PainelRHClient } from './PainelRHClient';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 import {
   loadCadeiaIndiretaData,
   loadCompanyForRhPanel,
@@ -136,7 +137,7 @@ export default async function PainelRHPage(): Promise<JSX.Element> {
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: company.logoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           // Sino canonico §4.1 — Bruno + RH puro/RH-Lider recebem sino;
           // C-level operando como RH segue a regra canonica de C-level
           // (sem sino).

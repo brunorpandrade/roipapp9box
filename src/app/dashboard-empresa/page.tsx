@@ -30,6 +30,7 @@ import { loadPlatformMenuContext } from '../../lib/session/platformMenuContext';
 import { loadCompanyAggregatePage } from '../../server/services/companyAggregate';
 import { resolveHierarchicalScope } from '../../server/services/hierarchicalScope';
 import { getServerSession } from '../../server/session/serverSession';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 
 import {
   EmpresaDashboardClient, // rota Bruno reaproveitada (RV-14 — §8.06.4)
@@ -99,7 +100,7 @@ export default async function DashboardEmpresaNativoPage(props: PageProps): Prom
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: menu.showNotificationBell,
         }}
       >

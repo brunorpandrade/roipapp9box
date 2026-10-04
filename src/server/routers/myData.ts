@@ -191,6 +191,9 @@ async function loadH1bEmployee(
   return {
     kind: 'h1b',
     displayName: emp.name,
+    // ME-B9.3 Fase A2 dispatch 3 — foto canonica do titular propagada
+    // ao card H1b (`/meus-dados`).
+    photoUrl: emp.photoUrl ?? null,
     badgePapel: resolveBadgePapel(role),
     cpfCompleto: emp.cpf,
     dataNascimento: toYYYYMMDD(emp.dataNascimento),
@@ -225,6 +228,9 @@ async function loadH1bClevel(db: RoipDatabase, clevelId: number): Promise<MeusDa
   return {
     kind: 'h1b',
     displayName: clevel.name,
+    // ME-B9.3 Fase A2 dispatch 3 — foto canonica do C-level logado
+    // propagada ao card H1b (`/meus-dados`).
+    photoUrl: clevel.photoUrl ?? null,
     badgePapel: 'C-level',
     cpfCompleto: clevel.cpf,
     dataNascimento: toYYYYMMDD(clevel.dataNascimento),

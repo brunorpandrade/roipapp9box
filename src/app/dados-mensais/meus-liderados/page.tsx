@@ -35,6 +35,7 @@ import { resolveDatabaseUrl } from '../../../lib/db/resolveDatabaseUrl';
 import { loadPlatformMenuContext } from '../../../lib/session/platformMenuContext';
 import { getServerSession } from '../../../server/session/serverSession';
 import { getMonthlyClosureStatusByMonth } from '../../../server/services/monthlyClosureStatus';
+import { headerUserFromSession } from '../../../lib/session/headerUser';
 
 import {
   criarSolicitacaoDesbloqueioAction,
@@ -115,7 +116,7 @@ export default async function MeusLideradosPage(): Promise<JSX.Element> {
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: menu.showNotificationBell,
         }}
       >

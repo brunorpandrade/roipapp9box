@@ -20,6 +20,7 @@ import { createCallerFactory, createContextInner } from '../../server/trpc';
 
 import { Nr1Client, type Nr1ClientProps } from './Nr1Client';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 
 const nr1Router = createNr1Router();
 const createNr1Caller = createCallerFactory(nr1Router);
@@ -93,7 +94,7 @@ export default async function Nr1RHPage(): Promise<JSX.Element> {
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           // Sino canonico §4.1 — Bruno + RH; C-level operando como RH
           // segue a regra canonica de C-level (sem sino).
           showNotificationBell: !rhCtx.isCLevelActingAsRH,

@@ -45,6 +45,7 @@ import { parseCompanyIdParam, parseTabParam } from './internals';
 import { listCLevelsForCompany } from '../../../../../server/routers/cLevelMembers';
 import { listRHForCompany } from '../../../../../server/routers/employees';
 import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../../../../lib/session/headerUser';
 
 interface PageProps {
   readonly params: Promise<{ id: string }>;
@@ -109,7 +110,7 @@ export default async function CLevelRHPage(props: PageProps): Promise<JSX.Elemen
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
           companyLogoUrl: company.logoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
         superAdminContext={{ companyDisplayName: company.nomeFantasia }}

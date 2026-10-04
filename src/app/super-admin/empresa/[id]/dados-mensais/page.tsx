@@ -48,6 +48,7 @@ import {
   uploadRHDataAction,
 } from './actions';
 import { currentMes, parseCompanyIdParam, parseTabParam } from './internals';
+import { headerUserFromSession } from '../../../../../lib/session/headerUser';
 
 interface PageProps {
   readonly params: Promise<{ id: string }>;
@@ -128,7 +129,7 @@ export default async function DadosMensaisPage(props: PageProps): Promise<JSX.El
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
           companyLogoUrl: company.logoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
         superAdminContext={{

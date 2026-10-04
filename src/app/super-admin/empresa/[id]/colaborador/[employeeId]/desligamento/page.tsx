@@ -22,6 +22,7 @@ import { parseMotivoDesligamentoParam } from '../../../../../../../lib/shared/te
 import { resolveProfileKey } from '../../../../../../../lib/session/resolveProfileKey';
 import { getServerSession } from '../../../../../../../server/session/serverSession';
 import { executarTransferenciaAction, inativarColaboradorAction } from '../editar/actions';
+import { headerUserFromSession } from '../../../../../../../lib/session/headerUser';
 import {
   loadColaboradorEditarPage,
   parseCompanyIdParam,
@@ -95,7 +96,7 @@ export default async function DesligamentoBrunoPage(props: PageProps): Promise<J
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
           companyLogoUrl: company.logoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
         superAdminContext={{ companyDisplayName: company.nomeFantasia }}

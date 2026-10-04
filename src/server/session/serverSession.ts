@@ -100,6 +100,14 @@ export type ServerSession =
       readonly companyDisplayName: string;
       readonly companyLogoUrl: string | null;
       /**
+       * ME-B9.3 Fase A2 dispatch 3 — foto canonica do titular logado,
+       * lida de `employees.photoUrl` ou `cLevelMembers.photoUrl`. Null
+       * quando sem foto; o `Header` canonico via `headerUserFromSession`
+       * repassa como `avatarUrl` ao `UserMenuDropdown`, que mantem o
+       * fallback de iniciais em teal.
+       */
+      readonly userPhotoUrl: string | null;
+      /**
        * ME-080b Dispatch 3 — flag canonica do gate "primeiro acesso ao
        * painel". `false` quando o titular ainda usa a senha inicial
        * provisionada (nunca fez `auth.changePassword`). Painéis
@@ -198,6 +206,7 @@ export async function resolveServerSession(
       .select({
         name: cLevelMembers.name,
         passwordSet: cLevelMembers.passwordSet,
+        photoUrl: cLevelMembers.photoUrl,
         nomeFantasia: companies.nomeFantasia,
         logoUrl: companies.logoUrl,
       })
@@ -217,6 +226,8 @@ export async function resolveServerSession(
       displayName: clevelRow.name,
       companyDisplayName: clevelRow.nomeFantasia,
       companyLogoUrl: clevelRow.logoUrl,
+      // ME-B9.3 Fase A2 dispatch 3 — foto canonica do C-level logado.
+      userPhotoUrl: clevelRow.photoUrl,
       passwordSet: clevelRow.passwordSet === true,
     };
   }
@@ -226,6 +237,7 @@ export async function resolveServerSession(
     .select({
       name: employees.name,
       passwordSet: employees.passwordSet,
+      photoUrl: employees.photoUrl,
       nomeFantasia: companies.nomeFantasia,
       logoUrl: companies.logoUrl,
     })
@@ -245,6 +257,8 @@ export async function resolveServerSession(
     displayName: empRow.name,
     companyDisplayName: empRow.nomeFantasia,
     companyLogoUrl: empRow.logoUrl,
+    // ME-B9.3 Fase A2 dispatch 3 — foto canonica do titular logado.
+    userPhotoUrl: empRow.photoUrl,
     passwordSet: empRow.passwordSet === true,
   };
 }

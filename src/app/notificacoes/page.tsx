@@ -37,6 +37,7 @@ import { parseFiltersFromSearchParams } from './filters';
 
 import { loadNotificacoesPage } from './internals';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 
 // -----------------------------------------------------------------------
 // Presentation payload consolidado (menu + destinatario canonico)
@@ -85,14 +86,14 @@ export default async function NotificacoesPage(props: PageProps): Promise<JSX.El
       session.kind === 'super_admin'
         ? {
             leftMode: 'super_admin_global' as const,
-            user: { displayName: session.displayName },
+            user: headerUserFromSession(session),
             showNotificationBell: presentation.showNotificationBell,
           }
         : {
             leftMode: 'in_company' as const,
             companyDisplayName: session.companyDisplayName,
             companyLogoUrl: session.companyLogoUrl ?? undefined,
-            user: { displayName: session.displayName },
+            user: headerUserFromSession(session),
             showNotificationBell: presentation.showNotificationBell,
           };
 

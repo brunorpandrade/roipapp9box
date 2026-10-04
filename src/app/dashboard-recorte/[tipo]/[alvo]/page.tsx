@@ -31,6 +31,7 @@ import {
   RecorteDashboardClient, // rota Bruno reaproveitada (RV-14 — §8.06.6b)
 } from '../../../super-admin/empresa/[id]/dashboard-recorte/[tipo]/[alvo]/RecorteDashboardClient';
 import { AiChatLauncherEquipe } from './AiChatLauncherEquipe';
+import { headerUserFromSession } from '../../../../lib/session/headerUser';
 
 interface PageProps {
   readonly params: Promise<{ tipo: string; alvo: string }>;
@@ -115,7 +116,7 @@ export default async function DashboardRecorteNativoPage(props: PageProps): Prom
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: menu.showNotificationBell,
         }}
       >

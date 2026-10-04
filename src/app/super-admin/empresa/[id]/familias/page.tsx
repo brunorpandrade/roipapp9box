@@ -23,6 +23,7 @@ import { getServerSession } from '../../../../../server/session/serverSession';
 
 import { FamiliasClient } from './FamiliasClient';
 import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../../../../lib/session/headerUser';
 import {
   buildInitialFamiliesState,
   loadJobFamiliesForCompany,
@@ -90,7 +91,7 @@ export default async function SuperAdminCompanyFamiliasPage(
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
           companyLogoUrl: company.logoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
         superAdminContext={{ companyDisplayName: company.nomeFantasia }}

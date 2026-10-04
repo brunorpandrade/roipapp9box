@@ -33,6 +33,7 @@ import { loadPlatformMenuCtxCookie } from '../../lib/session/platformMenuCookie'
 import type { PlatformSession } from '../../lib/session/platformMenuContext';
 import { getServerSession } from '../../server/session/serverSession';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 import {
   getPendenciasCardData,
   type PendenciaCardRow,
@@ -233,7 +234,7 @@ export default async function PainelCLevelPage(): Promise<JSX.Element> {
         leftMode: 'in_company',
         companyDisplayName: session.companyDisplayName,
         companyLogoUrl: session.companyLogoUrl ?? undefined,
-        user: { displayName: session.displayName },
+        user: headerUserFromSession(session),
         // C-level NUNCA tem sino (S474 §4.1).
         showNotificationBell: false,
       }}

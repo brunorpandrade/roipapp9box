@@ -31,6 +31,7 @@ import { RecorteDashboardClient } from './RecorteDashboardClient';
 // comparativa quando ha 1 so especificador.
 // eslint-disable-next-line @stylistic/max-len
 import { AiChatLauncherEquipe } from '../../../../../../dashboard-recorte/[tipo]/[alvo]/AiChatLauncherEquipe';
+import { headerUserFromSession } from '../../../../../../../lib/session/headerUser';
 
 interface PageProps {
   readonly params: Promise<{ id: string; tipo: string; alvo: string }>;
@@ -100,7 +101,7 @@ export default async function DashboardRecortePage(props: PageProps): Promise<JS
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
           companyLogoUrl: company.logoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
         superAdminContext={{ companyDisplayName: company.nomeFantasia }}

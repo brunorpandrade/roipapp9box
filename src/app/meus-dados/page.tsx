@@ -23,6 +23,7 @@ import type { MenuItem } from '../../lib/menu/menuConfig';
 import { resolveMenuItems } from '../../lib/menu/menuConfig';
 // eslint-disable-next-line @stylistic/max-len -- path canonico do guard
 import { requireAuthenticatedNonCollaborator } from '../../lib/routes/requireAuthenticatedNonCollaborator';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 import { loadPlatformMenuCtxCookie } from '../../lib/session/platformMenuCookie';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { createRateLimiter } from '../../server/auth/rateLimit';
@@ -107,9 +108,6 @@ export default async function MeusDadosPage(): Promise<JSX.Element> {
       }
     }
 
-    const displayName =
-      activeSession.kind === 'super_admin' ? activeSession.displayName : activeSession.displayName;
-
     return (
       <Layout
         menuItems={menuItems}
@@ -118,7 +116,7 @@ export default async function MeusDadosPage(): Promise<JSX.Element> {
           leftMode: activeSession.kind === 'super_admin' ? 'super_admin_global' : 'in_company',
           companyDisplayName,
           companyLogoUrl: companyLogoResolved ?? companyLogoUrl ?? undefined,
-          user: { displayName },
+          user: headerUserFromSession(activeSession),
           showNotificationBell,
         }}
       >

@@ -31,6 +31,7 @@ import { ColaboradorNovoClient } from './ColaboradorNovoClient';
 import { criarColaboradorAction, definirRFAction, pesquisarLiderCandidatosAction } from './actions';
 import { resolveDatabaseUrl } from '../../../../../../lib/db/resolveDatabaseUrl';
 import { loadColaboradorNovoPage, parseCompanyIdParam, parsePresetParam } from './internals';
+import { headerUserFromSession } from '../../../../../../lib/session/headerUser';
 
 interface PageProps {
   readonly params: Promise<{ id: string }>;
@@ -89,7 +90,7 @@ export default async function ColaboradorNovoPage(props: PageProps): Promise<JSX
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
           companyLogoUrl: company.logoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
         superAdminContext={{ companyDisplayName: company.nomeFantasia }}

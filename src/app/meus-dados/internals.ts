@@ -74,6 +74,12 @@ export type H1bVinculo = H1bVinculoEmployee | H1bVinculoCLevel;
 export interface MeusDadosH1bPayload {
   readonly kind: 'h1b';
   readonly displayName: string;
+  /**
+   * ME-B9.3 Fase A2 dispatch 3 — foto canonica do titular logado,
+   * propagada do schema (`employees.photoUrl` / `cLevelMembers.photoUrl`).
+   * Null = sem foto, UI mantem fallback de iniciais em teal canonico.
+   */
+  readonly photoUrl: string | null;
   readonly badgePapel: H1bBadgePapel;
   readonly cpfCompleto: string;
   readonly dataNascimento: string;

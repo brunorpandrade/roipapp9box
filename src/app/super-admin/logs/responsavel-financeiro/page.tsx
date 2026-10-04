@@ -53,6 +53,7 @@ import { parseRFFiltersFromSearchParams } from './filters';
 
 import { loadEmpresasList, loadRFLogsPage } from './internals';
 import { resolveDatabaseUrl } from '../../../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../../../lib/session/headerUser';
 
 // -----------------------------------------------------------------------
 // Rota canonica /super-admin/logs/responsavel-financeiro (§14.20)
@@ -103,7 +104,7 @@ export default async function RFLogsPage(props: PageProps): Promise<JSX.Element>
         menuItems={menuItems}
         header={{
           leftMode: 'super_admin_global',
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
       >

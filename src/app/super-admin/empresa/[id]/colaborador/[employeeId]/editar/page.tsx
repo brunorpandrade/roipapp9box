@@ -35,6 +35,7 @@ import {
   verificarInativacaoAction,
 } from './actions';
 import { loadColaboradorEditarPage, parseCompanyIdParam, parseEmployeeIdParam } from './internals';
+import { headerUserFromSession } from '../../../../../../../lib/session/headerUser';
 
 interface PageProps {
   readonly params: Promise<{ id: string; employeeId: string }>;
@@ -102,7 +103,7 @@ export default async function ColaboradorEditarPage(props: PageProps): Promise<J
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
           companyLogoUrl: company.logoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
         superAdminContext={{ companyDisplayName: company.nomeFantasia }}

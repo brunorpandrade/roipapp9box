@@ -32,6 +32,7 @@ import { getServerSession } from '../../../../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../../../../server/trpc';
 
 import { parseCompanyIdParam } from './internals';
+import { headerUserFromSession } from '../../../../../lib/session/headerUser';
 
 const SESSION_COOKIE = 'session';
 
@@ -106,7 +107,7 @@ export default async function FaturamentoSuperAdminPage(props: PageProps): Promi
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
           companyLogoUrl: company.logoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
         superAdminContext={{ companyDisplayName: company.nomeFantasia }}

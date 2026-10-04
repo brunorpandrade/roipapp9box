@@ -55,6 +55,7 @@ import { panelPathForRole } from '../../lib/routes/redirectByRole';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { getServerSession, type ServerSession } from '../../server/session/serverSession';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 
 interface AccessDeniedPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -365,7 +366,7 @@ export default async function AccessDeniedPage({
           session.kind === 'platform' && flags.companyLogoUrl !== null
             ? flags.companyLogoUrl
             : undefined,
-        user: { displayName: session.displayName },
+        user: headerUserFromSession(session),
         showNotificationBell,
       }}
     >

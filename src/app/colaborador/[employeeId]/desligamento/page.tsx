@@ -23,6 +23,7 @@ import {
   parseEmployeeIdParam,
 } from '../../../super-admin/empresa/[id]/colaborador/[employeeId]/editar/internals';
 import { executarTransferenciaRHAction, inativarColaboradorRHAction } from '../editar/actions';
+import { headerUserFromSession } from '../../../../lib/session/headerUser';
 
 interface PageProps {
   readonly params: Promise<{ readonly employeeId: string }>;
@@ -79,7 +80,7 @@ export default async function DesligamentoRHPage(props: PageProps): Promise<JSX.
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: menu.showNotificationBell,
         }}
       >

@@ -39,6 +39,7 @@ import { createRateLimiter } from '../../../../../server/auth/rateLimit';
 import { Nr1Client } from './Nr1Client';
 import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 import { parseCompanyIdParam, type HistoricalCycleRow, type AlertRow } from './internals';
+import { headerUserFromSession } from '../../../../../lib/session/headerUser';
 
 // -----------------------------------------------------------------------
 // tRPC caller para getCycleDetails (loader)
@@ -191,7 +192,7 @@ export default async function Nr1Page(props: PageProps): Promise<JSX.Element> {
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
           companyLogoUrl: company.logoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
         superAdminContext={{

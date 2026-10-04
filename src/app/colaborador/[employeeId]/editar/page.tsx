@@ -41,6 +41,7 @@ import { getServerSession } from '../../../../server/session/serverSession';
 
 import { ColaboradorEditarClient } from './_client';
 import { resolveDatabaseUrl } from '../../../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../../../lib/session/headerUser';
 import {
   loadColaboradorEditarPage,
   parseEmployeeIdParam,
@@ -146,7 +147,7 @@ export default async function ColaboradorEditarRHPage(props: PageProps): Promise
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
       >

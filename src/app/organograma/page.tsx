@@ -41,6 +41,7 @@ import { loadFullOrgTree } from '../../server/services/orgTree';
 
 import { OrganogramaClient } from './_client';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 
 export default async function OrganogramaRHPage(): Promise<JSX.Element> {
   const session = await getServerSession();
@@ -83,7 +84,7 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
             leftMode: 'in_company',
             companyDisplayName: session.companyDisplayName,
             companyLogoUrl: session.companyLogoUrl ?? undefined,
-            user: { displayName: session.displayName },
+            user: headerUserFromSession(session),
             showNotificationBell: !rhCtx.isCLevelActingAsRH,
           }}
         >
@@ -154,7 +155,7 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
             leftMode: 'in_company',
             companyDisplayName: session.companyDisplayName,
             companyLogoUrl: session.companyLogoUrl ?? undefined,
-            user: { displayName: session.displayName },
+            user: headerUserFromSession(session),
             showNotificationBell: false,
           }}
         >
@@ -190,7 +191,7 @@ export default async function OrganogramaRHPage(): Promise<JSX.Element> {
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: menu.showNotificationBell,
         }}
       >

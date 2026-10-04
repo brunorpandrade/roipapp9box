@@ -45,6 +45,7 @@ import { getServerSession } from '../../../../server/session/serverSession';
 
 import { CompanyLandingClient } from './CompanyLandingClient';
 import { resolveDatabaseUrl } from '../../../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../../../lib/session/headerUser';
 import {
   loadCompanyForLanding,
   loadDepartmentCounts,
@@ -135,7 +136,7 @@ export default async function SuperAdminCompanyLandingPage(props: PageProps): Pr
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
           companyLogoUrl: company.logoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
         superAdminContext={{ companyDisplayName: company.nomeFantasia }}

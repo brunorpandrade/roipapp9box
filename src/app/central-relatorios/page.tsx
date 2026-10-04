@@ -23,6 +23,7 @@ import { closeDbClient, createDbClient } from '../../db/client';
 import { loadPlatformMenuCtxCookie } from '../../lib/session/platformMenuCookie';
 import { getServerSession } from '../../server/session/serverSession';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 
 import {
   generateEvolucaoTrimestralXlsxClevelAction,
@@ -78,7 +79,7 @@ export default async function CentralRelatoriosRHPage(): Promise<JSX.Element> {
             leftMode: 'in_company',
             companyDisplayName: session.companyDisplayName,
             companyLogoUrl: session.companyLogoUrl ?? undefined,
-            user: { displayName: session.displayName },
+            user: headerUserFromSession(session),
             showNotificationBell: false,
           }}
         >
@@ -111,7 +112,7 @@ export default async function CentralRelatoriosRHPage(): Promise<JSX.Element> {
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: menu.showNotificationBell,
         }}
       >

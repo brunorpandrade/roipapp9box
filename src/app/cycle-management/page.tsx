@@ -39,6 +39,7 @@ import {
   listPendingUnlockRequestsAction,
 } from './actions';
 import { CANONICAL_CYCLE_SCHEDULE_DEFAULT_FILTERS, parseCycleScheduleFilters } from './filters';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 
 interface PageProps {
   readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -76,7 +77,7 @@ export default async function CycleManagementPage(props: PageProps): Promise<JSX
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: !rhCtx.isCLevelActingAsRH,
         }}
       >

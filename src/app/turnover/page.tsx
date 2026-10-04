@@ -21,6 +21,7 @@ import { getServerSession } from '../../server/session/serverSession';
 
 import { buildDocumentosPadrao } from './documentos';
 import { parseGrupoDrilldown, parseTrimestreParam, resolveTurnoverAccess } from './internals';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 
 interface PageProps {
   readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -67,7 +68,7 @@ export default async function TurnoverPage(props: PageProps): Promise<JSX.Elemen
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: menu.showNotificationBell,
         }}
       >

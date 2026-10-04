@@ -45,6 +45,7 @@ import { DALLogsBrunoClient } from './DALLogsBrunoClient';
 
 import { type BrunoDALEmpresaOption } from './internals';
 import { resolveDatabaseUrl } from '../../../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../../../lib/session/headerUser';
 
 async function loadEmpresasListForBruno(
   db: RoipDatabase,
@@ -106,7 +107,7 @@ export default async function DALLogsBrunoPage(props: PageProps): Promise<JSX.El
         menuItems={menuItems}
         header={{
           leftMode: 'super_admin_global',
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
       >

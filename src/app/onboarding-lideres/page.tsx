@@ -26,6 +26,7 @@ import { createCallerFactory, createContextInner } from '../../server/trpc';
 
 import { OnboardingLideresClient, type OnboardingCardInitial } from './OnboardingLideresClient';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 
 // -----------------------------------------------------------------------
 // Instâncias module-level canônicas bit-exact (padrão S366)
@@ -92,7 +93,7 @@ export default async function OnboardingLideresRHPage(): Promise<JSX.Element> {
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: !rhCtx.isCLevelActingAsRH,
         }}
       >

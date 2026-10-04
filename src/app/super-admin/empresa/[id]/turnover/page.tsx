@@ -22,6 +22,7 @@ import { getServerSession } from '../../../../../server/session/serverSession';
 import { buildDocumentosPadrao } from '../../../../turnover/documentos';
 import { parseGrupoDrilldown, parseTrimestreParam } from '../../../../turnover/internals';
 import { parseCompanyIdParam } from '../colaborador/[employeeId]/editar/internals';
+import { headerUserFromSession } from '../../../../../lib/session/headerUser';
 
 interface PageProps {
   readonly params: Promise<{ id: string }>;
@@ -81,7 +82,7 @@ export default async function TurnoverBrunoPage(props: PageProps): Promise<JSX.E
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
           companyLogoUrl: company.logoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
         superAdminContext={{ companyDisplayName: company.nomeFantasia }}

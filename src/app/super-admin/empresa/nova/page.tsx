@@ -39,6 +39,7 @@ import { resolveProfileKey } from '../../../../lib/session/resolveProfileKey';
 import { getServerSession } from '../../../../server/session/serverSession';
 
 import { NovaEmpresaClient } from './NovaEmpresaClient';
+import { headerUserFromSession } from '../../../../lib/session/headerUser';
 
 export default async function NovaEmpresaPage(): Promise<JSX.Element> {
   const session = await getServerSession();
@@ -73,7 +74,7 @@ export default async function NovaEmpresaPage(): Promise<JSX.Element> {
       menuItems={menuItems}
       header={{
         leftMode: 'super_admin_global',
-        user: { displayName: session.displayName },
+        user: headerUserFromSession(session),
         showNotificationBell: true,
       }}
     >

@@ -490,7 +490,18 @@ function H1bDemaisPerfis(props: H1bProps): JSX.Element {
         {/* Secao 1 — Dados pessoais */}
         <div style={FIRST_SECTION_STYLE}>
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-            <div style={AVATAR_STYLE}>{iniciais}</div>
+            {/* ME-B9.3 Fase A2 dispatch 3 — foto canonica do titular
+                logado no card H1b (`/meus-dados`); fallback bit-exact de
+                iniciais em teal quando `photoUrl` vazio. */}
+            {payload.photoUrl !== null && payload.photoUrl !== '' ? (
+              <img
+                src={payload.photoUrl}
+                alt={`Foto de ${payload.displayName}`}
+                style={{ ...AVATAR_STYLE, objectFit: 'cover' }}
+              />
+            ) : (
+              <div style={AVATAR_STYLE}>{iniciais}</div>
+            )}
             <div style={{ flex: 1 }}>
               <div>
                 <span style={{ fontSize: 20, fontWeight: 600, color: COLORS.text.primary }}>

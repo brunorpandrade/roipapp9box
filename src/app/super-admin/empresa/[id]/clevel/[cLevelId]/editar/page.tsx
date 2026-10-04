@@ -28,6 +28,7 @@ import { getServerSession } from '../../../../../../../server/session/serverSess
 import { CLevelEditarClient } from './CLevelEditarClient';
 import { resolveDatabaseUrl } from '../../../../../../../lib/db/resolveDatabaseUrl';
 import { loadCLevelEditarPage, parseCLevelIdParam, parseCompanyIdParam } from './internals';
+import { headerUserFromSession } from '../../../../../../../lib/session/headerUser';
 
 interface PageProps {
   readonly params: Promise<{ id: string; cLevelId: string }>;
@@ -86,7 +87,7 @@ export default async function CLevelEditarPage(props: PageProps): Promise<JSX.El
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
           companyLogoUrl: company.logoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
         superAdminContext={{ companyDisplayName: company.nomeFantasia }}

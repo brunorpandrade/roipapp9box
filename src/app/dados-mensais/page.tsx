@@ -42,6 +42,7 @@ import {
 } from './actions';
 import { currentMes, parseTabParam } from './internals';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 
 interface PageProps {
   readonly searchParams?: Promise<{ tab?: string }>;
@@ -101,7 +102,7 @@ export default async function DadosMensaisRHPage(props: PageProps): Promise<JSX.
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: !rhCtx.isCLevelActingAsRH,
         }}
       >

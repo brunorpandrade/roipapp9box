@@ -28,6 +28,7 @@ import { resolveMenuItems } from '../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { getServerSession } from '../../server/session/serverSession';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 import {
   getPendenciasCardData,
   type PendenciaCardRow,
@@ -256,7 +257,7 @@ export default async function PainelLiderPage(): Promise<JSX.Element> {
         leftMode: 'in_company',
         companyDisplayName: session.companyDisplayName,
         companyLogoUrl: companyLogoUrl ?? undefined,
-        user: { displayName: session.displayName },
+        user: headerUserFromSession(session),
         // Regra Q1 canonica §4.1: Lider NAO tem sino (S474).
         showNotificationBell: false,
       }}

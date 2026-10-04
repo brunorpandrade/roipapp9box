@@ -18,6 +18,7 @@ import { getServerSession } from '../../server/session/serverSession';
 
 import { AlterarSenhaClient } from './AlterarSenhaClient';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 
 function resolvePainelHref(role: 'rh' | 'rh_lider' | 'clevel' | 'lider'): string {
   switch (role) {
@@ -56,7 +57,7 @@ export default async function AlterarSenhaPage(): Promise<JSX.Element> {
         menuItems={menuItems}
         header={{
           leftMode: 'super_admin_global',
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
       >
@@ -109,7 +110,7 @@ export default async function AlterarSenhaPage(): Promise<JSX.Element> {
           leftMode: 'in_company',
           companyDisplayName,
           companyLogoUrl,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell,
         }}
       >

@@ -39,6 +39,7 @@ import { hasFirstQuarterCalculated } from '../../../../../server/services/compan
 
 import { ParametrosClient } from './ParametrosClient';
 import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../../../../lib/session/headerUser';
 import {
   loadCompanyForParametros,
   mapCompanyRowToFormValues,
@@ -100,7 +101,7 @@ export default async function SuperAdminCompanyParametrosPage(
           leftMode: 'in_company',
           companyDisplayName: row.nomeFantasia,
           companyLogoUrl: row.logoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
         superAdminContext={{ companyDisplayName: row.nomeFantasia }}

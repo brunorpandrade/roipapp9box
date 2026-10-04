@@ -27,6 +27,7 @@ import { TodosColaboradoresClient } from '../minha-equipe/_client';
 import { parseColaboradoresFiltersFromSearchParams } from '../minha-equipe/filters';
 
 import { listarCadeiaIndiretaAction } from './actions';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 import {
   enforceCadeiaIndiretaFilters,
   loadCadeiaIndiretaPage,
@@ -77,7 +78,7 @@ export default async function CadeiaIndiretaPage(props: PageProps): Promise<JSX.
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: access.menu.showNotificationBell,
         }}
       >

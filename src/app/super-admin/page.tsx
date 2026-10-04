@@ -59,6 +59,7 @@ import { resolveMenuItems } from '../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
 import { getServerSession } from '../../server/session/serverSession';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 
 interface SuperAdminPanelData {
   readonly companiesActiveCount: number;
@@ -433,7 +434,7 @@ export default async function SuperAdminGlobalPanel(
       menuItems={menuItems}
       header={{
         leftMode: 'super_admin_global',
-        user: { displayName: session.displayName },
+        user: headerUserFromSession(session),
         // Regra Q1 canonica §4.1: sino visivel apenas para Bruno e RH.
         showNotificationBell: true,
       }}

@@ -47,6 +47,7 @@ import {
 } from '../../../../onboarding-lideres/OnboardingLideresClient';
 import { parseCompanyIdParam } from '../../../../onboarding-lideres/internals';
 import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../../../../lib/session/headerUser';
 
 // -----------------------------------------------------------------------
 // Instâncias module-level canônicas bit-exact (padrão S366)
@@ -137,7 +138,7 @@ export default async function OnboardingLideresPage(props: PageProps): Promise<J
           leftMode: 'in_company',
           companyDisplayName: company.nomeFantasia,
           companyLogoUrl: company.logoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: true,
         }}
         superAdminContext={{

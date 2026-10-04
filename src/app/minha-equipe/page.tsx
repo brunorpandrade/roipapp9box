@@ -84,6 +84,7 @@ import { TodosColaboradoresClient } from './_client';
 import { listarMinhaEquipeAction } from './actions';
 import { parseColaboradoresFiltersFromSearchParams } from './filters';
 import { enforceEmployeeLeaderScope, loadMinhaEquipePageForEmployeeLeader } from './internals';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 
 interface PageProps {
   readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -139,7 +140,7 @@ export default async function MinhaEquipePage(props: PageProps): Promise<JSX.Ele
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: menu.showNotificationBell,
         }}
       >

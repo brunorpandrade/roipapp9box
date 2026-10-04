@@ -28,6 +28,7 @@ import { createMonthlyClosureRouter } from '../../server/routers/monthlyClosure'
 import { createRevenueRouter } from '../../server/routers/revenue';
 import { getServerSession } from '../../server/session/serverSession';
 import { createCallerFactory, createContextInner } from '../../server/trpc';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 
 const SESSION_COOKIE = 'session';
 
@@ -88,7 +89,7 @@ export default async function FaturamentoMensalPage(): Promise<JSX.Element> {
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: session.companyLogoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: menuCtx.showNotificationBell,
         }}
       >

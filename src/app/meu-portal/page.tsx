@@ -36,6 +36,7 @@ import { loadCompanyForRhPanel, loadMeuPortalData } from '../painel-rh/internals
 
 import { MeuPortalClient } from './MeuPortalClient';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import { headerUserFromSession } from '../../lib/session/headerUser';
 
 export default async function MeuPortalPage(): Promise<JSX.Element> {
   const session = await getServerSession();
@@ -76,7 +77,7 @@ export default async function MeuPortalPage(): Promise<JSX.Element> {
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,
           companyLogoUrl: company.logoUrl ?? undefined,
-          user: { displayName: session.displayName },
+          user: headerUserFromSession(session),
           showNotificationBell: menu.showNotificationBell,
         }}
       >
