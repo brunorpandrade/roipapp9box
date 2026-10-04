@@ -414,15 +414,16 @@ export function faixaPlenitudeLabel(f: FaixaPlenitude | null): string {
 }
 
 /**
- * Label canônico da faixa de assiduidade (ME-B9.9). Primeira letra
+ * Label canônico da faixa de assiduidade (ME-B9.9b). Adjetivos no
+ * feminino: "assiduidade" é substantivo feminino. Primeira letra
  * maiúscula conforme preferência de registro executivo canônico.
  */
 export function faixaAssiduidadeLabel(f: FaixaAssiduidade | null): string {
-  if (f === 'otimo') {
-    return 'Ótimo';
+  if (f === 'otima') {
+    return 'Ótima';
   }
-  if (f === 'bom') {
-    return 'Bom';
+  if (f === 'boa') {
+    return 'Boa';
   }
   if (f === 'regular') {
     return 'Regular';
@@ -434,20 +435,22 @@ export function faixaAssiduidadeLabel(f: FaixaAssiduidade | null): string {
 }
 
 /**
- * Cor canônica da faixa de assiduidade (ME-B9.9) alinhada à paleta
- * oficial DOC 05 §2.1:
- *   - Ótimo   -> success (verde)   #16A34A
- *   - Bom     -> teal §2.1 (acento) #14B8A6
- *   - Regular -> warning (amarelo) #F2A900 (ME 8.06.4)
- *   - Ruim    -> danger (vermelho) #DC2626
+ * Cor canônica da faixa de assiduidade (ME-B9.9b) alinhada à paleta
+ * oficial DOC 05 §2.1. Ótima e Boa compartilham a família verde
+ * (success escuro + success base), conforme decisão canônica de que a
+ * faixa Boa permanece no verde:
+ *   - Ótima   -> verde escuro (success texto) #166534
+ *   - Boa     -> verde base (success)         #16A34A
+ *   - Regular -> amarelo (warning)            #F2A900 (ME 8.06.4)
+ *   - Ruim    -> vermelho (danger)            #DC2626
  * Faixa nula devolve `COLORS.text.primary` (fallback neutro).
  */
 export function assiduidadeColor(f: FaixaAssiduidade | null): string {
-  if (f === 'otimo') {
-    return COLORS.semantic.success;
+  if (f === 'otima') {
+    return '#166534';
   }
-  if (f === 'bom') {
-    return '#14B8A6';
+  if (f === 'boa') {
+    return COLORS.semantic.success;
   }
   if (f === 'regular') {
     return COLORS.semantic.warning;

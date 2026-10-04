@@ -92,29 +92,34 @@ export function computeAssiduidade(diasUteis: number, faltas: number): number | 
 }
 
 // ============================================================
-// Passo 1.5 — Classificacao canonica de assiduidade (ME-B9.9)
+// Passo 1.5 — Classificacao canonica de assiduidade (ME-B9.9b)
 // ============================================================
 
 /**
- * Faixa canonica de assiduidade (ME-B9.9).
+ * Faixa canonica de assiduidade (ME-B9.9b). Adjetivos no feminino
+ * porque "assiduidade" e substantivo feminino (otima, boa). Regular
+ * e ruim sao invariaveis.
  */
-export type FaixaAssiduidade = 'otimo' | 'bom' | 'regular' | 'ruim';
+export type FaixaAssiduidade = 'otima' | 'boa' | 'regular' | 'ruim';
 
 /**
- * Cutoffs canonicos da escala de assiduidade (ME-B9.9).
+ * Cutoffs canonicos da escala de assiduidade (ME-B9.9b). Recalibrados
+ * apos validacao empirica em producao: a calibracao original 99/97/95
+ * (herdada da espec B9.9 OPERACAO) classificava colaboradores com
+ * presenca 90%+ como "Ruim" (vermelho), severidade incompativel com
+ * a realidade de PMEs brasileiras.
  *
- * Convertidos da especificacao canonica em percentual de **ausencia**
- * (B9.9 em OPERACAO_POS_B8_V1) para percentual de **presenca**
- * (`computeAssiduidade` retorna presenca 0..100):
- *   - Otimo:   presenca >= 99%   (ausencia <= 1%)
- *   - Bom:     97% <= presenca < 99%  (1% < ausencia <= 3%)
- *   - Regular: 95% <= presenca < 97%  (3% < ausencia <= 5%)
- *   - Ruim:    presenca < 95%  (ausencia > 5%)
+ * Operados em percentual de **presenca** (`computeAssiduidade` retorna
+ * presenca 0..100):
+ *   - Otima:   presenca >= 97%
+ *   - Boa:     94% <= presenca < 97%
+ *   - Regular: 87% <= presenca < 94%
+ *   - Ruim:    presenca < 87%
  */
 export const ASSIDUIDADE_CUTOFFS = {
-  otimo: 99.0,
-  bom: 97.0,
-  regular: 95.0,
+  otima: 97.0,
+  boa: 94.0,
+  regular: 87.0,
 } as const;
 
 /**
@@ -125,11 +130,11 @@ export function classifyAssiduidade(presenca: number | null): FaixaAssiduidade |
   if (presenca === null || Number.isNaN(presenca)) {
     return null;
   }
-  if (presenca >= ASSIDUIDADE_CUTOFFS.otimo) {
-    return 'otimo';
+  if (presenca >= ASSIDUIDADE_CUTOFFS.otima) {
+    return 'otima';
   }
-  if (presenca >= ASSIDUIDADE_CUTOFFS.bom) {
-    return 'bom';
+  if (presenca >= ASSIDUIDADE_CUTOFFS.boa) {
+    return 'boa';
   }
   if (presenca >= ASSIDUIDADE_CUTOFFS.regular) {
     return 'regular';
