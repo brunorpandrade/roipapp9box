@@ -10,6 +10,20 @@
 // chaves (nome, trimestre, dimensao, valor); so o `itemIndex` foi recalculado
 // via `itemIndex -= (dimensao-1)*5`. Contagens inalteradas (8020 rows cada).
 //
+// ME-B9.12 (04/10/2026) — fixture v1.2 -> v1.3: recalibracao canonica da curva
+// de demanda por quadrante 9-Box dominante do colaborador (Opcao B). Atualizados
+// os pins SHA-256 de `performance_mensal.json` (demanda recalibrada) e de
+// `performance_trimestral.json` (campo `capacidadeOciosa` recomputado via regra
+// S056). Preservado bit-exact: `desempenho_i` em todas as 3976 variaveis
+// afetadas, logo `indiceDesempenho`, `scoreDesempenho`, `faixaDesempenho` e
+// 9-Box completo inalterados. F6 (lideranca_gestao) nao tocada por regra
+// canonica (`capacidadeOciosa = NULL` por natureza). Contagens inalteradas
+// (1210 e 415 rows). Distribuicao canonica medida pos-reseed: 94.9% verde
+// (saudavel 10-25%), 2.1% vermelho (sobrecarga <10% — apenas RISCO DE
+// ESGOTAMENTO + DESGASTE OCULTO), 3.0% amarelo (ociosidade cara >25% —
+// POTENCIAL SUBUTILIZADO + DESEMPENHO REPRESADO). Documentacao canonica em
+// EMPRESA_DEMO_NATIVA.md v1.3 §21.
+//
 // Regra canonica RV-02: qualquer divergencia SHA-256 no loader = ABORT (fixture
 // corrompida ou editada). O loader `loadFixtures.ts` valida cada JSON antes de
 // deserializar; SHA-256 mismatch dispara throw canonico bit-exact.
@@ -82,7 +96,7 @@ export const NATIVA_FIXTURE_MANIFEST = [
   },
   {
     filename: 'performance_trimestral.json',
-    sha256: 'd394803669c31002c31d5afc4227c8990128c69291376a8b0f5e023104d1b829',
+    sha256: 'c0b4e1c7509a6ad83b664b6d15bdcffe0112ec557b27b980bf7dd215ca8f5d52',
     recordCount: 415,
     destinationTable: 'performanceQuarterlyData',
   },
@@ -154,7 +168,7 @@ export const NATIVA_FIXTURE_MANIFEST = [
   },
   {
     filename: 'performance_mensal.json',
-    sha256: '66ac271eb4df7ffbd1da90da5e71989e0e4f4785d8f0131b0decbb97d951b2f7',
+    sha256: '116d87882f8c2fe046d10738e15babffeaa9408d9ca9910d115dfcb899358288',
     recordCount: 1210,
     destinationTable: 'performanceData',
   },
