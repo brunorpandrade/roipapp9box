@@ -114,7 +114,7 @@ export const NATIVA_FIXTURE_MANIFEST = [
   },
   {
     filename: 'performance_trimestral.json',
-    sha256: '822d936e215d270f995bcf547c7b331a50903f3c2033f5c7e11462058ccc3a64',
+    sha256: 'b40eed5cb3e4af467ed52b68d3ad6c752ebc7c90badd21dbac4a01f3174b17aa',
     recordCount: 415,
     destinationTable: 'performanceQuarterlyData',
   },
