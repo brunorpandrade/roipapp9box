@@ -35,7 +35,7 @@
 //   - S055 — tolerancia a falha parcial: try/catch por colaborador,
 //     transacao curta por colaborador (write em performanceQuarterlyData
 //     + performanceMultiplierLog dentro da mesma transacao).
-//   - S056 — `computeCapacidadeOciosa` usa a `demanda` do ULTIMO mes do
+//   - S056 — `computeCapacidadeOciosa` usa o `executado` do ULTIMO mes do
 //     trimestre (representa capacidade atual). Anotado para conferencia
 //     na ME de dashboard individual (Bloco B5).
 //   - S058 — leitura literal do §3.7: `diasUteis` NULL bloqueia o motor
@@ -837,17 +837,19 @@ async function buildEmployeeSnapshotFirstPass(
     const varRows = await db
       .select({
         variableIndex: performanceVariableData.variableIndex,
-        demanda: performanceVariableData.demanda,
+        executado: performanceVariableData.executado,
       })
       .from(performanceVariableData)
       .where(eq(performanceVariableData.performanceDataId, perfUltimo.id));
-    const demandaByIndex = new Map<number, number | null>();
+    const executadoByIndex = new Map<number, number | null>();
     for (const v of varRows) {
-      demandaByIndex.set(v.variableIndex, toNumberOrNull(v.demanda));
+      executadoByIndex.set(v.variableIndex, toNumberOrNull(v.executado));
     }
+    // ME-B9.13 — reformulacao canonica: usa `executado` (entrega real)
+    // em vez de `demanda` (solicitacao). Formula: (goal-executado)/goal.
     const ociosaInput = goalsRows.map((g) => ({
       weight: Number(g.weight),
-      demanda: demandaByIndex.get(g.variableIndex) ?? null,
+      executado: executadoByIndex.get(g.variableIndex) ?? null,
       goal: Number(g.goal),
     }));
     capacidadeOciosa = computeCapacidadeOciosa(ociosaInput, false);

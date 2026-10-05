@@ -304,7 +304,7 @@ export function DefinirMetasControl(props: DefinirMetasControlProps): JSX.Elemen
                       <th style={{ padding: 8 }}>Nome da variável</th>
                       <th style={{ padding: 8 }}>Unidade</th>
                       <th style={{ padding: 8 }}>Peso (%)</th>
-                      <th style={{ padding: 8 }}>Meta (capacidade plena)</th>
+                      <th style={{ padding: 8 }}>Capacidade máxima</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -338,7 +338,7 @@ export function DefinirMetasControl(props: DefinirMetasControlProps): JSX.Elemen
                               <span style={{ color: COLORS.text.tertiary }}>N/A · peso zero</span>
                             ) : (
                               <input
-                                aria-label={`Meta da variável ${i + 1}`}
+                                aria-label={`Capacidade máxima da variável ${i + 1}`}
                                 inputMode="decimal"
                                 style={INPUT_STYLE}
                                 value={dados.familia6 ? '5' : l.goal}

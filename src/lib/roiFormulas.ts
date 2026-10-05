@@ -289,23 +289,33 @@ export function computeFaixaDesempenho(
  */
 export interface OciosaVariable {
   weight: number;
-  demanda: number | null;
+  executado: number | null;
   goal: number;
 }
 
 /**
  * Capacidade ociosa do colaborador (indicador paralelo, nao entra no Eixo X).
  *
- * Regra canonica §3.4 Passo 7:
- *   - Familia 6 -> `null` (nao calcula).
- *   - Para cada variavel com `weight > 0` e `demanda_i < goal_i`:
- *     `ociosa_i = (goal_i - demanda_i) / goal_i`.
- *   - Variaveis com `demanda_i >= goal_i` contribuem 0 de ociosidade.
+ * Regra canonica §3.4 Passo 7 (ME-B9.13 — reformulacao canonica):
+ *   - `goal` representa a CAPACIDADE MAXIMA do colaborador na variavel
+ *     (teto saudavel; operar a 100% = sobrecarga; faixa saudavel = 10-15%
+ *     abaixo da capacidade).
+ *   - Familia 6 -> `null` (nao calcula; lideres nao tem capacidade
+ *     instalada mensuravel).
+ *   - Para cada variavel com `weight > 0` e `executado_i < goal_i`:
+ *     `ociosa_i = (goal_i - executado_i) / goal_i`.
+ *   - Variaveis com `executado_i >= goal_i` contribuem 0 de ociosidade
+ *     (sobrecarga pura — o colaborador entregou acima da capacidade).
  *   - Variaveis com `weight = 0` nao entram no calculo.
- *   - Media das ociosidades sobre TODAS as variaveis com `weight > 0`
- *     (nao so as com `demanda < goal`).
+ *   - Media das ociosidades sobre TODAS as variaveis com `weight > 0`.
  *
- * Decisao S056 (autor): usa a `demanda` do MES injetado pelo caller. O
+ * Reformulacao canonica ME-B9.13: antes a formula usava `demanda` (quanto
+ * foi solicitado), que gerava semantica errada — se demanda alta e
+ * executado baixo, parecia nao haver ociosidade apesar da folga real do
+ * colaborador. A nova formula usa `executado` (entrega real), medindo o
+ * espaco entre a capacidade instalada e o que foi efetivamente entregue.
+ *
+ * Decisao S056 (autor): usa o `executado` do MES injetado pelo caller. O
  * motor decide qual mes usar — canonicamente o ultimo mes do trimestre
  * (representa a capacidade atual do colaborador). Documentado no
  * comentario canonico do motor.
@@ -332,12 +342,12 @@ export function computeCapacidadeOciosa(
       // dividir por zero.
       continue;
     }
-    const demanda = v.demanda ?? 0;
-    if (demanda >= v.goal) {
-      // variavel contribui 0% de ociosidade.
+    const executado = v.executado ?? 0;
+    if (executado >= v.goal) {
+      // sobrecarga pura: variavel contribui 0% de ociosidade.
       continue;
     }
-    somaOciosa += (v.goal - demanda) / v.goal;
+    somaOciosa += (v.goal - executado) / v.goal;
   }
   // multiplicado por 100 no motor antes de gravar em decimal(5,2)
   // (percentual). Aqui devolvemos fracao 0..1.

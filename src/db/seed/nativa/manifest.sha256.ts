@@ -10,6 +10,16 @@
 // chaves (nome, trimestre, dimensao, valor); so o `itemIndex` foi recalculado
 // via `itemIndex -= (dimensao-1)*5`. Contagens inalteradas (8020 rows cada).
 //
+// ME-B9.13 (04/10/2026) — reformulacao canonica do motor de ociosidade:
+// `computeCapacidadeOciosa` passa de (goal-demanda)/goal para
+// max(0, (goal-executado)/goal). `goal` reinterpretado como "capacidade
+// maxima" (nao mais "meta"). Faixas canonicas realinhadas: <10% critica,
+// 10-15% saudavel, 15-25% atencao, >25% elevada. Fixture
+// `performance_trimestral.json` regerado com nova formula (novo SHA
+// `fc2c9ed4...`); demais 19 JSONs preservados bit-exact. Motor serve
+// Nativa + Ubatuba + Embrastec + novas empresas com a nova regra sem
+// gambiarra. Base: ME-B9.12 + patch1 + patch2.
+//
 // ME-B9.12 + patch1 + patch2 (04/10/2026) — fixture v1.2 -> v1.3: recalibracao
 // canonica da curva de demanda por quadrante 9-Box dominante do colaborador
 // (Opcao B).
@@ -114,7 +124,7 @@ export const NATIVA_FIXTURE_MANIFEST = [
   },
   {
     filename: 'performance_trimestral.json',
-    sha256: 'b40eed5cb3e4af467ed52b68d3ad6c752ebc7c90badd21dbac4a01f3174b17aa',
+    sha256: 'fc2c9ed4581000173f8ca35b9d2aef690a426accd884d6b64c3d89e4f9f01862',
     recordCount: 415,
     destinationTable: 'performanceQuarterlyData',
   },

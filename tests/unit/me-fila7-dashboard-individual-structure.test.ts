@@ -70,10 +70,16 @@ describe('dashboard individual — helpers puros', () => {
     expect(formatPercentFrac(null)).toBe('—');
   });
 
-  it('ociosidadeTier segue as faixas canonicas (ME-B9.13, DOC 03 §3.4 Passo 7)', () => {
+  it('ociosidadeTier segue as faixas canonicas reformuladas (ME-B9.13 nova formula)', () => {
+    // Faixas canonicas pos-reformulacao (formula usando `executado`):
+    //   <10% -> critica (sobrecarga, proximo a 100% capacidade)
+    //   10-15% -> saudavel (operacao com folga adequada)
+    //   15-25% -> atencao (ociosidade cara comecando)
+    //   >25% -> elevada (capacidade subutilizada)
     expect(ociosidadeTier('0')).toBe('critica');
-    expect(ociosidadeTier('4.9')).toBe('critica');
-    expect(ociosidadeTier('5')).toBe('saudavel');
+    expect(ociosidadeTier('5')).toBe('critica');
+    expect(ociosidadeTier('9.9')).toBe('critica');
+    expect(ociosidadeTier('10')).toBe('saudavel');
     expect(ociosidadeTier('15')).toBe('saudavel');
     expect(ociosidadeTier('20')).toBe('atencao');
     expect(ociosidadeTier('25')).toBe('atencao');

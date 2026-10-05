@@ -471,7 +471,7 @@ function EixoXModal(props: {
                 <thead>
                   <tr style={{ color: COLORS.text.tertiary }}>
                     <th style={{ textAlign: 'left', padding: '6px 8px' }}>Variável</th>
-                    <th style={{ textAlign: 'right', padding: '6px 8px' }}>Meta</th>
+                    <th style={{ textAlign: 'right', padding: '6px 8px' }}>Capacidade máxima</th>
                     <th style={{ textAlign: 'right', padding: '6px 8px' }}>Demanda</th>
                     <th style={{ textAlign: 'right', padding: '6px 8px' }}>Executado</th>
                     <th style={{ textAlign: 'right', padding: '6px 8px' }}>Desempenho</th>

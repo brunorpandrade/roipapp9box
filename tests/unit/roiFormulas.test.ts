@@ -283,52 +283,69 @@ describe('computeFaixaDesempenho (§3.4)', () => {
 // §3.4 — Passo 7 — Capacidade ociosa
 // ============================================================
 
-describe('computeCapacidadeOciosa (§3.4 Passo 7)', () => {
-  it('caso canonico: 4 variaveis com demanda variada', () => {
-    // v1: goal=100, demanda=50 -> ociosa=0.5
-    // v2: goal=100, demanda=100 -> ociosa=0 (demanda>=goal)
-    // v3: goal=100, demanda=200 -> ociosa=0 (demanda>=goal)
-    // v4: goal=100, demanda=75 -> ociosa=0.25
+describe('computeCapacidadeOciosa (§3.4 Passo 7, ME-B9.13 reformulada)', () => {
+  it('caso canonico: 4 variaveis com executado variado', () => {
+    // Formula ME-B9.13: ociosa = (goal - executado) / goal
+    // v1: goal=100, executado=50 -> ociosa=0.5
+    // v2: goal=100, executado=100 -> ociosa=0 (executado>=goal, sobrecarga)
+    // v3: goal=100, executado=200 -> ociosa=0 (executado>=goal, sobrecarga)
+    // v4: goal=100, executado=75 -> ociosa=0.25
     // media = (0.5 + 0 + 0 + 0.25) / 4 = 0.1875 (18.75%)
     const vars = [
-      { weight: 25, demanda: 50, goal: 100 },
-      { weight: 25, demanda: 100, goal: 100 },
-      { weight: 25, demanda: 200, goal: 100 },
-      { weight: 25, demanda: 75, goal: 100 },
+      { weight: 25, executado: 50, goal: 100 },
+      { weight: 25, executado: 100, goal: 100 },
+      { weight: 25, executado: 200, goal: 100 },
+      { weight: 25, executado: 75, goal: 100 },
     ];
     expect(computeCapacidadeOciosa(vars, false)).toBeCloseTo(0.1875, 6);
   });
 
   it('Familia 6 -> null (nao calcula)', () => {
-    const vars = [{ weight: 100, demanda: 5, goal: 5 }];
+    const vars = [{ weight: 100, executado: 5, goal: 5 }];
     expect(computeCapacidadeOciosa(vars, true)).toBeNull();
   });
 
   it('todas variaveis com weight=0 -> null', () => {
     const vars = [
-      { weight: 0, demanda: 50, goal: 100 },
-      { weight: 0, demanda: 50, goal: 100 },
+      { weight: 0, executado: 50, goal: 100 },
+      { weight: 0, executado: 50, goal: 100 },
     ];
     expect(computeCapacidadeOciosa(vars, false)).toBeNull();
   });
 
   it('variavel com weight=0 e ignorada na media', () => {
     // ativas: 2 (a de weight=0 e ignorada)
-    // v1: goal=100, demanda=50 -> 0.5
-    // v2: goal=100, demanda=100 -> 0
+    // v1: goal=100, executado=50 -> 0.5
+    // v2: goal=100, executado=100 -> 0 (sobrecarga)
     // media = 0.5 / 2 = 0.25
     const vars = [
-      { weight: 50, demanda: 50, goal: 100 },
-      { weight: 50, demanda: 100, goal: 100 },
-      { weight: 0, demanda: 0, goal: 100 }, // ignorada
+      { weight: 50, executado: 50, goal: 100 },
+      { weight: 50, executado: 100, goal: 100 },
+      { weight: 0, executado: 0, goal: 100 }, // ignorada
     ];
     expect(computeCapacidadeOciosa(vars, false)).toBeCloseTo(0.25, 6);
   });
 
-  it('demanda=null tratada como 0 (ociosa=100%)', () => {
-    // demanda=null -> 0 -> ociosa = (100-0)/100 = 1.0
-    const vars = [{ weight: 100, demanda: null, goal: 100 }];
+  it('executado=null tratado como 0 (ociosa=100%)', () => {
+    // executado=null -> 0 -> ociosa = (100-0)/100 = 1.0
+    const vars = [{ weight: 100, executado: null, goal: 100 }];
     expect(computeCapacidadeOciosa(vars, false)).toBe(1.0);
+  });
+
+  it('ME-B9.13: executado proximo da capacidade maxima -> ociosidade saudavel', () => {
+    // Caso canonico pos-reformulacao: colaborador na faixa 10-15% da capacidade
+    // v1: goal=220, executado=197.11 -> (220-197.11)/220 = 0.1040
+    // v2: goal=45, executado=41.3 -> (45-41.3)/45 = 0.0822
+    // v3: goal=60, executado=53.52 -> (60-53.52)/60 = 0.1080
+    // v4: goal=4, executado=3.49 -> (4-3.49)/4 = 0.1275
+    // media = (0.1040 + 0.0822 + 0.1080 + 0.1275) / 4 = 0.1054 (10.54% ~ saudavel)
+    const vars = [
+      { weight: 40, executado: 197.11, goal: 220 },
+      { weight: 30, executado: 41.3, goal: 45 },
+      { weight: 20, executado: 53.52, goal: 60 },
+      { weight: 10, executado: 3.49, goal: 4 },
+    ];
+    expect(computeCapacidadeOciosa(vars, false)).toBeCloseTo(0.1054, 3);
   });
 });
 

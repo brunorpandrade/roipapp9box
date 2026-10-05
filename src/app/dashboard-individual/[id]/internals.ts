@@ -478,12 +478,16 @@ export function formatPercentFrac(valor: string | null): string {
 export type OciosidadeTier = 'saudavel' | 'atencao' | 'critica' | 'elevada' | 'sem_dado';
 
 /**
- * Faixa de ociosidade canonica (DOC 03 §3.4 Passo 7, ME-B9.13):
- *   - abaixo de 5% → critica (sobrecarga, sem folga — perigoso)
- *   - 5% a 15% → saudavel (margem adequada para absorver variacoes)
- *   - 15% a 25% → atencao (margem acima da ideal)
- *   - acima de 25% → elevada (capacidade subutilizada — ociosidade cara)
- * `capacidadeOciosa` chega em escala 0–100.
+ * Faixa de ociosidade canonica (DOC 03 §3.4 Passo 7, ME-B9.13 reformulada):
+ *   - abaixo de 10% → critica (sobrecarga, operacao proxima a 100% da
+ *     capacidade maxima — insustentavel a medio prazo)
+ *   - 10% a 15% → saudavel (operacao com folga adequada, dentro da faixa
+ *     de uso otimo da capacidade instalada)
+ *   - 15% a 25% → atencao (ociosidade cara comecando, capacidade
+ *     parcialmente subutilizada)
+ *   - acima de 25% → elevada (capacidade significativamente subutilizada,
+ *     reavaliar alocacao/metas)
+ * `capacidadeOciosa` chega em escala 0–100 (percentual).
  */
 export function ociosidadeTier(valor: string | null): OciosidadeTier {
   if (valor === null) {
@@ -493,7 +497,7 @@ export function ociosidadeTier(valor: string | null): OciosidadeTier {
   if (!Number.isFinite(num)) {
     return 'sem_dado';
   }
-  if (num < 5) {
+  if (num < 10) {
     return 'critica';
   }
   if (num <= 15) {
