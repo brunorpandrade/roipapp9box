@@ -70,14 +70,15 @@ describe('dashboard individual — helpers puros', () => {
     expect(formatPercentFrac(null)).toBe('—');
   });
 
-  it('ociosidadeTier segue as faixas de negocio', () => {
+  it('ociosidadeTier segue as faixas canonicas (ME-B9.13, DOC 03 §3.4 Passo 7)', () => {
     expect(ociosidadeTier('0')).toBe('critica');
     expect(ociosidadeTier('4.9')).toBe('critica');
     expect(ociosidadeTier('5')).toBe('saudavel');
     expect(ociosidadeTier('15')).toBe('saudavel');
     expect(ociosidadeTier('20')).toBe('atencao');
     expect(ociosidadeTier('25')).toBe('atencao');
-    expect(ociosidadeTier('30')).toBe('critica');
+    expect(ociosidadeTier('30')).toBe('elevada');
+    expect(ociosidadeTier('50')).toBe('elevada');
     expect(ociosidadeTier(null)).toBe('sem_dado');
   });
 
