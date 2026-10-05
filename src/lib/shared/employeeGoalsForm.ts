@@ -1,26 +1,35 @@
-// ROIP APP 9BOX — modal [Definir metas] (M1): textos e validacao
+// ROIP APP 9BOX — modal [Configurar variáveis de desempenho] (M1): textos e validacao
 // (DOC 05 §13.7 e §18.9; DOC 03 §3.2/§3.3; ME-fila6 D3).
 //
 // Modulo puro compartilhado pelo client do modal e pelo service de
 // gravacao (mesma regra nos dois lados).
 //
+// ME-B9.14 (04/10/2026) — rename canonico pos-ME-B9.13: "meta" -> "variavel
+// de desempenho / capacidade maxima" na terminologia UI. Para Familia 6
+// (lideranca e gestao), a coluna "Capacidade maxima" e OCULTADA no modal
+// porque o valor e fixo em 5 (teto da escala Likert 1-5) e nao editavel —
+// mostrar coluna com valores bloqueados em "5" era ruido visual. Texto
+// explicativo da F6 reformulado para explicar a natureza da escala em vez
+// de dizer "meta e sempre 5" (termo "meta" nao faz mais sentido no modelo
+// canonico onde goal = capacidade maxima = teto saudavel).
+//
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
 export const MSG_SOMA_PESOS = 'A soma dos pesos deve totalizar 100%.';
-export const MSG_META_VAZIA = 'Informe o valor da meta.';
+export const MSG_META_VAZIA = 'Informe o valor da capacidade máxima.';
 export const MSG_META_FORA_INTERVALO = 'Valor fora do intervalo permitido.';
 export const MSG_PESO_VAZIO = 'Informe o peso.';
 export const MSG_PESO_FORA_INTERVALO = 'Peso deve estar entre 0 e 100.';
-export const MSG_METAS_SALVAS = 'Metas definidas com sucesso.';
+export const MSG_METAS_SALVAS = 'Variáveis configuradas com sucesso.';
 export const MSG_TEMPLATE_ATUALIZADO =
-  'O template desta família foi atualizado por Bruno. Considere revisar as metas para ' +
+  'O template desta família foi atualizado por Bruno. Considere revisar as variáveis para ' +
   'alinhar com o novo padrão.';
 export const MSG_TEMPLATE_AUSENTE =
   'O template desta família ainda não foi configurado. Peça ao Bruno para configurá-lo em ' +
   'Famílias de função.';
 export const TEXTO_FAMILIA_6 =
-  'Família 6 (Liderança e gestão): nomes e unidade fixos; a meta é sempre 5. Apenas o peso é ' +
-  'editável.';
+  'Família 6 (Liderança e gestão): nomes e unidade fixos; variáveis avaliadas em escala 1 a ' +
+  '5. Apenas o peso é editável.';
 
 /** Quantidade de variaveis por familia de funcao (DOC 01 §12.2). */
 export const VARIAVEIS_POR_FAMILIA = 4;

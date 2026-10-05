@@ -331,7 +331,8 @@ const BTN_DISABLED_STYLE = {
 };
 
 const S503_TOOLTIP_PRIMEIRO_ACESSO = 'Envio de primeiro acesso disponível em ME futura de auth.';
-const TOOLTIP_METAS_APOS_CADASTRO = 'Salve o colaborador para definir as metas.';
+const TOOLTIP_METAS_APOS_CADASTRO =
+  'Salve o colaborador para configurar as variáveis de desempenho.';
 
 // ============================================================
 // Helpers puros (RV-13 — testaveis)
@@ -847,11 +848,11 @@ export function ColaboradorForm(props: ColaboradorFormProps): JSX.Element {
         </section>
       ) : null}
 
-      {/* Seção 6 — Metas (§13.4 / §13.7 — ME-fila6 D3) */}
+      {/* Seção 6 — Variáveis de desempenho (§13.4 / §13.7 — ME-fila6 D3) */}
       <section style={SECTION_CARD_STYLE}>
-        <h2 style={SECTION_TITLE_STYLE}>Metas de desempenho</h2>
+        <h2 style={SECTION_TITLE_STYLE}>Variáveis de desempenho</h2>
         <div style={{ fontSize: 13, color: COLORS.text.secondary }}>
-          As metas mensais dependem da família de função do colaborador. Sem as 4 metas
+          As variáveis mensais dependem da família de função do colaborador. Sem as 4 variáveis
           configuradas, o motor do Eixo X ignora este colaborador.
         </div>
         <div>
@@ -863,7 +864,7 @@ export function ColaboradorForm(props: ColaboradorFormProps): JSX.Element {
               title={TOOLTIP_METAS_APOS_CADASTRO}
               aria-label={TOOLTIP_METAS_APOS_CADASTRO}
             >
-              Definir metas
+              Configurar variáveis de desempenho
             </button>
           )}
         </div>

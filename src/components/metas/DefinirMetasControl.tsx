@@ -1,15 +1,22 @@
 'use client';
 
-// ROIP APP 9BOX — botao [Definir metas], selo de status e modal M1
-// (DOC 05 §13.4 Secao 6, §13.7 e §18.9; ME-fila6 D3).
+// ROIP APP 9BOX — botao [Configurar variáveis de desempenho], selo de
+// status e modal M1 (DOC 05 §13.4 Secao 6, §13.7 e §18.9; ME-fila6 D3).
 //
-// - Selo: "Metas definidas" (verde) ou "Metas pendentes" (ambar).
+// - Selo: "Configuradas" (verde) ou "Pendentes" (ambar).
 // - Modal: 4 variaveis da familia (nome e unidade somente leitura; peso e
-//   meta editaveis), contador "Soma dos pesos: X%", validacao inline,
-//   banner ambar de template atualizado com [Aplicar template atual],
-//   Familia 6 com meta fixa 5, peso zero com meta "N/A".
-// - Rodape: [Cancelar] e [Salvar metas] (desabilitado ate validar).
-// - Sucesso: toast verde "Metas definidas com sucesso.".
+//   capacidade maxima editaveis para liderado; apenas peso para F6 lider),
+//   contador "Soma dos pesos: X%", validacao inline, banner ambar de
+//   template atualizado com [Aplicar template atual], peso zero com nota
+//   "N/A".
+// - Rodape: [Cancelar] e [Salvar] (desabilitado ate validar).
+// - Sucesso: toast verde "Variáveis configuradas com sucesso.".
+//
+// ME-B9.14 (04/10/2026) — rename canonico pos-ME-B9.13: botao, titulo do
+// modal, aria-labels, selo e toast migrados de "metas" para "variaveis de
+// desempenho / capacidade maxima". F6 (lideranca_gestao): coluna
+// "Capacidade maxima" OCULTADA (valor fixo em 5 nao editavel; texto
+// explicativo acima do modal ja comunica a escala Likert 1-5).
 //
 // Permissao e gravacao decididas no servidor (`salvarMetasAction`).
 //
@@ -78,7 +85,7 @@ function Selo(props: { readonly status: MetasStatus }): JSX.Element {
         color: definidas ? COLORS.badge.successText : COLORS.badge.warningText,
       }}
     >
-      {definidas ? 'Metas definidas' : 'Metas pendentes'}
+      {definidas ? 'Configuradas' : 'Pendentes'}
     </span>
   );
 }
@@ -168,13 +175,13 @@ export function DefinirMetasControl(props: DefinirMetasControlProps): JSX.Elemen
     }
   };
 
-  // §18.9: mensagens inline em tempo real; [Salvar metas] desabilitado ate validar.
+  // §18.9: mensagens inline em tempo real; [Salvar] desabilitado ate validar.
   const errosVisiveis = validacao !== null && !validacao.ok ? validacao.erros : null;
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
       <button type="button" style={BTN_STYLE} onClick={(): void => void abrir()}>
-        Definir metas
+        Configurar variáveis de desempenho
       </button>
       {mostrarSelo ? <Selo status={status} /> : null}
 
@@ -202,7 +209,7 @@ export function DefinirMetasControl(props: DefinirMetasControlProps): JSX.Elemen
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Definir metas"
+          aria-label="Configurar variáveis de desempenho"
           style={{
             position: 'fixed',
             inset: 0,
@@ -233,7 +240,7 @@ export function DefinirMetasControl(props: DefinirMetasControlProps): JSX.Elemen
                 <h2
                   style={{ fontSize: 18, fontWeight: 700, margin: 0, color: COLORS.text.primary }}
                 >
-                  Definir metas de {dados?.employeeName ?? '…'}
+                  Configurar variáveis de desempenho: {dados?.employeeName ?? '…'}
                 </h2>
                 {dados !== null ? (
                   <div style={{ fontSize: 13, color: COLORS.text.secondary, marginTop: 4 }}>
@@ -304,7 +311,7 @@ export function DefinirMetasControl(props: DefinirMetasControlProps): JSX.Elemen
                       <th style={{ padding: 8 }}>Nome da variável</th>
                       <th style={{ padding: 8 }}>Unidade</th>
                       <th style={{ padding: 8 }}>Peso (%)</th>
-                      <th style={{ padding: 8 }}>Capacidade máxima</th>
+                      {dados.familia6 ? null : <th style={{ padding: 8 }}>Capacidade máxima</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -333,25 +340,26 @@ export function DefinirMetasControl(props: DefinirMetasControlProps): JSX.Elemen
                               <div style={ERRO_STYLE}>{erroLinha.peso}</div>
                             ) : null}
                           </td>
-                          <td style={{ padding: 8 }}>
-                            {pesoZero ? (
-                              <span style={{ color: COLORS.text.tertiary }}>N/A · peso zero</span>
-                            ) : (
-                              <input
-                                aria-label={`Capacidade máxima da variável ${i + 1}`}
-                                inputMode="decimal"
-                                style={INPUT_STYLE}
-                                value={dados.familia6 ? '5' : l.goal}
-                                disabled={dados.familia6}
-                                onChange={(e): void =>
-                                  alterar(l.variableIndex, 'goal', e.target.value)
-                                }
-                              />
-                            )}
-                            {erroLinha?.meta !== undefined ? (
-                              <div style={ERRO_STYLE}>{erroLinha.meta}</div>
-                            ) : null}
-                          </td>
+                          {dados.familia6 ? null : (
+                            <td style={{ padding: 8 }}>
+                              {pesoZero ? (
+                                <span style={{ color: COLORS.text.tertiary }}>N/A · peso zero</span>
+                              ) : (
+                                <input
+                                  aria-label={`Capacidade máxima da variável ${i + 1}`}
+                                  inputMode="decimal"
+                                  style={INPUT_STYLE}
+                                  value={l.goal}
+                                  onChange={(e): void =>
+                                    alterar(l.variableIndex, 'goal', e.target.value)
+                                  }
+                                />
+                              )}
+                              {erroLinha?.meta !== undefined ? (
+                                <div style={ERRO_STYLE}>{erroLinha.meta}</div>
+                              ) : null}
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
@@ -410,7 +418,7 @@ export function DefinirMetasControl(props: DefinirMetasControlProps): JSX.Elemen
                   opacity: podeSalvar ? 1 : 0.6,
                 }}
               >
-                {salvando ? 'Salvando...' : 'Salvar metas'}
+                {salvando ? 'Salvando...' : 'Salvar'}
               </button>
             </div>
           </div>
