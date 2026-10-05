@@ -475,12 +475,15 @@ export function formatPercentFrac(valor: string | null): string {
   return `${(num * 100).toFixed(1).replace('.', ',')}%`;
 }
 
-export type OciosidadeTier = 'saudavel' | 'atencao' | 'critica' | 'sem_dado';
+export type OciosidadeTier = 'saudavel' | 'atencao' | 'critica' | 'elevada' | 'sem_dado';
 
 /**
- * Faixa de ociosidade (regra de negocio): abaixo de 5% e critica (sem folga
- * — perigoso); 5% a 15% e saudavel; acima de 15% ate 25% e atencao; acima de
- * 25% e critica. `capacidadeOciosa` chega em escala 0–100.
+ * Faixa de ociosidade canonica (DOC 03 §3.4 Passo 7, ME-B9.13):
+ *   - abaixo de 5% → critica (sobrecarga, sem folga — perigoso)
+ *   - 5% a 15% → saudavel (margem adequada para absorver variacoes)
+ *   - 15% a 25% → atencao (margem acima da ideal)
+ *   - acima de 25% → elevada (capacidade subutilizada — ociosidade cara)
+ * `capacidadeOciosa` chega em escala 0–100.
  */
 export function ociosidadeTier(valor: string | null): OciosidadeTier {
   if (valor === null) {
@@ -499,7 +502,7 @@ export function ociosidadeTier(valor: string | null): OciosidadeTier {
   if (num <= 25) {
     return 'atencao';
   }
-  return 'critica';
+  return 'elevada';
 }
 
 export function ociosidadeLabel(tier: OciosidadeTier): string {
@@ -511,6 +514,12 @@ export function ociosidadeLabel(tier: OciosidadeTier): string {
   }
   if (tier === 'critica') {
     return 'Faixa crítica';
+  }
+  if (tier === 'elevada') {
+    return 'Ociosidade elevada';
+  }
+  if (tier === 'sem_dado') {
+    return 'Não aplicável a líderes';
   }
   return '';
 }

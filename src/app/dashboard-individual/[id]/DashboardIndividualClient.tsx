@@ -412,6 +412,9 @@ function ociColor(tier: OciosidadeTier): string {
   if (tier === 'critica') {
     return COLORS.semantic.danger;
   }
+  if (tier === 'elevada') {
+    return COLORS.semantic.warning;
+  }
   return COLORS.text.primary;
 }
 
