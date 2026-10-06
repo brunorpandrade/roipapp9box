@@ -124,10 +124,10 @@ export function Sidebar(props: SidebarProps): JSX.Element {
         <Image
           src="/brand/roipeople-horizontal-dark.png"
           alt="ROIPeople"
-          width={119}
-          height={48}
+          width={179}
+          height={72}
           priority
-          style={{ height: 48, width: 'auto' }}
+          style={{ height: 72, width: 'auto' }}
         />
       </div>
 
