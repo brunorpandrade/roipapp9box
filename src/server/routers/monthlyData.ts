@@ -94,7 +94,8 @@ import { resolveLeaderLinkAtMonth } from '../services/employeeLeaderHistory';
 import { listEmployeeVariables } from '../services/employeeVariables';
 import { updatePerformanceDataInputRH } from '../services/performanceData';
 import { updatePerformanceVariableInputLeader } from '../services/performanceVariableData';
-import { rhAllowedProcedure } from '../auth/rhAllowedProcedure';
+import { decideRhAllowed, rhAllowedProcedure } from '../auth/rhAllowedProcedure';
+import { loadCLevelSessionContext } from '../../lib/session/cLevelSessionContext';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
 import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 
@@ -450,12 +451,21 @@ export function createMonthlyDataRouter() {
         const status = await resolveMonthStatus(ctx.db, input.companyId, input.mes);
 
         if (input.aba === 'rh') {
-          // Aba RH: RH/RH-Lider/Super Admin livres; demais bloqueados.
-          if (
-            ctx.user.role !== 'super_admin' &&
-            ctx.user.role !== 'rh' &&
-            ctx.user.role !== 'rh_lider'
-          ) {
+          // ME-B9.8-PATCH4 — aba RH: RH/RH-Lider/Super Admin livres;
+          // tambem admite C-level com cLevelMembers.isRH=true (ex. Michelle,
+          // COO Embrastec operando como RH nativo — ME 3.5 Dispatch 2).
+          // Decisao canonica delegada a `decideRhAllowed` (fonte unica com
+          // `rhAllowedProcedure`). I/O em cLevelMembers so quando role='clevel'.
+          let clevelIsRH: boolean | null = null;
+          if (ctx.user.role === 'clevel') {
+            const cctx = await loadCLevelSessionContext(
+              ctx.db,
+              ctx.user.companyId,
+              ctx.user.userId,
+            );
+            clevelIsRH = cctx === null ? null : cctx.isRH;
+          }
+          if (decideRhAllowed(ctx.user, clevelIsRH) === 'forbid') {
             throw new TRPCError({
               code: 'FORBIDDEN',
               message: 'Aba RH restrita a RH e Bruno.',
@@ -1303,11 +1313,19 @@ export function createMonthlyDataRouter() {
         //   - escopo='empresa': RH/RH-Lider/Super Admin;
         //   - escopo='minha_cadeia': Lider e C-level com liderId=proprio.
         if (input.escopo === 'empresa') {
-          if (
-            ctx.user.role !== 'super_admin' &&
-            ctx.user.role !== 'rh' &&
-            ctx.user.role !== 'rh_lider'
-          ) {
+          // ME-B9.8-PATCH4 — mesma ampliacao da aba RH do getMonthlyInputForm:
+          // admite C-level com cLevelMembers.isRH=true (Michelle). Delegado
+          // a `decideRhAllowed` canonico (fonte unica).
+          let clevelIsRH: boolean | null = null;
+          if (ctx.user.role === 'clevel') {
+            const cctx = await loadCLevelSessionContext(
+              ctx.db,
+              ctx.user.companyId,
+              ctx.user.userId,
+            );
+            clevelIsRH = cctx === null ? null : cctx.isRH;
+          }
+          if (decideRhAllowed(ctx.user, clevelIsRH) === 'forbid') {
             throw new TRPCError({
               code: 'FORBIDDEN',
               message: 'Escopo empresa restrito a RH e Bruno.',
