@@ -5,10 +5,18 @@
 // `/super-admin/empresa/[id]/dados-mensais` (ME-079a) no padrao
 // dual-route L123 canonizado em ME-084 + ME-B9-CR. Todas as 8 actions
 // desta rota:
-//   - Usam `requireRHOrSuperAdmin` (ME-084) como guard canonico
-//     (aceita `session.kind === 'super_admin'` OU
-//     `session.kind === 'platform'` com `role IN {'rh', 'rh_lider'}`).
-//   - Derivam `companyId` de `session.companyId` para RH/RH-Lider
+//   - ME-B9.8-PATCH3 (06/10/2026): guard migrado de `requireRHOrSuperAdmin`
+//     para `requireRhLikeOrSuperAdmin` (ME 3.5.1) — admite a quarta linha
+//     canonica `platform.role === 'clevel' AND cLevelMembers.isRH === true`
+//     (ex.: Michelle, COO Embrastec operando como RH nativo). Antes a
+//     Michelle recebia "acesso restrito" ao abrir `/dados-mensais`,
+//     renderizado como erro generico "Nao foi possivel carregar os dados".
+//     As duas actions de xlsx (`downloadRHTemplateRHAction`,
+//     `uploadRHDataRHAction`) ja aceitam clevel+isRH via `rhAllowedProcedure`
+//     no router `spreadsheets` (ME 3.5 Dispatch 2), portanto permanecem
+//     intocadas aqui. Debito B15.6 do roadmap canonico (migracao sistemica
+//     de todas as rotas RH-facing) permanece aberto para `/central-relatorios`.
+//   - Derivam `companyId` de `session.companyId` para RH/RH-Lider/clevel-isRH
 //     via `resolveEffectiveCompanyId` (bit-exact ao padrao
 //     `/central-relatorios` ME-B9-CR).
 //   - Delegam para procedures tRPC via caller — defense-in-depth §2.4
@@ -50,7 +58,10 @@ import type {
 } from '../../components/dados-mensais/internals';
 import { closeDbClient, createDbClient } from '../../db/client';
 import { monthlyClosureStatus } from '../../db/schema';
-import { requireRHOrSuperAdmin } from '../../lib/routes/requireRHOrSuperAdmin';
+import {
+  requireRhLikeOrSuperAdmin,
+  type RhLikeOrSuperAdminSession,
+} from '../../lib/routes/requireRhLikeOrSuperAdmin';
 import { createRateLimiter } from '../../server/auth/rateLimit';
 import {
   createCycleUnlockRequestsRouter,
@@ -107,12 +118,12 @@ async function resolveRawToken(): Promise<string | null> {
 
 /**
  * Resolve `companyId` efetivo a partir do escopo canonico da sessao.
- * Para RH/RH-Lider (`kind='platform'`): retorna `session.companyId`
- * bit-exact. Para Super Admin: retorna o `inputCompanyId` que ele
- * passou. Bit-exact ao padrao ME-B9-CR.
+ * Para RH/RH-Lider/clevel-isRH (`kind='platform'`): retorna
+ * `session.companyId` bit-exact. Para Super Admin: retorna o
+ * `inputCompanyId` que ele passou. Bit-exact ao padrao ME-B9-CR.
  */
 function resolveEffectiveCompanyId(
-  session: ReturnType<typeof requireRHOrSuperAdmin>,
+  session: RhLikeOrSuperAdminSession,
   inputCompanyId: number,
 ): number {
   if (session.kind === 'platform') {
@@ -139,8 +150,6 @@ export async function loadMonthlyFormAction(input: {
   readonly liderId?: number;
   readonly liderTipo?: 'employee' | 'clevel';
 }): Promise<ActionResult<MonthlyInputFormResult>> {
-  const session = requireRHOrSuperAdmin(await getServerSession(), 'loadMonthlyFormAction');
-  const companyId = resolveEffectiveCompanyId(session, input.companyId);
   const token = await resolveRawToken();
   if (token === null) {
     return { ok: false, message: 'Sessão ausente ou expirada.' };
@@ -148,6 +157,12 @@ export async function loadMonthlyFormAction(input: {
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    const session = await requireRhLikeOrSuperAdmin(
+      client.db,
+      await getServerSession(),
+      'loadMonthlyFormAction',
+    );
+    const companyId = resolveEffectiveCompanyId(session, input.companyId);
     const caller = createMonthlyDataCaller(
       createContextInner({
         db: client.db,
@@ -187,8 +202,6 @@ export async function saveMonthlyRHDataAction(input: {
     readonly faltas: number;
   }>;
 }): Promise<ActionResult<SaveMonthlyDataResult>> {
-  const session = requireRHOrSuperAdmin(await getServerSession(), 'saveMonthlyRHDataAction');
-  const companyId = resolveEffectiveCompanyId(session, input.companyId);
   const token = await resolveRawToken();
   if (token === null) {
     return { ok: false, message: 'Sessão ausente ou expirada.' };
@@ -196,6 +209,12 @@ export async function saveMonthlyRHDataAction(input: {
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    const session = await requireRhLikeOrSuperAdmin(
+      client.db,
+      await getServerSession(),
+      'saveMonthlyRHDataAction',
+    );
+    const companyId = resolveEffectiveCompanyId(session, input.companyId);
     const caller = createMonthlyDataCaller(
       createContextInner({
         db: client.db,
@@ -229,8 +248,6 @@ export async function getClosureStatusAction(input: {
   readonly companyId: number;
   readonly mes: string;
 }): Promise<ActionResult<DadosMensaisClosureStatus>> {
-  const session = requireRHOrSuperAdmin(await getServerSession(), 'getClosureStatusAction');
-  const companyId = resolveEffectiveCompanyId(session, input.companyId);
   const token = await resolveRawToken();
   if (token === null) {
     return { ok: false, message: 'Sessão ausente ou expirada.' };
@@ -238,6 +255,12 @@ export async function getClosureStatusAction(input: {
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    const session = await requireRhLikeOrSuperAdmin(
+      client.db,
+      await getServerSession(),
+      'getClosureStatusAction',
+    );
+    const companyId = resolveEffectiveCompanyId(session, input.companyId);
     const caller = createMonthlyClosureCaller(
       createContextInner({
         db: client.db,
@@ -274,8 +297,6 @@ export async function getLeadersStatusAction(input: {
   readonly companyId: number;
   readonly mes: string;
 }): Promise<ActionResult<LeaderStatusRow[]>> {
-  const session = requireRHOrSuperAdmin(await getServerSession(), 'getLeadersStatusAction');
-  const companyId = resolveEffectiveCompanyId(session, input.companyId);
   const token = await resolveRawToken();
   if (token === null) {
     return { ok: false, message: 'Sessão ausente ou expirada.' };
@@ -283,6 +304,12 @@ export async function getLeadersStatusAction(input: {
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    const session = await requireRhLikeOrSuperAdmin(
+      client.db,
+      await getServerSession(),
+      'getLeadersStatusAction',
+    );
+    const companyId = resolveEffectiveCompanyId(session, input.companyId);
     const caller = createMonthlyDataCaller(
       createContextInner({
         db: client.db,
@@ -317,11 +344,6 @@ export async function criarSolicitacaoDesbloqueioAction(input: {
   readonly liderTipo?: 'employee' | 'clevel';
   readonly justificativa: string;
 }): Promise<ActionResult<{ readonly id: number }>> {
-  const session = requireRHOrSuperAdmin(
-    await getServerSession(),
-    'criarSolicitacaoDesbloqueioAction',
-  );
-  const companyId = resolveEffectiveCompanyId(session, input.companyId);
   const token = await resolveRawToken();
   if (token === null) {
     return { ok: false, message: 'Sessão ausente ou expirada.' };
@@ -329,6 +351,12 @@ export async function criarSolicitacaoDesbloqueioAction(input: {
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    const session = await requireRhLikeOrSuperAdmin(
+      client.db,
+      await getServerSession(),
+      'criarSolicitacaoDesbloqueioAction',
+    );
+    const companyId = resolveEffectiveCompanyId(session, input.companyId);
     const caller = createCycleUnlockRequestsCaller(
       createContextInner({
         db: client.db,
@@ -371,8 +399,6 @@ export async function hasPendingUnlockAction(input: {
     readonly requestedAt: string | null;
   }>
 > {
-  const session = requireRHOrSuperAdmin(await getServerSession(), 'hasPendingUnlockAction');
-  const companyId = resolveEffectiveCompanyId(session, input.companyId);
   const token = await resolveRawToken();
   if (token === null) {
     return { ok: false, message: 'Sessão ausente ou expirada.' };
@@ -380,6 +406,12 @@ export async function hasPendingUnlockAction(input: {
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    const session = await requireRhLikeOrSuperAdmin(
+      client.db,
+      await getServerSession(),
+      'hasPendingUnlockAction',
+    );
+    const companyId = resolveEffectiveCompanyId(session, input.companyId);
     const caller = createCycleUnlockRequestsCaller(
       createContextInner({
         db: client.db,
@@ -443,11 +475,14 @@ function formatMesLabelServer(mes: string): string {
 export async function listMesesFechadosAction(input: {
   readonly companyId: number;
 }): Promise<ActionResult<DadosMensaisMesFechado[]>> {
-  const session = requireRHOrSuperAdmin(await getServerSession(), 'listMesesFechadosAction');
-  const companyId = resolveEffectiveCompanyId(session, input.companyId);
-
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    const session = await requireRhLikeOrSuperAdmin(
+      client.db,
+      await getServerSession(),
+      'listMesesFechadosAction',
+    );
+    const companyId = resolveEffectiveCompanyId(session, input.companyId);
     const rows = await client.db
       .select({ mes: monthlyClosureStatus.mes })
       .from(monthlyClosureStatus)
@@ -480,11 +515,14 @@ export async function listMesesFechadosAction(input: {
 export async function listCompanyLeadersRHAction(input: {
   readonly companyId: number;
 }): Promise<ActionResult<DadosMensaisLeaderOption[]>> {
-  const session = requireRHOrSuperAdmin(await getServerSession(), 'listCompanyLeadersRHAction');
-  const companyId = resolveEffectiveCompanyId(session, input.companyId);
-
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    const session = await requireRhLikeOrSuperAdmin(
+      client.db,
+      await getServerSession(),
+      'listCompanyLeadersRHAction',
+    );
+    const companyId = resolveEffectiveCompanyId(session, input.companyId);
     const rows = await listActiveLeadersAndClevelsByCompany(client.db, companyId);
     const leaders: DadosMensaisLeaderOption[] = rows.map((r) => ({
       id: r.id,
@@ -503,7 +541,10 @@ export async function listCompanyLeadersRHAction(input: {
 
 /**
  * ME-fila5 D3 §3.11 — Variante RH da action `downloadRHTemplate`.
- * Guard `requireRHOrSuperAdmin` server-side; company derivada da sessao.
+ * Guard `rhAllowedProcedure` server-side (router spreadsheets, ME 3.5
+ * Dispatch 2 — aceita super_admin/rh/rh_lider/clevel+isRH); company
+ * derivada da sessao via proc tRPC. Nao precisa guard na action porque
+ * o router ja aplica.
  */
 export async function downloadRHTemplateRHAction(input: {
   readonly companyId: number;
