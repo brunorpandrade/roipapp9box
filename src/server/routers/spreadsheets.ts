@@ -88,7 +88,13 @@ import { and, asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { RoipDatabase } from '../../db/client';
-import { cLevelMembers, companies, employees, employeeLeaderHistory } from '../../db/schema';
+import {
+  cLevelMembers,
+  companies,
+  employeeGoals,
+  employees,
+  employeeLeaderHistory,
+} from '../../db/schema';
 import { listEmployeeVariables } from '../services/employeeVariables';
 import { rhAllowedProcedure } from '../auth/rhAllowedProcedure';
 import { roleProcedure, router } from '../trpc';
@@ -432,7 +438,7 @@ async function loadLeaderTemplateData(
     nome: string;
     cargo: string;
     jobFamily: string;
-    variaveis: Array<{ variableIndex: number; weight: string }>;
+    variaveis: Array<{ variableIndex: number; weight: string; goal: string | null }>;
   }>;
 }> {
   const [company] = await db
@@ -509,7 +515,7 @@ async function loadLeaderTemplateData(
     nome: string;
     cargo: string;
     jobFamily: string;
-    variaveis: Array<{ variableIndex: number; weight: string }>;
+    variaveis: Array<{ variableIndex: number; weight: string; goal: string | null }>;
   }> = [];
 
   for (const empId of lideradoIds) {
@@ -532,9 +538,25 @@ async function loadLeaderTemplateData(
     const vigentes = await listEmployeeVariables(db, companyId, [
       { id: emp.id, jobFamily: emp.jobFamily },
     ]);
+    // ME-B9.8-PATCH2 — carrega employeeGoals.goal para pre-popular coluna
+    // Meta do xlsx (§3.11 CC3 — Meta e read-only informativa). Filtra por
+    // (employeeId, jobFamily) para evitar vazamento de goals de familias
+    // anteriores do mesmo colaborador. Mapeia por variableIndex 0-based.
+    const goalRows = await db
+      .select({
+        variableIndex: employeeGoals.variableIndex,
+        goal: employeeGoals.goal,
+      })
+      .from(employeeGoals)
+      .where(and(eq(employeeGoals.employeeId, emp.id), eq(employeeGoals.jobFamily, emp.jobFamily)));
+    const goalByIndex = new Map<number, string>();
+    for (const g of goalRows) {
+      goalByIndex.set(g.variableIndex, g.goal);
+    }
     const vars = (vigentes.get(emp.id) ?? []).map((v) => ({
       variableIndex: v.variableIndex,
       weight: v.weight,
+      goal: goalByIndex.get(v.variableIndex) ?? null,
     }));
 
     liderados.push({
@@ -638,9 +660,11 @@ async function buildLeaderTemplateBuffer(
       const pesoZero = Number(varDef.weight) === 0;
 
       // Meta: read-only cinza (§3.11 CC3). Valor canonico: 5 para
-      // Familia 6, senao vazio (usuario preenche demanda como meta
-      // do mes se relevante — Meta e read-only informativa aqui).
-      const meta = isFamilia6 ? 5 : null;
+      // Familia 6; para F1-F5 usa `employeeGoals.goal` carregado em
+      // `loadLeaderTemplateData` (ME-B9.8-PATCH2 — antes era sempre null,
+      // deixando a coluna Meta vazia mesmo com goal persistido). Se o RH
+      // ainda nao configurou meta para a variavel, mantem vazio.
+      const meta = isFamilia6 ? 5 : varDef.goal !== null ? Number(varDef.goal) : null;
       // Demanda: '—' para Familia 6 (locked); vazio para peso zero
       // (locked); vazio para geral (editavel).
       const demanda = isFamilia6 ? VALOR_DEMANDA_FAMILIA_6 : pesoZero ? '' : null;

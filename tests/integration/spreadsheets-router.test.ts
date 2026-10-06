@@ -28,6 +28,7 @@ import {
   companies,
   companyJobFamilies,
   companyMonthlyData,
+  employeeGoals,
   employeeLeaderHistory,
   employees,
   performanceData,
@@ -91,6 +92,7 @@ const CNPJ_DOWNLOAD_LIDER = '10000000000865';
 const CNPJ_UPLOAD_RH = '10000000000866';
 const CNPJ_UPLOAD_LIDER = '10000000000867';
 const CNPJ_INTEGRACAO_REAL = '10000000000868';
+const CNPJ_B98P2_META = '10000000000870';
 
 let client: RoipDbClient;
 const createdCompanyIds: number[] = [];
@@ -128,6 +130,8 @@ afterAll(async () => {
       await client.db
         .delete(employeeLeaderHistory)
         .where(inArray(employeeLeaderHistory.employeeId, empIds));
+      // ME-B9.8-PATCH2 — limpar employeeGoals antes de employees (FK).
+      await client.db.delete(employeeGoals).where(inArray(employeeGoals.employeeId, empIds));
     }
     await client.db
       .delete(companyJobFamilies)
@@ -1183,5 +1187,193 @@ describe('spreadsheets-router — integracao com DEFAULT_MONTHLY_DATA_FACADE (S1
     expect(pd.length).toBe(1);
     expect(pd[0]!.employeeId).toBe(colab1);
     expect(pd[0]!.faltas).toBe(0);
+  });
+});
+
+// ============================================================
+// ME-B9.8-PATCH2 — Meta pre-populada no xlsx do lider (regressao)
+// ============================================================
+//
+// Antes da ME-B9.8-PATCH2, `loadLeaderTemplateData` nao carregava
+// `employeeGoals.goal` e `buildLeaderTemplateBuffer` forcava `meta=null`
+// para todas as familias nao-F6 — o xlsx baixado pelo lider trazia a
+// coluna Meta vazia mesmo quando o RH ja tinha configurado goals para o
+// colaborador via modal "Configurar variaveis de desempenho". Bruno
+// detectou o defeito em 06/10/2026 na operacao real da Embrastec.
+//
+// Este bloco cobre bit-exact:
+//   1. F1-F5 com employeeGoals persistido -> coluna Meta pre-populada
+//      com o valor canonico `employeeGoals.goal` por variavel.
+//   2. F1-F5 sem employeeGoals -> coluna Meta vazia (null) — comportamento
+//      preservado para colaboradores com metas pendentes.
+//   3. F6 (lideranca_gestao) -> coluna Meta sempre 5 (regra canonica
+//      §3.11 CC3), independente de goals persistidos.
+
+describe('spreadsheets-router — downloadLeaderTemplate Meta pre-populada (ME-B9.8-PATCH2)', () => {
+  let companyId: number;
+  let liderEmp: number;
+  let liderF6: number;
+  let liderComGoals: number;
+  let liderSemGoals: number;
+  let liderado_f6: number;
+  const mes = '2026-10';
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_B98P2_META, 'Empresa B98P2');
+    liderEmp = await createEmployee(companyId, { isLider: true, name: 'Lider F1-F5' });
+    liderF6 = await createEmployee(companyId, {
+      isLider: true,
+      jobFamily: 'lideranca_gestao',
+      name: 'Lider F6',
+    });
+    liderComGoals = await createEmployee(companyId, {
+      jobFamily: 'vendas_comercial',
+      name: 'Liderado Com Goals',
+    });
+    liderSemGoals = await createEmployee(companyId, {
+      jobFamily: 'vendas_comercial',
+      name: 'Liderado Sem Goals',
+    });
+    liderado_f6 = await createEmployee(companyId, {
+      jobFamily: 'lideranca_gestao',
+      name: 'Liderado F6',
+    });
+    await linkLeader(liderComGoals, liderEmp, null, new Date('2020-01-01'));
+    await linkLeader(liderSemGoals, liderEmp, null, new Date('2020-01-01'));
+    await linkLeader(liderado_f6, liderF6, null, new Date('2020-01-01'));
+    // Variaveis canonicas da familia vendas_comercial (0..3).
+    await seedVariables(companyId, 'vendas_comercial', [
+      { variableIndex: 0, weight: '25.00' },
+      { variableIndex: 1, weight: '25.00' },
+      { variableIndex: 2, weight: '25.00' },
+      { variableIndex: 3, weight: '25.00' },
+    ]);
+    // Variaveis canonicas da familia lideranca_gestao (F6, 0..3).
+    await seedVariables(companyId, 'lideranca_gestao', [
+      { variableIndex: 0, weight: '25.00' },
+      { variableIndex: 1, weight: '25.00' },
+      { variableIndex: 2, weight: '25.00' },
+      { variableIndex: 3, weight: '25.00' },
+    ]);
+    // Goals canonicos APENAS para liderComGoals (bit-exact 0-based).
+    await client.db.insert(employeeGoals).values([
+      {
+        employeeId: liderComGoals,
+        jobFamily: 'vendas_comercial',
+        variableIndex: 0,
+        variableName: 'Receita gerada',
+        unit: 'R$',
+        weight: '25.00',
+        goal: '1000000.00',
+        updatedBy: 'rh',
+      },
+      {
+        employeeId: liderComGoals,
+        jobFamily: 'vendas_comercial',
+        variableIndex: 1,
+        variableName: 'Novos clientes',
+        unit: 'unidades',
+        weight: '25.00',
+        goal: '10.00',
+        updatedBy: 'rh',
+      },
+      {
+        employeeId: liderComGoals,
+        jobFamily: 'vendas_comercial',
+        variableIndex: 2,
+        variableName: 'Margem',
+        unit: '%',
+        weight: '25.00',
+        goal: '35.00',
+        updatedBy: 'rh',
+      },
+      {
+        employeeId: liderComGoals,
+        jobFamily: 'vendas_comercial',
+        variableIndex: 3,
+        variableName: 'Gestao representantes',
+        unit: 'unidades',
+        weight: '25.00',
+        goal: '5.00',
+        updatedBy: 'rh',
+      },
+    ]);
+  });
+
+  it('F1-F5 com goals -> coluna Meta pre-populada bit-exact', async () => {
+    const { facade } = makeMockFacade();
+    const caller = callerFor(await tokenFor('lider', liderEmp, companyId), facade);
+    const res = await caller.downloadLeaderTemplate({
+      companyId,
+      mes,
+      liderId: liderEmp,
+      liderTipo: 'employee',
+    });
+    const wb = await loadWorkbookFromBase64(res.xlsxBase64);
+    const ws = wb.getWorksheet(NOME_ABA_LIDER)!;
+    // Encontra a linha do liderComGoals.
+    let linha: number | null = null;
+    for (let r = 2; r <= ws.rowCount; r += 1) {
+      if (ws.getRow(r).getCell(1).value === 'Liderado Com Goals') {
+        linha = r;
+        break;
+      }
+    }
+    expect(linha).not.toBeNull();
+    // Colunas Meta: C=3 (V1), F=6 (V2), I=9 (V3), L=12 (V4).
+    expect(Number(ws.getRow(linha!).getCell(3).value)).toBe(1000000);
+    expect(Number(ws.getRow(linha!).getCell(6).value)).toBe(10);
+    expect(Number(ws.getRow(linha!).getCell(9).value)).toBe(35);
+    expect(Number(ws.getRow(linha!).getCell(12).value)).toBe(5);
+  });
+
+  it('F1-F5 sem goals -> coluna Meta vazia (null)', async () => {
+    const { facade } = makeMockFacade();
+    const caller = callerFor(await tokenFor('lider', liderEmp, companyId), facade);
+    const res = await caller.downloadLeaderTemplate({
+      companyId,
+      mes,
+      liderId: liderEmp,
+      liderTipo: 'employee',
+    });
+    const wb = await loadWorkbookFromBase64(res.xlsxBase64);
+    const ws = wb.getWorksheet(NOME_ABA_LIDER)!;
+    let linha: number | null = null;
+    for (let r = 2; r <= ws.rowCount; r += 1) {
+      if (ws.getRow(r).getCell(1).value === 'Liderado Sem Goals') {
+        linha = r;
+        break;
+      }
+    }
+    expect(linha).not.toBeNull();
+    expect(ws.getRow(linha!).getCell(3).value).toBeNull();
+    expect(ws.getRow(linha!).getCell(6).value).toBeNull();
+    expect(ws.getRow(linha!).getCell(9).value).toBeNull();
+    expect(ws.getRow(linha!).getCell(12).value).toBeNull();
+  });
+
+  it('F6 -> coluna Meta sempre 5 (regra canonica §3.11 CC3)', async () => {
+    const { facade } = makeMockFacade();
+    const caller = callerFor(await tokenFor('lider', liderF6, companyId), facade);
+    const res = await caller.downloadLeaderTemplate({
+      companyId,
+      mes,
+      liderId: liderF6,
+      liderTipo: 'employee',
+    });
+    const wb = await loadWorkbookFromBase64(res.xlsxBase64);
+    const ws = wb.getWorksheet(NOME_ABA_LIDER)!;
+    let linha: number | null = null;
+    for (let r = 2; r <= ws.rowCount; r += 1) {
+      if (ws.getRow(r).getCell(1).value === 'Liderado F6') {
+        linha = r;
+        break;
+      }
+    }
+    expect(linha).not.toBeNull();
+    expect(Number(ws.getRow(linha!).getCell(3).value)).toBe(5);
+    expect(Number(ws.getRow(linha!).getCell(6).value)).toBe(5);
+    expect(Number(ws.getRow(linha!).getCell(9).value)).toBe(5);
+    expect(Number(ws.getRow(linha!).getCell(12).value)).toBe(5);
   });
 });
