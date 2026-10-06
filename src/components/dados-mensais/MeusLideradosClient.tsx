@@ -44,6 +44,7 @@ import type {
   SaveMonthlyDataResult,
 } from '../../server/routers/monthlyData';
 
+import { buildVariaveisPorSlot } from '../../lib/shared/leaderSlotMapping';
 import { triggerXlsxDownload } from '../import-mass/downloadXlsxBase64';
 import { ImportarPlanilhaModal } from '../import-mass/ImportarPlanilhaModal';
 import { ModalSolicitarDesbloqueio } from './ModalSolicitarDesbloqueio';
@@ -1198,15 +1199,11 @@ function renderRow(
   isEditable: boolean,
 ): JSX.Element {
   const metasPendentes = isLineaMetasPendentes(row);
-  // Ordena canonicamente por variableIndex (proc ja retorna ordenado
-  // por design, mas defense-in-depth); garante 4 slots.
-  const variaveisPorSlot: Array<MonthlyInputFormLeaderVariable | null> = [null, null, null, null];
-  for (const v of row.variaveis) {
-    const slot = v.variableIndex - 1;
-    if (slot >= 0 && slot < 4) {
-      variaveisPorSlot[slot] = v;
-    }
-  }
+  // ME-B9.8-PATCH1 — mapeamento canonico 0-based delegado a helper puro
+  // em `src/lib/shared/leaderSlotMapping.ts` (fonte unica + teste de
+  // regressao). Antes vivia inline aqui com `v.variableIndex - 1`, que
+  // descartava `variableIndex=0` e deslocava as demais em -1 slot.
+  const variaveisPorSlot = buildVariaveisPorSlot(row.variaveis);
 
   return (
     <tr key={`row-${row.employeeId}`}>
