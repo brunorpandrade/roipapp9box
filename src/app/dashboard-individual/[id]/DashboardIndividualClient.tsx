@@ -1122,6 +1122,13 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
           employeeId={employee.id}
           employeeName={employee.name}
           onClose={() => setChatIaOpen(false)}
+          // ME-B9-IA-TRIMESTRE — propaga o trimestre visivel na UI para
+          // que o payload de contexto da IA (Chat IA) reflita o
+          // trimestre que o viewer esta vendo, nao o "latest do banco".
+          // `view.trimestre` pode ser null quando o colaborador nao tem
+          // nenhum trimestre de dados; nesse caso o AiChatDrawer segue
+          // sem o parametro (comportamento historico).
+          trimestreSelecionado={view.trimestre ?? undefined}
         />
       ) : null}
       {dialogosOpen && podeVerAcoesLiderDireto ? (

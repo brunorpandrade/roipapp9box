@@ -563,17 +563,51 @@ export async function loadDashboardIndividualContext(
     return null;
   }
 
-  // 2. Ultima linha de `performanceQuarterlyData` para o trimestre
-  //    atual + eixo X + capacidade ociosa + financeiro. Todos os
-  //    campos em camelCase (verificado em `tables.ts`).
+  // 2. Trimestre canonico do payload (ME-B9-IA-TRIMESTRE):
+  //    - `historicoRows` carrega SEMPRE os 4 trimestres mais recentes do
+  //      banco para o bloco `historico_4_trimestres` do payload.
+  //    - `latestQuarterly` fixa o trimestre "atual" do payload:
+  //       - `args.trimestre` informado: lookup direto (uma query extra
+  //         quando o trimestre nao esta entre os 4 mais recentes). Se o
+  //         trimestre informado nao existir no banco, retorna null do
+  //         payload inteiro — o chamador exibe "sem dados para o
+  //         trimestre" ao inves de reusar outro trimestre.
+  //       - `args.trimestre` omitido: usa o primeiro de `historicoRows`
+  //         (comportamento historico — latest do banco).
   const historicoLimit = 4;
-  const quarterlyRows = await db
+  const historicoRows = await db
     .select()
     .from(performanceQuarterlyData)
     .where(eq(performanceQuarterlyData.employeeId, args.employeeId))
     .orderBy(desc(performanceQuarterlyData.trimestre))
     .limit(historicoLimit);
-  const latestQuarterly = quarterlyRows[0] ?? null;
+  let latestQuarterly: (typeof historicoRows)[number] | null;
+  if (args.trimestre !== undefined) {
+    const match = historicoRows.find((r) => r.trimestre === args.trimestre) ?? null;
+    if (match !== null) {
+      latestQuarterly = match;
+    } else {
+      // Trimestre fora dos 4 mais recentes — busca cirurgica para
+      // confirmar existencia e popular o payload.
+      const [solicitado] = await db
+        .select()
+        .from(performanceQuarterlyData)
+        .where(
+          and(
+            eq(performanceQuarterlyData.employeeId, args.employeeId),
+            eq(performanceQuarterlyData.trimestre, args.trimestre),
+          ),
+        )
+        .limit(1);
+      latestQuarterly = solicitado ?? null;
+      if (latestQuarterly === null) {
+        return null;
+      }
+    }
+  } else {
+    latestQuarterly = historicoRows[0] ?? null;
+  }
+  const quarterlyRows = historicoRows;
 
   // 3. Eixo Y (plenitude) — leitura direta do trimestre atual.
   const [latestPlenitude] = latestQuarterly

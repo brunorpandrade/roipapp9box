@@ -450,6 +450,15 @@ export interface AiChatDrawerProps {
   readonly employeeId: number;
   readonly employeeName: string;
   readonly onClose: () => void;
+  /**
+   * ME-B9-IA-TRIMESTRE — trimestre canonico `YYYY-QN` selecionado na UI
+   * do dashboard individual. Repassado em cada `sendMessage` para que o
+   * payload de contexto da IA reflita o trimestre que o viewer esta
+   * vendo (nao o "latest do banco"). Opcional por retrocompatibilidade
+   * com callsites que ainda nao propagam o trimestre (nesses casos a IA
+   * segue com o comportamento anterior: latest do banco).
+   */
+  readonly trimestreSelecionado?: string;
 }
 
 export function AiChatDrawer(props: AiChatDrawerProps): JSX.Element {
@@ -502,6 +511,7 @@ export function AiChatDrawer(props: AiChatDrawerProps): JSX.Element {
       const res = await chatIaSendMessageAction({
         employeeId: props.employeeId,
         content: trimmed,
+        trimestre: props.trimestreSelecionado,
       });
       setEnviando(false);
       if (!res.ok || res.userMessage === null || res.assistantMessage === null) {
@@ -512,7 +522,7 @@ export function AiChatDrawer(props: AiChatDrawerProps): JSX.Element {
       setMessages((prev) => [...prev, res.userMessage!, res.assistantMessage!]);
       setInputValue('');
     },
-    [props.employeeId],
+    [props.employeeId, props.trimestreSelecionado],
   );
 
   const handleSend = useCallback((): void => {

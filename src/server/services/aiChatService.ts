@@ -246,6 +246,13 @@ export interface SendChatMessageArgs {
   viewerRole: 'super_admin' | 'rh' | 'rh_lider' | 'clevel' | 'lider';
   viewerUserId: number;
   viewerUserType: ChatIaUserType;
+  /**
+   * ME-B9-IA-TRIMESTRE — trimestre canonico `YYYY-QN` selecionado na UI
+   * do gestor. Propagado ao `loadIndividualContext` quando
+   * `dashboardLevel === 'individual'` (alinhando o payload da IA ao
+   * trimestre que o gestor esta vendo). Ignorado em outros niveis.
+   */
+  trimestre?: string;
 }
 
 /** Union discriminado do outcome canonico de `sendChatMessage`. */
@@ -328,6 +335,7 @@ export async function sendChatMessage(
       viewerRole: args.viewerRole,
       viewerUserId: args.viewerUserId,
       viewerUserType: args.viewerUserType,
+      trimestre: args.trimestre,
     });
     if (payload === null) {
       return { kind: 'context_not_found', userId: userMessageId };

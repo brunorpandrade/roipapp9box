@@ -240,12 +240,17 @@ export async function generateDiagnosticoIA(
   }
 
   // 3. Recompoe contexto identico ao Chat IA individual (§6.2).
+  // ME-B9-IA-TRIMESTRE — propaga `trimestreSolicitado` ao loader para
+  // que o payload reflita o trimestre alvo do diagnostico, em vez de
+  // sempre pegar o latest do banco (que podia divergir — ex.: seed
+  // Nativa populou ate Q4/2027 enquanto o diagnostico era para Q4/2026).
   const contextPayload = await deps.loadIndividualContext(deps.db, {
     companyId: args.companyId,
     employeeId: args.employeeId,
     viewerRole: args.viewerRole,
     viewerUserId: args.viewerUserId,
     viewerUserType: args.viewerUserType,
+    trimestre: args.trimestreSolicitado,
   });
   if (contextPayload === null) {
     return {

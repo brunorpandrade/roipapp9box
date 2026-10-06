@@ -126,6 +126,12 @@ export async function chatIaGetHistoryAction(input: {
 export async function chatIaSendMessageAction(input: {
   employeeId: number;
   content: string;
+  // ME-B9-IA-TRIMESTRE — trimestre canonico `YYYY-QN` selecionado na UI
+  // do dashboard individual. Propagado ate o loader de contexto para que
+  // o payload JSON enviado a Claude reflita o trimestre que o viewer esta
+  // vendo (evita alucinacao de ano/trimestre quando o viewer navega para
+  // tras no historico).
+  trimestre?: string;
 }): Promise<ChatIaSendMessageResult> {
   const token = await requireToken();
   const client = createDbClient(resolveDatabaseUrl());
@@ -142,6 +148,7 @@ export async function chatIaSendMessageAction(input: {
       dashboardLevel: 'individual',
       contextId: input.employeeId,
       content: input.content,
+      trimestre: input.trimestre,
     });
     // Reconstroi os dois registros para o drawer sem depender de um
     // getHistory adicional (economiza uma round-trip). `createdAt`

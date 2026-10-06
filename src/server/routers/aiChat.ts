@@ -83,6 +83,14 @@ export const SEND_MESSAGE_INPUT_SCHEMA = z.object({
   contextId: z.number().int().positive(),
   contextType: CHAT_IA_CONTEXT_TYPE_SCHEMA,
   content: z.string().min(1).max(CHAT_IA_USER_MESSAGE_MAX_CHARS),
+  // ME-B9-IA-TRIMESTRE — trimestre canonico `YYYY-QN` opcional selecionado
+  // na UI do gestor. Quando informado, o payload da IA alinha-se a este
+  // trimestre (vs. default de "latest do banco"). Padrao YYYY-QN com
+  // validacao leve regex.
+  trimestre: z
+    .string()
+    .regex(/^\d{4}-Q[1-4]$/, 'Formato invalido. Use YYYY-QN.')
+    .optional(),
 });
 
 /** Input canonico de `aiChat.getHistory`. */
@@ -352,6 +360,10 @@ export function createAiChatRouter(deps: AiChatRouterDeps = {}) {
           viewerRole: ctx.user.role,
           viewerUserId: deriveUserIdFromCtx(ctx.user),
           viewerUserType: deriveUserTypeFromCtx(ctx.user),
+          // ME-B9-IA-TRIMESTRE — propaga o trimestre selecionado na UI do
+          // dashboard individual para o loader de contexto, de modo que
+          // o payload JSON reflita o trimestre que o viewer esta vendo.
+          trimestre: input.trimestre,
         });
         if (outcome.kind === 'context_not_found') {
           throw new TRPCError({

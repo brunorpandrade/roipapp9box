@@ -266,6 +266,14 @@ export interface DashboardIndividualContextArgs {
   viewerRole: 'super_admin' | 'rh' | 'rh_lider' | 'clevel' | 'lider';
   viewerUserId: number;
   viewerUserType: ChatIaUserType;
+  /**
+   * ME-B9-IA-TRIMESTRE — trimestre canonico `YYYY-QN` selecionado na UI
+   * do gestor. Quando informado, o loader carrega quarterly/plenitude/
+   * 9-Box desse trimestre especifico (alinhando o payload da IA ao
+   * trimestre que o gestor esta vendo). Quando omitido, mantem o
+   * comportamento historico (latest = trimestre mais recente do banco).
+   */
+  trimestre?: string;
 }
 
 /**
