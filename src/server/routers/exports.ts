@@ -55,6 +55,7 @@ import {
   EXEC_REPORT_CLIMA_PISO_RESPONDENTES,
   type BuildExecutiveReportArgs,
 } from '../services/executiveReportEngine';
+import { rhAllowedProcedure } from '../auth/rhAllowedProcedure';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
 import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
 import { sanitizeRazaoSocial } from './spreadsheets';
@@ -329,7 +330,11 @@ export function createExportsRouter(deps: ExportsRouterDeps = {}) {
     // ==============================================================
     // §13.3 — Resumo dashboard (xlsx)
     // ==============================================================
-    getResumoDashboard: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    // ME-B9.9: migrado de roleProcedure(['super_admin','rh','rh_lider'])
+    // para rhAllowedProcedure() a fim de admitir clevel+isRH (Michelle,
+    // Embrastec) no toggle RH do /central-relatorios. defense-in-depth
+    // §2.4 preservado via `assertCompanyScopeExports` abaixo.
+    getResumoDashboard: rhAllowedProcedure()
       .input(commonScopedInput)
       .mutation(async ({ ctx, input }): Promise<{ filename: string; contentBase64: string }> => {
         assertCompanyScopeExports(ctx.user, input.companyId);
@@ -352,7 +357,8 @@ export function createExportsRouter(deps: ExportsRouterDeps = {}) {
     // ==============================================================
     // §13.4 — Evolucao trimestral (xlsx)
     // ==============================================================
-    getEvolucaoTrimestral: roleProcedure(['super_admin', 'rh', 'rh_lider'])
+    // ME-B9.9: idem getResumoDashboard — migrado para rhAllowedProcedure.
+    getEvolucaoTrimestral: rhAllowedProcedure()
       .input(evolucaoTrimestralInput)
       .mutation(async ({ ctx, input }): Promise<{ filename: string; contentBase64: string }> => {
         assertCompanyScopeExports(ctx.user, input.companyId);

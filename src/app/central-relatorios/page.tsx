@@ -69,6 +69,38 @@ export default async function CentralRelatoriosRHPage(): Promise<JSX.Element> {
       if (menu.profileKey !== 'clevel_full' && menu.profileKey !== 'rh') {
         redirect('/access-denied?rota=/central-relatorios');
       }
+      // ME-B9.9 — variant e actions resolvidos a partir do toggle do
+      // painel (menu.profileKey), nao da `session.role` fixa. Michelle
+      // (clevel+isRH) no toggle RH ve variant='rh' com as actions RH
+      // (5 cards incluindo as 2 planilhas operacionais). No toggle
+      // C-level ve variant='clevel' com as actions clevel (4 cards sem
+      // as planilhas). Guard do helper `requireRhLikeOrSuperAdmin` nas
+      // actions RH aceita clevel+isRH; procs `getResumoDashboard` e
+      // `getEvolucaoTrimestral` migrados para `rhAllowedProcedure()`
+      // nesta mesma ME.
+      const isRhToggle = menu.profileKey === 'rh';
+      const variant = isRhToggle ? 'rh' : 'clevel';
+      const actions = isRhToggle
+        ? {
+            listClosedQuarters: listClosedQuartersRHAction,
+            listDepartments: listDepartmentsRHAction,
+            listLeaders: listLeadersRHAction,
+            generateRelatorioExecutivo: generateRelatorioExecutivoRHAction,
+            startReportDownloadToken: startReportDownloadTokenRHAction,
+            startExecutiveReportDownloadToken: startExecutiveReportDownloadTokenRHAction,
+            generateResumoDashboardXlsx: generateResumoDashboardXlsxRHAction,
+            generateEvolucaoTrimestralXlsx: generateEvolucaoTrimestralXlsxRHAction,
+          }
+        : {
+            listClosedQuarters: listClosedQuartersClevelAction,
+            listDepartments: listDepartmentsClevelAction,
+            listLeaders: listLeadersClevelAction,
+            generateRelatorioExecutivo: generateRelatorioExecutivoClevelAction,
+            startReportDownloadToken: startReportDownloadTokenClevelAction,
+            startExecutiveReportDownloadToken: startExecutiveReportDownloadTokenClevelAction,
+            generateResumoDashboardXlsx: generateResumoDashboardXlsxClevelAction,
+            generateEvolucaoTrimestralXlsx: generateEvolucaoTrimestralXlsxClevelAction,
+          };
       return (
         <Layout
           menuItems={menu.menuItems}
@@ -86,17 +118,8 @@ export default async function CentralRelatoriosRHPage(): Promise<JSX.Element> {
           <RelatoriosClient
             companyId={session.companyId}
             companyName={session.companyDisplayName}
-            variant="clevel"
-            actions={{
-              listClosedQuarters: listClosedQuartersClevelAction,
-              listDepartments: listDepartmentsClevelAction,
-              listLeaders: listLeadersClevelAction,
-              generateRelatorioExecutivo: generateRelatorioExecutivoClevelAction,
-              startReportDownloadToken: startReportDownloadTokenClevelAction,
-              startExecutiveReportDownloadToken: startExecutiveReportDownloadTokenClevelAction,
-              generateResumoDashboardXlsx: generateResumoDashboardXlsxClevelAction,
-              generateEvolucaoTrimestralXlsx: generateEvolucaoTrimestralXlsxClevelAction,
-            }}
+            variant={variant}
+            actions={actions}
           />
         </Layout>
       );

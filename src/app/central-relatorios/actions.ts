@@ -5,8 +5,15 @@
 // `/super-admin/empresa/[id]/relatorios-e-exportacoes` (ME-079a) no
 // padrao dual-route L123 canonizado em ME-084. Todas as 6 actions
 // desta rota:
-//   - Usam `requireRHOrSuperAdmin` (ME-084) como guard canonico
-//     (aceita `session.kind === 'super_admin'` OU
+//   - ME-B9.9 (06/10/2026): guard migrado de `requireRHOrSuperAdmin`
+//     para `requireRhLikeOrSuperAdmin` (ME 3.5.1) a fim de admitir
+//     Michelle (clevel+isRH) consumindo as planilhas operacionais no
+//     toggle RH do painel. Pattern bit-exact dos ME-B9.8-PATCH3/4
+//     (`/dados-mensais`). O helper async exige o DB client antes do
+//     guard — por isso o guard foi reposicionado DENTRO do try do
+//     `createDbClient` em todas as actions migradas.
+//   - Pre-migracao usavam `requireRHOrSuperAdmin` (ME-084) como guard
+//     canonico (aceitava `session.kind === 'super_admin'` OU
 //     `session.kind === 'platform'` com `role IN {'rh', 'rh_lider'}`).
 //   - Derivam `companyId` de `session.companyId` para RH/RH-Lider
 //     (D-CR-4 aprovada — client sempre passa `companyId` mas o valor
@@ -40,7 +47,10 @@ import { employees } from '../../db/schema';
 import { listClosedQuarters } from '../../server/services/closedQuarters';
 import { loadPlatformMenuContext } from '../../lib/session/platformMenuContext';
 import { requireClevelOrSuperAdmin } from '../../lib/routes/requireClevelOrSuperAdmin';
-import { requireRHOrSuperAdmin } from '../../lib/routes/requireRHOrSuperAdmin';
+import {
+  requireRhLikeOrSuperAdmin,
+  type RhLikeOrSuperAdminSession,
+} from '../../lib/routes/requireRhLikeOrSuperAdmin';
 import { signPdfEphemeralToken } from '../../server/auth/pdfEphemeralToken';
 import { createRateLimiter } from '../../server/auth/rateLimit';
 import { createExportsRouter, deriveResourceIdCanonicoEscopo } from '../../server/routers/exports';
@@ -86,7 +96,7 @@ async function resolveRawToken(): Promise<string | null> {
  * outra empresa mesmo se manipular `companyId` no client.
  */
 function resolveEffectiveCompanyId(
-  session: ReturnType<typeof requireRHOrSuperAdmin>,
+  session: RhLikeOrSuperAdminSession,
   inputCompanyId: number,
 ): number {
   if (session.kind === 'platform') {
@@ -98,16 +108,15 @@ function resolveEffectiveCompanyId(
 /**
  * Resolve `userType` do token efemero conforme perfil da sessao (D-CR-4).
  * `signPdfEphemeralToken` aceita canonicamente apenas
- * `'super_admin' | 'employee'` — RH cai em `'employee'`.
+ * `'super_admin' | 'employee'` — RH, RH-Lider e clevel+isRH caem em
+ * `'employee'`.
  */
-function resolveTokenUserType(
-  session: ReturnType<typeof requireRHOrSuperAdmin>,
-): 'super_admin' | 'employee' {
+function resolveTokenUserType(session: RhLikeOrSuperAdminSession): 'super_admin' | 'employee' {
   return session.kind === 'super_admin' ? 'super_admin' : 'employee';
 }
 
 /** Resolve `userId` do agente (auditoria — nunca autorizacao). */
-function resolveTokenUserId(session: ReturnType<typeof requireRHOrSuperAdmin>): number {
+function resolveTokenUserId(session: RhLikeOrSuperAdminSession): number {
   return session.kind === 'super_admin' ? session.superAdminId : session.userId;
 }
 
@@ -118,11 +127,14 @@ function resolveTokenUserId(session: ReturnType<typeof requireRHOrSuperAdmin>): 
 export async function listClosedQuartersRHAction(input: {
   readonly companyId: number;
 }): Promise<ActionResult<ClosedQuarter[]>> {
-  const session = requireRHOrSuperAdmin(await getServerSession(), 'listClosedQuartersRHAction');
-  const companyId = resolveEffectiveCompanyId(session, input.companyId);
-
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    const session = await requireRhLikeOrSuperAdmin(
+      client.db,
+      await getServerSession(),
+      'listClosedQuartersRHAction',
+    );
+    const companyId = resolveEffectiveCompanyId(session, input.companyId);
     const closed = await listClosedQuarters(client.db, companyId);
     return { ok: true, data: closed };
   } finally {
@@ -137,11 +149,14 @@ export async function listClosedQuartersRHAction(input: {
 export async function listDepartmentsRHAction(input: {
   readonly companyId: number;
 }): Promise<ActionResult<string[]>> {
-  const session = requireRHOrSuperAdmin(await getServerSession(), 'listDepartmentsRHAction');
-  const companyId = resolveEffectiveCompanyId(session, input.companyId);
-
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    const session = await requireRhLikeOrSuperAdmin(
+      client.db,
+      await getServerSession(),
+      'listDepartmentsRHAction',
+    );
+    const companyId = resolveEffectiveCompanyId(session, input.companyId);
     const rows = await client.db
       .selectDistinct({ departamento: employees.departamento })
       .from(employees)
@@ -160,11 +175,14 @@ export async function listDepartmentsRHAction(input: {
 export async function listLeadersRHAction(input: {
   readonly companyId: number;
 }): Promise<ActionResult<LeaderOption[]>> {
-  const session = requireRHOrSuperAdmin(await getServerSession(), 'listLeadersRHAction');
-  const companyId = resolveEffectiveCompanyId(session, input.companyId);
-
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    const session = await requireRhLikeOrSuperAdmin(
+      client.db,
+      await getServerSession(),
+      'listLeadersRHAction',
+    );
+    const companyId = resolveEffectiveCompanyId(session, input.companyId);
     const rows = await client.db
       .select({
         id: employees.id,
@@ -203,18 +221,18 @@ export async function generateRelatorioExecutivoRHAction(input: {
   readonly escopoTipo: NivelEscopo;
   readonly escopoReferencia?: string;
 }): Promise<ActionResult<GenerateRelatorioExecutivoResult>> {
-  const session = requireRHOrSuperAdmin(
-    await getServerSession(),
-    'generateRelatorioExecutivoRHAction',
-  );
-  const companyId = resolveEffectiveCompanyId(session, input.companyId);
   const token = await resolveRawToken();
   if (token === null) {
     return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
-
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    const session = await requireRhLikeOrSuperAdmin(
+      client.db,
+      await getServerSession(),
+      'generateRelatorioExecutivoRHAction',
+    );
+    const companyId = resolveEffectiveCompanyId(session, input.companyId);
     const caller = createExportsCaller(
       createContextInner({
         db: client.db,
@@ -257,17 +275,18 @@ export async function generateResumoDashboardXlsxRHAction(input: {
   readonly escopoTipo: NivelEscopo;
   readonly escopoReferencia?: string;
 }): Promise<ActionResult<XlsxDownloadResult>> {
-  const session = requireRHOrSuperAdmin(
-    await getServerSession(),
-    'generateResumoDashboardXlsxRHAction',
-  );
-  const companyId = resolveEffectiveCompanyId(session, input.companyId);
   const token = await resolveRawToken();
   if (token === null) {
     return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    const session = await requireRhLikeOrSuperAdmin(
+      client.db,
+      await getServerSession(),
+      'generateResumoDashboardXlsxRHAction',
+    );
+    const companyId = resolveEffectiveCompanyId(session, input.companyId);
     const caller = createExportsCaller(
       createContextInner({
         db: client.db,
@@ -298,17 +317,18 @@ export async function generateEvolucaoTrimestralXlsxRHAction(input: {
   readonly escopoTipo: NivelEscopo;
   readonly escopoReferencia?: string;
 }): Promise<ActionResult<XlsxDownloadResult>> {
-  const session = requireRHOrSuperAdmin(
-    await getServerSession(),
-    'generateEvolucaoTrimestralXlsxRHAction',
-  );
-  const companyId = resolveEffectiveCompanyId(session, input.companyId);
   const token = await resolveRawToken();
   if (token === null) {
     return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
   const client = createDbClient(resolveDatabaseUrl());
   try {
+    const session = await requireRhLikeOrSuperAdmin(
+      client.db,
+      await getServerSession(),
+      'generateEvolucaoTrimestralXlsxRHAction',
+    );
+    const companyId = resolveEffectiveCompanyId(session, input.companyId);
     const caller = createExportsCaller(
       createContextInner({
         db: client.db,
@@ -377,13 +397,14 @@ export async function startReportDownloadTokenRHAction(input: {
   readonly escopoTipo: NivelEscopo;
   readonly escopoReferencia?: string;
 }): Promise<ActionResult<{ token: string; downloadUrl: string }>> {
-  const session = requireRHOrSuperAdmin(
-    await getServerSession(),
-    'startReportDownloadTokenRHAction',
-  );
-  const companyId = resolveEffectiveCompanyId(session, input.companyId);
-
+  const client = createDbClient(resolveDatabaseUrl());
   try {
+    const session = await requireRhLikeOrSuperAdmin(
+      client.db,
+      await getServerSession(),
+      'startReportDownloadTokenRHAction',
+    );
+    const companyId = resolveEffectiveCompanyId(session, input.companyId);
     const resourceId = deriveResourceIdCanonicoEscopo(
       companyId,
       input.escopoTipo,
@@ -417,6 +438,8 @@ export async function startReportDownloadTokenRHAction(input: {
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Erro ao gerar token.';
     return { ok: false, message: msg };
+  } finally {
+    await closeDbClient(client);
   }
 }
 
@@ -428,13 +451,14 @@ export async function startExecutiveReportDownloadTokenRHAction(input: {
   readonly companyId: number;
   readonly cacheId: number;
 }): Promise<ActionResult<{ token: string; downloadUrl: string }>> {
-  const session = requireRHOrSuperAdmin(
-    await getServerSession(),
-    'startExecutiveReportDownloadTokenRHAction',
-  );
-  const companyId = resolveEffectiveCompanyId(session, input.companyId);
-
+  const client = createDbClient(resolveDatabaseUrl());
   try {
+    const session = await requireRhLikeOrSuperAdmin(
+      client.db,
+      await getServerSession(),
+      'startExecutiveReportDownloadTokenRHAction',
+    );
+    const companyId = resolveEffectiveCompanyId(session, input.companyId);
     const now = new Date();
     const token = await signPdfEphemeralToken(
       {
@@ -451,6 +475,8 @@ export async function startExecutiveReportDownloadTokenRHAction(input: {
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Erro ao gerar token.';
     return { ok: false, message: msg };
+  } finally {
+    await closeDbClient(client);
   }
 }
 
