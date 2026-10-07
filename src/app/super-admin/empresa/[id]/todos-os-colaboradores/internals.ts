@@ -41,7 +41,7 @@
 // **RV-14 canonica.** Um statement por linha, largura maxima 100 cols.
 
 import type { RoipDatabase } from '../../../../../db/client';
-import { type Departamento, type NivelHierarquico } from '../../../../../db/schema';
+import { type Departamento } from '../../../../../db/schema';
 import {
   listActiveLeadersAndClevelsByCompany,
   listDistinctDepartamentosByCompany,
@@ -99,22 +99,26 @@ export { JOB_FAMILY_LABELS } from '../../../../../lib/job-family/formatJobFamily
 /**
  * §DOC 01 §15.3 — 3 niveis hierarquicos canonicos bit-exact. Labels
  * human-readable com capitalizacao canonica.
+ *
+ * ME-B11.1d (XLSX2): delegacao canonica ao helper compartilhado
+ * `src/lib/hierarchy-level/formatHierarchyLevel` (L125 RV-14 —
+ * componente reutilizado extraido na mesma ME, com refactor dos
+ * callsites originais). Mapa bit-exact preservado — o helper so
+ * centralizou a definicao canonica.
  */
-export const NIVEL_HIERARQUICO_LABELS: Readonly<Record<NivelHierarquico, string>> = {
-  operacional: 'Operacional',
-  tatico: 'Tático',
-  estrategico: 'Estratégico',
-};
+export { NIVEL_HIERARQUICO_LABELS } from '../../../../../lib/hierarchy-level/formatHierarchyLevel';
 
 /**
  * §DOC 01 §4.5 — 3 senioridades canonicas bit-exact do enum
  * `employees.senioridade`.
+ *
+ * ME-B11.1d (XLSX2): delegacao canonica ao helper compartilhado
+ * `src/lib/seniority/formatSeniority` (L125 RV-14 — componente
+ * reutilizado extraido na mesma ME, com refactor dos callsites
+ * originais). Mapa bit-exact preservado — o helper so centralizou
+ * a definicao canonica.
  */
-export const SENIORIDADE_LABELS: Readonly<Record<'junior' | 'pleno' | 'senior', string>> = {
-  junior: 'Júnior',
-  pleno: 'Pleno',
-  senior: 'Sênior',
-};
+export { SENIORIDADE_LABELS } from '../../../../../lib/seniority/formatSeniority';
 
 /**
  * §DOC 01 §4.5 — enum `employees.status` (`ativo` / `inativo`). Label

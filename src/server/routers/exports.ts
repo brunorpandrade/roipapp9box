@@ -65,6 +65,8 @@ import {
   parseTrimestreCicloReferencia,
 } from '../../lib/cycleDates';
 import { getQuarterMonths } from '../../lib/quarterlyPeriod';
+import { formatSeniority } from '../../lib/seniority/formatSeniority';
+import { formatHierarchyLevel } from '../../lib/hierarchy-level/formatHierarchyLevel';
 
 // ============================================================
 // Constantes canonicas exportadas
@@ -741,8 +743,8 @@ async function composeResumoDashboardXlsx(
     'Senioridade',
     'Nível hierárquico',
     'Líder direto',
-    'scoreDesempenho',
-    'plenitudeScore',
+    'Desempenho',
+    'Plenitude',
     '% da meta atingida',
     'Assiduidade',
     'Ociosidade',
@@ -752,8 +754,8 @@ async function composeResumoDashboardXlsx(
       r.nome,
       r.cargo,
       r.departamento,
-      r.senioridade,
-      r.nivelHierarquico,
+      formatSeniority(r.senioridade),
+      formatHierarchyLevel(r.nivelHierarquico),
       r.liderDireto ?? '—',
       r.scoreDesempenho ?? '—',
       r.plenitudeScore ?? '—',
@@ -835,8 +837,8 @@ async function composeEvolucaoTrimestralXlsx(
     >;
     label: string;
   }> = [
-    { key: 'scoreDesempenho', label: 'scoreDesempenho' },
-    { key: 'plenitudeScore', label: 'plenitudeScore' },
+    { key: 'scoreDesempenho', label: 'Desempenho' },
+    { key: 'plenitudeScore', label: 'Plenitude' },
     { key: 'percMetaAtingida', label: '% da meta atingida' },
     { key: 'assiduidade', label: 'Assiduidade' },
     { key: 'capacidadeOciosa', label: 'Ociosidade' },
@@ -888,8 +890,8 @@ async function composeEvolucaoTrimestralXlsx(
       identidade.nome,
       identidade.cargo,
       identidade.departamento,
-      identidade.senioridade,
-      identidade.nivelHierarquico,
+      formatSeniority(identidade.senioridade),
+      formatHierarchyLevel(identidade.nivelHierarquico),
       identidade.liderDireto ?? '—',
     ];
     for (const m of METRICAS) {

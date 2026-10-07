@@ -15,6 +15,7 @@
 // Grupos abaixo do piso sao agregados ao nivel imediatamente acima
 // (mesma mecanica do Bloco Clima do relatorio executivo).
 
+import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
 import { escapeHtml, renderLayoutBase } from './layoutBase';
 
 /** Bloco canonico de agregacao de Clima (empresa/depto/equipe). */
@@ -97,7 +98,7 @@ function renderCapaBloco(input: ClimaEngajamentoTemplateInput): string {
   <h1>Clima e engajamento</h1>
   <p><strong>Empresa:</strong> ${escapeHtml(input.nomeFantasia)}</p>
   <p><strong>Trimestre de referência:</strong> ${escapeHtml(input.trimestre)}</p>
-  <p><strong>Data de geração:</strong> ${escapeHtml(input.geradoEmIso)}</p>
+  <p><strong>Data de geração:</strong> ${escapeHtml(toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso)}</p>
   <p class="muted">Este relatório apresenta os agregados de clima e engajamento do último trimestre disponível. Estritamente determinístico — sem participação de IA. Grupos abaixo do piso de anonimato são agregados ao nível hierárquico imediatamente acima.</p>
 </section>`;
 }
@@ -143,6 +144,6 @@ export function renderClimaEngajamentoHTML(input: ClimaEngajamentoTemplateInput)
     title: `Clima e engajamento · ${input.nomeFantasia} · ${input.trimestre}`,
     company: { nomeFantasia: input.nomeFantasia },
     bodyHtml,
-    footerCenter: `Gerado em ${input.geradoEmIso}`,
+    footerCenter: `Gerado em ${toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso}`,
   });
 }

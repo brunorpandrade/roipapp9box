@@ -6,6 +6,8 @@ import type { CSSProperties, JSX } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { COLORS } from '../../../lib/design-tokens/colors';
+import { formatSeniority } from '../../../lib/seniority/formatSeniority';
+import { formatHierarchyLevel } from '../../../lib/hierarchy-level/formatHierarchyLevel';
 
 import { FichaCadastralModal } from '../../../components/colaboradores/FichaCadastralModal';
 
@@ -744,10 +746,10 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
                     </span>
                   ) : null}
                   <span style={{ fontSize: 11, color: COLORS.text.quaternary }}>
-                    {employee.senioridade}
+                    {formatSeniority(employee.senioridade)}
                   </span>
                   <span style={{ fontSize: 11, color: COLORS.text.quaternary }}>
-                    {employee.nivelHierarquico}
+                    {formatHierarchyLevel(employee.nivelHierarquico)}
                   </span>
                   <span style={{ fontSize: 11, color: COLORS.text.quaternary }}>
                     {tempoEmpresa(employee.dataAdmissao)}

@@ -33,6 +33,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { COLORS } from '../../lib/design-tokens/colors';
 import { initialsFromName } from '../../lib/avatar/initials';
+import { formatSeniority } from '../../lib/seniority/formatSeniority';
+import { formatHierarchyLevel } from '../../lib/hierarchy-level/formatHierarchyLevel';
 
 import { atualizarNomeAction } from './actions';
 import {
@@ -589,8 +591,11 @@ function H1bDemaisPerfis(props: H1bProps): JSX.Element {
                 <FieldRO label="CBO" value={payload.vinculo.cbo} />
                 <FieldRO label="Descrição do CBO" value={payload.vinculo.descricaoCBO} />
                 <FieldRO label="Família de função" value={payload.vinculo.familiaFuncao} />
-                <FieldRO label="Senioridade" value={payload.vinculo.senioridade} />
-                <FieldRO label="Nível hierárquico" value={payload.vinculo.nivelHierarquico} />
+                <FieldRO label="Senioridade" value={formatSeniority(payload.vinculo.senioridade)} />
+                <FieldRO
+                  label="Nível hierárquico"
+                  value={formatHierarchyLevel(payload.vinculo.nivelHierarquico)}
+                />
                 <FieldRO label="Departamento" value={payload.vinculo.departamento} />
                 <FieldRO label="Líder direto" value={payload.vinculo.liderDireto ?? '—'} />
               </>

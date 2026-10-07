@@ -14,6 +14,7 @@
 //
 // Determinismo canonico: mesmos dados = mesmo HTML byte a byte.
 
+import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
 import { escapeHtml, renderLayoutBase } from './layoutBase';
 
 /** 9 quadrantes canonicos do DOC 03 §10.5. */
@@ -114,7 +115,7 @@ function renderCapa(input: Snapshot9BoxTemplateInput): string {
   <p><strong>Empresa:</strong> ${escapeHtml(input.nomeFantasia)}</p>
   <p><strong>Trimestre:</strong> ${escapeHtml(input.trimestre)}</p>
   <p><strong>Escopo:</strong> ${escopo}</p>
-  <p><strong>Data de geração:</strong> ${escapeHtml(input.geradoEmIso)}</p>
+  <p><strong>Data de geração:</strong> ${escapeHtml(toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso)}</p>
   <p class="muted">Este relatório apresenta a distribuição dos colaboradores no 9-Box calculada no trimestre. Estritamente determinístico — sem participação de IA.</p>
 </section>`;
 }
@@ -180,6 +181,6 @@ export function renderSnapshot9BoxHTML(input: Snapshot9BoxTemplateInput): string
     title: `Snapshot 9-Box · ${input.nomeFantasia} · ${input.trimestre}`,
     company: { nomeFantasia: input.nomeFantasia },
     bodyHtml,
-    footerCenter: `Gerado em ${input.geradoEmIso}`,
+    footerCenter: `Gerado em ${toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso}`,
   });
 }

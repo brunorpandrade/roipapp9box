@@ -6,6 +6,7 @@
 // (2) ROI agregado, (3) radar de riscos psicossociais, (4) turnover.
 // Escopo canonico: empresa ou departamento (sem equipe).
 
+import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
 import { escapeHtml, renderLayoutBase } from './layoutBase';
 import { NINE_BOX_QUADRANTES, type NineBoxDistribuicao } from './snapshot9BoxTemplate';
 
@@ -189,6 +190,6 @@ export function renderBoardDeckHTML(input: BoardDeckTemplateInput): string {
     title: `Board deck · ${input.nomeFantasia} · ${input.trimestre}`,
     company: { nomeFantasia: input.nomeFantasia },
     bodyHtml,
-    footerCenter: `Gerado em ${input.geradoEmIso}`,
+    footerCenter: `Gerado em ${toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso}`,
   });
 }
