@@ -26,6 +26,7 @@ import { and, desc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { employeeLeaderHistory } from '../../db/schema';
+import { formatJobFamily } from '../../lib/job-family/formatJobFamily';
 import { requireSuperAdmin } from '../../lib/routes/requireSuperAdmin';
 import type { RoipDatabase } from '../../db/client';
 import {
@@ -182,7 +183,10 @@ async function loadH1bEmployee(
     cargo: emp.cargo,
     cbo: emp.cbo,
     descricaoCBO: emp.descricaoCBO,
-    familiaFuncao: emp.jobFamily,
+    // ME-B11.1c PATCH2 (MD1): humanizacao canonica da familia via
+    // helper compartilhado `formatJobFamily` — alinhado bit-exact com
+    // os cards do grid de familias (DOC 05 §13.1 Aba 2).
+    familiaFuncao: formatJobFamily(emp.jobFamily),
     senioridade: emp.senioridade,
     nivelHierarquico: emp.nivelHierarquico,
     departamento: emp.departamento,

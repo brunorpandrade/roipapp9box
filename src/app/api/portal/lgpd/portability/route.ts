@@ -140,11 +140,18 @@ export async function GET(req: Request): Promise<NextResponse> {
   }
 
   // Data canonica de geracao (`YYYY-MM-DD` UTC, deterministico).
+  // Preservada bit-exact — segue sendo a chave canonica do filename
+  // `dados_pessoais_{nome}_{YYYYMMDD}.pdf` (§19.6 literal).
   const now = getNowFn()();
   const yy = now.getUTCFullYear();
   const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
   const dd = String(now.getUTCDate()).padStart(2, '0');
   const generatedAtDate = `${yy}-${mm}-${dd}`;
+
+  // ME-B11.1c PATCH2 (PDL10): timestamp completo ISO 8601 (UTC)
+  // propagado ao template para humanizacao canonica no rodape
+  // "Gerado em DD/MM/YYYY as HH:mm (BRT)".
+  const generatedAtTimestamp = now.toISOString();
 
   // Renderiza HTML canonico bit-exact.
   const html = renderLgpdPortabilityHTML({
@@ -155,6 +162,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     copsoq: payload.copsoq,
     individualProfile: payload.individualProfile,
     generatedAtDate,
+    generatedAtTimestamp,
   });
 
   // Converte HTML->PDF via Facade canonica (S260). Testes substituem

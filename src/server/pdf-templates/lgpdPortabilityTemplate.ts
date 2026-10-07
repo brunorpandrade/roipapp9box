@@ -42,6 +42,10 @@
 //     literal com §19.6.
 
 import { formatCpf } from '../../lib/cpf/formatCpf';
+import { formatTrimestreBR } from '../../lib/cycle/formatTrimestreBR';
+import { formatDateBR } from '../../lib/date/formatDateBR';
+import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
+import { formatJobFamily } from '../../lib/job-family/formatJobFamily';
 
 import { escapeHtml, type LayoutBaseCompany, renderLayoutBase } from './layoutBase';
 
@@ -103,6 +107,13 @@ export interface LgpdPortabilityInstrumentoRow {
  */
 export interface LgpdPortabilityCopsoqRow {
   cicloDbId: number;
+  /**
+   * ME-B11.1c PATCH2 (PDL9): identificador canonico do trimestre
+   * (`YYYY-QN`) resolvido via JOIN com `copsoqCycles` no service
+   * `lgpdPortability.getCopsoqRespostas`. O template humaniza via
+   * `formatTrimestreBR` para "Nº trimestre de YYYY".
+   */
+  cicloReferencia: string;
   fator: number;
   itemIndex: number;
   valor: number;
@@ -132,8 +143,21 @@ export interface LgpdPortabilityTemplateInput {
   instrumentD: LgpdPortabilityInstrumentoRow[];
   copsoq: LgpdPortabilityCopsoqRow[];
   individualProfile: LgpdPortabilityIndividualProfileRow[];
-  /** Data de geracao para o rodape. `YYYY-MM-DD`. */
+  /**
+   * Data de geracao canonica — formato `YYYY-MM-DD`. Preservada
+   * bit-exact: continua sendo a chave canonica do filename
+   * `dados_pessoais_{nome}_{YYYYMMDD}.pdf` (§19.6 literal).
+   */
   generatedAtDate: string;
+  /**
+   * ME-B11.1c PATCH2 (PDL10): timestamp completo canonico ISO 8601
+   * (UTC) para o rodape "Gerado em DD/MM/YYYY as HH:mm (BRT)". O
+   * template humaniza via `toTimestampBrt` para o fuso BRT fixo
+   * (UTC-3, sem horario de verao). Opcional por compatibilidade com
+   * eventuais chamadores que ainda nao propagam o timestamp — nesse
+   * caso, o rodape cai no `generatedAtDate` bit-exact pre-ME.
+   */
+  generatedAtTimestamp?: string;
 }
 
 const NIVEL_HIERARQUICO_ROTULO_LGPD: Record<'operacional' | 'tatico' | 'estrategico', string> = {
@@ -219,8 +243,15 @@ function renderCadastraisSection(c: LgpdPortabilityCadastrais): string {
   // (11 digitos — DOC 01 §4.5).
   linhas.push(`<p><strong>CPF:</strong> ${escapeHtml(formatCpf(c.cpf))}</p>`);
   linhas.push(`<p><strong>E-mail:</strong> ${escapeHtml(c.email ?? '(não cadastrado)')}</p>`);
-  linhas.push(`<p><strong>Data de nascimento:</strong> ${escapeHtml(c.dataNascimento)}</p>`);
-  linhas.push(`<p><strong>Data de admissão:</strong> ${escapeHtml(c.dataAdmissao)}</p>`);
+  // ME-B11.1c PATCH2 (PDL3): datas canonicas em formato BR `DD/MM/YYYY`
+  // via helper compartilhado `formatDateBR`. Dados chegam do service em
+  // formato ISO `YYYY-MM-DD` (coluna `date()` MySQL).
+  linhas.push(
+    `<p><strong>Data de nascimento:</strong> ${escapeHtml(formatDateBR(c.dataNascimento))}</p>`,
+  );
+  linhas.push(
+    `<p><strong>Data de admissão:</strong> ${escapeHtml(formatDateBR(c.dataAdmissao))}</p>`,
+  );
   linhas.push(`<p><strong>Cargo:</strong> ${escapeHtml(c.cargo)}</p>`);
   linhas.push(`<p><strong>Departamento:</strong> ${escapeHtml(c.departamento)}</p>`);
   linhas.push(`<p><strong>Status:</strong> ${escapeHtml(STATUS_TITULAR_ROTULO[c.status])}</p>`);
@@ -240,7 +271,12 @@ function renderCadastraisSection(c: LgpdPortabilityCadastrais): string {
     );
   }
   if (c.jobFamily !== null) {
-    linhas.push(`<p><strong>Família de cargo:</strong> ${escapeHtml(c.jobFamily)}</p>`);
+    // ME-B11.1c PATCH2 (PDL4): humanizacao canonica da familia via
+    // helper compartilhado `formatJobFamily` — alinhado bit-exact com
+    // os cards do grid de familias (DOC 05 §13.1 Aba 2).
+    linhas.push(
+      `<p><strong>Família de cargo:</strong> ${escapeHtml(formatJobFamily(c.jobFamily))}</p>`,
+    );
   }
   return `<section>
   <h2>Dados cadastrais</h2>
@@ -252,14 +288,21 @@ function renderInstrumentoRows(rows: LgpdPortabilityInstrumentoRow[], vazioMsg: 
   if (rows.length === 0) {
     return `<p class="muted">${escapeHtml(vazioMsg)}</p>`;
   }
+  // ME-B11.1c PATCH2 (PDL5 + PDL9):
+  //  - trimestre humanizado via `formatTrimestreBR` (`2026-Q1` ->
+  //    "1º trimestre de 2026").
+  //  - `respondidoEm` humanizado via `toTimestampBrt` (ISO UTC ->
+  //    "DD/MM/YYYY as HH:mm (BRT)").
   const cells = rows
     .map(
       (r) => `<tr>
-      <td style="padding:1.5mm 3mm 1.5mm 0;">${escapeHtml(r.trimestre)}</td>
+      <td style="padding:1.5mm 3mm 1.5mm 0;">${escapeHtml(formatTrimestreBR(r.trimestre))}</td>
       <td style="padding:1.5mm 3mm; text-align:center;">${r.dimensao}</td>
       <td style="padding:1.5mm 3mm; text-align:center;">${r.itemIndex}</td>
       <td style="padding:1.5mm 3mm; text-align:right;">${r.valor}</td>
-      <td style="padding:1.5mm 0 1.5mm 3mm;" class="muted">${escapeHtml(r.respondidoEm ?? '')}</td>
+      <td style="padding:1.5mm 0 1.5mm 3mm;" class="muted">${escapeHtml(
+        toTimestampBrt(r.respondidoEm) ?? '',
+      )}</td>
     </tr>`,
     )
     .join('\n');
@@ -307,14 +350,26 @@ function renderCopsoqSection(rows: LgpdPortabilityCopsoqRow[]): string {
   // com os Instrumentos A e D. A ordenacao canonica das linhas por
   // `fator ASC, itemIndex ASC` e aplicada no service (`getCopsoqRespostas`
   // em `lgpdPortability.ts`).
+  //
+  // ME-B11.1c PATCH2 (PDL8 + PDL9):
+  //  - coluna "Ciclo" passa a exibir `cicloReferencia` humanizado
+  //    (`"4º trimestre de 2027"`) via `formatTrimestreBR`. O id numerico
+  //    `cicloDbId` deixa de ser exibido para o titular (continua
+  //    disponivel no payload para auditoria tecnica).
+  //  - `respondidoEm` humanizado via `toTimestampBrt` (ISO UTC ->
+  //    "DD/MM/YYYY as HH:mm (BRT)").
   const cells = rows
     .map(
       (r) => `<tr>
-      <td style="padding:1.5mm 3mm 1.5mm 0;">${r.cicloDbId}</td>
+      <td style="padding:1.5mm 3mm 1.5mm 0;">${escapeHtml(
+        formatTrimestreBR(r.cicloReferencia),
+      )}</td>
       <td style="padding:1.5mm 3mm; text-align:center;">${r.fator}</td>
       <td style="padding:1.5mm 3mm; text-align:center;">${r.itemIndex}</td>
       <td style="padding:1.5mm 3mm; text-align:right;">${r.valor}</td>
-      <td style="padding:1.5mm 0 1.5mm 3mm;" class="muted">${escapeHtml(r.respondidoEm ?? '')}</td>
+      <td style="padding:1.5mm 0 1.5mm 3mm;" class="muted">${escapeHtml(
+        toTimestampBrt(r.respondidoEm) ?? '',
+      )}</td>
     </tr>`,
     )
     .join('\n');
@@ -356,7 +411,9 @@ function renderIndividualProfileSection(rows: LgpdPortabilityIndividualProfileRo
     <h3>Tentativa ${r.tentativa}</h3>
     <p><strong>Status:</strong> ${escapeHtml(STATUS_IPA_ROTULO[r.status])}</p>
     <p><strong>Bloco atual:</strong> ${r.blocoAtual}</p>
-    <p><strong>Enviado em:</strong> ${escapeHtml(r.enviadoEm ?? '(não enviado)')}</p>
+    <p><strong>Enviado em:</strong> ${escapeHtml(
+      toTimestampBrt(r.enviadoEm) ?? '(não enviado)',
+    )}</p>
     <p><strong>Respostas brutas:</strong></p>
     <pre style="background:#f3f4f6; padding:3mm; font-size:8.5pt; overflow-wrap:break-word; white-space:pre-wrap;">${escapeHtml(respostasStr)}</pre>
   </div>`;
@@ -388,10 +445,19 @@ export function renderLgpdPortabilityHTML(input: LgpdPortabilityTemplateInput): 
     renderIndividualProfileSection(input.individualProfile),
   ].join('\n\n');
 
+  // ME-B11.1c PATCH2 (PDL10): rodape canonico com timestamp completo
+  // humanizado quando `generatedAtTimestamp` esta presente. Fallback
+  // para `generatedAtDate` bit-exact pre-ME quando o chamador nao
+  // propaga o timestamp.
+  const footerCenter =
+    input.generatedAtTimestamp !== undefined
+      ? `Gerado em ${toTimestampBrt(input.generatedAtTimestamp) ?? input.generatedAtDate}`
+      : `Gerado em ${formatDateBR(input.generatedAtDate)}`;
+
   return renderLayoutBase({
     title: `Portabilidade LGPD — ${input.cadastrais.nome}`,
     company: input.company,
     bodyHtml,
-    footerCenter: `Gerado em ${input.generatedAtDate}`,
+    footerCenter,
   });
 }

@@ -253,14 +253,15 @@ export function formatarTempoEmpresa(anos: number, meses: number): string {
 /**
  * Formata data ISO "YYYY-MM-DD" no formato canonico brasileiro
  * "DD/MM/YYYY". Retorna string vazia se invalida.
+ *
+ * ME-B11.1c PATCH2 (PDL3): delegacao canonica ao helper compartilhado
+ * `src/lib/date/formatDateBR` (L125 RV-14 — componente reutilizado
+ * extraido na mesma ME). Mantem o nome historico `formatarDataBR`
+ * para preservar os callsites bit-exact.
  */
+import { formatDateBR as formatDateBRShared } from '../../lib/date/formatDateBR';
 export function formatarDataBR(dataIso: string): string {
-  const d = parseIsoDate(dataIso);
-  if (d === null) return '';
-  const dia = String(d.getUTCDate()).padStart(2, '0');
-  const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const ano = d.getUTCFullYear();
-  return `${dia}/${mes}/${ano}`;
+  return formatDateBRShared(dataIso);
 }
 
 /**

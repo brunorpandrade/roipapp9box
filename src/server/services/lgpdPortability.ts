@@ -43,6 +43,7 @@ import {
   cLevelMembers,
   companies,
   copsoq_responses,
+  copsoqCycles,
   employees,
   individualProfileAssessments,
   instrumentA_responses,
@@ -96,9 +97,17 @@ export interface LgpdPortabilityInstrumentoResposta {
  * nasce dentro da transacao atomica do submit via `nr1.saveResponse`
  * (DOC 03 §11.4). O template renderiza com cabecalho "Respondido em"
  * alinhado bit-exact com os Instrumentos A e D.
+ *
+ * ME-B11.1c PATCH2 (PDL9): adiciona `cicloReferencia` ao payload
+ * via JOIN com `copsoqCycles.cicloReferencia` (formato canonico
+ * `YYYY-QN` — DOC 03 §11.2). O template humaniza via helper
+ * `formatTrimestreBR` para `"Nº trimestre de YYYY"`. `cicloDbId`
+ * preservado como coluna de depuracao canonica, mas a coluna
+ * principal exibida ao titular passa a ser o trimestre humanizado.
  */
 export interface LgpdPortabilityCopsoqResposta {
   cicloDbId: number;
+  cicloReferencia: string;
   fator: number;
   itemIndex: number;
   valor: number;
@@ -373,9 +382,13 @@ export async function getCopsoqRespostas(
   titularId: number,
 ): Promise<LgpdPortabilityCopsoqResposta[]> {
   if (titularType !== 'employee') return [];
+  // ME-B11.1c PATCH2 (PDL9): JOIN canonico com `copsoqCycles` para
+  // resolver `cicloDbId` em `cicloReferencia` (`YYYY-QN`). O template
+  // humaniza em "Nº trimestre de YYYY" via `formatTrimestreBR`.
   const rows = await db
     .select({
       cicloDbId: copsoq_responses.cicloDbId,
+      cicloReferencia: copsoqCycles.ciclo,
       fator: copsoq_responses.fator,
       itemIndex: copsoq_responses.itemIndex,
       valor: copsoq_responses.valor,
@@ -383,6 +396,7 @@ export async function getCopsoqRespostas(
       id: copsoq_responses.id,
     })
     .from(copsoq_responses)
+    .innerJoin(copsoqCycles, eq(copsoqCycles.id, copsoq_responses.cicloDbId))
     .where(
       and(eq(copsoq_responses.companyId, companyId), eq(copsoq_responses.employeeId, titularId)),
     )
@@ -394,6 +408,7 @@ export async function getCopsoqRespostas(
     );
   return rows.map((r) => ({
     cicloDbId: r.cicloDbId,
+    cicloReferencia: r.cicloReferencia,
     fator: r.fator,
     itemIndex: r.itemIndex,
     valor: r.valor,

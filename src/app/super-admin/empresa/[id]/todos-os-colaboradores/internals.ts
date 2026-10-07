@@ -41,7 +41,7 @@
 // **RV-14 canonica.** Um statement por linha, largura maxima 100 cols.
 
 import type { RoipDatabase } from '../../../../../db/client';
-import { type Departamento, type JobFamily, type NivelHierarquico } from '../../../../../db/schema';
+import { type Departamento, type NivelHierarquico } from '../../../../../db/schema';
 import {
   listActiveLeadersAndClevelsByCompany,
   listDistinctDepartamentosByCompany,
@@ -87,15 +87,14 @@ export const DEPARTAMENTO_LABELS: Readonly<Record<Departamento, string>> = {
  * §DOC 01 §15.3 — 6 familias de funcao canonicas bit-exact. Labels
  * human-readable mapeados a partir do enum tecnico. Ordem canonica bit-
  * exact preservada.
+ *
+ * ME-B11.1c PATCH2 (PDL4): delegacao canonica ao helper compartilhado
+ * `src/lib/job-family/formatJobFamily` (L125 RV-14 — componente
+ * reutilizado extraido na mesma ME, com refactor dos callsites
+ * originais). Mapa bit-exact preservado — o helper so centralizou
+ * a definicao canonica.
  */
-export const JOB_FAMILY_LABELS: Readonly<Record<JobFamily, string>> = {
-  vendas_comercial: 'Vendas e comercial',
-  producao_operacoes: 'Produção e operações',
-  tecnico_especialista: 'Técnico especialista',
-  administrativo_suporte: 'Administrativo e suporte',
-  atendimento_relacionamento: 'Atendimento e relacionamento',
-  lideranca_gestao: 'Liderança e gestão',
-};
+export { JOB_FAMILY_LABELS } from '../../../../../lib/job-family/formatJobFamily';
 
 /**
  * §DOC 01 §15.3 — 3 niveis hierarquicos canonicos bit-exact. Labels
@@ -177,13 +176,14 @@ export { formatCpf as formatCpfMasked } from '../../../../../lib/cpf/formatCpf';
  * §14.10 colunas 12 e 14 (datas) — formata `Date` como `dd/MM/yyyy`
  * canonica bit-exact BRT. L115 garante que o `Date` chega do server em
  * UTC; convertemos usando getters UTC para evitar drift TZ.
+ *
+ * ME-B11.1c PATCH2 (PDL3): delegacao canonica ao helper compartilhado
+ * `src/lib/date/formatDateBR` (L125 RV-14 — componente reutilizado
+ * extraido na mesma ME). O helper aceita `Date | string | null`;
+ * o callsite TodosColaboradoresClient.tsx usa a assinatura `Date`
+ * bit-exact pre-existente, preservada por overload natural.
  */
-export function formatDateBR(d: Date): string {
-  const dd = String(d.getUTCDate()).padStart(2, '0');
-  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const yyyy = String(d.getUTCFullYear());
-  return `${dd}/${mm}/${yyyy}`;
-}
+export { formatDateBR } from '../../../../../lib/date/formatDateBR';
 
 /**
  * §14.10 coluna 1 (Foto) — extrai as iniciais canonicas bit-exact do nome
