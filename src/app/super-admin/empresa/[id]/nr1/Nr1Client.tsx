@@ -166,7 +166,9 @@ const STYLES = {
 // Props
 // -----------------------------------------------------------------------
 
-interface Nr1ClientProps {
+// NR1·2 (ME-B11.1b): `export` adicionado para permitir re-export limpo
+// do stub RH em `src/app/nr1/Nr1Client.tsx`.
+export interface Nr1ClientProps {
   readonly companyId: number;
   readonly companyName: string;
   readonly initialCycleDetails: CycleDetailsPayload;
@@ -1106,6 +1108,20 @@ export function Nr1Client({
               highlight
             />
           </div>
+          {/* N1-ParteA (ME-B11.1b): rodape canonico "Configurado por [nome] em [data]" §14.28. */}
+          {cycle.configuradoPorNome !== null && cycle.configuradoEm !== null && (
+            <div
+              style={{
+                marginTop: 12,
+                paddingTop: 10,
+                borderTop: '1px solid #E5E7EB',
+                fontSize: 11,
+                color: '#6B7280',
+              }}
+            >
+              Configurado por {cycle.configuradoPorNome} em {formatTimestampBR(cycle.configuradoEm)}
+            </div>
+          )}
         </div>
       );
     }
@@ -1167,6 +1183,38 @@ export function Nr1Client({
                 highlight
               />
             </div>
+            {/* N1-ParteA + N2 (ME-B11.1b): rodape canonico §14.28 —
+                "Configurado por" + "Editado por" quando aplicavel. */}
+            {(cycle.configuradoPorNome !== null ||
+              (cycle.marcaEdicaoPermanente && cycle.ultimaEdicaoPorNome !== null)) && (
+              <div
+                style={{
+                  marginTop: 12,
+                  paddingTop: 10,
+                  borderTop: '1px solid #E5E7EB',
+                  fontSize: 11,
+                  color: '#6B7280',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 4,
+                }}
+              >
+                {cycle.configuradoPorNome !== null && cycle.configuradoEm !== null && (
+                  <div>
+                    Configurado por {cycle.configuradoPorNome} em{' '}
+                    {formatTimestampBR(cycle.configuradoEm)}
+                  </div>
+                )}
+                {cycle.marcaEdicaoPermanente &&
+                  cycle.ultimaEdicaoPorNome !== null &&
+                  cycle.ultimaEdicaoEm !== null && (
+                    <div>
+                      Editado por {cycle.ultimaEdicaoPorNome} em{' '}
+                      {formatTimestampBR(cycle.ultimaEdicaoEm)}
+                    </div>
+                  )}
+              </div>
+            )}
           </div>
           <div style={STYLES.card}>
             <div
@@ -1235,6 +1283,38 @@ export function Nr1Client({
                 }
               />
             </div>
+            {/* N1-ParteA + N2 (ME-B11.1b): rodape canonico §14.28 —
+                "Configurado por" + "Editado por" quando aplicavel. */}
+            {(cycle.configuradoPorNome !== null ||
+              (cycle.marcaEdicaoPermanente && cycle.ultimaEdicaoPorNome !== null)) && (
+              <div
+                style={{
+                  marginTop: 12,
+                  paddingTop: 10,
+                  borderTop: '1px solid #E5E7EB',
+                  fontSize: 11,
+                  color: '#6B7280',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 4,
+                }}
+              >
+                {cycle.configuradoPorNome !== null && cycle.configuradoEm !== null && (
+                  <div>
+                    Configurado por {cycle.configuradoPorNome} em{' '}
+                    {formatTimestampBR(cycle.configuradoEm)}
+                  </div>
+                )}
+                {cycle.marcaEdicaoPermanente &&
+                  cycle.ultimaEdicaoPorNome !== null &&
+                  cycle.ultimaEdicaoEm !== null && (
+                    <div>
+                      Editado por {cycle.ultimaEdicaoPorNome} em{' '}
+                      {formatTimestampBR(cycle.ultimaEdicaoEm)}
+                    </div>
+                  )}
+              </div>
+            )}
           </div>
 
           {/* Radares lado a lado */}
@@ -1521,7 +1601,18 @@ export function Nr1Client({
                 padding: 20,
               }}
             >
+              {/* NR1·8 (ME-B11.1b): nota contextual canonica que explica o
+                   contraste com o KPI "Fatores em alerta" do header do ciclo
+                   fechado. O KPI deriva automaticamente da regra §11.13
+                   (score < 50) sobre `copsoqFactorScores`; esta aba lista
+                   alertas gravados em `alerts.nr1_fator_critico` pelo motor
+                   no fechamento do ciclo (§11.14). Ciclos seed podem ter
+                   scores < 50 sem terem passado pelo motor que grava os
+                   alertas — explica a divergencia aparente para o usuario. */}
               Nenhum alerta registrado.
+              <div style={{ fontSize: 11, marginTop: 6, color: '#9CA3AF' }}>
+                Alertas são gravados pelo motor automaticamente no fechamento do ciclo.
+              </div>
             </div>
           )}
           <div

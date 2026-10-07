@@ -169,6 +169,15 @@ export interface CycleDetailsPayload {
   readonly marcaEdicaoPermanente: boolean;
   readonly ultimaEdicaoEm: string | null;
   readonly ultimaEdicaoJustificativa: string | null;
+  // N1-ParteA (ME-B11.1b): rodape "Configurado por [nome] em [data]"
+  // nos Estados 3/4/6 do card de ciclo (§14.28). `configuradoPorNome`
+  // vem de JOIN com `employees` ou `superAdmins` no `getCycleDetails`.
+  // `configuradoEm` ja existe no schema `copsoqCycles`.
+  readonly configuradoPorNome: string | null;
+  readonly configuradoEm: string | null;
+  // N2 (ME-B11.1b): nome do editor pos-edicao de data de fechamento,
+  // junto da marca visual permanente (§11.3). Analogo a configurado.
+  readonly ultimaEdicaoPorNome: string | null;
   readonly elegiveis: number;
   readonly respondentesEfetivos: number;
   readonly adesaoPercentual: number;

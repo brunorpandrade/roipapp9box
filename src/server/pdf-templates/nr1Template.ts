@@ -245,8 +245,14 @@ ${lis}
 }
 
 function renderDivergencias(items: Nr1DivergenceEntry[]): string {
+  // NR1·5 (ME-B11.1b): estado vazio canonico quando nao ha
+  // divergencias relevantes OU quando a tabela
+  // `nr1AreaDivergenceAnalysis` nao tem entradas validas (ex.: ciclos
+  // seed sem calculo completo). Antes desta ME + do fix no
+  // `nr1Report.ts`, 6 bullets "Fator 0 ... 0.0 ... 0.0 (gap 0.0)"
+  // vazavam na pagina 7 do PDF.
   if (items.length === 0) {
-    return `<section class="page-break"><h2>Convergência e divergência</h2><p class="muted">Sem divergências relevantes identificadas.</p></section>`;
+    return `<section class="page-break"><h2>Análise de convergência e divergência</h2><p class="muted">Sem análise de convergência e divergência para este ciclo.</p></section>`;
   }
   const lis = items
     .map(

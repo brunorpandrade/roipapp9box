@@ -517,7 +517,11 @@ describe('ME-050/51 — contratos publicos exportados (RV-13)', () => {
     expect(INDIVIDUAL_PROFILE_AI_TEMPERATURE).toBe(0.3);
     expect(typeof INDIVIDUAL_PROFILE_SYSTEM_PROMPT).toBe('string');
     expect(INDIVIDUAL_PROFILE_SYSTEM_PROMPT.length).toBeGreaterThan(1000);
-    expect(NR1_FATOR_NOMES[1]).toBe('Demandas');
+    // ME-B11.1b (NR1·4 + N3): o label canonico passou a vir de
+    // FATORES_NR1 do motor (COPSOQ-III classico) em vez do vocabulario
+    // HSE autoral originalmente ancorado ('Demandas'). Novo canonico:
+    // 'Exigencias quantitativas' (id=1). Teste re-ancorado bit-a-bit.
+    expect(NR1_FATOR_NOMES[1]).toBe('Exigências quantitativas');
     expect(Object.keys(NR1_FATOR_NOMES).length).toBe(8);
   });
 

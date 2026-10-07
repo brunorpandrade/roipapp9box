@@ -531,10 +531,17 @@ function labelInstrumentoColaborador(inst: string): string {
   return 'Radar NR-1';
 }
 
+// PNR1 (ME-B11.1b): formata usando getUTC* para consistir com o
+// header do questionario Nr1FormShell, que recebe `dataFechamento`
+// serializado por `dataCivilDeColunaNr1` (UTC-safe). Antes desta ME,
+// `getDate()`/`getMonth()`/`getFullYear()` operavam em local time e
+// produziam divergencia de +/- 1 dia em TZ fora de UTC (ex.: Sao Paulo
+// UTC-03: a data UTC `2026-10-30 00:00` virava "29/10/2026" no local
+// time do card, enquanto o header do formulario mantinha "30/10/2026").
 function formatDate(d: Date): string {
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const yy = d.getFullYear();
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const yy = d.getUTCFullYear();
   return `${dd}/${mm}/${yy}`;
 }
 

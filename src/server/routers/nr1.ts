@@ -59,6 +59,7 @@ import {
   departments,
   employees,
   nr1AreaDivergenceAnalysis,
+  superAdmins,
 } from '../../db/schema';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
 // ME 3.5 D6 patch3 — clevel+isRH consome os procedures RH via este guard.
@@ -306,6 +307,16 @@ export interface GetCycleDetailsResultNr1 {
   marcaEdicaoPermanente: boolean;
   ultimaEdicaoEm: string | null;
   ultimaEdicaoJustificativa: string | null;
+  // N1-ParteA (ME-B11.1b, §14.28 rodape canonico "Configurado por
+  // [nome] em [data]"). `configuradoEm` ja existe no schema
+  // `copsoqCycles`; `configuradoPorNome` vem de JOIN com `employees` ou
+  // `superAdmins` segundo qual FK esta preenchida.
+  configuradoPorNome: string | null;
+  configuradoEm: string | null;
+  // N2 (ME-B11.1b): nome do executor da ultima edicao de
+  // `dataFechamento` (§11.3 marca visual permanente). Analogo a
+  // configurado — JOIN condicional por FK preenchida.
+  ultimaEdicaoPorNome: string | null;
   elegiveis: number;
   respondentesEfetivos: number;
   adesaoPercentual: number;
@@ -736,6 +747,44 @@ export function createNr1Router(deps: Nr1RouterDeps = {}) {
           return vazioCycleDetails(input.companyId, input.fatorId ?? null);
         }
 
+        // N1-ParteA + N2 (ME-B11.1b): resolver nome de quem configurou
+        // o ciclo e de quem fez a ultima edicao de dataFechamento.
+        // Cada campo pode vir de employees ou de superAdmins conforme
+        // qual FK esta preenchida (os dois pares sao mutuamente
+        // exclusivos pelo fluxo canonico de insercao em §11.2).
+        let configuradoPorNome: string | null = null;
+        if (ciclo.configuradoPorEmployeeId !== null) {
+          const [row] = await ctx.db
+            .select({ nome: employees.name })
+            .from(employees)
+            .where(eq(employees.id, ciclo.configuradoPorEmployeeId))
+            .limit(1);
+          configuradoPorNome = row?.nome ?? null;
+        } else if (ciclo.configuradoPorSuperAdminId !== null) {
+          const [row] = await ctx.db
+            .select({ nome: superAdmins.name })
+            .from(superAdmins)
+            .where(eq(superAdmins.id, ciclo.configuradoPorSuperAdminId))
+            .limit(1);
+          configuradoPorNome = row?.nome ?? null;
+        }
+        let ultimaEdicaoPorNome: string | null = null;
+        if (ciclo.ultimaEdicaoPorEmployeeId !== null) {
+          const [row] = await ctx.db
+            .select({ nome: employees.name })
+            .from(employees)
+            .where(eq(employees.id, ciclo.ultimaEdicaoPorEmployeeId))
+            .limit(1);
+          ultimaEdicaoPorNome = row?.nome ?? null;
+        } else if (ciclo.ultimaEdicaoPorSuperAdminId !== null) {
+          const [row] = await ctx.db
+            .select({ nome: superAdmins.name })
+            .from(superAdmins)
+            .where(eq(superAdmins.id, ciclo.ultimaEdicaoPorSuperAdminId))
+            .limit(1);
+          ultimaEdicaoPorNome = row?.nome ?? null;
+        }
+
         const snapshot = await ctx.db
           .select()
           .from(copsoqCycleSnapshot)
@@ -827,6 +876,10 @@ export function createNr1Router(deps: Nr1RouterDeps = {}) {
           marcaEdicaoPermanente: ciclo.dataFechamentoOriginal !== null,
           ultimaEdicaoEm: ciclo.ultimaEdicaoEm === null ? null : ciclo.ultimaEdicaoEm.toISOString(),
           ultimaEdicaoJustificativa: ciclo.ultimaEdicaoJustificativa,
+          // N1-ParteA + N2 (ME-B11.1b)
+          configuradoPorNome,
+          configuradoEm: ciclo.configuradoEm === null ? null : ciclo.configuradoEm.toISOString(),
+          ultimaEdicaoPorNome,
           elegiveis: elegiveis.length,
           respondentesEfetivos: efetivos.length,
           adesaoPercentual,
@@ -1012,6 +1065,9 @@ function vazioCycleDetails(companyId: number, fatorId: number | null): GetCycleD
     marcaEdicaoPermanente: false,
     ultimaEdicaoEm: null,
     ultimaEdicaoJustificativa: null,
+    configuradoPorNome: null,
+    configuradoEm: null,
+    ultimaEdicaoPorNome: null,
     elegiveis: 0,
     respondentesEfetivos: 0,
     adesaoPercentual: 0,

@@ -38,6 +38,7 @@ import { createRateLimiter } from '../../../../../server/auth/rateLimit';
 
 import { Nr1Client } from './Nr1Client';
 import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
+import { toIsoDateUtc } from '../../../../../lib/date/toIsoDateUtc';
 import { parseCompanyIdParam, type HistoricalCycleRow, type AlertRow } from './internals';
 import { headerUserFromSession } from '../../../../../lib/session/headerUser';
 
@@ -165,8 +166,13 @@ export default async function Nr1Page(props: PageProps): Promise<JSX.Element> {
     const historicalRows: HistoricalCycleRow[] = historicalCyclesRaw.map((c) => ({
       id: c.id,
       ciclo: c.ciclo,
-      dataAbertura: String(c.dataAbertura),
-      dataFechamento: String(c.dataFechamento),
+      // NR1·6 (ME-B11.1b): toIsoDateUtc serializa `Date` em UTC como
+      // `YYYY-MM-DD` deterministico. Antes desta ME, `String(dateObj)`
+      // chamava `Date.toString()` e produzia a string JS crua
+      // ("Tue Oct 20 2026 00:00:00 GMT+0000 (Coordinated Universal
+      // Time)") que vazava na tabela historica.
+      dataAbertura: toIsoDateUtc(c.dataAbertura) ?? '',
+      dataFechamento: toIsoDateUtc(c.dataFechamento) ?? '',
       status: c.status,
     }));
 

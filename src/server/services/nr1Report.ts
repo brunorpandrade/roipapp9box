@@ -21,12 +21,17 @@
 // popula `notaAuditoriaEdicao` apenas nesse caso; caso contrario deixa
 // `undefined` e o template omite.
 
+import { eq } from 'drizzle-orm';
+
 import type { RoipDatabase } from '../../db/client';
+import { employees, superAdmins } from '../../db/schema';
+import { toIsoDateUtc, toTimestampBrt } from '../../lib/date/toIsoDateUtc';
 import { getCompanyById } from './companies';
 import { getCopsoqCycleById } from './copsoqCycles';
 import { listCopsoqFactorScoresByCiclo } from './copsoqFactorScores';
 import { listNr1AreaDivergenceAnalysisByCiclo } from './nr1AreaDivergenceAnalysis';
 import { listCopsoqCycleSnapshotsByCiclo } from './copsoqCycleSnapshot';
+import { FATORES_NR1, type FatorNr1 } from './nr1CalculationEngine';
 import type { LayoutBaseCompany } from '../pdf-templates/layoutBase';
 import type {
   Nr1AlertaFator,
@@ -41,35 +46,44 @@ import type {
 
 /**
  * Rotulos canonicos dos 8 fatores psicossociais (indices 1..8).
- * Origem: DOC 03 §11 (Radar NR-1). Consumido para render dos radares
- * e alertas informativos (§11.13).
+ * Fonte unica canonica: `FATORES_NR1` em `nr1CalculationEngine` (DOC 03
+ * §11.6 — nomenclatura COPSOQ-III classica).
+ *
+ * **NR1·4 + N3 (ME-B11.1b, fix canonico).** Antes desta ME, este mapa
+ * carregava vocabulario autoral tipo HSE ('Demandas', 'Controle', 'Apoio
+ * Social', 'Relacoes', 'Funcao', 'Mudanca', 'Saude', 'Reconhecimento')
+ * que vazava no PDF Radar NR-1 e divergia da UI (que importa de
+ * `FATORES_NR1`). Agora os dois canais consomem a mesma constante
+ * canonica — nomes de fator sao garantidos identicos entre UI, PDF
+ * executivos, Snapshot 9-Box e Board deck.
  */
-export const NR1_FATOR_NOMES: Record<number, string> = {
-  1: 'Demandas',
-  2: 'Controle',
-  3: 'Apoio Social',
-  4: 'Relacoes',
-  5: 'Funcao',
-  6: 'Mudanca',
-  7: 'Saude',
-  8: 'Reconhecimento',
-};
+export const NR1_FATOR_NOMES: Record<number, string> = FATORES_NR1.reduce(
+  (acc: Record<number, string>, f: FatorNr1) => {
+    acc[f.id] = f.nome;
+    return acc;
+  },
+  {},
+);
 
 /**
- * Formata uma coluna DATE (Date | string) do MySQL como YYYY-MM-DD
- * deterministicamente. Nunca faz `toLocaleDateString` (dependeria de
- * locale do runtime — quebra determinismo).
+ * NR1·7 (ME-B11.1b): wrapper fino sobre `toIsoDateUtc` do helper
+ * compartilhado `src/lib/date/toIsoDateUtc`. Mantido com assinatura
+ * local (retorno `string`, nao `string | null`) para preservar o
+ * contrato dos consumidores. Formato canonico `YYYY-MM-DD` civil UTC.
  */
 function toIsoDate(v: Date | string | null | undefined): string {
-  if (v === null || v === undefined) return '';
-  if (typeof v === 'string') return v.slice(0, 10);
-  return v.toISOString().slice(0, 10);
+  return toIsoDateUtc(v) ?? '';
 }
 
+/**
+ * NR1·7 (ME-B11.1b): timestamp canonico BR `DD/MM/YYYY as HH:mm (BRT)`.
+ * Antes desta ME, `toIsoDateTime` emitia ISO UTC completo (ex.:
+ * "2026-10-07T13:30:53.573Z") que vazava para pt-BR nos 4 PDFs. Agora
+ * delega a `toTimestampBrt` (helper canonico compartilhado). Mantem
+ * assinatura local com retorno `string` para contrato dos consumidores.
+ */
 function toIsoDateTime(v: Date | string | null | undefined): string {
-  if (v === null || v === undefined) return '';
-  if (typeof v === 'string') return v;
-  return v.toISOString();
+  return toTimestampBrt(v) ?? '';
 }
 
 function toNumber(v: string | number | null | undefined): number {
@@ -77,6 +91,42 @@ function toNumber(v: string | number | null | undefined): number {
   if (typeof v === 'number') return v;
   const n = Number.parseFloat(v);
   return Number.isNaN(n) ? 0 : n;
+}
+
+/**
+ * Shape canonico das linhas JSON em
+ * `nr1AreaDivergenceAnalysis.fatoresDivergentesCriticos`, populado pelo
+ * motor em `nr1CalculationEngine` (§11.9). Replicado aqui para evitar
+ * import circular com o motor.
+ */
+interface FatorDivergenteJsonRow {
+  readonly fator: number;
+  readonly scoreDept: number;
+  readonly scoreEmpresa: number;
+  readonly diferenca: number;
+}
+
+/**
+ * NR1·5 (ME-B11.1b): extrai o array canonico `FatorDivergenteJsonRow[]`
+ * de uma coluna `json` do Drizzle (tipo `unknown`). Retorna `[]` quando
+ * a coluna e NULL, nao-array ou objeto malformado. Nao lanca.
+ */
+function parseFatoresDivergentesJson(v: unknown): FatorDivergenteJsonRow[] {
+  if (!Array.isArray(v)) return [];
+  const out: FatorDivergenteJsonRow[] = [];
+  for (const r of v) {
+    if (typeof r !== 'object' || r === null) continue;
+    const rec = r as Record<string, unknown>;
+    const fator = typeof rec.fator === 'number' ? rec.fator : null;
+    if (fator === null || fator < 1 || fator > 8) continue;
+    out.push({
+      fator,
+      scoreDept: toNumber(rec.scoreDept as string | number | null | undefined),
+      scoreEmpresa: toNumber(rec.scoreEmpresa as string | number | null | undefined),
+      diferenca: toNumber(rec.diferenca as string | number | null | undefined),
+    });
+  }
+  return out;
 }
 
 interface CicloRow {
@@ -235,39 +285,81 @@ export async function buildNr1TemplateInput(
     }
   }
 
-  // Divergencias — apenas rotulos por departamento (versao mínima canônica).
+  // Divergencias — iteracao canonica dos arrays JSON por departamento.
+  //
+  // **NR1·5 (ME-B11.1b, fix estrutural).** Antes desta ME, este loop
+  // lia campos (`fator`, `gap`, `scoreEmpresa`, `scoreDepartamento`)
+  // como se fossem colunas da tabela `nr1AreaDivergenceAnalysis` — mas
+  // essas colunas NAO EXISTEM no schema real (so existem
+  // `fatoresDivergentesCriticos` e `fatoresDivergentesPositivos` como
+  // JSON arrays — ver `src/db/schema/tables.ts` tabela
+  // `nr1AreaDivergenceAnalysis`). O resultado era 6 bullets
+  // identicas "Fator 0 — Departamento: empresa 0.0, departamento 0.0
+  // (gap 0.0)" vazando na pagina 7 do PDF Radar NR-1.
+  //
+  // Fix canonico: extrair cada entrada do JSON `fatoresDivergentesCriticos`
+  // (shape `FatorDivergenteNr1`: `{ fator, scoreDept, scoreEmpresa,
+  // diferenca }`) para render linha a linha. Entradas com `fator=0` ou
+  // fator fora de 1..8 sao filtradas (`parseFatoresDivergentesJson`).
   const divergRows = await listNr1AreaDivergenceAnalysisByCiclo(deps.db, cicloDbId);
   const divergencias: Nr1DivergenceEntry[] = [];
   for (const row of divergRows) {
-    const depId = (row as { escopoDepartamentoId?: number | null }).escopoDepartamentoId;
+    const r = row as {
+      escopoDepartamentoId?: number | null;
+      fatoresDivergentesCriticos?: unknown;
+    };
+    const depId = r.escopoDepartamentoId;
     const departamentoNome =
       depId !== null && depId !== undefined
         ? (departamentosPorId.get(depId)?.nome ?? 'Departamento')
         : 'Departamento';
-    const fatorId = (row as { fator?: number }).fator ?? 0;
-    const gapVal = (row as { gap?: string | number | null }).gap ?? 0;
-    const scoreEmp = (row as { scoreEmpresa?: string | number | null }).scoreEmpresa ?? 0;
-    const scoreDep = (row as { scoreDepartamento?: string | number | null }).scoreDepartamento ?? 0;
-    divergencias.push({
-      fatorNome: NR1_FATOR_NOMES[fatorId] ?? `Fator ${fatorId}`,
-      scoreEmpresa: toNumber(scoreEmp),
-      scoreDepartamento: toNumber(scoreDep),
-      departamentoNome,
-      gap: toNumber(gapVal),
-    });
+    const criticos = parseFatoresDivergentesJson(r.fatoresDivergentesCriticos);
+    for (const c of criticos) {
+      divergencias.push({
+        fatorNome: NR1_FATOR_NOMES[c.fator] ?? `Fator ${c.fator}`,
+        scoreEmpresa: c.scoreEmpresa,
+        scoreDepartamento: c.scoreDept,
+        departamentoNome,
+        gap: c.diferenca,
+      });
+    }
   }
 
   // Nota de auditoria de edicao (§11.12) — condicional.
+  //
+  // **N2 (ME-B11.1b).** Antes desta ME, `ultimaEdicaoPor` era hardcoded
+  // como 'Autor da edicao'. Fix canonico: JOIN condicional com
+  // `employees` ou `superAdmins` segundo qual FK esta preenchida em
+  // `copsoqCycles.ultimaEdicaoPorEmployeeId` /
+  // `ultimaEdicaoPorSuperAdminId` (mutuamente exclusivos pelo fluxo
+  // §11.2 do DOC 03).
   let notaAuditoriaEdicao: Nr1NotaAuditoriaEdicao | undefined;
   if (cicloRaw.dataFechamentoOriginal !== null && cicloRaw.dataFechamentoOriginal !== undefined) {
+    const cr = cicloRaw as unknown as {
+      ultimaEdicaoPorEmployeeId: number | null;
+      ultimaEdicaoPorSuperAdminId: number | null;
+    };
+    let ultimaEdicaoPor = '-';
+    if (cr.ultimaEdicaoPorEmployeeId !== null) {
+      const [row] = await deps.db
+        .select({ nome: employees.name })
+        .from(employees)
+        .where(eq(employees.id, cr.ultimaEdicaoPorEmployeeId))
+        .limit(1);
+      ultimaEdicaoPor = row?.nome ?? '-';
+    } else if (cr.ultimaEdicaoPorSuperAdminId !== null) {
+      const [row] = await deps.db
+        .select({ nome: superAdmins.name })
+        .from(superAdmins)
+        .where(eq(superAdmins.id, cr.ultimaEdicaoPorSuperAdminId))
+        .limit(1);
+      ultimaEdicaoPor = row?.nome ?? '-';
+    }
     notaAuditoriaEdicao = {
       dataFechamentoOriginal: toIsoDate(cicloRaw.dataFechamentoOriginal),
       dataFechamentoAtual: toIsoDate(cicloRaw.dataFechamento),
       ultimaEdicaoEm: toIsoDateTime(cicloRaw.ultimaEdicaoEm),
-      // Nome do executor requer JOIN com employees/superAdmins que
-      // vive em ME de refinamento (D### de debito); nesta ME entrega
-      // rotulo minimo canonico.
-      ultimaEdicaoPor: 'Autor da edicao',
+      ultimaEdicaoPor,
       ultimaEdicaoJustificativa: cicloRaw.ultimaEdicaoJustificativa ?? '',
     };
   }
