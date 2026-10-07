@@ -183,6 +183,12 @@ describe('COLORS — paleta canonica DOC 05 §2.1', () => {
     expect(COLORS.badge.rhBg).toBe('#E6F1FB');
     expect(COLORS.badge.rhText).toBe('#0C447C');
   });
+
+  // ME-B11.1a — badge RF canonico §2.3 (quitacao do debito B15.7).
+  it('badges: RF canonico §2.3 (ME-B11.1a — quitacao B15.7)', () => {
+    expect(COLORS.badge.rfBg).toBe('#DCFCE7');
+    expect(COLORS.badge.rfText).toBe('#166534');
+  });
 });
 
 describe('COLORS — escalas canonicas §2.4 Clima e §2.5 Radar NR-1', () => {

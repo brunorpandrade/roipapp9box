@@ -1,8 +1,10 @@
 // ROIP APP 9BOX — Layout canonico perfil-agnostic (ME-055 Bloco B;
-// ME-056 Bloco E; estendido ME-B10-05 S257 — mobileHideSidebar).
+// ME-056 Bloco E; estendido ME-B10-05 S257 — mobileHideSidebar;
+// ampliado ME-B11.1a — montagem canonica do Breadcrumb §4.3).
 //
 // Origem canonica: DOC 05 §3 (estrutura comum a todos os menus — sidebar
-// 256px fixa) + §4 (header 56px + indicador contextual §4.2).
+// 256px fixa) + §4 (header 56px + indicador contextual §4.2 + breadcrumb
+// §4.3).
 //
 // Design canonizado nesta ME (D2): Layout e 100% dumb. Nao consulta
 // sessao, nao conhece `ProfileKey`, nao aplica filtros condicionais. O
@@ -28,9 +30,19 @@
 // os 4 formularios sao a excecao pratica canonica. Desktop e todo
 // o resto do painel administrativo preservam sidebar+header
 // intactos.
+//
+// ME-B11.1a: quando `superAdminContext` esta presente (equivale a
+// `ProfileKey === 'super_admin_in_company'`), o Layout monta tambem o
+// `<Breadcrumb />` logo abaixo da `<SuperAdminContextBar />` conforme
+// §4.3. O Breadcrumb e client component e resolve `companyId` e
+// `screenName` canonico via `usePathname()` + `breadcrumbRegistry` —
+// nenhuma page.tsx precisa passar `screenName` manualmente. O Layout
+// continua dumb: apenas decide se monta o componente com base na
+// presenca de `superAdminContext`.
 
 import type { JSX, ReactNode } from 'react';
 
+import { Breadcrumb } from './Breadcrumb';
 import { Header, type HeaderProps } from './Header';
 import { Sidebar } from './Sidebar';
 import { SuperAdminContextBar, type SuperAdminContextBarProps } from './SuperAdminContextBar';
@@ -62,7 +74,8 @@ export interface LayoutProps {
   /**
    * Props canonicas do indicador contextual §4.2. Presente somente
    * quando `ProfileKey === 'super_admin_in_company'`. Ausente em todos
-   * os demais perfis.
+   * os demais perfis. ME-B11.1a: a presenca desta prop tambem dispara
+   * a montagem do `<Breadcrumb />` canonico §4.3 abaixo da faixa navy.
    */
   readonly superAdminContext?: SuperAdminContextBarProps;
   /**
@@ -123,7 +136,12 @@ export function Layout(props: LayoutProps): JSX.Element {
         }}
       >
         <Header {...header} />
-        {superAdminContext !== undefined ? <SuperAdminContextBar {...superAdminContext} /> : null}
+        {superAdminContext !== undefined ? (
+          <>
+            <SuperAdminContextBar {...superAdminContext} />
+            <Breadcrumb companyDisplayName={superAdminContext.companyDisplayName} />
+          </>
+        ) : null}
         <main
           style={{
             flex: 1,

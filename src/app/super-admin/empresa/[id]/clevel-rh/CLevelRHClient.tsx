@@ -138,14 +138,18 @@ function renderRFBadge(isRF: boolean): JSX.Element | null {
   if (!isRF) {
     return null;
   }
+  // ME-B11.1a: quitacao canonica do debito B15.7 — cores alinhadas ao
+  // badge RF canonico §2.3 do DOC 05 (verde `#DCFCE7` / `#166534`).
+  // Antes: ambar `#FEF3C7` / `#78350F`. Agora consome tokens
+  // `COLORS.badge.rfBg` / `COLORS.badge.rfText` (fonte canonica unica).
   const style = {
     display: 'inline-block',
     padding: '2px 6px',
     borderRadius: 4,
     fontSize: 10,
     fontWeight: 700,
-    background: '#FEF3C7',
-    color: '#78350F',
+    background: COLORS.badge.rfBg,
+    color: COLORS.badge.rfText,
     marginLeft: 6,
   } as const;
   return <span style={style}>RF</span>;

@@ -66,6 +66,12 @@ export const COLORS = {
     // de componentes.
     rhBg: '#E6F1FB',
     rhText: '#0C447C',
+    // §2.3 badge RF (Responsavel financeiro). Hex coincidem com
+    // `successBg`/`successTextAlt` por valor, mas sao canonizados
+    // separadamente em §2.3 para badge RF — aliases explicitos
+    // (ME-B11.1a, quitacao canonica do debito B15.7).
+    rfBg: '#DCFCE7',
+    rfText: '#166534',
   },
   // §2.4 escala Clima (0.0-5.9 vermelho, 6.0-7.4 amarelo, 7.5-10 verde)
   // e §2.5 escala Radar NR-1 (0-49 vermelho, 50-65 amarelo, 66-100 verde).
