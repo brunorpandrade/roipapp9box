@@ -451,8 +451,9 @@ export function CLevelEditarClient(props: Props): JSX.Element {
         </h3>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12 }}>
           <div style={{ flex: 1 }}>
+            {/* ME-B11.1c (EC6): acentuacao canonica "Matrícula" */}
             <div style={{ fontSize: 12, color: COLORS.text.secondary, marginBottom: 4 }}>
-              Matricula (portal do colaborador)
+              Matrícula (portal do colaborador)
             </div>
             <div
               style={{
@@ -481,7 +482,8 @@ export function CLevelEditarClient(props: Props): JSX.Element {
               cursor: regenLoading ? 'not-allowed' : 'pointer',
             }}
           >
-            Regenerar matricula
+            {/* ME-B11.1c (EC6): acentuacao canonica "matrícula" */}
+            Regenerar matrícula
           </button>
         </div>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>

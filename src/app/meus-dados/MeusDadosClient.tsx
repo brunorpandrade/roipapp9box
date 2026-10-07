@@ -9,9 +9,18 @@
 //     `atualizarNomeAction` (S511). Sucesso: toast literal "Nome
 //     atualizado." + propagacao no card, header, avatar (iniciais).
 //   - H1b: reveal CPF inline (mascara <-> completo, sem backend).
-//   - Ambos: botao [Alterar senha] navega para /alterar-senha; H1a
-//     tem tambem [Alterar e-mail] navegando para /alterar-email (rota
-//     ainda inexistente — D-ALTERAR-EMAIL registrado, bloco pos-B9).
+//   - Ambos: botao [Alterar senha] navega para /alterar-senha.
+//
+// ME-B11.1c (BUG-ALT-EMAIL — Opcao B canonizada): o botao
+// [Alterar e-mail] foi removido do H1a. A rota `/alterar-email` (H3,
+// DOC 02 §4.8-§4.9) nao esta implementada no MVP corrente —
+// manter o botao expunha o Super Admin a dead-end 404 real em
+// producao. A rota propriamente dita permanece reservada no DOC 02
+// como contrato canonico; a UI sera reintroduzida quando a
+// implementacao H3 for feita (ME dedicada futura). Enquanto isso, o
+// e-mail aparece apenas como info-line read-only, consistente com o
+// bloqueio operacional canonico "contate o Super Admin / RH" ja
+// aplicado aos demais perfis (H1b).
 //
 // **RV-13.** Consumido por page.tsx (mesma ME).
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
@@ -418,18 +427,21 @@ function H1aSuperAdmin(props: H1aProps): JSX.Element {
 
         {/* Secao 2 — Credenciais */}
         <div style={SECTION_STYLE}>
+          {/*
+            ME-B11.1c (BUG-ALT-EMAIL — Opcao B): botao `[Alterar e-mail]`
+            removido ate a implementacao canonica da rota `/alterar-email`
+            (H3 — DOC 02 §4.8-§4.9). O botao apontava para rota 404 real
+            em producao, criando dead-end para o Super Admin. O e-mail
+            fica como info-line read-only — o Super Admin troca o
+            proprio e-mail diretamente no banco enquanto a UI nao
+            existe. Comentario de linha acima do cabecalho do arquivo
+            descreve a decisao canonica completa.
+          */}
           <div style={ROW_BETWEEN_STYLE}>
             <div>
               <div style={LABEL_STYLE}>E-mail</div>
               <div style={VALUE_STYLE}>{initial.email}</div>
             </div>
-            <button
-              type="button"
-              onClick={() => router.push('/alterar-email')}
-              style={BTN_OUTLINE_NAVY_STYLE}
-            >
-              Alterar e-mail
-            </button>
           </div>
           <div
             style={{

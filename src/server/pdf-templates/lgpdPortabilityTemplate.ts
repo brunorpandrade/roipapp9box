@@ -41,6 +41,8 @@
 //     nessas secoes — preservando determinismo bit-exact e alinhamento
 //     literal com §19.6.
 
+import { formatCpf } from '../../lib/cpf/formatCpf';
+
 import { escapeHtml, type LayoutBaseCompany, renderLayoutBase } from './layoutBase';
 
 /** Discriminante canonico do titular (padrao polimorfico A, DOC 01 §14.1). */
@@ -90,12 +92,21 @@ export interface LgpdPortabilityInstrumentoRow {
 /**
  * Linha bruta de resposta canonica do Radar NR-1 (`fator`, `itemIndex`,
  * `valor`). Preserva formato canonico DOC 01 §11.7.
+ *
+ * ME-B11.1c (PDL8): adiciona `respondidoEm` canonico ao payload para
+ * consistencia bit-exact com os Instrumentos A e D no PDF LGPD. A
+ * tabela `copsoq_responses` nao tem coluna `respondidoEm` dedicada —
+ * o service usa `createdAt` como proxy canonico (a linha nasce dentro
+ * da transacao atomica do submit via `nr1.saveResponse`, portanto
+ * `createdAt` cumpre a mesma funcao semantica de timestamp de
+ * envio).
  */
 export interface LgpdPortabilityCopsoqRow {
   cicloDbId: number;
   fator: number;
   itemIndex: number;
   valor: number;
+  respondidoEm: string | null; // ISO 8601 ou null — ME-B11.1c PDL8
 }
 
 /**
@@ -202,7 +213,11 @@ function renderCadastraisSection(c: LgpdPortabilityCadastrais): string {
     `<p><strong>Tipo de titular:</strong> ${escapeHtml(TITULAR_TIPO_ROTULO[c.titularType])}</p>`,
   );
   linhas.push(`<p><strong>Nome:</strong> ${escapeHtml(c.nome)}</p>`);
-  linhas.push(`<p><strong>CPF:</strong> ${escapeHtml(c.cpf)}</p>`);
+  // ME-B11.1c (PDL2): CPF formatado com mascara canonica
+  // "XXX.XXX.XXX-XX" via helper compartilhado `formatCpf` (fonte unica
+  // em `src/lib/cpf/formatCpf.ts`). CPF chega do banco sem pontuacao
+  // (11 digitos — DOC 01 §4.5).
+  linhas.push(`<p><strong>CPF:</strong> ${escapeHtml(formatCpf(c.cpf))}</p>`);
   linhas.push(`<p><strong>E-mail:</strong> ${escapeHtml(c.email ?? '(não cadastrado)')}</p>`);
   linhas.push(`<p><strong>Data de nascimento:</strong> ${escapeHtml(c.dataNascimento)}</p>`);
   linhas.push(`<p><strong>Data de admissão:</strong> ${escapeHtml(c.dataAdmissao)}</p>`);
@@ -288,13 +303,18 @@ function renderCopsoqSection(rows: LgpdPortabilityCopsoqRow[]): string {
   <p class="muted">Nenhuma resposta registrada.</p>
 </section>`;
   }
+  // ME-B11.1c (PDL7 + PDL8): coluna "Respondido em" alinhada bit-exact
+  // com os Instrumentos A e D. A ordenacao canonica das linhas por
+  // `fator ASC, itemIndex ASC` e aplicada no service (`getCopsoqRespostas`
+  // em `lgpdPortability.ts`).
   const cells = rows
     .map(
       (r) => `<tr>
       <td style="padding:1.5mm 3mm 1.5mm 0;">${r.cicloDbId}</td>
       <td style="padding:1.5mm 3mm; text-align:center;">${r.fator}</td>
       <td style="padding:1.5mm 3mm; text-align:center;">${r.itemIndex}</td>
-      <td style="padding:1.5mm 0 1.5mm 3mm; text-align:right;">${r.valor}</td>
+      <td style="padding:1.5mm 3mm; text-align:right;">${r.valor}</td>
+      <td style="padding:1.5mm 0 1.5mm 3mm;" class="muted">${escapeHtml(r.respondidoEm ?? '')}</td>
     </tr>`,
     )
     .join('\n');
@@ -307,7 +327,8 @@ function renderCopsoqSection(rows: LgpdPortabilityCopsoqRow[]): string {
         <th style="text-align:left; padding:1.5mm 3mm 1.5mm 0; border-bottom:0.5pt solid #d1d5db;">Ciclo</th>
         <th style="text-align:center; padding:1.5mm 3mm; border-bottom:0.5pt solid #d1d5db;">Fator</th>
         <th style="text-align:center; padding:1.5mm 3mm; border-bottom:0.5pt solid #d1d5db;">Item</th>
-        <th style="text-align:right; padding:1.5mm 0 1.5mm 3mm; border-bottom:0.5pt solid #d1d5db;">Valor</th>
+        <th style="text-align:right; padding:1.5mm 3mm; border-bottom:0.5pt solid #d1d5db;">Valor</th>
+        <th style="text-align:left; padding:1.5mm 0 1.5mm 3mm; border-bottom:0.5pt solid #d1d5db;">Respondido em</th>
       </tr>
     </thead>
     <tbody>

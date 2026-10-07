@@ -1,12 +1,15 @@
 // ROIP APP 9BOX — modal "Privacidade e proteção de dados"
-// (ME-B10-01, DOC 05 §6.4; estendido ME-B10-05 S256 — perímetro mobile).
+// (ME-B10-01, DOC 05 §6.4; estendido ME-B10-05 S256 — perímetro mobile;
+// estendido ME-B11.1c LGPD2 — contatos reais do Encarregado).
 //
 // Modal centralizado 720px desktop com 3 abas horizontais:
 //   Aba 1 — Termo de consentimento (texto literal v1.0 do DOC 05
 //           §6.2, sem botão de aceite).
-//   Aba 2 — Contatos do encarregado de dados LGPD (placeholders nesta
-//           ME — carregamento real via API virá em ME futura de
-//           configuração da empresa).
+//   Aba 2 — Contatos do Encarregado de dados LGPD (ME-B11.1c LGPD2 —
+//           carregamento real via `GET /api/portal/lgpd/contatos`,
+//           orquestrado pelo PortalLayout.tsx que injeta `contatos`
+//           como prop; fallback canônico "(não configurado)" quando
+//           algum campo vem nulo ou o fetch falha).
 //   Aba 3 — Meus dados (botão [📥 Baixar meus dados em PDF] dispara
 //           `GET /api/portal/lgpd/portability?token=<portalToken>`
 //           via `window.location.assign` — S249 Opção A canonizada).
@@ -32,9 +35,34 @@ const TEXT_3 = '#6B7280';
 
 type Aba = 'termo' | 'contatos' | 'meus_dados';
 
+/**
+ * Contatos canonicos do Encarregado de dados LGPD da empresa do
+ * titular logado (ME-B11.1c LGPD2). Carregados pelo PortalLayout.tsx
+ * via `GET /api/portal/lgpd/contatos`. Qualquer campo nulo e
+ * renderizado como "(não configurado)" bit-exact nesta aba.
+ *
+ * `null` como payload inteiro: fetch ainda nao retornou (loading),
+ * falhou (401/network) ou o shell nao esta autenticado (gate
+ * pre-login) — o modal exibe fallback canonico em todos os campos.
+ */
+export interface LgpdContatosDpo {
+  readonly encarregadoNome: string | null;
+  readonly encarregadoEmail: string | null;
+  readonly encarregadoTelefone: string | null;
+  readonly encarregadoPoliticaUrl: string | null;
+}
+
 export interface PrivacyModalProps {
   readonly onClose: () => void;
+  /**
+   * ME-B11.1c (LGPD2): contatos canonicos do Encarregado de dados
+   * injetados pelo PortalLayout.tsx. `undefined` ou `null` cai em
+   * fallback canonico "(não configurado)" em todos os campos.
+   */
+  readonly contatos?: LgpdContatosDpo | null;
 }
+
+const FALLBACK_NAO_CONFIGURADO = '(não configurado)';
 
 const TERMO_LITERAL_V10 =
   'Ao prosseguir, você declara estar ciente de que seus dados pessoais ' +
@@ -46,8 +74,17 @@ const TERMO_LITERAL_V10 =
   'disponibilizados pela empresa.';
 
 export function PrivacyModal(props: PrivacyModalProps): JSX.Element {
-  const { onClose } = props;
+  const { onClose, contatos } = props;
   const [aba, setAba] = useState<Aba>('termo');
+
+  // ME-B11.1c (LGPD2): extrai campos canonicos do Encarregado com
+  // fallback literal "(não configurado)" por campo. Preserva o
+  // comportamento historico quando `contatos` nao foi carregado
+  // ainda ou nao esta disponivel (shell nao autenticado).
+  const dpoNome = contatos?.encarregadoNome ?? null;
+  const dpoEmail = contatos?.encarregadoEmail ?? null;
+  const dpoTelefone = contatos?.encarregadoTelefone ?? null;
+  const dpoPoliticaUrl = contatos?.encarregadoPoliticaUrl ?? null;
 
   useEffect(() => {
     function handleEsc(e: KeyboardEvent): void {
@@ -176,13 +213,43 @@ export function PrivacyModal(props: PrivacyModalProps): JSX.Element {
                 Encarregado de dados (DPO)
               </p>
               <p style={{ margin: 0, marginBottom: 6 }}>
-                Nome: <em style={{ color: TEXT_3 }}>a ser configurado pela empresa</em>
+                Nome:{' '}
+                {dpoNome !== null && dpoNome.length > 0 ? (
+                  <span>{dpoNome}</span>
+                ) : (
+                  <em style={{ color: TEXT_3 }}>{FALLBACK_NAO_CONFIGURADO}</em>
+                )}
               </p>
               <p style={{ margin: 0, marginBottom: 6 }}>
-                E-mail: <em style={{ color: TEXT_3 }}>a ser configurado pela empresa</em>
+                E-mail:{' '}
+                {dpoEmail !== null && dpoEmail.length > 0 ? (
+                  <a href={`mailto:${dpoEmail}`} style={{ color: TEAL }}>
+                    {dpoEmail}
+                  </a>
+                ) : (
+                  <em style={{ color: TEXT_3 }}>{FALLBACK_NAO_CONFIGURADO}</em>
+                )}
               </p>
-              <p style={{ margin: 0, color: TEXT_3, fontSize: 12 }}>
-                Contatos exibidos são pré-cadastrados pela empresa contratante.
+              {dpoTelefone !== null && dpoTelefone.length > 0 ? (
+                <p style={{ margin: 0, marginBottom: 6 }}>
+                  Telefone: <span>{dpoTelefone}</span>
+                </p>
+              ) : null}
+              {dpoPoliticaUrl !== null && dpoPoliticaUrl.length > 0 ? (
+                <p style={{ margin: 0, marginBottom: 6 }}>
+                  Política de privacidade:{' '}
+                  <a
+                    href={dpoPoliticaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: TEAL }}
+                  >
+                    {dpoPoliticaUrl}
+                  </a>
+                </p>
+              ) : null}
+              <p style={{ margin: '12px 0 0', color: TEXT_3, fontSize: 12 }}>
+                Contatos pré-cadastrados pela empresa contratante.
               </p>
             </div>
           ) : null}

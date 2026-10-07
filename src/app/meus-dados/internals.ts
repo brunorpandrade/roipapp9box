@@ -17,7 +17,9 @@
  *
  * Campos canonicos:
  *   - `displayName`: nome atual (editavel inline via [Editar]).
- *   - `email`: e-mail atual (info line, botao [Alterar e-mail]).
+ *   - `email`: e-mail atual (info line read-only; o botao
+ *     [Alterar e-mail] foi removido na ME-B11.1c (BUG-ALT-EMAIL
+ *     Opcao B) ate a implementacao canonica da rota /alterar-email).
  *   - `contaCriadaEm`: data ISO do createdAt do superAdmins (read-only,
  *     renderizada como "DD/MM/YYYY").
  */
@@ -168,13 +170,12 @@ export function maskCpf(cpf: string): string {
 /**
  * Formata CPF completo com pontuacao canonica "XXX.XXX.XXX-XX" (DOC
  * 05 §14.5). CPF armazenado sem pontuacao (11 digitos).
+ *
+ * ME-B11.1c (PDL2): delegacao canonica ao helper compartilhado
+ * `src/lib/cpf/formatCpf` (L125 RV-14 — componente reutilizado
+ * extraido na mesma ME).
  */
-export function formatCpf(cpf: string): string {
-  if (cpf.length !== 11) {
-    return cpf;
-  }
-  return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9, 11)}`;
-}
+export { formatCpf } from '../../lib/cpf/formatCpf';
 
 // -----------------------------------------------------------------------
 // Calculos derivados canonicos (DOC 05 §14.5)

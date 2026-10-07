@@ -1,5 +1,6 @@
 // ROIP APP 9BOX — shell canônico do portal do colaborador
-// (ME-B10-01, DOC 05 §6; estendido ME-B10-05 S256 — perímetro mobile).
+// (ME-B10-01, DOC 05 §6; estendido ME-B10-05 S256 — perímetro mobile;
+// estendido ME-B11.1c LGPD2 — contatos reais do Encarregado LGPD).
 //
 // Layout tela cheia sem sidebar. Header brand com logo ROIP APP; nome
 // do usuário + botão [Sair] renderizados condicionalmente (ausentes na
@@ -15,12 +16,23 @@
 // e `roip-footer-mobile` para paddings responsivos canônicos (DOC 05
 // §19.1). Layout desktop preservado bit-a-bit — apenas viewport
 // `< 1024px` altera paddings via `src/app/globals.css`.
+//
+// ME-B11.1c (LGPD2): quando o portal esta autenticado
+// (`showHeader===true` com `portalToken` em sessionStorage), o layout
+// faz fetch lazy do endpoint canonico `GET /api/portal/lgpd/contatos`
+// na primeira abertura do PrivacyModal e passa o payload adiante como
+// prop. Elimina a dissonancia bit-exact "a ser configurado pela
+// empresa" exibida mesmo quando o DPO ja estava configurado em
+// `/parametros`. Fetch e lazy (dispara so quando o modal abre) para
+// nao impactar a performance do portal nas telas que nao abrem
+// Privacidade. O fetch e cacheado em memoria pelo tempo de vida do
+// mount — abrir e fechar o modal varias vezes nao refaz a chamada.
 
 'use client';
 
-import { useState, type JSX, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type JSX, type ReactNode } from 'react';
 
-import { PrivacyModal } from './PrivacyModal';
+import { PrivacyModal, type LgpdContatosDpo } from './PrivacyModal';
 
 export interface PortalLayoutProps {
   readonly children: ReactNode;
@@ -57,8 +69,56 @@ const TEXT_3 = '#6B7280';
 export function PortalLayout(props: PortalLayoutProps): JSX.Element {
   const { children, userName, userPhotoUrl, onSair, showHeader } = props;
   const [privacyOpen, setPrivacyOpen] = useState(false);
+  // ME-B11.1c (LGPD2): cache em memoria dos contatos canonicos do
+  // Encarregado. `null` = ainda nao carregado / fetch falhou / shell
+  // nao autenticado (fallback canonico "(não configurado)" por campo).
+  const [lgpdContatos, setLgpdContatos] = useState<LgpdContatosDpo | null>(null);
+  const [lgpdFetchStarted, setLgpdFetchStarted] = useState(false);
   const renderUserBar = showHeader === true && userName !== undefined && userName !== null;
   const hasPhoto = userPhotoUrl !== undefined && userPhotoUrl !== null && userPhotoUrl.length > 0;
+
+  // ME-B11.1c (LGPD2): fetch lazy dos contatos canonicos quando o
+  // modal e aberto pela primeira vez. Dispara apenas se o shell esta
+  // autenticado (`showHeader===true` + portalToken em sessionStorage).
+  // Falhas (401, offline, 404) sao silenciosas — o modal cai no
+  // fallback canonico "(não configurado)".
+  useEffect(() => {
+    if (!privacyOpen) {
+      return;
+    }
+    if (lgpdFetchStarted) {
+      return;
+    }
+    if (showHeader !== true) {
+      return;
+    }
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const token = window.sessionStorage.getItem('portalToken');
+    if (token === null || token.length === 0) {
+      return;
+    }
+    setLgpdFetchStarted(true);
+    void fetch('/api/portal/lgpd/contatos', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          return;
+        }
+        const payload = (await res.json()) as LgpdContatosDpo;
+        setLgpdContatos(payload);
+      })
+      .catch(() => {
+        // Silencioso: modal cai no fallback canonico.
+      });
+  }, [privacyOpen, lgpdFetchStarted, showHeader]);
+
+  const handleClosePrivacy = useCallback(() => {
+    setPrivacyOpen(false);
+  }, []);
 
   return (
     <div
@@ -211,7 +271,7 @@ export function PortalLayout(props: PortalLayoutProps): JSX.Element {
         </button>
       </footer>
 
-      {privacyOpen ? <PrivacyModal onClose={() => setPrivacyOpen(false)} /> : null}
+      {privacyOpen ? <PrivacyModal onClose={handleClosePrivacy} contatos={lgpdContatos} /> : null}
     </div>
   );
 }

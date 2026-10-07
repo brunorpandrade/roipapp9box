@@ -164,16 +164,14 @@ export function getPapelFuncionalLabel(
  * §14.10 coluna 3 (CPF) — formata CPF de 11 digitos com mascara canonica
  * bit-exact `XXX.XXX.XXX-XX`. Input com menos de 11 digitos e retornado
  * como esta (defensivo — dados de teste podem chegar assim).
+ *
+ * ME-B11.1c (PDL2): delegacao canonica ao helper compartilhado
+ * `src/lib/cpf/formatCpf` (L125 RV-14 — componente reutilizado
+ * extraido na mesma ME). Comportamento bit-exact ao implementado
+ * historico aqui — `formatCpf` tambem normaliza separadores e
+ * retorna o input quando nao normaliza para 11 digitos.
  */
-export function formatCpfMasked(cpf: string): string {
-  const digits = cpf.replace(/\D/g, '');
-  if (digits.length !== 11) return cpf;
-  const p1 = digits.slice(0, 3);
-  const p2 = digits.slice(3, 6);
-  const p3 = digits.slice(6, 9);
-  const p4 = digits.slice(9, 11);
-  return `${p1}.${p2}.${p3}-${p4}`;
-}
+export { formatCpf as formatCpfMasked } from '../../../../../lib/cpf/formatCpf';
 
 /**
  * §14.10 colunas 12 e 14 (datas) — formata `Date` como `dd/MM/yyyy`

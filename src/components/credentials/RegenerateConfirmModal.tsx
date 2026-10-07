@@ -32,22 +32,30 @@ interface RegenerateConfirmModalProps {
   onCancel: () => void;
 }
 
+// ME-B11.1c (EC6): typo canonico sistemico "Regerar" (sem N) ->
+// "Regenerar" (com N). Aplicado tambem acentuacao canonica em
+// "matrícula" (acento + ortografia PT-BR). Alinhamento bit-exact com
+// o verbo que ja aparece nos botoes de linha do
+// `ColaboradorEditarClient.tsx` e `CLevelEditarClient.tsx` — eliminada
+// a dissonancia visual entre botao e titulo do modal (uso previo:
+// botao de linha ja dizia "Regenerar matricula", mas o modal dizia
+// "Regerar matricula").
 const COPY: Record<'matricula' | 'senha', { titulo: string; corpo: string; botao: string }> = {
   matricula: {
-    titulo: 'Regerar matricula?',
+    titulo: 'Regenerar matrícula?',
     corpo:
-      'A matricula atual deixara de funcionar imediatamente. O colaborador nao conseguira ' +
-      'acessar o portal com ela apos a confirmacao. A nova matricula sera exibida uma unica ' +
-      'vez na proxima tela para voce copiar.',
-    botao: 'Regerar matricula',
+      'A matrícula atual deixará de funcionar imediatamente. O colaborador não conseguirá ' +
+      'acessar o portal com ela após a confirmação. A nova matrícula será exibida uma única ' +
+      'vez na próxima tela para você copiar.',
+    botao: 'Regenerar matrícula',
   },
   senha: {
-    titulo: 'Regerar senha inicial?',
+    titulo: 'Regenerar senha inicial?',
     corpo:
-      'A senha atual deixara de funcionar imediatamente. O colaborador precisara usar a nova ' +
-      'senha inicial no proximo acesso ao painel e sera obrigado a troca-la. A nova senha sera ' +
-      'exibida uma unica vez na proxima tela para voce copiar.',
-    botao: 'Regerar senha',
+      'A senha atual deixará de funcionar imediatamente. O colaborador precisará usar a nova ' +
+      'senha inicial no próximo acesso ao painel e será obrigado a trocá-la. A nova senha será ' +
+      'exibida uma única vez na próxima tela para você copiar.',
+    botao: 'Regenerar senha',
   },
 };
 

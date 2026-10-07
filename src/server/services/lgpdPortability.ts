@@ -87,12 +87,22 @@ export interface LgpdPortabilityInstrumentoResposta {
   respondidoEm: string | null;
 }
 
-/** Linha canonica de resposta bruta do Radar NR-1 (COPSOQ). */
+/**
+ * Linha canonica de resposta bruta do Radar NR-1 (COPSOQ).
+ *
+ * ME-B11.1c (PDL8): adiciona `respondidoEm` ao payload. A tabela
+ * `copsoq_responses` nao tem coluna `respondidoEm` dedicada (DOC 01)
+ * — o service expoe `createdAt` como proxy canonico, pois a linha
+ * nasce dentro da transacao atomica do submit via `nr1.saveResponse`
+ * (DOC 03 §11.4). O template renderiza com cabecalho "Respondido em"
+ * alinhado bit-exact com os Instrumentos A e D.
+ */
 export interface LgpdPortabilityCopsoqResposta {
   cicloDbId: number;
   fator: number;
   itemIndex: number;
   valor: number;
+  respondidoEm: string | null;
 }
 
 /** Linha canonica de tentativa de Perfil Individual. */
@@ -340,8 +350,21 @@ export async function getInstrumentDRespostas(
 
 /**
  * SELECT canonico das respostas de Radar NR-1 (COPSOQ) do titular
- * (§19.6). Filtro canonico `companyId + employeeId`. Ordenacao canonica
- * `createdAt ASC` + `id ASC`. Titular C-level retorna vazio por schema.
+ * (§19.6). Filtro canonico `companyId + employeeId`.
+ *
+ * ME-B11.1c (PDL7): ordenacao canonica mudou de `createdAt ASC` para
+ * `cicloDbId ASC, fator ASC, itemIndex ASC` (DOC 03 §11.6 — ordem
+ * natural de leitura por fator do COPSOQ). O `id` fica como
+ * tie-breaker deterministico final.
+ *
+ * ME-B11.1c (PDL8): projeta `createdAt` para expor `respondidoEm`
+ * canonico no payload — a tabela `copsoq_responses` nao tem coluna
+ * `respondidoEm` dedicada (DOC 01 §11.7), mas `createdAt` cumpre a
+ * mesma funcao semantica (a linha nasce dentro da transacao atomica
+ * do submit via `nr1.saveResponse`, DOC 03 §11.4).
+ *
+ * Titular C-level retorna vazio por schema (FK aponta exclusivamente
+ * a `employees.id`).
  */
 export async function getCopsoqRespostas(
   db: RoipDatabase,
@@ -356,18 +379,25 @@ export async function getCopsoqRespostas(
       fator: copsoq_responses.fator,
       itemIndex: copsoq_responses.itemIndex,
       valor: copsoq_responses.valor,
+      createdAt: copsoq_responses.createdAt,
       id: copsoq_responses.id,
     })
     .from(copsoq_responses)
     .where(
       and(eq(copsoq_responses.companyId, companyId), eq(copsoq_responses.employeeId, titularId)),
     )
-    .orderBy(asc(copsoq_responses.createdAt), asc(copsoq_responses.id));
+    .orderBy(
+      asc(copsoq_responses.cicloDbId),
+      asc(copsoq_responses.fator),
+      asc(copsoq_responses.itemIndex),
+      asc(copsoq_responses.id),
+    );
   return rows.map((r) => ({
     cicloDbId: r.cicloDbId,
     fator: r.fator,
     itemIndex: r.itemIndex,
     valor: r.valor,
+    respondidoEm: toISOStringOrNull(r.createdAt),
   }));
 }
 

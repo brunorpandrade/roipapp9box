@@ -1008,8 +1008,9 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
         <h3 style={CREDENTIALS_TITLE_STYLE}>Credenciais de acesso</h3>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12 }}>
           <div style={{ flex: 1 }}>
-            <div style={CREDENTIALS_LABEL_STYLE}>Matricula (portal do colaborador)</div>
-            <div style={CREDENTIALS_VALUE_STYLE}>{currentMatricula ?? '— nao provisionada —'}</div>
+            {/* ME-B11.1c (EC6): acentuacao canonica "Matrícula" */}
+            <div style={CREDENTIALS_LABEL_STYLE}>Matrícula (portal do colaborador)</div>
+            <div style={CREDENTIALS_VALUE_STYLE}>{currentMatricula ?? '— não provisionada —'}</div>
           </div>
           <button
             type="button"
@@ -1017,7 +1018,8 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
             style={BTN_REGEN_STYLE}
             disabled={saving || regenLoading}
           >
-            Regenerar matricula
+            {/* ME-B11.1c (EC6): acentuacao canonica "matrícula" */}
+            Regenerar matrícula
           </button>
         </div>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
