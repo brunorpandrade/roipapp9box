@@ -183,27 +183,24 @@ export function PrivacyModal(props: PrivacyModalProps): JSX.Element {
         >
           {aba === 'termo' ? (
             <div>
+              {/*
+                ME-B11.1c (patch pos-RV-01): a linha
+                "Consulta sempre disponível no rodapé do portal."
+                foi removida — redundante bit-exact (o modal e aberto
+                pelo proprio botao canonico do rodape, entao a
+                afirmacao nao agrega informacao e so adiciona ruido
+                visual).
+              */}
               <p
                 style={{
                   fontSize: 13.5,
                   color: TEXT_2,
                   lineHeight: 1.65,
                   margin: 0,
-                  marginBottom: 16,
                 }}
               >
                 {TERMO_LITERAL_V10}
               </p>
-              <div
-                style={{
-                  fontSize: 11.5,
-                  color: TEXT_3,
-                  paddingTop: 12,
-                  borderTop: `1px dashed ${BORDER}`,
-                }}
-              >
-                Consulta sempre disponível no rodapé do portal.
-              </div>
             </div>
           ) : null}
 
@@ -248,9 +245,13 @@ export function PrivacyModal(props: PrivacyModalProps): JSX.Element {
                   </a>
                 </p>
               ) : null}
-              <p style={{ margin: '12px 0 0', color: TEXT_3, fontSize: 12 }}>
-                Contatos pré-cadastrados pela empresa contratante.
-              </p>
+              {/*
+                ME-B11.1c (patch pos-RV-01): a linha
+                "Contatos pré-cadastrados pela empresa contratante."
+                foi removida — redundante bit-exact (obvio pelo
+                contexto; o colaborador sabe que ele proprio nao
+                cadastrou isso).
+              */}
             </div>
           ) : null}
 
