@@ -124,7 +124,7 @@ export default async function SuperAdminPendenciasPortalPage(
                 margin: '4px 0 0 0',
               }}
             >
-              Contexto dentro-de-empresa: {company.nomeFantasia}. Visao consolidada de pendencias do
+              Contexto dentro-de-empresa: {company.nomeFantasia}. Visão consolidada de pendências do
               portal do colaborador; envie lembretes individualmente ou em massa.
             </p>
           </div>
