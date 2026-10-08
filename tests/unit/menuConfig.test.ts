@@ -55,7 +55,7 @@ describe('MENU_CONFIG_BY_PROFILE — composicao canonica DOC 05 §3.1-§3.10', (
     // debito canonico consertado nesta ME.
     expect(summarizeAll(config as MenuConfig)).toEqual([
       ['Painel', '/super-admin'],
-      ['Instrumentos (placeholder Fase 1)', '/super-admin/instrumentos'],
+      ['Instrumentos', '/super-admin/instrumentos'],
       ['Suporte e logs (placeholder Fase 1)', '/super-admin/suporte-logs'],
       ['Logs administrativos', '/super-admin/logs'],
       ['Gestão de ciclos', '/cycle-management'],

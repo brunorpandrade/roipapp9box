@@ -1,12 +1,13 @@
 // ROIP APP 9BOX — LikertFormShell (ME-B10-02, S253;
-// estendido ME-B10-05 S256 — perimetro mobile via classes utilitarias).
+// estendido ME-B10-05 S256 — perimetro mobile via classes utilitarias;
+// estendido ME-B11.2 — canal `demo` para aba Instrumentos Super Admin).
 //
 // Componente shell compartilhado para formularios Likert 4x5 (20 itens)
-// dos Instrumentos A e D. Reuso bit-a-bit entre canais portal e platform
-// (S246-C + S247-Alfa). Arquitetura visual literal ao mockup canonico
-// `delta_instrumento_a_mobile_v1.html` — header sticky com progresso,
-// corpo scrollavel com headers de dimensao sticky, rodape sticky com
-// botao de envio, modal de aviso de saida.
+// dos Instrumentos A e D. Reuso bit-a-bit entre canais portal, platform
+// e demo (S246-C + S247-Alfa + B11.2). Arquitetura visual literal ao
+// mockup canonico `delta_instrumento_a_mobile_v1.html` — header sticky
+// com progresso, corpo scrollavel com headers de dimensao sticky,
+// rodape sticky com botao de envio, modal de aviso de saida.
 //
 // Estrategia de autenticacao (prop `canalAutenticacao`):
 // - `portal` — le `portalToken` de `sessionStorage`. Se ausente,
@@ -14,6 +15,12 @@
 // - `platform` — no clique de envio, chama
 //   `POST /api/portal/session-token` para emitir portalToken temporario
 //   (TTL 10 min, S247-Alfa). Falha 401 -> redireciona para `/logout`.
+// - `demo` — ME-B11.2 — nenhum fetch, nenhum portalToken, nenhuma
+//   persistencia. Submissao e puramente visual: `handleEnviar` apenas
+//   seta `enviado=true` e renderiza a tela de confirmacao canonica com
+//   botao `[Fechar]` que chama `onDemoClose` (ou faz push para
+//   `hrefPendencias` como fallback). `endpointSubmit` e
+//   `trimestreAtual` sao ignorados nesta modalidade.
 //
 // Submissao: POST `endpointSubmit` com body
 // `{ portalToken, trimestre, respostas: [{dimensao, itemIndex, valor}] }`.
@@ -68,9 +75,10 @@ export interface LikertFormShellProps {
   readonly subtitulo?: string;
   readonly trimestreAtual: string;
   readonly catalogo: InstrumentCatalog;
-  readonly canalAutenticacao: 'portal' | 'platform';
+  readonly canalAutenticacao: 'portal' | 'platform' | 'demo';
   readonly endpointSubmit: string;
   readonly hrefPendencias: string;
+  readonly onDemoClose?: () => void;
 }
 
 interface RespostaMap {
@@ -97,10 +105,18 @@ export function LikertFormShell(props: LikertFormShellProps): JSX.Element {
   const [erro, setErro] = useState<string | null>(null);
   const [enviado, setEnviado] = useState(false);
   const [tokenPortalPronto, setTokenPortalPronto] = useState<boolean>(
-    props.canalAutenticacao === 'platform',
+    props.canalAutenticacao !== 'portal',
   );
 
   const numeroItens = props.catalogo.numeroItens;
+
+  const handleClose = useCallback((): void => {
+    if (props.canalAutenticacao === 'demo' && props.onDemoClose !== undefined) {
+      props.onDemoClose();
+      return;
+    }
+    router.push(props.hrefPendencias);
+  }, [props.canalAutenticacao, props.onDemoClose, props.hrefPendencias, router]);
 
   useEffect(() => {
     if (props.canalAutenticacao !== 'portal') {
@@ -132,7 +148,7 @@ export function LikertFormShell(props: LikertFormShellProps): JSX.Element {
       return;
     }
     if (respondidas === 0) {
-      router.push(props.hrefPendencias);
+      handleClose();
       return;
     }
     setModalSaidaAberto(true);
@@ -144,7 +160,7 @@ export function LikertFormShell(props: LikertFormShellProps): JSX.Element {
 
   function handleConfirmarSaida(): void {
     setModalSaidaAberto(false);
-    router.push(props.hrefPendencias);
+    handleClose();
   }
 
   const handleEnviar = useCallback(async (): Promise<void> => {
@@ -153,6 +169,12 @@ export function LikertFormShell(props: LikertFormShellProps): JSX.Element {
     }
     setErro(null);
     setEnviando(true);
+
+    if (props.canalAutenticacao === 'demo') {
+      setEnviado(true);
+      setEnviando(false);
+      return;
+    }
 
     let portalToken: string | null = null;
 
@@ -259,7 +281,7 @@ export function LikertFormShell(props: LikertFormShellProps): JSX.Element {
   }, [props.catalogo.dimensoes, respostas]);
 
   if (enviado) {
-    return renderConfirmacao(props.hrefPendencias, router);
+    return renderConfirmacao(handleClose, props.canalAutenticacao === 'demo');
   }
 
   if (!tokenPortalPronto) {
@@ -603,10 +625,8 @@ export function LikertFormShell(props: LikertFormShellProps): JSX.Element {
   );
 }
 
-function renderConfirmacao(
-  hrefPendencias: string,
-  router: ReturnType<typeof useRouter>,
-): JSX.Element {
+function renderConfirmacao(onClose: () => void, demo: boolean): JSX.Element {
+  const labelBotao = demo ? 'Fechar' : 'Voltar às pendências';
   return (
     <div style={centerBoxStyle()}>
       <div
@@ -655,7 +675,7 @@ function renderConfirmacao(
         </div>
         <button
           type="button"
-          onClick={() => router.push(hrefPendencias)}
+          onClick={onClose}
           style={{
             padding: '12px 22px',
             borderRadius: 8,
@@ -668,7 +688,7 @@ function renderConfirmacao(
             fontFamily: 'inherit',
           }}
         >
-          Voltar às pendências
+          {labelBotao}
         </button>
       </div>
     </div>

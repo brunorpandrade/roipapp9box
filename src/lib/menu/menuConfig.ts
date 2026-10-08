@@ -170,15 +170,15 @@ const MENU_SUPER_ADMIN_GLOBAL: MenuConfig = [
     iconKey: 'Painel',
   },
   {
-    // ME-080d Onda 1a — D8: prefetch: false suprime prefetch RSC 404
-    // (rota placeholder Fase 1 nao implementada).
+    // ME-B11.2: placeholder "Fase 1" substituido pela aba de demonstracao
+    // real dos instrumentos canonicos. Prefetch RSC reativado (padrao
+    // Next 15) porque a rota agora tem page.tsx servindo o Client real.
     // ME-080d Onda 1e — item "Empresas" removido acima (era vizinho aqui),
     // ver commit `fix me-080d-onda1e` para racional.
     type: 'link',
-    label: 'Instrumentos (placeholder Fase 1)',
+    label: 'Instrumentos',
     href: '/super-admin/instrumentos',
-    iconKey: 'Instrumentos (placeholder Fase 1)',
-    prefetch: false,
+    iconKey: 'Instrumentos',
   },
   {
     // ME-080d Onda 1a — D8: prefetch: false (rota placeholder Fase 1).

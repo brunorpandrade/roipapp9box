@@ -3,7 +3,8 @@
 // estendido ME-B10-05 S256 — perimetro mobile. Overlay usa classe
 // `.roip-modal-pi-overlay` e o modal usa `.roip-modal-pi-fullscreen-mobile`:
 // desktop preserva 80%/760px/90vh; mobile ocupa 100vw/100vh (tela
-// cheia) conforme regra canonica §7.5 mobile do DOC 05).
+// cheia) conforme regra canonica §7.5 mobile do DOC 05;
+// estendido ME-B11.2 — canal `demo` para aba Instrumentos Super Admin).
 //
 // Shell dedicado ao formulario do Perfil Individual — servido bit-a-bit
 // nos canais portal (`/colaborador/responder/perfil-individual`, S207
@@ -157,8 +158,9 @@ const CONFIRM_SUB =
 // ============================================================
 
 export interface PerfilIndividualFormShellProps {
-  readonly canalAutenticacao: 'portal' | 'platform';
+  readonly canalAutenticacao: 'portal' | 'platform' | 'demo';
   readonly hrefPendencias: string;
+  readonly onDemoClose?: () => void;
 }
 
 // ============================================================
@@ -345,7 +347,27 @@ export function PerfilIndividualFormShell(props: PerfilIndividualFormShellProps)
     [],
   );
 
+  const handleClose = useCallback((): void => {
+    if (props.canalAutenticacao === 'demo' && props.onDemoClose !== undefined) {
+      props.onDemoClose();
+      return;
+    }
+    router.push(props.hrefPendencias);
+  }, [props.canalAutenticacao, props.onDemoClose, props.hrefPendencias, router]);
+
   useEffect(() => {
+    if (props.canalAutenticacao === 'demo') {
+      const demoFormData: FormDataPronto = {
+        assessmentId: 0,
+        blocoAtual: 1,
+        blocosCompletos: [],
+        respostas: {},
+      };
+      setBlocoUx(1);
+      setRespostasLocais({});
+      setState({ kind: 'pronto', portalToken: 'demo', formData: demoFormData });
+      return () => undefined;
+    }
     let cancelled = false;
     async function init(): Promise<void> {
       const token = await resolverPortalToken();
@@ -490,6 +512,20 @@ export function PerfilIndividualFormShell(props: PerfilIndividualFormShellProps)
     if (ehBlocoFinal) return;
 
     setErroTransiente(null);
+    if (props.canalAutenticacao === 'demo') {
+      const respostasBlocoDemo = extrairRespostasDoBloco(blocoUx);
+      const novoBloco = Math.min(blocoUx + 1, PERFIL_INDIVIDUAL_TOTAL_BLOCOS);
+      const novoFormDataDemo: FormDataPronto = {
+        assessmentId: state.formData.assessmentId,
+        blocoAtual: novoBloco,
+        blocosCompletos: [...state.formData.blocosCompletos, blocoUx],
+        respostas: { ...state.formData.respostas, ...respostasBlocoDemo },
+      };
+      setState({ kind: 'pronto', portalToken: state.portalToken, formData: novoFormDataDemo });
+      setBlocoUx(novoBloco);
+      setVoltouUmaVez(false);
+      return;
+    }
     setState({ kind: 'enviando', portalToken: state.portalToken, formData: state.formData });
     const respostasBloco = extrairRespostasDoBloco(blocoUx);
     const result = await salvarBloco(
@@ -512,7 +548,7 @@ export function PerfilIndividualFormShell(props: PerfilIndividualFormShellProps)
     setState({ kind: 'pronto', portalToken: state.portalToken, formData: novoFormData });
     setBlocoUx(Math.min(blocoUx + 1, PERFIL_INDIVIDUAL_TOTAL_BLOCOS));
     setVoltouUmaVez(false);
-  }, [blocoAtualCompleto, blocoUx, ehBlocoFinal, salvarBloco, state]);
+  }, [blocoAtualCompleto, blocoUx, ehBlocoFinal, props.canalAutenticacao, salvarBloco, state]);
 
   function handleAnterior(): void {
     if (state.kind !== 'pronto') return;
@@ -526,15 +562,15 @@ export function PerfilIndividualFormShell(props: PerfilIndividualFormShellProps)
   const handleSalvarDepoisOuFechar = useCallback(async (): Promise<void> => {
     if (state.kind !== 'pronto') return;
     // Se bloco atual completo, salva antes de fechar (regra §7.5).
-    if (blocoAtualCompleto) {
+    if (blocoAtualCompleto && props.canalAutenticacao !== 'demo') {
       const respostasBloco = extrairRespostasDoBloco(blocoUx);
       // Fire-and-forget canonico: se falhar, o proximo carregamento
       // do form-state recupera o estado consistente (o backend nao
       // avancou blocoAtual). Nao bloqueamos o retorno ao portal.
       void salvarBloco(state.portalToken, state.formData.assessmentId, blocoUx, respostasBloco);
     }
-    router.push(props.hrefPendencias);
-  }, [blocoAtualCompleto, blocoUx, props.hrefPendencias, router, salvarBloco, state]);
+    handleClose();
+  }, [blocoAtualCompleto, blocoUx, handleClose, props.canalAutenticacao, salvarBloco, state]);
 
   const handleEnviarFinal = useCallback(async (): Promise<void> => {
     if (state.kind !== 'pronto') return;
@@ -542,6 +578,10 @@ export function PerfilIndividualFormShell(props: PerfilIndividualFormShellProps)
     if (!blocoAtualCompleto) return;
 
     setErroTransiente(null);
+    if (props.canalAutenticacao === 'demo') {
+      setState({ kind: 'enviado', enviadoEmIso: new Date().toISOString() });
+      return;
+    }
     setState({ kind: 'enviando', portalToken: state.portalToken, formData: state.formData });
 
     // 1) Salva o bloco 10 (idempotente do lado do backend — merge canonico).
@@ -568,10 +608,18 @@ export function PerfilIndividualFormShell(props: PerfilIndividualFormShellProps)
 
     // 3) Sucesso — tela de confirmacao canonica (DOC 05 §7.5).
     setState({ kind: 'enviado', enviadoEmIso: submitResult.enviadoEm });
-  }, [blocoAtualCompleto, blocoUx, ehBlocoFinal, salvarBloco, state, submeterAssessment]);
+  }, [
+    blocoAtualCompleto,
+    blocoUx,
+    ehBlocoFinal,
+    props.canalAutenticacao,
+    salvarBloco,
+    state,
+    submeterAssessment,
+  ]);
 
   function handleFecharPosEnvio(): void {
-    router.push(props.hrefPendencias);
+    handleClose();
   }
 
   // -------- 5) Render --------

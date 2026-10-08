@@ -4,7 +4,8 @@
 // paddings usam `.roip-header-padding`/`.roip-progress-padding`/
 // `.roip-body-padding`, opcoes Likert usam `.roip-likert-options` e
 // `.roip-likert-btn` — mesma primitiva compartilhada com o
-// LikertFormShell. Desktop preservado bit-a-bit).
+// LikertFormShell. Desktop preservado bit-a-bit;
+// estendido ME-B11.2 — canal `demo` para aba Instrumentos Super Admin).
 //
 // Componente shell dedicado ao formulario do Radar NR-1. NAO deriva
 // do LikertFormShell (ME-B10-02) porque cinco pontos materiais divergem
@@ -139,9 +140,14 @@ const TXT_CONFIRMACAO_BOTAO = 'Voltar às pendências';
 const TXT_BOTAO_VOLTAR_PORTAL = 'Voltar às pendências';
 
 export interface Nr1FormShellProps {
-  readonly canalAutenticacao: 'portal' | 'platform';
+  readonly canalAutenticacao: 'portal' | 'platform' | 'demo';
   readonly hrefPendencias: string;
+  readonly onDemoClose?: () => void;
 }
+
+const DEMO_AVISO_INICIO =
+  'Considere seus últimos 3 meses de trabalho ao responder. ' +
+  'Esta é uma demonstração — nenhuma resposta é gravada.';
 
 interface NR1GridItem {
   readonly fator: number;
@@ -235,7 +241,43 @@ export function Nr1FormShell(props: Nr1FormShellProps): JSX.Element {
     }
   }, []);
 
+  const handleClose = useCallback((): void => {
+    if (props.canalAutenticacao === 'demo' && props.onDemoClose !== undefined) {
+      props.onDemoClose();
+      return;
+    }
+    router.push(props.hrefPendencias);
+  }, [props.canalAutenticacao, props.onDemoClose, props.hrefPendencias, router]);
+
   useEffect(() => {
+    if (props.canalAutenticacao === 'demo') {
+      setPortalToken('demo');
+      setTokenResolvido(true);
+      const demoGrid: NR1GridItem[] = [];
+      let globalIdx = 0;
+      for (const fator of NR1_CATALOG.fatores) {
+        for (const item of fator.itens) {
+          globalIdx += 1;
+          demoGrid.push({
+            fator: item.fator,
+            fatorNome: fator.nome,
+            itemIndex: item.itemIndex,
+            itemGlobal: globalIdx,
+          });
+        }
+      }
+      setFormState({
+        kind: 'disponivel',
+        cicloDbId: 0,
+        ciclo: 'Demo',
+        dataFechamento: null,
+        startToken: 'demo',
+        avisoInicio: DEMO_AVISO_INICIO,
+        grid: demoGrid,
+      });
+      return () => undefined;
+    }
+
     let cancelado = false;
 
     async function inicializar(): Promise<void> {
@@ -395,7 +437,7 @@ export function Nr1FormShell(props: Nr1FormShellProps): JSX.Element {
       return;
     }
     if (respondidas === 0) {
-      router.push(props.hrefPendencias);
+      handleClose();
       return;
     }
     setModalSaidaAberto(true);
@@ -407,7 +449,7 @@ export function Nr1FormShell(props: Nr1FormShellProps): JSX.Element {
 
   function handleConfirmarSaida(): void {
     setModalSaidaAberto(false);
-    router.push(props.hrefPendencias);
+    handleClose();
   }
 
   function handleAceitarAviso(): void {
@@ -415,12 +457,12 @@ export function Nr1FormShell(props: Nr1FormShellProps): JSX.Element {
   }
 
   function handleCancelarAviso(): void {
-    router.push(props.hrefPendencias);
+    handleClose();
   }
 
   function handleFecharModalCicloEncerrado(): void {
     setModalCicloEncerradoAberto(false);
-    router.push(props.hrefPendencias);
+    handleClose();
   }
 
   const enviarRespostas = useCallback(
@@ -469,6 +511,13 @@ export function Nr1FormShell(props: Nr1FormShellProps): JSX.Element {
       return;
     }
     if (!completo || enviando || enviado) {
+      return;
+    }
+    if (props.canalAutenticacao === 'demo') {
+      setEnviando(true);
+      setErro(null);
+      setEnviado(true);
+      setEnviando(false);
       return;
     }
     if (portalToken === null) {
@@ -527,21 +576,18 @@ export function Nr1FormShell(props: Nr1FormShellProps): JSX.Element {
     );
   }
 
+  const demo = props.canalAutenticacao === 'demo';
+
   if (formState.kind === 'erro') {
-    return renderEstadoBloqueado(
-      TXT_ESTADO_SEM_CICLO_TITULO,
-      formState.msg,
-      props.hrefPendencias,
-      router,
-    );
+    return renderEstadoBloqueado(TXT_ESTADO_SEM_CICLO_TITULO, formState.msg, handleClose, demo);
   }
 
   if (formState.kind === 'ja_respondeu') {
     return renderEstadoBloqueado(
       TXT_ESTADO_JA_RESPONDEU_TITULO,
       TXT_ESTADO_JA_RESPONDEU_DESC,
-      props.hrefPendencias,
-      router,
+      handleClose,
+      demo,
     );
   }
 
@@ -549,8 +595,8 @@ export function Nr1FormShell(props: Nr1FormShellProps): JSX.Element {
     return renderEstadoBloqueado(
       TXT_ESTADO_NAO_ELEGIVEL_TITULO,
       TXT_ESTADO_NAO_ELEGIVEL_DESC,
-      props.hrefPendencias,
-      router,
+      handleClose,
+      demo,
     );
   }
 
@@ -558,13 +604,13 @@ export function Nr1FormShell(props: Nr1FormShellProps): JSX.Element {
     return renderEstadoBloqueado(
       TXT_ESTADO_SEM_CICLO_TITULO,
       TXT_ESTADO_SEM_CICLO_DESC,
-      props.hrefPendencias,
-      router,
+      handleClose,
+      demo,
     );
   }
 
   if (enviado) {
-    return renderConfirmacao(props.hrefPendencias, router);
+    return renderConfirmacao(handleClose, demo);
   }
 
   if (!avisoAceito) {
@@ -1082,9 +1128,10 @@ function renderModalCicloEncerrado(onFechar: () => void): JSX.Element {
 function renderEstadoBloqueado(
   titulo: string,
   descricao: string,
-  hrefPendencias: string,
-  router: ReturnType<typeof useRouter>,
+  onClose: () => void,
+  demo: boolean,
 ): JSX.Element {
+  const labelBotao = demo ? 'Fechar' : TXT_BOTAO_VOLTAR_PORTAL;
   return (
     <div style={centerBoxStyle()}>
       <div
@@ -1130,7 +1177,7 @@ function renderEstadoBloqueado(
         </div>
         <button
           type="button"
-          onClick={() => router.push(hrefPendencias)}
+          onClick={onClose}
           style={{
             padding: '12px 22px',
             borderRadius: 8,
@@ -1143,17 +1190,15 @@ function renderEstadoBloqueado(
             fontFamily: 'inherit',
           }}
         >
-          {TXT_BOTAO_VOLTAR_PORTAL}
+          {labelBotao}
         </button>
       </div>
     </div>
   );
 }
 
-function renderConfirmacao(
-  hrefPendencias: string,
-  router: ReturnType<typeof useRouter>,
-): JSX.Element {
+function renderConfirmacao(onClose: () => void, demo: boolean): JSX.Element {
+  const labelBotao = demo ? 'Fechar' : TXT_CONFIRMACAO_BOTAO;
   return (
     <div style={centerBoxStyle()}>
       <div
@@ -1202,7 +1247,7 @@ function renderConfirmacao(
         </div>
         <button
           type="button"
-          onClick={() => router.push(hrefPendencias)}
+          onClick={onClose}
           style={{
             padding: '12px 22px',
             borderRadius: 8,
@@ -1215,7 +1260,7 @@ function renderConfirmacao(
             fontFamily: 'inherit',
           }}
         >
-          {TXT_CONFIRMACAO_BOTAO}
+          {labelBotao}
         </button>
       </div>
     </div>

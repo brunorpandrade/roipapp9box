@@ -53,10 +53,11 @@ describe('ME-080d — MENU_SUPER_ADMIN_GLOBAL (Onda 1e revisão de D2 + Onda 1a 
     expect(painel?.href).toBe('/super-admin');
   });
 
-  it('D8 — "Instrumentos (placeholder Fase 1)" declara prefetch: false', () => {
-    const item = findLinkByLabel(items, 'Instrumentos (placeholder Fase 1)');
+  it('ME-B11.2 — "Instrumentos" nao declara mais prefetch: false', () => {
+    const item = findLinkByLabel(items, 'Instrumentos');
     expect(item).toBeDefined();
-    expect(item?.prefetch).toBe(false);
+    // Rota real existe desde ME-B11.2; prefetch segue o padrao Next 15.
+    expect(item?.prefetch).toBeUndefined();
   });
 
   it('D8 — "Suporte e logs (placeholder Fase 1)" declara prefetch: false', () => {
