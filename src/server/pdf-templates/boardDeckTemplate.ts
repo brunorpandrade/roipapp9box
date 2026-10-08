@@ -124,7 +124,7 @@ function renderElementoROI(input: BoardDeckTemplateInput): string {
   return `<section>
   <h2>2. ROI agregado</h2>
   <table class="kv">
-    <tr><th>ROI do trimestre</th><td>${fmtNum(r.roiAgregado, 4)}</td></tr>
+    <tr><th>ROI do trimestre</th><td>${fmtNum(r.roiAgregado, 2)}</td></tr>
     <tr><th>Variação vs trimestre anterior</th><td>${fmtPct(r.variacaoTrimestreAnterior)}</td></tr>
     <tr><th>Variação vs mesmo trimestre ano anterior</th><td>${fmtPct(r.variacaoAnoAnterior)}</td></tr>
   </table>

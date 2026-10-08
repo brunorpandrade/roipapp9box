@@ -22,6 +22,7 @@
 //   Normalizacao: espaco -> underscore, remove acentos, remove
 //   caracteres especiais, limita a 40 caracteres.
 
+import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
 import { escapeHtml, type LayoutBaseCompany, renderLayoutBase } from './layoutBase';
 
 /** Score de um dos 8 fatores canonicos. */
@@ -361,7 +362,7 @@ function renderRastreabilidade(input: Nr1TemplateInput): string {
   <p><strong>Ciclo:</strong> ${escapeHtml(input.ciclo.cicloRotulo)}</p>
   <p><strong>Data de abertura do ciclo:</strong> ${escapeHtml(input.ciclo.dataAbertura)}</p>
   <p><strong>Data de fechamento do ciclo:</strong> ${escapeHtml(input.ciclo.dataFechamento)}</p>
-  <p><strong>Gerado em:</strong> ${escapeHtml(input.generatedAtIso)}</p>
+  <p><strong>Gerado em:</strong> ${escapeHtml(toTimestampBrt(input.generatedAtIso) ?? input.generatedAtIso)}</p>
   ${notaAuditoria}
 </section>`;
 }

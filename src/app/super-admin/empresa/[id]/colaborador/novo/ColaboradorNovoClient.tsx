@@ -249,15 +249,15 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
     if (v.dataAdmissao.length === 0) return 'Informe a data de admissao.';
     if (v.cargo.trim().length === 0) return 'Informe o cargo.';
     if (v.cbo.trim().length === 0) return 'Informe o CBO.';
-    if (v.descricaoCBO.trim().length === 0) return 'Informe a descricao do CBO.';
+    if (v.descricaoCBO.trim().length === 0) return 'Informe a descrição do CBO.';
     if (v.departamento === '') return 'Selecione o departamento.';
     if (v.senioridade === '') return 'Selecione a senioridade.';
-    if (v.nivelHierarquico === '') return 'Selecione o nivel hierarquico.';
-    if (v.jobFamily === '') return 'Selecione a familia de funcao.';
+    if (v.nivelHierarquico === '') return 'Selecione o nível hierárquico.';
+    if (v.jobFamily === '') return 'Selecione a família de função.';
     // ME-B9.11 — D-LIDER-OBRIGATORIO-CADASTRO: lider direto obrigatorio.
     // Sem lider, a hierarquia da qual 9-Box e motores de agregacao (ROI,
     // assiduidade, plenitude, IQL) dependem fica quebrada.
-    if (v.liderInicial === null) return 'Selecione o lider direto.';
+    if (v.liderInicial === null) return 'Selecione o líder direto.';
     return null;
   }
 

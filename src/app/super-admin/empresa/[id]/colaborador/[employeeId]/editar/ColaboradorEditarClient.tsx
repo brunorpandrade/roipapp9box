@@ -610,7 +610,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
   // lider, a hierarquia da qual 9-Box e motores de agregacao (ROI,
   // assiduidade, plenitude, IQL) dependem fica quebrada.
   function validateForm(v: ColaboradorFormValues): string | null {
-    if (v.liderInicial === null) return 'Selecione o lider direto.';
+    if (v.liderInicial === null) return 'Selecione o líder direto.';
     return null;
   }
 

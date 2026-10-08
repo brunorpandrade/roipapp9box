@@ -127,12 +127,12 @@ function renderBlocoFinanceiro(input: ExecutiveReportFinalPayload): string {
   );
   if (b.comparativoTrimestreAnterior) {
     linhas.push(
-      `<tr><th>ROI (trimestre anterior)</th><td>${fmtNum(b.comparativoTrimestreAnterior.roiAgregado, 4)} · Δ ${fmtPct(b.comparativoTrimestreAnterior.variacaoPercentualRoi)}</td></tr>`,
+      `<tr><th>ROI (trimestre anterior)</th><td>${fmtNum(b.comparativoTrimestreAnterior.roiAgregado, 2)} · Δ ${fmtPct(b.comparativoTrimestreAnterior.variacaoPercentualRoi)}</td></tr>`,
     );
   }
   if (b.comparativoMesmoTrimestreAnoAnterior) {
     linhas.push(
-      `<tr><th>ROI (mesmo trim. ano anterior)</th><td>${fmtNum(b.comparativoMesmoTrimestreAnoAnterior.roiAgregado, 4)} · Δ ${fmtPct(b.comparativoMesmoTrimestreAnoAnterior.variacaoPercentualRoi)}</td></tr>`,
+      `<tr><th>ROI (mesmo trim. ano anterior)</th><td>${fmtNum(b.comparativoMesmoTrimestreAnoAnterior.roiAgregado, 2)} · Δ ${fmtPct(b.comparativoMesmoTrimestreAnoAnterior.variacaoPercentualRoi)}</td></tr>`,
     );
   }
   return `<section class="page-break">
