@@ -393,6 +393,6 @@ export function renderNr1ReportHTML(input: Nr1TemplateInput): string {
     title: `Radar NR-1 — ${input.company.nomeFantasia} — ${input.ciclo.cicloRotulo}`,
     company: input.company,
     bodyHtml,
-    footerCenter: `Gerado em ${input.generatedAtDate}`,
+    footerCenter: `Gerado em ${toTimestampBrt(input.generatedAtIso) ?? input.generatedAtDate}`,
   });
 }

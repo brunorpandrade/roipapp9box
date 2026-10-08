@@ -241,12 +241,12 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
 
   function validateForm(v: ColaboradorFormValues): string | null {
     if (v.name.trim().length === 0) return 'Informe o nome completo.';
-    if (v.cpf.length !== 11) return 'Informe um CPF valido.';
+    if (v.cpf.length !== 11) return 'Informe um CPF válido.';
     if ((v.isLider || v.isRH) && v.email.trim().length === 0) {
-      return 'E-mail obrigatorio para acesso como RH ou Lider.';
+      return 'E-mail obrigatório para acesso como RH ou Líder.';
     }
     if (v.dataNascimento.length === 0) return 'Informe a data de nascimento.';
-    if (v.dataAdmissao.length === 0) return 'Informe a data de admissao.';
+    if (v.dataAdmissao.length === 0) return 'Informe a data de admissão.';
     if (v.cargo.trim().length === 0) return 'Informe o cargo.';
     if (v.cbo.trim().length === 0) return 'Informe o CBO.';
     if (v.descricaoCBO.trim().length === 0) return 'Informe a descrição do CBO.';

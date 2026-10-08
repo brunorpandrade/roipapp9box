@@ -138,15 +138,15 @@ export function CLevelNovoClient(props: Props): JSX.Element {
       return;
     }
     if (v.cargo.trim().length === 0 || v.descricaoCargo.trim().length === 0) {
-      setErrorMsg('Preencha Cargo e Descricao do cargo.');
+      setErrorMsg('Preencha Cargo e Descrição do cargo.');
       return;
     }
     if (v.custoMensal.trim().length === 0 || Number.isNaN(Number(v.custoMensal))) {
-      setErrorMsg('Informe o Custo mensal valido.');
+      setErrorMsg('Informe o Custo mensal válido.');
       return;
     }
     if (v.dataNascimento.length === 0 || v.dataAdmissao.length === 0) {
-      setErrorMsg('Informe Data de nascimento e Data de admissao.');
+      setErrorMsg('Informe Data de nascimento e Data de admissão.');
       return;
     }
 

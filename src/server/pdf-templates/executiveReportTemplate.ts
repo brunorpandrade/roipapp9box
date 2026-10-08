@@ -108,7 +108,7 @@ function renderResumoExecutivo(texto: string): string {
 function renderBlocoFinanceiro(input: ExecutiveReportFinalPayload): string {
   const b = input.blocoFinanceiro;
   const linhas: string[] = [];
-  linhas.push(`<tr><th>ROI agregado</th><td>${fmtNum(b.trimestreAtual.roiAgregado, 4)}</td></tr>`);
+  linhas.push(`<tr><th>ROI agregado</th><td>${fmtNum(b.trimestreAtual.roiAgregado, 2)}</td></tr>`);
   if (b.trimestreAtual.faturamentoMedioTrimestral !== null) {
     linhas.push(
       `<tr><th>Faturamento médio trimestral</th><td>${fmtMoeda(b.trimestreAtual.faturamentoMedioTrimestral)}</td></tr>`,
