@@ -1,5 +1,6 @@
 // ROIP APP 9BOX — Registry canonico dos instrumentos para a aba demo
-// `/super-admin/instrumentos` (ME-B11.2).
+// `/super-admin/instrumentos` (ME-B11.2; `kind: 'likert_c'` para o
+// Instrumento C acrescentado em ME-B11.2b).
 //
 // Fonte unica da lista dinamica apresentada na aba Instrumentos do
 // painel raiz do Super Admin. Ordenacao canonica: A, B, C, D, seguidos
@@ -21,15 +22,17 @@
 /**
  * Modalidade de experiencia do usuario disponivel na aba demo.
  *
- * - `likert_a` / `likert_d` — reusa `LikertFormShell` com `canalAutenticacao='demo'`.
+ * - `likert_a` / `likert_c` / `likert_d` — reusa `LikertFormShell` com
+ *   `canalAutenticacao='demo'` e o catalogo canonico correspondente.
  * - `nr1` — reusa `Nr1FormShell` com `canalAutenticacao='demo'`.
- * - `perfil_individual` — reusa `PerfilIndividualFormShell` com `canalAutenticacao='demo'`.
- * - `nao_disponivel` — apenas tela de apresentacao textual (vide decisao
- *   D5=B da ME-B11.2 para o Instrumento C enquanto o shell real nao
- *   nasce em producao).
+ * - `perfil_individual` — reusa `PerfilIndividualFormShell` com
+ *   `canalAutenticacao='demo'`.
+ * - `nao_disponivel` — apenas tela de apresentacao textual, sem botao
+ *   "Experiencia do usuario". Reservado para instrumentos futuros que
+ *   ainda nao tenham catalogo canonico publicado.
  */
 export type InstrumentDemoKind =
-  'likert_a' | 'likert_d' | 'nr1' | 'perfil_individual' | 'nao_disponivel';
+  'likert_a' | 'likert_c' | 'likert_d' | 'nr1' | 'perfil_individual' | 'nao_disponivel';
 
 export interface InstrumentDemoDescription {
   readonly oQueFaz: string;
@@ -116,11 +119,7 @@ const INSTRUMENTOS_DEMO: readonly InstrumentDemoEntry[] = [
         'Líder direto, C-level, RH ou Super Admin, na plataforma administrativa. O líder nunca ' +
         'pode avaliar a si mesmo.',
     },
-    kind: 'nao_disponivel',
-    notaDisponibilidade:
-      'A interface de preenchimento do Instrumento C será entregue junto com a implementação ' +
-      'administrativa dedicada. Enquanto isso, a apresentação acima documenta como ele será ' +
-      'aplicado em produção.',
+    kind: 'likert_c',
   },
   {
     id: 'instrumento-d',

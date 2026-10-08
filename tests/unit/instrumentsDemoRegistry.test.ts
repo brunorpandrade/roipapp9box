@@ -1,7 +1,8 @@
 // ROIP APP 9BOX — testes unitarios do registry demo dos instrumentos
-// (ME-B11.2). Verifica a ordenacao canonica A, B, C, D, PI; a
-// completude das 4 secoes de descricao; a presenca/ausencia da
-// `notaDisponibilidade` conforme o `kind`; e a resolucao por id.
+// (ME-B11.2; ampliado em ME-B11.2b — C agora tem `kind: 'likert_c'`
+// com Experiencia do usuario). Verifica a ordenacao canonica
+// A, B, C, D, PI; a completude das 4 secoes de descricao; a resolucao
+// por id; e os `kind` canonicos atribuidos.
 
 import { describe, it, expect } from 'vitest';
 
@@ -32,34 +33,31 @@ describe('instrumentsDemoRegistry', () => {
     }
   });
 
-  it('Instrumento C e o unico com `kind=nao_disponivel` + nota (D5=B)', () => {
-    const entries = listInstrumentDemoEntries();
-    const naoDisponiveis = entries.filter((e) => e.kind === 'nao_disponivel');
-    expect(naoDisponiveis).toHaveLength(1);
-    expect(naoDisponiveis[0]?.id).toBe('instrumento-c');
-    expect(naoDisponiveis[0]?.notaDisponibilidade).toBeDefined();
-  });
-
-  it('instrumentos com experiencia nao carregam nota de disponibilidade', () => {
+  it('nenhuma entrada carrega notaDisponibilidade (B11.2b)', () => {
     const entries = listInstrumentDemoEntries();
     for (const entry of entries) {
-      if (entry.kind !== 'nao_disponivel') {
-        expect(entry.notaDisponibilidade).toBeUndefined();
-      }
+      expect(entry.notaDisponibilidade).toBeUndefined();
     }
+  });
+
+  it('nenhuma entrada tem `kind=nao_disponivel` (B11.2b)', () => {
+    const entries = listInstrumentDemoEntries();
+    const naoDisponiveis = entries.filter((e) => e.kind === 'nao_disponivel');
+    expect(naoDisponiveis).toHaveLength(0);
   });
 
   it('findInstrumentDemoEntry resolve por id ou retorna null', () => {
     expect(findInstrumentDemoEntry('instrumento-a')?.kind).toBe('likert_a');
+    expect(findInstrumentDemoEntry('instrumento-c')?.kind).toBe('likert_c');
     expect(findInstrumentDemoEntry('instrumento-d')?.kind).toBe('likert_d');
     expect(findInstrumentDemoEntry('perfil-individual')?.kind).toBe('perfil_individual');
     expect(findInstrumentDemoEntry('instrumento-b')?.kind).toBe('nr1');
     expect(findInstrumentDemoEntry('inexistente')).toBeNull();
   });
 
-  it('kinds canonicos cobrem todos os instrumentos exceto C', () => {
+  it('kinds canonicos — todos os 5 instrumentos com Experiencia do usuario', () => {
     const entries = listInstrumentDemoEntries();
     const kinds = entries.map((e) => e.kind);
-    expect(kinds).toEqual(['likert_a', 'nr1', 'nao_disponivel', 'likert_d', 'perfil_individual']);
+    expect(kinds).toEqual(['likert_a', 'nr1', 'likert_c', 'likert_d', 'perfil_individual']);
   });
 });

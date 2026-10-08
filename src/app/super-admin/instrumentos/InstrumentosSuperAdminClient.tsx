@@ -25,6 +25,7 @@ import { Nr1FormShell } from '../../../components/instruments/Nr1FormShell';
 // eslint-disable-next-line @stylistic/max-len -- import atomico (prettier)
 import { PerfilIndividualFormShell } from '../../../components/instruments/PerfilIndividualFormShell';
 import { INSTRUMENT_A_CATALOG } from '../../../lib/instruments/instrumentACatalog';
+import { INSTRUMENT_C_CATALOG } from '../../../lib/instruments/instrumentCCatalog';
 import { INSTRUMENT_D_CATALOG } from '../../../lib/instruments/instrumentDCatalog';
 import {
   findInstrumentDemoEntry,
@@ -247,6 +248,21 @@ function ExperienciaInstrumento(props: ExperienciaProps): JSX.Element {
         subtitulo="Demonstração — nenhuma resposta é gravada"
         trimestreAtual={DEMO_TRIMESTRE_LABEL}
         catalogo={INSTRUMENT_A_CATALOG}
+        canalAutenticacao="demo"
+        endpointSubmit=""
+        hrefPendencias={DEMO_HREF_PENDENCIAS}
+        onDemoClose={onFechar}
+      />
+    );
+  }
+
+  if (entry.kind === 'likert_c') {
+    return (
+      <LikertFormShell
+        titulo="Avaliação do colaborador direto — Liderado demo"
+        subtitulo="Ciclo Demo · Nenhuma resposta é gravada"
+        trimestreAtual={DEMO_TRIMESTRE_LABEL}
+        catalogo={INSTRUMENT_C_CATALOG}
         canalAutenticacao="demo"
         endpointSubmit=""
         hrefPendencias={DEMO_HREF_PENDENCIAS}
