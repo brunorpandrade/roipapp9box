@@ -178,7 +178,7 @@ export function renderSnapshot9BoxHTML(input: Snapshot9BoxTemplateInput): string
     .filter((s) => s.length > 0)
     .join('\n');
   return renderLayoutBase({
-    title: `Snapshot 9-Box · ${input.nomeFantasia} · ${input.trimestre}`,
+    title: `Snapshot do 9-Box · ${input.nomeFantasia} · ${input.trimestre}`,
     company: { nomeFantasia: input.nomeFantasia },
     bodyHtml,
     footerCenter: `Gerado em ${toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso}`,

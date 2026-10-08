@@ -10,7 +10,7 @@
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
 /** Mensagem canonica exposta ao usuario em falha estrutural da action. */
-export const MSG_ACTION_FALHA_GENERICA = 'Nao foi possivel completar a operacao. Tente novamente.';
+export const MSG_ACTION_FALHA_GENERICA = 'Não foi possível completar a operação. Tente novamente.';
 
 /**
  * Mensagem individual do historico canonico do drawer. Serializavel

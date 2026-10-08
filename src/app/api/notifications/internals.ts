@@ -33,12 +33,12 @@
 import { createDbClient, type RoipDbClient } from '../../../db/client';
 import { resolveDatabaseUrl } from '../../../lib/db/resolveDatabaseUrl';
 
-export const MSG_UNAUTHORIZED = 'Sessao ausente.';
-export const MSG_FORBIDDEN = 'Perfil sem sino canonico (§10.1).';
-export const MSG_INVALID_MODE = 'Parametro "mode" invalido — use count OU unread.';
-export const MSG_INVALID_ACTION = 'Parametro "action" invalido — use read OU archive.';
-export const MSG_MISSING_ID = 'Parametro "id" ausente ou invalido.';
-export const MSG_NOT_FOUND = 'Notificacao nao encontrada OU sem permissao.';
+export const MSG_UNAUTHORIZED = 'Sessão ausente.';
+export const MSG_FORBIDDEN = 'Perfil sem sino canônico (§10.1).';
+export const MSG_INVALID_MODE = 'Parâmetro "mode" inválido — use count OU unread.';
+export const MSG_INVALID_ACTION = 'Parâmetro "action" inválido — use read OU archive.';
+export const MSG_MISSING_ID = 'Parâmetro "id" ausente ou inválido.';
+export const MSG_NOT_FOUND = 'Notificação não encontrada OU sem permissão.';
 
 /**
  * Limite canonico do dropdown do sino (§10.4 — 10 ultimas nao lidas).

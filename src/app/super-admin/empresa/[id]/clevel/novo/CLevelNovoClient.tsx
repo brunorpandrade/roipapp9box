@@ -134,7 +134,7 @@ export function CLevelNovoClient(props: Props): JSX.Element {
   const handleSave = useCallback(async () => {
     const v = valuesRef.current;
     if (v.name.trim().length === 0 || v.cpf.length !== 11 || v.email.trim().length === 0) {
-      setErrorMsg('Preencha todos os campos obrigatorios (Nome, CPF, E-mail).');
+      setErrorMsg('Preencha todos os campos obrigatórios (Nome, CPF, E-mail).');
       return;
     }
     if (v.cargo.trim().length === 0 || v.descricaoCargo.trim().length === 0) {

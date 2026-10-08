@@ -268,8 +268,8 @@ const BLOCKER_MODAL_BOX_STYLE = {
 };
 
 const MSG_LEADERSHIPTRANSFER_BLOQUEADO_LITERAL =
-  'Nao e possivel inativar este colaborador. Nao ha nenhum outro C-level ou colaborador com ' +
-  'isLider=true ativo na empresa. Cadastre outro C-level ou promova um colaborador a Lider ' +
+  'Não é possível inativar este colaborador. Não há nenhum outro C-level ou colaborador com ' +
+  'isLider=true ativo na empresa. Cadastre outro C-level ou promova um colaborador a Líder ' +
   'antes de prosseguir.';
 
 function toFormValues(e: GetByIdEmployeeResult): ColaboradorFormValues {

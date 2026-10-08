@@ -12,7 +12,7 @@
 
 /** Mensagem canonica exposta em falha estrutural da action. */
 export const MSG_ACTION_FALHA_GENERICA_DIALOGOS =
-  'Nao foi possivel completar a operacao. Tente novamente.';
+  'Não foi possível completar a operação. Tente novamente.';
 
 /**
  * Formato serializavel de um dialogo atravessando fronteira
