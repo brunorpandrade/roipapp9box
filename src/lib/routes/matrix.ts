@@ -379,6 +379,33 @@ export const ROUTE_MATRIX: readonly RouteRule[] = [
       lider: 'deny',
     },
   },
+  // ME-B11.1-FINAL (B11.1g — G7): placeholder `/super-admin/instrumentos`.
+  // Super Admin exclusivo. Guard defensivo no page.tsx tambem redireciona
+  // para '/' quando perfil nao e super_admin (defense-in-depth §10.5).
+  {
+    pattern: '/super-admin/instrumentos',
+    canonicalRef: '§10.5',
+    byRole: {
+      super_admin: 'allow',
+      rh: 'deny',
+      rh_lider: 'deny',
+      clevel: 'deny',
+      lider: 'deny',
+    },
+  },
+  // ME-B11.1-FINAL (B11.1g — G8): placeholder `/super-admin/suporte-logs`.
+  // Super Admin exclusivo. Mesma racional canonica.
+  {
+    pattern: '/super-admin/suporte-logs',
+    canonicalRef: '§10.5',
+    byRole: {
+      super_admin: 'allow',
+      rh: 'deny',
+      rh_lider: 'deny',
+      clevel: 'deny',
+      lider: 'deny',
+    },
+  },
 
   // §10.6 Prontidao MVP --------------------------------------------------
   {
