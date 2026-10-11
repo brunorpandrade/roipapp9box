@@ -46,3 +46,28 @@ export function initialsFromName(name: string): string {
   }
   return `${first}${last.charAt(0).toUpperCase()}`;
 }
+
+/**
+ * Extrai o primeiro nome canonico de um nome completo. Usado pela
+ * saudacao do cabecalho do portal do colaborador (ME-1.3, item 1.3 do
+ * roadmap). Normalizacao canonica:
+ *   - `trim()` + `split(/\s+/)` — mesma normalizacao de `initialsFromName`,
+ *     por consistencia.
+ *   - Primeira letra do primeiro nome em maiusculo; restante preservado
+ *     bit-exact (ex.: "bruno" -> "Bruno", "BRUNO" -> "BRUNO",
+ *     "d'avila" -> "D'avila"). O backend ja persiste o nome em
+ *     capitalizacao coerente; esta funcao apenas garante que a inicial
+ *     renderize em maiuscula no primeiro mount.
+ *   - Entrada vazia ou so espacos: retorna string vazia (caller trata o
+ *     fallback — tipicamente nao renderiza a saudacao).
+ */
+export function extractFirstName(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 0 || parts[0] === undefined || parts[0] === '') {
+    return '';
+  }
+  const first = parts[0];
+  const head = first.charAt(0).toUpperCase();
+  const tail = first.slice(1);
+  return `${head}${tail}`;
+}

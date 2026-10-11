@@ -74,9 +74,21 @@ interface LoginSuccessUser {
   photoUrl: string | null;
 }
 
+/**
+ * ME-1.3 (item 1.3 do roadmap): identidade visual canonica da empresa
+ * do titular, propagada ao `PortalLayout` via sessionStorage
+ * (`portalCompanyName`, `portalCompanyLogoUrl`). Backend garante
+ * `displayName` nunca vazio (fallback razaoSocial em `/api/portal/login`).
+ */
+interface LoginSuccessCompany {
+  displayName: string;
+  logoUrl: string | null;
+}
+
 interface LoginSuccess {
   portalToken: string;
   user: LoginSuccessUser;
+  company: LoginSuccessCompany;
   gateStep: 'lgpd_consent' | 'pendencias';
 }
 
@@ -181,6 +193,12 @@ export function ColaboradorLoginClient(): JSX.Element {
         // PortalLayout. Grava string vazia quando ausente (lida pelo
         // `pendencias/page.tsx` + outros responder pages do portal).
         window.sessionStorage.setItem('portalUserPhoto', success.user.photoUrl ?? '');
+        // ME-1.3 (item 1.3 do roadmap) — identidade visual canonica
+        // da empresa, consumida pelo `PortalLayout` nas 6 pages pos-login
+        // do portal (gate-lgpd, pendencias, 4 responder/*). Logo vazio
+        // persistido como string vazia (padrao de `portalUserPhoto`).
+        window.sessionStorage.setItem('portalCompanyName', success.company.displayName);
+        window.sessionStorage.setItem('portalCompanyLogoUrl', success.company.logoUrl ?? '');
         if (success.gateStep === 'lgpd_consent') {
           router.replace('/colaborador/gate-lgpd');
         } else {

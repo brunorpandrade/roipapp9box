@@ -29,7 +29,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { COLORS } from '../../src/lib/design-tokens/colors';
-import { initialsFromName } from '../../src/lib/avatar/initials';
+import { extractFirstName, initialsFromName } from '../../src/lib/avatar/initials';
 import { Avatar } from '../../src/components/ui/Avatar';
 import { Banner, BANNER_COLORS_BY_SEVERITY } from '../../src/components/ui/Banner';
 import {
@@ -133,6 +133,41 @@ describe('lib/avatar/initials — helper canonico §2.10', () => {
   it('nome unico de uma letra padeja para duas letras', () => {
     // 'A' -> primeiras duas letras de 'A' = 'A', padEnd para 2 com 'A' → 'AA'
     expect(initialsFromName('A')).toBe('AA');
+  });
+});
+
+describe('lib/avatar/initials — extractFirstName (ME-1.3, item 1.3)', () => {
+  it('nome unico retorna com inicial maiuscula', () => {
+    expect(extractFirstName('Bruno')).toBe('Bruno');
+    expect(extractFirstName('bruno')).toBe('Bruno');
+    expect(extractFirstName('BRUNO')).toBe('BRUNO');
+  });
+
+  it('nome + sobrenome retorna apenas o primeiro nome', () => {
+    expect(extractFirstName('Bruno Andrade')).toBe('Bruno');
+    expect(extractFirstName('maria silva')).toBe('Maria');
+    expect(extractFirstName('Ana Maria Ferreira Souza')).toBe('Ana');
+  });
+
+  it('espacos multiplos sao normalizados', () => {
+    expect(extractFirstName('  Bruno   Andrade  ')).toBe('Bruno');
+  });
+
+  it('entrada vazia ou so espacos retorna string vazia', () => {
+    expect(extractFirstName('')).toBe('');
+    expect(extractFirstName('   ')).toBe('');
+  });
+
+  it('uma letra retorna a letra em maiuscula', () => {
+    expect(extractFirstName('a')).toBe('A');
+    expect(extractFirstName('X')).toBe('X');
+  });
+
+  it('preserva capitalizacao do restante bit-exact', () => {
+    // Caso canonico: backend persiste o nome com capitalizacao coerente.
+    // O helper apenas garante que a inicial renderize maiuscula.
+    expect(extractFirstName('dAVILA')).toBe('DAVILA');
+    expect(extractFirstName('maria-clara silva')).toBe('Maria-clara');
   });
 });
 

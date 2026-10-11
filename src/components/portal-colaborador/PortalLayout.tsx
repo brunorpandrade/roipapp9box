@@ -44,6 +44,30 @@ export interface PortalLayoutProps {
   readonly userPhotoUrl?: string | null;
   readonly onSair?: () => void;
   readonly showHeader?: boolean;
+  /**
+   * ME-1.3 (item 1.3 do roadmap) — nome fantasia da empresa do titular
+   * logado. Quando presente (string nao vazia), o lado esquerdo do
+   * header renderiza logo+nome da empresa no lugar do brand ROIPeople,
+   * cumprindo o criterio canonico "logo da empresa + nome da empresa"
+   * do item 1.3. Ausente ou vazio = fallback canonico do brand
+   * ROIPeople (comportamento pre-ME-1.3 preservado).
+   */
+  readonly companyDisplayName?: string | null;
+  /**
+   * ME-1.3 — URL do logo da empresa (coluna `companies.logoUrl`). Usado
+   * quando `companyDisplayName` tambem esta presente. Ausente = somente
+   * nome da empresa a esquerda (sem logo), evitando quebrar o layout
+   * para empresas que ainda nao fizeram upload.
+   */
+  readonly companyLogoUrl?: string | null;
+  /**
+   * ME-1.3 — primeiro nome do titular logado, canonicamente derivado por
+   * `extractFirstName(userName)` no caller. Quando presente e nao vazio,
+   * o lado direito do header renderiza "Olá, {firstName}" no lugar do
+   * nome completo seco (padrao atual). Ausente = fallback canonico para
+   * `userName` (comportamento pre-ME-1.3 preservado).
+   */
+  readonly greetingFirstName?: string | null;
 }
 
 function initialsFromPortalName(name: string): string {
@@ -67,7 +91,16 @@ const TEXT_2 = '#374151';
 const TEXT_3 = '#6B7280';
 
 export function PortalLayout(props: PortalLayoutProps): JSX.Element {
-  const { children, userName, userPhotoUrl, onSair, showHeader } = props;
+  const {
+    children,
+    userName,
+    userPhotoUrl,
+    onSair,
+    showHeader,
+    companyDisplayName,
+    companyLogoUrl,
+    greetingFirstName,
+  } = props;
   const [privacyOpen, setPrivacyOpen] = useState(false);
   // ME-B11.1c (LGPD2): cache em memoria dos contatos canonicos do
   // Encarregado. `null` = ainda nao carregado / fetch falhou / shell
@@ -76,6 +109,18 @@ export function PortalLayout(props: PortalLayoutProps): JSX.Element {
   const [lgpdFetchStarted, setLgpdFetchStarted] = useState(false);
   const renderUserBar = showHeader === true && userName !== undefined && userName !== null;
   const hasPhoto = userPhotoUrl !== undefined && userPhotoUrl !== null && userPhotoUrl.length > 0;
+  // ME-1.3: brand da empresa substitui brand ROIPeople quando presente.
+  const hasCompanyName =
+    companyDisplayName !== undefined &&
+    companyDisplayName !== null &&
+    companyDisplayName.length > 0;
+  const hasCompanyLogo =
+    companyLogoUrl !== undefined && companyLogoUrl !== null && companyLogoUrl.length > 0;
+  // ME-1.3: saudacao canonica "Olá, {firstName}" quando primeiro nome
+  // disponivel; fallback bit-exact ao nome completo (padrao pre-ME-1.3).
+  const hasFirstName =
+    greetingFirstName !== undefined && greetingFirstName !== null && greetingFirstName.length > 0;
+  const userBarText = hasFirstName ? `Olá, ${greetingFirstName}` : (userName ?? '');
 
   // ME-B11.1c (LGPD2): fetch lazy dos contatos canonicos quando o
   // modal e aberto pela primeira vez. Dispara apenas se o shell esta
@@ -143,34 +188,71 @@ export function PortalLayout(props: PortalLayoutProps): JSX.Element {
             alignItems: 'center',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: NAVY,
-                color: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: 12,
-                flexShrink: 0,
-              }}
-            >
-              R
-            </div>
-            <span
-              style={{
-                fontSize: 14,
-                fontWeight: 700,
-                color: NAVY,
-                letterSpacing: '0.04em',
-              }}
-            >
-              ROIP<span style={{ color: TEAL }}> APP</span>
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            {/* ME-1.3 (item 1.3 do roadmap): quando a empresa foi
+                propagada ao layout, renderiza logo+nome da empresa
+                (identidade visual do cliente). Fallback canonico ao
+                brand ROIPeople quando a empresa esta ausente (login
+                page e cenarios degenerados). */}
+            {hasCompanyName ? (
+              <>
+                {hasCompanyLogo ? (
+                  // `<img>` nativo (ME-080d Onda 1e): mesma racional do
+                  // Header canonico Shell §4 — companies.logoUrl aponta
+                  // para CDN arbitrario ate o upload interno (D-LOGO-UPLOAD).
+                  <img
+                    src={companyLogoUrl ?? ''}
+                    alt={companyDisplayName ?? 'Logo da empresa'}
+                    width={32}
+                    height={32}
+                    style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }}
+                  />
+                ) : null}
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: NAVY,
+                    letterSpacing: '0.02em',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {companyDisplayName}
+                </span>
+              </>
+            ) : (
+              <>
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    background: NAVY,
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                    fontSize: 12,
+                    flexShrink: 0,
+                  }}
+                >
+                  R
+                </div>
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: NAVY,
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  ROIP<span style={{ color: TEAL }}> APP</span>
+                </span>
+              </>
+            )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
             {/* ME-B9.3 Fase A2 dispatch 2 — avatar canonico do titular
@@ -220,7 +302,7 @@ export function PortalLayout(props: PortalLayoutProps): JSX.Element {
                 textOverflow: 'ellipsis',
               }}
             >
-              {userName}
+              {userBarText}
             </span>
             <button
               type="button"

@@ -1,5 +1,6 @@
 // ROIP APP 9BOX — rota canonica
-// `/colaborador/responder/lideranca-direta` (ME-B10-02, S253, DOC 05 §7.3).
+// `/colaborador/responder/lideranca-direta` (ME-B10-02, S253, DOC 05 §7.3;
+// ME-1.3 cabecalho padrao com identidade da empresa).
 //
 // Tela de resposta do Instrumento D no canal portal (colaborador puro
 // autenticado por CPF+matricula + gate LGPD + sessionStorage). Padrao
@@ -12,6 +13,11 @@
 // ou Q3 (§8.6 S156 — cadencia semestral). Se nao houver card ativo,
 // redireciona para `/colaborador/pendencias`. C-level (S099 §8.6
 // Bloqueio 3) e bloqueado no submit pelo backend com 403 canonico.
+//
+// ME-1.3 (item 1.3 do roadmap): consumo canonico do hook
+// `usePortalSession` substituiu a logica inline de leitura do
+// sessionStorage + handleSair (L125). Propaga identidade visual da
+// empresa + saudacao com primeiro nome ao `PortalLayout`.
 
 'use client';
 
@@ -20,6 +26,7 @@ import { useRouter } from 'next/navigation';
 
 import { LikertFormShell } from '../../../../components/instruments/LikertFormShell';
 import { PortalLayout } from '../../../../components/portal-colaborador/PortalLayout';
+import { usePortalSession } from '../../../../components/portal-colaborador/usePortalSession';
 import { INSTRUMENT_D_CATALOG } from '../../../../lib/instruments/instrumentDCatalog';
 import type {
   PortalColaboradorPendencias,
@@ -30,32 +37,21 @@ const HREF_PENDENCIAS = '/colaborador/pendencias';
 
 export default function RespondeLiderancaDiretaPortalPage(): JSX.Element {
   const router = useRouter();
-  const [userName, setUserName] = useState<string | null>(null);
+  const session = usePortalSession();
   const [trimestre, setTrimestre] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
-
-  function handleSair(): void {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    window.sessionStorage.removeItem('portalToken');
-    window.sessionStorage.removeItem('portalUserName');
-    window.sessionStorage.removeItem('portalUserType');
-    window.sessionStorage.removeItem('portalLgpdSeen');
-    router.replace('/colaborador');
-  }
 
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;
     }
+    // ME-1.3: o guard de token ja aconteceu dentro do usePortalSession
+    // (redirecionando ao `/colaborador` quando ausente). Aqui so lemos
+    // novamente para passar ao fetch de pendencias.
     const token = window.sessionStorage.getItem('portalToken');
     if (token === null || token.length === 0) {
-      router.replace('/colaborador');
       return;
     }
-    const nome = window.sessionStorage.getItem('portalUserName');
-    setUserName(nome);
 
     async function resolverPendencia(bearer: string): Promise<void> {
       try {
@@ -95,9 +91,19 @@ export default function RespondeLiderancaDiretaPortalPage(): JSX.Element {
     void resolverPendencia(token);
   }, [router]);
 
+  const layoutProps = {
+    showHeader: true as const,
+    userName: session.userName,
+    userPhotoUrl: session.userPhotoUrl,
+    companyDisplayName: session.companyDisplayName,
+    companyLogoUrl: session.companyLogoUrl,
+    greetingFirstName: session.greetingFirstName,
+    onSair: session.handleSair,
+  };
+
   if (carregando || trimestre === null) {
     return (
-      <PortalLayout showHeader={true} userName={userName} onSair={handleSair}>
+      <PortalLayout {...layoutProps}>
         <div
           style={{
             padding: 60,
@@ -113,7 +119,7 @@ export default function RespondeLiderancaDiretaPortalPage(): JSX.Element {
   }
 
   return (
-    <PortalLayout showHeader={true} userName={userName} onSair={handleSair}>
+    <PortalLayout {...layoutProps}>
       <LikertFormShell
         titulo="Avaliação da liderança direta"
         subtitulo={`Trimestre ${trimestre}`}

@@ -78,6 +78,27 @@ interface PortalLoginSuccess {
      */
     photoUrl: string | null;
   };
+  /**
+   * ME-1.3 (item 1.3 do roadmap) — identidade visual canonica da
+   * empresa do titular, propagada ao `PortalLayout` via sessionStorage
+   * (`portalCompanyName`, `portalCompanyLogoUrl`). Cumpre o criterio
+   * canonico "logo da empresa + nome da empresa" do cabecalho padrao
+   * do portal.
+   */
+  company: {
+    /**
+     * Nome de exibicao canonico: `companies.nomeFantasia` quando
+     * presente e nao vazio, fallback para `companies.razaoSocial`.
+     * Nunca vazio: empresa cadastrada sempre tem razao social
+     * preenchida (DOC 01 §4.2).
+     */
+    displayName: string;
+    /**
+     * `companies.logoUrl`. Null = empresa sem logo (fallback canonico
+     * no PortalLayout: so o nome a esquerda, sem quadrado de iniciais).
+     */
+    logoUrl: string | null;
+  };
   gateStep: 'lgpd_consent' | 'pendencias';
 }
 
@@ -206,9 +227,24 @@ export async function POST(req: Request): Promise<NextResponse> {
   const consented = await hasValidLGPDConsent(db, titularType, titularId, LGPD_TERM_VERSION);
   const gateStep: PortalLoginSuccess['gateStep'] = consented ? 'pendencias' : 'lgpd_consent';
 
+  // ME-1.3: identidade visual canonica da empresa.
+  // `nomeFantasia` canonicamente opcional (DOC 01 §4.2); fallback para
+  // `razaoSocial` que sempre tem valor em empresa cadastrada.
+  const companyDisplayName =
+    company.nomeFantasia !== null &&
+    company.nomeFantasia !== undefined &&
+    company.nomeFantasia.length > 0
+      ? company.nomeFantasia
+      : company.razaoSocial;
+  const companyLogoUrl =
+    company.logoUrl !== null && company.logoUrl !== undefined && company.logoUrl.length > 0
+      ? company.logoUrl
+      : null;
+
   const body200: PortalLoginSuccess = {
     portalToken,
     user: { id: titularId, name, type: titularType, photoUrl: userPhotoUrl },
+    company: { displayName: companyDisplayName, logoUrl: companyLogoUrl },
     gateStep,
   };
 

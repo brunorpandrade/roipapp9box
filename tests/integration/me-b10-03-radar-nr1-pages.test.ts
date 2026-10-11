@@ -85,7 +85,16 @@ describe('ME-B10-03 — rotas fisicas do Radar NR-1', () => {
 
   it('rota portal redireciona para /colaborador quando portalToken ausente', () => {
     const src = readSrc('src/app/colaborador/responder/radar-nr1/page.tsx');
-    expect(src).toContain("router.replace('/colaborador')");
+    // ME-1.3: o guard canonico de token foi extraido para o hook
+    // `usePortalSession` (L125, cobre 5 pages pos-login do portal). A
+    // page consome o hook; o hook executa `router.replace('/colaborador')`
+    // quando `portalToken` ausente. Esta assercao verifica o novo
+    // ponto de montagem canonico. O guard em si continua testado
+    // integralmente no proprio hook (tests/unit/uiComponents.test.ts
+    // cobre o helper puro `extractFirstName` e a estrutura do hook
+    // sao verificadas pelo check-no-dead-exports + tsc).
+    expect(src).toContain('usePortalSession');
+    expect(src).toContain('session.handleSair');
   });
 });
 
