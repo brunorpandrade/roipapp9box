@@ -1,10 +1,10 @@
-// ROIP APP 9BOX — motor canonico `roiCalculationEngine` (ME-033).
+// ROIP APP 9BOX — motor canonico `roiCalculationEngine` (ME-033 + ME-1.2).
 //
 // Consolida os hooks canonicos do DOC 03 §3 + §18.1: Eixo X, bloco
-// financeiro trimestral e diagnostico economico. Motor puro no sentido
-// canonico (§18.2): zero resolver tRPC, chamado pelo
-// `monthlyClosureOrchestrator` via DI (`TriggerQuarterlyCalculation` /
-// `RecalculateQuarter` — S046 preservada) e por jobs cron a virem.
+// financeiro trimestral v2 (emenda ME-1.1) e diagnostico economico v2.
+// Motor puro no sentido canonico (§18.2): zero resolver tRPC, chamado
+// pelo `monthlyClosureOrchestrator` via DI (`TriggerQuarterlyCalculation`
+// / `RecalculateQuarter` — S046 preservada) e por jobs cron a virem.
 //
 // Convencoes canonicas desta ME:
 //   - `now` sempre parametro explicito. Determinismo total (S044/L38).
@@ -27,7 +27,7 @@
 //     devolve `RoiSkipLog[]` tipado como parte de `RoiCalculationResult`
 //     (S054 aprovada; D006 aberta para ME futura de schema estendido).
 //
-// Decisoes de autor RV-08 desta ME (indice §7):
+// Decisoes de autor desta ME:
 //   - S052 — nome canonico `roiCalculationEngine.ts` (DOC 03 §18.1).
 //   - S053 — motor unico cobre §3 integral (Eixo X + financeiro +
 //     diagnostico); nao edita hash do orchestrator (L54 preservada).
@@ -41,6 +41,22 @@
 //   - S058 — leitura literal do §3.7: `diasUteis` NULL bloqueia o motor
 //     no mes inteiro. Consequencia canonica: se 1+ mes do trimestre tem
 //     `diasUteis=NULL`, o colaborador entra em `dias_uteis_nao_lancado`.
+//   - ME-1.2 (emenda ME-1.1) — motor de ROI v2:
+//       * `folhaProdutivaMedia` = soma dos custos dos colaboradores em P.
+//         Base exclusiva do motor de ROI. Reconstituida em runtime a
+//         partir dos `custoMedioTrimestral` dos colaboradores em P (sem
+//         coluna nova no schema — operacao>roadmap canonico).
+//       * `folhaTotalMedia` preservada em `companyEconomicDiagnosis`
+//         (coluna `NOT NULL`) e usada APENAS para `folhaPorcentagem`
+//         (§3.6, S532 — "inclui alta lideranca").
+//       * `fatorModerador` com 3 ramos canonicos: P_score normal,
+//         P_neutro (fator 1.00 + log `fator_neutro_sem_score`), fallback
+//         geral (scoreMedioPonderado=0 -> todo P com fator 1.00 + log).
+//       * `participacao` persistida = `participacaoBase x fatorModerador`
+//         (`participacaoBase` reconstituivel por `retornoPotencial /
+//         faturamentoPotencial` sem persistencia adicional).
+//       * `roiEmpresa` sobre `folhaProdutivaMedia` (nao total).
+//       * `faturamentoIdeal` sobre `folhaProdutivaMedia`.
 
 import { and, asc, eq, inArray } from 'drizzle-orm';
 
@@ -64,12 +80,15 @@ import {
   computeCapacidadeOciosa,
   computeFaixaDesempenho,
   computeFaturamentoIdeal,
+  computeFatorModerador,
   computeFolhaPorcentagem,
+  computeFolhaProdutivaMedia,
   computeFolhaTotalMedia,
   computeIndiceDesempenhoMes,
   computeIndiceDesempenhoTrimestral,
   computeMediaTrimestral,
-  computeParticipacao,
+  computeParticipacaoAjustada,
+  computeParticipacaoBase,
   computePercMetaAtingida,
   computeRetornoEstimado,
   computeRetornoPotencial,
@@ -77,10 +96,13 @@ import {
   computeRoiEstimado,
   computeRoiMuitoBom,
   computeScoreDesempenho,
+  computeScoreMedioPonderado,
   computeStatusDiagnostico,
   FAMILIA_6_JOB_FAMILY,
+  FATOR_MODERADOR_NEUTRO,
   type FaixaDesempenho,
   type RoiSkipMotivo,
+  type ScoreParticipacaoPair,
   type StatusDiagnostico,
   type VariableMonth,
 } from '../../lib/roiFormulas';
@@ -362,6 +384,11 @@ async function processEmployeeMonthly(
     return { updated: false, skipped };
   }
 
+  // jobFamily consumido para distinguir Familia 6 canonicamente em
+  // consumidores futuros (processamento mensal nao precisa dele hoje —
+  // mas preservado na assinatura para compatibilidade com callers).
+  void jobFamily;
+
   const goalsRows = await db
     .select({
       variableIndex: employeeGoals.variableIndex,
@@ -453,9 +480,9 @@ async function processEmployeeMonthly(
  * Hook publico canonico chamado pelo orchestrator via DI
  * `TriggerQuarterlyCalculation`. Executa a cadeia canonica completa do
  * §3 para o trimestre indicado: garante indices mensais dos 3 meses,
- * calcula trimestre por colaborador ativo, calcula bloco financeiro da
- * empresa (§3.5), calcula diagnostico economico (§3.6). Persiste
- * `performanceQuarterlyData` (upsert), `companyEconomicDiagnosis`
+ * calcula trimestre por colaborador ativo, calcula bloco financeiro v2
+ * da empresa (§3.5 ME-1.1), calcula diagnostico economico v2 (§3.6).
+ * Persiste `performanceQuarterlyData` (upsert), `companyEconomicDiagnosis`
  * (upsert) e `performanceMultiplierLog` (append).
  *
  * Assinatura alinhada com o tipo canonico `TriggerQuarterlyCalculation`
@@ -493,7 +520,7 @@ export async function recalculateQuarter(
 }
 
 // ============================================================
-// Implementacao interna canonica do calculo trimestral
+// Implementacao interna canonica do calculo trimestral v2 (ME-1.1)
 // ============================================================
 
 interface EmployeeQuarterlySnapshot {
@@ -508,7 +535,9 @@ interface EmployeeQuarterlySnapshot {
   capacidadeOciosa: number | null;
   custoMedioTrimestral: number | null;
   retornoPotencial: number | null;
-  // preenchidos na segunda passada (bloco financeiro):
+  // preenchidos na passada financeira v2 (bloco financeiro):
+  participacaoBase: number | null;
+  fatorModerador: number | null;
   participacao: number | null;
   retornoEstimado: number | null;
   roiEstimado: number | null;
@@ -606,7 +635,8 @@ async function runQuarterlyCalculation(
 
   // Primeira passada: computa indiceTri, scoreDesempenho, capacidadeOciosa,
   // custoMedioTrimestral, retornoPotencial (dependem so de dados do
-  // colaborador). Segunda passada depende de faturamentoPotencial global.
+  // colaborador). Passadas financeiras subsequentes dependem de
+  // folhaProdutivaMedia e faturamentoPotencial globais.
   const snapshots: EmployeeQuarterlySnapshot[] = [];
   for (const emp of activeEmployees) {
     try {
@@ -631,7 +661,7 @@ async function runQuarterlyCalculation(
     }
   }
 
-  // Bloco financeiro da empresa (§3.5 Passos 1-4). Requer faturamento
+  // Bloco financeiro v2 da empresa (§3.5 Passos 1-11). Requer faturamento
   // dos 3 meses preenchido.
   const monthlyRows = await db
     .select({
@@ -651,6 +681,7 @@ async function runQuarterlyCalculation(
 
   let faturamentoMedioTrimestral: number | null = null;
   let folhaTotalMedia: number | null = null;
+  let folhaProdutivaMedia: number | null = null;
   let faturamentoPotencial: number | null = null;
 
   if (financialCanCompute) {
@@ -660,7 +691,9 @@ async function runQuarterlyCalculation(
       faturamentos[2] as number,
     );
 
-    const custosEmployees = snapshots
+    // Folha total (inclui C-levels) — insumo exclusivo de folhaPorcentagem
+    // (§3.6, S532). Nao entra no motor de ROI v2.
+    const custosEmployeesTodos = snapshots
       .filter((s) => s.custoMedioTrimestral !== null)
       .map((s) => s.custoMedioTrimestral as number);
 
@@ -670,7 +703,16 @@ async function runQuarterlyCalculation(
       .where(and(eq(cLevelMembers.companyId, companyId), eq(cLevelMembers.status, 'ativo')));
     const custosCLevels = cLevelRows.map((r) => Number(r.custoMensal));
 
-    folhaTotalMedia = computeFolhaTotalMedia(custosEmployees, custosCLevels);
+    folhaTotalMedia = computeFolhaTotalMedia(custosEmployeesTodos, custosCLevels);
+
+    // Populacao P (§3.5): colaboradores em `employees` com `metaROI`
+    // resolvida (nao NULL) no trimestre. retornoPotencial so e populado
+    // em buildEmployeeSnapshotFirstPass quando metaROI nao e NULL E
+    // custoMedioTrimestral tambem nao e NULL — i.e., exatamente P.
+    const custosEmP = snapshots
+      .filter((s) => s.retornoPotencial !== null && s.custoMedioTrimestral !== null)
+      .map((s) => s.custoMedioTrimestral as number);
+    folhaProdutivaMedia = computeFolhaProdutivaMedia(custosEmP);
 
     faturamentoPotencial = snapshots
       .filter((s) => s.retornoPotencial !== null)
@@ -685,36 +727,43 @@ async function runQuarterlyCalculation(
     });
   }
 
-  // Segunda passada: participacao, retornoEstimado, roiEstimado,
-  // percMetaAtingida. Requer faturamentoPotencial e faturamentoMedio.
-  if (financialCanCompute && faturamentoPotencial !== null && faturamentoMedioTrimestral !== null) {
-    for (const s of snapshots) {
-      if (s.retornoPotencial === null || s.metaROI === null) {
-        continue;
-      }
-      const participacao = computeParticipacao(s.retornoPotencial, faturamentoPotencial);
-      if (participacao === null) {
-        continue;
-      }
-      s.participacao = participacao;
-      const retornoEstimado = computeRetornoEstimado(faturamentoMedioTrimestral, participacao);
-      s.retornoEstimado = retornoEstimado;
-      if (s.custoMedioTrimestral !== null) {
-        s.roiEstimado = computeRoiEstimado(retornoEstimado, s.custoMedioTrimestral);
-        if (s.roiEstimado !== null) {
-          s.percMetaAtingida = computePercMetaAtingida(s.roiEstimado, s.metaROI);
-        }
-      }
-    }
+  // Passada financeira v2 (§3.5 Passos 5-10) — participacaoBase,
+  // scoreMedioPonderado, fatorModerador, participacao ajustada,
+  // retornoEstimado, roiEstimado, percMetaAtingida.
+  if (
+    financialCanCompute &&
+    faturamentoPotencial !== null &&
+    faturamentoPotencial > 0 &&
+    faturamentoMedioTrimestral !== null
+  ) {
+    applyRoiV2Pass(
+      snapshots,
+      faturamentoPotencial,
+      faturamentoMedioTrimestral,
+      trimestre,
+      result.skipped,
+    );
   }
 
-  // Persistencia: uma transacao por colaborador (S055 tolerancia a
-  // falha parcial). Transacao curta: performanceQuarterlyData (upsert)
+  // Persistencia (ME-1.1): uma transacao por colaborador (S055 tolerancia
+  // a falha parcial). Transacao curta: performanceQuarterlyData (upsert)
   // + performanceMultiplierLog (append).
+  //
+  // Regra canonica v2 de criar linha:
+  //   - Com Eixo X calculado (indiceTri != null) -> grava linha completa.
+  //   - Em P_neutro (indiceTri = null MAS participacao != null) -> grava
+  //     linha com Eixo X NULL e bloco financeiro preenchido. Necessario
+  //     para a Prova 1 fechar: Σ retornoEstimado_i = faturamentoMedio
+  //     exige participacao de toda P persistida.
+  //   - Fora de P e sem Eixo X -> nao persiste linha (canonicamente nao
+  //     cria linha vazia).
   for (const s of snapshots) {
-    if (s.indiceTri === null || s.scoreDesempenho === null || s.faixaDesempenho === null) {
+    const temEixoX =
+      s.indiceTri !== null && s.scoreDesempenho !== null && s.faixaDesempenho !== null;
+    const temFinanceiro = s.participacao !== null;
+    if (!temEixoX && !temFinanceiro) {
       // Skip ja registrado — nao persiste linha do trimestre para este
-      // colaborador (canonicamente NAO cria linha vazia).
+      // colaborador.
       continue;
     }
     try {
@@ -728,11 +777,11 @@ async function runQuarterlyCalculation(
     }
   }
 
-  // Diagnostico economico (§3.6). Requer faturamentoMedio e
-  // folhaTotalMedia > 0 (senao roiEmpresa NULL e o schema exige
-  // roiEmpresa notNull). Grava sempre que financialCanCompute e ha
-  // folha > 0, com status adequado (inclusive `sem_referencia` quando
-  // roiSegmento* NULL).
+  // Diagnostico economico (§3.6 ME-1.1). roiEmpresa e faturamentoIdeal
+  // operam sobre folhaProdutivaMedia; folhaPorcentagem opera sobre
+  // folhaTotalMedia. Grava sempre que financialCanCompute e ha folha
+  // total > 0 (campo NOT NULL no schema), com status adequado (inclusive
+  // `sem_referencia` quando roiSegmento* NULL).
   if (
     financialCanCompute &&
     faturamentoMedioTrimestral !== null &&
@@ -746,6 +795,7 @@ async function runQuarterlyCalculation(
         trimestre,
         faturamentoMedioTrimestral,
         folhaTotalMedia,
+        folhaProdutivaMedia,
         faturamentoPotencial,
         ctx,
         now,
@@ -760,6 +810,117 @@ async function runQuarterlyCalculation(
   }
 
   return result;
+}
+
+/**
+ * Aplica em memoria a passada financeira v2 (§3.5 Passos 5-10, ME-1.1)
+ * sobre os `snapshots` do trimestre, usando `faturamentoPotencial` e
+ * `faturamentoMedioTrimestral` ja calculados.
+ *
+ * Ordem canonica:
+ *   1) participacaoBase_i = retornoPotencial_i / faturamentoPotencial.
+ *   2) scoreMedioPonderado sobre P_score (snapshots em P com
+ *      scoreDesempenho != null).
+ *   3) Se scoreMedioPonderado NULL ou <= 0 -> fallback neutro geral:
+ *      todos os snapshots em P recebem fator 1.00 com registro
+ *      `fator_neutro_sem_score` (detail especifico do fallback).
+ *   4) Caso canonico: para cada snapshot em P:
+ *      - Em P_score: fatorModerador = scoreDesempenho / scoreMedio.
+ *      - Em P_neutro: fatorModerador = 1.00 + registro
+ *        `fator_neutro_sem_score`.
+ *   5) participacao_i = participacaoBase_i * fatorModerador_i.
+ *   6) retornoEstimado, roiEstimado, percMetaAtingida.
+ *
+ * `faturamentoPotencial` > 0 ja garantido pelo caller.
+ */
+function applyRoiV2Pass(
+  snapshots: EmployeeQuarterlySnapshot[],
+  faturamentoPotencial: number,
+  faturamentoMedioTrimestral: number,
+  trimestre: string,
+  skipped: RoiSkipLog[],
+): void {
+  // Populacao P: snapshots com retornoPotencial != null (ja garantido
+  // metaROI != null + custoMedioTrimestral != null em
+  // buildEmployeeSnapshotFirstPass).
+  const populacaoP = snapshots.filter(
+    (s) => s.retornoPotencial !== null && s.custoMedioTrimestral !== null && s.metaROI !== null,
+  );
+
+  // Passo 5: participacaoBase (vive no snapshot).
+  for (const s of populacaoP) {
+    const base = computeParticipacaoBase(s.retornoPotencial as number, faturamentoPotencial);
+    s.participacaoBase = base;
+  }
+
+  // Passo 6: scoreMedioPonderado sobre P_score.
+  const pScorePairs: ScoreParticipacaoPair[] = [];
+  for (const s of populacaoP) {
+    if (s.scoreDesempenho !== null && s.participacaoBase !== null) {
+      pScorePairs.push({
+        participacaoBase: s.participacaoBase,
+        scoreDesempenho: s.scoreDesempenho,
+      });
+    }
+  }
+  const scoreMedioPonderado = computeScoreMedioPonderado(pScorePairs);
+
+  // Fallback neutro geral: scoreMedioPonderado NULL (P_score vazio) OU
+  // scoreMedioPonderado = 0 (todos os scores zerados). Todo P recebe
+  // fator 1.00; cada colaborador ganha linha de log informativa.
+  const fallbackNeutro = scoreMedioPonderado === null || scoreMedioPonderado <= 0;
+
+  for (const s of populacaoP) {
+    if (s.participacaoBase === null) {
+      // defensivo: participacaoBase NULL (faturamentoPotencial <= 0)
+      // ja barrado pelo caller, mas protege linha.
+      continue;
+    }
+
+    let fator: number;
+    if (fallbackNeutro) {
+      fator = FATOR_MODERADOR_NEUTRO;
+      skipped.push({
+        employeeId: s.employeeId,
+        mes: null,
+        trimestre,
+        motivo: 'fator_neutro_sem_score',
+        detail:
+          `fallback geral: scoreMedioPonderado=${scoreMedioPonderado === null ? 'null' : '0'} ` +
+          `aplica fator neutro 1,00 a todo P (colaborador ${s.employeeId})`,
+      });
+    } else if (s.scoreDesempenho === null) {
+      // P_neutro canonico (S531): colaborador em P sem scoreDesempenho
+      // no trimestre.
+      fator = FATOR_MODERADOR_NEUTRO;
+      skipped.push({
+        employeeId: s.employeeId,
+        mes: null,
+        trimestre,
+        motivo: 'fator_neutro_sem_score',
+        detail:
+          `colaborador ${s.employeeId} sem scoreDesempenho; ` +
+          `fator moderador neutro 1,00 aplicado (bloco financeiro calculado)`,
+      });
+    } else {
+      // P_score canonico: moderador = score / scoreMedioPonderado.
+      fator = computeFatorModerador(s.scoreDesempenho, scoreMedioPonderado as number);
+    }
+    s.fatorModerador = fator;
+
+    const participacao = computeParticipacaoAjustada(s.participacaoBase, fator);
+    s.participacao = participacao;
+
+    const retornoEstimado = computeRetornoEstimado(faturamentoMedioTrimestral, participacao);
+    s.retornoEstimado = retornoEstimado;
+
+    const roiEstimado = computeRoiEstimado(retornoEstimado, s.custoMedioTrimestral as number);
+    s.roiEstimado = roiEstimado;
+
+    if (roiEstimado !== null) {
+      s.percMetaAtingida = computePercMetaAtingida(roiEstimado, s.metaROI as number);
+    }
+  }
 }
 
 async function buildEmployeeSnapshotFirstPass(
@@ -802,7 +963,19 @@ async function buildEmployeeSnapshotFirstPass(
     indicesPorMes[2] ?? null,
   );
 
+  let scoreDesempenho: number | null = null;
+  let faixaDesempenho: FaixaDesempenho | null = null;
+
   if (indiceTri === null) {
+    // Nota canonica ME-1.1: ausencia de scoreDesempenho NAO impede o
+    // colaborador de participar do bloco financeiro — ele entra em
+    // P_neutro (fator 1,00). Ainda assim registramos o skip canonico
+    // `sem_demanda` para auditoria. Prosseguimos construindo o snapshot
+    // com indiceTri=null (sem scoreDesempenho); o motor nao persiste
+    // linha em performanceQuarterlyData para colaborador sem Eixo X
+    // (canonicamente nao cria linha vazia — logica preservada no
+    // runQuarterlyCalculation), mas o colaborador ainda pode entrar
+    // na folha produtiva se tiver metaROI resolvida.
     skipped.push({
       employeeId,
       mes: null,
@@ -810,15 +983,14 @@ async function buildEmployeeSnapshotFirstPass(
       motivo: 'sem_demanda',
       detail: `colaborador ${employeeId} sem indice mensal em 1+ mes do trimestre`,
     });
-    return null;
+  } else {
+    scoreDesempenho = computeScoreDesempenho(indiceTri);
+    faixaDesempenho = computeFaixaDesempenho(
+      scoreDesempenho,
+      ctx.thresholdDesempenhoBaixo,
+      ctx.thresholdDesempenhoMedio,
+    );
   }
-
-  const scoreDesempenho = computeScoreDesempenho(indiceTri);
-  const faixaDesempenho = computeFaixaDesempenho(
-    scoreDesempenho,
-    ctx.thresholdDesempenhoBaixo,
-    ctx.thresholdDesempenhoMedio,
-  );
 
   // Capacidade ociosa: baseada no ULTIMO mes do trimestre (S056).
   const ultimoMes = meses[2];
@@ -905,6 +1077,8 @@ async function buildEmployeeSnapshotFirstPass(
     capacidadeOciosa,
     custoMedioTrimestral,
     retornoPotencial,
+    participacaoBase: null,
+    fatorModerador: null,
     participacao: null,
     retornoEstimado: null,
     roiEstimado: null,
@@ -920,9 +1094,24 @@ async function persistEmployeeQuarterly(
   now: Date,
   ajusteRetroativo: boolean,
 ): Promise<void> {
-  if (s.indiceTri === null || s.scoreDesempenho === null || s.faixaDesempenho === null) {
-    throw new Error('persistEmployeeQuarterly: snapshot sem Eixo X');
+  const temEixoX = s.indiceTri !== null && s.scoreDesempenho !== null && s.faixaDesempenho !== null;
+  const temFinanceiro = s.participacao !== null;
+  if (!temEixoX && !temFinanceiro) {
+    throw new Error('persistEmployeeQuarterly: snapshot sem Eixo X e sem bloco financeiro');
   }
+  // Campos canonicos v2 do upsert — montados uma vez para INSERT e UPDATE.
+  const indiceDesempenho = s.indiceTri === null ? null : String(s.indiceTri);
+  const scoreDesempenho = s.scoreDesempenho === null ? null : String(s.scoreDesempenho);
+  const capacidadeOciosa = s.capacidadeOciosa === null ? null : String(s.capacidadeOciosa * 100);
+  const faixaDesempenho = s.faixaDesempenho;
+  const custoMedioTrimestral =
+    s.custoMedioTrimestral === null ? null : String(s.custoMedioTrimestral);
+  const metaROI = s.metaROI === null ? null : String(s.metaROI);
+  const retornoPotencial = s.retornoPotencial === null ? null : String(s.retornoPotencial);
+  const participacao = s.participacao === null ? null : String(s.participacao);
+  const retornoEstimado = s.retornoEstimado === null ? null : String(s.retornoEstimado);
+  const roiEstimado = s.roiEstimado === null ? null : String(s.roiEstimado);
+  const percMetaAtingida = s.percMetaAtingida === null ? null : String(s.percMetaAtingida);
   await db.transaction(async (tx) => {
     await tx
       .insert(performanceQuarterlyData)
@@ -930,34 +1119,32 @@ async function persistEmployeeQuarterly(
         companyId,
         employeeId: s.employeeId,
         trimestre,
-        indiceDesempenho: String(s.indiceTri),
-        scoreDesempenho: String(s.scoreDesempenho),
-        capacidadeOciosa: s.capacidadeOciosa === null ? null : String(s.capacidadeOciosa * 100),
-        faixaDesempenho: s.faixaDesempenho,
-        custoMedioTrimestral:
-          s.custoMedioTrimestral === null ? null : String(s.custoMedioTrimestral),
-        metaROI: s.metaROI === null ? null : String(s.metaROI),
-        retornoPotencial: s.retornoPotencial === null ? null : String(s.retornoPotencial),
-        participacao: s.participacao === null ? null : String(s.participacao),
-        retornoEstimado: s.retornoEstimado === null ? null : String(s.retornoEstimado),
-        roiEstimado: s.roiEstimado === null ? null : String(s.roiEstimado),
-        percMetaAtingida: s.percMetaAtingida === null ? null : String(s.percMetaAtingida),
+        indiceDesempenho,
+        scoreDesempenho,
+        capacidadeOciosa,
+        faixaDesempenho,
+        custoMedioTrimestral,
+        metaROI,
+        retornoPotencial,
+        participacao,
+        retornoEstimado,
+        roiEstimado,
+        percMetaAtingida,
         calculadoEm: now,
       })
       .onDuplicateKeyUpdate({
         set: {
-          indiceDesempenho: String(s.indiceTri),
-          scoreDesempenho: String(s.scoreDesempenho),
-          capacidadeOciosa: s.capacidadeOciosa === null ? null : String(s.capacidadeOciosa * 100),
-          faixaDesempenho: s.faixaDesempenho,
-          custoMedioTrimestral:
-            s.custoMedioTrimestral === null ? null : String(s.custoMedioTrimestral),
-          metaROI: s.metaROI === null ? null : String(s.metaROI),
-          retornoPotencial: s.retornoPotencial === null ? null : String(s.retornoPotencial),
-          participacao: s.participacao === null ? null : String(s.participacao),
-          retornoEstimado: s.retornoEstimado === null ? null : String(s.retornoEstimado),
-          roiEstimado: s.roiEstimado === null ? null : String(s.roiEstimado),
-          percMetaAtingida: s.percMetaAtingida === null ? null : String(s.percMetaAtingida),
+          indiceDesempenho,
+          scoreDesempenho,
+          capacidadeOciosa,
+          faixaDesempenho,
+          custoMedioTrimestral,
+          metaROI,
+          retornoPotencial,
+          participacao,
+          retornoEstimado,
+          roiEstimado,
+          percMetaAtingida,
           calculadoEm: now,
         },
       });
@@ -1002,11 +1189,19 @@ async function persistEconomicDiagnosis(
   trimestre: string,
   faturamentoMedio: number,
   folhaTotalMedia: number,
+  folhaProdutivaMedia: number | null,
   faturamentoPotencial: number | null,
   ctx: CompanyContext,
   now: Date,
 ): Promise<void> {
-  const roiEmpresa = computeRoiEmpresa(faturamentoMedio, folhaTotalMedia);
+  // ME-1.1: roiEmpresa opera sobre folhaProdutivaMedia (nao total).
+  // Quando folhaProdutivaMedia e NULL ou 0, nao e possivel calcular
+  // roiEmpresa — grava 0 como sentinela (schema NOT NULL) e statusDiagnostico
+  // `sem_referencia`.
+  let roiEmpresa: number | null = null;
+  if (folhaProdutivaMedia !== null && folhaProdutivaMedia > 0) {
+    roiEmpresa = computeRoiEmpresa(faturamentoMedio, folhaProdutivaMedia);
+  }
   const folhaPorcentagem = computeFolhaPorcentagem(folhaTotalMedia, faturamentoMedio);
   const statusDiagnostico: StatusDiagnostico =
     roiEmpresa === null
@@ -1015,9 +1210,15 @@ async function persistEconomicDiagnosis(
 
   let roiMuitoBom: number | null = null;
   let faturamentoIdeal: number | null = null;
-  if (ctx.roiSegmentoMinimo !== null && ctx.roiSegmentoMaximo !== null) {
+  if (
+    ctx.roiSegmentoMinimo !== null &&
+    ctx.roiSegmentoMaximo !== null &&
+    folhaProdutivaMedia !== null &&
+    folhaProdutivaMedia > 0
+  ) {
     roiMuitoBom = computeRoiMuitoBom(ctx.roiSegmentoMinimo, ctx.roiSegmentoMaximo);
-    faturamentoIdeal = computeFaturamentoIdeal(folhaTotalMedia, roiMuitoBom);
+    // ME-1.1: faturamentoIdeal opera sobre folhaProdutivaMedia.
+    faturamentoIdeal = computeFaturamentoIdeal(folhaProdutivaMedia, roiMuitoBom);
   }
 
   const values = {

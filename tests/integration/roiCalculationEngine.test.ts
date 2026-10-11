@@ -65,6 +65,9 @@ const CNPJ_IDEMPOTENT = '10000000000360';
 const CNPJ_FAMILIA6 = '10000000000361';
 const CNPJ_DIAGNOSTIC = '10000000000362';
 const CNPJ_PARTIAL_FAILURE = '10000000000363';
+const CNPJ_V2_MODERADOR = '10000000000364';
+const CNPJ_V2_IDENTIDADES = '10000000000365';
+const CNPJ_V2_PNEUTRO = '10000000000366';
 
 const TRIMESTRE = '2025-Q1';
 const MES_1 = '2025-01';
@@ -494,14 +497,15 @@ describe('triggerQuarterlyCalculation caso feliz completo', () => {
       .select()
       .from(companyEconomicDiagnosis)
       .where(eq(companyEconomicDiagnosis.companyId, companyId));
-    // folhaTotalMedia = 5000 + 10000 + 15000 = 30000
+    // folhaTotalMedia = 5000 + 10000 + 15000 = 30000 (empA + empB + C-level)
     expect(Number(econ!.folhaTotalMedia)).toBeCloseTo(30000, 2);
     // faturamentoMedio = 80000
     expect(Number(econ!.faturamentoMedioTrimestral)).toBeCloseTo(80000, 2);
-    // roiEmpresa = 80000/30000 ~ 2.6667
-    expect(Number(econ!.roiEmpresa)).toBeCloseTo(2.6667, 3);
-    // roiSegmentoMin=2, max=4, muitoBom=3, empresa=2.67 -> aceitavel
-    expect(econ!.statusDiagnostico).toBe('aceitavel');
+    // ME-1.1: roiEmpresa = faturamentoMedio / folhaProdutivaMedia (sem C-levels)
+    // folhaProdutivaMedia = 5000 + 10000 = 15000 (so empA + empB); roi = 80000/15000 ~ 5.3333
+    expect(Number(econ!.roiEmpresa)).toBeCloseTo(5.3333, 3);
+    // roiSegmentoMin=2, max=4; empresa=5.33 >= 4 -> excelente (v2 ME-1.1)
+    expect(econ!.statusDiagnostico).toBe('excelente');
 
     const logRows = await client.db
       .select()
@@ -657,10 +661,32 @@ describe('triggerQuarterlyCalculation skips canonicos', () => {
       ]);
     }
     const result = await triggerQuarterlyCalculation(client.db, cid, TRIMESTRE, NOW);
-    // colaborador NAO calculado (Eixo X sem indice)
-    expect(result.employeesCalculated).not.toContain(emp);
-    const s = result.skipped.find((r) => r.employeeId === emp && r.motivo === 'sem_demanda');
-    expect(s).toBeDefined();
+    // ME-1.1: colaborador em P (metaROI 3.00 + custo 5000) sem Eixo X -> P_neutro
+    // Linha persistida com Eixo X NULL e participacao = participacaoBase (fator 1.00).
+    // Entra em employeesCalculated.
+    expect(result.employeesCalculated).toContain(emp);
+    // Skip canonico `sem_demanda` continua sendo registrado (ausencia de Eixo X).
+    const sSemDemanda = result.skipped.find(
+      (r) => r.employeeId === emp && r.motivo === 'sem_demanda',
+    );
+    expect(sSemDemanda).toBeDefined();
+    // ME-1.1 S531: novo skip informativo `fator_neutro_sem_score`.
+    const sFatorNeutro = result.skipped.find(
+      (r) => r.employeeId === emp && r.motivo === 'fator_neutro_sem_score',
+    );
+    expect(sFatorNeutro).toBeDefined();
+    // Linha persistida com Eixo X NULL e bloco financeiro preenchido.
+    const [row] = await client.db
+      .select()
+      .from(performanceQuarterlyData)
+      .where(eq(performanceQuarterlyData.employeeId, emp));
+    expect(row).toBeDefined();
+    expect(row!.indiceDesempenho).toBeNull();
+    expect(row!.scoreDesempenho).toBeNull();
+    expect(row!.faixaDesempenho).toBeNull();
+    expect(row!.participacao).not.toBeNull();
+    // Unico colaborador em P -> participacao ajustada = 1.0 (todo rateio).
+    expect(Number(row!.participacao)).toBeCloseTo(1.0, 3);
   });
 });
 
@@ -927,11 +953,21 @@ describe('tolerancia a falha parcial (S055)', () => {
   it('colaborador problematico entra em skipped; ok continua', async () => {
     const result = await triggerQuarterlyCalculation(client.db, companyId, TRIMESTRE, NOW);
     expect(result.employeesCalculated).toContain(empOk);
-    expect(result.employeesCalculated).not.toContain(empSemGoals);
-    const s = result.skipped.find(
+    // ME-1.1: empSemGoals esta em P (tem metaROI 3.00 + custoMedio 5000) e
+    // vai para P_neutro — linha persistida com Eixo X NULL e participacao
+    // calculada com fator moderador 1.00. Entra em employeesCalculated.
+    expect(result.employeesCalculated).toContain(empSemGoals);
+    // Skip canonico `sem_demanda` continua sendo registrado (ausencia de Eixo X).
+    const sSemDemanda = result.skipped.find(
       (r) => r.employeeId === empSemGoals && r.motivo === 'sem_demanda',
     );
-    expect(s).toBeDefined();
+    expect(sSemDemanda).toBeDefined();
+    // ME-1.1 S531: novo skip informativo `fator_neutro_sem_score` indica
+    // que o bloco financeiro foi calculado com fator 1.00.
+    const sFatorNeutro = result.skipped.find(
+      (r) => r.employeeId === empSemGoals && r.motivo === 'fator_neutro_sem_score',
+    );
+    expect(sFatorNeutro).toBeDefined();
   });
 });
 
@@ -974,5 +1010,236 @@ describe('contratos de tipo e defaults canonicos', () => {
       errors: [],
     };
     expect(monthly.mes).toBe('2025-01');
+  });
+});
+// ============================================================
+// 10) Motor de ROI v2 (ME-1.1 / emenda do DOC 03 §3.5-§3.6)
+// ============================================================
+
+describe('motor de ROI v2 — fator moderador por desempenho (§3.5 Passo 6)', () => {
+  let companyId: number;
+  let empHigh: number;
+  let empLow: number;
+
+  beforeAll(async () => {
+    // 2 colaboradores com participacoesBase iguais (mesmo custo + mesma
+    // metaROI) e scores contrastantes para isolar o efeito do moderador.
+    companyId = await createCompany(CNPJ_V2_MODERADOR, {
+      metaROIOperacional: '3.00',
+      roiSegmentoMinimo: '2.00',
+      roiSegmentoMaximo: '6.00',
+    });
+    empHigh = await createEmployee(companyId, nextCpf(), 'operacional', 'vendas_comercial');
+    empLow = await createEmployee(companyId, nextCpf(), 'operacional', 'vendas_comercial');
+    await createGoals(empHigh, 'vendas_comercial', [
+      { variableIndex: 1, weight: '100.00', goal: '100.00' },
+    ]);
+    await createGoals(empLow, 'vendas_comercial', [
+      { variableIndex: 1, weight: '100.00', goal: '100.00' },
+    ]);
+    for (const mes of [MES_1, MES_2, MES_3]) {
+      await createClosure(companyId, mes, 'fechado');
+      await createMonthlyData(companyId, mes, '60000.00', 22);
+      // empHigh: executado 120 -> desempenho 1.2 -> score 120 (alto)
+      await createPerformanceData(companyId, empHigh, mes, '10000.00', 0, [
+        { variableIndex: 1, demanda: '100.00', executado: '120.00' },
+      ]);
+      // empLow: executado 60 -> desempenho 0.6 -> score 60 (medio, limite)
+      await createPerformanceData(companyId, empLow, mes, '10000.00', 0, [
+        { variableIndex: 1, demanda: '100.00', executado: '60.00' },
+      ]);
+    }
+  });
+
+  it('scoreMedioPonderado centraliza em 90 (media de 120 e 60 com pesos iguais)', async () => {
+    const result = await triggerQuarterlyCalculation(client.db, companyId, TRIMESTRE, NOW);
+    expect(result.errors).toHaveLength(0);
+    expect(result.employeesCalculated).toEqual(expect.arrayContaining([empHigh, empLow]));
+    const rows = await client.db
+      .select()
+      .from(performanceQuarterlyData)
+      .where(eq(performanceQuarterlyData.companyId, companyId));
+    const rowHigh = rows.find((r) => r.employeeId === empHigh);
+    const rowLow = rows.find((r) => r.employeeId === empLow);
+    expect(rowHigh).toBeDefined();
+    expect(rowLow).toBeDefined();
+    // participacaoBase = 1/2 = 0.5 para cada (mesmo custo, mesma metaROI).
+    // scoreMedioPonderado = (0.5*120 + 0.5*60) / (0.5+0.5) = 90.
+    // fatorHigh = 120/90 ~ 1.3333; fatorLow = 60/90 ~ 0.6667.
+    // participacaoHigh = 0.5 * 1.3333 ~ 0.6667; participacaoLow = 0.5 * 0.6667 ~ 0.3333.
+    expect(Number(rowHigh!.participacao)).toBeCloseTo(0.6667, 3);
+    expect(Number(rowLow!.participacao)).toBeCloseTo(0.3333, 3);
+    // Soma das participacoes = 1 (propriedade estrutural v2).
+    const soma = Number(rowHigh!.participacao) + Number(rowLow!.participacao);
+    expect(soma).toBeCloseTo(1, 4);
+    // retornoEstimado respeita participacao: fat=60000, high leva ~40000, low ~20000.
+    expect(Number(rowHigh!.retornoEstimado)).toBeCloseTo(40000, 1);
+    expect(Number(rowLow!.retornoEstimado)).toBeCloseTo(20000, 1);
+    // percMetaAtingida_high: roiEstimado = 40000/10000 = 4.0; metaROI = 3.0 -> ~133%.
+    expect(Number(rowHigh!.percMetaAtingida)).toBeCloseTo(133.33, 1);
+    // percMetaAtingida_low: roiEstimado = 20000/10000 = 2.0; metaROI = 3.0 -> ~66.67%.
+    expect(Number(rowLow!.percMetaAtingida)).toBeCloseTo(66.67, 1);
+  });
+});
+
+describe('motor de ROI v2 — identidades canonicas sobre banco real (§3.5 ME-1.1)', () => {
+  let companyId: number;
+  let empIds: number[];
+
+  beforeAll(async () => {
+    // 3 colaboradores com perfis contrastantes para exercer as duas
+    // provas canonicas lendo direto do performanceQuarterlyData.
+    companyId = await createCompany(CNPJ_V2_IDENTIDADES, {
+      metaROIOperacional: '2.50',
+      metaROITatico: '3.00',
+      roiSegmentoMinimo: '2.00',
+      roiSegmentoMaximo: '5.00',
+    });
+    const empA = await createEmployee(companyId, nextCpf(), 'operacional', 'vendas_comercial');
+    const empB = await createEmployee(companyId, nextCpf(), 'tatico', 'vendas_comercial');
+    const empC = await createEmployee(companyId, nextCpf(), 'operacional', 'vendas_comercial');
+    empIds = [empA, empB, empC];
+    for (const emp of empIds) {
+      await createGoals(emp, 'vendas_comercial', [
+        { variableIndex: 1, weight: '100.00', goal: '100.00' },
+      ]);
+    }
+    for (const mes of [MES_1, MES_2, MES_3]) {
+      await createClosure(companyId, mes, 'fechado');
+      await createMonthlyData(companyId, mes, '150000.00', 22);
+      // custos e executados diferentes por colaborador.
+      await createPerformanceData(companyId, empA, mes, '10000.00', 0, [
+        { variableIndex: 1, demanda: '100.00', executado: '110.00' },
+      ]);
+      await createPerformanceData(companyId, empB, mes, '20000.00', 0, [
+        { variableIndex: 1, demanda: '100.00', executado: '80.00' },
+      ]);
+      await createPerformanceData(companyId, empC, mes, '15000.00', 0, [
+        { variableIndex: 1, demanda: '100.00', executado: '55.00' },
+      ]);
+    }
+  });
+
+  it('Prova 1: Σ retornoEstimado_i = faturamentoMedioTrimestral', async () => {
+    const result = await triggerQuarterlyCalculation(client.db, companyId, TRIMESTRE, NOW);
+    expect(result.errors).toHaveLength(0);
+    const rows = await client.db
+      .select()
+      .from(performanceQuarterlyData)
+      .where(eq(performanceQuarterlyData.companyId, companyId));
+    const somaRetornos = rows.reduce((acc, r) => acc + Number(r.retornoEstimado ?? '0'), 0);
+    // faturamentoMedio = 150000. Tolerancia 1 real: `retornoEstimado` eh
+    // DECIMAL(15,2) persistido por colaborador — erro de arredondamento
+    // pode acumular alguns centavos sobre 3+ colaboradores. Identidade
+    // canonica continua: diferenca < R$ 1,00 sobre R$ 150.000 e ruido.
+    expect(Math.abs(somaRetornos - 150000)).toBeLessThan(1);
+  });
+
+  it('Prova 2: custoMedio_i × roiEstimado_i = retornoEstimado_i por colaborador', async () => {
+    const rows = await client.db
+      .select()
+      .from(performanceQuarterlyData)
+      .where(eq(performanceQuarterlyData.companyId, companyId));
+    for (const r of rows) {
+      if (r.custoMedioTrimestral === null || r.roiEstimado === null || r.retornoEstimado === null) {
+        continue;
+      }
+      const prod = Number(r.custoMedioTrimestral) * Number(r.roiEstimado);
+      const retorno = Number(r.retornoEstimado);
+      // Tolerancia canonica: `roiEstimado` eh DECIMAL(6,4) (4 casas),
+      // `custoMedio` DECIMAL(12,2); produto pode diferir do `retornoEstimado`
+      // DECIMAL(15,2) por ate ~1 real quando o custo esta na casa dos
+      // 10000s (4 casas decimais truncadas × milhares de reais).
+      // Identidade canonica preservada em escala relativa (< 0.01%).
+      expect(Math.abs(prod - retorno)).toBeLessThan(Math.max(1, retorno * 0.0001));
+    }
+  });
+
+  it('roiEmpresa = faturamentoMedio / folhaProdutivaMedia (sem C-levels)', async () => {
+    const rows = await client.db
+      .select()
+      .from(performanceQuarterlyData)
+      .where(eq(performanceQuarterlyData.companyId, companyId));
+    const folhaProdutivaMedia = rows.reduce(
+      (acc, r) => acc + Number(r.custoMedioTrimestral ?? '0'),
+      0,
+    );
+    const [econ] = await client.db
+      .select()
+      .from(companyEconomicDiagnosis)
+      .where(eq(companyEconomicDiagnosis.companyId, companyId));
+    const roiEsperado = 150000 / folhaProdutivaMedia;
+    expect(Number(econ!.roiEmpresa)).toBeCloseTo(roiEsperado, 3);
+  });
+
+  it('Σ participacao = 1 sobre P (propriedade estrutural canonica)', async () => {
+    const rows = await client.db
+      .select()
+      .from(performanceQuarterlyData)
+      .where(eq(performanceQuarterlyData.companyId, companyId));
+    const somaPart = rows.reduce((acc, r) => acc + Number(r.participacao ?? '0'), 0);
+    expect(somaPart).toBeCloseTo(1, 3);
+  });
+});
+
+describe('motor de ROI v2 — P_neutro (§3.5 Passo 6, S531)', () => {
+  let companyId: number;
+  let empScore: number;
+  let empNeutro: number;
+
+  beforeAll(async () => {
+    // empScore: Eixo X calculado. empNeutro: em P (metaROI + custo) mas
+    // sem variavel ativa (sem_demanda) -> P_neutro.
+    companyId = await createCompany(CNPJ_V2_PNEUTRO, {
+      metaROIOperacional: '3.00',
+      roiSegmentoMinimo: '2.00',
+      roiSegmentoMaximo: '6.00',
+    });
+    empScore = await createEmployee(companyId, nextCpf(), 'operacional', 'vendas_comercial');
+    empNeutro = await createEmployee(companyId, nextCpf(), 'operacional', 'vendas_comercial');
+    await createGoals(empScore, 'vendas_comercial', [
+      { variableIndex: 1, weight: '100.00', goal: '100.00' },
+    ]);
+    // empNeutro: sem goals -> indiceDesempenho NULL -> sem Eixo X.
+    for (const mes of [MES_1, MES_2, MES_3]) {
+      await createClosure(companyId, mes, 'fechado');
+      await createMonthlyData(companyId, mes, '60000.00', 22);
+      await createPerformanceData(companyId, empScore, mes, '10000.00', 0, [
+        { variableIndex: 1, demanda: '100.00', executado: '100.00' },
+      ]);
+      // empNeutro: lanca custo mas sem variavel.
+      await createPerformanceData(companyId, empNeutro, mes, '10000.00', 0, []);
+    }
+  });
+
+  it('empNeutro recebe fator 1.00 e participacao = participacaoBase', async () => {
+    const result = await triggerQuarterlyCalculation(client.db, companyId, TRIMESTRE, NOW);
+    expect(result.employeesCalculated).toEqual(expect.arrayContaining([empScore, empNeutro]));
+    // Skip canonico informativo `fator_neutro_sem_score` presente.
+    const skipFator = result.skipped.find(
+      (r) => r.employeeId === empNeutro && r.motivo === 'fator_neutro_sem_score',
+    );
+    expect(skipFator).toBeDefined();
+    const rows = await client.db
+      .select()
+      .from(performanceQuarterlyData)
+      .where(eq(performanceQuarterlyData.companyId, companyId));
+    const rowScore = rows.find((r) => r.employeeId === empScore);
+    const rowNeutro = rows.find((r) => r.employeeId === empNeutro);
+    expect(rowScore).toBeDefined();
+    expect(rowNeutro).toBeDefined();
+    // Eixo X de empNeutro = NULL (sem_demanda).
+    expect(rowNeutro!.indiceDesempenho).toBeNull();
+    expect(rowNeutro!.scoreDesempenho).toBeNull();
+    expect(rowNeutro!.faixaDesempenho).toBeNull();
+    // Bloco financeiro de empNeutro preenchido com participacao = participacaoBase.
+    expect(rowNeutro!.participacao).not.toBeNull();
+    // scoreMedioPonderado = scoreScore (so empScore em P_score). fator_score = 1.0;
+    // fator_neutro = 1.0 (canonico). Ambos tem participacao = participacaoBase = 0.5.
+    expect(Number(rowNeutro!.participacao)).toBeCloseTo(0.5, 3);
+    expect(Number(rowScore!.participacao)).toBeCloseTo(0.5, 3);
+    // Σ participacao = 1 preservada.
+    const soma = Number(rowScore!.participacao) + Number(rowNeutro!.participacao);
+    expect(soma).toBeCloseTo(1, 4);
   });
 });

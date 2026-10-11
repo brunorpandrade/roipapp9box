@@ -1,8 +1,9 @@
-// ROIP APP 9BOX — helpers puros das formulas canonicas do Eixo X (ME-033).
+// ROIP APP 9BOX — helpers puros das formulas canonicas do Eixo X (ME-033)
+// e do motor de ROI v2 (ME-1.2 / emenda ME-1.1 do DOC 03 §3.5-§3.6).
 //
-// Consolidam as formulas de §3.4 (Eixo X), §3.5 (bloco financeiro trimestral)
-// e §3.6 (diagnostico economico) do DOC 03. Puros: sem I/O, sem banco, sem
-// dependencias externas. Consumidos por `roiCalculationEngine.ts` (motor
+// Consolidam as formulas de §3.4 (Eixo X), §3.5 (bloco financeiro trimestral
+// v2) e §3.6 (diagnostico economico) do DOC 03. Puros: sem I/O, sem banco,
+// sem dependencias externas. Consumidos por `roiCalculationEngine.ts` (motor
 // canonico DOC 03 §18.1) e testados diretamente por `roiFormulas.test.ts`.
 //
 // Convencoes canonicas:
@@ -33,6 +34,15 @@ export const DESEMPENHO_CAP_FRACAO = 1.5;
 export const SCORE_DESEMPENHO_CAP_PERCENTUAL = 150.0;
 
 /**
+ * Fator moderador canonico aplicado ao colaborador sem `scoreDesempenho`
+ * calculado no trimestre (§3.5 Passo 6, S531). Participa do rateio pela
+ * `participacaoBase`, sem distorcer os demais. Tambem usado como fallback
+ * canonico quando `scoreMedioPonderado = 0` (cenario degenerado — todos
+ * os scores de P_score iguais a zero).
+ */
+export const FATOR_MODERADOR_NEUTRO = 1.0;
+
+/**
  * Valor canonico `jobFamily` da Familia 6 (`lideranca_gestao`). O motor
  * usa esta constante ao decidir os casos especiais canonicos (§3.3):
  *   - `demanda` fixa=5, ignorada se enviada.
@@ -58,11 +68,16 @@ export type StatusDiagnostico =
   'excelente' | 'muito_bom' | 'aceitavel' | 'critico' | 'sem_referencia';
 
 /**
- * Motivos canonicos de `ignoradoMotivo` (§3.7). Sete literais fechados.
+ * Motivos canonicos de `ignoradoMotivo` (§3.7). Oito literais fechados.
  * O motor propaga estes literais no retorno do hook publico
  * (`RoiCalculationResult.skipped`) sem persistir (S054 — nao ha tabela
  * canonica no schema atual; D006 aberta para ME futura de schema
  * estendido).
+ *
+ * `fator_neutro_sem_score` (ME-1.1, S531) e **informativo, nao
+ * bloqueante**: colaborador da populacao P sem `scoreDesempenho` calculado
+ * teve o bloco financeiro calculado com `fatorModerador = 1,00`. Nao
+ * impede persistencia nenhuma — e marcador de auditoria.
  */
 export type RoiSkipMotivo =
   | 'meta_roi_nao_configurada'
@@ -71,7 +86,8 @@ export type RoiSkipMotivo =
   | 'dias_uteis_nao_lancado'
   | 'faturamento_nao_lancado'
   | 'sem_responsavel_financeiro'
-  | 'trimestre_incompleto';
+  | 'trimestre_incompleto'
+  | 'fator_neutro_sem_score';
 
 // ============================================================
 // Passo 1 — Assiduidade mensal (§3.4)
@@ -355,7 +371,7 @@ export function computeCapacidadeOciosa(
 }
 
 // ============================================================
-// §3.5 Bloco financeiro trimestral
+// §3.5 Bloco financeiro trimestral — motor de ROI v2 (emenda ME-1.1)
 // ============================================================
 
 /**
@@ -370,13 +386,32 @@ export function computeMediaTrimestral(m1: number, m2: number, m3: number): numb
 
 /**
  * Soma canonica dos custos medios trimestrais de todos os
- * colaboradores ativos (employees) mais os C-levels ativos (§3.5 Passo 1).
- * Motor injeta `custosEmployees` e `custosCLevels` ja calculados.
+ * colaboradores ativos (employees) mais os C-levels ativos. Usada
+ * exclusivamente como insumo de `folhaPorcentagem` (§3.6) e do card de
+ * folha total da empresa (`ESPEC_ORGANOGRAMAS_E_AGREGADOS` §11.1), com
+ * o subtexto canonico "inclui alta lideranca".
+ *
+ * NAO entra no motor de ROI v2 (§3.5): o motor opera sobre
+ * `folhaProdutivaMedia` (so employees em P), nao sobre folha total.
  */
 export function computeFolhaTotalMedia(custosEmployees: number[], custosCLevels: number[]): number {
   const somaEmp = custosEmployees.reduce((acc, c) => acc + c, 0);
   const somaCL = custosCLevels.reduce((acc, c) => acc + c, 0);
   return somaEmp + somaCL;
+}
+
+/**
+ * Soma canonica dos custos medios trimestrais dos colaboradores da
+ * populacao P (§3.5 Passo 1, S529). P = colaboradores ativos em
+ * `employees` com `metaROI` configurada no trimestre; C-levels nunca
+ * pertencem a P.
+ *
+ * Base exclusiva de todo o motor de ROI v2: rateio, retorno estimado,
+ * ROI individual e ROI da empresa. `custoGovernanca` (C-levels) NUNCA
+ * entra aqui.
+ */
+export function computeFolhaProdutivaMedia(custosEmployeesEmP: number[]): number {
+  return custosEmployeesEmP.reduce((acc, c) => acc + c, 0);
 }
 
 /**
@@ -390,11 +425,17 @@ export function computeRetornoPotencial(custoMedioTrimestral: number, metaROI: n
 }
 
 /**
- * `participacao_i = retornoPotencial_i / faturamentoPotencial` (§3.5 Passo 5).
+ * `participacaoBase_i = retornoPotencial_i / faturamentoPotencial`
+ * (§3.5 Passo 5). Propriedade canonica: `Σ participacaoBase_i = 1` sobre P.
+ *
+ * Prova real do rateio potencial: `participacaoBase_i × faturamentoPotencial
+ * = retornoPotencial_i` — a fatia do faturamento ideal reconstitui
+ * exatamente custo × meta.
+ *
  * Retorna `null` se `faturamentoPotencial <= 0` — canonicamente quando
  * nenhum colaborador tem `metaROI` configurada e o somatorio zerou.
  */
-export function computeParticipacao(
+export function computeParticipacaoBase(
   retornoPotencialIndividual: number,
   faturamentoPotencial: number,
 ): number | null {
@@ -405,8 +446,108 @@ export function computeParticipacao(
 }
 
 /**
+ * Alias canonico retido para compatibilidade com consumidores anteriores
+ * da ME-033. Nome historico da funcao que hoje produz a `participacaoBase`
+ * (§3.5 Passo 5). Novos consumidores devem usar `computeParticipacaoBase`.
+ *
+ * @deprecated use `computeParticipacaoBase` — nome canonico v2 (ME-1.1).
+ */
+export function computeParticipacao(
+  retornoPotencialIndividual: number,
+  faturamentoPotencial: number,
+): number | null {
+  return computeParticipacaoBase(retornoPotencialIndividual, faturamentoPotencial);
+}
+
+/**
+ * Entrada canonica do `computeScoreMedioPonderado`: pares
+ * (`participacaoBase`, `scoreDesempenho`) de colaboradores em P_score
+ * (subconjunto de P com scoreDesempenho calculado no trimestre). O caller
+ * ja aplicou o filtro de P_score — nao ha null aqui.
+ */
+export interface ScoreParticipacaoPair {
+  participacaoBase: number;
+  scoreDesempenho: number;
+}
+
+/**
+ * `scoreMedioPonderado = Σ(participacaoBase_i × scoreDesempenho_i) /
+ * Σ(participacaoBase_i)` sobre P_score (§3.5 Passo 6).
+ *
+ * Retorna `null` quando P_score esta vazio OU quando `Σ(participacaoBase)`
+ * resulta <= 0 (defensivo contra flutuacao numerica). Caller canonicamente
+ * trata ambos os retornos NULL como fallback neutro (§3.5 Passo 6: todos
+ * os fatorModerador=1,00 com registro `fator_neutro_sem_score`).
+ *
+ * Caso canonico `scoreMedioPonderado = 0` (todos os scores de P_score iguais
+ * a zero) e tratado pelo caller apos receber o valor — nao e NULL, e
+ * zero legitimo. O caller aplica fallback neutro geral.
+ */
+export function computeScoreMedioPonderado(pairs: ScoreParticipacaoPair[]): number | null {
+  if (pairs.length === 0) {
+    return null;
+  }
+  let somaProd = 0;
+  let somaPart = 0;
+  for (const p of pairs) {
+    somaProd += p.participacaoBase * p.scoreDesempenho;
+    somaPart += p.participacaoBase;
+  }
+  if (somaPart <= 0) {
+    return null;
+  }
+  return somaProd / somaPart;
+}
+
+/**
+ * `fatorModerador_i = scoreDesempenho_i / scoreMedioPonderado` (§3.5
+ * Passo 6, S530).
+ *
+ * Regras canonicas de borda:
+ *   - `scoreMedioPonderado = 0` -> fallback neutro geral `1.00` (caller
+ *     canonicamente aplica para todo P com registro em log; esta funcao
+ *     retorna 1.00 defensivo quando chamada diretamente neste cenario).
+ *   - `scoreDesempenho_i = 0` com `scoreMedioPonderado > 0` -> fator 0
+ *     (leitura honesta de trimestre sem entrega).
+ *
+ * Nao trata o caso P_neutro (colaborador sem `scoreDesempenho`) — e
+ * responsabilidade do caller aplicar `FATOR_MODERADOR_NEUTRO` diretamente
+ * para colaboradores de P_neutro, com registro `fator_neutro_sem_score`
+ * em log.
+ */
+export function computeFatorModerador(
+  scoreDesempenho: number,
+  scoreMedioPonderado: number,
+): number {
+  if (scoreMedioPonderado <= 0) {
+    return FATOR_MODERADOR_NEUTRO;
+  }
+  return scoreDesempenho / scoreMedioPonderado;
+}
+
+/**
+ * `participacao_i = participacaoBase_i × fatorModerador_i` (§3.5 Passo 7).
+ *
+ * Propriedade estrutural: `Σ participacao_i = 1` sobre P, por construcao
+ * do `scoreMedioPonderado` (o ajuste redistribui o faturamento entre as
+ * pessoas; nao cria nem destroi valor).
+ *
+ * Persistida em `performanceQuarterlyData.participacao` como valor final.
+ * `participacaoBase_i` e reconstituivel a qualquer momento por
+ * `retornoPotencial_i / faturamentoPotencial` a partir dos campos
+ * persistidos — sem coluna adicional no schema (ME-1.1).
+ */
+export function computeParticipacaoAjustada(
+  participacaoBase: number,
+  fatorModerador: number,
+): number {
+  return participacaoBase * fatorModerador;
+}
+
+/**
  * `retornoEstimado_i = faturamentoMedioTrimestral * participacao_i`
- * (§3.5 Passo 6).
+ * (§3.5 Passo 8). Consumo da participacao JA AJUSTADA pelo moderador
+ * (nao da participacaoBase).
  */
 export function computeRetornoEstimado(
   faturamentoMedioTrimestral: number,
@@ -416,7 +557,7 @@ export function computeRetornoEstimado(
 }
 
 /**
- * `roiEstimado_i = retornoEstimado_i / custoMedioTrimestral_i` (§3.5 Passo 7).
+ * `roiEstimado_i = retornoEstimado_i / custoMedioTrimestral_i` (§3.5 Passo 9).
  * Retorna `null` se `custoMedioTrimestral <= 0` (defensivo — canonicamente
  * o `custo_nao_lancado` ja teria propagado antes de chegar aqui).
  */
@@ -431,7 +572,7 @@ export function computeRoiEstimado(
 }
 
 /**
- * `percMetaAtingida_i = (roiEstimado_i / metaROI_i) * 100` (§3.5 Passo 8).
+ * `percMetaAtingida_i = (roiEstimado_i / metaROI_i) * 100` (§3.5 Passo 10).
  * Percentual (pode passar de 100). Retorna `null` se `metaROI <= 0`
  * (defensivo — `meta_roi_nao_configurada` ja teria propagado).
  */
@@ -443,18 +584,25 @@ export function computePercMetaAtingida(roiEstimado: number, metaROI: number): n
 }
 
 /**
- * `roiEmpresa = faturamentoMedioTrimestral / folhaTotalMedia` (§3.5 Passo 9).
- * Independente dos ROIs individuais e independente de colaboradores sem
- * `metaROI` (§3.5 nota canonica). Retorna `null` se `folhaTotalMedia <= 0`.
+ * `roiEmpresa = faturamentoMedioTrimestral / folhaProdutivaMedia` (§3.5
+ * Passo 11, emenda ME-1.1).
+ *
+ * Identidade canonica exata: `roiEmpresa = Σ retornoEstimado_i /
+ * Σ custoMedioTrimestral_i` sobre P — a media dos `roiEstimado` ponderada
+ * pelo custo. Vale por construcao, sem delta residual, porque a base e a
+ * folha produtiva (sem C-levels) e porque `Σ participacao_i = 1`.
+ *
+ * Retorna `null` se `folhaProdutivaMedia <= 0` (defensivo — P vazia ou
+ * nenhuma `metaROI` configurada).
  */
 export function computeRoiEmpresa(
   faturamentoMedioTrimestral: number,
-  folhaTotalMedia: number,
+  folhaProdutivaMedia: number,
 ): number | null {
-  if (folhaTotalMedia <= 0) {
+  if (folhaProdutivaMedia <= 0) {
     return null;
   }
-  return faturamentoMedioTrimestral / folhaTotalMedia;
+  return faturamentoMedioTrimestral / folhaProdutivaMedia;
 }
 
 // ============================================================
@@ -465,6 +613,13 @@ export function computeRoiEmpresa(
  * `roiMuitoBom = (roiSegmentoMinimo + roiSegmentoMaximo) / 2` (§3.6).
  * Motor so chama esta funcao quando ambos os campos da empresa estao
  * preenchidos (canonicamente definidos na `companies`).
+ *
+ * Regra canonica de calibracao (ME-1.1, S532): os parametros
+ * `roiSegmentoMinimo` e `roiSegmentoMaximo` sao calibrados e declarados
+ * sobre a base folha produtiva. Toda calibracao setorial registra
+ * explicitamente a base utilizada; faixas de benchmark pesquisadas sobre
+ * folha total sao convertidas para a base folha produtiva antes do
+ * cadastro.
  */
 export function computeRoiMuitoBom(roiSegmentoMinimo: number, roiSegmentoMaximo: number): number {
   return (roiSegmentoMinimo + roiSegmentoMaximo) / 2;
@@ -472,8 +627,12 @@ export function computeRoiMuitoBom(roiSegmentoMinimo: number, roiSegmentoMaximo:
 
 /**
  * `folhaPorcentagem = (folhaTotalMedia / faturamentoMedioTrimestral) * 100`
- * (§3.6). Retorna `null` se `faturamentoMedioTrimestral <= 0` — motor
- * propaga skip antes de chegar aqui, mas defensivo.
+ * (§3.6, S532). OPERADO SOBRE FOLHA TOTAL (inclui C-levels) — indicador
+ * comparavel ao benchmark setorial de produtividade de folha, exibido
+ * com o subtexto canonico "inclui alta lideranca".
+ *
+ * Retorna `null` se `faturamentoMedioTrimestral <= 0` — motor propaga
+ * skip antes de chegar aqui, mas defensivo.
  */
 export function computeFolhaPorcentagem(
   folhaTotalMedia: number,
@@ -517,11 +676,14 @@ export function computeStatusDiagnostico(
 }
 
 /**
- * `faturamentoIdeal = folhaTotalMedia * roiMuitoBom` (§3.6). Motor so
- * calcula quando `roiSegmentoMinimo` e `roiSegmentoMaximo` estao
+ * `faturamentoIdeal = folhaProdutivaMedia * roiMuitoBom` (§3.6, emenda
+ * ME-1.1). Opera sobre folha produtiva (nao folha total), coerente com
+ * o motor de ROI v2 (§3.5).
+ *
+ * Motor so calcula quando `roiSegmentoMinimo` e `roiSegmentoMaximo` estao
  * preenchidos; caso contrario grava NULL em
  * `companyEconomicDiagnosis.faturamentoIdeal`.
  */
-export function computeFaturamentoIdeal(folhaTotalMedia: number, roiMuitoBom: number): number {
-  return folhaTotalMedia * roiMuitoBom;
+export function computeFaturamentoIdeal(folhaProdutivaMedia: number, roiMuitoBom: number): number {
+  return folhaProdutivaMedia * roiMuitoBom;
 }
