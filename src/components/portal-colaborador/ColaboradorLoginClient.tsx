@@ -41,7 +41,6 @@ import { useEffect, useRef, useState, type ChangeEvent, type JSX } from 'react';
 import { useRouter } from 'next/navigation';
 
 const NAVY = '#1F3A5F';
-const TEAL = '#14B8A6';
 const BORDER = '#D1D5DB';
 const TEXT_1 = '#111827';
 const TEXT_2 = '#374151';
@@ -263,16 +262,11 @@ export function ColaboradorLoginClient(): JSX.Element {
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div
-            style={{
-              fontSize: 20,
-              fontWeight: 700,
-              letterSpacing: '0.06em',
-              color: NAVY,
-            }}
-          >
-            ROIP<span style={{ color: TEAL }}> APP</span>
-          </div>
+          <img
+            src="/brand/roipeople-analytics-platform.png"
+            alt="ROIPeople Analytics Platform"
+            style={{ height: 48, width: 'auto', maxWidth: '85%' }}
+          />
         </div>
 
         <h1
@@ -284,7 +278,7 @@ export function ColaboradorLoginClient(): JSX.Element {
             margin: '0 0 22px 0',
           }}
         >
-          Acesso ao Portal
+          Acesse seu portal
         </h1>
 
         {banner !== null ? <Banner kind={banner.kind} msg={banner.msg} /> : null}

@@ -153,6 +153,15 @@ const CONFIRM_TITULO = 'Suas respostas foram enviadas!';
 const CONFIRM_SUB =
   'Obrigado por responder o Perfil Individual. Suas respostas foram registradas com sucesso.';
 
+// ME-1.3b item 5: estimativa canonica de tempo por item do PI para
+// preview temporal "~Y min restantes". Baseline conservador de 10
+// segundos por item (Likert + alternativas tipicas). Produz:
+// - 80 itens / 0 respondidas: ~14 min restantes.
+// - 40 itens / 0 respondidas: ~7 min restantes.
+// - 8 itens restantes: ~2 min restantes (Math.max(1, ...) garante
+//   piso de 1 min para microatrasos finais).
+const SEGUNDOS_POR_ITEM_ESTIMATIVA = 10;
+
 // ============================================================
 // Props publicas
 // ============================================================
@@ -721,7 +730,16 @@ export function PerfilIndividualFormShell(props: PerfilIndividualFormShellProps)
         <div ref={bodyRef} style={estilos.body}>
           {blocoUx === 1 ? <div style={estilos.instrucao}>{INSTRUCAO_BLOCO_1}</div> : null}
           <div style={estilos.blocoLabel}>
-            Bloco {blocoUx} de {PERFIL_INDIVIDUAL_TOTAL_BLOCOS}
+            Bloco {blocoUx} de {PERFIL_INDIVIDUAL_TOTAL_BLOCOS} · ~
+            {Math.max(
+              1,
+              Math.ceil(
+                ((PERFIL_INDIVIDUAL_TOTAL_ITENS - respondidasTotal) *
+                  SEGUNDOS_POR_ITEM_ESTIMATIVA) /
+                  60,
+              ),
+            )}{' '}
+            min restantes
           </div>
           {itensBlocoAtual.map((item) => (
             <ItemRender

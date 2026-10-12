@@ -150,6 +150,24 @@ export function PendenciasClient(): JSX.Element {
   const { pendencias, respondidosRecentes } = data;
   const vazio = pendencias.length === 0 && respondidosRecentes.length === 0;
 
+  // ME-1.3b item 2: ordenacao canonica por urgencia do prazo.
+  // Prazos passados (atrasados) primeiro, depois prazos proximos, depois
+  // distantes; cards sem prazo (`prazoOriginal === null`) ao final.
+  // Esta ordenacao e client-side por caracteristica da pendencia renderizada.
+  const pendenciasOrdenadas = [...pendencias].sort((a, b) => {
+    const ta = a.prazoOriginal === null ? Infinity : a.prazoOriginal.getTime();
+    const tb = b.prazoOriginal === null ? Infinity : b.prazoOriginal.getTime();
+    return ta - tb;
+  });
+
+  // ME-1.3b item 2: barra de progresso global do ciclo.
+  // Denominador = pendentes + respondidos recentes (janela de 7 dias).
+  // Numerador = respondidos recentes.
+  // Snapshot local do ciclo em curso (nao representa historico completo).
+  const totalCiclo = pendencias.length + respondidosRecentes.length;
+  const respondidosCount = respondidosRecentes.length;
+  const progressoPct = totalCiclo === 0 ? 0 : Math.round((respondidosCount / totalCiclo) * 100);
+
   return (
     <div
       className="roip-pendencias-container"
@@ -169,11 +187,13 @@ export function PendenciasClient(): JSX.Element {
         </div>
       ) : (
         <>
-          {pendencias.length > 0 ? (
+          <ProgressoGlobal respondidos={respondidosCount} total={totalCiclo} pct={progressoPct} />
+
+          {pendenciasOrdenadas.length > 0 ? (
             <>
               <SectionTitle label="Instrumentos pendentes" />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {pendencias.map((p) => (
+                {pendenciasOrdenadas.map((p) => (
                   <CardPendencia key={p.key} card={p} />
                 ))}
               </div>
@@ -255,10 +275,8 @@ function CardRadarNr1(props: CardPendenciaProps): JSX.Element {
       iconeBg="#F0FDFA"
       borderLeftTeal
       titulo="Radar NR-1"
-      descricao={`Avaliação de fatores psicossociais no trabalho — 32 perguntas${
-        card.prazoOriginal !== null ? ` · Fecha em ${formatDate(card.prazoOriginal)}` : ''
-      }`}
-      badge={{ label: card.status === 'Atrasado' ? 'Atrasado' : 'Pendente', kind: card.status }}
+      descricao="Diagnóstico de fatores psicossociais no ambiente de trabalho. Respostas anônimas."
+      badge={computeBadgePrazo(card.prazoOriginal, card.status)}
       buttonLabel="Responder →"
       buttonKind="teal"
       href="/colaborador/responder/radar-nr1"
@@ -273,10 +291,8 @@ function CardAutoAvaliacao(props: CardPendenciaProps): JSX.Element {
       icone="📋"
       iconeBg="#F5F3FF"
       titulo="Autoavaliação do colaborador"
-      descricao={`Sua percepção sobre a plenitude no trabalho${
-        card.prazoOriginal !== null ? ` · Prazo: ${formatDate(card.prazoOriginal)}` : ''
-      }`}
-      badge={{ label: card.status === 'Atrasado' ? 'Atrasado' : 'Pendente', kind: card.status }}
+      descricao="Avaliação de como você percebe seu próprio engajamento e satisfação."
+      badge={computeBadgePrazo(card.prazoOriginal, card.status)}
       buttonLabel="Responder →"
       buttonKind="navy"
       atrasadoBg={card.status === 'Atrasado'}
@@ -294,10 +310,8 @@ function CardLiderancaDireta(props: CardPendenciaProps): JSX.Element {
       icone="🧭"
       iconeBg="#FFF7ED"
       titulo="Avaliação da liderança direta"
-      descricao={`Sua avaliação sobre a qualidade da liderança do seu líder direto${liderInfo}${
-        card.prazoOriginal !== null ? ` · Prazo: ${formatDate(card.prazoOriginal)}` : ''
-      }`}
-      badge={{ label: card.status === 'Atrasado' ? 'Atrasado' : 'Pendente', kind: card.status }}
+      descricao={`Você avalia seu líder direto. Suas respostas são anônimas.${liderInfo}`}
+      badge={computeBadgePrazo(card.prazoOriginal, card.status)}
       buttonLabel="Responder →"
       buttonKind="navy"
       atrasadoBg={card.status === 'Atrasado'}
@@ -319,7 +333,7 @@ function CardPerfilIndividual(props: CardPendenciaProps): JSX.Element {
         borderLeftTeal
         andamentoBg
         titulo="Perfil Individual — finalizar questionário"
-        descricao="Responda no seu próprio ritmo — suas respostas são salvas por bloco"
+        descricao="Instrumento que revela seus pontos fortes e seu jeito de trabalhar."
         progresso={`${blocos} de 10 blocos concluídos`}
         buttonLabel="Continuar"
         buttonKind="teal"
@@ -338,12 +352,19 @@ function CardPerfilIndividual(props: CardPendenciaProps): JSX.Element {
       icone="🧠"
       iconeBg="#EFF6FF"
       titulo="Perfil Individual"
-      descricao="Responda seu questionário de perfil executivo"
+      descricao="Instrumento que revela seus pontos fortes e seu jeito de trabalhar."
       buttonLabel="Responder"
       buttonKind="navy"
       href="/colaborador/responder/perfil-individual"
     />
   );
+}
+
+type BadgePalette = 'danger' | 'warning' | 'success' | 'info';
+
+interface BadgeInfo {
+  readonly label: string;
+  readonly palette: BadgePalette;
 }
 
 interface CardBaseProps {
@@ -352,7 +373,7 @@ interface CardBaseProps {
   readonly titulo: string;
   readonly descricao: string;
   readonly progresso?: string;
-  readonly badge?: { label: string; kind: 'Pendente' | 'Atrasado' };
+  readonly badge?: BadgeInfo;
   readonly buttonLabel: string;
   readonly buttonKind: 'navy' | 'teal';
   readonly borderLeftTeal?: boolean;
@@ -365,6 +386,100 @@ interface CardBaseProps {
    * navegacao). O botao renderiza como `<Link>` do next/navigation.
    */
   readonly href: string;
+}
+
+// ME-1.3b item 3: badge por urgencia do prazo.
+// - Atrasado (dias < 0): paleta DANGER, label "Atrasado ha N dias".
+// - Fecha hoje (dias === 0): paleta WARNING, label "Fecha hoje".
+// - 1-3 dias: paleta WARNING, label "Fecha em N dia(s)".
+// - 4+ dias: paleta SUCCESS, label "Fecha em N dias".
+// - Sem prazo (prazoOriginal === null): paleta INFO, label do status.
+function computeBadgePrazo(prazoOriginal: Date | null, status: 'Pendente' | 'Atrasado'): BadgeInfo {
+  if (prazoOriginal === null) {
+    return { label: status === 'Atrasado' ? 'Atrasado' : 'Pendente', palette: 'info' };
+  }
+  const agora = Date.now();
+  const diffMs = prazoOriginal.getTime() - agora;
+  const diffDias = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+  if (diffDias < 0) {
+    const abs = Math.abs(diffDias);
+    const label = abs === 1 ? 'Atrasado há 1 dia' : `Atrasado há ${abs} dias`;
+    return { label, palette: 'danger' };
+  }
+  if (diffDias === 0) {
+    return { label: 'Fecha hoje', palette: 'warning' };
+  }
+  if (diffDias <= 3) {
+    const label = diffDias === 1 ? 'Fecha em 1 dia' : `Fecha em ${diffDias} dias`;
+    return { label, palette: 'warning' };
+  }
+  return { label: `Fecha em ${diffDias} dias`, palette: 'success' };
+}
+
+function paletteBadgeBg(palette: BadgePalette): string {
+  if (palette === 'danger') return DANGER_BG;
+  if (palette === 'warning') return WARNING_BG;
+  if (palette === 'success') return SUCCESS_BG;
+  return INFO_BG;
+}
+
+function paletteBadgeFg(palette: BadgePalette): string {
+  if (palette === 'danger') return DANGER_TX;
+  if (palette === 'warning') return WARNING_TX;
+  if (palette === 'success') return SUCCESS_TX;
+  return INFO;
+}
+
+interface ProgressoGlobalProps {
+  readonly respondidos: number;
+  readonly total: number;
+  readonly pct: number;
+}
+
+function ProgressoGlobal(props: ProgressoGlobalProps): JSX.Element {
+  const { respondidos, total, pct } = props;
+  return (
+    <div
+      style={{
+        background: '#FFFFFF',
+        border: `1px solid ${BORDER}`,
+        borderRadius: 12,
+        padding: '14px 16px',
+        marginBottom: 24,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 8,
+        }}
+      >
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: TEXT_1 }}>
+          Você respondeu {respondidos} de {total} instrumentos
+        </span>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: TEAL }}>{pct}%</span>
+      </div>
+      <div
+        style={{
+          height: 6,
+          background: '#F3F4F6',
+          borderRadius: 999,
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            width: `${pct}%`,
+            height: '100%',
+            background: TEAL,
+            transition: 'width 240ms ease-out',
+          }}
+        />
+      </div>
+    </div>
+  );
 }
 
 function CardBase(props: CardBaseProps): JSX.Element {
@@ -426,8 +541,8 @@ function CardBase(props: CardBaseProps): JSX.Element {
               textTransform: 'uppercase',
               letterSpacing: '0.02em',
               whiteSpace: 'nowrap',
-              background: props.badge.kind === 'Atrasado' ? DANGER_BG : INFO_BG,
-              color: props.badge.kind === 'Atrasado' ? DANGER_TX : INFO,
+              background: paletteBadgeBg(props.badge.palette),
+              color: paletteBadgeFg(props.badge.palette),
             }}
           >
             {props.badge.label}
@@ -545,5 +660,8 @@ function formatDate(d: Date): string {
   return `${dd}/${mm}/${yy}`;
 }
 
-// WARNING_BG/TX reservados para futuros badges âmbar (regressão-safe).
-export const _RESERVED_BADGE_TOKENS = { WARNING_BG, WARNING_TX, DANGER };
+// ME-1.3b item 3: WARNING_BG/TX agora sao consumidos em
+// `paletteBadgeBg/Fg` para o badge "Fecha em N dias" quando o prazo
+// esta dentro de 3 dias; mantemos `DANGER` reservado para destaques de
+// borda futuros (regressão-safe canonica — RV-13).
+export const _RESERVED_BADGE_TOKENS = { DANGER };
