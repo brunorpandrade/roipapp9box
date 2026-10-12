@@ -265,7 +265,13 @@ export function ColaboradorLoginClient(): JSX.Element {
           <img
             src="/brand/roipeople-analytics-platform.png"
             alt="ROIPeople Analytics Platform"
-            style={{ height: 48, width: 'auto', maxWidth: '85%' }}
+            style={{
+              height: 48,
+              width: 'auto',
+              maxWidth: '85%',
+              display: 'block',
+              margin: '0 auto',
+            }}
           />
         </div>
 
@@ -294,7 +300,7 @@ export function ColaboradorLoginClient(): JSX.Element {
               marginBottom: 6,
             }}
           >
-            Digite seu CPF para acessar
+            CPF
           </label>
           <input
             ref={cpfRef}

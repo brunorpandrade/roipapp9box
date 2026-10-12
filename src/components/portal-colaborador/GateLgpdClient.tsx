@@ -142,16 +142,17 @@ export function GateLgpdClient(): JSX.Element {
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: 22 }}>
-          <div
+          <img
+            src="/brand/roipeople-analytics-platform.png"
+            alt="ROIPeople Analytics Platform"
             style={{
-              fontSize: 18,
-              fontWeight: 700,
-              letterSpacing: '0.06em',
-              color: NAVY,
+              height: 48,
+              width: 'auto',
+              maxWidth: '85%',
+              display: 'block',
+              margin: '0 auto',
             }}
-          >
-            ROIP<span style={{ color: TEAL }}> APP</span>
-          </div>
+          />
         </div>
 
         <div
@@ -197,15 +198,11 @@ export function GateLgpdClient(): JSX.Element {
         <div
           style={{
             marginTop: 12,
-            display: 'flex',
-            justifyContent: 'space-between',
             fontSize: 11.5,
             color: TEXT_4,
-            gap: 8,
-            flexWrap: 'wrap',
+            textAlign: 'center',
           }}
         >
-          <span>Termo v1.0</span>
           <span>Consulta sempre disponível no rodapé do portal</span>
         </div>
 
