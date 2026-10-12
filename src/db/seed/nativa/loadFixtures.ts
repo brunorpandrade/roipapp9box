@@ -107,6 +107,7 @@ import {
 } from './deriveMisc';
 import { deriveOpenNr1Cycle, NATIVA_OPEN_NR1_DATA_ABERTURA } from './deriveOpenNr1Cycle';
 import { loadFixture, validateNativaManifest } from './loadJsonFixtures';
+import { normalizeScoresKeys } from './normalizeScoresKeys';
 
 // ---------------------------------------------------------------------
 // Configuracao canonica
@@ -136,7 +137,7 @@ function toDate(iso: string): Date {
   return new Date(iso + 'T00:00:00.000Z');
 }
 
-interface EmployeeIdIndex {
+export interface EmployeeIdIndex {
   byName: Map<string, number>;
   cLevelByName: Map<string, number>;
 }
@@ -167,7 +168,7 @@ function findEmployeeAdmissao(id: number): string {
   return found.dataAdmissao;
 }
 
-function buildIdIndex(): EmployeeIdIndex {
+export function buildIdIndex(): EmployeeIdIndex {
   const byName = new Map<string, number>();
   for (const emp of NATIVA_EMPLOYEES) {
     byName.set(emp.nomeCompleto, emp.id);
@@ -748,7 +749,7 @@ function mapAssessmentToRow(
  * gerador Python para elas isoladamente; a assinatura vetorial e o que importa
  * para os testes de UI).
  */
-function mapScoreToRow(
+export function mapScoreToRow(
   r: Record<string, unknown>,
   idx: EmployeeIdIndex,
   assessmentIdIndex: Map<string, number>,
@@ -773,7 +774,14 @@ function mapScoreToRow(
   const vetorNegl = override?.vetorNegligenciado ?? null;
   const top3Final = override?.top3 ?? top3;
   const flags = (r.flags as unknown) ?? null;
-  const scores = (r.scores as Record<string, number> | undefined) ?? {};
+  // ME-1.4a (RV-14 L125): normalizacao canonica das chaves do bloco
+  // `scores` para lowercase antes do acesso. O fixture canonico bit-exact
+  // emite chaves UPPERCASE (POST_ASSERT, EST_ABERT, ...) por convencao do
+  // gerador Python original; o mapper le em lowercase alinhadas ao schema.
+  // Normalizar aqui preserva o fixture (nenhum JSON ou SHA-256 muda) e
+  // destrava os 59 colaboradores sem override canonico que estavam com
+  // fallback '50.00' em todas as 25 colunas decimais.
+  const scores = normalizeScoresKeys(r.scores as Record<string, unknown> | undefined);
   const overrideMap: Readonly<Record<string, number>> | null =
     override !== null
       ? {
