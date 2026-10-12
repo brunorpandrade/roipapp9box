@@ -10,15 +10,41 @@
 // chaves (nome, trimestre, dimensao, valor); so o `itemIndex` foi recalculado
 // via `itemIndex -= (dimensao-1)*5`. Contagens inalteradas (8020 rows cada).
 //
+// ME-1.4b (12/10/2026) — regeneracao canonica do fixture
+// `performance_trimestral.json` aplicando o motor de ROI v2 TS
+// (`src/lib/roiFormulas.ts`, canonizado em ME-1.1 + ME-1.2). O gerador
+// Python antigo (ME-068) nao aplicava o passo canonico do fator moderador
+// por `scoreDesempenho`, gerando `participacao = participacaoBase` em
+// toda a populacao P. Consequencia observada: `percMetaAtingida` em
+// platô absoluto de ~168% uniforme (apenas 2 valores distintos em 53
+// colaboradores por trimestre). Causa: faltava o passo 7 do motor
+// (`participacao_i = participacaoBase_i × fatorModerador_i`).
+// Correcao canonica: para cada registro do fixture, 4 campos
+// recalculados via motor v2 TS canonico (`participacao`, `retornoEstimado`,
+// `roiEstimado`, `percMetaAtingida`); 12 campos preservados bit-exact
+// (`nome`, `employeeId`, `trimestre`, `indiceDesempenho`,
+// `scoreDesempenho`, `capacidadeOciosa`, `faixaDesempenho`,
+// `custoMedioTrimestral`, `metaROI`, `retornoPotencial`,
+// `nivelHierarquico`, `trimestreCompleto`). Novo SHA
+// `13fd3be1...`; demais 19 JSONs preservados bit-exact. Dispersao
+// canonica resultante em 2026-Q4: 48 valores distintos em 53
+// colaboradores, amplitude 101-201%, media 164% com desvio std ~25
+// pontos. Casos canonicos pos-regeneracao: Jonas Rocha (score 54 baixo
+// desempenho) sai de 176% uniforme para 103% coerente; Daniel Moraes
+// (score 108 top performer) chega a 201%; Thiago Costa (score 73) fica
+// em 137%; Juliana Freitas (score 100) em 187%. Base: ME-1.4a (loader
+// `individualProfileScores` corrigido via normalizeScoresKeys).
+//
 // ME-B9.13 (04/10/2026) — reformulacao canonica do motor de ociosidade:
 // `computeCapacidadeOciosa` passa de (goal-demanda)/goal para
 // max(0, (goal-executado)/goal). `goal` reinterpretado como "capacidade
 // maxima" (nao mais "meta"). Faixas canonicas realinhadas: <10% critica,
 // 10-15% saudavel, 15-25% atencao, >25% elevada. Fixture
-// `performance_trimestral.json` regerado com nova formula (novo SHA
-// `fc2c9ed4...`); demais 19 JSONs preservados bit-exact. Motor serve
-// Nativa + Ubatuba + Embrastec + novas empresas com a nova regra sem
-// gambiarra. Base: ME-B9.12 + patch1 + patch2.
+// `performance_trimestral.json` regerado com nova formula (SHA anterior
+// `fc2c9ed4...`, substituido pela ME-1.4b em 12/10/2026); demais 19
+// JSONs preservados bit-exact. Motor serve Nativa + Ubatuba + Embrastec
+// + novas empresas com a nova regra sem gambiarra.
+// Base: ME-B9.12 + patch1 + patch2.
 //
 // ME-B9.12 + patch1 + patch2 (04/10/2026) — fixture v1.2 -> v1.3: recalibracao
 // canonica da curva de demanda por quadrante 9-Box dominante do colaborador
@@ -124,7 +150,7 @@ export const NATIVA_FIXTURE_MANIFEST = [
   },
   {
     filename: 'performance_trimestral.json',
-    sha256: 'fc2c9ed4581000173f8ca35b9d2aef690a426accd884d6b64c3d89e4f9f01862',
+    sha256: '13fd3be192a0323190500de012f1ad92bd056cd56327759550506676fc7ce205',
     recordCount: 415,
     destinationTable: 'performanceQuarterlyData',
   },

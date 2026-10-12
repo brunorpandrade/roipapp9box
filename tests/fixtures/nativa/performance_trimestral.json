@@ -12,10 +12,10 @@
     "retornoPotencial": 87000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.081621,
-    "retornoEstimado": 122431.5,
-    "roiEstimado": 8.4436,
-    "percMetaAtingida": 140.73
+    "participacao": 0.078705,
+    "retornoEstimado": 118057.51,
+    "roiEstimado": 8.1419,
+    "percMetaAtingida": 135.7
   },
   {
     "nome": "Fernando Salles",
@@ -30,10 +30,10 @@
     "retornoPotencial": 96000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.090065,
-    "retornoEstimado": 135097.5,
-    "roiEstimado": 8.4436,
-    "percMetaAtingida": 140.73
+    "participacao": 0.096868,
+    "retornoEstimado": 145300.97,
+    "roiEstimado": 9.0813,
+    "percMetaAtingida": 151.36
   },
   {
     "nome": "Camila Batista",
@@ -48,10 +48,10 @@
     "retornoPotencial": 51000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.047847,
-    "retornoEstimado": 71770.5,
-    "roiEstimado": 8.4436,
-    "percMetaAtingida": 140.73
+    "participacao": 0.051461,
+    "retornoEstimado": 77191.14,
+    "roiEstimado": 9.0813,
+    "percMetaAtingida": 151.36
   },
   {
     "nome": "Marcelo Vieira",
@@ -66,10 +66,10 @@
     "retornoPotencial": 51000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.047847,
-    "retornoEstimado": 71770.5,
-    "roiEstimado": 8.4436,
-    "percMetaAtingida": 140.73
+    "participacao": 0.04436,
+    "retornoEstimado": 66539.13,
+    "roiEstimado": 7.8281,
+    "percMetaAtingida": 130.47
   },
   {
     "nome": "Gustavo Almeida",
@@ -84,10 +84,10 @@
     "retornoPotencial": 81000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.075992,
-    "retornoEstimado": 113988.0,
-    "roiEstimado": 8.4436,
-    "percMetaAtingida": 140.73
+    "participacao": 0.077505,
+    "retornoEstimado": 116256.66,
+    "roiEstimado": 8.6116,
+    "percMetaAtingida": 143.53
   },
   {
     "nome": "Márcio Fernandes",
@@ -102,10 +102,10 @@
     "retornoPotencial": 45000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.042218,
-    "retornoEstimado": 63327.0,
-    "roiEstimado": 8.4436,
-    "percMetaAtingida": 140.73
+    "participacao": 0.041489,
+    "retornoEstimado": 62233.8,
+    "roiEstimado": 8.2978,
+    "percMetaAtingida": 138.3
   },
   {
     "nome": "Bianca Martins",
@@ -120,10 +120,10 @@
     "retornoPotencial": 90000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.084436,
-    "retornoEstimado": 126654.0,
-    "roiEstimado": 8.4436,
-    "percMetaAtingida": 140.73
+    "participacao": 0.090813,
+    "retornoEstimado": 136219.66,
+    "roiEstimado": 9.0813,
+    "percMetaAtingida": 151.36
   },
   {
     "nome": "Thiago Costa",
@@ -138,10 +138,10 @@
     "retornoPotencial": 54000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.050661,
-    "retornoEstimado": 75991.5,
-    "roiEstimado": 8.4435,
-    "percMetaAtingida": 140.73
+    "participacao": 0.041332,
+    "retornoEstimado": 61998.48,
+    "roiEstimado": 6.8887,
+    "percMetaAtingida": 114.81
   },
   {
     "nome": "Renata Lima",
@@ -156,10 +156,10 @@
     "retornoPotencial": 69000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.064734,
-    "retornoEstimado": 97101.0,
-    "roiEstimado": 8.4436,
-    "percMetaAtingida": 140.73
+    "participacao": 0.067218,
+    "retornoEstimado": 100826.79,
+    "roiEstimado": 8.7675,
+    "percMetaAtingida": 146.13
   },
   {
     "nome": "Bruno Cardoso",
@@ -174,10 +174,10 @@
     "retornoPotencial": 21000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.019702,
-    "retornoEstimado": 29553.0,
-    "roiEstimado": 4.2219,
-    "percMetaAtingida": 140.73
+    "participacao": 0.022159,
+    "retornoEstimado": 33237.86,
+    "roiEstimado": 4.7483,
+    "percMetaAtingida": 158.28
   },
   {
     "nome": "Denise Rocha",
@@ -192,10 +192,10 @@
     "retornoPotencial": 12600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.011821,
-    "retornoEstimado": 17731.5,
-    "roiEstimado": 4.2218,
-    "percMetaAtingida": 140.73
+    "participacao": 0.012188,
+    "retornoEstimado": 18281.65,
+    "roiEstimado": 4.3528,
+    "percMetaAtingida": 145.09
   },
   {
     "nome": "Claudia Nascimento",
@@ -210,10 +210,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009006,
-    "retornoEstimado": 13509.0,
-    "roiEstimado": 4.2216,
-    "percMetaAtingida": 140.72
+    "participacao": 0.008602,
+    "retornoEstimado": 12902.28,
+    "roiEstimado": 4.032,
+    "percMetaAtingida": 134.4
   },
   {
     "nome": "Marisa Oliveira",
@@ -228,10 +228,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009006,
-    "retornoEstimado": 13509.0,
-    "roiEstimado": 4.2216,
-    "percMetaAtingida": 140.72
+    "participacao": 0.010491,
+    "retornoEstimado": 15737.06,
+    "roiEstimado": 4.9178,
+    "percMetaAtingida": 163.93
   },
   {
     "nome": "Roberto Santos",
@@ -246,10 +246,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009006,
-    "retornoEstimado": 13509.0,
-    "roiEstimado": 4.2216,
-    "percMetaAtingida": 140.72
+    "participacao": 0.008517,
+    "retornoEstimado": 12776.02,
+    "roiEstimado": 3.9925,
+    "percMetaAtingida": 133.08
   },
   {
     "nome": "Everton Nunes",
@@ -264,10 +264,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009006,
-    "retornoEstimado": 13509.0,
-    "roiEstimado": 4.2216,
-    "percMetaAtingida": 140.72
+    "participacao": 0.007055,
+    "retornoEstimado": 10583.06,
+    "roiEstimado": 3.3072,
+    "percMetaAtingida": 110.24
   },
   {
     "nome": "André Luiz Costa",
@@ -282,10 +282,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010695,
-    "retornoEstimado": 16042.5,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.012411,
+    "retornoEstimado": 18616.36,
+    "roiEstimado": 4.899,
+    "percMetaAtingida": 163.3
   },
   {
     "nome": "Tiago Martins",
@@ -300,10 +300,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010695,
-    "retornoEstimado": 16042.5,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.012512,
+    "retornoEstimado": 18768.07,
+    "roiEstimado": 4.939,
+    "percMetaAtingida": 164.63
   },
   {
     "nome": "Paulo Henrique Lima",
@@ -318,10 +318,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010695,
-    "retornoEstimado": 16042.5,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.006891,
+    "retornoEstimado": 10336.27,
+    "roiEstimado": 2.7201,
+    "percMetaAtingida": 90.67
   },
   {
     "nome": "Sérgio Moura",
@@ -336,10 +336,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010695,
-    "retornoEstimado": 16042.5,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.008508,
+    "retornoEstimado": 12761.93,
+    "roiEstimado": 3.3584,
+    "percMetaAtingida": 111.95
   },
   {
     "nome": "Lucas Ferreira",
@@ -354,10 +354,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010695,
-    "retornoEstimado": 16042.5,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.012473,
+    "retornoEstimado": 18709.17,
+    "roiEstimado": 4.9235,
+    "percMetaAtingida": 164.12
   },
   {
     "nome": "Caio Santos",
@@ -372,10 +372,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010695,
-    "retornoEstimado": 16042.5,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.010601,
+    "retornoEstimado": 15901.55,
+    "roiEstimado": 4.1846,
+    "percMetaAtingida": 139.49
   },
   {
     "nome": "Rafael Teixeira",
@@ -390,10 +390,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010695,
-    "retornoEstimado": 16042.5,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.012608,
+    "retornoEstimado": 18912.65,
+    "roiEstimado": 4.977,
+    "percMetaAtingida": 165.9
   },
   {
     "nome": "Gabriel Oliveira",
@@ -408,10 +408,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010695,
-    "retornoEstimado": 16042.5,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.011936,
+    "retornoEstimado": 17904.19,
+    "roiEstimado": 4.7116,
+    "percMetaAtingida": 157.05
   },
   {
     "nome": "Vinícius Ribeiro",
@@ -426,10 +426,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010695,
-    "retornoEstimado": 16042.5,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.008391,
+    "retornoEstimado": 12587.01,
+    "roiEstimado": 3.3124,
+    "percMetaAtingida": 110.41
   },
   {
     "nome": "Bruno Henrique Alves",
@@ -444,10 +444,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010695,
-    "retornoEstimado": 16042.5,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.01121,
+    "retornoEstimado": 16815.41,
+    "roiEstimado": 4.4251,
+    "percMetaAtingida": 147.5
   },
   {
     "nome": "José Carlos Pereira",
@@ -462,10 +462,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010695,
-    "retornoEstimado": 16042.5,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.012024,
+    "retornoEstimado": 18036.27,
+    "roiEstimado": 4.7464,
+    "percMetaAtingida": 158.21
   },
   {
     "nome": "Felipe Barros",
@@ -480,10 +480,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010695,
-    "retornoEstimado": 16042.5,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.006727,
+    "retornoEstimado": 10089.96,
+    "roiEstimado": 2.6553,
+    "percMetaAtingida": 88.51
   },
   {
     "nome": "Marcos Vinícius Souza",
@@ -498,10 +498,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010695,
-    "retornoEstimado": 16042.5,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.008257,
+    "retornoEstimado": 12385.32,
+    "roiEstimado": 3.2593,
+    "percMetaAtingida": 108.64
   },
   {
     "nome": "Cristiano Barbosa",
@@ -516,10 +516,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010695,
-    "retornoEstimado": 16042.5,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.010398,
+    "retornoEstimado": 15596.33,
+    "roiEstimado": 4.1043,
+    "percMetaAtingida": 136.81
   },
   {
     "nome": "Danilo Azevedo",
@@ -534,10 +534,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008162,
-    "retornoEstimado": 12243.0,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.007539,
+    "retornoEstimado": 11308.57,
+    "roiEstimado": 3.8995,
+    "percMetaAtingida": 129.98
   },
   {
     "nome": "Aline Prado",
@@ -552,10 +552,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008162,
-    "retornoEstimado": 12243.0,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.008146,
+    "retornoEstimado": 12218.48,
+    "roiEstimado": 4.2133,
+    "percMetaAtingida": 140.44
   },
   {
     "nome": "Sônia Cardoso",
@@ -570,10 +570,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008162,
-    "retornoEstimado": 12243.0,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.006789,
+    "retornoEstimado": 10183.43,
+    "roiEstimado": 3.5115,
+    "percMetaAtingida": 117.05
   },
   {
     "nome": "Renata Campos",
@@ -588,10 +588,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008162,
-    "retornoEstimado": 12243.0,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.009737,
+    "retornoEstimado": 14604.97,
+    "roiEstimado": 5.0362,
+    "percMetaAtingida": 167.87
   },
   {
     "nome": "Jéssica Moura",
@@ -606,10 +606,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008162,
-    "retornoEstimado": 12243.0,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.007474,
+    "retornoEstimado": 11210.49,
+    "roiEstimado": 3.8657,
+    "percMetaAtingida": 128.86
   },
   {
     "nome": "Paula Ribeiro",
@@ -624,10 +624,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008162,
-    "retornoEstimado": 12243.0,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.007952,
+    "retornoEstimado": 11928.34,
+    "roiEstimado": 4.1132,
+    "percMetaAtingida": 137.11
   },
   {
     "nome": "Renato Silva",
@@ -642,10 +642,10 @@
     "retornoPotencial": 10200.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009569,
-    "retornoEstimado": 14353.5,
-    "roiEstimado": 4.2216,
-    "percMetaAtingida": 140.72
+    "participacao": 0.007666,
+    "retornoEstimado": 11498.42,
+    "roiEstimado": 3.3819,
+    "percMetaAtingida": 112.73
   },
   {
     "nome": "Daniel Moraes",
@@ -660,10 +660,10 @@
     "retornoPotencial": 10200.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009569,
-    "retornoEstimado": 14353.5,
-    "roiEstimado": 4.2216,
-    "percMetaAtingida": 140.72
+    "participacao": 0.01081,
+    "retornoEstimado": 16214.37,
+    "roiEstimado": 4.7689,
+    "percMetaAtingida": 158.96
   },
   {
     "nome": "Everton Lima",
@@ -678,10 +678,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008444,
-    "retornoEstimado": 12666.0,
-    "roiEstimado": 4.222,
-    "percMetaAtingida": 140.73
+    "participacao": 0.008927,
+    "retornoEstimado": 13390.87,
+    "roiEstimado": 4.4636,
+    "percMetaAtingida": 148.79
   },
   {
     "nome": "Adriano Souza",
@@ -696,10 +696,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008444,
-    "retornoEstimado": 12666.0,
-    "roiEstimado": 4.222,
-    "percMetaAtingida": 140.73
+    "participacao": 0.010077,
+    "retornoEstimado": 15115.63,
+    "roiEstimado": 5.0385,
+    "percMetaAtingida": 167.95
   },
   {
     "nome": "Jonas Rocha",
@@ -714,10 +714,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008444,
-    "retornoEstimado": 12666.0,
-    "roiEstimado": 4.222,
-    "percMetaAtingida": 140.73
+    "participacao": 0.004792,
+    "retornoEstimado": 7187.92,
+    "roiEstimado": 2.396,
+    "percMetaAtingida": 79.87
   },
   {
     "nome": "Leonardo Pires",
@@ -732,10 +732,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.018294,
-    "retornoEstimado": 27441.0,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.022361,
+    "retornoEstimado": 33541.29,
+    "roiEstimado": 5.1602,
+    "percMetaAtingida": 172.01
   },
   {
     "nome": "Fábio Henrique",
@@ -750,10 +750,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.018294,
-    "retornoEstimado": 27441.0,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.01886,
+    "retornoEstimado": 28289.97,
+    "roiEstimado": 4.3523,
+    "percMetaAtingida": 145.08
   },
   {
     "nome": "Pedro Augusto",
@@ -768,10 +768,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.018294,
-    "retornoEstimado": 27441.0,
-    "roiEstimado": 4.2217,
-    "percMetaAtingida": 140.72
+    "participacao": 0.013566,
+    "retornoEstimado": 20348.87,
+    "roiEstimado": 3.1306,
+    "percMetaAtingida": 104.35
   },
   {
     "nome": "Marina Lopes",
@@ -786,10 +786,10 @@
     "retornoPotencial": 16500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01548,
-    "retornoEstimado": 23220.0,
-    "roiEstimado": 4.2218,
-    "percMetaAtingida": 140.73
+    "participacao": 0.01754,
+    "retornoEstimado": 26309.22,
+    "roiEstimado": 4.7835,
+    "percMetaAtingida": 159.45
   },
   {
     "nome": "Tatiane Freitas",
@@ -804,10 +804,10 @@
     "retornoPotencial": 10500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009851,
-    "retornoEstimado": 14776.5,
-    "roiEstimado": 4.2219,
-    "percMetaAtingida": 140.73
+    "participacao": 0.009475,
+    "retornoEstimado": 14212.15,
+    "roiEstimado": 4.0606,
+    "percMetaAtingida": 135.35
   },
   {
     "nome": "Carlos Eduardo Mendes",
@@ -822,10 +822,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007881,
-    "retornoEstimado": 11821.5,
-    "roiEstimado": 4.222,
-    "percMetaAtingida": 140.73
+    "participacao": 0.00923,
+    "retornoEstimado": 13844.89,
+    "roiEstimado": 4.9446,
+    "percMetaAtingida": 164.82
   },
   {
     "nome": "João Pedro Ramos",
@@ -840,10 +840,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007881,
-    "retornoEstimado": 11821.5,
-    "roiEstimado": 4.222,
-    "percMetaAtingida": 140.73
+    "participacao": 0.007294,
+    "retornoEstimado": 10940.97,
+    "roiEstimado": 3.9075,
+    "percMetaAtingida": 130.25
   },
   {
     "nome": "Alexandre Gouveia",
@@ -858,10 +858,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007881,
-    "retornoEstimado": 11821.5,
-    "roiEstimado": 4.222,
-    "percMetaAtingida": 140.73
+    "participacao": 0.008055,
+    "retornoEstimado": 12082.55,
+    "roiEstimado": 4.3152,
+    "percMetaAtingida": 143.84
   },
   {
     "nome": "Juliana Freitas",
@@ -876,10 +876,10 @@
     "retornoPotencial": 87000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.082504,
-    "retornoEstimado": 130356.32,
-    "roiEstimado": 8.9901,
-    "percMetaAtingida": 149.84
+    "participacao": 0.07994,
+    "retornoEstimado": 126305.8,
+    "roiEstimado": 8.7107,
+    "percMetaAtingida": 145.18
   },
   {
     "nome": "Fernando Salles",
@@ -894,10 +894,10 @@
     "retornoPotencial": 96000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.091038,
-    "retornoEstimado": 143840.04,
-    "roiEstimado": 8.99,
-    "percMetaAtingida": 149.83
+    "participacao": 0.100077,
+    "retornoEstimado": 158122.08,
+    "roiEstimado": 9.8826,
+    "percMetaAtingida": 164.71
   },
   {
     "nome": "Camila Batista",
@@ -912,10 +912,10 @@
     "retornoPotencial": 51000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.048364,
-    "retornoEstimado": 76415.12,
-    "roiEstimado": 8.99,
-    "percMetaAtingida": 149.83
+    "participacao": 0.051365,
+    "retornoEstimado": 81157.57,
+    "roiEstimado": 9.5479,
+    "percMetaAtingida": 159.13
   },
   {
     "nome": "Marcelo Vieira",
@@ -930,10 +930,10 @@
     "retornoPotencial": 51000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.048364,
-    "retornoEstimado": 76415.12,
-    "roiEstimado": 8.99,
-    "percMetaAtingida": 149.83
+    "participacao": 0.045959,
+    "retornoEstimado": 72614.67,
+    "roiEstimado": 8.5429,
+    "percMetaAtingida": 142.38
   },
   {
     "nome": "Gustavo Almeida",
@@ -948,10 +948,10 @@
     "retornoPotencial": 81000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.076814,
-    "retornoEstimado": 121366.12,
-    "roiEstimado": 8.9901,
-    "percMetaAtingida": 149.84
+    "participacao": 0.083015,
+    "retornoEstimado": 131163.2,
+    "roiEstimado": 9.7158,
+    "percMetaAtingida": 161.93
   },
   {
     "nome": "Márcio Fernandes",
@@ -966,10 +966,10 @@
     "retornoPotencial": 45000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.042674,
-    "retornoEstimado": 67424.92,
-    "roiEstimado": 8.99,
-    "percMetaAtingida": 149.83
+    "participacao": 0.039755,
+    "retornoEstimado": 62812.94,
+    "roiEstimado": 8.3751,
+    "percMetaAtingida": 139.58
   },
   {
     "nome": "Bianca Martins",
@@ -984,10 +984,10 @@
     "retornoPotencial": 90000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.085349,
-    "retornoEstimado": 134851.42,
-    "roiEstimado": 8.9901,
-    "percMetaAtingida": 149.84
+    "participacao": 0.090645,
+    "retornoEstimado": 143219.24,
+    "roiEstimado": 9.5479,
+    "percMetaAtingida": 159.13
   },
   {
     "nome": "Thiago Costa",
@@ -1002,10 +1002,10 @@
     "retornoPotencial": 54000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.051209,
-    "retornoEstimado": 80910.22,
-    "roiEstimado": 8.99,
-    "percMetaAtingida": 149.83
+    "participacao": 0.041981,
+    "retornoEstimado": 66330.11,
+    "roiEstimado": 7.37,
+    "percMetaAtingida": 122.83
   },
   {
     "nome": "Renata Lima",
@@ -1020,10 +1020,10 @@
     "retornoPotencial": 69000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.065434,
-    "retornoEstimado": 103385.72,
-    "roiEstimado": 8.9901,
-    "percMetaAtingida": 149.84
+    "participacao": 0.068273,
+    "retornoEstimado": 107871.22,
+    "roiEstimado": 9.3801,
+    "percMetaAtingida": 156.34
   },
   {
     "nome": "Bruno Cardoso",
@@ -1038,10 +1038,10 @@
     "retornoPotencial": 21000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.019915,
-    "retornoEstimado": 31465.7,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.022477,
+    "retornoEstimado": 35514.35,
+    "roiEstimado": 5.0735,
+    "percMetaAtingida": 169.12
   },
   {
     "nome": "Denise Rocha",
@@ -1056,10 +1056,10 @@
     "retornoPotencial": 12600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.011949,
-    "retornoEstimado": 18879.42,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.011369,
+    "retornoEstimado": 17963.31,
+    "roiEstimado": 4.277,
+    "percMetaAtingida": 142.57
   },
   {
     "nome": "Claudia Nascimento",
@@ -1074,10 +1074,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009104,
-    "retornoEstimado": 14384.32,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.008819,
+    "retornoEstimado": 13933.98,
+    "roiEstimado": 4.3544,
+    "percMetaAtingida": 145.15
   },
   {
     "nome": "Marisa Oliveira",
@@ -1092,10 +1092,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009104,
-    "retornoEstimado": 14384.32,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.010775,
+    "retornoEstimado": 17024.7,
+    "roiEstimado": 5.3202,
+    "percMetaAtingida": 177.34
   },
   {
     "nome": "Roberto Santos",
@@ -1110,10 +1110,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009104,
-    "retornoEstimado": 14384.32,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.00865,
+    "retornoEstimado": 13667.04,
+    "roiEstimado": 4.2709,
+    "percMetaAtingida": 142.36
   },
   {
     "nome": "Everton Nunes",
@@ -1128,10 +1128,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009104,
-    "retornoEstimado": 14384.32,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.007274,
+    "retornoEstimado": 11492.92,
+    "roiEstimado": 3.5915,
+    "percMetaAtingida": 119.72
   },
   {
     "nome": "André Luiz Costa",
@@ -1146,10 +1146,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010811,
-    "retornoEstimado": 17081.38,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.012521,
+    "retornoEstimado": 19783.35,
+    "roiEstimado": 5.2061,
+    "percMetaAtingida": 173.54
   },
   {
     "nome": "Tiago Martins",
@@ -1164,10 +1164,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010811,
-    "retornoEstimado": 17081.38,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.01256,
+    "retornoEstimado": 19844.46,
+    "roiEstimado": 5.2222,
+    "percMetaAtingida": 174.07
   },
   {
     "nome": "Paulo Henrique Lima",
@@ -1182,10 +1182,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010811,
-    "retornoEstimado": 17081.38,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.006877,
+    "retornoEstimado": 10865.57,
+    "roiEstimado": 2.8594,
+    "percMetaAtingida": 95.31
   },
   {
     "nome": "Sérgio Moura",
@@ -1200,10 +1200,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010811,
-    "retornoEstimado": 17081.38,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.008586,
+    "retornoEstimado": 13565.73,
+    "roiEstimado": 3.5699,
+    "percMetaAtingida": 119.0
   },
   {
     "nome": "Lucas Ferreira",
@@ -1218,10 +1218,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010811,
-    "retornoEstimado": 17081.38,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.012119,
+    "retornoEstimado": 19147.46,
+    "roiEstimado": 5.0388,
+    "percMetaAtingida": 167.96
   },
   {
     "nome": "Caio Santos",
@@ -1236,10 +1236,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010811,
-    "retornoEstimado": 17081.38,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.010888,
+    "retornoEstimado": 17203.5,
+    "roiEstimado": 4.5272,
+    "percMetaAtingida": 150.91
   },
   {
     "nome": "Rafael Teixeira",
@@ -1254,10 +1254,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010811,
-    "retornoEstimado": 17081.38,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.012855,
+    "retornoEstimado": 20310.4,
+    "roiEstimado": 5.3448,
+    "percMetaAtingida": 178.16
   },
   {
     "nome": "Gabriel Oliveira",
@@ -1272,10 +1272,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010811,
-    "retornoEstimado": 17081.38,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.01265,
+    "retornoEstimado": 19987.68,
+    "roiEstimado": 5.2599,
+    "percMetaAtingida": 175.33
   },
   {
     "nome": "Vinícius Ribeiro",
@@ -1290,10 +1290,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010811,
-    "retornoEstimado": 17081.38,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.006838,
+    "retornoEstimado": 10804.46,
+    "roiEstimado": 2.8433,
+    "percMetaAtingida": 94.78
   },
   {
     "nome": "Bruno Henrique Alves",
@@ -1308,10 +1308,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010811,
-    "retornoEstimado": 17081.38,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.006496,
+    "retornoEstimado": 10264.05,
+    "roiEstimado": 2.7011,
+    "percMetaAtingida": 90.04
   },
   {
     "nome": "José Carlos Pereira",
@@ -1326,10 +1326,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010811,
-    "retornoEstimado": 17081.38,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.01236,
+    "retornoEstimado": 19529.38,
+    "roiEstimado": 5.1393,
+    "percMetaAtingida": 171.31
   },
   {
     "nome": "Felipe Barros",
@@ -1344,10 +1344,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010811,
-    "retornoEstimado": 17081.38,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.006541,
+    "retornoEstimado": 10334.7,
+    "roiEstimado": 2.7197,
+    "percMetaAtingida": 90.66
   },
   {
     "nome": "Marcos Vinícius Souza",
@@ -1380,10 +1380,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010811,
-    "retornoEstimado": 17081.38,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.010672,
+    "retornoEstimado": 16861.68,
+    "roiEstimado": 4.4373,
+    "percMetaAtingida": 147.91
   },
   {
     "nome": "Danilo Azevedo",
@@ -1398,10 +1398,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00825,
-    "retornoEstimado": 13035.0,
-    "roiEstimado": 4.4948,
-    "percMetaAtingida": 149.83
+    "participacao": 0.007464,
+    "retornoEstimado": 11792.62,
+    "roiEstimado": 4.0664,
+    "percMetaAtingida": 135.55
   },
   {
     "nome": "Aline Prado",
@@ -1416,10 +1416,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00825,
-    "retornoEstimado": 13035.0,
-    "roiEstimado": 4.4948,
-    "percMetaAtingida": 149.83
+    "participacao": 0.008501,
+    "retornoEstimado": 13432.11,
+    "roiEstimado": 4.6318,
+    "percMetaAtingida": 154.39
   },
   {
     "nome": "Sônia Cardoso",
@@ -1434,10 +1434,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00825,
-    "retornoEstimado": 13035.0,
-    "roiEstimado": 4.4948,
-    "percMetaAtingida": 149.83
+    "participacao": 0.006854,
+    "retornoEstimado": 10829.33,
+    "roiEstimado": 3.7343,
+    "percMetaAtingida": 124.48
   },
   {
     "nome": "Renata Campos",
@@ -1452,10 +1452,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00825,
-    "retornoEstimado": 13035.0,
-    "roiEstimado": 4.4948,
-    "percMetaAtingida": 149.83
+    "participacao": 0.009525,
+    "retornoEstimado": 15049.73,
+    "roiEstimado": 5.1896,
+    "percMetaAtingida": 172.99
   },
   {
     "nome": "Jéssica Moura",
@@ -1470,10 +1470,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00825,
-    "retornoEstimado": 13035.0,
-    "roiEstimado": 4.4948,
-    "percMetaAtingida": 149.83
+    "participacao": 0.0084,
+    "retornoEstimado": 13271.8,
+    "roiEstimado": 4.5765,
+    "percMetaAtingida": 152.55
   },
   {
     "nome": "Paula Ribeiro",
@@ -1488,10 +1488,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00825,
-    "retornoEstimado": 13035.0,
-    "roiEstimado": 4.4948,
-    "percMetaAtingida": 149.83
+    "participacao": 0.008354,
+    "retornoEstimado": 13198.93,
+    "roiEstimado": 4.5514,
+    "percMetaAtingida": 151.71
   },
   {
     "nome": "Renato Silva",
@@ -1506,10 +1506,10 @@
     "retornoPotencial": 10200.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009673,
-    "retornoEstimado": 15283.34,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.008077,
+    "retornoEstimado": 12761.39,
+    "roiEstimado": 3.7533,
+    "percMetaAtingida": 125.11
   },
   {
     "nome": "Daniel Moraes",
@@ -1524,10 +1524,10 @@
     "retornoPotencial": 10200.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009673,
-    "retornoEstimado": 15283.34,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.011452,
+    "retornoEstimado": 18093.87,
+    "roiEstimado": 5.3217,
+    "percMetaAtingida": 177.39
   },
   {
     "nome": "Everton Lima",
@@ -1542,10 +1542,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008535,
-    "retornoEstimado": 13485.3,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.008137,
+    "retornoEstimado": 12856.57,
+    "roiEstimado": 4.2855,
+    "percMetaAtingida": 142.85
   },
   {
     "nome": "Adriano Souza",
@@ -1560,10 +1560,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008535,
-    "retornoEstimado": 13485.3,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.010292,
+    "retornoEstimado": 16260.66,
+    "roiEstimado": 5.4202,
+    "percMetaAtingida": 180.67
   },
   {
     "nome": "Jonas Rocha",
@@ -1578,10 +1578,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008535,
-    "retornoEstimado": 13485.3,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.005397,
+    "retornoEstimado": 8526.82,
+    "roiEstimado": 2.8423,
+    "percMetaAtingida": 94.74
   },
   {
     "nome": "Leonardo Pires",
@@ -1596,10 +1596,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.018492,
-    "retornoEstimado": 29217.36,
-    "roiEstimado": 4.495,
-    "percMetaAtingida": 149.83
+    "participacao": 0.02119,
+    "retornoEstimado": 33480.64,
+    "roiEstimado": 5.1509,
+    "percMetaAtingida": 171.7
   },
   {
     "nome": "Fábio Henrique",
@@ -1614,10 +1614,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.018492,
-    "retornoEstimado": 29217.36,
-    "roiEstimado": 4.495,
-    "percMetaAtingida": 149.83
+    "participacao": 0.018007,
+    "retornoEstimado": 28450.38,
+    "roiEstimado": 4.377,
+    "percMetaAtingida": 145.9
   },
   {
     "nome": "Pedro Augusto",
@@ -1632,10 +1632,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.018492,
-    "retornoEstimado": 29217.36,
-    "roiEstimado": 4.495,
-    "percMetaAtingida": 149.83
+    "participacao": 0.013667,
+    "retornoEstimado": 21594.2,
+    "roiEstimado": 3.3222,
+    "percMetaAtingida": 110.74
   },
   {
     "nome": "Marina Lopes",
@@ -1650,10 +1650,10 @@
     "retornoPotencial": 16500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.015647,
-    "retornoEstimado": 24722.26,
-    "roiEstimado": 4.495,
-    "percMetaAtingida": 149.83
+    "participacao": 0.018054,
+    "retornoEstimado": 28526.01,
+    "roiEstimado": 5.1865,
+    "percMetaAtingida": 172.88
   },
   {
     "nome": "Tatiane Freitas",
@@ -1668,10 +1668,10 @@
     "retornoPotencial": 10500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009957,
-    "retornoEstimado": 15732.06,
-    "roiEstimado": 4.4949,
-    "percMetaAtingida": 149.83
+    "participacao": 0.0095,
+    "retornoEstimado": 15009.88,
+    "roiEstimado": 4.2885,
+    "percMetaAtingida": 142.95
   },
   {
     "nome": "Carlos Eduardo Mendes",
@@ -1686,10 +1686,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007966,
-    "retornoEstimado": 12586.28,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.009412,
+    "retornoEstimado": 14871.28,
+    "roiEstimado": 5.3112,
+    "percMetaAtingida": 177.04
   },
   {
     "nome": "João Pedro Ramos",
@@ -1704,10 +1704,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007966,
-    "retornoEstimado": 12586.28,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.007841,
+    "retornoEstimado": 12389.22,
+    "roiEstimado": 4.4247,
+    "percMetaAtingida": 147.49
   },
   {
     "nome": "Alexandre Gouveia",
@@ -1722,10 +1722,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007966,
-    "retornoEstimado": 12586.28,
-    "roiEstimado": 4.4951,
-    "percMetaAtingida": 149.84
+    "participacao": 0.007539,
+    "retornoEstimado": 11912.22,
+    "roiEstimado": 4.2544,
+    "percMetaAtingida": 141.81
   },
   {
     "nome": "Ademir Prado",
@@ -1758,10 +1758,10 @@
     "retornoPotencial": 87000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.081921,
-    "retornoEstimado": 140904.12,
-    "roiEstimado": 9.7175,
-    "percMetaAtingida": 161.96
+    "participacao": 0.085262,
+    "retornoEstimado": 146650.92,
+    "roiEstimado": 10.1139,
+    "percMetaAtingida": 168.56
   },
   {
     "nome": "Fernando Salles",
@@ -1776,10 +1776,10 @@
     "retornoPotencial": 96000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.090395,
-    "retornoEstimado": 155479.4,
-    "roiEstimado": 9.7175,
-    "percMetaAtingida": 161.96
+    "participacao": 0.097449,
+    "retornoEstimado": 167612.82,
+    "roiEstimado": 10.4758,
+    "percMetaAtingida": 174.6
   },
   {
     "nome": "Camila Batista",
@@ -1794,10 +1794,10 @@
     "retornoPotencial": 51000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.048023,
-    "retornoEstimado": 82599.56,
-    "roiEstimado": 9.7176,
-    "percMetaAtingida": 161.96
+    "participacao": 0.05177,
+    "retornoEstimado": 89044.31,
+    "roiEstimado": 10.4758,
+    "percMetaAtingida": 174.6
   },
   {
     "nome": "Marcelo Vieira",
@@ -1812,10 +1812,10 @@
     "retornoPotencial": 51000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.048023,
-    "retornoEstimado": 82599.56,
-    "roiEstimado": 9.7176,
-    "percMetaAtingida": 161.96
+    "participacao": 0.041948,
+    "retornoEstimado": 72151.04,
+    "roiEstimado": 8.4884,
+    "percMetaAtingida": 141.47
   },
   {
     "nome": "Gustavo Almeida",
@@ -1830,10 +1830,10 @@
     "retornoPotencial": 81000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.076271,
-    "retornoEstimado": 131186.12,
-    "roiEstimado": 9.7175,
-    "percMetaAtingida": 161.96
+    "participacao": 0.07655,
+    "retornoEstimado": 131665.45,
+    "roiEstimado": 9.753,
+    "percMetaAtingida": 162.55
   },
   {
     "nome": "Márcio Fernandes",
@@ -1848,10 +1848,10 @@
     "retornoPotencial": 45000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.042373,
-    "retornoEstimado": 72881.56,
-    "roiEstimado": 9.7175,
-    "percMetaAtingida": 161.96
+    "participacao": 0.039376,
+    "retornoEstimado": 67726.43,
+    "roiEstimado": 9.0302,
+    "percMetaAtingida": 150.5
   },
   {
     "nome": "Bianca Martins",
@@ -1866,10 +1866,10 @@
     "retornoPotencial": 90000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.084746,
-    "retornoEstimado": 145763.12,
-    "roiEstimado": 9.7175,
-    "percMetaAtingida": 161.96
+    "participacao": 0.094506,
+    "retornoEstimado": 162549.93,
+    "roiEstimado": 10.8367,
+    "percMetaAtingida": 180.61
   },
   {
     "nome": "Thiago Costa",
@@ -1884,10 +1884,10 @@
     "retornoPotencial": 54000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.050847,
-    "retornoEstimado": 87456.84,
-    "roiEstimado": 9.7174,
-    "percMetaAtingida": 161.96
+    "participacao": 0.041581,
+    "retornoEstimado": 71518.72,
+    "roiEstimado": 7.9465,
+    "percMetaAtingida": 132.44
   },
   {
     "nome": "Renata Lima",
@@ -1902,10 +1902,10 @@
     "retornoPotencial": 69000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.064972,
-    "retornoEstimado": 111751.84,
-    "roiEstimado": 9.7176,
-    "percMetaAtingida": 161.96
+    "participacao": 0.067622,
+    "retornoEstimado": 116309.35,
+    "roiEstimado": 10.1139,
+    "percMetaAtingida": 168.56
   },
   {
     "nome": "Bruno Cardoso",
@@ -1920,10 +1920,10 @@
     "retornoPotencial": 21000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.019774,
-    "retornoEstimado": 34011.28,
-    "roiEstimado": 4.8588,
-    "percMetaAtingida": 161.96
+    "participacao": 0.024285,
+    "retornoEstimado": 41770.46,
+    "roiEstimado": 5.9672,
+    "percMetaAtingida": 198.91
   },
   {
     "nome": "Denise Rocha",
@@ -1938,10 +1938,10 @@
     "retornoPotencial": 12600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.011864,
-    "retornoEstimado": 20406.08,
-    "roiEstimado": 4.8586,
-    "percMetaAtingida": 161.95
+    "participacao": 0.011996,
+    "retornoEstimado": 20633.76,
+    "roiEstimado": 4.9128,
+    "percMetaAtingida": 163.76
   },
   {
     "nome": "Claudia Nascimento",
@@ -1956,10 +1956,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00904,
-    "retornoEstimado": 15548.8,
-    "roiEstimado": 4.859,
-    "percMetaAtingida": 161.97
+    "participacao": 0.008491,
+    "retornoEstimado": 14604.35,
+    "roiEstimado": 4.5639,
+    "percMetaAtingida": 152.13
   },
   {
     "nome": "Marisa Oliveira",
@@ -1974,10 +1974,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00904,
-    "retornoEstimado": 15548.8,
-    "roiEstimado": 4.859,
-    "percMetaAtingida": 161.97
+    "participacao": 0.010463,
+    "retornoEstimado": 17995.79,
+    "roiEstimado": 5.6237,
+    "percMetaAtingida": 187.46
   },
   {
     "nome": "Roberto Santos",
@@ -1992,10 +1992,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00904,
-    "retornoEstimado": 15548.8,
-    "roiEstimado": 4.859,
-    "percMetaAtingida": 161.97
+    "participacao": 0.008654,
+    "retornoEstimado": 14885.24,
+    "roiEstimado": 4.6516,
+    "percMetaAtingida": 155.05
   },
   {
     "nome": "Everton Nunes",
@@ -2010,10 +2010,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00904,
-    "retornoEstimado": 15548.8,
-    "roiEstimado": 4.859,
-    "percMetaAtingida": 161.97
+    "participacao": 0.007587,
+    "retornoEstimado": 13049.08,
+    "roiEstimado": 4.0778,
+    "percMetaAtingida": 135.93
   },
   {
     "nome": "André Luiz Costa",
@@ -2028,10 +2028,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010734,
-    "retornoEstimado": 18462.48,
-    "roiEstimado": 4.8585,
-    "percMetaAtingida": 161.95
+    "participacao": 0.012786,
+    "retornoEstimado": 21991.81,
+    "roiEstimado": 5.7873,
+    "percMetaAtingida": 192.91
   },
   {
     "nome": "Tiago Martins",
@@ -2046,10 +2046,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010734,
-    "retornoEstimado": 18462.48,
-    "roiEstimado": 4.8585,
-    "percMetaAtingida": 161.95
+    "participacao": 0.012398,
+    "retornoEstimado": 21324.71,
+    "roiEstimado": 5.6118,
+    "percMetaAtingida": 187.06
   },
   {
     "nome": "Paulo Henrique Lima",
@@ -2064,10 +2064,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010734,
-    "retornoEstimado": 18462.48,
-    "roiEstimado": 4.8585,
-    "percMetaAtingida": 161.95
+    "participacao": 0.006485,
+    "retornoEstimado": 11153.42,
+    "roiEstimado": 2.9351,
+    "percMetaAtingida": 97.84
   },
   {
     "nome": "Sérgio Moura",
@@ -2082,10 +2082,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010734,
-    "retornoEstimado": 18462.48,
-    "roiEstimado": 4.8585,
-    "percMetaAtingida": 161.95
+    "participacao": 0.008751,
+    "retornoEstimado": 15051.04,
+    "roiEstimado": 3.9608,
+    "percMetaAtingida": 132.03
   },
   {
     "nome": "Lucas Ferreira",
@@ -2100,10 +2100,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010734,
-    "retornoEstimado": 18462.48,
-    "roiEstimado": 4.8585,
-    "percMetaAtingida": 161.95
+    "participacao": 0.012842,
+    "retornoEstimado": 22088.59,
+    "roiEstimado": 5.8128,
+    "percMetaAtingida": 193.76
   },
   {
     "nome": "Caio Santos",
@@ -2118,10 +2118,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010734,
-    "retornoEstimado": 18462.48,
-    "roiEstimado": 4.8585,
-    "percMetaAtingida": 161.95
+    "participacao": 0.010174,
+    "retornoEstimado": 17499.15,
+    "roiEstimado": 4.605,
+    "percMetaAtingida": 153.5
   },
   {
     "nome": "Rafael Teixeira",
@@ -2136,10 +2136,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010734,
-    "retornoEstimado": 18462.48,
-    "roiEstimado": 4.8585,
-    "percMetaAtingida": 161.95
+    "participacao": 0.012922,
+    "retornoEstimado": 22226.54,
+    "roiEstimado": 5.8491,
+    "percMetaAtingida": 194.97
   },
   {
     "nome": "Gabriel Oliveira",
@@ -2154,10 +2154,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010734,
-    "retornoEstimado": 18462.48,
-    "roiEstimado": 4.8585,
-    "percMetaAtingida": 161.95
+    "participacao": 0.012387,
+    "retornoEstimado": 21306.18,
+    "roiEstimado": 5.6069,
+    "percMetaAtingida": 186.9
   },
   {
     "nome": "Vinícius Ribeiro",
@@ -2172,10 +2172,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010734,
-    "retornoEstimado": 18462.48,
-    "roiEstimado": 4.8585,
-    "percMetaAtingida": 161.95
+    "participacao": 0.006486,
+    "retornoEstimado": 11155.48,
+    "roiEstimado": 2.9357,
+    "percMetaAtingida": 97.86
   },
   {
     "nome": "Bruno Henrique Alves",
@@ -2190,10 +2190,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010734,
-    "retornoEstimado": 18462.48,
-    "roiEstimado": 4.8585,
-    "percMetaAtingida": 161.95
+    "participacao": 0.007322,
+    "retornoEstimado": 12594.69,
+    "roiEstimado": 3.3144,
+    "percMetaAtingida": 110.48
   },
   {
     "nome": "José Carlos Pereira",
@@ -2208,10 +2208,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010734,
-    "retornoEstimado": 18462.48,
-    "roiEstimado": 4.8585,
-    "percMetaAtingida": 161.95
+    "participacao": 0.012606,
+    "retornoEstimado": 21682.97,
+    "roiEstimado": 5.706,
+    "percMetaAtingida": 190.2
   },
   {
     "nome": "Felipe Barros",
@@ -2244,10 +2244,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010734,
-    "retornoEstimado": 18462.48,
-    "roiEstimado": 4.8585,
-    "percMetaAtingida": 161.95
+    "participacao": 0.010229,
+    "retornoEstimado": 17593.86,
+    "roiEstimado": 4.63,
+    "percMetaAtingida": 154.33
   },
   {
     "nome": "Danilo Azevedo",
@@ -2262,10 +2262,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008192,
-    "retornoEstimado": 14090.24,
-    "roiEstimado": 4.8587,
-    "percMetaAtingida": 161.96
+    "participacao": 0.00623,
+    "retornoEstimado": 10716.38,
+    "roiEstimado": 3.6953,
+    "percMetaAtingida": 123.18
   },
   {
     "nome": "Aline Prado",
@@ -2280,10 +2280,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008192,
-    "retornoEstimado": 14090.24,
-    "roiEstimado": 4.8587,
-    "percMetaAtingida": 161.96
+    "participacao": 0.008831,
+    "retornoEstimado": 15189.91,
+    "roiEstimado": 5.2379,
+    "percMetaAtingida": 174.6
   },
   {
     "nome": "Sônia Cardoso",
@@ -2298,10 +2298,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008192,
-    "retornoEstimado": 14090.24,
-    "roiEstimado": 4.8587,
-    "percMetaAtingida": 161.96
+    "participacao": 0.006724,
+    "retornoEstimado": 11564.89,
+    "roiEstimado": 3.9879,
+    "percMetaAtingida": 132.93
   },
   {
     "nome": "Renata Campos",
@@ -2316,10 +2316,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008192,
-    "retornoEstimado": 14090.24,
-    "roiEstimado": 4.8587,
-    "percMetaAtingida": 161.96
+    "participacao": 0.009696,
+    "retornoEstimado": 16676.38,
+    "roiEstimado": 5.7505,
+    "percMetaAtingida": 191.68
   },
   {
     "nome": "Jéssica Moura",
@@ -2334,10 +2334,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008192,
-    "retornoEstimado": 14090.24,
-    "roiEstimado": 4.8587,
-    "percMetaAtingida": 161.96
+    "participacao": 0.007765,
+    "retornoEstimado": 13356.19,
+    "roiEstimado": 4.6056,
+    "percMetaAtingida": 153.52
   },
   {
     "nome": "Paula Ribeiro",
@@ -2352,10 +2352,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008192,
-    "retornoEstimado": 14090.24,
-    "roiEstimado": 4.8587,
-    "percMetaAtingida": 161.96
+    "participacao": 0.008003,
+    "retornoEstimado": 13764.73,
+    "roiEstimado": 4.7465,
+    "percMetaAtingida": 158.22
   },
   {
     "nome": "Renato Silva",
@@ -2370,10 +2370,10 @@
     "retornoPotencial": 10200.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009605,
-    "retornoEstimado": 16520.6,
-    "roiEstimado": 4.859,
-    "percMetaAtingida": 161.97
+    "participacao": 0.007735,
+    "retornoEstimado": 13304.6,
+    "roiEstimado": 3.9131,
+    "percMetaAtingida": 130.44
   },
   {
     "nome": "Daniel Moraes",
@@ -2388,10 +2388,10 @@
     "retornoPotencial": 10200.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009605,
-    "retornoEstimado": 16520.6,
-    "roiEstimado": 4.859,
-    "percMetaAtingida": 161.97
+    "participacao": 0.011192,
+    "retornoEstimado": 19249.49,
+    "roiEstimado": 5.6616,
+    "percMetaAtingida": 188.72
   },
   {
     "nome": "Everton Lima",
@@ -2406,10 +2406,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008475,
-    "retornoEstimado": 14577.0,
-    "roiEstimado": 4.859,
-    "percMetaAtingida": 161.97
+    "participacao": 0.008142,
+    "retornoEstimado": 14003.68,
+    "roiEstimado": 4.6679,
+    "percMetaAtingida": 155.6
   },
   {
     "nome": "Adriano Souza",
@@ -2442,10 +2442,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008475,
-    "retornoEstimado": 14577.0,
-    "roiEstimado": 4.859,
-    "percMetaAtingida": 161.97
+    "participacao": 0.005077,
+    "retornoEstimado": 8732.18,
+    "roiEstimado": 2.9107,
+    "percMetaAtingida": 97.02
   },
   {
     "nome": "Leonardo Pires",
@@ -2460,10 +2460,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.018362,
-    "retornoEstimado": 31582.64,
-    "roiEstimado": 4.8589,
-    "percMetaAtingida": 161.96
+    "participacao": 0.021598,
+    "retornoEstimado": 37149.16,
+    "roiEstimado": 5.7153,
+    "percMetaAtingida": 190.51
   },
   {
     "nome": "Fábio Henrique",
@@ -2478,10 +2478,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.018362,
-    "retornoEstimado": 31582.64,
-    "roiEstimado": 4.8589,
-    "percMetaAtingida": 161.96
+    "participacao": 0.017085,
+    "retornoEstimado": 29386.86,
+    "roiEstimado": 4.5211,
+    "percMetaAtingida": 150.7
   },
   {
     "nome": "Pedro Augusto",
@@ -2496,10 +2496,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.018362,
-    "retornoEstimado": 31582.64,
-    "roiEstimado": 4.8589,
-    "percMetaAtingida": 161.96
+    "participacao": 0.014618,
+    "retornoEstimado": 25142.95,
+    "roiEstimado": 3.8681,
+    "percMetaAtingida": 128.94
   },
   {
     "nome": "Marina Lopes",
@@ -2514,10 +2514,10 @@
     "retornoPotencial": 16500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.015537,
-    "retornoEstimado": 26723.64,
-    "roiEstimado": 4.8588,
-    "percMetaAtingida": 161.96
+    "participacao": 0.017848,
+    "retornoEstimado": 30697.83,
+    "roiEstimado": 5.5814,
+    "percMetaAtingida": 186.05
   },
   {
     "nome": "Tatiane Freitas",
@@ -2532,10 +2532,10 @@
     "retornoPotencial": 10500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009887,
-    "retornoEstimado": 17005.64,
-    "roiEstimado": 4.8588,
-    "percMetaAtingida": 161.96
+    "participacao": 0.009516,
+    "retornoEstimado": 16367.97,
+    "roiEstimado": 4.6766,
+    "percMetaAtingida": 155.89
   },
   {
     "nome": "Carlos Eduardo Mendes",
@@ -2550,10 +2550,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00791,
-    "retornoEstimado": 13605.2,
-    "roiEstimado": 4.859,
-    "percMetaAtingida": 161.97
+    "participacao": 0.009266,
+    "retornoEstimado": 15937.48,
+    "roiEstimado": 5.692,
+    "percMetaAtingida": 189.73
   },
   {
     "nome": "João Pedro Ramos",
@@ -2568,10 +2568,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00791,
-    "retornoEstimado": 13605.2,
-    "roiEstimado": 4.859,
-    "percMetaAtingida": 161.97
+    "participacao": 0.007419,
+    "retornoEstimado": 12760.6,
+    "roiEstimado": 4.5574,
+    "percMetaAtingida": 151.91
   },
   {
     "nome": "Alexandre Gouveia",
@@ -2586,10 +2586,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00791,
-    "retornoEstimado": 13605.2,
-    "roiEstimado": 4.859,
-    "percMetaAtingida": 161.97
+    "participacao": 0.007669,
+    "retornoEstimado": 13191.47,
+    "roiEstimado": 4.7112,
+    "percMetaAtingida": 157.04
   },
   {
     "nome": "Ademir Prado",
@@ -2604,10 +2604,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010734,
-    "retornoEstimado": 18462.48,
-    "roiEstimado": 4.8585,
-    "percMetaAtingida": 161.95
+    "participacao": 0.01094,
+    "retornoEstimado": 18816.89,
+    "roiEstimado": 4.9518,
+    "percMetaAtingida": 165.06
   },
   {
     "nome": "Isabela Rezende",
@@ -2622,10 +2622,10 @@
     "retornoPotencial": 16500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.015537,
-    "retornoEstimado": 26723.64,
-    "roiEstimado": 4.8588,
-    "percMetaAtingida": 161.96
+    "participacao": 0.011718,
+    "retornoEstimado": 20154.3,
+    "roiEstimado": 3.6644,
+    "percMetaAtingida": 122.15
   },
   {
     "nome": "Wanderson Alves",
@@ -2694,10 +2694,10 @@
     "retornoPotencial": 87000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.080511,
-    "retornoEstimado": 146530.02,
-    "roiEstimado": 10.1055,
-    "percMetaAtingida": 168.42
+    "participacao": 0.089246,
+    "retornoEstimado": 162427.52,
+    "roiEstimado": 11.2019,
+    "percMetaAtingida": 186.7
   },
   {
     "nome": "Fernando Salles",
@@ -2712,10 +2712,10 @@
     "retornoPotencial": 96000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.08884,
-    "retornoEstimado": 161688.8,
-    "roiEstimado": 10.1055,
-    "percMetaAtingida": 168.42
+    "participacao": 0.095199,
+    "retornoEstimado": 173262.0,
+    "roiEstimado": 10.8289,
+    "percMetaAtingida": 180.48
   },
   {
     "nome": "Camila Batista",
@@ -2730,10 +2730,10 @@
     "retornoPotencial": 51000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.047196,
-    "retornoEstimado": 85896.72,
-    "roiEstimado": 10.1055,
-    "percMetaAtingida": 168.42
+    "participacao": 0.047085,
+    "retornoEstimado": 85694.52,
+    "roiEstimado": 10.0817,
+    "percMetaAtingida": 168.03
   },
   {
     "nome": "Marcelo Vieira",
@@ -2748,10 +2748,10 @@
     "retornoPotencial": 51000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.047196,
-    "retornoEstimado": 85896.72,
-    "roiEstimado": 10.1055,
-    "percMetaAtingida": 168.42
+    "participacao": 0.043595,
+    "retornoEstimado": 79343.6,
+    "roiEstimado": 9.3345,
+    "percMetaAtingida": 155.58
   },
   {
     "nome": "Gustavo Almeida",
@@ -2766,10 +2766,10 @@
     "retornoPotencial": 81000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.074958,
-    "retornoEstimado": 136423.56,
-    "roiEstimado": 10.1054,
-    "percMetaAtingida": 168.42
+    "participacao": 0.076169,
+    "retornoEstimado": 138628.53,
+    "roiEstimado": 10.2688,
+    "percMetaAtingida": 171.15
   },
   {
     "nome": "Márcio Fernandes",
@@ -2784,10 +2784,10 @@
     "retornoPotencial": 45000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.041644,
-    "retornoEstimado": 75792.08,
-    "roiEstimado": 10.1056,
-    "percMetaAtingida": 168.43
+    "participacao": 0.040008,
+    "retornoEstimado": 72815.14,
+    "roiEstimado": 9.7087,
+    "percMetaAtingida": 161.81
   },
   {
     "nome": "Bianca Martins",
@@ -2802,10 +2802,10 @@
     "retornoPotencial": 90000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.083287,
-    "retornoEstimado": 151582.34,
-    "roiEstimado": 10.1055,
-    "percMetaAtingida": 168.42
+    "participacao": 0.086165,
+    "retornoEstimado": 156820.97,
+    "roiEstimado": 10.4547,
+    "percMetaAtingida": 174.25
   },
   {
     "nome": "Thiago Costa",
@@ -2820,10 +2820,10 @@
     "retornoPotencial": 54000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.049972,
-    "retornoEstimado": 90949.04,
-    "roiEstimado": 10.1054,
-    "percMetaAtingida": 168.42
+    "participacao": 0.04062,
+    "retornoEstimado": 73929.17,
+    "roiEstimado": 8.2144,
+    "percMetaAtingida": 136.91
   },
   {
     "nome": "Renata Lima",
@@ -2838,10 +2838,10 @@
     "retornoPotencial": 69000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.063853,
-    "retornoEstimado": 116212.46,
-    "roiEstimado": 10.1054,
-    "percMetaAtingida": 168.42
+    "participacao": 0.06606,
+    "retornoEstimado": 120229.41,
+    "roiEstimado": 10.4547,
+    "percMetaAtingida": 174.25
   },
   {
     "nome": "Bruno Cardoso",
@@ -2856,10 +2856,10 @@
     "retornoPotencial": 21000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.019434,
-    "retornoEstimado": 35369.88,
-    "roiEstimado": 5.0528,
-    "percMetaAtingida": 168.43
+    "participacao": 0.022781,
+    "retornoEstimado": 41461.03,
+    "roiEstimado": 5.923,
+    "percMetaAtingida": 197.43
   },
   {
     "nome": "Denise Rocha",
@@ -2874,10 +2874,10 @@
     "retornoPotencial": 12600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01166,
-    "retornoEstimado": 21221.2,
-    "roiEstimado": 5.0527,
-    "percMetaAtingida": 168.42
+    "participacao": 0.011224,
+    "retornoEstimado": 20428.23,
+    "roiEstimado": 4.8639,
+    "percMetaAtingida": 162.13
   },
   {
     "nome": "Claudia Nascimento",
@@ -2892,10 +2892,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008884,
-    "retornoEstimado": 16168.88,
-    "roiEstimado": 5.0528,
-    "percMetaAtingida": 168.43
+    "participacao": 0.008466,
+    "retornoEstimado": 15408.43,
+    "roiEstimado": 4.8151,
+    "percMetaAtingida": 160.5
   },
   {
     "nome": "Marisa Oliveira",
@@ -2910,10 +2910,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008884,
-    "retornoEstimado": 16168.88,
-    "roiEstimado": 5.0528,
-    "percMetaAtingida": 168.43
+    "participacao": 0.010528,
+    "retornoEstimado": 19161.52,
+    "roiEstimado": 5.988,
+    "percMetaAtingida": 199.6
   },
   {
     "nome": "Roberto Santos",
@@ -2928,10 +2928,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008884,
-    "retornoEstimado": 16168.88,
-    "roiEstimado": 5.0528,
-    "percMetaAtingida": 168.43
+    "participacao": 0.008826,
+    "retornoEstimado": 16062.63,
+    "roiEstimado": 5.0196,
+    "percMetaAtingida": 167.32
   },
   {
     "nome": "Everton Nunes",
@@ -2946,10 +2946,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008884,
-    "retornoEstimado": 16168.88,
-    "roiEstimado": 5.0528,
-    "percMetaAtingida": 168.43
+    "participacao": 0.006728,
+    "retornoEstimado": 12245.02,
+    "roiEstimado": 3.8266,
+    "percMetaAtingida": 127.55
   },
   {
     "nome": "André Luiz Costa",
@@ -2964,10 +2964,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01055,
-    "retornoEstimado": 19201.0,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.012301,
+    "retornoEstimado": 22388.23,
+    "roiEstimado": 5.8916,
+    "percMetaAtingida": 196.39
   },
   {
     "nome": "Tiago Martins",
@@ -2982,10 +2982,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01055,
-    "retornoEstimado": 19201.0,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.012084,
+    "retornoEstimado": 21992.35,
+    "roiEstimado": 5.7875,
+    "percMetaAtingida": 192.92
   },
   {
     "nome": "Paulo Henrique Lima",
@@ -3000,10 +3000,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01055,
-    "retornoEstimado": 19201.0,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.006814,
+    "retornoEstimado": 12401.96,
+    "roiEstimado": 3.2637,
+    "percMetaAtingida": 108.79
   },
   {
     "nome": "Sérgio Moura",
@@ -3018,10 +3018,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01055,
-    "retornoEstimado": 19201.0,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.008724,
+    "retornoEstimado": 15877.57,
+    "roiEstimado": 4.1783,
+    "percMetaAtingida": 139.28
   },
   {
     "nome": "Lucas Ferreira",
@@ -3036,10 +3036,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01055,
-    "retornoEstimado": 19201.0,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.012075,
+    "retornoEstimado": 21977.45,
+    "roiEstimado": 5.7835,
+    "percMetaAtingida": 192.78
   },
   {
     "nome": "Caio Santos",
@@ -3054,10 +3054,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01055,
-    "retornoEstimado": 19201.0,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.00951,
+    "retornoEstimado": 17307.83,
+    "roiEstimado": 4.5547,
+    "percMetaAtingida": 151.82
   },
   {
     "nome": "Rafael Teixeira",
@@ -3072,10 +3072,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01055,
-    "retornoEstimado": 19201.0,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.011686,
+    "retornoEstimado": 21268.71,
+    "roiEstimado": 5.597,
+    "percMetaAtingida": 186.57
   },
   {
     "nome": "Gabriel Oliveira",
@@ -3090,10 +3090,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01055,
-    "retornoEstimado": 19201.0,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.012246,
+    "retornoEstimado": 22288.19,
+    "roiEstimado": 5.8653,
+    "percMetaAtingida": 195.51
   },
   {
     "nome": "Vinícius Ribeiro",
@@ -3144,10 +3144,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01055,
-    "retornoEstimado": 19201.0,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.012439,
+    "retornoEstimado": 22639.37,
+    "roiEstimado": 5.9577,
+    "percMetaAtingida": 198.59
   },
   {
     "nome": "Cristiano Barbosa",
@@ -3162,10 +3162,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01055,
-    "retornoEstimado": 19201.0,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.010705,
+    "retornoEstimado": 19483.01,
+    "roiEstimado": 5.1271,
+    "percMetaAtingida": 170.9
   },
   {
     "nome": "Danilo Azevedo",
@@ -3180,10 +3180,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008051,
-    "retornoEstimado": 14652.82,
-    "roiEstimado": 5.0527,
-    "percMetaAtingida": 168.42
+    "participacao": 0.004947,
+    "retornoEstimado": 9003.36,
+    "roiEstimado": 3.1046,
+    "percMetaAtingida": 103.49
   },
   {
     "nome": "Aline Prado",
@@ -3198,10 +3198,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008051,
-    "retornoEstimado": 14652.82,
-    "roiEstimado": 5.0527,
-    "percMetaAtingida": 168.42
+    "participacao": 0.007986,
+    "retornoEstimado": 14534.01,
+    "roiEstimado": 5.0117,
+    "percMetaAtingida": 167.06
   },
   {
     "nome": "Sônia Cardoso",
@@ -3216,10 +3216,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008051,
-    "retornoEstimado": 14652.82,
-    "roiEstimado": 5.0527,
-    "percMetaAtingida": 168.42
+    "participacao": 0.006191,
+    "retornoEstimado": 11267.6,
+    "roiEstimado": 3.8854,
+    "percMetaAtingida": 129.51
   },
   {
     "nome": "Renata Campos",
@@ -3234,10 +3234,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008051,
-    "retornoEstimado": 14652.82,
-    "roiEstimado": 5.0527,
-    "percMetaAtingida": 168.42
+    "participacao": 0.009218,
+    "retornoEstimado": 16777.14,
+    "roiEstimado": 5.7852,
+    "percMetaAtingida": 192.84
   },
   {
     "nome": "Jéssica Moura",
@@ -3252,10 +3252,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008051,
-    "retornoEstimado": 14652.82,
-    "roiEstimado": 5.0527,
-    "percMetaAtingida": 168.42
+    "participacao": 0.008137,
+    "retornoEstimado": 14808.52,
+    "roiEstimado": 5.1064,
+    "percMetaAtingida": 170.21
   },
   {
     "nome": "Paula Ribeiro",
@@ -3270,10 +3270,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008051,
-    "retornoEstimado": 14652.82,
-    "roiEstimado": 5.0527,
-    "percMetaAtingida": 168.42
+    "participacao": 0.006669,
+    "retornoEstimado": 12138.21,
+    "roiEstimado": 4.1856,
+    "percMetaAtingida": 139.52
   },
   {
     "nome": "Renato Silva",
@@ -3288,10 +3288,10 @@
     "retornoPotencial": 10200.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009439,
-    "retornoEstimado": 17178.98,
-    "roiEstimado": 5.0526,
-    "percMetaAtingida": 168.42
+    "participacao": 0.007688,
+    "retornoEstimado": 13992.96,
+    "roiEstimado": 4.1156,
+    "percMetaAtingida": 137.19
   },
   {
     "nome": "Daniel Moraes",
@@ -3306,10 +3306,10 @@
     "retornoPotencial": 10200.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009439,
-    "retornoEstimado": 17178.98,
-    "roiEstimado": 5.0526,
-    "percMetaAtingida": 168.42
+    "participacao": 0.011268,
+    "retornoEstimado": 20507.65,
+    "roiEstimado": 6.0317,
+    "percMetaAtingida": 201.06
   },
   {
     "nome": "Everton Lima",
@@ -3324,10 +3324,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008329,
-    "retornoEstimado": 15158.78,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.007919,
+    "retornoEstimado": 14411.8,
+    "roiEstimado": 4.8039,
+    "percMetaAtingida": 160.13
   },
   {
     "nome": "Jonas Rocha",
@@ -3342,10 +3342,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008329,
-    "retornoEstimado": 15158.78,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.005015,
+    "retornoEstimado": 9127.31,
+    "roiEstimado": 3.0424,
+    "percMetaAtingida": 101.41
   },
   {
     "nome": "Leonardo Pires",
@@ -3360,10 +3360,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.018046,
-    "retornoEstimado": 32843.72,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.020499,
+    "retornoEstimado": 37309.04,
+    "roiEstimado": 5.7399,
+    "percMetaAtingida": 191.33
   },
   {
     "nome": "Fábio Henrique",
@@ -3378,10 +3378,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.018046,
-    "retornoEstimado": 32843.72,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.017141,
+    "retornoEstimado": 31196.45,
+    "roiEstimado": 4.7995,
+    "percMetaAtingida": 159.98
   },
   {
     "nome": "Pedro Augusto",
@@ -3396,10 +3396,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.018046,
-    "retornoEstimado": 32843.72,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.013932,
+    "retornoEstimado": 25356.9,
+    "roiEstimado": 3.9011,
+    "percMetaAtingida": 130.04
   },
   {
     "nome": "Marina Lopes",
@@ -3414,10 +3414,10 @@
     "retornoPotencial": 16500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.015269,
-    "retornoEstimado": 27789.58,
-    "roiEstimado": 5.0527,
-    "percMetaAtingida": 168.42
+    "participacao": 0.017508,
+    "retornoEstimado": 31864.92,
+    "roiEstimado": 5.7936,
+    "percMetaAtingida": 193.12
   },
   {
     "nome": "Tatiane Freitas",
@@ -3432,10 +3432,10 @@
     "retornoPotencial": 10500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009717,
-    "retornoEstimado": 17684.94,
-    "roiEstimado": 5.0528,
-    "percMetaAtingida": 168.43
+    "participacao": 0.009071,
+    "retornoEstimado": 16509.92,
+    "roiEstimado": 4.7171,
+    "percMetaAtingida": 157.24
   },
   {
     "nome": "Carlos Eduardo Mendes",
@@ -3450,10 +3450,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007773,
-    "retornoEstimado": 14146.86,
-    "roiEstimado": 5.0525,
-    "percMetaAtingida": 168.42
+    "participacao": 0.008724,
+    "retornoEstimado": 15877.12,
+    "roiEstimado": 5.6704,
+    "percMetaAtingida": 189.01
   },
   {
     "nome": "João Pedro Ramos",
@@ -3468,10 +3468,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007773,
-    "retornoEstimado": 14146.86,
-    "roiEstimado": 5.0525,
-    "percMetaAtingida": 168.42
+    "participacao": 0.00745,
+    "retornoEstimado": 13559.23,
+    "roiEstimado": 4.8426,
+    "percMetaAtingida": 161.42
   },
   {
     "nome": "Alexandre Gouveia",
@@ -3486,10 +3486,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007773,
-    "retornoEstimado": 14146.86,
-    "roiEstimado": 5.0525,
-    "percMetaAtingida": 168.42
+    "participacao": 0.007884,
+    "retornoEstimado": 14349.63,
+    "roiEstimado": 5.1249,
+    "percMetaAtingida": 170.83
   },
   {
     "nome": "Ademir Prado",
@@ -3504,10 +3504,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01055,
-    "retornoEstimado": 19201.0,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.010085,
+    "retornoEstimado": 18354.98,
+    "roiEstimado": 4.8303,
+    "percMetaAtingida": 161.01
   },
   {
     "nome": "Isabela Rezende",
@@ -3522,10 +3522,10 @@
     "retornoPotencial": 16500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.015269,
-    "retornoEstimado": 27789.58,
-    "roiEstimado": 5.0527,
-    "percMetaAtingida": 168.42
+    "participacao": 0.015139,
+    "retornoEstimado": 27552.19,
+    "roiEstimado": 5.0095,
+    "percMetaAtingida": 166.98
   },
   {
     "nome": "Wanderson Alves",
@@ -3540,10 +3540,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008329,
-    "retornoEstimado": 15158.78,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.007543,
+    "retornoEstimado": 13727.93,
+    "roiEstimado": 4.576,
+    "percMetaAtingida": 152.53
   },
   {
     "nome": "Fernanda Correia",
@@ -3558,10 +3558,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01055,
-    "retornoEstimado": 19201.0,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.010301,
+    "retornoEstimado": 18748.73,
+    "roiEstimado": 4.9339,
+    "percMetaAtingida": 164.46
   },
   {
     "nome": "Diego Ferraz",
@@ -3576,10 +3576,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008884,
-    "retornoEstimado": 16168.88,
-    "roiEstimado": 5.0528,
-    "percMetaAtingida": 168.43
+    "participacao": 0.007704,
+    "retornoEstimado": 14021.19,
+    "roiEstimado": 4.3816,
+    "percMetaAtingida": 146.05
   },
   {
     "nome": "Vitor Ramos",
@@ -3594,10 +3594,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01055,
-    "retornoEstimado": 19201.0,
-    "roiEstimado": 5.0529,
-    "percMetaAtingida": 168.43
+    "participacao": 0.010697,
+    "retornoEstimado": 19468.11,
+    "roiEstimado": 5.1232,
+    "percMetaAtingida": 170.77
   },
   {
     "nome": "Cauê Fonseca",
@@ -3648,10 +3648,10 @@
     "retornoPotencial": 87000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.081278,
-    "retornoEstimado": 150364.3,
-    "roiEstimado": 10.37,
-    "percMetaAtingida": 172.83
+    "participacao": 0.086031,
+    "retornoEstimado": 159156.8,
+    "roiEstimado": 10.9763,
+    "percMetaAtingida": 182.94
   },
   {
     "nome": "Fernando Salles",
@@ -3666,10 +3666,10 @@
     "retornoPotencial": 96000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.089686,
-    "retornoEstimado": 165919.1,
-    "roiEstimado": 10.3699,
-    "percMetaAtingida": 172.83
+    "participacao": 0.09493,
+    "retornoEstimado": 175621.29,
+    "roiEstimado": 10.9763,
+    "percMetaAtingida": 182.94
   },
   {
     "nome": "Camila Batista",
@@ -3684,10 +3684,10 @@
     "retornoPotencial": 51000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.047646,
-    "retornoEstimado": 88145.1,
-    "roiEstimado": 10.37,
-    "percMetaAtingida": 172.83
+    "participacao": 0.050432,
+    "retornoEstimado": 93298.81,
+    "roiEstimado": 10.9763,
+    "percMetaAtingida": 182.94
   },
   {
     "nome": "Marcelo Vieira",
@@ -3702,10 +3702,10 @@
     "retornoPotencial": 51000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.047646,
-    "retornoEstimado": 88145.1,
-    "roiEstimado": 10.37,
-    "percMetaAtingida": 172.83
+    "participacao": 0.044237,
+    "retornoEstimado": 81837.79,
+    "roiEstimado": 9.628,
+    "percMetaAtingida": 160.47
   },
   {
     "nome": "Gustavo Almeida",
@@ -3720,10 +3720,10 @@
     "retornoPotencial": 81000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.075673,
-    "retornoEstimado": 139995.05,
-    "roiEstimado": 10.37,
-    "percMetaAtingida": 172.83
+    "participacao": 0.07729,
+    "retornoEstimado": 142986.35,
+    "roiEstimado": 10.5916,
+    "percMetaAtingida": 176.53
   },
   {
     "nome": "Márcio Fernandes",
@@ -3738,10 +3738,10 @@
     "retornoPotencial": 45000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.04204,
-    "retornoEstimado": 77774.0,
-    "roiEstimado": 10.3699,
-    "percMetaAtingida": 172.83
+    "participacao": 0.040597,
+    "retornoEstimado": 75104.1,
+    "roiEstimado": 10.0139,
+    "percMetaAtingida": 166.9
   },
   {
     "nome": "Bianca Martins",
@@ -3756,10 +3756,10 @@
     "retornoPotencial": 90000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.084081,
-    "retornoEstimado": 155549.85,
-    "roiEstimado": 10.37,
-    "percMetaAtingida": 172.83
+    "participacao": 0.085878,
+    "retornoEstimado": 158873.72,
+    "roiEstimado": 10.5916,
+    "percMetaAtingida": 176.53
   },
   {
     "nome": "Thiago Costa",
@@ -3774,10 +3774,10 @@
     "retornoPotencial": 54000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.050448,
-    "retornoEstimado": 93328.8,
-    "roiEstimado": 10.3699,
-    "percMetaAtingida": 172.83
+    "participacao": 0.038407,
+    "retornoEstimado": 71053.83,
+    "roiEstimado": 7.8949,
+    "percMetaAtingida": 131.58
   },
   {
     "nome": "Renata Lima",
@@ -3792,10 +3792,10 @@
     "retornoPotencial": 69000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.064462,
-    "retornoEstimado": 119254.7,
-    "roiEstimado": 10.37,
-    "percMetaAtingida": 172.83
+    "participacao": 0.067032,
+    "retornoEstimado": 124008.85,
+    "roiEstimado": 10.7834,
+    "percMetaAtingida": 179.72
   },
   {
     "nome": "Bruno Cardoso",
@@ -3810,10 +3810,10 @@
     "retornoPotencial": 21000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.019619,
-    "retornoEstimado": 36295.15,
-    "roiEstimado": 5.185,
-    "percMetaAtingida": 172.83
+    "participacao": 0.023063,
+    "retornoEstimado": 42667.31,
+    "roiEstimado": 6.0953,
+    "percMetaAtingida": 203.18
   },
   {
     "nome": "Denise Rocha",
@@ -3828,10 +3828,10 @@
     "retornoPotencial": 12600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.011771,
-    "retornoEstimado": 21776.35,
-    "roiEstimado": 5.1848,
-    "percMetaAtingida": 172.83
+    "participacao": 0.010621,
+    "retornoEstimado": 19648.56,
+    "roiEstimado": 4.6782,
+    "percMetaAtingida": 155.94
   },
   {
     "nome": "Claudia Nascimento",
@@ -3846,10 +3846,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008969,
-    "retornoEstimado": 16592.65,
-    "roiEstimado": 5.1852,
-    "percMetaAtingida": 172.84
+    "participacao": 0.009081,
+    "retornoEstimado": 16800.49,
+    "roiEstimado": 5.2502,
+    "percMetaAtingida": 175.01
   },
   {
     "nome": "Marisa Oliveira",
@@ -3864,10 +3864,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008969,
-    "retornoEstimado": 16592.65,
-    "roiEstimado": 5.1852,
-    "percMetaAtingida": 172.84
+    "participacao": 0.010514,
+    "retornoEstimado": 19451.44,
+    "roiEstimado": 6.0786,
+    "percMetaAtingida": 202.62
   },
   {
     "nome": "Roberto Santos",
@@ -3882,10 +3882,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008969,
-    "retornoEstimado": 16592.65,
-    "roiEstimado": 5.1852,
-    "percMetaAtingida": 172.84
+    "participacao": 0.008727,
+    "retornoEstimado": 16144.22,
+    "roiEstimado": 5.0451,
+    "percMetaAtingida": 168.17
   },
   {
     "nome": "Everton Nunes",
@@ -3900,10 +3900,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008969,
-    "retornoEstimado": 16592.65,
-    "roiEstimado": 5.1852,
-    "percMetaAtingida": 172.84
+    "participacao": 0.006784,
+    "retornoEstimado": 12550.45,
+    "roiEstimado": 3.922,
+    "percMetaAtingida": 130.73
   },
   {
     "nome": "André Luiz Costa",
@@ -3918,10 +3918,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01065,
-    "retornoEstimado": 19702.5,
-    "roiEstimado": 5.1849,
-    "percMetaAtingida": 172.83
+    "participacao": 0.012658,
+    "retornoEstimado": 23416.9,
+    "roiEstimado": 6.1623,
+    "percMetaAtingida": 205.41
   },
   {
     "nome": "Tiago Martins",
@@ -3936,10 +3936,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01065,
-    "retornoEstimado": 19702.5,
-    "roiEstimado": 5.1849,
-    "percMetaAtingida": 172.83
+    "participacao": 0.012288,
+    "retornoEstimado": 22731.98,
+    "roiEstimado": 5.9821,
+    "percMetaAtingida": 199.4
   },
   {
     "nome": "Paulo Henrique Lima",
@@ -3954,10 +3954,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01065,
-    "retornoEstimado": 19702.5,
-    "roiEstimado": 5.1849,
-    "percMetaAtingida": 172.83
+    "participacao": 0.006592,
+    "retornoEstimado": 12194.7,
+    "roiEstimado": 3.2091,
+    "percMetaAtingida": 106.97
   },
   {
     "nome": "Sérgio Moura",
@@ -3990,10 +3990,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01065,
-    "retornoEstimado": 19702.5,
-    "roiEstimado": 5.1849,
-    "percMetaAtingida": 172.83
+    "participacao": 0.012098,
+    "retornoEstimado": 22380.74,
+    "roiEstimado": 5.8897,
+    "percMetaAtingida": 196.32
   },
   {
     "nome": "Caio Santos",
@@ -4008,10 +4008,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01065,
-    "retornoEstimado": 19702.5,
-    "roiEstimado": 5.1849,
-    "percMetaAtingida": 172.83
+    "participacao": 0.010986,
+    "retornoEstimado": 20323.77,
+    "roiEstimado": 5.3484,
+    "percMetaAtingida": 178.28
   },
   {
     "nome": "Rafael Teixeira",
@@ -4026,10 +4026,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01065,
-    "retornoEstimado": 19702.5,
-    "roiEstimado": 5.1849,
-    "percMetaAtingida": 172.83
+    "participacao": 0.012197,
+    "retornoEstimado": 22565.14,
+    "roiEstimado": 5.9382,
+    "percMetaAtingida": 197.94
   },
   {
     "nome": "Gabriel Oliveira",
@@ -4044,10 +4044,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01065,
-    "retornoEstimado": 19702.5,
-    "roiEstimado": 5.1849,
-    "percMetaAtingida": 172.83
+    "participacao": 0.013021,
+    "retornoEstimado": 24088.66,
+    "roiEstimado": 6.3391,
+    "percMetaAtingida": 211.3
   },
   {
     "nome": "José Carlos Pereira",
@@ -4062,10 +4062,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01065,
-    "retornoEstimado": 19702.5,
-    "roiEstimado": 5.1849,
-    "percMetaAtingida": 172.83
+    "participacao": 0.012129,
+    "retornoEstimado": 22437.82,
+    "roiEstimado": 5.9047,
+    "percMetaAtingida": 196.82
   },
   {
     "nome": "Cristiano Barbosa",
@@ -4080,10 +4080,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01065,
-    "retornoEstimado": 19702.5,
-    "roiEstimado": 5.1849,
-    "percMetaAtingida": 172.83
+    "participacao": 0.009951,
+    "retornoEstimado": 18409.5,
+    "roiEstimado": 4.8446,
+    "percMetaAtingida": 161.49
   },
   {
     "nome": "Danilo Azevedo",
@@ -4098,10 +4098,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008128,
-    "retornoEstimado": 15036.8,
-    "roiEstimado": 5.1851,
-    "percMetaAtingida": 172.84
+    "participacao": 0.0045,
+    "retornoEstimado": 8324.74,
+    "roiEstimado": 2.8706,
+    "percMetaAtingida": 95.69
   },
   {
     "nome": "Aline Prado",
@@ -4116,10 +4116,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008128,
-    "retornoEstimado": 15036.8,
-    "roiEstimado": 5.1851,
-    "percMetaAtingida": 172.84
+    "participacao": 0.004829,
+    "retornoEstimado": 8932.88,
+    "roiEstimado": 3.0803,
+    "percMetaAtingida": 102.68
   },
   {
     "nome": "Sônia Cardoso",
@@ -4134,10 +4134,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008128,
-    "retornoEstimado": 15036.8,
-    "roiEstimado": 5.1851,
-    "percMetaAtingida": 172.84
+    "participacao": 0.006059,
+    "retornoEstimado": 11209.66,
+    "roiEstimado": 3.8654,
+    "percMetaAtingida": 128.85
   },
   {
     "nome": "Renata Campos",
@@ -4152,10 +4152,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008128,
-    "retornoEstimado": 15036.8,
-    "roiEstimado": 5.1851,
-    "percMetaAtingida": 172.84
+    "participacao": 0.00943,
+    "retornoEstimado": 17445.26,
+    "roiEstimado": 6.0156,
+    "percMetaAtingida": 200.52
   },
   {
     "nome": "Jéssica Moura",
@@ -4170,10 +4170,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008128,
-    "retornoEstimado": 15036.8,
-    "roiEstimado": 5.1851,
-    "percMetaAtingida": 172.84
+    "participacao": 0.008676,
+    "retornoEstimado": 16051.38,
+    "roiEstimado": 5.535,
+    "percMetaAtingida": 184.5
   },
   {
     "nome": "Paula Ribeiro",
@@ -4188,10 +4188,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008128,
-    "retornoEstimado": 15036.8,
-    "roiEstimado": 5.1851,
-    "percMetaAtingida": 172.84
+    "participacao": 0.007453,
+    "retornoEstimado": 13788.0,
+    "roiEstimado": 4.7545,
+    "percMetaAtingida": 158.48
   },
   {
     "nome": "Renato Silva",
@@ -4224,10 +4224,10 @@
     "retornoPotencial": 10200.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009529,
-    "retornoEstimado": 17628.65,
-    "roiEstimado": 5.1849,
-    "percMetaAtingida": 172.83
+    "participacao": 0.010815,
+    "retornoEstimado": 20007.19,
+    "roiEstimado": 5.8845,
+    "percMetaAtingida": 196.15
   },
   {
     "nome": "Everton Lima",
@@ -4242,10 +4242,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008408,
-    "retornoEstimado": 15554.8,
-    "roiEstimado": 5.1849,
-    "percMetaAtingida": 172.83
+    "participacao": 0.007999,
+    "retornoEstimado": 14797.25,
+    "roiEstimado": 4.9324,
+    "percMetaAtingida": 164.41
   },
   {
     "nome": "Jonas Rocha",
@@ -4260,10 +4260,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008408,
-    "retornoEstimado": 15554.8,
-    "roiEstimado": 5.1849,
-    "percMetaAtingida": 172.83
+    "participacao": 0.00506,
+    "retornoEstimado": 9360.5,
+    "roiEstimado": 3.1202,
+    "percMetaAtingida": 104.01
   },
   {
     "nome": "Leonardo Pires",
@@ -4278,10 +4278,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.018217,
-    "retornoEstimado": 33701.45,
-    "roiEstimado": 5.1848,
-    "percMetaAtingida": 172.83
+    "participacao": 0.021006,
+    "retornoEstimado": 38861.12,
+    "roiEstimado": 5.9786,
+    "percMetaAtingida": 199.29
   },
   {
     "nome": "Fábio Henrique",
@@ -4296,10 +4296,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.018217,
-    "retornoEstimado": 33701.45,
-    "roiEstimado": 5.1848,
-    "percMetaAtingida": 172.83
+    "participacao": 0.016273,
+    "retornoEstimado": 30104.32,
+    "roiEstimado": 4.6314,
+    "percMetaAtingida": 154.38
   },
   {
     "nome": "Marina Lopes",
@@ -4314,10 +4314,10 @@
     "retornoPotencial": 16500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.015415,
-    "retornoEstimado": 28517.75,
-    "roiEstimado": 5.185,
-    "percMetaAtingida": 172.83
+    "participacao": 0.018456,
+    "retornoEstimado": 34143.9,
+    "roiEstimado": 6.208,
+    "percMetaAtingida": 206.93
   },
   {
     "nome": "Tatiane Freitas",
@@ -4332,10 +4332,10 @@
     "retornoPotencial": 10500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009809,
-    "retornoEstimado": 18146.65,
-    "roiEstimado": 5.1848,
-    "percMetaAtingida": 172.83
+    "participacao": 0.009662,
+    "retornoEstimado": 17874.09,
+    "roiEstimado": 5.1069,
+    "percMetaAtingida": 170.23
   },
   {
     "nome": "Carlos Eduardo Mendes",
@@ -4350,10 +4350,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007848,
-    "retornoEstimado": 14518.8,
-    "roiEstimado": 5.1853,
-    "percMetaAtingida": 172.84
+    "participacao": 0.009242,
+    "retornoEstimado": 17097.66,
+    "roiEstimado": 6.1063,
+    "percMetaAtingida": 203.54
   },
   {
     "nome": "João Pedro Ramos",
@@ -4368,10 +4368,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007848,
-    "retornoEstimado": 14518.8,
-    "roiEstimado": 5.1853,
-    "percMetaAtingida": 172.84
+    "participacao": 0.00747,
+    "retornoEstimado": 13818.85,
+    "roiEstimado": 4.9353,
+    "percMetaAtingida": 164.51
   },
   {
     "nome": "Alexandre Gouveia",
@@ -4386,10 +4386,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007848,
-    "retornoEstimado": 14518.8,
-    "roiEstimado": 5.1853,
-    "percMetaAtingida": 172.84
+    "participacao": 0.007742,
+    "retornoEstimado": 14323.53,
+    "roiEstimado": 5.1155,
+    "percMetaAtingida": 170.52
   },
   {
     "nome": "Ademir Prado",
@@ -4404,10 +4404,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01065,
-    "retornoEstimado": 19702.5,
-    "roiEstimado": 5.1849,
-    "percMetaAtingida": 172.83
+    "participacao": 0.009637,
+    "retornoEstimado": 17827.76,
+    "roiEstimado": 4.6915,
+    "percMetaAtingida": 156.38
   },
   {
     "nome": "Isabela Rezende",
@@ -4422,10 +4422,10 @@
     "retornoPotencial": 16500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.015415,
-    "retornoEstimado": 28517.75,
-    "roiEstimado": 5.185,
-    "percMetaAtingida": 172.83
+    "participacao": 0.017817,
+    "retornoEstimado": 32961.92,
+    "roiEstimado": 5.9931,
+    "percMetaAtingida": 199.77
   },
   {
     "nome": "Wanderson Alves",
@@ -4440,10 +4440,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008408,
-    "retornoEstimado": 15554.8,
-    "roiEstimado": 5.1849,
-    "percMetaAtingida": 172.83
+    "participacao": 0.008425,
+    "retornoEstimado": 15585.81,
+    "roiEstimado": 5.1953,
+    "percMetaAtingida": 173.18
   },
   {
     "nome": "Fernanda Correia",
@@ -4458,10 +4458,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01065,
-    "retornoEstimado": 19702.5,
-    "roiEstimado": 5.1849,
-    "percMetaAtingida": 172.83
+    "participacao": 0.009946,
+    "retornoEstimado": 18400.72,
+    "roiEstimado": 4.8423,
+    "percMetaAtingida": 161.41
   },
   {
     "nome": "Diego Ferraz",
@@ -4476,10 +4476,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008969,
-    "retornoEstimado": 16592.65,
-    "roiEstimado": 5.1852,
-    "percMetaAtingida": 172.84
+    "participacao": 0.009829,
+    "retornoEstimado": 18183.27,
+    "roiEstimado": 5.6823,
+    "percMetaAtingida": 189.41
   },
   {
     "nome": "Vitor Ramos",
@@ -4494,10 +4494,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01065,
-    "retornoEstimado": 19702.5,
-    "roiEstimado": 5.1849,
-    "percMetaAtingida": 172.83
+    "participacao": 0.010383,
+    "retornoEstimado": 19208.58,
+    "roiEstimado": 5.0549,
+    "percMetaAtingida": 168.5
   },
   {
     "nome": "Cauê Fonseca",
@@ -4512,10 +4512,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.01065,
-    "retornoEstimado": 19702.5,
-    "roiEstimado": 5.1849,
-    "percMetaAtingida": 172.83
+    "participacao": 0.010435,
+    "retornoEstimado": 19305.17,
+    "roiEstimado": 5.0803,
+    "percMetaAtingida": 169.34
   },
   {
     "nome": "Beatriz Nogueira",
@@ -4530,10 +4530,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.018217,
-    "retornoEstimado": 33701.45,
-    "roiEstimado": 5.1848,
-    "percMetaAtingida": 172.83
+    "participacao": 0.013315,
+    "retornoEstimado": 24633.2,
+    "roiEstimado": 3.7897,
+    "percMetaAtingida": 126.32
   },
   {
     "nome": "Igor Beltrão",
@@ -4602,10 +4602,10 @@
     "retornoPotencial": 87000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.077831,
-    "retornoEstimado": 151770.45,
-    "roiEstimado": 10.4669,
-    "percMetaAtingida": 174.45
+    "participacao": 0.08224,
+    "retornoEstimado": 160369.35,
+    "roiEstimado": 11.06,
+    "percMetaAtingida": 184.33
   },
   {
     "nome": "Fernando Salles",
@@ -4620,10 +4620,10 @@
     "retornoPotencial": 96000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.085883,
-    "retornoEstimado": 167471.85,
-    "roiEstimado": 10.467,
-    "percMetaAtingida": 174.45
+    "participacao": 0.092306,
+    "retornoEstimado": 179997.99,
+    "roiEstimado": 11.2499,
+    "percMetaAtingida": 187.5
   },
   {
     "nome": "Camila Batista",
@@ -4638,10 +4638,10 @@
     "retornoPotencial": 51000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.045625,
-    "retornoEstimado": 88968.75,
-    "roiEstimado": 10.4669,
-    "percMetaAtingida": 174.45
+    "participacao": 0.04821,
+    "retornoEstimado": 94009.62,
+    "roiEstimado": 11.06,
+    "percMetaAtingida": 184.33
   },
   {
     "nome": "Marcelo Vieira",
@@ -4656,10 +4656,10 @@
     "retornoPotencial": 51000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.045625,
-    "retornoEstimado": 88968.75,
-    "roiEstimado": 10.4669,
-    "percMetaAtingida": 174.45
+    "participacao": 0.039896,
+    "retornoEstimado": 77798.38,
+    "roiEstimado": 9.1528,
+    "percMetaAtingida": 152.55
   },
   {
     "nome": "Gustavo Almeida",
@@ -4674,10 +4674,10 @@
     "retornoPotencial": 81000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.072464,
-    "retornoEstimado": 141304.8,
-    "roiEstimado": 10.467,
-    "percMetaAtingida": 174.45
+    "participacao": 0.075246,
+    "retornoEstimado": 146730.03,
+    "roiEstimado": 10.8689,
+    "percMetaAtingida": 181.15
   },
   {
     "nome": "Márcio Fernandes",
@@ -4692,10 +4692,10 @@
     "retornoPotencial": 45000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.040258,
-    "retornoEstimado": 78503.1,
-    "roiEstimado": 10.4671,
-    "percMetaAtingida": 174.45
+    "participacao": 0.032268,
+    "retornoEstimado": 62922.3,
+    "roiEstimado": 8.3896,
+    "percMetaAtingida": 139.83
   },
   {
     "nome": "Bianca Martins",
@@ -4710,10 +4710,10 @@
     "retornoPotencial": 90000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.080515,
-    "retornoEstimado": 157004.25,
-    "roiEstimado": 10.467,
-    "percMetaAtingida": 174.45
+    "participacao": 0.085076,
+    "retornoEstimado": 165899.32,
+    "roiEstimado": 11.06,
+    "percMetaAtingida": 184.33
   },
   {
     "nome": "Thiago Costa",
@@ -4728,10 +4728,10 @@
     "retornoPotencial": 54000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.048309,
-    "retornoEstimado": 94202.55,
-    "roiEstimado": 10.467,
-    "percMetaAtingida": 174.45
+    "participacao": 0.040485,
+    "retornoEstimado": 78945.91,
+    "roiEstimado": 8.7718,
+    "percMetaAtingida": 146.2
   },
   {
     "nome": "Renata Lima",
@@ -4746,10 +4746,10 @@
     "retornoPotencial": 69000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.061728,
-    "retornoEstimado": 120369.6,
-    "roiEstimado": 10.4669,
-    "percMetaAtingida": 174.45
+    "participacao": 0.061852,
+    "retornoEstimado": 120610.94,
+    "roiEstimado": 10.4879,
+    "percMetaAtingida": 174.8
   },
   {
     "nome": "Bruno Cardoso",
@@ -4764,10 +4764,10 @@
     "retornoPotencial": 21000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.018787,
-    "retornoEstimado": 36634.65,
-    "roiEstimado": 5.2335,
-    "percMetaAtingida": 174.45
+    "participacao": 0.022691,
+    "retornoEstimado": 44247.83,
+    "roiEstimado": 6.3211,
+    "percMetaAtingida": 210.7
   },
   {
     "nome": "Denise Rocha",
@@ -4782,10 +4782,10 @@
     "retornoPotencial": 12600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.011272,
-    "retornoEstimado": 21980.4,
-    "roiEstimado": 5.2334,
-    "percMetaAtingida": 174.45
+    "participacao": 0.011134,
+    "retornoEstimado": 21712.27,
+    "roiEstimado": 5.1696,
+    "percMetaAtingida": 172.32
   },
   {
     "nome": "Claudia Nascimento",
@@ -4800,10 +4800,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008588,
-    "retornoEstimado": 16746.6,
-    "roiEstimado": 5.2333,
-    "percMetaAtingida": 174.44
+    "participacao": 0.008503,
+    "retornoEstimado": 16581.12,
+    "roiEstimado": 5.1816,
+    "percMetaAtingida": 172.72
   },
   {
     "nome": "Marisa Oliveira",
@@ -4818,10 +4818,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008588,
-    "retornoEstimado": 16746.6,
-    "roiEstimado": 5.2333,
-    "percMetaAtingida": 174.44
+    "participacao": 0.009846,
+    "retornoEstimado": 19198.81,
+    "roiEstimado": 5.9996,
+    "percMetaAtingida": 199.99
   },
   {
     "nome": "Roberto Santos",
@@ -4836,10 +4836,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008588,
-    "retornoEstimado": 16746.6,
-    "roiEstimado": 5.2333,
-    "percMetaAtingida": 174.44
+    "participacao": 0.008236,
+    "retornoEstimado": 16059.42,
+    "roiEstimado": 5.0186,
+    "percMetaAtingida": 167.29
   },
   {
     "nome": "Everton Nunes",
@@ -4854,10 +4854,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008588,
-    "retornoEstimado": 16746.6,
-    "roiEstimado": 5.2333,
-    "percMetaAtingida": 174.44
+    "participacao": 0.007087,
+    "retornoEstimado": 13820.65,
+    "roiEstimado": 4.319,
+    "percMetaAtingida": 143.97
   },
   {
     "nome": "André Luiz Costa",
@@ -4872,10 +4872,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010199,
-    "retornoEstimado": 19888.05,
-    "roiEstimado": 5.2337,
-    "percMetaAtingida": 174.46
+    "participacao": 0.012374,
+    "retornoEstimado": 24128.94,
+    "roiEstimado": 6.3497,
+    "percMetaAtingida": 211.66
   },
   {
     "nome": "Tiago Martins",
@@ -4890,10 +4890,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010199,
-    "retornoEstimado": 19888.05,
-    "roiEstimado": 5.2337,
-    "percMetaAtingida": 174.46
+    "participacao": 0.012121,
+    "retornoEstimado": 23635.49,
+    "roiEstimado": 6.2199,
+    "percMetaAtingida": 207.33
   },
   {
     "nome": "Paulo Henrique Lima",
@@ -4908,10 +4908,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010199,
-    "retornoEstimado": 19888.05,
-    "roiEstimado": 5.2337,
-    "percMetaAtingida": 174.46
+    "participacao": 0.006109,
+    "retornoEstimado": 11912.3,
+    "roiEstimado": 3.1348,
+    "percMetaAtingida": 104.49
   },
   {
     "nome": "Lucas Ferreira",
@@ -4926,10 +4926,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010199,
-    "retornoEstimado": 19888.05,
-    "roiEstimado": 5.2337,
-    "percMetaAtingida": 174.46
+    "participacao": 0.01188,
+    "retornoEstimado": 23165.95,
+    "roiEstimado": 6.0963,
+    "percMetaAtingida": 203.21
   },
   {
     "nome": "Caio Santos",
@@ -4944,10 +4944,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010199,
-    "retornoEstimado": 19888.05,
-    "roiEstimado": 5.2337,
-    "percMetaAtingida": 174.46
+    "participacao": 0.00946,
+    "retornoEstimado": 18446.68,
+    "roiEstimado": 4.8544,
+    "percMetaAtingida": 161.81
   },
   {
     "nome": "Rafael Teixeira",
@@ -4962,10 +4962,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010199,
-    "retornoEstimado": 19888.05,
-    "roiEstimado": 5.2337,
-    "percMetaAtingida": 174.46
+    "participacao": 0.011482,
+    "retornoEstimado": 22389.92,
+    "roiEstimado": 5.8921,
+    "percMetaAtingida": 196.4
   },
   {
     "nome": "Gabriel Oliveira",
@@ -4998,10 +4998,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010199,
-    "retornoEstimado": 19888.05,
-    "roiEstimado": 5.2337,
-    "percMetaAtingida": 174.46
+    "participacao": 0.010937,
+    "retornoEstimado": 21326.94,
+    "roiEstimado": 5.6124,
+    "percMetaAtingida": 187.08
   },
   {
     "nome": "Cristiano Barbosa",
@@ -5016,10 +5016,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010199,
-    "retornoEstimado": 19888.05,
-    "roiEstimado": 5.2337,
-    "percMetaAtingida": 174.46
+    "participacao": 0.009084,
+    "retornoEstimado": 17714.12,
+    "roiEstimado": 4.6616,
+    "percMetaAtingida": 155.39
   },
   {
     "nome": "Aline Prado",
@@ -5034,10 +5034,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007783,
-    "retornoEstimado": 15176.85,
-    "roiEstimado": 5.2334,
-    "percMetaAtingida": 174.45
+    "participacao": 0.004186,
+    "retornoEstimado": 8163.62,
+    "roiEstimado": 2.815,
+    "percMetaAtingida": 93.83
   },
   {
     "nome": "Sônia Cardoso",
@@ -5052,10 +5052,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007783,
-    "retornoEstimado": 15176.85,
-    "roiEstimado": 5.2334,
-    "percMetaAtingida": 174.45
+    "participacao": 0.006041,
+    "retornoEstimado": 11780.1,
+    "roiEstimado": 4.0621,
+    "percMetaAtingida": 135.4
   },
   {
     "nome": "Renata Campos",
@@ -5070,10 +5070,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007783,
-    "retornoEstimado": 15176.85,
-    "roiEstimado": 5.2334,
-    "percMetaAtingida": 174.45
+    "participacao": 0.009173,
+    "retornoEstimado": 17888.31,
+    "roiEstimado": 6.1684,
+    "percMetaAtingida": 205.61
   },
   {
     "nome": "Jéssica Moura",
@@ -5088,10 +5088,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007783,
-    "retornoEstimado": 15176.85,
-    "roiEstimado": 5.2334,
-    "percMetaAtingida": 174.45
+    "participacao": 0.0072,
+    "retornoEstimado": 14039.58,
+    "roiEstimado": 4.8412,
+    "percMetaAtingida": 161.37
   },
   {
     "nome": "Paula Ribeiro",
@@ -5106,10 +5106,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007783,
-    "retornoEstimado": 15176.85,
-    "roiEstimado": 5.2334,
-    "percMetaAtingida": 174.45
+    "participacao": 0.007509,
+    "retornoEstimado": 14643.43,
+    "roiEstimado": 5.0495,
+    "percMetaAtingida": 168.32
   },
   {
     "nome": "Daniel Moraes",
@@ -5124,10 +5124,10 @@
     "retornoPotencial": 10200.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009125,
-    "retornoEstimado": 17793.75,
-    "roiEstimado": 5.2335,
-    "percMetaAtingida": 174.45
+    "participacao": 0.010549,
+    "retornoEstimado": 20569.89,
+    "roiEstimado": 6.05,
+    "percMetaAtingida": 201.67
   },
   {
     "nome": "Everton Lima",
@@ -5142,10 +5142,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008052,
-    "retornoEstimado": 15701.4,
-    "roiEstimado": 5.2338,
-    "percMetaAtingida": 174.46
+    "participacao": 0.007635,
+    "retornoEstimado": 14887.52,
+    "roiEstimado": 4.9625,
+    "percMetaAtingida": 165.42
   },
   {
     "nome": "Jonas Rocha",
@@ -5160,10 +5160,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008052,
-    "retornoEstimado": 15701.4,
-    "roiEstimado": 5.2338,
-    "percMetaAtingida": 174.46
+    "participacao": 0.00487,
+    "retornoEstimado": 9497.12,
+    "roiEstimado": 3.1657,
+    "percMetaAtingida": 105.52
   },
   {
     "nome": "Leonardo Pires",
@@ -5178,10 +5178,10 @@
     "retornoPotencial": 54000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.048309,
-    "retornoEstimado": 94202.55,
-    "roiEstimado": 10.467,
-    "percMetaAtingida": 174.45
+    "participacao": 0.054167,
+    "retornoEstimado": 105625.03,
+    "roiEstimado": 11.7361,
+    "percMetaAtingida": 195.6
   },
   {
     "nome": "Fábio Henrique",
@@ -5196,10 +5196,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.017445,
-    "retornoEstimado": 34017.75,
-    "roiEstimado": 5.2335,
-    "percMetaAtingida": 174.45
+    "participacao": 0.016137,
+    "retornoEstimado": 31468.01,
+    "roiEstimado": 4.8412,
+    "percMetaAtingida": 161.37
   },
   {
     "nome": "Marina Lopes",
@@ -5214,10 +5214,10 @@
     "retornoPotencial": 16500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.014761,
-    "retornoEstimado": 28783.95,
-    "roiEstimado": 5.2334,
-    "percMetaAtingida": 174.45
+    "participacao": 0.01674,
+    "retornoEstimado": 32642.43,
+    "roiEstimado": 5.935,
+    "percMetaAtingida": 197.83
   },
   {
     "nome": "Tatiane Freitas",
@@ -5232,10 +5232,10 @@
     "retornoPotencial": 10500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009393,
-    "retornoEstimado": 18316.35,
-    "roiEstimado": 5.2332,
-    "percMetaAtingida": 174.44
+    "participacao": 0.009506,
+    "retornoEstimado": 18536.04,
+    "roiEstimado": 5.296,
+    "percMetaAtingida": 176.53
   },
   {
     "nome": "Carlos Eduardo Mendes",
@@ -5250,10 +5250,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007515,
-    "retornoEstimado": 14654.25,
-    "roiEstimado": 5.2337,
-    "percMetaAtingida": 174.46
+    "participacao": 0.00875,
+    "retornoEstimado": 17063.24,
+    "roiEstimado": 6.094,
+    "percMetaAtingida": 203.13
   },
   {
     "nome": "João Pedro Ramos",
@@ -5268,10 +5268,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007515,
-    "retornoEstimado": 14654.25,
-    "roiEstimado": 5.2337,
-    "percMetaAtingida": 174.46
+    "participacao": 0.007344,
+    "retornoEstimado": 14321.08,
+    "roiEstimado": 5.1147,
+    "percMetaAtingida": 170.49
   },
   {
     "nome": "Alexandre Gouveia",
@@ -5286,10 +5286,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007515,
-    "retornoEstimado": 14654.25,
-    "roiEstimado": 5.2337,
-    "percMetaAtingida": 174.46
+    "participacao": 0.007409,
+    "retornoEstimado": 14447.62,
+    "roiEstimado": 5.1599,
+    "percMetaAtingida": 172.0
   },
   {
     "nome": "Ademir Prado",
@@ -5304,10 +5304,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010199,
-    "retornoEstimado": 19888.05,
-    "roiEstimado": 5.2337,
-    "percMetaAtingida": 174.46
+    "participacao": 0.010126,
+    "retornoEstimado": 19746.6,
+    "roiEstimado": 5.1965,
+    "percMetaAtingida": 173.22
   },
   {
     "nome": "Isabela Rezende",
@@ -5322,10 +5322,10 @@
     "retornoPotencial": 16500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.014761,
-    "retornoEstimado": 28783.95,
-    "roiEstimado": 5.2334,
-    "percMetaAtingida": 174.45
+    "participacao": 0.018122,
+    "retornoEstimado": 35338.77,
+    "roiEstimado": 6.4252,
+    "percMetaAtingida": 214.17
   },
   {
     "nome": "Wanderson Alves",
@@ -5340,10 +5340,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008052,
-    "retornoEstimado": 15701.4,
-    "roiEstimado": 5.2338,
-    "percMetaAtingida": 174.46
+    "participacao": 0.008097,
+    "retornoEstimado": 15788.49,
+    "roiEstimado": 5.2628,
+    "percMetaAtingida": 175.43
   },
   {
     "nome": "Fernanda Correia",
@@ -5358,10 +5358,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010199,
-    "retornoEstimado": 19888.05,
-    "roiEstimado": 5.2337,
-    "percMetaAtingida": 174.46
+    "participacao": 0.0092,
+    "retornoEstimado": 17940.19,
+    "roiEstimado": 4.7211,
+    "percMetaAtingida": 157.37
   },
   {
     "nome": "Diego Ferraz",
@@ -5376,10 +5376,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008588,
-    "retornoEstimado": 16746.6,
-    "roiEstimado": 5.2333,
-    "percMetaAtingida": 174.44
+    "participacao": 0.010508,
+    "retornoEstimado": 20491.18,
+    "roiEstimado": 6.4035,
+    "percMetaAtingida": 213.45
   },
   {
     "nome": "Vitor Ramos",
@@ -5394,10 +5394,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010199,
-    "retornoEstimado": 19888.05,
-    "roiEstimado": 5.2337,
-    "percMetaAtingida": 174.46
+    "participacao": 0.009935,
+    "retornoEstimado": 19372.71,
+    "roiEstimado": 5.0981,
+    "percMetaAtingida": 169.94
   },
   {
     "nome": "Cauê Fonseca",
@@ -5412,10 +5412,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010199,
-    "retornoEstimado": 19888.05,
-    "roiEstimado": 5.2337,
-    "percMetaAtingida": 174.46
+    "participacao": 0.009779,
+    "retornoEstimado": 19068.38,
+    "roiEstimado": 5.018,
+    "percMetaAtingida": 167.27
   },
   {
     "nome": "Beatriz Nogueira",
@@ -5430,10 +5430,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.017445,
-    "retornoEstimado": 34017.75,
-    "roiEstimado": 5.2335,
-    "percMetaAtingida": 174.45
+    "participacao": 0.012972,
+    "retornoEstimado": 25295.63,
+    "roiEstimado": 3.8916,
+    "percMetaAtingida": 129.72
   },
   {
     "nome": "Igor Beltrão",
@@ -5448,10 +5448,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010199,
-    "retornoEstimado": 19888.05,
-    "roiEstimado": 5.2337,
-    "percMetaAtingida": 174.46
+    "participacao": 0.007401,
+    "retornoEstimado": 14431.71,
+    "roiEstimado": 3.7978,
+    "percMetaAtingida": 126.59
   },
   {
     "nome": "Rodrigo Oliveira",
@@ -5466,10 +5466,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010199,
-    "retornoEstimado": 19888.05,
-    "roiEstimado": 5.2337,
-    "percMetaAtingida": 174.46
+    "participacao": 0.009394,
+    "retornoEstimado": 18318.43,
+    "roiEstimado": 4.8206,
+    "percMetaAtingida": 160.69
   },
   {
     "nome": "Vinicius Nogueira",
@@ -5484,10 +5484,10 @@
     "retornoPotencial": 10200.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009125,
-    "retornoEstimado": 17793.75,
-    "roiEstimado": 5.2335,
-    "percMetaAtingida": 174.45
+    "participacao": 0.008726,
+    "retornoEstimado": 17016.45,
+    "roiEstimado": 5.0048,
+    "percMetaAtingida": 166.83
   },
   {
     "nome": "Larissa Mendes",
@@ -5556,10 +5556,10 @@
     "retornoPotencial": 87000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.07513,
-    "retornoEstimado": 151011.3,
-    "roiEstimado": 10.4146,
-    "percMetaAtingida": 173.58
+    "participacao": 0.077779,
+    "retornoEstimado": 156336.13,
+    "roiEstimado": 10.7818,
+    "percMetaAtingida": 179.7
   },
   {
     "nome": "Fernando Salles",
@@ -5574,10 +5574,10 @@
     "retornoPotencial": 96000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.082902,
-    "retornoEstimado": 166633.02,
-    "roiEstimado": 10.4146,
-    "percMetaAtingida": 173.58
+    "participacao": 0.084316,
+    "retornoEstimado": 169476.31,
+    "roiEstimado": 10.5923,
+    "percMetaAtingida": 176.54
   },
   {
     "nome": "Camila Batista",
@@ -5592,10 +5592,10 @@
     "retornoPotencial": 51000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.044041,
-    "retornoEstimado": 88522.41,
-    "roiEstimado": 10.4144,
-    "percMetaAtingida": 173.57
+    "participacao": 0.047193,
+    "retornoEstimado": 94857.73,
+    "roiEstimado": 11.1597,
+    "percMetaAtingida": 186.0
   },
   {
     "nome": "Marcelo Vieira",
@@ -5610,10 +5610,10 @@
     "retornoPotencial": 51000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.044041,
-    "retornoEstimado": 88522.41,
-    "roiEstimado": 10.4144,
-    "percMetaAtingida": 173.57
+    "participacao": 0.041597,
+    "retornoEstimado": 83609.47,
+    "roiEstimado": 9.8364,
+    "percMetaAtingida": 163.94
   },
   {
     "nome": "Gustavo Almeida",
@@ -5628,10 +5628,10 @@
     "retornoPotencial": 81000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.069948,
-    "retornoEstimado": 140595.48,
-    "roiEstimado": 10.4145,
-    "percMetaAtingida": 173.58
+    "participacao": 0.071142,
+    "retornoEstimado": 142995.64,
+    "roiEstimado": 10.5923,
+    "percMetaAtingida": 176.54
   },
   {
     "nome": "Márcio Fernandes",
@@ -5646,10 +5646,10 @@
     "retornoPotencial": 45000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.03886,
-    "retornoEstimado": 78108.6,
-    "roiEstimado": 10.4145,
-    "percMetaAtingida": 173.58
+    "participacao": 0.035996,
+    "retornoEstimado": 72351.57,
+    "roiEstimado": 9.6469,
+    "percMetaAtingida": 160.78
   },
   {
     "nome": "Bianca Martins",
@@ -5664,10 +5664,10 @@
     "retornoPotencial": 90000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.07772,
-    "retornoEstimado": 156217.2,
-    "roiEstimado": 10.4145,
-    "percMetaAtingida": 173.58
+    "participacao": 0.083281,
+    "retornoEstimado": 167395.99,
+    "roiEstimado": 11.1597,
+    "percMetaAtingida": 186.0
   },
   {
     "nome": "Thiago Costa",
@@ -5682,10 +5682,10 @@
     "retornoPotencial": 54000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.046632,
-    "retornoEstimado": 93730.32,
-    "roiEstimado": 10.4145,
-    "percMetaAtingida": 173.58
+    "participacao": 0.039805,
+    "retornoEstimado": 80008.92,
+    "roiEstimado": 8.8899,
+    "percMetaAtingida": 148.16
   },
   {
     "nome": "Renata Lima",
@@ -5700,10 +5700,10 @@
     "retornoPotencial": 69000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.059585,
-    "retornoEstimado": 119765.85,
-    "roiEstimado": 10.4144,
-    "percMetaAtingida": 173.57
+    "participacao": 0.061687,
+    "retornoEstimado": 123990.73,
+    "roiEstimado": 10.7818,
+    "percMetaAtingida": 179.7
   },
   {
     "nome": "Bruno Cardoso",
@@ -5718,10 +5718,10 @@
     "retornoPotencial": 21000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.018135,
-    "retornoEstimado": 36451.35,
-    "roiEstimado": 5.2073,
-    "percMetaAtingida": 173.58
+    "participacao": 0.02066,
+    "retornoEstimado": 41525.83,
+    "roiEstimado": 5.9323,
+    "percMetaAtingida": 197.74
   },
   {
     "nome": "Denise Rocha",
@@ -5736,10 +5736,10 @@
     "retornoPotencial": 12600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010881,
-    "retornoEstimado": 21870.81,
-    "roiEstimado": 5.2073,
-    "percMetaAtingida": 173.58
+    "participacao": 0.01028,
+    "retornoEstimado": 20663.61,
+    "roiEstimado": 4.9199,
+    "percMetaAtingida": 164.0
   },
   {
     "nome": "Claudia Nascimento",
@@ -5754,10 +5754,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00829,
-    "retornoEstimado": 16662.9,
-    "roiEstimado": 5.2072,
-    "percMetaAtingida": 173.57
+    "participacao": 0.007282,
+    "retornoEstimado": 14637.83,
+    "roiEstimado": 4.5743,
+    "percMetaAtingida": 152.48
   },
   {
     "nome": "Marisa Oliveira",
@@ -5772,10 +5772,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00829,
-    "retornoEstimado": 16662.9,
-    "roiEstimado": 5.2072,
-    "percMetaAtingida": 173.57
+    "participacao": 0.009907,
+    "retornoEstimado": 19912.97,
+    "roiEstimado": 6.2228,
+    "percMetaAtingida": 207.43
   },
   {
     "nome": "Roberto Santos",
@@ -5790,10 +5790,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00829,
-    "retornoEstimado": 16662.9,
-    "roiEstimado": 5.2072,
-    "percMetaAtingida": 173.57
+    "participacao": 0.007786,
+    "retornoEstimado": 15649.28,
+    "roiEstimado": 4.8904,
+    "percMetaAtingida": 163.01
   },
   {
     "nome": "Everton Nunes",
@@ -5808,10 +5808,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00829,
-    "retornoEstimado": 16662.9,
-    "roiEstimado": 5.2072,
-    "percMetaAtingida": 173.57
+    "participacao": 0.006567,
+    "retornoEstimado": 13199.65,
+    "roiEstimado": 4.1249,
+    "percMetaAtingida": 137.5
   },
   {
     "nome": "André Luiz Costa",
@@ -5826,10 +5826,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009845,
-    "retornoEstimado": 19788.45,
-    "roiEstimado": 5.2075,
-    "percMetaAtingida": 173.58
+    "participacao": 0.011342,
+    "retornoEstimado": 22797.04,
+    "roiEstimado": 5.9992,
+    "percMetaAtingida": 199.97
   },
   {
     "nome": "Tiago Martins",
@@ -5844,10 +5844,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009845,
-    "retornoEstimado": 19788.45,
-    "roiEstimado": 5.2075,
-    "percMetaAtingida": 173.58
+    "participacao": 0.011316,
+    "retornoEstimado": 22745.29,
+    "roiEstimado": 5.9856,
+    "percMetaAtingida": 199.52
   },
   {
     "nome": "Paulo Henrique Lima",
@@ -5862,10 +5862,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009845,
-    "retornoEstimado": 19788.45,
-    "roiEstimado": 5.2075,
-    "percMetaAtingida": 173.58
+    "participacao": 0.005605,
+    "retornoEstimado": 11266.98,
+    "roiEstimado": 2.965,
+    "percMetaAtingida": 98.83
   },
   {
     "nome": "Lucas Ferreira",
@@ -5880,10 +5880,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009845,
-    "retornoEstimado": 19788.45,
-    "roiEstimado": 5.2075,
-    "percMetaAtingida": 173.58
+    "participacao": 0.011428,
+    "retornoEstimado": 22969.55,
+    "roiEstimado": 6.0446,
+    "percMetaAtingida": 201.49
   },
   {
     "nome": "Caio Santos",
@@ -5898,10 +5898,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009845,
-    "retornoEstimado": 19788.45,
-    "roiEstimado": 5.2075,
-    "percMetaAtingida": 173.58
+    "participacao": 0.009104,
+    "retornoEstimado": 18298.87,
+    "roiEstimado": 4.8155,
+    "percMetaAtingida": 160.52
   },
   {
     "nome": "Rafael Teixeira",
@@ -5916,10 +5916,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009845,
-    "retornoEstimado": 19788.45,
-    "roiEstimado": 5.2075,
-    "percMetaAtingida": 173.58
+    "participacao": 0.01128,
+    "retornoEstimado": 22671.97,
+    "roiEstimado": 5.9663,
+    "percMetaAtingida": 198.88
   },
   {
     "nome": "José Carlos Pereira",
@@ -5952,10 +5952,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009845,
-    "retornoEstimado": 19788.45,
-    "roiEstimado": 5.2075,
-    "percMetaAtingida": 173.58
+    "participacao": 0.009489,
+    "retornoEstimado": 19073.01,
+    "roiEstimado": 5.0192,
+    "percMetaAtingida": 167.31
   },
   {
     "nome": "Sônia Cardoso",
@@ -5970,10 +5970,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007513,
-    "retornoEstimado": 15101.13,
-    "roiEstimado": 5.2073,
-    "percMetaAtingida": 173.58
+    "participacao": 0.005652,
+    "retornoEstimado": 11361.52,
+    "roiEstimado": 3.9178,
+    "percMetaAtingida": 130.59
   },
   {
     "nome": "Renata Campos",
@@ -5988,10 +5988,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007513,
-    "retornoEstimado": 15101.13,
-    "roiEstimado": 5.2073,
-    "percMetaAtingida": 173.58
+    "participacao": 0.008639,
+    "retornoEstimado": 17364.83,
+    "roiEstimado": 5.9879,
+    "percMetaAtingida": 199.6
   },
   {
     "nome": "Jéssica Moura",
@@ -6006,10 +6006,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007513,
-    "retornoEstimado": 15101.13,
-    "roiEstimado": 5.2073,
-    "percMetaAtingida": 173.58
+    "participacao": 0.007329,
+    "retornoEstimado": 14731.8,
+    "roiEstimado": 5.0799,
+    "percMetaAtingida": 169.33
   },
   {
     "nome": "Paula Ribeiro",
@@ -6024,10 +6024,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007513,
-    "retornoEstimado": 15101.13,
-    "roiEstimado": 5.2073,
-    "percMetaAtingida": 173.58
+    "participacao": 0.007301,
+    "retornoEstimado": 14674.2,
+    "roiEstimado": 5.0601,
+    "percMetaAtingida": 168.67
   },
   {
     "nome": "Daniel Moraes",
@@ -6042,10 +6042,10 @@
     "retornoPotencial": 10200.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008808,
-    "retornoEstimado": 17704.08,
-    "roiEstimado": 5.2071,
-    "percMetaAtingida": 173.57
+    "participacao": 0.010016,
+    "retornoEstimado": 20133.03,
+    "roiEstimado": 5.9215,
+    "percMetaAtingida": 197.38
   },
   {
     "nome": "Everton Lima",
@@ -6060,10 +6060,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007772,
-    "retornoEstimado": 15621.72,
-    "roiEstimado": 5.2072,
-    "percMetaAtingida": 173.57
+    "participacao": 0.0077,
+    "retornoEstimado": 15476.43,
+    "roiEstimado": 5.1588,
+    "percMetaAtingida": 171.96
   },
   {
     "nome": "Jonas Rocha",
@@ -6078,10 +6078,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007772,
-    "retornoEstimado": 15621.72,
-    "roiEstimado": 5.2072,
-    "percMetaAtingida": 173.57
+    "participacao": 0.004568,
+    "retornoEstimado": 9182.69,
+    "roiEstimado": 3.0609,
+    "percMetaAtingida": 102.03
   },
   {
     "nome": "Leonardo Pires",
@@ -6096,10 +6096,10 @@
     "retornoPotencial": 54000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.046632,
-    "retornoEstimado": 93730.32,
-    "roiEstimado": 10.4145,
-    "percMetaAtingida": 173.58
+    "participacao": 0.05126,
+    "retornoEstimado": 103032.04,
+    "roiEstimado": 11.448,
+    "percMetaAtingida": 190.8
   },
   {
     "nome": "Fábio Henrique",
@@ -6114,10 +6114,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.016839,
-    "retornoEstimado": 33846.39,
-    "roiEstimado": 5.2071,
-    "percMetaAtingida": 173.57
+    "participacao": 0.015783,
+    "retornoEstimado": 31724.89,
+    "roiEstimado": 4.8808,
+    "percMetaAtingida": 162.69
   },
   {
     "nome": "Marina Lopes",
@@ -6132,10 +6132,10 @@
     "retornoPotencial": 48000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.041451,
-    "retornoEstimado": 83316.51,
-    "roiEstimado": 10.4146,
-    "percMetaAtingida": 173.58
+    "participacao": 0.045537,
+    "retornoEstimado": 91529.56,
+    "roiEstimado": 11.4412,
+    "percMetaAtingida": 190.69
   },
   {
     "nome": "Tatiane Freitas",
@@ -6150,10 +6150,10 @@
     "retornoPotencial": 10500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009067,
-    "retornoEstimado": 18224.67,
-    "roiEstimado": 5.207,
-    "percMetaAtingida": 173.57
+    "participacao": 0.008949,
+    "retornoEstimado": 17988.3,
+    "roiEstimado": 5.1395,
+    "percMetaAtingida": 171.32
   },
   {
     "nome": "Carlos Eduardo Mendes",
@@ -6168,10 +6168,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007254,
-    "retornoEstimado": 14580.54,
-    "roiEstimado": 5.2073,
-    "percMetaAtingida": 173.58
+    "participacao": 0.008194,
+    "retornoEstimado": 16470.51,
+    "roiEstimado": 5.8823,
+    "percMetaAtingida": 196.08
   },
   {
     "nome": "João Pedro Ramos",
@@ -6186,10 +6186,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007254,
-    "retornoEstimado": 14580.54,
-    "roiEstimado": 5.2073,
-    "percMetaAtingida": 173.58
+    "participacao": 0.006774,
+    "retornoEstimado": 13615.26,
+    "roiEstimado": 4.8626,
+    "percMetaAtingida": 162.09
   },
   {
     "nome": "Alexandre Gouveia",
@@ -6204,10 +6204,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007254,
-    "retornoEstimado": 14580.54,
-    "roiEstimado": 5.2073,
-    "percMetaAtingida": 173.58
+    "participacao": 0.006962,
+    "retornoEstimado": 13993.42,
+    "roiEstimado": 4.9976,
+    "percMetaAtingida": 166.59
   },
   {
     "nome": "Ademir Prado",
@@ -6222,10 +6222,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009845,
-    "retornoEstimado": 19788.45,
-    "roiEstimado": 5.2075,
-    "percMetaAtingida": 173.58
+    "participacao": 0.009293,
+    "retornoEstimado": 18678.39,
+    "roiEstimado": 4.9154,
+    "percMetaAtingida": 163.85
   },
   {
     "nome": "Isabela Rezende",
@@ -6240,10 +6240,10 @@
     "retornoPotencial": 16500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.014249,
-    "retornoEstimado": 28640.49,
-    "roiEstimado": 5.2074,
-    "percMetaAtingida": 173.58
+    "participacao": 0.017296,
+    "retornoEstimado": 34765.35,
+    "roiEstimado": 6.321,
+    "percMetaAtingida": 210.7
   },
   {
     "nome": "Wanderson Alves",
@@ -6258,10 +6258,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007772,
-    "retornoEstimado": 15621.72,
-    "roiEstimado": 5.2072,
-    "percMetaAtingida": 173.57
+    "participacao": 0.007276,
+    "retornoEstimado": 14625.23,
+    "roiEstimado": 4.8751,
+    "percMetaAtingida": 162.5
   },
   {
     "nome": "Fernanda Correia",
@@ -6276,10 +6276,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009845,
-    "retornoEstimado": 19788.45,
-    "roiEstimado": 5.2075,
-    "percMetaAtingida": 173.58
+    "participacao": 0.008813,
+    "retornoEstimado": 17714.5,
+    "roiEstimado": 4.6617,
+    "percMetaAtingida": 155.39
   },
   {
     "nome": "Diego Ferraz",
@@ -6294,10 +6294,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00829,
-    "retornoEstimado": 16662.9,
-    "roiEstimado": 5.2072,
-    "percMetaAtingida": 173.57
+    "participacao": 0.009428,
+    "retornoEstimado": 18950.55,
+    "roiEstimado": 5.922,
+    "percMetaAtingida": 197.4
   },
   {
     "nome": "Vitor Ramos",
@@ -6312,10 +6312,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009845,
-    "retornoEstimado": 19788.45,
-    "roiEstimado": 5.2075,
-    "percMetaAtingida": 173.58
+    "participacao": 0.009152,
+    "retornoEstimado": 18395.91,
+    "roiEstimado": 4.841,
+    "percMetaAtingida": 161.37
   },
   {
     "nome": "Cauê Fonseca",
@@ -6330,10 +6330,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009845,
-    "retornoEstimado": 19788.45,
-    "roiEstimado": 5.2075,
-    "percMetaAtingida": 173.58
+    "participacao": 0.009444,
+    "retornoEstimado": 18982.44,
+    "roiEstimado": 4.9954,
+    "percMetaAtingida": 166.51
   },
   {
     "nome": "Beatriz Nogueira",
@@ -6348,10 +6348,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.016839,
-    "retornoEstimado": 33846.39,
-    "roiEstimado": 5.2071,
-    "percMetaAtingida": 173.57
+    "participacao": 0.013003,
+    "retornoEstimado": 26136.79,
+    "roiEstimado": 4.021,
+    "percMetaAtingida": 134.03
   },
   {
     "nome": "Igor Beltrão",
@@ -6366,10 +6366,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009845,
-    "retornoEstimado": 19788.45,
-    "roiEstimado": 5.2075,
-    "percMetaAtingida": 173.58
+    "participacao": 0.00717,
+    "retornoEstimado": 14410.96,
+    "roiEstimado": 3.7924,
+    "percMetaAtingida": 126.41
   },
   {
     "nome": "Rodrigo Oliveira",
@@ -6384,10 +6384,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009845,
-    "retornoEstimado": 19788.45,
-    "roiEstimado": 5.2075,
-    "percMetaAtingida": 173.58
+    "participacao": 0.011041,
+    "retornoEstimado": 22193.26,
+    "roiEstimado": 5.8403,
+    "percMetaAtingida": 194.68
   },
   {
     "nome": "Vinicius Nogueira",
@@ -6402,10 +6402,10 @@
     "retornoPotencial": 10200.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008808,
-    "retornoEstimado": 17704.08,
-    "roiEstimado": 5.2071,
-    "percMetaAtingida": 173.57
+    "participacao": 0.008411,
+    "retornoEstimado": 16905.18,
+    "roiEstimado": 4.9721,
+    "percMetaAtingida": 165.74
   },
   {
     "nome": "Larissa Mendes",
@@ -6420,10 +6420,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009845,
-    "retornoEstimado": 19788.45,
-    "roiEstimado": 5.2075,
-    "percMetaAtingida": 173.58
+    "participacao": 0.007497,
+    "retornoEstimado": 15068.65,
+    "roiEstimado": 3.9654,
+    "percMetaAtingida": 132.18
   },
   {
     "nome": "Márcia Silveira",
@@ -6438,10 +6438,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007513,
-    "retornoEstimado": 15101.13,
-    "roiEstimado": 5.2073,
-    "percMetaAtingida": 173.58
+    "participacao": 0.007074,
+    "retornoEstimado": 14218.36,
+    "roiEstimado": 4.9029,
+    "percMetaAtingida": 163.43
   },
   {
     "nome": "Camila Duarte",
@@ -6456,10 +6456,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007513,
-    "retornoEstimado": 15101.13,
-    "roiEstimado": 5.2073,
-    "percMetaAtingida": 173.58
+    "participacao": 0.005597,
+    "retornoEstimado": 11249.62,
+    "roiEstimado": 3.8792,
+    "percMetaAtingida": 129.31
   },
   {
     "nome": "Wesley Duarte",
@@ -6510,10 +6510,10 @@
     "retornoPotencial": 87000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.073679,
-    "retornoEstimado": 153252.32,
-    "roiEstimado": 10.5691,
-    "percMetaAtingida": 176.15
+    "participacao": 0.073161,
+    "retornoEstimado": 152174.14,
+    "roiEstimado": 10.4948,
+    "percMetaAtingida": 174.91
   },
   {
     "nome": "Fernando Salles",
@@ -6528,10 +6528,10 @@
     "retornoPotencial": 96000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.081301,
-    "retornoEstimado": 169106.08,
-    "roiEstimado": 10.5691,
-    "percMetaAtingida": 176.15
+    "participacao": 0.086712,
+    "retornoEstimado": 180360.76,
+    "roiEstimado": 11.2725,
+    "percMetaAtingida": 187.88
   },
   {
     "nome": "Camila Batista",
@@ -6546,10 +6546,10 @@
     "retornoPotencial": 51000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.043191,
-    "retornoEstimado": 89837.28,
-    "roiEstimado": 10.5691,
-    "percMetaAtingida": 176.15
+    "participacao": 0.043683,
+    "retornoEstimado": 90860.79,
+    "roiEstimado": 10.6895,
+    "percMetaAtingida": 178.16
   },
   {
     "nome": "Marcelo Vieira",
@@ -6564,10 +6564,10 @@
     "retornoPotencial": 51000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.043191,
-    "retornoEstimado": 89837.28,
-    "roiEstimado": 10.5691,
-    "percMetaAtingida": 176.15
+    "participacao": 0.041301,
+    "retornoEstimado": 85904.93,
+    "roiEstimado": 10.1065,
+    "percMetaAtingida": 168.44
   },
   {
     "nome": "Gustavo Almeida",
@@ -6582,10 +6582,10 @@
     "retornoPotencial": 81000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.068598,
-    "retornoEstimado": 142683.84,
-    "roiEstimado": 10.5692,
-    "percMetaAtingida": 176.15
+    "participacao": 0.073164,
+    "retornoEstimado": 152179.39,
+    "roiEstimado": 11.2725,
+    "percMetaAtingida": 187.88
   },
   {
     "nome": "Márcio Fernandes",
@@ -6600,10 +6600,10 @@
     "retornoPotencial": 45000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.03811,
-    "retornoEstimado": 79268.8,
-    "roiEstimado": 10.5692,
-    "percMetaAtingida": 176.15
+    "participacao": 0.034339,
+    "retornoEstimado": 71425.65,
+    "roiEstimado": 9.5234,
+    "percMetaAtingida": 158.72
   },
   {
     "nome": "Bianca Martins",
@@ -6618,10 +6618,10 @@
     "retornoPotencial": 90000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.07622,
-    "retornoEstimado": 158537.6,
-    "roiEstimado": 10.5692,
-    "percMetaAtingida": 176.15
+    "participacao": 0.079888,
+    "retornoEstimado": 166167.17,
+    "roiEstimado": 11.0778,
+    "percMetaAtingida": 184.63
   },
   {
     "nome": "Thiago Costa",
@@ -6636,10 +6636,10 @@
     "retornoPotencial": 54000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.045732,
-    "retornoEstimado": 95122.56,
-    "roiEstimado": 10.5692,
-    "percMetaAtingida": 176.15
+    "participacao": 0.036162,
+    "retornoEstimado": 75216.01,
+    "roiEstimado": 8.3573,
+    "percMetaAtingida": 139.29
   },
   {
     "nome": "Renata Lima",
@@ -6654,10 +6654,10 @@
     "retornoPotencial": 69000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.058435,
-    "retornoEstimado": 121544.8,
-    "roiEstimado": 10.5691,
-    "percMetaAtingida": 176.15
+    "participacao": 0.062324,
+    "retornoEstimado": 129634.3,
+    "roiEstimado": 11.2725,
+    "percMetaAtingida": 187.88
   },
   {
     "nome": "Bruno Cardoso",
@@ -6672,10 +6672,10 @@
     "retornoPotencial": 21000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.017785,
-    "retornoEstimado": 36992.8,
-    "roiEstimado": 5.2847,
-    "percMetaAtingida": 176.16
+    "participacao": 0.021029,
+    "retornoEstimado": 43739.28,
+    "roiEstimado": 6.2485,
+    "percMetaAtingida": 208.28
   },
   {
     "nome": "Denise Rocha",
@@ -6690,10 +6690,10 @@
     "retornoPotencial": 12600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.010671,
-    "retornoEstimado": 22195.68,
-    "roiEstimado": 5.2847,
-    "percMetaAtingida": 176.16
+    "participacao": 0.010175,
+    "retornoEstimado": 21164.8,
+    "roiEstimado": 5.0392,
+    "percMetaAtingida": 167.97
   },
   {
     "nome": "Claudia Nascimento",
@@ -6708,10 +6708,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00813,
-    "retornoEstimado": 16910.4,
-    "roiEstimado": 5.2845,
-    "percMetaAtingida": 176.15
+    "participacao": 0.007151,
+    "retornoEstimado": 14873.65,
+    "roiEstimado": 4.648,
+    "percMetaAtingida": 154.93
   },
   {
     "nome": "Marisa Oliveira",
@@ -6726,10 +6726,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00813,
-    "retornoEstimado": 16910.4,
-    "roiEstimado": 5.2845,
-    "percMetaAtingida": 176.15
+    "participacao": 0.008956,
+    "retornoEstimado": 18629.38,
+    "roiEstimado": 5.8217,
+    "percMetaAtingida": 194.06
   },
   {
     "nome": "Roberto Santos",
@@ -6744,10 +6744,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00813,
-    "retornoEstimado": 16910.4,
-    "roiEstimado": 5.2845,
-    "percMetaAtingida": 176.15
+    "participacao": 0.007748,
+    "retornoEstimado": 16116.23,
+    "roiEstimado": 5.0363,
+    "percMetaAtingida": 167.88
   },
   {
     "nome": "Everton Nunes",
@@ -6780,10 +6780,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009654,
-    "retornoEstimado": 20080.32,
-    "roiEstimado": 5.2843,
-    "percMetaAtingida": 176.14
+    "participacao": 0.011563,
+    "retornoEstimado": 24049.93,
+    "roiEstimado": 6.3289,
+    "percMetaAtingida": 210.96
   },
   {
     "nome": "Tiago Martins",
@@ -6798,10 +6798,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009654,
-    "retornoEstimado": 20080.32,
-    "roiEstimado": 5.2843,
-    "percMetaAtingida": 176.14
+    "participacao": 0.011538,
+    "retornoEstimado": 23998.97,
+    "roiEstimado": 6.3155,
+    "percMetaAtingida": 210.52
   },
   {
     "nome": "Paulo Henrique Lima",
@@ -6816,10 +6816,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009654,
-    "retornoEstimado": 20080.32,
-    "roiEstimado": 5.2843,
-    "percMetaAtingida": 176.14
+    "participacao": 0.005903,
+    "retornoEstimado": 12278.65,
+    "roiEstimado": 3.2312,
+    "percMetaAtingida": 107.71
   },
   {
     "nome": "Lucas Ferreira",
@@ -6834,10 +6834,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009654,
-    "retornoEstimado": 20080.32,
-    "roiEstimado": 5.2843,
-    "percMetaAtingida": 176.14
+    "participacao": 0.011298,
+    "retornoEstimado": 23500.47,
+    "roiEstimado": 6.1843,
+    "percMetaAtingida": 206.14
   },
   {
     "nome": "Caio Santos",
@@ -6852,10 +6852,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009654,
-    "retornoEstimado": 20080.32,
-    "roiEstimado": 5.2843,
-    "percMetaAtingida": 176.14
+    "participacao": 0.009082,
+    "retornoEstimado": 18889.88,
+    "roiEstimado": 4.971,
+    "percMetaAtingida": 165.7
   },
   {
     "nome": "Rafael Teixeira",
@@ -6870,10 +6870,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009654,
-    "retornoEstimado": 20080.32,
-    "roiEstimado": 5.2843,
-    "percMetaAtingida": 176.14
+    "participacao": 0.011213,
+    "retornoEstimado": 23323.22,
+    "roiEstimado": 6.1377,
+    "percMetaAtingida": 204.59
   },
   {
     "nome": "Cristiano Barbosa",
@@ -6888,10 +6888,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009654,
-    "retornoEstimado": 20080.32,
-    "roiEstimado": 5.2843,
-    "percMetaAtingida": 176.14
+    "participacao": 0.008722,
+    "retornoEstimado": 18141.02,
+    "roiEstimado": 4.774,
+    "percMetaAtingida": 159.13
   },
   {
     "nome": "Sônia Cardoso",
@@ -6906,10 +6906,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007368,
-    "retornoEstimado": 15325.44,
-    "roiEstimado": 5.2846,
-    "percMetaAtingida": 176.15
+    "participacao": 0.005677,
+    "retornoEstimado": 11808.71,
+    "roiEstimado": 4.072,
+    "percMetaAtingida": 135.73
   },
   {
     "nome": "Renata Campos",
@@ -6924,10 +6924,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007368,
-    "retornoEstimado": 15325.44,
-    "roiEstimado": 5.2846,
-    "percMetaAtingida": 176.15
+    "participacao": 0.008522,
+    "retornoEstimado": 17724.91,
+    "roiEstimado": 6.112,
+    "percMetaAtingida": 203.73
   },
   {
     "nome": "Jéssica Moura",
@@ -6942,10 +6942,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007368,
-    "retornoEstimado": 15325.44,
-    "roiEstimado": 5.2846,
-    "percMetaAtingida": 176.15
+    "participacao": 0.007421,
+    "retornoEstimado": 15435.53,
+    "roiEstimado": 5.3226,
+    "percMetaAtingida": 177.42
   },
   {
     "nome": "Paula Ribeiro",
@@ -6960,10 +6960,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007368,
-    "retornoEstimado": 15325.44,
-    "roiEstimado": 5.2846,
-    "percMetaAtingida": 176.15
+    "participacao": 0.007227,
+    "retornoEstimado": 15031.42,
+    "roiEstimado": 5.1832,
+    "percMetaAtingida": 172.77
   },
   {
     "nome": "Daniel Moraes",
@@ -6978,10 +6978,10 @@
     "retornoPotencial": 10200.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008638,
-    "retornoEstimado": 17967.04,
-    "roiEstimado": 5.2844,
-    "percMetaAtingida": 176.15
+    "participacao": 0.009948,
+    "retornoEstimado": 20691.72,
+    "roiEstimado": 6.0858,
+    "percMetaAtingida": 202.86
   },
   {
     "nome": "Everton Lima",
@@ -6996,10 +6996,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007622,
-    "retornoEstimado": 15853.76,
-    "roiEstimado": 5.2846,
-    "percMetaAtingida": 176.15
+    "participacao": 0.006918,
+    "retornoEstimado": 14390.08,
+    "roiEstimado": 4.7967,
+    "percMetaAtingida": 159.89
   },
   {
     "nome": "Jonas Rocha",
@@ -7014,10 +7014,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007622,
-    "retornoEstimado": 15853.76,
-    "roiEstimado": 5.2846,
-    "percMetaAtingida": 176.15
+    "participacao": 0.004492,
+    "retornoEstimado": 9343.84,
+    "roiEstimado": 3.1146,
+    "percMetaAtingida": 103.82
   },
   {
     "nome": "Leonardo Pires",
@@ -7032,10 +7032,10 @@
     "retornoPotencial": 54000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.045732,
-    "retornoEstimado": 95122.56,
-    "roiEstimado": 10.5692,
-    "percMetaAtingida": 176.15
+    "participacao": 0.051571,
+    "retornoEstimado": 107267.03,
+    "roiEstimado": 11.9186,
+    "percMetaAtingida": 198.64
   },
   {
     "nome": "Fábio Henrique",
@@ -7050,10 +7050,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.016514,
-    "retornoEstimado": 34349.12,
-    "roiEstimado": 5.2845,
-    "percMetaAtingida": 176.15
+    "participacao": 0.015626,
+    "retornoEstimado": 32501.13,
+    "roiEstimado": 5.0002,
+    "percMetaAtingida": 166.67
   },
   {
     "nome": "Marina Lopes",
@@ -7068,10 +7068,10 @@
     "retornoPotencial": 48000.0,
     "nivelHierarquico": "tatico",
     "trimestreCompleto": true,
-    "participacao": 0.04065,
-    "retornoEstimado": 84552.0,
-    "roiEstimado": 10.569,
-    "percMetaAtingida": 176.15
+    "participacao": 0.045908,
+    "retornoEstimado": 95488.4,
+    "roiEstimado": 11.9361,
+    "percMetaAtingida": 198.93
   },
   {
     "nome": "Tatiane Freitas",
@@ -7086,10 +7086,10 @@
     "retornoPotencial": 10500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008892,
-    "retornoEstimado": 18495.36,
-    "roiEstimado": 5.2844,
-    "percMetaAtingida": 176.15
+    "participacao": 0.008405,
+    "retornoEstimado": 17482.24,
+    "roiEstimado": 4.9949,
+    "percMetaAtingida": 166.5
   },
   {
     "nome": "Carlos Eduardo Mendes",
@@ -7104,10 +7104,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007114,
-    "retornoEstimado": 14797.12,
-    "roiEstimado": 5.2847,
-    "percMetaAtingida": 176.16
+    "participacao": 0.00805,
+    "retornoEstimado": 16743.12,
+    "roiEstimado": 5.9797,
+    "percMetaAtingida": 199.32
   },
   {
     "nome": "João Pedro Ramos",
@@ -7122,10 +7122,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007114,
-    "retornoEstimado": 14797.12,
-    "roiEstimado": 5.2847,
-    "percMetaAtingida": 176.16
+    "participacao": 0.006496,
+    "retornoEstimado": 13510.73,
+    "roiEstimado": 4.8253,
+    "percMetaAtingida": 160.84
   },
   {
     "nome": "Alexandre Gouveia",
@@ -7140,10 +7140,10 @@
     "retornoPotencial": 8400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007114,
-    "retornoEstimado": 14797.12,
-    "roiEstimado": 5.2847,
-    "percMetaAtingida": 176.16
+    "participacao": 0.006964,
+    "retornoEstimado": 14485.35,
+    "roiEstimado": 5.1733,
+    "percMetaAtingida": 172.44
   },
   {
     "nome": "Ademir Prado",
@@ -7158,10 +7158,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009654,
-    "retornoEstimado": 20080.32,
-    "roiEstimado": 5.2843,
-    "percMetaAtingida": 176.14
+    "participacao": 0.009234,
+    "retornoEstimado": 19206.71,
+    "roiEstimado": 5.0544,
+    "percMetaAtingida": 168.48
   },
   {
     "nome": "Isabela Rezende",
@@ -7176,10 +7176,10 @@
     "retornoPotencial": 16500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.013974,
-    "retornoEstimado": 29065.92,
-    "roiEstimado": 5.2847,
-    "percMetaAtingida": 176.16
+    "participacao": 0.015691,
+    "retornoEstimado": 32638.15,
+    "roiEstimado": 5.9342,
+    "percMetaAtingida": 197.81
   },
   {
     "nome": "Wanderson Alves",
@@ -7194,10 +7194,10 @@
     "retornoPotencial": 9000.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007622,
-    "retornoEstimado": 15853.76,
-    "roiEstimado": 5.2846,
-    "percMetaAtingida": 176.15
+    "participacao": 0.007057,
+    "retornoEstimado": 14678.68,
+    "roiEstimado": 4.8929,
+    "percMetaAtingida": 163.1
   },
   {
     "nome": "Fernanda Correia",
@@ -7212,10 +7212,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009654,
-    "retornoEstimado": 20080.32,
-    "roiEstimado": 5.2843,
-    "percMetaAtingida": 176.14
+    "participacao": 0.009234,
+    "retornoEstimado": 19206.71,
+    "roiEstimado": 5.0544,
+    "percMetaAtingida": 168.48
   },
   {
     "nome": "Diego Ferraz",
@@ -7230,10 +7230,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00813,
-    "retornoEstimado": 16910.4,
-    "roiEstimado": 5.2845,
-    "percMetaAtingida": 176.15
+    "participacao": 0.008875,
+    "retornoEstimado": 18459.6,
+    "roiEstimado": 5.7686,
+    "percMetaAtingida": 192.29
   },
   {
     "nome": "Vitor Ramos",
@@ -7248,10 +7248,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009654,
-    "retornoEstimado": 20080.32,
-    "roiEstimado": 5.2843,
-    "percMetaAtingida": 176.14
+    "participacao": 0.009689,
+    "retornoEstimado": 20152.75,
+    "roiEstimado": 5.3034,
+    "percMetaAtingida": 176.78
   },
   {
     "nome": "Cauê Fonseca",
@@ -7266,10 +7266,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009654,
-    "retornoEstimado": 20080.32,
-    "roiEstimado": 5.2843,
-    "percMetaAtingida": 176.14
+    "participacao": 0.008725,
+    "retornoEstimado": 18147.67,
+    "roiEstimado": 4.7757,
+    "percMetaAtingida": 159.19
   },
   {
     "nome": "Beatriz Nogueira",
@@ -7284,10 +7284,10 @@
     "retornoPotencial": 19500.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.016514,
-    "retornoEstimado": 34349.12,
-    "roiEstimado": 5.2845,
-    "percMetaAtingida": 176.15
+    "participacao": 0.012512,
+    "retornoEstimado": 26024.4,
+    "roiEstimado": 4.0038,
+    "percMetaAtingida": 133.46
   },
   {
     "nome": "Igor Beltrão",
@@ -7302,10 +7302,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009654,
-    "retornoEstimado": 20080.32,
-    "roiEstimado": 5.2843,
-    "percMetaAtingida": 176.14
+    "participacao": 0.006917,
+    "retornoEstimado": 14387.86,
+    "roiEstimado": 3.7863,
+    "percMetaAtingida": 126.21
   },
   {
     "nome": "Rodrigo Oliveira",
@@ -7320,10 +7320,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009654,
-    "retornoEstimado": 20080.32,
-    "roiEstimado": 5.2843,
-    "percMetaAtingida": 176.14
+    "participacao": 0.010816,
+    "retornoEstimado": 22496.82,
+    "roiEstimado": 5.9202,
+    "percMetaAtingida": 197.34
   },
   {
     "nome": "Vinicius Nogueira",
@@ -7338,10 +7338,10 @@
     "retornoPotencial": 10200.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.008638,
-    "retornoEstimado": 17967.04,
-    "roiEstimado": 5.2844,
-    "percMetaAtingida": 176.15
+    "participacao": 0.008448,
+    "retornoEstimado": 17571.51,
+    "roiEstimado": 5.1681,
+    "percMetaAtingida": 172.27
   },
   {
     "nome": "Larissa Mendes",
@@ -7356,10 +7356,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009654,
-    "retornoEstimado": 20080.32,
-    "roiEstimado": 5.2843,
-    "percMetaAtingida": 176.14
+    "participacao": 0.00711,
+    "retornoEstimado": 14788.88,
+    "roiEstimado": 3.8918,
+    "percMetaAtingida": 129.73
   },
   {
     "nome": "Márcia Silveira",
@@ -7374,10 +7374,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007368,
-    "retornoEstimado": 15325.44,
-    "roiEstimado": 5.2846,
-    "percMetaAtingida": 176.15
+    "participacao": 0.008454,
+    "retornoEstimado": 17584.57,
+    "roiEstimado": 6.0636,
+    "percMetaAtingida": 202.12
   },
   {
     "nome": "Camila Duarte",
@@ -7392,10 +7392,10 @@
     "retornoPotencial": 8700.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.007368,
-    "retornoEstimado": 15325.44,
-    "roiEstimado": 5.2846,
-    "percMetaAtingida": 176.15
+    "participacao": 0.005309,
+    "retornoEstimado": 11042.77,
+    "roiEstimado": 3.8079,
+    "percMetaAtingida": 126.93
   },
   {
     "nome": "Wesley Duarte",
@@ -7410,10 +7410,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009654,
-    "retornoEstimado": 20080.32,
-    "roiEstimado": 5.2843,
-    "percMetaAtingida": 176.14
+    "participacao": 0.009384,
+    "retornoEstimado": 19519.1,
+    "roiEstimado": 5.1366,
+    "percMetaAtingida": 171.22
   },
   {
     "nome": "Otávio Braga",
@@ -7428,10 +7428,10 @@
     "retornoPotencial": 11400.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.009654,
-    "retornoEstimado": 20080.32,
-    "roiEstimado": 5.2843,
-    "percMetaAtingida": 176.14
+    "participacao": 0.007775,
+    "retornoEstimado": 16171.39,
+    "roiEstimado": 4.2556,
+    "percMetaAtingida": 141.85
   },
   {
     "nome": "Marina Peixoto",
@@ -7446,10 +7446,10 @@
     "retornoPotencial": 9600.0,
     "nivelHierarquico": "operacional",
     "trimestreCompleto": true,
-    "participacao": 0.00813,
-    "retornoEstimado": 16910.4,
-    "roiEstimado": 5.2845,
-    "percMetaAtingida": 176.15
+    "participacao": 0.006432,
+    "retornoEstimado": 13379.2,
+    "roiEstimado": 4.181,
+    "percMetaAtingida": 139.37
   },
   {
     "nome": "Rafaela Torres",

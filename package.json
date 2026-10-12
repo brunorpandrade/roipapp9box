@@ -24,7 +24,8 @@
     "seed:ubatuba:op-d4-final": "node scripts/seed-ubatuba-operacional-d4-final.mjs",
     "reset-reseed:ubatuba": "node scripts/reset-reseed-ubatuba.mjs",
     "reset-reseed:nativa": "node scripts/reset-reseed-nativa.mjs",
-    "reproject:nativa:individual-profile-scores": "node scripts/reproject-nativa-individual-profile-scores.mjs"
+    "reproject:nativa:individual-profile-scores": "node scripts/reproject-nativa-individual-profile-scores.mjs",
+    "reproject:nativa:performance-quarterly": "node scripts/reproject-nativa-performance-quarterly.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "5.101.2",

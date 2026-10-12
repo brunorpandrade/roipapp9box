@@ -879,7 +879,7 @@ function mapPerfMensalToRow(r: Record<string, unknown>) {
   };
 }
 
-function mapPerfTrimToRow(r: Record<string, unknown>) {
+export function mapPerfTrimToRow(r: Record<string, unknown>) {
   const trim = r.trimestre as string;
   const [ano, qStr] = trim.split('-Q');
   const q = parseInt(qStr!, 10);
