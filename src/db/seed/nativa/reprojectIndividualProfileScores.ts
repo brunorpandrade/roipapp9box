@@ -22,9 +22,18 @@
 //   6. CC registrada: ME-1.4a + anexo de reconciliacao no HISTORICO POS_B8
 //      V11 (apos aprovacao do gate CC067).
 //
-// Idempotencia canonica: antes do DELETE, verifica se o estado ja esta
-// corrigido (soma de desvios padrao > 0.0 no top5/bottom5 em relacao a
-// 50.00). Se ja esta diferenciado, retorna {alreadyFixed: true, ...}.
+// Idempotencia canonica (CC079 patch ME-1.4a — regua corrigida):
+// a primeira versao usava "pelo menos uma linha != 50.00" como regua, mas
+// os 7 overrides canonicos de `perfilIndividualOverrides.ts` (clevel id=1
+// Eduardo + employees ids 52, 6, 9, 26, 36, 46) ja gravam valores != 50.00
+// MESMO no estado antigo — a regua antiga dispara falso positivo
+// idempotente. Regua corrigida: "quantas linhas tem post_assert = '50.00'".
+// Nenhum override tem post_assert = 50; nenhum valor do fixture arredonda
+// para 50.00. Portanto:
+//   - Estado antigo: 59 linhas em 50.00 (os sem override) → fix necessario.
+//   - Estado corrigido: 0 linhas em 50.00 → idempotente.
+//   - Qualquer valor entre 1 e 58 indica estado parcial corrompido e
+//     tambem dispara o fix (mais seguro que silenciar).
 
 import { eq } from 'drizzle-orm';
 
@@ -35,6 +44,8 @@ import { loadFixture } from './loadJsonFixtures';
 
 export interface ReprojectResult {
   readonly alreadyFixed: boolean;
+  readonly linhasPreExistentes: number;
+  readonly linhasEm5000Pre: number;
   readonly scoresDeletados: number;
   readonly scoresInseridos: number;
   readonly assessmentsPreservados: number;
@@ -48,9 +59,10 @@ export interface ReprojectResult {
 export async function reprojectNativaIndividualProfileScores(
   db: RoipDatabase,
 ): Promise<ReprojectResult> {
-  // Idempotencia: se alguma linha ja tem post_assert != 50.00, a demo esta
-  // corrigida. Nenhum teardown; retorna estado atual.
-  const amostraPreExistente = await db
+  // Idempotencia (CC079): conta quantas linhas tem post_assert = '50.00'.
+  // Zero = estado corrigido → nao faz nada; > 0 = estado antigo ou parcial
+  // → aplica fix.
+  const linhasPre = await db
     .select({
       id: individualProfileScores.id,
       post_assert: individualProfileScores.post_assert,
@@ -58,15 +70,15 @@ export async function reprojectNativaIndividualProfileScores(
     .from(individualProfileScores)
     .where(eq(individualProfileScores.companyId, NATIVA_COMPANY_ID));
 
-  const temDiferenciacao = amostraPreExistente.some(
-    (r) => r.post_assert !== null && r.post_assert !== '50.00',
-  );
-  if (temDiferenciacao) {
+  const linhasEm5000Pre = linhasPre.filter((r) => r.post_assert === '50.00').length;
+  if (linhasEm5000Pre === 0) {
     return {
       alreadyFixed: true,
+      linhasPreExistentes: linhasPre.length,
+      linhasEm5000Pre,
       scoresDeletados: 0,
       scoresInseridos: 0,
-      assessmentsPreservados: amostraPreExistente.length,
+      assessmentsPreservados: linhasPre.length,
     };
   }
 
@@ -110,6 +122,8 @@ export async function reprojectNativaIndividualProfileScores(
 
   return {
     alreadyFixed: false,
+    linhasPreExistentes: linhasPre.length,
+    linhasEm5000Pre,
     scoresDeletados: deletados,
     scoresInseridos: inseridos,
     assessmentsPreservados: assessmentIdRows.length,

@@ -12,8 +12,10 @@
 // NAO TOCA na Ubatuba (companyId=2) nem na Embrastec (companyId=3) nem no
 // super-admin. Todo DELETE e restrito por WHERE companyId=1.
 //
-// Idempotente: segunda execucao detecta estado ja corrigido (ao menos uma
-// linha com post_assert != '50.00') e retorna sem tocar o banco.
+// Idempotente (CC079 patch): segunda execucao detecta estado ja corrigido
+// (zero linhas com post_assert = '50.00') e retorna sem tocar o banco. A
+// primeira versao da regua gerava falso positivo porque os 7 overrides
+// canonicos ja gravam post_assert != 50 mesmo no estado antigo.
 //
 // Prerrequisito: DATABASE_URL obrigatoria; aborta com RC=2 se ausente.
 // Uso: `npm run reproject:nativa:individual-profile-scores`.
@@ -43,12 +45,15 @@ async function main(): Promise<void> {
     const result: ReprojectResult = await reprojectNativaIndividualProfileScores(client.db);
     if (result.alreadyFixed) {
       console.log(
-        `[reproject-nativa-ips] IDEMPOTENTE: estado ja corrigido. ` +
-          `${result.assessmentsPreservados} assessments preservados. Nada a fazer.`,
+        `[reproject-nativa-ips] IDEMPOTENTE: estado ja corrigido ` +
+          `(${result.linhasPreExistentes} linhas pre-existentes, ` +
+          `0 em 50.00). ${result.assessmentsPreservados} assessments ` +
+          `preservados. Nada a fazer.`,
       );
     } else {
       console.log(
-        `[reproject-nativa-ips] OK: ${result.scoresDeletados} linhas deletadas, ` +
+        `[reproject-nativa-ips] OK: ${result.linhasEm5000Pre} linhas em 50.00 ` +
+          `detectadas antes do fix; ${result.scoresDeletados} linhas deletadas, ` +
           `${result.scoresInseridos} linhas inseridas. ` +
           `${result.assessmentsPreservados} assessments preservados bit-exact.`,
       );
