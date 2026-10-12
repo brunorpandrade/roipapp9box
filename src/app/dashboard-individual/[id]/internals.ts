@@ -129,7 +129,7 @@ export interface DiagnosticoState {
 /** Visao serializavel de um trimestre (montada server-side, trocada na nav). */
 export interface QuarterView {
   readonly trimestre: string | null;
-  readonly isTrimestreAtual: boolean;
+  readonly isTrimestreFuturo: boolean;
   readonly eixoX: EixoX | null;
   readonly eixoY: EixoY | null;
   readonly nineBox: NineBoxPos | null;
@@ -591,7 +591,7 @@ export function buildQuarterView(args: {
       : [];
   return {
     trimestre,
-    isTrimestreAtual: trimestre !== null && trimestre === currentTrimestreUTC(),
+    isTrimestreFuturo: trimestre !== null && trimestre > currentTrimestreUTC(),
     eixoX:
       quarterly !== null
         ? {

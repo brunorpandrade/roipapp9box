@@ -648,7 +648,7 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
   const legenda = nb !== null ? (QUADRANTE_LEGENDA[nb.quadrante] ?? '') : '';
   const fin = view.financeiro;
   const eixoY = view.eixoY;
-  const podeGerar = view.isTrimestreAtual && view.trimestre !== null;
+  const podeGerar = !view.isTrimestreFuturo && view.trimestre !== null;
   const rotuloBotao =
     view.diagnostico.texto === null ? 'Gerar diagnóstico' : 'Atualizar diagnóstico';
   const eixoXColor = faixaDesColor(view.eixoX?.faixaDesempenho ?? null);
