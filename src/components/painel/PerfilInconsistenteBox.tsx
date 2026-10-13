@@ -1,7 +1,8 @@
 'use client';
 
 // ROIP APP 9BOX — client component canonico da Secao 6 §5.5 nova
-// (ME-fila3-reteste-ui) — "Perfil Individual inconsistente".
+// (ME-fila3-reteste-ui; estendido pela ME-1.11 do ROADMAP_V3) —
+// "Perfil Individual inconsistente".
 //
 // Origem canonica:
 // - DOC 03 §10.6 pt.6 ("Registro do colaborador aparece automaticamente
@@ -20,11 +21,21 @@
 //   (`variant='super_admin_preview'`), atendendo simetricamente a
 //   promessa DOC 03 §10.6 pt.6.
 //
+// ME-1.11 do ROADMAP_V3 adiciona botao `[Motivo]` vermelho a esquerda
+// do `[Liberar teste novamente]` na coluna Acao. O botao abre a
+// `MotivoInconsistenciaModal`, que humaniza os 5 subindices `ia_*` da
+// ultima tentativa inconsistente do titular (zero migration, zero
+// recalculo — ja persistidos em `individualProfileAssessments`). No
+// estado `aguardando_nova_resposta`, o botao fica apagado (opacity 0.5)
+// mas clicavel, exibindo os motivos da tentativa anterior.
+//
 // Escopo:
 // - Renderiza tabela canonica com linhas dos placeholders em estado
 //   `inconsistente` ou `aguardando_nova_resposta` (SSR na page.tsx).
 // - Estado vazio canonico: "Nenhum Perfil Individual inconsistente
 //   no momento."
+// - Botao `[Motivo]` vermelho na coluna Acao em ambos os estados
+//   (apagado em `aguardando_nova_resposta`).
 // - Botao `[Liberar teste novamente]` na coluna Acao quando
 //   `placeholderStatus === 'inconsistente'`.
 // - Rotulo `[Aguardando nova resposta]` (nao-clicavel) quando
@@ -33,6 +44,8 @@
 //   `placeholderStatus === 'inconsistente'` (reincidencia).
 // - Modal de confirmacao pre-acao com texto canonico literal do
 //   §10.7 sobre efeito no portal do colaborador.
+// - Modal `MotivoInconsistenciaModal` com rotulos humanizados dos 5
+//   subindices de confiabilidade (ME-1.11).
 //
 // **RV-14 canonica.** Um statement por linha, largura maxima 100 cols.
 // **RV-13 canonica.** Consumido por `PainelRHClient.tsx`; props tipadas
@@ -43,6 +56,7 @@ import type { JSX } from 'react';
 
 import { COLORS } from '../../lib/design-tokens/colors';
 import type { PerfilInconsistenteRow } from '../../server/services/individualProfilePlaceholders';
+import { MotivoInconsistenciaModal } from './MotivoInconsistenciaModal';
 
 // -----------------------------------------------------------------------
 // Contrato canonico das actions injetadas
@@ -83,6 +97,9 @@ export const BOTAO_LIBERAR_LABEL = 'Liberar teste novamente';
 
 /** Rotulo canonico do estado nao-clicavel — status='aguardando_nova_resposta'. */
 export const AGUARDANDO_LABEL = 'Aguardando nova resposta';
+
+/** Rotulo canonico do botao de motivo (ME-1.11). */
+export const BOTAO_MOTIVO_LABEL = 'Motivo';
 
 /**
  * Texto canonico literal DOC 03 §10.7 — exibido no modal de confirmacao
@@ -263,12 +280,26 @@ export function PerfilInconsistenteBox(props: PerfilInconsistenteBoxProps): JSX.
   const { companyId, linhas, actions } = props;
 
   const [modalLinha, setModalLinha] = useState<PerfilInconsistenteRow | null>(null);
+  const [modalMotivoLinha, setModalMotivoLinha] = useState<PerfilInconsistenteRow | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleOpenModal = (linha: PerfilInconsistenteRow): void => {
     setErrorMessage(null);
     setModalLinha(linha);
+  };
+
+  // ME-1.11: abre modal "Motivo da inconsistencia" para a linha dada.
+  // Funciona nos dois estados do placeholder (`inconsistente` e
+  // `aguardando_nova_resposta`) — a `motivoInconsistencia` vem do
+  // service referenciando a ultima tentativa `inconsistente` do
+  // titular, nao da nova em `em_andamento` quando aplicavel.
+  const handleOpenMotivo = (linha: PerfilInconsistenteRow): void => {
+    setModalMotivoLinha(linha);
+  };
+
+  const handleCloseMotivo = (): void => {
+    setModalMotivoLinha(null);
   };
 
   const handleCancel = (): void => {
@@ -368,34 +399,63 @@ export function PerfilInconsistenteBox(props: PerfilInconsistenteBoxProps): JSX.
                   <td style={tdStyleCenter}>{linha.tentativaAtual}</td>
                   <td style={tdStyle}>{formatDate(linha.retesteLiberadoEm)}</td>
                   <td style={tdStyleRight}>
-                    {linha.placeholderStatus === 'inconsistente' ? (
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 8,
+                        justifyContent: 'flex-end',
+                        alignItems: 'center',
+                      }}
+                    >
+                      {/* ME-1.11: botao [Motivo] vermelho a esquerda. */}
+                      {/* Apagado em `aguardando_nova_resposta`, ainda clicavel. */}
                       <button
                         type="button"
-                        onClick={() => handleOpenModal(linha)}
+                        onClick={() => handleOpenMotivo(linha)}
+                        aria-label={`Ver motivo da inconsistencia de ${linha.userDisplayName}`}
                         style={{
                           padding: '6px 12px',
                           borderRadius: 6,
                           border: 'none',
-                          background: COLORS.primary.navy,
+                          background: COLORS.semantic.danger,
                           color: '#FFFFFF',
                           fontSize: 12,
                           fontWeight: 600,
                           cursor: 'pointer',
+                          opacity: linha.placeholderStatus === 'aguardando_nova_resposta' ? 0.5 : 1,
                         }}
                       >
-                        {BOTAO_LIBERAR_LABEL}
+                        {BOTAO_MOTIVO_LABEL}
                       </button>
-                    ) : (
-                      <span
-                        style={{
-                          fontSize: 12,
-                          fontStyle: 'italic',
-                          color: COLORS.text.tertiary,
-                        }}
-                      >
-                        {AGUARDANDO_LABEL}
-                      </span>
-                    )}
+                      {linha.placeholderStatus === 'inconsistente' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenModal(linha)}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: 6,
+                            border: 'none',
+                            background: COLORS.primary.navy,
+                            color: '#FFFFFF',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {BOTAO_LIBERAR_LABEL}
+                        </button>
+                      ) : (
+                        <span
+                          style={{
+                            fontSize: 12,
+                            fontStyle: 'italic',
+                            color: COLORS.text.tertiary,
+                          }}
+                        >
+                          {AGUARDANDO_LABEL}
+                        </span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
@@ -410,6 +470,14 @@ export function PerfilInconsistenteBox(props: PerfilInconsistenteBoxProps): JSX.
           onConfirm={handleConfirm}
           loading={isPending}
           errorMessage={errorMessage}
+        />
+      ) : null}
+      {modalMotivoLinha !== null ? (
+        <MotivoInconsistenciaModal
+          userDisplayName={modalMotivoLinha.userDisplayName}
+          cargo={modalMotivoLinha.cargo}
+          motivos={modalMotivoLinha.motivoInconsistencia}
+          onClose={handleCloseMotivo}
         />
       ) : null}
     </>

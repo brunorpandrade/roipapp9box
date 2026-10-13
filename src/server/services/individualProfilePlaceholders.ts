@@ -1,5 +1,5 @@
 // ROIP APP 9BOX — service `individualProfilePlaceholders` (ME-011;
-// estendido em ME-fila3-reteste-ui).
+// estendido em ME-fila3-reteste-ui; ampliado em ME-1.11 do ROADMAP_V3).
 //
 // Repositorio tipado da tabela `individualProfilePlaceholders` (DOC 01
 // §4.9). Registra pendencia do Perfil Individual no portal. Ator
@@ -10,6 +10,18 @@
 // para consumo canonico da Secao 6 §5.5 nova (Perfil Individual
 // inconsistente) — enriquece cada placeholder com nome/cargo do titular
 // e tentativa/reteste da assessment mais recente.
+//
+// ME-1.11 do ROADMAP_V3 amplia a `PerfilInconsistenteRow` com o campo
+// `motivoInconsistencia: readonly MotivoRotulado[]`, humanizando os
+// motivos pelos quais o motor marcou a tentativa como `baixa`
+// confiabilidade. A query (3) seleciona tambem as 5 colunas `ia_*` +
+// `status` e a reducao mantem simultaneamente a ultima assessment
+// (para `tentativaAtual` + `retesteLiberadoEm`) e a ultima com
+// `status='inconsistente'` (para `motivoInconsistencia` +
+// `ultimaTentativaEnviadaEm`). Essa dupla reducao garante que
+// placeholders em `aguardando_nova_resposta` continuem mostrando os
+// motivos e a data da ultima tentativa que caiu em inconsistente, nao
+// da nova tentativa em `em_andamento` aberta pelo `releaseRetest`.
 
 import { and, asc, desc, eq, inArray, or } from 'drizzle-orm';
 
@@ -20,6 +32,10 @@ import {
   individualProfileAssessments,
   individualProfilePlaceholders,
 } from '../../db/schema';
+import {
+  classificarMotivosInconsistencia,
+  type MotivoRotulado,
+} from '../../lib/instruments/individualProfileReliabilityLabels';
 
 /** Tipo derivado do schema (payload de INSERT). */
 type NewIndividualProfilePlaceholder = typeof individualProfilePlaceholders.$inferInsert;
@@ -102,8 +118,9 @@ export async function updatePlaceholderStatus(
 
 /**
  * Linha canonica retornada por `listInconsistentesEnriquecidoByCompany`
- * (ME-fila3-reteste-ui). Consumida pelo SSR da Secao 6 §5.5 nova
- * ("Perfil Individual inconsistente") no `PainelRHClient`.
+ * (ME-fila3-reteste-ui; ampliada em ME-1.11). Consumida pelo SSR da
+ * Secao 6 §5.5 nova ("Perfil Individual inconsistente") no
+ * `PainelRHClient` + preview Super Admin via CORR1 do ME-B9-fechamento.
  *
  * Campos enriquecidos:
  * - `userDisplayName` + `cargo`: extraidos de `employees` ou
@@ -112,12 +129,26 @@ export async function updatePlaceholderStatus(
  *   do titular na empresa (sempre >= 1 quando o placeholder existe em
  *   `inconsistente` ou `aguardando_nova_resposta` — nenhum titular
  *   chega nesses estados sem ter respondido ao menos uma vez).
- * - `ultimaTentativaEnviadaEm`: `enviadoEm` da assessment com a maior
- *   `tentativa`. Pode ser `null` quando a assessment mais recente e a
- *   nova aberta pelo `releaseRetest` (status='em_andamento').
+ * - `ultimaTentativaEnviadaEm`: `enviadoEm` da assessment canonica da
+ *   ultima tentativa que o motor marcou como `inconsistente` — nos
+ *   dois estados do placeholder, essa e a ultima resposta real do
+ *   colaborador que caiu em baixa confiabilidade. Preenchido para
+ *   tentativas pos-ME-1.11 (parte 3) e para historicos backfilled via
+ *   SQL pontual do Railway Console. Pode ser `null` quando a tentativa
+ *   anterior a ME-1.11 nao foi coberta pelo backfill.
  * - `retesteLiberadoEm`: `retesteLiberadoEm` da assessment mais recente
  *   quando ela foi aberta via reteste (`retesteLiberadoTipo` !== null).
  *   Utilizado apenas quando o placeholder esta `aguardando_nova_resposta`.
+ * - `motivoInconsistencia` (ME-1.11): lista humanizada dos motivos pelos
+ *   quais o motor classificou a ultima tentativa `inconsistente` como
+ *   `baixa` confiabilidade. Reaproveita os 5 scores `ia_*` ja persistidos
+ *   em `individualProfileAssessments` (DOC 01 §9.1) — zero migration,
+ *   zero recalculo. Ordem canonica: `critico` antes de `medio` (modulo
+ *   `individualProfileReliabilityLabels.ts`). Para placeholders em
+ *   `aguardando_nova_resposta`, exibe os motivos da ultima tentativa
+ *   `inconsistente`, nao da nova tentativa em `em_andamento`. Pode ser
+ *   vazio quando o titular nao tem assessment `inconsistente` em
+ *   historico (defensiva — nao esperado em producao).
  */
 export interface PerfilInconsistenteRow {
   readonly placeholderId: number;
@@ -129,6 +160,7 @@ export interface PerfilInconsistenteRow {
   readonly tentativaAtual: number;
   readonly ultimaTentativaEnviadaEm: Date | null;
   readonly retesteLiberadoEm: Date | null;
+  readonly motivoInconsistencia: readonly MotivoRotulado[];
 }
 
 /**
@@ -217,13 +249,29 @@ export async function listInconsistentesEnriquecidoByCompany(
   //     MySQL; solucao canonica: buscar todas as assessments dos
   //     titulares em questao e resolver o `MAX(tentativa)` em JS
   //     (volume O(n) — n dezenas por empresa em PMEs).
+  //
+  //     ME-1.11: seleciona tambem `status` + 5 scores `ia_*` + reduz
+  //     para dois mapas: (a) `latestByKey` — ultima assessment overall
+  //     (para `tentativaAtual` + `retesteLiberadoEm`); (b)
+  //     `latestInconsistenteByKey` — ultima assessment com
+  //     `status='inconsistente'` (para `motivoInconsistencia` +
+  //     `ultimaTentativaEnviadaEm`). Dupla reducao garante que
+  //     placeholders em `aguardando_nova_resposta` mostrem os motivos
+  //     da ultima inconsistente, nao da nova em_andamento aberta pelo
+  //     releaseRetest.
   const assessmentRows = await db
     .select({
       userType: individualProfileAssessments.userType,
       userId: individualProfileAssessments.userId,
       tentativa: individualProfileAssessments.tentativa,
+      status: individualProfileAssessments.status,
       enviadoEm: individualProfileAssessments.enviadoEm,
       retesteLiberadoEm: individualProfileAssessments.retesteLiberadoEm,
+      ia_att: individualProfileAssessments.ia_att,
+      ia_soc: individualProfileAssessments.ia_soc,
+      ia_acq: individualProfileAssessments.ia_acq,
+      ia_cons: individualProfileAssessments.ia_cons,
+      ia_ext: individualProfileAssessments.ia_ext,
     })
     .from(individualProfileAssessments)
     .where(eq(individualProfileAssessments.companyId, companyId))
@@ -234,16 +282,40 @@ export async function listInconsistentesEnriquecidoByCompany(
     string,
     { tentativa: number; enviadoEm: Date | null; retesteLiberadoEm: Date | null }
   >();
+  // Reduz para "assessment inconsistente com maior tentativa por
+  // (userType,userId)" — ME-1.11.
+  const latestInconsistenteByKey = new Map<
+    string,
+    {
+      tentativa: number;
+      enviadoEm: Date | null;
+      ia_att: string | null;
+      ia_soc: string | null;
+      ia_acq: string | null;
+      ia_cons: string | null;
+      ia_ext: string | null;
+    }
+  >();
   for (const a of assessmentRows) {
     const key = `${a.userType}:${a.userId}`;
-    if (latestByKey.has(key)) {
-      continue;
+    if (!latestByKey.has(key)) {
+      latestByKey.set(key, {
+        tentativa: a.tentativa,
+        enviadoEm: a.enviadoEm,
+        retesteLiberadoEm: a.retesteLiberadoEm,
+      });
     }
-    latestByKey.set(key, {
-      tentativa: a.tentativa,
-      enviadoEm: a.enviadoEm,
-      retesteLiberadoEm: a.retesteLiberadoEm,
-    });
+    if (a.status === 'inconsistente' && !latestInconsistenteByKey.has(key)) {
+      latestInconsistenteByKey.set(key, {
+        tentativa: a.tentativa,
+        enviadoEm: a.enviadoEm,
+        ia_att: a.ia_att,
+        ia_soc: a.ia_soc,
+        ia_acq: a.ia_acq,
+        ia_cons: a.ia_cons,
+        ia_ext: a.ia_ext,
+      });
+    }
   }
 
   // Monta payload canonico bit-a-bit.
@@ -259,8 +331,12 @@ export async function listInconsistentesEnriquecidoByCompany(
     }
     const key = `${p.userType}:${p.userId}`;
     const latest = latestByKey.get(key);
+    const latestInconsistente = latestInconsistenteByKey.get(key);
     const tentativaAtual = latest?.tentativa ?? 1;
-    const ultimaTentativaEnviadaEm = latest?.enviadoEm ?? null;
+    // `ultimaTentativaEnviadaEm` canonicamente aponta para a ultima
+    // assessment `inconsistente` — ME-1.11. Em ambos os estados do
+    // placeholder, essa e a ultima resposta real do colaborador.
+    const ultimaTentativaEnviadaEm = latestInconsistente?.enviadoEm ?? null;
     // `retesteLiberadoEm` so faz sentido enquanto o placeholder esta
     // `aguardando_nova_resposta` (nova tentativa aberta pelo release).
     const retesteLiberadoEm =
@@ -268,6 +344,20 @@ export async function listInconsistentesEnriquecidoByCompany(
     // Narrow canonico do status para o subset de interesse.
     const placeholderStatus: 'inconsistente' | 'aguardando_nova_resposta' =
       p.status === 'aguardando_nova_resposta' ? 'aguardando_nova_resposta' : 'inconsistente';
+    // ME-1.11: classifica motivos a partir dos 5 scores `ia_*` da
+    // ultima assessment `inconsistente`. Zero migration, zero
+    // recalculo. Vazio quando nao ha historico de inconsistente
+    // (defensiva — nao esperado em producao canonica).
+    const motivoInconsistencia: readonly MotivoRotulado[] =
+      latestInconsistente === undefined
+        ? []
+        : classificarMotivosInconsistencia({
+            ia_att: latestInconsistente.ia_att,
+            ia_soc: latestInconsistente.ia_soc,
+            ia_acq: latestInconsistente.ia_acq,
+            ia_cons: latestInconsistente.ia_cons,
+            ia_ext: latestInconsistente.ia_ext,
+          });
     out.push({
       placeholderId: p.id,
       userType: p.userType,
@@ -278,6 +368,7 @@ export async function listInconsistentesEnriquecidoByCompany(
       tentativaAtual,
       ultimaTentativaEnviadaEm,
       retesteLiberadoEm,
+      motivoInconsistencia,
     });
   }
   return out;

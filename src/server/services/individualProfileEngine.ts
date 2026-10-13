@@ -821,6 +821,14 @@ export async function runAssessment(
       ia_cons: iaConsStr,
       ia_ext: iaExtStr,
       calculadoEm: now,
+      // ME-1.11 do ROADMAP_V3: grava `enviadoEm` tambem no caminho
+      // inconsistente (simetria com o caminho consistente da linha
+      // 872). A coluna "Ultima resposta" do box "Perfil Individual
+      // inconsistente" do painel RH consome este campo via service
+      // `listInconsistentesEnriquecidoByCompany`. Sem este campo, a
+      // coluna fica em travessao para quem respondeu e caiu em baixa
+      // confiabilidade, mesmo que a resposta tenha sido no mesmo dia.
+      enviadoEm,
     });
     await transicionaPlaceholder(db, assessment, 'inconsistente', now);
     return {
