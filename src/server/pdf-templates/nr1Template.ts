@@ -22,6 +22,7 @@
 //   Normalizacao: espaco -> underscore, remove acentos, remove
 //   caracteres especiais, limita a 40 caracteres.
 
+import { formatDateBR } from '../../lib/date/formatDateBR';
 import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
 import { escapeHtml, type LayoutBaseCompany, renderLayoutBase } from './layoutBase';
 
@@ -148,7 +149,7 @@ function renderCapa(input: Nr1TemplateInput): string {
   <h1>Radar NR-1</h1>
   <p><strong>Empresa:</strong> ${escapeHtml(input.company.nomeFantasia)}</p>
   <p><strong>Ciclo:</strong> ${escapeHtml(input.ciclo.cicloRotulo)}</p>
-  <p><strong>Período:</strong> ${escapeHtml(input.ciclo.dataAbertura)} a ${escapeHtml(input.ciclo.dataFechamento)}</p>
+  <p><strong>Período:</strong> ${escapeHtml(formatDateBR(input.ciclo.dataAbertura))} a ${escapeHtml(formatDateBR(input.ciclo.dataFechamento))}</p>
   <p><strong>Respondentes:</strong> ${input.ciclo.totalRespondentes} de ${input.ciclo.totalElegiveis}</p>
   <p class="muted">Radar diagnóstico preliminar dos 8 fatores psicossociais no ambiente de trabalho. Não substitui os instrumentos e processos formais.</p>
 </section>`;
@@ -294,7 +295,15 @@ function renderAlertas(alertas: Nr1AlertaFator[]): string {
         a.escopo === 'empresa'
           ? 'empresa'
           : `departamento ${escapeHtml(a.departamentoNome ?? '-')}`;
-      return `<li>${escapeHtml(a.fatorNome)} — ${escopo}, score ${a.score.toFixed(1)}.</li>`;
+      // ME-1.3b: score canonicamente formatado em pt-BR (`39,1` em vez
+      // de `39.1`); separador `:` em vez de travessao `—` (preferencia
+      // canonica de Bruno). Formato explicito via toLocaleString evita
+      // drift entre ambientes com Intl locale diferente.
+      const scoreBr = a.score.toLocaleString('pt-BR', {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      });
+      return `<li>${escapeHtml(a.fatorNome)}: ${escopo}, score ${scoreBr}.</li>`;
     })
     .join('\n');
   return `<section class="page-break">
@@ -353,15 +362,17 @@ ${lis}
 }
 
 function renderRastreabilidade(input: Nr1TemplateInput): string {
+  // ME-1.3b: 3 datas da nota de auditoria canonicamente humanizadas em
+  // DD/MM/YYYY via `formatDateBR`. Antes da ME-1.3b emitiam ISO cru.
   const notaAuditoria = input.notaAuditoriaEdicao
-    ? `<p><em>A data de fechamento original deste ciclo era ${escapeHtml(input.notaAuditoriaEdicao.dataFechamentoOriginal)}. Foi alterada para ${escapeHtml(input.notaAuditoriaEdicao.dataFechamentoAtual)} em ${escapeHtml(input.notaAuditoriaEdicao.ultimaEdicaoEm)} por ${escapeHtml(input.notaAuditoriaEdicao.ultimaEdicaoPor)}. Motivo registrado: ${escapeHtml(input.notaAuditoriaEdicao.ultimaEdicaoJustificativa)}.</em></p>`
+    ? `<p><em>A data de fechamento original deste ciclo era ${escapeHtml(formatDateBR(input.notaAuditoriaEdicao.dataFechamentoOriginal))}. Foi alterada para ${escapeHtml(formatDateBR(input.notaAuditoriaEdicao.dataFechamentoAtual))} em ${escapeHtml(formatDateBR(input.notaAuditoriaEdicao.ultimaEdicaoEm))} por ${escapeHtml(input.notaAuditoriaEdicao.ultimaEdicaoPor)}. Motivo registrado: ${escapeHtml(input.notaAuditoriaEdicao.ultimaEdicaoJustificativa)}.</em></p>`
     : '';
   return `<section class="page-break">
   <h2>Rastreabilidade</h2>
   <p><strong>Empresa:</strong> ${escapeHtml(input.company.nomeFantasia)}</p>
   <p><strong>Ciclo:</strong> ${escapeHtml(input.ciclo.cicloRotulo)}</p>
-  <p><strong>Data de abertura do ciclo:</strong> ${escapeHtml(input.ciclo.dataAbertura)}</p>
-  <p><strong>Data de fechamento do ciclo:</strong> ${escapeHtml(input.ciclo.dataFechamento)}</p>
+  <p><strong>Data de abertura do ciclo:</strong> ${escapeHtml(formatDateBR(input.ciclo.dataAbertura))}</p>
+  <p><strong>Data de fechamento do ciclo:</strong> ${escapeHtml(formatDateBR(input.ciclo.dataFechamento))}</p>
   <p><strong>Gerado em:</strong> ${escapeHtml(toTimestampBrt(input.generatedAtIso) ?? input.generatedAtIso)}</p>
   ${notaAuditoria}
 </section>`;

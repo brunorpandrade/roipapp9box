@@ -356,7 +356,7 @@ describe('nr1Template (ME-050/51)', () => {
         ultimaEdicaoJustificativa: 'Necessidade de mais tempo por baixa participação.',
       },
     });
-    expect(html).toContain('A data de fechamento original deste ciclo era 2026-06-30');
+    expect(html).toContain('A data de fechamento original deste ciclo era 30/06/2026');
     expect(html).toContain('RH Alice');
   });
 

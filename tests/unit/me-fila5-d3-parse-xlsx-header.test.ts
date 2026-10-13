@@ -87,9 +87,9 @@ describe('validateXlsxHeader — modo prefix', () => {
       [
         'Nome liderado',
         'Cargo',
-        'Meta [Variavel 1]',
-        'Demanda [Variavel 1]',
-        'Realizado [Variavel 1]',
+        'Meta [Variável 1]',
+        'Demanda [Variável 1]',
+        'Realizado [Variável 1]',
       ],
     ]);
     const result = await validateXlsxHeader(file, EXPECTED_PREFIX, 'prefix');
@@ -98,7 +98,7 @@ describe('validateXlsxHeader — modo prefix', () => {
 
   it('rejeita quando a primeira coluna do prefixo esta errada', async () => {
     const file = makeXlsxFile([
-      ['Nome do liderado', 'Cargo', 'Meta [Variavel 1]'], // typo na primeira
+      ['Nome do liderado', 'Cargo', 'Meta [Variável 1]'], // typo na primeira
     ]);
     const result = await validateXlsxHeader(file, EXPECTED_PREFIX, 'prefix');
     expect(result.ok).toBe(false);
@@ -109,7 +109,7 @@ describe('validateXlsxHeader — modo prefix', () => {
 
   it('rejeita quando a segunda coluna do prefixo esta trocada de posicao', async () => {
     const file = makeXlsxFile([
-      ['Nome liderado', 'Meta [Variavel 1]', 'Cargo'], // Cargo fora da posicao 2
+      ['Nome liderado', 'Meta [Variável 1]', 'Cargo'], // Cargo fora da posicao 2
     ]);
     const result = await validateXlsxHeader(file, EXPECTED_PREFIX, 'prefix');
     expect(result.ok).toBe(false);

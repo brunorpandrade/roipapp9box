@@ -59,7 +59,7 @@ describe('ME-fila5 D3 — consistencia monthly-columns.ts vs spreadsheets.ts', (
       'Nome',
       'CPF',
       'Cargo',
-      'Lider direto',
+      'Líder direto',
       'Custo mensal (R$)',
       'Faltas',
     ]);

@@ -383,7 +383,7 @@ describe('spreadsheets-router — contratos publicos (RV-13)', () => {
       'Nome',
       'CPF',
       'Cargo',
-      'Lider direto',
+      'Líder direto',
       'Custo mensal (R$)',
       'Faltas',
     ]);
@@ -394,9 +394,9 @@ describe('spreadsheets-router — contratos publicos (RV-13)', () => {
   });
 
   it('LABEL_META/DEMANDA/REALIZADO seguem CC3 canonico (§3.11)', () => {
-    expect(LABEL_META(1)).toBe('Meta [Variavel 1]');
-    expect(LABEL_DEMANDA(2)).toBe('Demanda [Variavel 2]');
-    expect(LABEL_REALIZADO(4)).toBe('Realizado [Variavel 4]');
+    expect(LABEL_META(1)).toBe('Meta [Variável 1]');
+    expect(LABEL_DEMANDA(2)).toBe('Demanda [Variável 2]');
+    expect(LABEL_REALIZADO(4)).toBe('Realizado [Variável 4]');
   });
 
   it('VALOR_DEMANDA_FAMILIA_6 e o em-dash canonico (§3.11 CC3)', () => {
@@ -861,7 +861,7 @@ describe('spreadsheets-router — uploadRHData parser + delegacao', () => {
   it('rejeita cabecalhos divergentes', async () => {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet(NOME_ABA_RH);
-    ws.addRow(['Nome', 'CPF', 'Errado', 'Lider direto', 'Custo mensal (R$)', 'Faltas']);
+    ws.addRow(['Nome', 'CPF', 'Errado', 'Líder direto', 'Custo mensal (R$)', 'Faltas']);
     const buf = Buffer.from(await wb.xlsx.writeBuffer()).toString('base64');
     const { facade } = makeMockFacade();
     const caller = callerFor(await tokenFor('rh', empRH, companyId), facade);

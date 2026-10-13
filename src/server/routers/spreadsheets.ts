@@ -87,6 +87,8 @@ import ExcelJS from 'exceljs';
 import { and, asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
+import { formatCpf } from '../../lib/cpf/formatCpf';
+
 import type { RoipDatabase } from '../../db/client';
 import {
   cLevelMembers,
@@ -143,11 +145,17 @@ export const NOME_ABA_RH = 'Preenchimento mensal RH';
 export const NOME_ABA_LIDER = 'Preenchimento mensal Lider';
 
 /** Cabecalhos canonicos exatos da aba RH (§3.11 + mockup §7.5). */
+// ME-1.3b: headers canonicos acentuados (`Lider` -> `Líder`,
+// `Variavel` -> `Variável`). Breaking change de contrato ciente:
+// planilhas antigas (geradas pre-deploy desta ME) nao sao mais
+// aceitas pela validacao bit-exact do parser. Embrastec ainda nao
+// enviou nada; Nativa e Ubatuba sao demo — nenhum impacto operacional
+// real. Documentado como adendo canonico ao OPERACAO V12.
 export const COLUNAS_CANONICAS_RH = [
   'Nome',
   'CPF',
   'Cargo',
-  'Lider direto',
+  'Líder direto',
   'Custo mensal (R$)',
   'Faltas',
 ] as const;
@@ -156,9 +164,9 @@ export const COLUNAS_CANONICAS_RH = [
 export const COLUNAS_FIXAS_LIDER = ['Nome liderado', 'Cargo'] as const;
 
 /** Etiquetas dinamicas canonicas CC3 (§3.11 — nunca o nome real da variavel). */
-export const LABEL_META = (n: number) => `Meta [Variavel ${n}]`;
-export const LABEL_DEMANDA = (n: number) => `Demanda [Variavel ${n}]`;
-export const LABEL_REALIZADO = (n: number) => `Realizado [Variavel ${n}]`;
+export const LABEL_META = (n: number) => `Meta [Variável ${n}]`;
+export const LABEL_DEMANDA = (n: number) => `Demanda [Variável ${n}]`;
+export const LABEL_REALIZADO = (n: number) => `Realizado [Variável ${n}]`;
 
 /** Senha canonica interna da sheet protection (nao secreta — a protecao
  *  e de UX, o backend rejeita valores invalidos independentemente).
@@ -591,8 +599,13 @@ async function buildRHTemplateBuffer(
 
   // Linhas pre-preenchidas: Nome, CPF, Cargo, Lider direto (read-only),
   // Custo mensal (editavel, vazio), Faltas (editavel, 0).
+  // ME-1.3b: CPF canonicamente formatado `XXX.XXX.XXX-XX` via helper
+  // L125 RV-14 compartilhado `formatCpf` (fonte unica canonica — ME-B11.1c).
+  // Parser aceita CPF com ou sem pontos/hifen (strip canonico antes do lookup
+  // em `cpfIndex`); plenamente compativel com planilhas preenchidas por
+  // humanos que digitem CPF em qualquer formato.
   for (const row of data.linhas) {
-    const excelRow = ws.addRow([row.nome, row.cpf, row.cargo, row.liderNome, null, 0]);
+    const excelRow = ws.addRow([row.nome, formatCpf(row.cpf), row.cargo, row.liderNome, null, 0]);
     // Colunas read-only: A, B, C, D (locked=true).
     // Colunas editaveis: E, F (locked=false).
     (['A', 'B', 'C', 'D'] as const).forEach((col) => {
@@ -601,6 +614,8 @@ async function buildRHTemplateBuffer(
     (['E', 'F'] as const).forEach((col) => {
       excelRow.getCell(col).protection = { locked: false };
     });
+    // ME-1.3b: formato canonico moeda pt-BR na celula E (Custo mensal (R$)).
+    excelRow.getCell('E').numFmt = 'R$ #,##0.00';
   }
 
   // Larguras confortaveis.
@@ -837,7 +852,12 @@ async function parseRHUpload(
       continue;
     }
 
-    const employeeId = cpfIndex.get(cpf);
+    // ME-1.3b: strip canonico de pontos/hifen do CPF antes do lookup.
+    // `cpfIndex` guarda chaves cruas (so digitos) vindas de `employees.cpf`;
+    // CPF digitado em qualquer formato (`XXX.XXX.XXX-XX` ou `XXXXXXXXXXX`)
+    // bate exato apos normalizacao. Compatibilidade dupla preservada.
+    const cpfNormalizado = cpf.replace(/[.\-]/g, '');
+    const employeeId = cpfIndex.get(cpfNormalizado);
     if (employeeId === undefined) {
       erros.push({ linha: r, coluna: 'CPF', mensagem: MSG_CPF_NAO_ENCONTRADO });
       continue;
@@ -904,7 +924,11 @@ async function parseLeaderUpload(
   while (true) {
     const meta = cellString(ws, 1, col);
     if (meta === '') break;
-    const varN = /^Meta \[Variavel (\d+)\]$/.exec(meta);
+    // ME-1.3b: regex canonicamente acentuado para bater com o header
+    // novo (`Meta [Variável N]`). Aceita apenas o header canonico atual;
+    // planilhas antigas (`Meta [Variavel N]` sem acento) sao rejeitadas
+    // na reimportacao. Breaking change ciente (ver comentario em L146).
+    const varN = /^Meta \[Variável (\d+)\]$/.exec(meta);
     if (!varN) {
       throw new TRPCError({
         code: 'BAD_REQUEST',

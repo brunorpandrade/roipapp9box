@@ -31,7 +31,7 @@ export const COLUNAS_CANONICAS_RH_MONTHLY = [
   'Nome',
   'CPF',
   'Cargo',
-  'Lider direto',
+  'Líder direto',
   'Custo mensal (R$)',
   'Faltas',
 ] as const;

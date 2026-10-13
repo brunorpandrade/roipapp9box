@@ -14,6 +14,7 @@
 import { NextResponse } from 'next/server';
 
 import { closeDbClient, createDbClient } from '../../../../db/client';
+import { toTimestampBrt } from '../../../../lib/date/toIsoDateUtc';
 import { resolveDatabaseUrl } from '../../../../lib/db/resolveDatabaseUrl';
 import { findCompanyDisplayInfo } from '../../../../lib/logs/companyHistoryLog';
 import {
@@ -57,7 +58,12 @@ export async function GET(req: Request): Promise<NextResponse> {
     if (company === null) {
       return NextResponse.json({ error: 'empresa_nao_encontrada' }, { status: 404 });
     }
-    const geradoEm = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    // ME-1.3b: rodape canonicamente formatado via helper L125 RV-14
+    // compartilhado `toTimestampBrt` (`DD/MM/YYYY as HH:mm (BRT)`), consistente
+    // com os demais PDFs rich (Board deck, Snapshot 9-Box, Clima e
+    // engajamento, Relatorio executivo, Perfil Individual, LGPD, Radar NR-1).
+    const geradoEmIso = new Date().toISOString();
+    const geradoEm = toTimestampBrt(geradoEmIso) ?? geradoEmIso;
     html = renderDocumentoPadraoPdfHtml(
       tipo,
       { nomeFantasia: company.nomeFantasia, logoUrl: company.logoUrl ?? undefined },
