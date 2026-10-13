@@ -78,6 +78,8 @@ const CNPJ_RETEST_PRECOND = '10000000000967';
 const CNPJ_RETEST_AUTH = '10000000000968';
 const CNPJ_RETEST_PC1E = '10000000000969';
 const CNPJ_PDF_AUTH = '10000000000970';
+const CNPJ_REPORT_ME111_DISCRIMINATOR = '10000000000971';
+const CNPJ_REPORT_ME111_INCONSISTENTE = '10000000000972';
 
 /** Stub deterministico do renderer PDF — devolve um binario PDF minimo
  *  (magic bytes %PDF). Evita a toolchain Puppeteer real (S260); o foco
@@ -266,6 +268,13 @@ async function createAssessment(
   userType: 'employee' | 'clevel' = 'employee',
   tentativa = 1,
   status: 'em_andamento' | 'enviado' | 'inconsistente' = 'enviado',
+  iaOverrides: {
+    ia_att?: string;
+    ia_soc?: string;
+    ia_acq?: string;
+    ia_cons?: string;
+    ia_ext?: string;
+  } = {},
 ): Promise<number> {
   const [row] = await client.db
     .insert(individualProfileAssessments)
@@ -279,11 +288,11 @@ async function createAssessment(
       blocosCompletos: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       respostas: { ITEM_001: 4 },
       confiabilidadeNivel: status === 'inconsistente' ? 'baixa' : 'alta',
-      ia_att: '0.00',
-      ia_soc: '0.00',
-      ia_acq: '0.00',
-      ia_cons: '0.00',
-      ia_ext: '0.00',
+      ia_att: iaOverrides.ia_att ?? '0.00',
+      ia_soc: iaOverrides.ia_soc ?? '0.00',
+      ia_acq: iaOverrides.ia_acq ?? '0.00',
+      ia_cons: iaOverrides.ia_cons ?? '0.00',
+      ia_ext: iaOverrides.ia_ext ?? '0.00',
       enviadoEm: NOW,
       calculadoEm: NOW,
     })
@@ -485,11 +494,11 @@ describe('individualProfile.getReport — caminho canonico', () => {
     });
   });
 
-  it('retorna null quando o titular nao tem score (S233)', async () => {
+  it('ME-1.11: kind=none quando o titular nao tem score nem inconsistente', async () => {
     const { factory, ctx } = bindRouter();
     const caller = factory(ctx(await tokenPlatform('rh', rhId, companyId)));
     const out = await caller.getReport({ companyId, userType: 'employee', userId: empSemScore });
-    expect(out).toBeNull();
+    expect(out.kind).toBe('none');
   });
 
   it('retorna DTO com flags de geracao quando os textos sao NULL', async () => {
@@ -497,14 +506,15 @@ describe('individualProfile.getReport — caminho canonico', () => {
     const { factory, ctx } = bindRouter({ reportGeneration: spy.facade });
     const caller = factory(ctx(await tokenPlatform('rh', rhId, companyId)));
     const out = await caller.getReport({ companyId, userType: 'employee', userId: empComScore });
-    expect(out).not.toBeNull();
-    expect(out!.gerandoResumo).toBe(true);
-    expect(out!.gerandoExpandido).toBe(true);
-    expect(out!.score.resumoJson).toBeNull();
-    expect(out!.score.perfilComportamental).toBe('Executor');
-    expect(out!.assessment.tentativa).toBe(1);
-    expect(out!.assessment.status).toBe('enviado');
-    expect(out!.assessment.confiabilidadeNivel).toBe('alta');
+    expect(out.kind).toBe('consistente');
+    if (out.kind !== 'consistente') return;
+    expect(out.gerandoResumo).toBe(true);
+    expect(out.gerandoExpandido).toBe(true);
+    expect(out.score.resumoJson).toBeNull();
+    expect(out.score.perfilComportamental).toBe('Executor');
+    expect(out.assessment.tentativa).toBe(1);
+    expect(out.assessment.status).toBe('enviado');
+    expect(out.assessment.confiabilidadeNivel).toBe('alta');
   });
 
   it('aciona o hook DI de geracao com o payload canonico (S210)', async () => {
@@ -526,10 +536,12 @@ describe('individualProfile.getReport — caminho canonico', () => {
     const { factory, ctx } = bindRouter({ reportGeneration: spy.facade });
     const caller = factory(ctx(await tokenPlatform('rh', rhId, companyId)));
     const out = await caller.getReport({ companyId, userType: 'employee', userId: empComTextos });
-    expect(out!.gerandoResumo).toBe(false);
-    expect(out!.gerandoExpandido).toBe(false);
-    expect(out!.score.resumoJson).toEqual({ texto: 'resumo gerado' });
-    expect(out!.score.expandidoJson).toEqual({ texto: 'expandido gerado' });
+    expect(out.kind).toBe('consistente');
+    if (out.kind !== 'consistente') return;
+    expect(out.gerandoResumo).toBe(false);
+    expect(out.gerandoExpandido).toBe(false);
+    expect(out.score.resumoJson).toEqual({ texto: 'resumo gerado' });
+    expect(out.score.expandidoJson).toEqual({ texto: 'expandido gerado' });
     expect(spy.calls.length).toBe(0);
   });
 
@@ -537,7 +549,9 @@ describe('individualProfile.getReport — caminho canonico', () => {
     const { factory, ctx } = bindRouter();
     const caller = factory(ctx(await tokenPlatform('rh', rhId, companyId)));
     const out = await caller.getReport({ companyId, userType: 'employee', userId: empComScore });
-    expect(Object.keys(out!.assessment)).toEqual([
+    expect(out.kind).toBe('consistente');
+    if (out.kind !== 'consistente') return;
+    expect(Object.keys(out.assessment)).toEqual([
       'id',
       'tentativa',
       'status',
@@ -551,7 +565,132 @@ describe('individualProfile.getReport — caminho canonico', () => {
     const { factory, ctx } = bindRouter();
     const caller = factory(ctx(await tokenSuperAdmin()));
     const out = await caller.getReport({ companyId, userType: 'employee', userId: empComScore });
-    expect(out!.score.companyId).toBe(companyId);
+    expect(out.kind).toBe('consistente');
+    if (out.kind !== 'consistente') return;
+    expect(out.score.companyId).toBe(companyId);
+  });
+});
+
+// ============================================================
+// 1b) getReport — ME-1.11 Leva 2 discriminator kind (3 cenarios)
+// ============================================================
+
+describe('individualProfile.getReport — ME-1.11 discriminator kind', () => {
+  let companyId: number;
+  let rhId: number;
+  let empNunca: number;
+  let empSoInconsistente: number;
+  let empConsistente: number;
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_REPORT_ME111_DISCRIMINATOR);
+    rhId = await createEmployee(companyId);
+
+    // kind='none': titular sem qualquer assessment.
+    empNunca = await createEmployee(companyId);
+
+    // kind='inconsistente': 1 tentativa inconsistente, sem score.
+    // ia_soc=4 -> critico; ia_acq=1 -> medio; demais ok.
+    empSoInconsistente = await createEmployee(companyId);
+    await createAssessment(companyId, empSoInconsistente, 'employee', 1, 'inconsistente', {
+      ia_att: '2.00',
+      ia_soc: '4.00',
+      ia_acq: '1.00',
+      ia_cons: '0.00',
+      ia_ext: '0.50',
+    });
+
+    // kind='consistente': tentativa enviada + score gerado.
+    empConsistente = await createEmployee(companyId);
+    const a = await createAssessment(companyId, empConsistente, 'employee', 1);
+    await createScore(companyId, empConsistente, a, 1);
+  });
+
+  it('ME-1.11 kind=none: titular sem assessment nenhum', async () => {
+    const { factory, ctx } = bindRouter();
+    const caller = factory(ctx(await tokenPlatform('rh', rhId, companyId)));
+    const out = await caller.getReport({ companyId, userType: 'employee', userId: empNunca });
+    expect(out.kind).toBe('none');
+    expect(Object.keys(out)).toEqual(['kind']);
+  });
+
+  it('ME-1.11 kind=inconsistente: devolve tentativa e motivos ordenados', async () => {
+    const { factory, ctx } = bindRouter();
+    const caller = factory(ctx(await tokenPlatform('rh', rhId, companyId)));
+    const out = await caller.getReport({
+      companyId,
+      userType: 'employee',
+      userId: empSoInconsistente,
+    });
+    expect(out.kind).toBe('inconsistente');
+    if (out.kind !== 'inconsistente') return;
+    expect(out.tentativa).toBe(1);
+    expect(out.enviadoEm).not.toBeNull();
+    expect(out.calculadoEm).not.toBeNull();
+    expect(out.motivosInconsistencia.length).toBe(2);
+    // Critico primeiro (ia_soc), medio depois (ia_acq).
+    expect(out.motivosInconsistencia[0]!.chave).toBe('ia_soc');
+    expect(out.motivosInconsistencia[0]!.severidade).toBe('critico');
+    expect(out.motivosInconsistencia[1]!.chave).toBe('ia_acq');
+    expect(out.motivosInconsistencia[1]!.severidade).toBe('medio');
+  });
+
+  it('ME-1.11 kind=consistente: devolve score + assessment canonicos', async () => {
+    const { factory, ctx } = bindRouter();
+    const caller = factory(ctx(await tokenPlatform('rh', rhId, companyId)));
+    const out = await caller.getReport({
+      companyId,
+      userType: 'employee',
+      userId: empConsistente,
+    });
+    expect(out.kind).toBe('consistente');
+    if (out.kind !== 'consistente') return;
+    expect(out.score.userId).toBe(empConsistente);
+    expect(out.assessment.status).toBe('enviado');
+    expect(out.assessment.confiabilidadeNivel).toBe('alta');
+  });
+});
+
+// ============================================================
+// 1c) ME-1.11 Parte 3 — executor grava enviadoEm no caminho inconsistente
+// ============================================================
+
+describe('individualProfile ME-1.11 Parte 3 — enviadoEm no caminho inconsistente', () => {
+  let companyId: number;
+  let empId: number;
+
+  beforeAll(async () => {
+    companyId = await createCompany(CNPJ_REPORT_ME111_INCONSISTENTE);
+    empId = await createEmployee(companyId);
+    // Simula o executor: assessment inconsistente com enviadoEm = calculadoEm = NOW.
+    await createAssessment(companyId, empId, 'employee', 1, 'inconsistente', {
+      ia_att: '0.00',
+      ia_soc: '5.00',
+      ia_acq: '1.00',
+      ia_cons: '3.00',
+      ia_ext: '0.80',
+    });
+  });
+
+  it('tentativa inconsistente tem enviadoEm igual a calculadoEm', async () => {
+    const rows = await client.db
+      .select({
+        enviadoEm: individualProfileAssessments.enviadoEm,
+        calculadoEm: individualProfileAssessments.calculadoEm,
+      })
+      .from(individualProfileAssessments)
+      .where(
+        and(
+          eq(individualProfileAssessments.companyId, companyId),
+          eq(individualProfileAssessments.userId, empId),
+          eq(individualProfileAssessments.status, 'inconsistente'),
+        ),
+      );
+    expect(rows.length).toBe(1);
+    const row = rows[0]!;
+    expect(row.enviadoEm).not.toBeNull();
+    expect(row.calculadoEm).not.toBeNull();
+    expect(row.enviadoEm!.toISOString()).toBe(row.calculadoEm!.toISOString());
   });
 });
 
@@ -578,9 +717,11 @@ describe('individualProfile.getReport — S213 tentativa vigente', () => {
     const { factory, ctx } = bindRouter();
     const caller = factory(ctx(await tokenPlatform('rh', rhId, companyId)));
     const out = await caller.getReport({ companyId, userType: 'employee', userId: empId });
-    expect(out!.score.tentativa).toBe(2);
-    expect(out!.assessment.tentativa).toBe(2);
-    expect(out!.score.resumoJson).toEqual({ texto: 'tentativa 2' });
+    expect(out.kind).toBe('consistente');
+    if (out.kind !== 'consistente') return;
+    expect(out.score.tentativa).toBe(2);
+    expect(out.assessment.tentativa).toBe(2);
+    expect(out.score.resumoJson).toEqual({ texto: 'tentativa 2' });
   });
 
   it('a tentativa anterior permanece no banco por auditoria (§10.7)', async () => {
@@ -646,7 +787,9 @@ describe('individualProfile.getReport — guards canonicos', () => {
     const { factory, ctx } = bindRouter();
     const caller = factory(ctx(await tokenPlatform('lider', liderId, companyId)));
     const out = await caller.getReport({ companyId, userType: 'employee', userId: liderado });
-    expect(out!.score.userId).toBe(liderado);
+    expect(out.kind).toBe('consistente');
+    if (out.kind !== 'consistente') return;
+    expect(out.score.userId).toBe(liderado);
   });
 
   it('S066 — lider NAO le colaborador fora da cadeia direta', async () => {
@@ -677,7 +820,9 @@ describe('individualProfile.getReport — guards canonicos', () => {
     const { factory, ctx } = bindRouter();
     const rhCaller = factory(ctx(await tokenPlatform('rh', rhId, companyId)));
     const outRh = await rhCaller.getReport({ companyId, userType: 'employee', userId: inativo });
-    expect(outRh!.score.userId).toBe(inativo);
+    expect(outRh.kind).toBe('consistente');
+    if (outRh.kind !== 'consistente') return;
+    expect(outRh.score.userId).toBe(inativo);
 
     const liderCaller = factory(ctx(await tokenPlatform('lider', liderId, companyId)));
     await expect(
@@ -719,8 +864,10 @@ describe('individualProfile.getReport — PC1e §10.11/§15.5', () => {
     const { factory, ctx } = bindRouter();
     const caller = factory(ctx(await tokenSuperAdmin()));
     const out = await caller.getReport({ companyId, userType: 'clevel', userId: clevelId });
-    expect(out!.score.userType).toBe('clevel');
-    expect(out!.score.userId).toBe(clevelId);
+    expect(out.kind).toBe('consistente');
+    if (out.kind !== 'consistente') return;
+    expect(out.score.userType).toBe('clevel');
+    expect(out.score.userId).toBe(clevelId);
   });
 
   it('RH recebe FORBIDDEN com a mensagem canonica do DOC 02 §11.5', async () => {

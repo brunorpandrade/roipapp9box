@@ -29,6 +29,7 @@ import { Spinner } from '../../../components/ui/Spinner';
 import {
   carregarPerfilRelatorioAction,
   baixarPerfilPdfAction,
+  type PerfilInconsistenteSnapshot,
   type PerfilRelatorioSnapshot,
 } from './perfilRelatorioActions';
 import { initialsOf } from './internals';
@@ -51,6 +52,21 @@ const MSG_FALHA = 'Erro ao gerar relatório. Tente novamente em alguns instantes
 const MSG_SEM_RELATORIO =
   'Este colaborador ainda não respondeu ao Perfil Individual. O relatório fica ' +
   'disponível após o envio e o cálculo da avaliação.';
+
+// ME-1.11 Leva 2 — Mensagem canonica do estado `inconsistente` (DOC 03
+// §10.6 pt.5 + §6.7). Tres elementos obrigatorios: linha de abertura
+// em destaque, paragrafo humanizado explicando os cinco padroes
+// possiveis sem termo tecnico sem traducao, instrucao de acao
+// apontando para a secao "Perfil Individual inconsistente".
+const MSG_INCONSISTENTE_TITULO = 'Última tentativa marcada como inconsistente';
+const MSG_INCONSISTENTE_CORPO =
+  'A última tentativa deste colaborador apresentou padrões de resposta que comprometem a ' +
+  'leitura canônica do perfil — como respostas rápidas demais, inclinação para o que seria ' +
+  'socialmente desejável, concordância automática, respostas contraditórias entre si ou uso ' +
+  'excessivo das extremidades da escala.';
+const MSG_INCONSISTENTE_ACAO =
+  'Peça ao RH ou ao Super Admin para abrir a seção "Perfil Individual inconsistente" do ' +
+  'painel RH, consultar os motivos detectados e liberar nova tentativa quando for o caso.';
 
 // O expandido gera em ate ~200s (timeout de backend); o polling do
 // front precisa cobrir esse pior caso com folga, senao desiste antes de
@@ -713,6 +729,10 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
   const [carregando, setCarregando] = useState<boolean>(true);
   const [erro, setErro] = useState<string | null>(null);
   const [semRelatorio, setSemRelatorio] = useState<boolean>(false);
+  // ME-1.11 Leva 2: distingue "nunca respondeu" (semRelatorio=true,
+  // inconsistente=null) de "respondeu mas inconsistente"
+  // (semRelatorio=false, inconsistente!=null).
+  const [inconsistente, setInconsistente] = useState<PerfilInconsistenteSnapshot | null>(null);
   const [textoFalhou, setTextoFalhou] = useState<boolean>(false);
   const [baixandoPdf, setBaixandoPdf] = useState<boolean>(false);
   const [erroPdf, setErroPdf] = useState<string | null>(null);
@@ -726,7 +746,12 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
       setCarregando(false);
       return;
     }
-    if (res.semRelatorio || res.snapshot === null) {
+    if (res.kind === 'inconsistente') {
+      setInconsistente(res.inconsistente);
+      setCarregando(false);
+      return;
+    }
+    if (res.kind === 'none' || res.semRelatorio || res.snapshot === null) {
       setSemRelatorio(true);
       setCarregando(false);
       return;
@@ -800,10 +825,13 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
 
   const textoAusente =
     snap !== null && (snap.gerandoResumo || snap.gerandoExpandido || textoFalhou);
+  // ME-1.11 Leva 2: no estado `inconsistente` a data de aplicacao vem
+  // do payload da tentativa inconsistente (nao ha `snap`). No estado
+  // `consistente` vem do assessment do score vigente. Em `none` fica
+  // em travessao.
+  const dataAplicacaoIso: string | null = snap?.enviadoEm ?? inconsistente?.enviadoEm ?? null;
   const dataAplicacao =
-    snap?.enviadoEm !== null && snap?.enviadoEm !== undefined
-      ? new Date(snap.enviadoEm).toLocaleDateString('pt-BR')
-      : '—';
+    dataAplicacaoIso !== null ? new Date(dataAplicacaoIso).toLocaleDateString('pt-BR') : '—';
 
   return (
     <div style={OVERLAY} onClick={onClose}>
@@ -937,6 +965,43 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
               <p style={{ fontSize: 13, color: COLORS.text.tertiary }}>Carregando relatório…</p>
             ) : erro !== null ? (
               <p style={{ fontSize: 13, color: COLORS.badge.dangerText }}>{erro}</p>
+            ) : inconsistente !== null ? (
+              /* ME-1.11 Leva 2: estado canonico `inconsistente` com 3
+                 elementos (DOC 03 §10.6 pt.5 + §6.7). */
+              <div>
+                <div
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: COLORS.semantic.danger,
+                    marginBottom: 12,
+                  }}
+                >
+                  {MSG_INCONSISTENTE_TITULO}
+                </div>
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: COLORS.text.secondary,
+                    lineHeight: 1.7,
+                    marginTop: 0,
+                    marginBottom: 12,
+                  }}
+                >
+                  {MSG_INCONSISTENTE_CORPO}
+                </p>
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: COLORS.text.secondary,
+                    lineHeight: 1.7,
+                    marginTop: 0,
+                    marginBottom: 0,
+                  }}
+                >
+                  {MSG_INCONSISTENTE_ACAO}
+                </p>
+              </div>
             ) : semRelatorio ? (
               <p style={{ fontSize: 13, color: COLORS.text.tertiary, lineHeight: 1.7 }}>
                 {MSG_SEM_RELATORIO}

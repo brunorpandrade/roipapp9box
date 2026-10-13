@@ -22,6 +22,7 @@ import { redirect } from 'next/navigation';
 
 import { closeDbClient, createDbClient } from '../../../db/client';
 import { resolveDatabaseUrl } from '../../../lib/db/resolveDatabaseUrl';
+import type { MotivoRotulado } from '../../../lib/instruments/individualProfileReliabilityLabels';
 import { createRateLimiter } from '../../../server/auth/rateLimit';
 import { appRouter } from '../../../server/routers';
 import { getServerSession } from '../../../server/session/serverSession';
@@ -57,10 +58,32 @@ export interface PerfilRelatorioSnapshot {
   readonly podeBaixarPdf: boolean;
 }
 
-/** Retorno de `carregarPerfilRelatorioAction`. */
+/**
+ * ME-1.11 Leva 2 — snapshot serializavel do caso `inconsistente`.
+ * Datas viajam como ISO string (Date nao e serializavel atraves da
+ * fronteira RSC). `motivosInconsistencia` ja chega humanizada do
+ * router (via `classificarMotivosInconsistencia` do modulo canonico).
+ */
+export interface PerfilInconsistenteSnapshot {
+  readonly tentativa: number;
+  readonly enviadoEm: string | null;
+  readonly calculadoEm: string | null;
+  readonly motivosInconsistencia: readonly MotivoRotulado[];
+}
+
+/**
+ * Retorno de `carregarPerfilRelatorioAction`. ME-1.11 Leva 2 amplia o
+ * contrato com `kind` discriminado para distinguir "nunca respondeu"
+ * (`'none'`), "respondeu mas inconsistente" (`'inconsistente'`) e
+ * "respondeu e tem relatorio" (`'consistente'`). Os campos legados
+ * `snapshot` e `semRelatorio` sao preservados para transicao suave
+ * do client, mas ja refletem a mesma informacao do `kind`.
+ */
 export interface CarregarPerfilRelatorioResult {
   readonly ok: boolean;
+  readonly kind: 'none' | 'inconsistente' | 'consistente';
   readonly snapshot: PerfilRelatorioSnapshot | null;
+  readonly inconsistente: PerfilInconsistenteSnapshot | null;
   readonly semRelatorio: boolean;
   readonly error?: string;
 }
@@ -104,9 +127,14 @@ async function resolvePodeBaixarPdf(): Promise<boolean> {
 
 /**
  * Carrega o relatorio do Perfil Individual do colaborador (§10.13
- * getReport). Retorna `semRelatorio=true` quando nao ha tentativa
- * vigente (getReport devolve null). Erros de autorizacao (PC1e, escopo,
- * cadeia) sobem como `ok=false` com a mensagem do backend.
+ * getReport). ME-1.11 Leva 2 — distingue canonicamente "nunca
+ * respondeu" (`kind='none'`), "respondeu mas inconsistente"
+ * (`kind='inconsistente'`) e "respondeu e tem relatorio"
+ * (`kind='consistente'`). Erros de autorizacao (PC1e, escopo, cadeia)
+ * sobem como `ok=false` com a mensagem do backend. `semRelatorio` e
+ * `snapshot` sao preservados para transicao suave do client:
+ * `semRelatorio=true` em `none`; `snapshot=null` em `none` ou
+ * `inconsistente`; `inconsistente!=null` apenas em `kind='inconsistente'`.
  */
 export async function carregarPerfilRelatorioAction(input: {
   companyId: number;
@@ -128,8 +156,29 @@ export async function carregarPerfilRelatorioAction(input: {
       userType: input.userType,
       userId: input.userId,
     });
-    if (report === null) {
-      return { ok: true, snapshot: null, semRelatorio: true };
+    if (report.kind === 'none') {
+      return {
+        ok: true,
+        kind: 'none',
+        snapshot: null,
+        inconsistente: null,
+        semRelatorio: true,
+      };
+    }
+    if (report.kind === 'inconsistente') {
+      const inconsistente: PerfilInconsistenteSnapshot = {
+        tentativa: report.tentativa,
+        enviadoEm: report.enviadoEm !== null ? report.enviadoEm.toISOString() : null,
+        calculadoEm: report.calculadoEm !== null ? report.calculadoEm.toISOString() : null,
+        motivosInconsistencia: report.motivosInconsistencia,
+      };
+      return {
+        ok: true,
+        kind: 'inconsistente',
+        snapshot: null,
+        inconsistente,
+        semRelatorio: false,
+      };
     }
     const podeBaixarPdf = await resolvePodeBaixarPdf();
     const score = report.score;
@@ -180,10 +229,23 @@ export async function carregarPerfilRelatorioAction(input: {
       escores,
       podeBaixarPdf,
     };
-    return { ok: true, snapshot, semRelatorio: false };
+    return {
+      ok: true,
+      kind: 'consistente',
+      snapshot,
+      inconsistente: null,
+      semRelatorio: false,
+    };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erro ao carregar o relatório.';
-    return { ok: false, snapshot: null, semRelatorio: false, error: message };
+    return {
+      ok: false,
+      kind: 'none',
+      snapshot: null,
+      inconsistente: null,
+      semRelatorio: false,
+      error: message,
+    };
   } finally {
     await closeDbClient(client);
   }

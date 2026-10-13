@@ -91,6 +91,10 @@ import { z } from 'zod';
 
 import type { RoipDatabase } from '../../db/client';
 import {
+  classificarMotivosInconsistencia,
+  type MotivoRotulado,
+} from '../../lib/instruments/individualProfileReliabilityLabels';
+import {
   cLevelMembers,
   companies,
   employees,
@@ -221,7 +225,7 @@ export interface IndividualProfileAssessmentMeta {
 }
 
 /**
- * DTO canonico de `getReport` (S233). `gerandoResumo` e
+ * DTO canonico do caso consistente de `getReport` (S233). `gerandoResumo` e
  * `gerandoExpandido` sao `true` exatamente quando o respectivo texto
  * ainda e `NULL` — §10.13 quarta linha.
  */
@@ -231,6 +235,41 @@ export interface IndividualProfileReport {
   gerandoResumo: boolean;
   gerandoExpandido: boolean;
 }
+
+/**
+ * ME-1.11 Leva 2 — DTO canonico do caso inconsistente de `getReport`.
+ * Shape sem `score` (motor para na Camada 1 §10.6 e nao grava
+ * `individualProfileScores`), mas com os metadados da tentativa que
+ * caiu em `baixa` confiabilidade mais os motivos humanizados para a
+ * UI do dashboard individual exibir a mensagem canonica dos 3
+ * elementos (§10.6 pt.5 + §6.7 do DOC 03).
+ */
+export interface IndividualProfileReportInconsistente {
+  tentativa: number;
+  enviadoEm: Date | null;
+  calculadoEm: Date | null;
+  motivosInconsistencia: readonly MotivoRotulado[];
+}
+
+/**
+ * ME-1.11 Leva 2 — Discriminated union canonica retornada por
+ * `getReport`. Substitui o retorno `IndividualProfileReport | null`
+ * anterior, que colapsava "nao respondido" e "respondido mas
+ * inconsistente" no mesmo `null` e fazia a modal do dashboard
+ * individual exibir texto literalmente falso para o segundo caso.
+ *
+ * - `kind: 'none'` — titular nao tem assessment vigente (nunca
+ *   respondeu ou nao chegou a enviar).
+ * - `kind: 'inconsistente'` — ultima tentativa foi marcada como
+ *   `baixa` confiabilidade pelo motor; `score` NAO existe; UI do
+ *   dashboard individual exibe mensagem canonica com motivos.
+ * - `kind: 'consistente'` — ultima tentativa gerou score; UI
+ *   renderiza o relatorio completo (resumo/expandido) como antes.
+ */
+export type IndividualProfileReportResult =
+  | { kind: 'none' }
+  | ({ kind: 'inconsistente' } & IndividualProfileReportInconsistente)
+  | ({ kind: 'consistente' } & IndividualProfileReport);
 
 /** Retorno canonico de `releaseRetest` (§10.7 passos 2-4). */
 export interface ReleaseRetestResult {
@@ -490,9 +529,14 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
     // ============================================================
     // Proc 1 — getReport (§10.13 quarta linha + §10.11 PC1e)
     // ============================================================
+    // ME-1.11 Leva 2: retorna discriminated union `IndividualProfileReportResult`
+    // em vez de `IndividualProfileReport | null`. Distingue canonicamente
+    // "nunca respondeu" (`kind: 'none'`) de "respondeu mas inconsistente"
+    // (`kind: 'inconsistente'`) para que a modal do dashboard individual
+    // exiba a mensagem canonica correta em cada caso (§10.6 pt.5 do DOC 03).
     getReport: roleProcedure(['super_admin', 'rh', 'rh_lider', 'clevel', 'lider'])
       .input(GET_REPORT_INPUT_SCHEMA)
-      .query(async ({ ctx, input }): Promise<IndividualProfileReport | null> => {
+      .query(async ({ ctx, input }): Promise<IndividualProfileReportResult> => {
         // §2.4 — isolamento por empresa. Super Admin atravessa.
         assertCompanyScope(ctx.user, input.companyId);
         // §10.11 + §15.5 — PC1e antes de qualquer leitura (S211).
@@ -508,7 +552,52 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
         // S213 — tentativa vigente na camada de leitura.
         const score = await getScoreVigente(ctx.db, input.companyId, input.userType, input.userId);
         if (!score) {
-          return null;
+          // ME-1.11 Leva 2 — sem score. Pode ser (a) nunca respondeu
+          // ou (b) respondeu mas caiu em `inconsistente` (motor para
+          // na Camada 1 §10.6, nao gera score). Discrimina pelo
+          // historico de `individualProfileAssessments`.
+          const inconsistenteRows = await ctx.db
+            .select({
+              tentativa: individualProfileAssessments.tentativa,
+              enviadoEm: individualProfileAssessments.enviadoEm,
+              calculadoEm: individualProfileAssessments.calculadoEm,
+              ia_att: individualProfileAssessments.ia_att,
+              ia_soc: individualProfileAssessments.ia_soc,
+              ia_acq: individualProfileAssessments.ia_acq,
+              ia_cons: individualProfileAssessments.ia_cons,
+              ia_ext: individualProfileAssessments.ia_ext,
+            })
+            .from(individualProfileAssessments)
+            .where(
+              and(
+                eq(individualProfileAssessments.companyId, input.companyId),
+                eq(individualProfileAssessments.userType, input.userType),
+                eq(individualProfileAssessments.userId, input.userId),
+                eq(individualProfileAssessments.status, 'inconsistente'),
+              ),
+            )
+            .orderBy(desc(individualProfileAssessments.tentativa))
+            .limit(1);
+          const inconsistente = inconsistenteRows[0];
+          if (!inconsistente) {
+            return { kind: 'none' };
+          }
+          const motivosInconsistencia: readonly MotivoRotulado[] = classificarMotivosInconsistencia(
+            {
+              ia_att: inconsistente.ia_att,
+              ia_soc: inconsistente.ia_soc,
+              ia_acq: inconsistente.ia_acq,
+              ia_cons: inconsistente.ia_cons,
+              ia_ext: inconsistente.ia_ext,
+            },
+          );
+          return {
+            kind: 'inconsistente',
+            tentativa: inconsistente.tentativa,
+            enviadoEm: inconsistente.enviadoEm,
+            calculadoEm: inconsistente.calculadoEm,
+            motivosInconsistencia,
+          };
         }
 
         const assessmentRows = await ctx.db
@@ -563,7 +652,7 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
           });
         }
 
-        return { score, assessment, gerandoResumo, gerandoExpandido };
+        return { kind: 'consistente', score, assessment, gerandoResumo, gerandoExpandido };
       }),
 
     // ============================================================
