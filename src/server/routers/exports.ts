@@ -67,6 +67,7 @@ import {
 import { getQuarterMonths } from '../../lib/quarterlyPeriod';
 import { formatSeniority } from '../../lib/seniority/formatSeniority';
 import { formatHierarchyLevel } from '../../lib/hierarchy-level/formatHierarchyLevel';
+import { formatTrimestreBR } from '../../lib/cycle/formatTrimestreBR';
 
 // ============================================================
 // Constantes canonicas exportadas
@@ -734,7 +735,10 @@ async function composeResumoDashboardXlsx(
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('Resumo dashboard');
-  ws.addRow([`Empresa: ${razaoSocial} · Trimestre: ${trimestre}`]);
+  // ME-1.3: humanizacao canonica do trimestre no header via helper
+  // L125 RV-14 compartilhado (formatTrimestreBR). Evita que
+  // `2026-Q4` cru vaze no xlsx de pitch.
+  ws.addRow([`Empresa: ${razaoSocial} · Trimestre: ${formatTrimestreBR(trimestre)}`]);
   ws.addRow([]);
   ws.addRow([
     'Nome',
@@ -763,6 +767,15 @@ async function composeResumoDashboardXlsx(
       r.assiduidade ?? '—',
       r.capacidadeOciosa ?? '—',
     ]);
+  }
+  // ME-1.3: formato canonico pt-BR das colunas numericas (G-K =
+  // Desempenho, Plenitude, % da meta atingida, Assiduidade,
+  // Ociosidade). `0,00` renderiza numero com virgula decimal; nao
+  // afeta celulas com fallback `—` (ExcelJS preserva strings
+  // textuais ignorando numFmt). Linhas 1-3 sao header e sao
+  // preservadas bit-exact.
+  for (const colLetter of ['G', 'H', 'I', 'J', 'K']) {
+    ws.getColumn(colLetter).numFmt = '0,00';
   }
   const buf = await wb.xlsx.writeBuffer();
   return Buffer.from(buf);
@@ -852,8 +865,12 @@ async function composeEvolucaoTrimestralXlsx(
     'Nível hierárquico',
     'Líder direto',
   ];
+  // ME-1.3: humanizacao canonica do trimestre em cada coluna de
+  // metrica via helper L125 RV-14 compartilhado
+  // (`formatTrimestreBR`). Evita que `2026-Q4` cru vaze nos
+  // headers das 5 metricas x 4 trimestres = 20 colunas.
   for (const m of METRICAS) {
-    for (const t of trimestres) header.push(`${m.label} ${t}`);
+    for (const t of trimestres) header.push(`${m.label} ${formatTrimestreBR(t)}`);
   }
   ws.addRow(header);
 
@@ -902,6 +919,16 @@ async function composeEvolucaoTrimestralXlsx(
       }
     }
     ws.addRow(linha);
+  }
+
+  // ME-1.3: formato canonico pt-BR das colunas numericas (G em
+  // diante — 5 metricas x N trimestres). A matriz de identidade e
+  // 6 colunas (A-F); as colunas numericas comecam na G e vao ate a
+  // ultima coluna adicionada. Nao afeta celulas com fallback `—`.
+  const METRICAS_COL_INICIO = 7;
+  const totalColunasMetricas = METRICAS.length * trimestres.length;
+  for (let col = METRICAS_COL_INICIO; col < METRICAS_COL_INICIO + totalColunasMetricas; col += 1) {
+    ws.getColumn(col).numFmt = '0,00';
   }
 
   const buf = await wb.xlsx.writeBuffer();

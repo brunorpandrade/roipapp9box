@@ -18,6 +18,7 @@
 // Determinismo canonico: mesmo `ExecutiveReportFinalPayload` = mesmo
 // HTML byte a byte, exceto `geradoEmIso` que vai no rodape.
 
+import { formatTrimestreBR } from '../../lib/cycle/formatTrimestreBR';
 import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
 import { escapeHtml, renderLayoutBase } from './layoutBase';
 import type { ExecutiveReportFinalPayload } from '../services/_shared/executiveReportTypes';
@@ -91,7 +92,7 @@ function renderCapa(input: ExecutiveReportFinalPayload): string {
   return `<section>
   <h1>Relatório executivo trimestral</h1>
   <p><strong>Empresa:</strong> ${escapeHtml(input.nomeFantasia)}</p>
-  <p><strong>Trimestre:</strong> ${escapeHtml(input.trimestre)}</p>
+  <p><strong>Trimestre:</strong> ${escapeHtml(formatTrimestreBR(input.trimestre))}</p>
   <p><strong>Escopo:</strong> ${escopoNome}</p>
   <p><strong>Data de geração:</strong> ${escapeHtml(toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso)}</p>
   <p class="muted">Este relatório combina dados estruturados determinísticos com comentário interpretativo curto por bloco e um resumo executivo geral no topo. A IA nunca calcula — apenas interpreta os números já calculados.</p>
@@ -368,7 +369,7 @@ export function renderExecutiveReportHTML(input: ExecutiveReportFinalPayload): s
     .join('\n');
 
   return renderLayoutBase({
-    title: `Relatório executivo trimestral · ${input.nomeFantasia} · ${input.trimestre}`,
+    title: `Relatório executivo trimestral · ${input.nomeFantasia} · ${formatTrimestreBR(input.trimestre)}`,
     company: { nomeFantasia: input.nomeFantasia },
     bodyHtml,
     footerCenter: `Gerado em ${toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso}`,

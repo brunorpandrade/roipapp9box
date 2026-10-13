@@ -6,6 +6,7 @@
 // (2) ROI agregado, (3) radar de riscos psicossociais, (4) turnover.
 // Escopo canonico: empresa ou departamento (sem equipe).
 
+import { formatTrimestreBR } from '../../lib/cycle/formatTrimestreBR';
 import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
 import { escapeHtml, renderLayoutBase } from './layoutBase';
 import { NINE_BOX_QUADRANTES, type NineBoxDistribuicao } from './snapshot9BoxTemplate';
@@ -98,7 +99,7 @@ function renderCapaBloco(input: BoardDeckTemplateInput): string {
   return `<section>
   <h1>Board deck</h1>
   <p><strong>Empresa:</strong> ${escapeHtml(input.nomeFantasia)}</p>
-  <p><strong>Trimestre:</strong> ${escapeHtml(input.trimestre)}</p>
+  <p><strong>Trimestre:</strong> ${escapeHtml(formatTrimestreBR(input.trimestre))}</p>
   <p><strong>Escopo:</strong> ${escopo}</p>
   <p class="muted">Board deck: resumo executivo ultra-condensado em 4 elementos canônicos.</p>
 </section>`;
@@ -187,7 +188,7 @@ export function renderBoardDeckHTML(input: BoardDeckTemplateInput): string {
     renderElementoTurnover(input),
   ].join('\n');
   return renderLayoutBase({
-    title: `Board deck · ${input.nomeFantasia} · ${input.trimestre}`,
+    title: `Board deck · ${input.nomeFantasia} · ${formatTrimestreBR(input.trimestre)}`,
     company: { nomeFantasia: input.nomeFantasia },
     bodyHtml,
     footerCenter: `Gerado em ${toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso}`,

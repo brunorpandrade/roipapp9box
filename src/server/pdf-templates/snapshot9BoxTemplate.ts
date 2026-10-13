@@ -14,6 +14,7 @@
 //
 // Determinismo canonico: mesmos dados = mesmo HTML byte a byte.
 
+import { formatTrimestreBR } from '../../lib/cycle/formatTrimestreBR';
 import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
 import { escapeHtml, renderLayoutBase } from './layoutBase';
 
@@ -113,7 +114,7 @@ function renderCapa(input: Snapshot9BoxTemplateInput): string {
   return `<section>
   <h1>Snapshot do 9-Box</h1>
   <p><strong>Empresa:</strong> ${escapeHtml(input.nomeFantasia)}</p>
-  <p><strong>Trimestre:</strong> ${escapeHtml(input.trimestre)}</p>
+  <p><strong>Trimestre:</strong> ${escapeHtml(formatTrimestreBR(input.trimestre))}</p>
   <p><strong>Escopo:</strong> ${escopo}</p>
   <p><strong>Data de geração:</strong> ${escapeHtml(toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso)}</p>
   <p class="muted">Este relatório apresenta a distribuição dos colaboradores no 9-Box calculada no trimestre. Estritamente determinístico — sem participação de IA.</p>
@@ -178,7 +179,7 @@ export function renderSnapshot9BoxHTML(input: Snapshot9BoxTemplateInput): string
     .filter((s) => s.length > 0)
     .join('\n');
   return renderLayoutBase({
-    title: `Snapshot do 9-Box · ${input.nomeFantasia} · ${input.trimestre}`,
+    title: `Snapshot do 9-Box · ${input.nomeFantasia} · ${formatTrimestreBR(input.trimestre)}`,
     company: { nomeFantasia: input.nomeFantasia },
     bodyHtml,
     footerCenter: `Gerado em ${toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso}`,

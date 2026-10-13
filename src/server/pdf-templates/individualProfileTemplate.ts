@@ -15,6 +15,7 @@
 // Determinismo canonico: nenhuma leitura de `Date.now()` interna. A
 // data de geracao viaja no input (`generatedAt`) e vai ao rodape.
 
+import { formatDateBR } from '../../lib/date/formatDateBR';
 import { escapeHtml, type LayoutBaseCompany, renderLayoutBase } from './layoutBase';
 
 // ── Estrutura rica do JSON (system prompt, Secao 11) ──────────────
@@ -172,7 +173,7 @@ function renderIdentificacaoSection(id: IndividualProfileIdentificacao): string 
   <p><strong>Nível hierárquico:</strong> ${escapeHtml(NIVEL_HIERARQUICO_ROTULO[id.nivelHierarquico])}</p>
   <p><strong>Departamento:</strong> ${escapeHtml(asStr(id.departamento))}</p>
   <p><strong>Líder direto:</strong> ${escapeHtml(asStr(id.liderDireto))}</p>
-  <p><strong>Data de aplicação:</strong> ${escapeHtml(asStr(id.dataAplicacao))}</p>
+  <p><strong>Data de aplicação:</strong> ${escapeHtml(formatDateBR(asStr(id.dataAplicacao)))}</p>
 </section>`;
 }
 

@@ -15,6 +15,7 @@
 // Grupos abaixo do piso sao agregados ao nivel imediatamente acima
 // (mesma mecanica do Bloco Clima do relatorio executivo).
 
+import { formatTrimestreBR } from '../../lib/cycle/formatTrimestreBR';
 import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
 import { escapeHtml, renderLayoutBase } from './layoutBase';
 
@@ -97,7 +98,7 @@ function renderCapaBloco(input: ClimaEngajamentoTemplateInput): string {
   return `<section>
   <h1>Clima e engajamento</h1>
   <p><strong>Empresa:</strong> ${escapeHtml(input.nomeFantasia)}</p>
-  <p><strong>Trimestre de referência:</strong> ${escapeHtml(input.trimestre)}</p>
+  <p><strong>Trimestre de referência:</strong> ${escapeHtml(formatTrimestreBR(input.trimestre))}</p>
   <p><strong>Data de geração:</strong> ${escapeHtml(toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso)}</p>
   <p class="muted">Este relatório apresenta os agregados de clima e engajamento do último trimestre disponível. Estritamente determinístico — sem participação de IA. Grupos abaixo do piso de anonimato são agregados ao nível hierárquico imediatamente acima.</p>
 </section>`;
@@ -141,7 +142,7 @@ export function renderClimaEngajamentoHTML(input: ClimaEngajamentoTemplateInput)
     .filter((s) => s.length > 0)
     .join('\n');
   return renderLayoutBase({
-    title: `Clima e engajamento · ${input.nomeFantasia} · ${input.trimestre}`,
+    title: `Clima e engajamento · ${input.nomeFantasia} · ${formatTrimestreBR(input.trimestre)}`,
     company: { nomeFantasia: input.nomeFantasia },
     bodyHtml,
     footerCenter: `Gerado em ${toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso}`,
