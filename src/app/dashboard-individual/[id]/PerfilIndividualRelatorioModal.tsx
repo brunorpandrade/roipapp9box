@@ -67,6 +67,14 @@ const MSG_INCONSISTENTE_CORPO =
 const MSG_INCONSISTENTE_ACAO =
   'Peça ao RH ou ao Super Admin para abrir a seção "Perfil Individual inconsistente" do ' +
   'painel RH, consultar os motivos detectados e liberar nova tentativa quando for o caso.';
+// ME-1.11 Leva 3 — mensagem canonica adicional quando o sub-estado
+// do placeholder e `aguardando_nova_resposta` (RH ou Super Admin ja
+// liberou o reteste, mas o colaborador ainda nao enviou a nova
+// tentativa). Substitui MSG_INCONSISTENTE_ACAO no render.
+const MSG_INCONSISTENTE_AGUARDANDO_PREFIXO = 'Nova tentativa já liberada em ';
+const MSG_INCONSISTENTE_AGUARDANDO_SUFIXO =
+  '. Peça ao colaborador para abrir o portal e responder novamente ao Perfil Individual — a ' +
+  'leitura canônica será atualizada automaticamente assim que a nova tentativa for enviada.';
 
 // O expandido gera em ate ~200s (timeout de backend); o polling do
 // front precisa cobrir esse pior caso com folga, senao desiste antes de
@@ -999,7 +1007,19 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
                     marginBottom: 0,
                   }}
                 >
-                  {MSG_INCONSISTENTE_ACAO}
+                  {inconsistente.aguardandoNovaResposta ? (
+                    <>
+                      {MSG_INCONSISTENTE_AGUARDANDO_PREFIXO}
+                      <strong>
+                        {inconsistente.retesteLiberadoEm !== null
+                          ? new Date(inconsistente.retesteLiberadoEm).toLocaleDateString('pt-BR')
+                          : '—'}
+                      </strong>
+                      {MSG_INCONSISTENTE_AGUARDANDO_SUFIXO}
+                    </>
+                  ) : (
+                    MSG_INCONSISTENTE_ACAO
+                  )}
                 </p>
               </div>
             ) : semRelatorio ? (

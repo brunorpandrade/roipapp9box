@@ -69,6 +69,15 @@ export interface PerfilInconsistenteSnapshot {
   readonly enviadoEm: string | null;
   readonly calculadoEm: string | null;
   readonly motivosInconsistencia: readonly MotivoRotulado[];
+  // ME-1.11 Leva 3 — sub-estado "aguardando_nova_resposta" do
+  // placeholder canonico do titular. Quando `true`, a UI acrescenta
+  // paragrafo orientando o leitor a pedir para o colaborador
+  // responder novamente ao Perfil Individual no portal.
+  readonly aguardandoNovaResposta: boolean;
+  // ISO string canonica do `retesteLiberadoEm` da nova tentativa
+  // aberta pelo `releaseRetest`. Preenchido APENAS quando
+  // `aguardandoNovaResposta` e `true`.
+  readonly retesteLiberadoEm: string | null;
 }
 
 /**
@@ -171,6 +180,9 @@ export async function carregarPerfilRelatorioAction(input: {
         enviadoEm: report.enviadoEm !== null ? report.enviadoEm.toISOString() : null,
         calculadoEm: report.calculadoEm !== null ? report.calculadoEm.toISOString() : null,
         motivosInconsistencia: report.motivosInconsistencia,
+        aguardandoNovaResposta: report.aguardandoNovaResposta,
+        retesteLiberadoEm:
+          report.retesteLiberadoEm !== null ? report.retesteLiberadoEm.toISOString() : null,
       };
       return {
         ok: true,

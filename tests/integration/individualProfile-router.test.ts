@@ -633,6 +633,57 @@ describe('individualProfile.getReport — ME-1.11 discriminator kind', () => {
     expect(out.motivosInconsistencia[0]!.severidade).toBe('critico');
     expect(out.motivosInconsistencia[1]!.chave).toBe('ia_acq');
     expect(out.motivosInconsistencia[1]!.severidade).toBe('medio');
+    // ME-1.11 Leva 3: sub-estado "aguardando_nova_resposta" nao ativo
+    // (placeholder nao foi criado para este empSoInconsistente, ou,
+    // se o getPlaceholder nao achar, trata como `false` canonico).
+    expect(out.aguardandoNovaResposta).toBe(false);
+    expect(out.retesteLiberadoEm).toBeNull();
+  });
+
+  it('ME-1.11 Leva 3: inconsistente com placeholder aguardando_nova_resposta', async () => {
+    // Novo titular: cria placeholder em `aguardando_nova_resposta` +
+    // uma tentativa inconsistente + uma tentativa posterior aberta
+    // pelo releaseRetest (em_andamento, com retesteLiberadoEm).
+    const empAguardando = await createEmployee(companyId);
+    await createAssessment(companyId, empAguardando, 'employee', 1, 'inconsistente', {
+      ia_att: '0.00',
+      ia_soc: '5.00',
+      ia_acq: '0.00',
+      ia_cons: '0.00',
+      ia_ext: '0.50',
+    });
+    // Nova tentativa aberta pelo releaseRetest — em_andamento, com
+    // `retesteLiberadoEm` preenchido. createAssessment nao preenche
+    // esse campo; precisamos de UPDATE pontual via Drizzle.
+    const retesteId = await createAssessment(
+      companyId,
+      empAguardando,
+      'employee',
+      2,
+      'em_andamento',
+    );
+    const retesteDate = new Date('2026-10-13T13:00:00.000Z');
+    await client.db
+      .update(individualProfileAssessments)
+      .set({ retesteLiberadoEm: retesteDate, retesteLiberadoTipo: 'rh' })
+      .where(eq(individualProfileAssessments.id, retesteId));
+    await createPlaceholder(companyId, empAguardando, 'employee', 'aguardando_nova_resposta');
+
+    const { factory, ctx } = bindRouter();
+    const caller = factory(ctx(await tokenPlatform('rh', rhId, companyId)));
+    const out = await caller.getReport({
+      companyId,
+      userType: 'employee',
+      userId: empAguardando,
+    });
+    expect(out.kind).toBe('inconsistente');
+    if (out.kind !== 'inconsistente') return;
+    // Payload canonico aponta para a tentativa 1 (ultima inconsistente),
+    // NAO para a 2 em curso.
+    expect(out.tentativa).toBe(1);
+    expect(out.aguardandoNovaResposta).toBe(true);
+    expect(out.retesteLiberadoEm).not.toBeNull();
+    expect(out.retesteLiberadoEm!.toISOString()).toBe(retesteDate.toISOString());
   });
 
   it('ME-1.11 kind=consistente: devolve score + assessment canonicos', async () => {

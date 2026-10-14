@@ -243,12 +243,29 @@ export interface IndividualProfileReport {
  * caiu em `baixa` confiabilidade mais os motivos humanizados para a
  * UI do dashboard individual exibir a mensagem canonica dos 3
  * elementos (§10.6 pt.5 + §6.7 do DOC 03).
+ *
+ * ME-1.11 Leva 3 (CC079) amplia o DTO com dois campos de sub-estado:
+ * - `aguardandoNovaResposta`: `true` quando o RH ou Super Admin ja
+ *   liberou uma nova tentativa (`individualProfilePlaceholders.status
+ *   = 'aguardando_nova_resposta'`); `false` quando a tentativa
+ *   inconsistente nao teve release ainda.
+ * - `retesteLiberadoEm`: timestamp canonico do release
+ *   (`individualProfileAssessments.retesteLiberadoEm` da nova
+ *   tentativa aberta pelo `releaseRetest`); `null` quando nao ha
+ *   release ainda. Preenchido APENAS quando `aguardandoNovaResposta`
+ *   e `true`.
+ *
+ * A UI do dashboard individual usa `aguardandoNovaResposta` para
+ * acrescentar paragrafo adicional orientando o leitor a pedir para
+ * o colaborador responder novamente ao Perfil Individual no portal.
  */
 export interface IndividualProfileReportInconsistente {
   tentativa: number;
   enviadoEm: Date | null;
   calculadoEm: Date | null;
   motivosInconsistencia: readonly MotivoRotulado[];
+  aguardandoNovaResposta: boolean;
+  retesteLiberadoEm: Date | null;
 }
 
 /**
@@ -591,12 +608,60 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
               ia_ext: inconsistente.ia_ext,
             },
           );
+          // ME-1.11 Leva 3 — sub-estado "aguardando_nova_resposta".
+          // Derivado do placeholder canonico do titular (DOC 03 §10.7).
+          // Quando o RH ou Super Admin libera reteste, `releaseRetest`
+          // cria uma nova linha em `individualProfileAssessments` com
+          // `retesteLiberadoEm` preenchido e transiciona o placeholder
+          // para `aguardando_nova_resposta`. Enquanto o colaborador
+          // nao envia a nova tentativa, a UI do dashboard individual
+          // continua lendo a ultima tentativa `inconsistente`, mas
+          // sinaliza que o reteste ja foi liberado.
+          const placeholderRows = await ctx.db
+            .select({ status: individualProfilePlaceholders.status })
+            .from(individualProfilePlaceholders)
+            .where(
+              and(
+                eq(individualProfilePlaceholders.companyId, input.companyId),
+                eq(individualProfilePlaceholders.userType, input.userType),
+                eq(individualProfilePlaceholders.userId, input.userId),
+              ),
+            )
+            .limit(1);
+          const aguardandoNovaResposta = placeholderRows[0]?.status === 'aguardando_nova_resposta';
+          let retesteLiberadoEm: Date | null = null;
+          if (aguardandoNovaResposta) {
+            // Busca o `retesteLiberadoEm` da nova tentativa em curso
+            // (status pode ser `em_andamento`, pois o colaborador ainda
+            // nao a enviou). Pega a de maior `tentativa` com
+            // `retesteLiberadoEm` nao-nulo.
+            const retesteRows = await ctx.db
+              .select({ retesteLiberadoEm: individualProfileAssessments.retesteLiberadoEm })
+              .from(individualProfileAssessments)
+              .where(
+                and(
+                  eq(individualProfileAssessments.companyId, input.companyId),
+                  eq(individualProfileAssessments.userType, input.userType),
+                  eq(individualProfileAssessments.userId, input.userId),
+                ),
+              )
+              .orderBy(desc(individualProfileAssessments.tentativa))
+              .limit(5);
+            for (const r of retesteRows) {
+              if (r.retesteLiberadoEm !== null) {
+                retesteLiberadoEm = r.retesteLiberadoEm;
+                break;
+              }
+            }
+          }
           return {
             kind: 'inconsistente',
             tentativa: inconsistente.tentativa,
             enviadoEm: inconsistente.enviadoEm,
             calculadoEm: inconsistente.calculadoEm,
             motivosInconsistencia,
+            aguardandoNovaResposta,
+            retesteLiberadoEm,
           };
         }
 
