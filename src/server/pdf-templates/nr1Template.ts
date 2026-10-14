@@ -24,6 +24,17 @@
 
 import { formatDateBR } from '../../lib/date/formatDateBR';
 import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
+import {
+  projectRadarPoint,
+  projectRadarPolygon,
+  renderRadarGridSvg,
+} from '../../lib/svg/pdfSvgHelpers';
+import {
+  classificarNr1Faixa,
+  type Nr1Faixa,
+  RADAR_COLORS,
+  RADAR_NR1_CORES,
+} from '../../lib/svg/pdfVisualTokens';
 import { escapeHtml, type LayoutBaseCompany, renderLayoutBase } from './layoutBase';
 
 /** Score de um dos 8 fatores canonicos. */
@@ -185,30 +196,184 @@ function renderResumoExecutivo(texto: string): string {
 </section>`;
 }
 
-function renderRadarEmpresa(fatores: Nr1FatorScore[]): string {
-  const rows = fatores
-    .map((f) => {
-      const pct = Math.max(0, Math.min(100, f.score));
-      return `<tr>
-    <td style="width:40%; padding:2mm 3mm 2mm 0;">${escapeHtml(f.nome)}</td>
-    <td style="width:50%;">
-      <div style="background:#e5e7eb; height:4mm;">
-        <div style="background:#111827; width:${pct.toFixed(1)}%; height:4mm;"></div>
-      </div>
-    </td>
-    <td style="width:10%; text-align:right;">${pct.toFixed(1)}</td>
-  </tr>`;
+// ============================================================
+// Radar SVG canonico (ME-1.3c)
+// ============================================================
+
+// Geometria canonica do radar — espelho bit-exact do mockup
+// `relatorio_radar_nr1_v1.html` pagina 4.
+const RADAR_SVG_CX = 200;
+const RADAR_SVG_CY = 200;
+const RADAR_SVG_MAX_RADIUS = 140;
+const RADAR_SVG_VIEWBOX = '0 0 400 380';
+const RADAR_SVG_NUM_RINGS = 4;
+
+/** Rotulos canonicos externos dos 8 eixos — projecao com margem. */
+function renderRadarAxisLabels(fatores: readonly Nr1FatorScore[]): string {
+  const labelRadius = RADAR_SVG_MAX_RADIUS + 24;
+  return fatores
+    .map((f, idx) => {
+      const p = projectRadarPoint(
+        idx,
+        fatores.length,
+        100,
+        RADAR_SVG_CX,
+        RADAR_SVG_CY,
+        labelRadius,
+      );
+      const label = escapeHtml(abreviarFator(f.nome));
+      return (
+        `<text x="${p.x.toFixed(2)}" y="${p.y.toFixed(2)}" text-anchor="middle" ` +
+        `font-size="10" font-weight="600" fill="${RADAR_COLORS.labelFill}">${label}</text>`
+      );
     })
     .join('\n');
-  return `<section class="page-break">
-  <h2>Radar da empresa (8 fatores canônicos)</h2>
-  <table style="width:100%; border-collapse:collapse;">
-${rows}
-  </table>
-</section>`;
 }
 
-function renderRadarDepartamentos(deps: Nr1DepartamentoScore[]): string {
+/** Abreviacao canonica dos nomes longos para caber no label do SVG. */
+function abreviarFator(nome: string): string {
+  const map: Record<string, string> = {
+    'Exigências quantitativas': 'Exig. quant.',
+    'Ritmo de trabalho': 'Ritmo',
+    'Conflitos de papel': 'Confl. papel',
+    Autonomia: 'Autonomia',
+    'Suporte social do líder': 'Sup. líder',
+    'Suporte social de colegas': 'Sup. colegas',
+    'Insegurança no trabalho': 'Insegurança',
+    'Saúde geral autopercebida': 'Saúde',
+  };
+  return map[nome] ?? nome;
+}
+
+/**
+ * Renderiza o radar SVG canonico (8 eixos + 4 aneis + poligono do
+ * dado + pontos por eixo + rotulos). Compara opcionalmente contra
+ * um radar de referencia (media empresa — tracejado cinza).
+ */
+function renderRadarSvg(
+  fatores: readonly Nr1FatorScore[],
+  referencia?: readonly Nr1FatorScore[],
+): string {
+  // Radar canonico exige pelo menos 3 eixos para render geometrico
+  // deterministico (poligono fechado). Fatores < 3 fazem fallback para
+  // string vazia — o renderRadarLegend adjacente ja apresenta os scores
+  // em tabela, preservando a leitura canonica.
+  if (fatores.length < 3) {
+    return '';
+  }
+  const scores = fatores.map((f) => f.score);
+  const polygonPoints = projectRadarPolygon(
+    scores,
+    RADAR_SVG_CX,
+    RADAR_SVG_CY,
+    RADAR_SVG_MAX_RADIUS,
+  );
+  const dataPoints = scores
+    .map((score, idx) => {
+      const p = projectRadarPoint(
+        idx,
+        scores.length,
+        score,
+        RADAR_SVG_CX,
+        RADAR_SVG_CY,
+        RADAR_SVG_MAX_RADIUS,
+      );
+      return `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="4" />`;
+    })
+    .join('\n');
+  const referenciaPoly = referencia
+    ? `<polygon points="${projectRadarPolygon(
+        referencia.map((f) => f.score),
+        RADAR_SVG_CX,
+        RADAR_SVG_CY,
+        RADAR_SVG_MAX_RADIUS,
+      )}" fill="none" stroke="${RADAR_COLORS.mediaEmpresaStroke}" stroke-width="1.5" ` +
+      `stroke-dasharray="${RADAR_COLORS.mediaEmpresaDasharray}" />`
+    : '';
+  return (
+    `<svg viewBox="${RADAR_SVG_VIEWBOX}" xmlns="http://www.w3.org/2000/svg" ` +
+    `style="width:100%; max-width:90mm; height:auto; display:block;">
+${renderRadarGridSvg(
+  scores.length,
+  RADAR_SVG_CX,
+  RADAR_SVG_CY,
+  RADAR_SVG_MAX_RADIUS,
+  RADAR_SVG_NUM_RINGS,
+  RADAR_COLORS.gridStroke,
+)}
+${referenciaPoly}
+<polygon points="${polygonPoints}" fill="${RADAR_COLORS.teal}" ` +
+    `fill-opacity="${RADAR_COLORS.tealFillOpacity}" stroke="${RADAR_COLORS.teal}" stroke-width="2" />
+<g fill="${RADAR_COLORS.teal}">
+${dataPoints}
+</g>
+${renderRadarAxisLabels(fatores)}
+</svg>`
+  );
+}
+
+/** Legenda canonica a direita do radar — dot colorido + score + faixa. */
+function renderRadarLegend(fatores: readonly Nr1FatorScore[]): string {
+  const items = fatores
+    .map((f) => {
+      const faixa: Nr1Faixa = classificarNr1Faixa(f.score);
+      const dotColor = RADAR_NR1_CORES[faixa];
+      const scoreFmt = Math.max(0, Math.min(100, f.score)).toFixed(1);
+      return (
+        `<tr>
+    <td style="padding:4px 10px 4px 0;">
+      <span style="display:inline-block; width:9px; height:9px; border-radius:50%; ` +
+        `background:${dotColor}; margin-right:6px;"></span>
+      <span style="color:${RADAR_COLORS.labelFill}; font-weight:500;">` +
+        `${escapeHtml(f.nome)}</span>
+    </td>
+    <td style="text-align:right; font-weight:700; color:${dotColor};">${scoreFmt}</td>
+  </tr>`
+      );
+    })
+    .join('\n');
+  return `<table style="width:100%; border-collapse:collapse; font-size:9.5pt;">
+${items}
+</table>`;
+}
+
+/** Linha SVG + legenda canonica compartilhada por empresa e dept. */
+function renderRadarBlock(
+  fatores: readonly Nr1FatorScore[],
+  referencia?: readonly Nr1FatorScore[],
+): string {
+  return `<table style="width:100%; border-collapse:collapse; margin-bottom:4mm;">
+  <tr>
+    <td style="width:52%; vertical-align:top; padding-right:8mm;">
+${renderRadarSvg(fatores, referencia)}
+    </td>
+    <td style="vertical-align:top;">
+${renderRadarLegend(fatores)}
+    </td>
+  </tr>
+</table>`;
+}
+
+function renderRadarEmpresa(fatores: Nr1FatorScore[]): string {
+  return (
+    `<section class="page-break">
+  <h2>Radar da empresa (8 fatores canônicos)</h2>
+  <p class="muted" style="font-size:9pt;">Legenda: ` +
+    `<span style="color:${RADAR_NR1_CORES.verde}; font-weight:700;">verde (66-100)</span> ` +
+    `satisfatório · ` +
+    `<span style="color:${RADAR_NR1_CORES.amarelo}; font-weight:700;">amarelo (50-65)</span> ` +
+    `atenção · ` +
+    `<span style="color:${RADAR_NR1_CORES.vermelho}; font-weight:700;">vermelho (0-49)</span> ` +
+    `crítico.</p>
+${renderRadarBlock(fatores)}
+</section>`
+  );
+}
+
+function renderRadarDepartamentos(
+  deps: Nr1DepartamentoScore[],
+  radarEmpresa?: readonly Nr1FatorScore[],
+): string {
   if (deps.length === 0) {
     return `<section class="page-break"><h2>Radar por departamento</h2><p class="muted">Nenhum departamento com amostra suficiente para radar próprio.</p></section>`;
   }
@@ -216,18 +381,17 @@ function renderRadarDepartamentos(deps: Nr1DepartamentoScore[]): string {
     .map(
       (d) =>
         `<h3>${escapeHtml(d.departamentoNome)} <span class="muted">(amostra ${d.amostra})</span></h3>
-${d.fatores
-  .map(
-    (f) =>
-      `<p>${escapeHtml(f.nome)}: <strong>${Math.max(0, Math.min(100, f.score)).toFixed(1)}</strong></p>`,
-  )
-  .join('\n')}`,
+${renderRadarBlock(d.fatores, radarEmpresa)}`,
     )
     .join('\n');
-  return `<section class="page-break">
+  return (
+    `<section class="page-break">
   <h2>Radar por departamento</h2>
+  <p class="muted" style="font-size:9pt;">Polígono em teal: departamento. ` +
+    `Tracejado cinza: média da empresa (referência).</p>
   ${blocks}
-</section>`;
+</section>`
+  );
 }
 
 function renderInsuficientes(items: Nr1DepartamentoInsuficiente[]): string {
@@ -389,7 +553,7 @@ export function renderNr1ReportHTML(input: Nr1TemplateInput): string {
     renderSumario(),
     renderResumoExecutivo(input.resumoExecutivo),
     renderRadarEmpresa(input.radarEmpresa),
-    renderRadarDepartamentos(input.radaresPorDepartamento),
+    renderRadarDepartamentos(input.radaresPorDepartamento, input.radarEmpresa),
     renderInsuficientes(input.departamentosInsuficientes),
     renderDivergencias(input.divergencias),
     renderCritico(input),
