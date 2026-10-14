@@ -1,18 +1,23 @@
 /* eslint-disable @stylistic/max-len -- template HTML canonico */
-// ROIP APP 9BOX — template PDF Snapshot 9-Box (ME-053, S275).
+// ROIP APP 9BOX — template PDF Snapshot 9-Box (ME-053, S275; ME-1.3c CC079 leva v2).
 //
 // Renderizacao HTML deterministica do Snapshot do 9-Box (DOC 03 §13.7).
 // 100% template — SEM participacao de IA. Consumido por
 // `exports.getSnapshot9Box` (Route Handler); convertido em PDF pelo
 // `pdfRenderer.ts`.
 //
-// Estrutura canonica em cascata §13.7:
-//   - Escopo empresa: visao geral consolidada (matriz 3x3 + tabela por
-//     quadrante) + detalhamento por departamento + detalhamento por
-//     equipe.
-//   - Escopo departamento / equipe: mesma cascata restrita ao recorte.
+// Estrutura canonica em cascata §13.7 (ME-1.3c CC079-v2 — padrao
+// editorial do mockup `relatorio_radar_nr1_v1.html`):
+// - Capa editorial com badge, hero title + accent teal, meta grid card,
+//   cover-note.
+// - Sumario estilizado com dots e numeracao de pagina.
+// - Secao numerada com section-num teal + h2 com borda inferior teal.
+// - Grid SVG 3x3 colorido com cores canonicas da UI + bolhas dos
+//   colaboradores com title canonico + rotulos de eixo.
+// - Tabela estilizada canonica com badges coloridos de quadrante por
+//   `NINE_BOX_PALETTE`.
 //
-// Determinismo canonico: mesmos dados = mesmo HTML byte a byte.
+// Determinismo canonico (§13.7): mesmos dados = mesmo HTML byte-exact.
 
 import { formatTrimestreBR } from '../../lib/cycle/formatTrimestreBR';
 import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
@@ -63,15 +68,13 @@ export interface Snapshot9BoxTemplateInput {
   trimestre: string;
   escopoTipo: 'empresa' | 'departamento' | 'equipe';
   escopoRotulo: string;
-  /** Bloco principal do escopo escolhido. */
   blocoPrincipal: NineBoxBlocoEscopo;
-  /** Blocos derivados canonicos (cascata). Vazio quando escopo=equipe. */
   blocosCapilares: NineBoxBlocoEscopo[];
   geradoEmIso: string;
 }
 
 // ============================================================
-// Helpers de formatacao
+// Helpers canonicos de formatacao
 // ============================================================
 
 function fmtInt(v: number): string {
@@ -85,10 +88,6 @@ function fmtNum(v: number | null, decimals = 2): string {
     maximumFractionDigits: decimals,
   });
 }
-
-// ============================================================
-// Filename canonico §13.7
-// ============================================================
 
 /**
  * Compoe o nome canonico do arquivo PDF:
@@ -105,46 +104,20 @@ export function composeSnapshot9BoxFilename(
 }
 
 // ============================================================
-// Secoes canonicas
+// Grid SVG canonico do 9-Box (ME-1.3c + CC079-v2)
 // ============================================================
 
-function renderCapa(input: Snapshot9BoxTemplateInput): string {
-  const escopo =
-    input.escopoTipo === 'empresa'
-      ? 'Empresa (agregado geral)'
-      : `${input.escopoTipo.charAt(0).toUpperCase() + input.escopoTipo.slice(1)}: ${escapeHtml(input.escopoRotulo)}`;
-  return `<section>
-  <h1>Snapshot do 9-Box</h1>
-  <p><strong>Empresa:</strong> ${escapeHtml(input.nomeFantasia)}</p>
-  <p><strong>Trimestre:</strong> ${escapeHtml(formatTrimestreBR(input.trimestre))}</p>
-  <p><strong>Escopo:</strong> ${escopo}</p>
-  <p><strong>Data de geração:</strong> ${escapeHtml(toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso)}</p>
-  <p class="muted">Este relatório apresenta a distribuição dos colaboradores no 9-Box calculada no trimestre. Estritamente determinístico — sem participação de IA.</p>
-</section>`;
-}
-
-// ============================================================
-// Grid SVG canonico do 9-Box (ME-1.3c)
-// ============================================================
-
-// Geometria canonica do SVG do 9-Box. viewBox 720x720; grid 600x600
-// com margens 60/60 para espaco de rotulos de eixo.
 const NINE_BOX_SVG_ORIGIN_X = 60;
 const NINE_BOX_SVG_ORIGIN_Y = 60;
 const NINE_BOX_SVG_GRID_SIZE = 600;
 
-// Ordem canonica das 9 caixas no grid 3x3 — espelho visual da UI
-// canonica (`NINE_BOX_GRID` em
-// `src/app/dashboard-individual/[id]/internals.ts:178-194`).
-// Row 0 = plenitude ALTA (topo); Row 2 = plenitude BAIXA (fundo).
-// Col 0 = desempenho BAIXO (esquerda); Col 2 = desempenho ALTO (dir).
 const NINE_BOX_SVG_GRID = [
   ['POTENCIAL SUBUTILIZADO', 'DESEMPENHO REPRESADO', 'ALTO IMPACTO'],
   ['DESEMPENHO CRÍTICO', 'EQUILÍBRIO FRÁGIL', 'ALTA ENTREGA'],
   ['RISCO CRÍTICO', 'DESGASTE OCULTO', 'RISCO DE ESGOTAMENTO'],
 ] as const satisfies readonly (readonly NineBoxQuadrante[])[];
 
-/** Rotulo curto canonico de iniciais do colaborador para a bolha. */
+/** Iniciais canonicas do colaborador para a bolha. */
 function initialsFor(nome: string): string {
   const parts = nome
     .trim()
@@ -161,7 +134,6 @@ function initialsFor(nome: string): string {
   return (first.charAt(0) + last.charAt(0)).toUpperCase();
 }
 
-/** Celulas coloridas 3x3 do grid canonico. */
 function renderNineBoxGridCells(distribuicao: NineBoxDistribuicao): string {
   const cellSize = NINE_BOX_SVG_GRID_SIZE / 3;
   const cells: string[] = [];
@@ -196,7 +168,6 @@ function renderNineBoxGridCells(distribuicao: NineBoxDistribuicao): string {
   return cells.join('\n');
 }
 
-/** Bolhas dos colaboradores projetadas pelo helper canonico. */
 function renderNineBoxBubbles(colaboradores: readonly NineBoxLinhaColaborador[]): string {
   const bolhas = colaboradores
     .filter((c) => c.scoreDesempenho !== null && c.plenitudeScore !== null)
@@ -223,7 +194,6 @@ function renderNineBoxBubbles(colaboradores: readonly NineBoxLinhaColaborador[])
   return bolhas.join('\n');
 }
 
-/** Rotulos canonicos de eixo do grid (desempenho em X, plenitude em Y). */
 function renderNineBoxAxisLabels(): string {
   const originX = NINE_BOX_SVG_ORIGIN_X;
   const originY = NINE_BOX_SVG_ORIGIN_Y;
@@ -254,19 +224,13 @@ function renderNineBoxAxisLabels(): string {
   return labels.join('\n');
 }
 
-/**
- * Renderiza o grid 9-Box canonico como SVG inline (ME-1.3c). Grid
- * colorido 3x3 com cores canonicas espelhadas da UI
- * (`NINE_BOX_PALETTE`) + bolhas dos colaboradores projetadas por
- * `projectNineBoxBubble` + rotulos canonicos de eixo.
- */
 function renderMatriz3x3(bloco: NineBoxBlocoEscopo): string {
   const svgWidth = NINE_BOX_SVG_ORIGIN_X * 2 + NINE_BOX_SVG_GRID_SIZE;
   const svgHeight = NINE_BOX_SVG_ORIGIN_Y + NINE_BOX_SVG_GRID_SIZE + 48;
   return (
     `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" ` +
     `xmlns="http://www.w3.org/2000/svg" ` +
-    `style="width:100%; max-width:160mm; height:auto; display:block; margin:0 auto 6mm;">
+    `style="width:100%; height:auto; display:block; margin:0 auto 6mm;">
 ${renderNineBoxGridCells(bloco.distribuicao)}
 ${renderNineBoxAxisLabels()}
 ${renderNineBoxBubbles(bloco.colaboradores)}
@@ -274,50 +238,141 @@ ${renderNineBoxBubbles(bloco.colaboradores)}
   );
 }
 
-function renderTabelaColaboradores(bloco: NineBoxBlocoEscopo): string {
-  if (bloco.colaboradores.length === 0) {
-    return '<p class="muted">Sem colaboradores classificados neste escopo.</p>';
+// ============================================================
+// Secoes editoriais canonicas (ME-1.3c CC079-v2)
+// ============================================================
+
+/** Humaniza data ISO em "DD de mes de YYYY". */
+const MESES_PT_BR = [
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
+] as const;
+
+function formatDataEditorial(iso: string): string {
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) {
+    return iso;
   }
-  const rows = bloco.colaboradores
-    .map(
-      (c) =>
-        `<tr><td>${escapeHtml(c.nome)}</td><td>${escapeHtml(c.departamento)}</td><td>${fmtNum(c.scoreDesempenho)}</td><td>${fmtNum(c.plenitudeScore)}</td><td>${escapeHtml(c.quadrante)}</td></tr>`,
-    )
-    .join('\n');
-  return `<table class="grid">
-  <thead>
-    <tr><th>Colaborador</th><th>Departamento</th><th>Desempenho</th><th>Plenitude</th><th>Quadrante</th></tr>
-  </thead>
-  <tbody>${rows}</tbody>
-</table>`;
+  const year = d.getUTCFullYear();
+  const month = MESES_PT_BR[d.getUTCMonth()];
+  const day = d.getUTCDate();
+  if (month === undefined) {
+    return iso;
+  }
+  return `${day} de ${month} de ${year}`;
 }
 
-function renderBloco(bloco: NineBoxBlocoEscopo, headingLevel: 2 | 3): string {
-  const h = `h${headingLevel}`;
-  return `<section class="page-break">
-  <${h}>${escapeHtml(bloco.titulo)}</${h}>
-  <p class="muted">Total classificados: ${fmtInt(bloco.totalClassificados)}</p>
-  ${renderMatriz3x3(bloco)}
-  ${renderTabelaColaboradores(bloco)}
+function renderCapa(input: Snapshot9BoxTemplateInput): string {
+  const escopoTxt =
+    input.escopoTipo === 'empresa'
+      ? 'Empresa (agregado geral)'
+      : `${input.escopoTipo.charAt(0).toUpperCase() + input.escopoTipo.slice(1)}: ${input.escopoRotulo}`;
+  const dataGeracao = formatDataEditorial(input.geradoEmIso);
+  const totalColaboradores = input.blocoPrincipal.totalClassificados;
+  return `<section class="cover-page">
+  <div class="cover-badge">Snapshot do trimestre</div>
+  <div class="cover-title">Snapshot<br/><span class="cover-title-accent">do 9-Box</span></div>
+  <div class="cover-subtitle">${escapeHtml(input.nomeFantasia)} · ${escapeHtml(formatTrimestreBR(input.trimestre))}</div>
+  <div class="cover-meta">
+    <div class="cover-meta-row"><span class="cover-meta-label">Empresa</span><span class="cover-meta-value">${escapeHtml(input.nomeFantasia)}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">Trimestre</span><span class="cover-meta-value">${escapeHtml(formatTrimestreBR(input.trimestre))}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">Escopo</span><span class="cover-meta-value">${escapeHtml(escopoTxt)}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">Colaboradores classificados</span><span class="cover-meta-value">${fmtInt(totalColaboradores)}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">Data de geração</span><span class="cover-meta-value">${escapeHtml(dataGeracao)}</span></div>
+  </div>
+  <div class="cover-note" style="background:#F0FDFA; border-color:#99F6E4; color:#134E4A;">
+    <strong>Sobre este relatório:</strong> apresenta a distribuição dos colaboradores no 9-Box calculada no trimestre, cruzando eixo de desempenho e eixo de plenitude. Renderização estritamente determinística — sem participação de IA. Material de leitura executiva para suportar conversas de gestão e desenvolvimento.
+  </div>
 </section>`;
 }
 
-// ============================================================
-// Funcao publica canonica
-// ============================================================
+function renderBloco(bloco: NineBoxBlocoEscopo, seccao: string, headingLevel: 2 | 3): string {
+  const h = `h${headingLevel}`;
+  const colaboradores =
+    bloco.colaboradores.length === 0
+      ? '<p class="muted">Sem colaboradores classificados neste escopo.</p>'
+      : `<table class="data-table">
+    <thead>
+      <tr>
+        <th>Colaborador</th>
+        <th>Departamento</th>
+        <th class="right">Desempenho</th>
+        <th class="right">Plenitude</th>
+        <th>Quadrante</th>
+      </tr>
+    </thead>
+    <tbody>
+${bloco.colaboradores
+  .map((c) => {
+    const paleta = NINE_BOX_PALETTE[c.quadrante];
+    const badge = `<span style="display:inline-block; padding:1mm 2.5mm; border-radius:4pt; background:${paleta.bg}; color:${paleta.text}; font-size:8.5pt; font-weight:700; letter-spacing:0.03em;">${escapeHtml(c.quadrante)}</span>`;
+    return `<tr>
+    <td>${escapeHtml(c.nome)}</td>
+    <td>${escapeHtml(c.departamento)}</td>
+    <td class="right fw-700">${fmtNum(c.scoreDesempenho)}</td>
+    <td class="right">${fmtNum(c.plenitudeScore)}</td>
+    <td>${badge}</td>
+  </tr>`;
+  })
+  .join('\n')}
+    </tbody>
+  </table>`;
+  const sectionNum = `<span class="section-num">${seccao}</span>`;
+  const sectionClass = headingLevel === 2 ? 'page-break' : '';
+  return `<section class="${sectionClass}">
+  ${headingLevel === 2 ? sectionNum : ''}
+  <${h}>${escapeHtml(bloco.titulo)}</${h}>
+  <p class="muted" style="font-size:9.5pt;">Total classificados: <strong>${fmtInt(bloco.totalClassificados)}</strong></p>
+  ${renderMatriz3x3(bloco)}
+  ${colaboradores}
+</section>`;
+}
 
+function renderIntroDistribuicao(input: Snapshot9BoxTemplateInput): string {
+  const total = input.blocoPrincipal.totalClassificados;
+  return `<section class="page-break">
+  <span class="section-num">Seção 1</span>
+  <h2>Distribuição no 9-Box</h2>
+  <p style="font-size:10pt;">Esta seção apresenta a distribuição dos <strong>${fmtInt(total)}</strong> colaboradores classificados no trimestre. Cada quadrante é apresentado com cor canônica da plataforma e os colaboradores são projetados por desempenho e plenitude.</p>
+  ${renderBloco(input.blocoPrincipal, 'Visão geral', 3)}
+</section>`;
+}
+
+function renderCapilares(input: Snapshot9BoxTemplateInput): string {
+  if (input.blocosCapilares.length === 0) {
+    return '';
+  }
+  const blocos = input.blocosCapilares
+    .map((b, idx) => renderBloco(b, `Recorte ${idx + 1}`, 3))
+    .join('\n');
+  return `<section class="page-break">
+  <span class="section-num">Seção 2</span>
+  <h2>Recortes capilares</h2>
+  <p style="font-size:10pt;">Detalhamento canônico do escopo em cascata — mesmo grid e mesma tabela aplicados a cada recorte interno (por departamento ou por equipe).</p>
+  ${blocos}
+</section>`;
+}
+
+/** Renderiza o HTML canonico do Snapshot 9-Box (ME-1.3c CC079-v2). */
 export function renderSnapshot9BoxHTML(input: Snapshot9BoxTemplateInput): string {
-  const secoesCapilares =
-    input.blocosCapilares.length === 0
-      ? ''
-      : input.blocosCapilares.map((b) => renderBloco(b, 3)).join('\n');
-  const bodyHtml = [renderCapa(input), renderBloco(input.blocoPrincipal, 2), secoesCapilares]
+  const bodyHtml = [renderCapa(input), renderIntroDistribuicao(input), renderCapilares(input)]
     .filter((s) => s.length > 0)
     .join('\n');
   return renderLayoutBase({
-    title: `Snapshot do 9-Box · ${input.nomeFantasia} · ${formatTrimestreBR(input.trimestre)}`,
+    title: `Snapshot do 9-Box`,
     company: { nomeFantasia: input.nomeFantasia },
     bodyHtml,
+    footerLeft: `Snapshot 9-Box · ${input.nomeFantasia} · ${formatTrimestreBR(input.trimestre)}`,
     footerCenter: `Gerado em ${toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso}`,
   });
 }
