@@ -21,7 +21,6 @@
 
 import { formatTrimestreBR } from '../../lib/cycle/formatTrimestreBR';
 import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
-import { projectNineBoxBubble } from '../../lib/svg/pdfSvgHelpers';
 import { NINE_BOX_PALETTE, RADAR_COLORS } from '../../lib/svg/pdfVisualTokens';
 import { escapeHtml, renderLayoutBase } from './layoutBase';
 
@@ -117,25 +116,14 @@ const NINE_BOX_SVG_GRID = [
   ['RISCO CRÍTICO', 'DESGASTE OCULTO', 'RISCO DE ESGOTAMENTO'],
 ] as const satisfies readonly (readonly NineBoxQuadrante[])[];
 
-/** Iniciais canonicas do colaborador para a bolha. */
-function initialsFor(nome: string): string {
-  const parts = nome
-    .trim()
-    .split(/\s+/)
-    .filter((p) => p.length > 0);
-  const first = parts[0];
-  if (first === undefined) {
-    return '?';
-  }
-  const last = parts[parts.length - 1];
-  if (parts.length === 1 || last === undefined) {
-    return first.slice(0, 2).toUpperCase();
-  }
-  return (first.charAt(0) + last.charAt(0)).toUpperCase();
-}
+// Espacamento canonico entre celulas (gutter) para o visual de cards
+// arredondados do dashboard canonico (DOC 05 §UI mirror). Decisao
+// canonica ME-1.3c CC079-v3 — espelho visual do dashboard agregado.
+const NINE_BOX_CELL_GAP = 10;
+const NINE_BOX_CELL_RADIUS = 14;
 
 function renderNineBoxGridCells(distribuicao: NineBoxDistribuicao): string {
-  const cellSize = NINE_BOX_SVG_GRID_SIZE / 3;
+  const cellSize = (NINE_BOX_SVG_GRID_SIZE - 2 * NINE_BOX_CELL_GAP) / 3;
   const cells: string[] = [];
   for (let row = 0; row < 3; row++) {
     const linha = NINE_BOX_SVG_GRID[row];
@@ -148,92 +136,73 @@ function renderNineBoxGridCells(distribuicao: NineBoxDistribuicao): string {
         continue;
       }
       const paleta = NINE_BOX_PALETTE[quadrante];
-      const x = NINE_BOX_SVG_ORIGIN_X + col * cellSize;
-      const y = NINE_BOX_SVG_ORIGIN_Y + row * cellSize;
-      const labelX = x + cellSize / 2;
-      const labelY = y + 24;
-      const countY = y + cellSize - 16;
+      const x = NINE_BOX_SVG_ORIGIN_X + col * (cellSize + NINE_BOX_CELL_GAP);
+      const y = NINE_BOX_SVG_ORIGIN_Y + row * (cellSize + NINE_BOX_CELL_GAP);
+      const cx = x + cellSize / 2;
+      // Numero grande centralizado em cima + nome do quadrante em
+      // UPPERCASE embaixo (padrao canonico do dashboard agregado).
+      const countY = y + cellSize / 2 - 6;
+      const nomeY = y + cellSize / 2 + 32;
       const total = fmtInt(distribuicao[quadrante]);
       cells.push(
         `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" ` +
-          `fill="${paleta.bg}" stroke="#FFFFFF" stroke-width="3" />` +
-          `<text x="${labelX}" y="${labelY}" text-anchor="middle" ` +
-          `font-size="12" font-weight="700" fill="${paleta.text}">` +
-          `${escapeHtml(quadrante)}</text>` +
-          `<text x="${labelX}" y="${countY}" text-anchor="middle" ` +
-          `font-size="22" font-weight="700" fill="${paleta.text}">${total}</text>`,
+          `rx="${NINE_BOX_CELL_RADIUS}" ry="${NINE_BOX_CELL_RADIUS}" ` +
+          `fill="${paleta.bg}" />` +
+          `<text x="${cx}" y="${countY}" text-anchor="middle" ` +
+          `font-size="56" font-weight="700" fill="${paleta.text}">${total}</text>` +
+          `<text x="${cx}" y="${nomeY}" text-anchor="middle" ` +
+          `font-size="13" font-weight="700" fill="${paleta.text}" ` +
+          `letter-spacing="0.5">${escapeHtml(quadrante)}</text>`,
       );
     }
   }
   return cells.join('\n');
 }
 
-function renderNineBoxBubbles(colaboradores: readonly NineBoxLinhaColaborador[]): string {
-  const bolhas = colaboradores
-    .filter((c) => c.scoreDesempenho !== null && c.plenitudeScore !== null)
-    .map((c) => {
-      const b = projectNineBoxBubble(
-        c.scoreDesempenho ?? 0,
-        c.plenitudeScore ?? 0,
-        NINE_BOX_SVG_ORIGIN_X,
-        NINE_BOX_SVG_ORIGIN_Y,
-        NINE_BOX_SVG_GRID_SIZE,
-      );
-      const paleta = NINE_BOX_PALETTE[c.quadrante];
-      const initials = escapeHtml(initialsFor(c.nome));
-      const title = escapeHtml(`${c.nome} · ${c.quadrante}`);
-      return (
-        `<g><title>${title}</title>` +
-        `<circle cx="${b.cx.toFixed(2)}" cy="${b.cy.toFixed(2)}" r="14" ` +
-        `fill="${paleta.text}" fill-opacity="0.92" stroke="#FFFFFF" stroke-width="2" />` +
-        `<text x="${b.cx.toFixed(2)}" y="${(b.cy + 4).toFixed(2)}" text-anchor="middle" ` +
-        `font-size="10" font-weight="700" fill="#FFFFFF">${initials}</text>` +
-        `</g>`
-      );
-    });
-  return bolhas.join('\n');
-}
-
+/**
+ * Rotulos canonicos de eixo — setas discretas no padrao do dashboard
+ * agregado (DOC 05 §UI mirror): "PLENITUDE ↑" vertical rotacionado a
+ * esquerda do grid; "DESEMPENHO →" horizontal abaixo do grid.
+ */
 function renderNineBoxAxisLabels(): string {
   const originX = NINE_BOX_SVG_ORIGIN_X;
   const originY = NINE_BOX_SVG_ORIGIN_Y;
   const size = NINE_BOX_SVG_GRID_SIZE;
-  const cell = size / 3;
-  const cx = (col: number): number => originX + cell * (col + 0.5);
-  const cy = (row: number): number => originY + cell * (row + 0.5);
-  const labelY = originY + size + 32;
-  const labelX = originX - 16;
-  const labelFill = RADAR_COLORS.labelFill;
-  const labels: string[] = [];
-  labels.push(
-    `<text x="${cx(0)}" y="${labelY}" text-anchor="middle" ` +
-      `font-size="11" font-weight="600" fill="${labelFill}">Desempenho baixo</text>`,
-    `<text x="${cx(1)}" y="${labelY}" text-anchor="middle" ` +
-      `font-size="11" font-weight="600" fill="${labelFill}">Desempenho médio</text>`,
-    `<text x="${cx(2)}" y="${labelY}" text-anchor="middle" ` +
-      `font-size="11" font-weight="600" fill="${labelFill}">Desempenho alto</text>`,
+  const labelFill = RADAR_COLORS.textMuted;
+  // Eixo horizontal: "DESEMPENHO →" centralizado embaixo.
+  const xHorizontalLabelCx = originX + size / 2;
+  const xHorizontalLabelY = originY + size + 40;
+  // Eixo vertical: "PLENITUDE ↑" rotacionado -90 graus a esquerda.
+  const yVerticalLabelX = originX - 22;
+  const yVerticalLabelCy = originY + size / 2;
+  return (
+    `<text x="${xHorizontalLabelCx}" y="${xHorizontalLabelY}" text-anchor="middle" ` +
+    `font-size="13" font-weight="700" fill="${labelFill}" letter-spacing="2">` +
+    `DESEMPENHO →</text>` +
+    `<text x="${yVerticalLabelX}" y="${yVerticalLabelCy}" text-anchor="middle" ` +
+    `font-size="13" font-weight="700" fill="${labelFill}" letter-spacing="2" ` +
+    `transform="rotate(-90 ${yVerticalLabelX} ${yVerticalLabelCy})">` +
+    `PLENITUDE ↑</text>`
   );
-  labels.push(
-    `<text x="${labelX}" y="${cy(0)}" text-anchor="end" ` +
-      `font-size="11" font-weight="600" fill="${labelFill}">Plenitude alta</text>`,
-    `<text x="${labelX}" y="${cy(1)}" text-anchor="end" ` +
-      `font-size="11" font-weight="600" fill="${labelFill}">Plenitude média</text>`,
-    `<text x="${labelX}" y="${cy(2)}" text-anchor="end" ` +
-      `font-size="11" font-weight="600" fill="${labelFill}">Plenitude baixa</text>`,
-  );
-  return labels.join('\n');
 }
 
+/**
+ * Renderiza o grid 9-Box canonico como SVG inline (ME-1.3c CC079-v3).
+ * Grid 3x3 de cards arredondados com cores canonicas da UI
+ * (`NINE_BOX_PALETTE`), numero grande centralizado por quadrante + nome
+ * em UPPERCASE embaixo, mais setas canonicas de eixo. Zero bolhas de
+ * colaboradores — a identificacao individual fica na tabela abaixo
+ * com badges coloridos de quadrante.
+ */
 function renderMatriz3x3(bloco: NineBoxBlocoEscopo): string {
   const svgWidth = NINE_BOX_SVG_ORIGIN_X * 2 + NINE_BOX_SVG_GRID_SIZE;
-  const svgHeight = NINE_BOX_SVG_ORIGIN_Y + NINE_BOX_SVG_GRID_SIZE + 48;
+  const svgHeight = NINE_BOX_SVG_ORIGIN_Y + NINE_BOX_SVG_GRID_SIZE + 56;
   return (
     `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" ` +
     `xmlns="http://www.w3.org/2000/svg" ` +
     `style="width:100%; height:auto; display:block; margin:0 auto 6mm;">
 ${renderNineBoxGridCells(bloco.distribuicao)}
 ${renderNineBoxAxisLabels()}
-${renderNineBoxBubbles(bloco.colaboradores)}
 </svg>`
   );
 }
@@ -296,10 +265,38 @@ function renderCapa(input: Snapshot9BoxTemplateInput): string {
 </section>`;
 }
 
+// Indice canonico de prioridade dos 9 quadrantes para ordenacao da
+// tabela — espelho da ordem de `NINE_BOX_QUADRANTES` (DOC 01 §8.4), do
+// melhor (ALTO IMPACTO = 0) ao pior (RISCO CRITICO = 8). Decisao
+// canonica ME-1.3c CC079-v3.
+export const NINE_BOX_PRIORIDADE: Readonly<Record<NineBoxQuadrante, number>> = Object.freeze(
+  Object.fromEntries(NINE_BOX_QUADRANTES.map((q, idx) => [q, idx])),
+) as Readonly<Record<NineBoxQuadrante, number>>;
+
+/**
+ * Ordena colaboradores canonicamente — primeiro pela ordem canonica
+ * dos 9 quadrantes (do melhor ao pior); dentro de cada quadrante, por
+ * ordem alfabetica do nome do colaborador (locale pt-BR, sem
+ * sensibilidade a acentos para que "Álvaro" fique perto de "Alvaro").
+ */
+export function ordenarColaboradoresCanonicos(
+  colaboradores: readonly NineBoxLinhaColaborador[],
+): NineBoxLinhaColaborador[] {
+  return [...colaboradores].sort((a, b) => {
+    const prioridadeA = NINE_BOX_PRIORIDADE[a.quadrante];
+    const prioridadeB = NINE_BOX_PRIORIDADE[b.quadrante];
+    if (prioridadeA !== prioridadeB) {
+      return prioridadeA - prioridadeB;
+    }
+    return a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' });
+  });
+}
+
 function renderBloco(bloco: NineBoxBlocoEscopo, seccao: string, headingLevel: 2 | 3): string {
   const h = `h${headingLevel}`;
+  const colaboradoresOrdenados = ordenarColaboradoresCanonicos(bloco.colaboradores);
   const colaboradores =
-    bloco.colaboradores.length === 0
+    colaboradoresOrdenados.length === 0
       ? '<p class="muted">Sem colaboradores classificados neste escopo.</p>'
       : `<table class="data-table">
     <thead>
@@ -312,7 +309,7 @@ function renderBloco(bloco: NineBoxBlocoEscopo, seccao: string, headingLevel: 2 
       </tr>
     </thead>
     <tbody>
-${bloco.colaboradores
+${colaboradoresOrdenados
   .map((c) => {
     const paleta = NINE_BOX_PALETTE[c.quadrante];
     const badge = `<span style="display:inline-block; padding:1mm 2.5mm; border-radius:4pt; background:${paleta.bg}; color:${paleta.text}; font-size:8.5pt; font-weight:700; letter-spacing:0.03em;">${escapeHtml(c.quadrante)}</span>`;

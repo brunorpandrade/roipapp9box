@@ -127,40 +127,10 @@ export function renderRadarGridSvg(
   ].join('\n');
 }
 
-// ============================================================
-// Projecao cartesiana do 9-Box (bolhas de colaboradores)
-// ============================================================
-
-export interface NineBoxBubble {
-  readonly cx: number;
-  readonly cy: number;
-}
-
-/**
- * Projeta um colaborador canonico como bolha no SVG do grid 9-Box
- * (DOC 03 §13.7).
- *
- * Coordenadas canonicas:
- * - Eixo X: `scoreDesempenho` (0-100) → `gridOriginX + (score/100) *
- *   gridSize`. Score 0 fica na borda esquerda; score 100 na direita.
- * - Eixo Y: `plenitudeScore` (0-100) → `gridOriginY + (1 - score/100)
- *   * gridSize`. Score 100 (plenitude alta) fica NO TOPO (y menor em
- *   SVG), score 0 (plenitude baixa) no fundo. Inversao canonica
- *   obrigatoria porque SVG tem Y crescente para baixo mas o 9-Box
- *   canonico tem plenitude crescente para cima.
- *
- * Scores clamp 0-100.
- */
-export function projectNineBoxBubble(
-  scoreDesempenho: number,
-  plenitudeScore: number,
-  gridOriginX: number,
-  gridOriginY: number,
-  gridSize: number,
-): NineBoxBubble {
-  const xClamp = Math.max(0, Math.min(100, scoreDesempenho));
-  const yClamp = Math.max(0, Math.min(100, plenitudeScore));
-  const cx = gridOriginX + (xClamp / 100) * gridSize;
-  const cy = gridOriginY + (1 - yClamp / 100) * gridSize;
-  return { cx, cy };
-}
+// ME-1.3c CC079-v3: projecao cartesiana de bolha retirada por decisao
+// canonica — 9-Box agora exibe apenas o contador por quadrante, sem
+// bolhas de colaboradores (padrao visual canonico dos dashboards
+// agregados). A funcao `projectNineBoxBubble` canonica foi removida
+// com todos os testes correspondentes conforme RV-13 (zero codigo
+// morto). Se um consumer futuro precisar, basta restaurar do git
+// (commits `6c3da51` e `6b3559a`).

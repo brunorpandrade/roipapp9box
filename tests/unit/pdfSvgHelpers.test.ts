@@ -8,9 +8,6 @@
 //   casas decimais; vazio lanca RangeError.
 // - `renderRadarGridSvg`: nEixos < 3 e nRings < 1 rejeitados; emite
 //   polygons + lines; precisa de stroke canonico.
-// - `projectNineBoxBubble`: inversao Y canonica (plenitude alta no
-//   topo); clamp; projecao canonica dos 4 cantos + centro + 5
-//   cantos extremos.
 // - `NINE_BOX_PALETTE`: replica bit-exact a `NINE_BOX_GRID` da UI
 //   canonica em `src/app/dashboard-individual/[id]/internals.ts`.
 // - `classificarNr1Faixa`: fronteiras canonicas inclusivas em cima
@@ -25,7 +22,6 @@ import {
   RADAR_NR1_CORES,
 } from '../../src/lib/svg/pdfVisualTokens';
 import {
-  projectNineBoxBubble,
   projectRadarPoint,
   projectRadarPolygon,
   renderRadarGridSvg,
@@ -143,50 +139,10 @@ describe('renderRadarGridSvg', () => {
   });
 });
 
-// ============================================================
-// projectNineBoxBubble — projecao cartesiana do 9-Box
-// ============================================================
-
-describe('projectNineBoxBubble', () => {
-  it('score desempenho=100 + plenitude=100 fica no CANTO SUPERIOR DIREITO', () => {
-    const b = projectNineBoxBubble(100, 100, 50, 50, 600);
-    expect(b.cx).toBe(650);
-    expect(b.cy).toBe(50);
-  });
-
-  it('score desempenho=0 + plenitude=0 fica no CANTO INFERIOR ESQUERDO', () => {
-    const b = projectNineBoxBubble(0, 0, 50, 50, 600);
-    expect(b.cx).toBe(50);
-    expect(b.cy).toBe(650);
-  });
-
-  it('score desempenho=50 + plenitude=50 fica no CENTRO', () => {
-    const b = projectNineBoxBubble(50, 50, 50, 50, 600);
-    expect(b.cx).toBe(350);
-    expect(b.cy).toBe(350);
-  });
-
-  it('desempenho=100 + plenitude=0 fica no CANTO INFERIOR DIREITO (RISCO ESGOT.)', () => {
-    const b = projectNineBoxBubble(100, 0, 50, 50, 600);
-    expect(b.cx).toBe(650);
-    expect(b.cy).toBe(650);
-  });
-
-  it('desempenho=0 + plenitude=100 fica no CANTO SUPERIOR ESQUERDO (POT. SUBUT.)', () => {
-    const b = projectNineBoxBubble(0, 100, 50, 50, 600);
-    expect(b.cx).toBe(50);
-    expect(b.cy).toBe(50);
-  });
-
-  it('clamp canonico para scores fora do dominio', () => {
-    const bNeg = projectNineBoxBubble(-10, -10, 0, 0, 600);
-    const bOver = projectNineBoxBubble(142, 142, 0, 0, 600);
-    expect(bNeg.cx).toBe(0);
-    expect(bNeg.cy).toBe(600);
-    expect(bOver.cx).toBe(600);
-    expect(bOver.cy).toBe(0);
-  });
-});
+// ME-1.3c CC079-v3: suite `projectNineBoxBubble` retirada junto com o
+// helper na ME, por decisao canonica de produto (9-Box agora exibe
+// apenas o contador por quadrante, sem bolhas). RV-13 integral — zero
+// codigo morto.
 
 // ============================================================
 // NINE_BOX_PALETTE — espelho canonico bit-exact da UI
