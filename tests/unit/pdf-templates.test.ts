@@ -310,34 +310,33 @@ describe('nr1Template (ME-050/51)', () => {
     expect(renderNr1ReportHTML(CANON_NR1)).toBe(renderNr1ReportHTML(CANON_NR1));
   });
 
-  it('renderNr1ReportHTML — cobre 13 secoes canonicas §11.12', () => {
+  it('renderNr1ReportHTML — cobre as secoes editoriais do CC079-v4', () => {
     const html = renderNr1ReportHTML(CANON_NR1);
     // Capa
     expect(html).toContain('Radar NR-1');
-    // Sumário
-    expect(html).toContain('Sumário');
     // Resumo executivo
     expect(html).toContain('Resumo executivo');
-    // Radar da empresa
+    // Radar da empresa (sem a palavra 'canônicos' no titulo)
     expect(html).toContain('Radar da empresa');
-    // Radar por departamento
+    // Descricao de cada fator (pagina propria no v4)
+    expect(html).toContain('Descrição de cada fator');
+    // Radar por departamento (presente quando CANON_NR1 tem depto)
     expect(html).toContain('Radar por departamento');
-    // Amostra insuficiente
-    expect(html).toContain('amostra insuficiente');
-    // Convergência
-    expect(html).toContain('convergência');
-    // Departamento crítico
+    // Departamento crítico (presente em CANON_NR1)
     expect(html).toContain('situação crítica');
     // Alertas
     expect(html).toContain('Alertas informativos');
-    // Comparação anterior
-    expect(html).toContain('Comparação com ciclo anterior');
-    // Comparação histórica
-    expect(html).toContain('Comparação histórica');
-    // Sugestões
-    expect(html).toContain('Sugestões de próximos passos');
     // Rastreabilidade
     expect(html).toContain('Rastreabilidade');
+    // Secoes eliminadas no CC079-v4
+    expect(html).not.toContain('Sumário');
+    expect(html).not.toContain('Sugestões de próximos passos');
+    // Vocabulario 'canônico/canônica' nao pode aparecer no cliente
+    expect(html).not.toContain('canônico');
+    expect(html).not.toContain('canônica');
+    // "SEÇÃO N" nao pode aparecer
+    expect(html).not.toContain('SEÇÃO ');
+    expect(html).not.toContain('Seção ');
   });
 
   it('renderNr1ReportHTML — nota de auditoria de edicao omitida quando ausente', () => {

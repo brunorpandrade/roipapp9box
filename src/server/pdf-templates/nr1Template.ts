@@ -1,19 +1,29 @@
-/* eslint-disable @stylistic/max-len -- template HTML canonico com tags e literais que perdem clareza quando quebrados */
-// ROIP APP 9BOX — template PDF Radar NR-1 (ME-050/51, S257; ME-1.3c CC079 leva v2).
+/* eslint-disable @stylistic/max-len -- template HTML editorial com strings longas */
+// ROIP APP 9BOX — template PDF Radar NR-1 (ME-1.3c CC079-v4).
 //
-// Renderizacao HTML deterministica do relatorio do Radar NR-1
+// Renderizacao HTML determinística do relatorio do Radar NR-1
 // (DOC 03 §11.12). Consumido por `nr1.downloadReport` (Route Handler);
-// convertido em PDF pela toolchain `pdfRenderer.ts` (Puppeteer via
-// `puppeteer-core`).
+// convertido em PDF pela toolchain `pdfRenderer.ts`.
 //
-// ME-1.3c CC079-v2: reescrita integral com padrao editorial do mockup
-// `relatorio_radar_nr1_v1.html` — capa editorial com badge/hero/meta
-// grid/cover-note, sumario estilizado, resumo executivo com KPIs +
-// gauge semicircular, radar emoldurado em card com descricao executiva
-// por fator, cards de dept com classes de severidade, departamento
-// critico em card vermelho, alertas em cards com borda lateral,
-// comparacao em tabela estilizada, historico em SVG line chart,
-// sugestoes com marker canonico, rastreabilidade em card cinza.
+// Estrutura CC079-v4 (editorial, enxuta):
+// - Capa sem badge, hero em uma linha, meta grid compacta (empresa,
+//   ciclo, datas, data de geracao), cover-note ambar.
+// - Resumo executivo com 3 KPI cards horizontais (adesao, respostas
+//   invalidadas, fatores em alerta) e gauge de adesao.
+// - Pagina inteira para o radar da empresa (grafico em cima + tabela
+//   de 8 fatores embaixo).
+// - Pagina inteira seguinte para a descricao de cada fator (com os
+//   rotulos "Fator de risco" / "Fator de recurso" preservados).
+// - Radar por departamento (quando houver departamentos com nome e
+//   amostra suficiente).
+// - Alertas informativos por fator.
+// - Rastreabilidade.
+//
+// Secoes vazias (convergencia/divergencia sem dado, dept critico
+// ausente, ciclo anterior inexistente, historico insuficiente) sao
+// suprimidas integralmente. Sugestoes de proximos passos eliminada.
+//
+// Determinismo: mesmos dados -> mesmo HTML byte-exact exceto timestamp.
 
 import { formatDateBR } from '../../lib/date/formatDateBR';
 import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
@@ -30,11 +40,11 @@ import {
 } from '../../lib/svg/pdfVisualTokens';
 import { escapeHtml, type LayoutBaseCompany, renderLayoutBase } from './layoutBase';
 
-/** Score de um dos 8 fatores canonicos. */
+/** Score de um dos 8 fatores. */
 export interface Nr1FatorScore {
-  fatorId: number; // 1 a 8
+  fatorId: number;
   nome: string;
-  score: number; // 0 a 100
+  score: number;
 }
 
 /** Score por departamento. */
@@ -44,7 +54,7 @@ export interface Nr1DepartamentoScore {
   fatores: Nr1FatorScore[];
 }
 
-/** Departamento com amostra abaixo do piso canonico (5). */
+/** Departamento com amostra abaixo do piso (5). */
 export interface Nr1DepartamentoInsuficiente {
   departamentoNome: string;
   amostra: number;
@@ -73,7 +83,7 @@ export interface Nr1ComparacaoCiclo {
   fatores: Nr1FatorScore[];
 }
 
-/** Nota de auditoria canonica de edicao de data de fechamento (§11.12). */
+/** Nota de auditoria de edicao de data de fechamento (§11.12). */
 export interface Nr1NotaAuditoriaEdicao {
   dataFechamentoOriginal: string;
   dataFechamentoAtual: string;
@@ -91,7 +101,7 @@ export interface Nr1CicloInfo {
   totalElegiveis: number;
 }
 
-/** Input canonico do template. */
+/** Input do template. */
 export interface Nr1TemplateInput {
   company: LayoutBaseCompany;
   ciclo: Nr1CicloInfo;
@@ -123,7 +133,7 @@ export function normalizeNomeEmpresaForFilename(nome: string): string {
   return limitado.length > 0 ? limitado : 'Empresa';
 }
 
-/** Compoe o nome canonico do arquivo PDF conforme §11.12. */
+/** Compoe o nome do arquivo PDF conforme §11.12. */
 export function composeNr1ReportFilename(
   nomeEmpresa: string,
   dataAbertura: string,
@@ -134,7 +144,7 @@ export function composeNr1ReportFilename(
 }
 
 // ============================================================
-// Helpers canonicos de formatacao editorial
+// Helpers de formatacao editorial
 // ============================================================
 
 const MESES_PT_BR = [
@@ -152,38 +162,18 @@ const MESES_PT_BR = [
   'dezembro',
 ] as const;
 
-/** Humaniza data ISO (YYYY-MM-DD) em "DD de mes de YYYY". */
 function formatDataEditorial(iso: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-  if (match === null) {
-    return iso;
-  }
+  if (match === null) return iso;
   const [, y, m, d] = match;
-  if (y === undefined || m === undefined || d === undefined) {
-    return iso;
-  }
+  if (y === undefined || m === undefined || d === undefined) return iso;
   const mi = Number(m) - 1;
-  if (mi < 0 || mi > 11) {
-    return iso;
-  }
+  if (mi < 0 || mi > 11) return iso;
   const mesNome = MESES_PT_BR[mi];
-  if (mesNome === undefined) {
-    return iso;
-  }
+  if (mesNome === undefined) return iso;
   return `${Number(d)} de ${mesNome} de ${y}`;
 }
 
-/** Duracao canonica em dias corridos entre duas datas ISO. */
-function duracaoDiasCorridos(dataAberturaIso: string, dataFechamentoIso: string): number {
-  const a = Date.parse(dataAberturaIso);
-  const b = Date.parse(dataFechamentoIso);
-  if (!Number.isFinite(a) || !Number.isFinite(b)) {
-    return 0;
-  }
-  return Math.round((b - a) / 86400000);
-}
-
-/** Formatacao canonica de score pt-BR com 1 decimal. */
 function fmtScore(score: number): string {
   const clamp = Math.max(0, Math.min(100, score));
   return clamp.toLocaleString('pt-BR', {
@@ -192,7 +182,6 @@ function fmtScore(score: number): string {
   });
 }
 
-/** Abreviacao canonica dos nomes longos para caber no label do SVG. */
 function abreviarFator(nome: string): string {
   const map: Record<string, string> = {
     'Exigências quantitativas': 'Exig. quant.',
@@ -207,7 +196,6 @@ function abreviarFator(nome: string): string {
   return map[nome] ?? nome;
 }
 
-/** Classifica fator canonicamente como risco ou recurso. */
 function classificarTipoFator(nome: string): 'Fator de risco' | 'Fator de recurso' {
   const prefixosRisco = ['Exigências', 'Ritmo', 'Conflitos', 'Insegurança'];
   const isRisco = prefixosRisco.some((prefix) => nome.startsWith(prefix));
@@ -215,7 +203,7 @@ function classificarTipoFator(nome: string): 'Fator de risco' | 'Fator de recurs
 }
 
 // ============================================================
-// Geometria canonica do radar SVG
+// Geometria do radar SVG
 // ============================================================
 
 const RADAR_SVG_CX = 200;
@@ -237,10 +225,7 @@ function renderRadarAxisLabels(fatores: readonly Nr1FatorScore[]): string {
         labelRadius,
       );
       const label = escapeHtml(abreviarFator(f.nome));
-      return (
-        `<text x="${p.x.toFixed(2)}" y="${p.y.toFixed(2)}" text-anchor="middle" ` +
-        `font-size="10" font-weight="600" fill="${RADAR_COLORS.labelFill}">${label}</text>`
-      );
+      return `<text x="${p.x.toFixed(2)}" y="${p.y.toFixed(2)}" text-anchor="middle" font-size="10" font-weight="600" fill="${RADAR_COLORS.labelFill}">${label}</text>`;
     })
     .join('\n');
 }
@@ -249,9 +234,7 @@ function renderRadarSvg(
   fatores: readonly Nr1FatorScore[],
   referencia?: readonly Nr1FatorScore[],
 ): string {
-  if (fatores.length < 3) {
-    return '';
-  }
+  if (fatores.length < 3) return '';
   const scores = fatores.map((f) => f.score);
   const polygonPoints = projectRadarPolygon(
     scores,
@@ -278,29 +261,17 @@ function renderRadarSvg(
         RADAR_SVG_CX,
         RADAR_SVG_CY,
         RADAR_SVG_MAX_RADIUS,
-      )}" fill="none" stroke="${RADAR_COLORS.mediaEmpresaStroke}" stroke-width="1.5" ` +
-      `stroke-dasharray="${RADAR_COLORS.mediaEmpresaDasharray}" />`
+      )}" fill="none" stroke="${RADAR_COLORS.mediaEmpresaStroke}" stroke-width="1.5" stroke-dasharray="${RADAR_COLORS.mediaEmpresaDasharray}" />`
     : '';
-  return (
-    `<svg viewBox="${RADAR_SVG_VIEWBOX}" xmlns="http://www.w3.org/2000/svg" ` +
-    `style="width:100%; height:auto; display:block;">
-${renderRadarGridSvg(
-  scores.length,
-  RADAR_SVG_CX,
-  RADAR_SVG_CY,
-  RADAR_SVG_MAX_RADIUS,
-  RADAR_SVG_NUM_RINGS,
-  RADAR_COLORS.gridStroke,
-)}
+  return `<svg viewBox="${RADAR_SVG_VIEWBOX}" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto; display:block;">
+${renderRadarGridSvg(scores.length, RADAR_SVG_CX, RADAR_SVG_CY, RADAR_SVG_MAX_RADIUS, RADAR_SVG_NUM_RINGS, RADAR_COLORS.gridStroke)}
 ${referenciaPoly}
-<polygon points="${polygonPoints}" fill="${RADAR_COLORS.teal}" ` +
-    `fill-opacity="${RADAR_COLORS.tealFillOpacity}" stroke="${RADAR_COLORS.teal}" stroke-width="2" />
+<polygon points="${polygonPoints}" fill="${RADAR_COLORS.teal}" fill-opacity="${RADAR_COLORS.tealFillOpacity}" stroke="${RADAR_COLORS.teal}" stroke-width="2" />
 <g fill="${RADAR_COLORS.teal}">
 ${dataPoints}
 </g>
 ${renderRadarAxisLabels(fatores)}
-</svg>`
-  );
+</svg>`;
 }
 
 function renderRadarLegend(fatores: readonly Nr1FatorScore[]): string {
@@ -341,10 +312,9 @@ function renderRadarCardBlock(
 }
 
 // ============================================================
-// Gauge semicircular canonico (ME-1.3c CC079-v2)
+// Gauge semicircular
 // ============================================================
 
-/** Gauge semicircular canonico espelho do mockup pagina 3. */
 function renderGaugeSvg(percent: number): string {
   const clamp = Math.max(0, Math.min(100, percent));
   const faixa: Nr1Faixa = clamp >= 66 ? 'verde' : clamp >= 50 ? 'amarelo' : 'vermelho';
@@ -362,12 +332,10 @@ function renderGaugeSvg(percent: number): string {
 }
 
 // ============================================================
-// Secoes canonicas (ME-1.3c CC079-v2)
+// Secoes editoriais CC079-v4
 // ============================================================
 
 function renderCapa(input: Nr1TemplateInput): string {
-  const periodo = `${formatDataEditorial(input.ciclo.dataAbertura)} a ${formatDataEditorial(input.ciclo.dataFechamento)}`;
-  const duracao = duracaoDiasCorridos(input.ciclo.dataAbertura, input.ciclo.dataFechamento);
   const dataGeracao = formatDataEditorial(input.generatedAtDate);
   const adesao =
     input.ciclo.totalElegiveis > 0
@@ -381,51 +349,17 @@ function renderCapa(input: Nr1TemplateInput): string {
       : '';
   return `<section class="cover-page">
   ${alertaAdesao}
-  <div class="cover-badge">Relatório do ciclo</div>
-  <div class="cover-title">Radar NR-1<br/><span class="cover-title-accent">Riscos Psicossociais no Trabalho</span></div>
-  <div class="cover-subtitle">${escapeHtml(input.company.nomeFantasia)} · ${escapeHtml(input.ciclo.cicloRotulo)}</div>
+  <div class="cover-title" style="font-size:26pt; line-height:1.15;">Radar NR-1 <span class="cover-title-accent">Riscos Psicossociais no Trabalho</span></div>
   <div class="cover-meta">
     <div class="cover-meta-row"><span class="cover-meta-label">Empresa</span><span class="cover-meta-value">${escapeHtml(input.company.nomeFantasia)}</span></div>
     <div class="cover-meta-row"><span class="cover-meta-label">Ciclo</span><span class="cover-meta-value">${escapeHtml(input.ciclo.cicloRotulo)}</span></div>
     <div class="cover-meta-row"><span class="cover-meta-label">Data de abertura</span><span class="cover-meta-value">${escapeHtml(formatDataEditorial(input.ciclo.dataAbertura))}</span></div>
     <div class="cover-meta-row"><span class="cover-meta-label">Data de fechamento</span><span class="cover-meta-value">${escapeHtml(formatDataEditorial(input.ciclo.dataFechamento))}</span></div>
-    <div class="cover-meta-row"><span class="cover-meta-label">Duração do ciclo</span><span class="cover-meta-value">${duracao} dias corridos</span></div>
     <div class="cover-meta-row"><span class="cover-meta-label">Data de geração do relatório</span><span class="cover-meta-value">${escapeHtml(dataGeracao)}</span></div>
-    <div class="cover-meta-row"><span class="cover-meta-label">Período coletado</span><span class="cover-meta-value">${escapeHtml(periodo)}</span></div>
   </div>
   <div class="cover-note">
-    <strong>⚠ Sobre este relatório:</strong> este documento entrega um radar diagnóstico preliminar dos 8 fatores psicossociais canônicos. Não substitui os instrumentos e processos formais exigidos pela NR-1, que requerem instrumento validado cientificamente e responsável técnico habilitado. Use os resultados como ponto de partida para investigação aprofundada quando necessário.
+    <strong>⚠ Sobre este relatório:</strong> este documento entrega um radar diagnóstico preliminar dos 8 fatores psicossociais. Não substitui os instrumentos e processos formais exigidos pela NR-1, que requerem instrumento validado cientificamente e responsável técnico habilitado. Use os resultados como ponto de partida para investigação aprofundada quando necessário.
   </div>
-</section>`;
-}
-
-function renderSumario(): string {
-  const items = [
-    'Resumo executivo',
-    'Radar da empresa — 8 fatores canônicos',
-    'Radar por departamento',
-    'Departamentos com amostra insuficiente',
-    'Análise de convergência e divergência',
-    'Departamento em situação crítica',
-    'Alertas informativos por fator',
-    'Comparação com ciclo anterior',
-    'Comparação histórica de longo prazo',
-    'Sugestões de próximos passos',
-    'Rastreabilidade e integridade do relatório',
-  ];
-  const lis = items
-    .map(
-      (t, i) =>
-        `<li class="toc-item"><span class="toc-num">${i + 1}</span><span class="toc-title">${escapeHtml(t)}</span><span class="toc-page">${i + 3}</span></li>`,
-    )
-    .join('\n');
-  return `<section class="page-break">
-  <span class="section-num">Seção 1</span>
-  <h2>Sumário</h2>
-  <ul class="toc-list">
-${lis}
-  </ul>
-  <p class="muted" style="margin-top:8mm; font-size:9.5pt; line-height:1.6;"><strong>Como ler este relatório.</strong> As seções 1 a 7 apresentam os resultados do ciclo atual em ordem crescente de granularidade — da visão empresa consolidada aos alertas por fator. As seções 8 e 9 trazem as comparações temporais. A seção 10 sistematiza sugestões práticas de investigação. A seção 11 registra a rastreabilidade técnica.</p>
 </section>`;
 }
 
@@ -435,9 +369,6 @@ function renderResumoExecutivo(input: Nr1TemplateInput): string {
       ? Math.round((input.ciclo.totalRespondentes / input.ciclo.totalElegiveis) * 100)
       : 0;
   const alertasCount = input.alertas.filter((a) => a.escopo === 'empresa').length;
-  const deptsAvaliados = input.radaresPorDepartamento.length;
-  const deptsInsuficientes = input.departamentosInsuficientes.length;
-  const temCritico = input.departamentoCritico !== undefined;
   const invalidados = Math.max(0, input.ciclo.totalElegiveis - input.ciclo.totalRespondentes);
   const faixaAdesao: Nr1Faixa = adesao >= 66 ? 'verde' : adesao >= 50 ? 'amarelo' : 'vermelho';
   const highlightAdesao =
@@ -446,6 +377,8 @@ function renderResumoExecutivo(input: Nr1TemplateInput): string {
       : faixaAdesao === 'amarelo'
         ? 'highlight-yellow'
         : 'highlight-red';
+  const kpiValueClass =
+    faixaAdesao === 'verde' ? 'green' : faixaAdesao === 'amarelo' ? 'yellow' : 'red';
   const gaugeTitulo =
     faixaAdesao === 'verde'
       ? 'Adesão saudável'
@@ -456,17 +389,15 @@ function renderResumoExecutivo(input: Nr1TemplateInput): string {
     faixaAdesao === 'verde'
       ? 'Os resultados representam de forma consistente a percepção da força de trabalho e sustentam análise executiva confiável.'
       : faixaAdesao === 'amarelo'
-        ? 'A adesão permite leitura executiva mas convém investigar a razão de parte dos elegíveis não responder, para reforçar a próxima rodada.'
+        ? 'A adesão permite leitura executiva, mas convém investigar a razão de parte dos elegíveis não responder, para reforçar a próxima rodada.'
         : 'A adesão é insuficiente para representar a força de trabalho. Resultados devem ser lidos com cautela e investigação ativa é recomendada.';
   const gaugeClass =
     faixaAdesao === 'verde' ? 'cs-green' : faixaAdesao === 'amarelo' ? 'cs-yellow' : 'cs-red';
-  const kpiValueClass =
-    faixaAdesao === 'verde' ? 'green' : faixaAdesao === 'amarelo' ? 'yellow' : 'red';
+  const resumoLimpo = input.resumoExecutivo.replace(/atencao/gi, 'atenção');
   return `<section class="page-break">
-  <span class="section-num">Seção 2</span>
   <h2>Resumo executivo</h2>
-  <p>${escapeHtml(input.resumoExecutivo)}</p>
-  <div class="kpi-grid">
+  <p>${escapeHtml(resumoLimpo)}</p>
+  <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
     <div class="kpi-card ${highlightAdesao}">
       <div class="kpi-label">Adesão</div>
       <div class="kpi-value ${kpiValueClass}">${adesao}%</div>
@@ -481,11 +412,6 @@ function renderResumoExecutivo(input: Nr1TemplateInput): string {
       <div class="kpi-label">Fatores em alerta</div>
       <div class="kpi-value ${alertasCount > 0 ? 'red' : ''}">${alertasCount}</div>
       <div class="kpi-sub">Score inferior a 50 (escopo empresa)</div>
-    </div>
-    <div class="kpi-card ${temCritico ? 'highlight-red' : ''}">
-      <div class="kpi-label">Departamentos avaliados</div>
-      <div class="kpi-value">${deptsAvaliados}</div>
-      <div class="kpi-sub">${deptsInsuficientes} com amostra insuficiente${temCritico ? ' · 1 crítico' : ''}</div>
     </div>
   </div>
   <div class="gauge-wrap">
@@ -518,8 +444,17 @@ const DESCRICOES_FATORES: Record<string, string> = {
     'Mede a percepção subjetiva do colaborador sobre a própria saúde geral. Escores altos indicam bem-estar relatado.',
 };
 
-function renderDescricoesFatores(fatores: readonly Nr1FatorScore[]): string {
-  return fatores
+function renderRadarEmpresa(input: Nr1TemplateInput): string {
+  const subtit = `${input.ciclo.totalRespondentes} respondentes efetivos`;
+  return `<section class="page-break">
+  <h2>Radar da empresa — 8 fatores</h2>
+  <p style="font-size:10pt;">Consolidação dos 8 fatores psicossociais no escopo empresa, agregando as respostas válidas de <strong>${input.ciclo.totalRespondentes} respondentes efetivos</strong>. Legenda: <span class="cs-green fw-700">verde (66-100)</span> satisfatório · <span class="cs-yellow fw-700">amarelo (50-65)</span> atenção · <span class="cs-red fw-700">vermelho (0-49)</span> crítico.</p>
+  ${renderRadarCardBlock('Empresa', subtit, input.radarEmpresa)}
+</section>`;
+}
+
+function renderDescricoesFatoresPagina(input: Nr1TemplateInput): string {
+  const blocos = input.radarEmpresa
     .map((f) => {
       const faixa: Nr1Faixa = classificarNr1Faixa(f.score);
       const color = RADAR_NR1_CORES[faixa];
@@ -533,28 +468,15 @@ function renderDescricoesFatores(fatores: readonly Nr1FatorScore[]): string {
 </div>`;
     })
     .join('\n');
-}
-
-function renderRadarEmpresa(input: Nr1TemplateInput): string {
-  const subtit = `${input.ciclo.totalRespondentes} respondentes efetivos`;
   return `<section class="page-break">
-  <span class="section-num">Seção 3</span>
-  <h2>Radar da empresa — 8 fatores canônicos</h2>
-  <p style="font-size:10pt;">Consolidação dos 8 fatores psicossociais no escopo empresa, agregando as respostas válidas de <strong>${input.ciclo.totalRespondentes} respondentes efetivos</strong>. Legenda: <span class="cs-green fw-700">verde (66-100)</span> satisfatório · <span class="cs-yellow fw-700">amarelo (50-65)</span> atenção · <span class="cs-red fw-700">vermelho (0-49)</span> crítico.</p>
-  ${renderRadarCardBlock('Empresa', subtit, input.radarEmpresa)}
-  <h3 style="margin-top:6mm;">Descrição executiva de cada fator</h3>
-  ${renderDescricoesFatores(input.radarEmpresa)}
+  <h2>Descrição de cada fator</h2>
+  <p style="font-size:10pt;">Síntese do que cada fator mede e orientação de leitura dos escores agregados do ciclo.</p>
+  ${blocos}
 </section>`;
 }
 
 function renderRadarDepartamentos(input: Nr1TemplateInput): string {
-  if (input.radaresPorDepartamento.length === 0) {
-    return `<section class="page-break">
-  <span class="section-num">Seção 4</span>
-  <h2>Radar por departamento</h2>
-  <p class="muted">Nenhum departamento com amostra suficiente para radar próprio.</p>
-</section>`;
-  }
+  if (input.radaresPorDepartamento.length === 0) return '';
   const blocks = input.radaresPorDepartamento
     .map((d) =>
       renderRadarCardBlock(
@@ -566,7 +488,6 @@ function renderRadarDepartamentos(input: Nr1TemplateInput): string {
     )
     .join('\n');
   return `<section class="page-break">
-  <span class="section-num">Seção 4</span>
   <h2>Radar por departamento</h2>
   <p style="font-size:10pt;">Detalhamento dos 8 fatores por departamento com amostra suficiente. Polígono em teal: departamento. Tracejado cinza: média da empresa (referência comparativa).</p>
   ${blocks}
@@ -574,13 +495,7 @@ function renderRadarDepartamentos(input: Nr1TemplateInput): string {
 }
 
 function renderInsuficientes(input: Nr1TemplateInput): string {
-  if (input.departamentosInsuficientes.length === 0) {
-    return `<section class="page-break">
-  <span class="section-num">Seção 5</span>
-  <h2>Departamentos com amostra insuficiente</h2>
-  <p class="muted">Nenhum.</p>
-</section>`;
-  }
+  if (input.departamentosInsuficientes.length === 0) return '';
   const cards = input.departamentosInsuficientes
     .map(
       (i) => `<div class="dept-card" style="background:#F9FAFB; border-style:dashed;">
@@ -595,22 +510,14 @@ function renderInsuficientes(input: Nr1TemplateInput): string {
     )
     .join('\n');
   return `<section class="page-break">
-  <span class="section-num">Seção 5</span>
   <h2>Departamentos com amostra insuficiente</h2>
   <p style="font-size:10pt;">Departamentos com menos de 5 respondentes efetivos não geram radar próprio para preservar o anonimato dos respondentes.</p>
   ${cards}
-  <p class="muted" style="font-size:9pt; line-height:1.55; margin-top:4mm;"><strong>Nota metodológica.</strong> A regra de piso de 5 respondentes é adotada como boa prática de survey research para preservar o anonimato individual e garantir representatividade mínima do agregado.</p>
 </section>`;
 }
 
 function renderDivergencias(input: Nr1TemplateInput): string {
-  if (input.radaresPorDepartamento.length === 0) {
-    return `<section class="page-break">
-  <span class="section-num">Seção 6</span>
-  <h2>Análise de convergência e divergência</h2>
-  <p class="muted">Sem análise de convergência e divergência para este ciclo.</p>
-</section>`;
-  }
+  if (input.divergencias.length === 0 || input.radaresPorDepartamento.length === 0) return '';
   const divergPorDept = new Map<string, Nr1DivergenceEntry[]>();
   for (const d of input.divergencias) {
     const arr = divergPorDept.get(d.departamentoNome) ?? [];
@@ -670,7 +577,6 @@ function renderDivergencias(input: Nr1TemplateInput): string {
     })
     .join('\n');
   return `<section class="page-break">
-  <span class="section-num">Seção 6</span>
   <h2>Análise de convergência e divergência</h2>
   <p style="font-size:10pt;">Cada departamento é classificado conforme a magnitude da variação dos seus 8 fatores em relação à média da empresa. Diferenças de até 10 pontos indicam convergência. Diferenças superiores com agravamento indicam divergência crítica; superiores com atenuação indicam divergência positiva.</p>
   ${cards}
@@ -678,19 +584,12 @@ function renderDivergencias(input: Nr1TemplateInput): string {
 }
 
 function renderCritico(input: Nr1TemplateInput): string {
-  if (!input.departamentoCritico) {
-    return `<section class="page-break">
-  <span class="section-num">Seção 7</span>
-  <h2>Departamento em situação crítica</h2>
-  <p class="muted">Nenhum departamento em situação crítica identificado neste ciclo.</p>
-</section>`;
-  }
+  if (!input.departamentoCritico) return '';
   const c = input.departamentoCritico;
   const badges = c.fatoresCriticos
     .map((f) => `<div class="critico-badge">${escapeHtml(f)}</div>`)
     .join('');
   return `<section class="page-break">
-  <span class="section-num">Seção 7</span>
   <h2>Departamento em situação crítica</h2>
   <p style="font-size:10pt;">Identificação automática do departamento com maior magnitude de divergência negativa entre todos os avaliados no ciclo. Merece atenção prioritária nos próximos passos operacionais.</p>
   <div class="critico-card">
@@ -704,18 +603,11 @@ function renderCritico(input: Nr1TemplateInput): string {
     <div class="critico-body">${escapeHtml(c.diagnostico)}</div>
     <div class="critico-badges">${badges}</div>
   </div>
-  <p class="muted" style="font-size:9pt; line-height:1.55; margin-top:3mm;"><strong>Critério de identificação.</strong> A escolha segue algoritmo determinístico: número de fatores em divergência crítica (maior → menor); em caso de empate, maior magnitude da pior divergência absoluta.</p>
 </section>`;
 }
 
 function renderAlertas(input: Nr1TemplateInput): string {
-  if (input.alertas.length === 0) {
-    return `<section class="page-break">
-  <span class="section-num">Seção 8</span>
-  <h2>Alertas informativos por fator</h2>
-  <p class="muted">Sem alertas gerados neste ciclo.</p>
-</section>`;
-  }
+  if (input.alertas.length === 0) return '';
   const cards = input.alertas
     .map((a) => {
       const isCritical = a.score < 40;
@@ -738,7 +630,6 @@ function renderAlertas(input: Nr1TemplateInput): string {
     })
     .join('\n');
   return `<section class="page-break">
-  <span class="section-num">Seção 8</span>
   <h2>Alertas informativos por fator</h2>
   <p style="font-size:10pt;">Registro de todos os fatores que ficaram com score inferior a 50 em qualquer escopo (empresa ou departamento) no ciclo. Alertas são informativos e não substituem análise por profissional habilitado.</p>
   ${cards}
@@ -748,13 +639,7 @@ function renderAlertas(input: Nr1TemplateInput): string {
 
 function renderComparacaoAnterior(input: Nr1TemplateInput): string {
   const comp = input.comparacaoCicloAnterior;
-  if (!comp) {
-    return `<section class="page-break">
-  <span class="section-num">Seção 9</span>
-  <h2>Comparação com ciclo anterior</h2>
-  <p class="muted">Sem ciclo anterior comparável.</p>
-</section>`;
-  }
+  if (!comp) return '';
   const atualPorFator = new Map(input.radarEmpresa.map((f) => [f.nome, f.score]));
   const rows = comp.fatores
     .map((f) => {
@@ -774,7 +659,6 @@ function renderComparacaoAnterior(input: Nr1TemplateInput): string {
     })
     .join('\n');
   return `<section class="page-break">
-  <span class="section-num">Seção 9</span>
   <h2>Comparação com ciclo anterior</h2>
   <p style="font-size:10pt;">Variação dos scores por fator no escopo empresa em relação ao ciclo imediatamente anterior fechado <strong>(${escapeHtml(comp.cicloRotulo)})</strong>. Variações superiores a 5 pontos são destacadas em cor.</p>
   <table class="data-table">
@@ -799,7 +683,6 @@ const HIST_PALETA: Record<string, string> = {
   Autonomia: '#16A34A',
   'Insegurança no trabalho': '#991B1B',
 };
-
 const HIST_FATORES_ALVO = [
   'Exigências quantitativas',
   'Ritmo de trabalho',
@@ -810,13 +693,7 @@ const HIST_FATORES_ALVO = [
 
 function renderComparacaoHistorica(input: Nr1TemplateInput): string {
   const comps = input.comparacaoHistorica;
-  if (!comps || comps.length < 2) {
-    return `<section class="page-break">
-  <span class="section-num">Seção 10</span>
-  <h2>Comparação histórica de longo prazo</h2>
-  <p class="muted">Base histórica ainda insuficiente — ao menos 2 ciclos são necessários.</p>
-</section>`;
-  }
+  if (!comps || comps.length < 2) return '';
   const widthViewBox = 800;
   const heightViewBox = 280;
   const chartLeft = 60;
@@ -835,17 +712,13 @@ function renderComparacaoHistorica(input: Nr1TemplateInput): string {
     const circles: string[] = [];
     comps.forEach((c, idx) => {
       const f = c.fatores.find((x) => x.nome === fatorNome);
-      if (f === undefined) {
-        return;
-      }
+      if (f === undefined) return;
       const x = chartLeft + idx * xStep;
       const y = yFor(f.score);
       pts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
       circles.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="${color}" />`);
     });
-    if (pts.length < 2) {
-      return '';
-    }
+    if (pts.length < 2) return '';
     return `<polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="2" />${circles.join('')}`;
   }).join('\n');
   const legendaChart = HIST_FATORES_ALVO.map(
@@ -859,7 +732,6 @@ function renderComparacaoHistorica(input: Nr1TemplateInput): string {
     })
     .join('\n');
   return `<section class="page-break">
-  <span class="section-num">Seção 10</span>
   <h2>Comparação histórica de longo prazo</h2>
   <p style="font-size:10pt;">Evolução dos scores por fator ao longo dos últimos ciclos executados. A linha tracejada vermelha marca o limite crítico de score 50.</p>
   <div style="background:#F9FAFB; border:1px solid #E5E7EB; border-radius:8pt; padding:4mm 5mm; margin-top:3mm;">
@@ -885,47 +757,19 @@ function renderComparacaoHistorica(input: Nr1TemplateInput): string {
 </section>`;
 }
 
-function renderSugestoes(input: Nr1TemplateInput): string {
-  if (input.sugestoesProximosPassos.length === 0) {
-    return `<section class="page-break">
-  <span class="section-num">Seção 11</span>
-  <h2>Sugestões de próximos passos</h2>
-  <p class="muted">Sem sugestões automáticas para este ciclo.</p>
-</section>`;
-  }
-  const items = input.sugestoesProximosPassos
-    .map((s) => {
-      const colonIdx = s.indexOf(':');
-      let titulo = s;
-      let desc = '';
-      if (colonIdx > 0 && colonIdx < 120) {
-        titulo = s.slice(0, colonIdx).trim();
-        desc = s.slice(colonIdx + 1).trim();
-      }
-      return `<div class="suggestion-item">
-  <div class="suggestion-marker">▸</div>
-  <div class="suggestion-body">
-    <div class="suggestion-title">${escapeHtml(titulo)}</div>
-    ${desc ? `<div class="suggestion-desc">${escapeHtml(desc)}</div>` : ''}
-  </div>
-</div>`;
-    })
-    .join('\n');
-  return `<section class="page-break">
-  <span class="section-num">Seção 11</span>
-  <h2>Sugestões de próximos passos</h2>
-  <div class="suggestion-intro">Este radar identifica sinais preliminares nos oito fatores psicossociais avaliados. Os pontos a seguir são sugestões de investigação e aprofundamento, com base nos resultados do ciclo, para orientar as próximas ações da empresa.</div>
-  ${items}
-</section>`;
-}
-
 function renderRastreabilidade(input: Nr1TemplateInput): string {
   const notaAuditoria = input.notaAuditoriaEdicao
     ? `<div class="edit-note"><strong>Nota de auditoria — data de fechamento editada.</strong> A data de fechamento original deste ciclo era ${escapeHtml(formatDateBR(input.notaAuditoriaEdicao.dataFechamentoOriginal))}. Foi alterada para ${escapeHtml(formatDateBR(input.notaAuditoriaEdicao.dataFechamentoAtual))} em ${escapeHtml(formatDateBR(input.notaAuditoriaEdicao.ultimaEdicaoEm))} por ${escapeHtml(input.notaAuditoriaEdicao.ultimaEdicaoPor)}. Motivo registrado: <em>${escapeHtml(input.notaAuditoriaEdicao.ultimaEdicaoJustificativa)}</em></div>`
     : '';
   const invalidados = Math.max(0, input.ciclo.totalElegiveis - input.ciclo.totalRespondentes);
+  // Correcao canonica CC079-v4: "as 07:28" -> "às 07:28" (acento agudo
+  // obrigatorio no advérbio de hora em pt-BR). Protege contra output
+  // antigo do `toTimestampBrt` que emitia "as" sem crase.
+  const geradoEmBrt = (toTimestampBrt(input.generatedAtIso) ?? input.generatedAtIso).replace(
+    /\bas\b/g,
+    'às',
+  );
   return `<section class="page-break">
-  <span class="section-num">Seção 11</span>
   <h2>Rastreabilidade e integridade do relatório</h2>
   <p style="font-size:10pt;">Este relatório foi gerado automaticamente pelo módulo Radar NR-1 do ROIP APP no fechamento do ciclo, a partir das respostas válidas registradas em base de dados. Os campos abaixo permitem a verificação técnica e histórica do documento.</p>
   <div class="trace-card">
@@ -933,7 +777,7 @@ function renderRastreabilidade(input: Nr1TemplateInput): string {
     <div><strong>Identificador do ciclo:</strong> <code>${escapeHtml(input.ciclo.cicloRotulo)}</code></div>
     <div><strong>Data de abertura:</strong> ${escapeHtml(formatDateBR(input.ciclo.dataAbertura))} · <strong>Data de fechamento:</strong> ${escapeHtml(formatDateBR(input.ciclo.dataFechamento))}</div>
     <div><strong>Respondentes elegíveis:</strong> ${input.ciclo.totalElegiveis} · <strong>Efetivos válidos:</strong> ${input.ciclo.totalRespondentes} · <strong>Diferença (invalidados + não respondidos):</strong> ${invalidados}</div>
-    <div><strong>Gerado em:</strong> ${escapeHtml(toTimestampBrt(input.generatedAtIso) ?? input.generatedAtIso)}</div>
+    <div><strong>Gerado em:</strong> ${escapeHtml(geradoEmBrt)}</div>
     <div><strong>Escala do instrumento:</strong> 0 (Nunca) · 1 (Quase nunca) · 2 (Às vezes) · 3 (Quase sempre) · 4 (Sempre)</div>
   </div>
   ${notaAuditoria}
@@ -942,26 +786,24 @@ function renderRastreabilidade(input: Nr1TemplateInput): string {
 }
 
 /**
- * Renderiza o HTML canonico do Radar NR-1 em PDF (ME-1.3c CC079-v2).
- * Deterministico: mesmos inputs -> mesma saida byte a byte (excluidas
- * `generatedAtIso` e `generatedAtDate`, que sao inputs do consumidor).
+ * Renderiza o HTML do Radar NR-1 (ME-1.3c CC079-v4).
+ * Secoes vazias sao suprimidas; sugestoes de proximos passos eliminada.
  */
 export function renderNr1ReportHTML(input: Nr1TemplateInput): string {
-  const bodyHtml = [
-    renderCapa(input),
-    renderSumario(),
-    renderResumoExecutivo(input),
-    renderRadarEmpresa(input),
-    renderRadarDepartamentos(input),
-    renderInsuficientes(input),
-    renderDivergencias(input),
-    renderCritico(input),
-    renderAlertas(input),
-    renderComparacaoAnterior(input),
-    renderComparacaoHistorica(input),
-    renderSugestoes(input),
-    renderRastreabilidade(input),
-  ].join('\n');
+  const partes: string[] = [];
+  partes.push(renderCapa(input));
+  partes.push(renderResumoExecutivo(input));
+  partes.push(renderRadarEmpresa(input));
+  partes.push(renderDescricoesFatoresPagina(input));
+  partes.push(renderRadarDepartamentos(input));
+  partes.push(renderInsuficientes(input));
+  partes.push(renderDivergencias(input));
+  partes.push(renderCritico(input));
+  partes.push(renderAlertas(input));
+  partes.push(renderComparacaoAnterior(input));
+  partes.push(renderComparacaoHistorica(input));
+  partes.push(renderRastreabilidade(input));
+  const bodyHtml = partes.filter((p) => p.length > 0).join('\n');
 
   return renderLayoutBase({
     title: 'Radar NR-1',

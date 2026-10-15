@@ -168,15 +168,13 @@ export const LAYOUT_BASE_CSS = `
   .muted { color: #6B7280; }
   strong { font-weight: 600; color: #111827; }
 
-  /* Numero de secao canonico — teal uppercase antes de h2. */
-  .section-num {
-    display: block;
-    color: #14B8A6;
-    font-weight: 700;
-    font-size: 10pt;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    margin-bottom: 1mm;
+  /* Classe editorial de card informativo arredondado (ME-1.3c v4). */
+  .info-card {
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 10pt;
+    padding: 5mm 6mm;
+    margin: 4mm 0;
   }
 
   /* Capa editorial — pagina 1. */
@@ -240,19 +238,8 @@ export const LAYOUT_BASE_CSS = `
   }
   .cover-note strong { color: #78350F; font-weight: 700; }
 
-  /* Sumario — pagina 2. */
-  .toc-list { list-style: none; padding: 0; margin: 0; }
-  .toc-item {
-    padding: 2.5mm 0;
-    border-bottom: 1px solid #F3F4F6;
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    font-size: 11pt;
-  }
-  .toc-item .toc-num { color: #14B8A6; font-weight: 700; font-size: 10pt; min-width: 10mm; }
-  .toc-item .toc-title { flex: 1; color: #111827; font-weight: 500; }
-  .toc-item .toc-page { color: #6B7280; font-weight: 600; font-size: 10pt; min-width: 8mm; text-align: right; }
+  /* ME-1.3c CC079-v4: classes de sumario (.toc-*) retiradas junto com
+  o indice do documento. */
 
   /* Cards KPI — resumo executivo. */
   .kpi-grid {
@@ -564,6 +551,113 @@ export const LAYOUT_BASE_CSS = `
   .suggestion-body { flex: 1; }
   .suggestion-title { font-weight: 700; color: #111827; margin-bottom: 0.5mm; font-size: 10.5pt; }
   .suggestion-desc { font-size: 9.5pt; color: #4B5563; line-height: 1.55; }
+
+  /* ME-1.3c CC079-v4: comparativo dept x empresa — layout lado a lado. */
+  .dept-vs-empresa {
+    display: flex;
+    gap: 6mm;
+    align-items: flex-start;
+    margin-top: 6mm;
+  }
+  .dept-vs-empresa .mini-empresa {
+    flex: 0 0 40%;
+  }
+  .dept-vs-empresa .texto-comparativo {
+    flex: 1;
+    font-size: 10pt;
+    color: #374151;
+    line-height: 1.6;
+  }
+  .dept-vs-empresa .texto-comparativo strong {
+    color: #111827;
+    font-weight: 700;
+  }
+
+  /* ME-1.3c CC079-v4: grade de mini 9-Boxes na pagina final. */
+  .mini-grid-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4mm;
+    margin: 4mm 0;
+  }
+  .mini-grid-row > div {
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 8pt;
+    padding: 3mm;
+    page-break-inside: avoid;
+  }
+  .mini-grid-row > div .mini-titulo {
+    font-size: 9pt;
+    font-weight: 700;
+    color: #111827;
+    text-align: center;
+    margin-bottom: 1.5mm;
+    letter-spacing: 0.02em;
+  }
+  .mini-grid-row > div.mini-empresa-destaque {
+    background: #F0FDFA;
+    border-color: #99F6E4;
+  }
+
+  /* ME-1.3c CC079-v4: barras empilhadas de distribuicao. */
+  .stacked-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 3mm;
+    margin: 2mm 0;
+    font-size: 9.5pt;
+  }
+  .stacked-bar-row .nome-depto {
+    flex: 0 0 32mm;
+    color: #374151;
+    font-weight: 600;
+  }
+  .stacked-bar-row .barra-wrap {
+    flex: 1;
+    display: flex;
+    height: 7mm;
+    border-radius: 3pt;
+    overflow: hidden;
+    border: 1px solid #E5E7EB;
+  }
+  .stacked-bar-row .barra-seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8pt;
+    font-weight: 700;
+    color: #FFFFFF;
+    text-shadow: 0 0 1px rgba(0,0,0,0.3);
+  }
+  .stacked-bar-row .total-depto {
+    flex: 0 0 10mm;
+    text-align: right;
+    color: #6B7280;
+    font-weight: 600;
+    font-size: 9pt;
+  }
+
+  /* ME-1.3c CC079-v4: legenda das barras empilhadas / mini grids. */
+  .legenda-quadrantes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3mm;
+    font-size: 8.5pt;
+    color: #374151;
+    margin-top: 2mm;
+  }
+  .legenda-quadrantes .leg-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 1mm;
+  }
+  .legenda-quadrantes .leg-swatch {
+    display: inline-block;
+    width: 3mm;
+    height: 3mm;
+    border-radius: 2pt;
+  }
 `;
 
 /**

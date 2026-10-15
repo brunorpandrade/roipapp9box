@@ -24,7 +24,7 @@
 import { eq } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../db/client';
-import { employees, superAdmins } from '../../db/schema';
+import { departments, employees, superAdmins } from '../../db/schema';
 import { toIsoDateUtc, toTimestampBrt } from '../../lib/date/toIsoDateUtc';
 import { getCompanyById } from './companies';
 import { getCopsoqCycleById } from './copsoqCycles';
@@ -235,12 +235,23 @@ export async function buildNr1TemplateInput(
     (s) => (s as { respondeu?: boolean | null }).respondeu === true,
   ).length;
 
+  // Fix do bug raiz (CC079-v4): o schema de `copsoqCycleSnapshot` nao
+  // armazena `departamentoNome` como coluna — so o `departamentoId`
+  // (FK para `departments`). O codigo anterior lia um campo que vinha
+  // sempre `undefined`, caia no fallback 'Departamento' e fazia o
+  // dropdown da UI + a secao "Radar por departamento" do PDF perderem
+  // o nome. Correcao canonica: carregar o mapa id -> nome de uma vez
+  // via query a `departments` e resolver o nome no join em memoria.
+  const allDepts = await deps.db
+    .select({ id: departments.id, nome: departments.nome })
+    .from(departments);
+  const departmentNameById = new Map<number, string>(allDepts.map((d) => [d.id, d.nome]));
+
   const departamentosPorId: Map<number, { nome: string; amostra: number }> = new Map();
   for (const snap of snapshots) {
     const depId = (snap as { departamentoId?: number | null }).departamentoId;
-    const depNome =
-      (snap as { departamentoNome?: string | null }).departamentoNome ?? 'Departamento';
     if (depId === null || depId === undefined) continue;
+    const depNome = departmentNameById.get(depId) ?? 'Departamento';
     const entry = departamentosPorId.get(depId) ?? { nome: depNome, amostra: 0 };
     entry.nome = depNome;
     if ((snap as { respondeu?: boolean | null }).respondeu === true) entry.amostra += 1;
