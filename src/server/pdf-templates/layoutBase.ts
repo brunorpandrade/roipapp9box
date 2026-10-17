@@ -658,6 +658,157 @@ export const LAYOUT_BASE_CSS = `
     height: 3mm;
     border-radius: 2pt;
   }
+
+  /* ============================================================
+     ME-1.3c CC079-v5 — layout canonico do PDF Radar NR-1.
+     Classes novas para radar centralizado com legenda abaixo
+     (nao mais lado a lado), pagina por departamento com cabecalho
+     identico, tabela 3 colunas comparativa dept x empresa, e
+     nota padronizada para paginas sem dados ainda disponiveis.
+     ============================================================ */
+
+  .radar-stacked {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4mm;
+    margin-top: 2mm;
+  }
+  .radar-stacked .radar-svg-centered {
+    width: 72%;
+    max-width: 110mm;
+  }
+  .radar-stacked .radar-respondentes-cap {
+    font-size: 9pt;
+    color: #6B7280;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-align: center;
+  }
+  .radar-legend-horizontal {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2mm 6mm;
+    width: 100%;
+    font-size: 9.5pt;
+  }
+  .radar-legend-horizontal .leg-item {
+    display: flex;
+    align-items: center;
+    gap: 2mm;
+    padding: 1mm 0;
+    border-bottom: 1px solid #F3F4F6;
+  }
+  .radar-legend-horizontal .leg-item:nth-last-child(-n+2) {
+    border-bottom: none;
+  }
+  .radar-legend-horizontal .leg-nome {
+    flex: 1;
+    color: #374151;
+    font-weight: 500;
+  }
+  .radar-legend-horizontal .leg-score {
+    font-weight: 700;
+  }
+  .radar-legend-biparticao {
+    display: flex;
+    justify-content: center;
+    gap: 10mm;
+    margin: 2mm 0 3mm;
+    font-size: 9pt;
+    color: #374151;
+    font-weight: 600;
+  }
+  .radar-legend-biparticao .leg-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 2mm;
+  }
+  .radar-legend-biparticao .leg-swatch-line {
+    display: inline-block;
+    width: 8mm;
+    height: 2pt;
+    border-radius: 1pt;
+  }
+  .radar-legend-biparticao .leg-swatch-line.dashed {
+    border-top: 2pt dashed #14B8A6;
+    height: 0;
+    background: transparent;
+  }
+
+  /* Tabela 3 colunas comparativa dept x empresa (sem delta/setinhas). */
+  table.data-table-3col {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+    margin-top: 4mm;
+  }
+  table.data-table-3col thead th {
+    text-align: left;
+    padding: 2.5mm 3mm;
+    background: #F9FAFB;
+    color: #6B7280;
+    font-weight: 600;
+    font-size: 8.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid #E5E7EB;
+  }
+  table.data-table-3col thead th.right {
+    text-align: right;
+  }
+  table.data-table-3col tbody td {
+    padding: 2.5mm 3mm;
+    border-bottom: 1px solid #F3F4F6;
+    color: #111827;
+    font-size: 9.5pt;
+  }
+  table.data-table-3col tbody tr:last-child td {
+    border-bottom: none;
+  }
+  table.data-table-3col tbody td.right {
+    text-align: right;
+    font-weight: 700;
+  }
+
+  /* Nota padronizada para paginas sem dados ainda disponiveis. */
+  .sem-dados-nota {
+    background: #F9FAFB;
+    border: 1px dashed #D1D5DB;
+    border-radius: 10pt;
+    padding: 10mm 8mm;
+    margin: 6mm 0;
+    text-align: center;
+    color: #6B7280;
+    font-size: 10pt;
+    line-height: 1.55;
+  }
+  .sem-dados-nota strong {
+    display: block;
+    font-size: 11pt;
+    color: #374151;
+    margin-bottom: 2mm;
+    font-weight: 700;
+  }
+
+  /* Cabecalho canonico de pagina de departamento. */
+  .dept-page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 2mm;
+  }
+  .dept-page-head .dept-page-title {
+    font-size: 13pt;
+    font-weight: 700;
+    color: #111827;
+    letter-spacing: -0.01em;
+  }
+  .dept-page-head .dept-page-sub {
+    font-size: 9pt;
+    color: #6B7280;
+    font-weight: 500;
+  }
 `;
 
 /**

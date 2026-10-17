@@ -310,7 +310,7 @@ describe('nr1Template (ME-050/51)', () => {
     expect(renderNr1ReportHTML(CANON_NR1)).toBe(renderNr1ReportHTML(CANON_NR1));
   });
 
-  it('renderNr1ReportHTML — cobre as secoes editoriais do CC079-v4', () => {
+  it('renderNr1ReportHTML — cobre as secoes editoriais do CC079-v5', () => {
     const html = renderNr1ReportHTML(CANON_NR1);
     // Capa
     expect(html).toContain('Radar NR-1');
@@ -318,25 +318,78 @@ describe('nr1Template (ME-050/51)', () => {
     expect(html).toContain('Resumo executivo');
     // Radar da empresa (sem a palavra 'canônicos' no titulo)
     expect(html).toContain('Radar da empresa');
-    // Descricao de cada fator (pagina propria no v4)
+    // Descricao de cada fator (pagina propria no v4+)
     expect(html).toContain('Descrição de cada fator');
-    // Radar por departamento (presente quando CANON_NR1 tem depto)
-    expect(html).toContain('Radar por departamento');
+    // Radar por departamento — v5: uma pagina por dept com nome no titulo
+    expect(html).toContain('Radar por departamento — Manufatura');
+    // Tabela 3 colunas canonica da v5
+    expect(html).toContain('data-table-3col');
+    expect(html).toContain('<th>Fator</th>');
+    expect(html).toContain('<th class="right">Departamento</th>');
+    expect(html).toContain('<th class="right">Empresa</th>');
     // Departamento crítico (presente em CANON_NR1)
     expect(html).toContain('situação crítica');
     // Alertas
     expect(html).toContain('Alertas informativos');
+    // Analise de convergencia e divergencia (reintroduzida v5)
+    expect(html).toContain('Análise de convergência e divergência');
+    // Sugestoes de proximos passos (reintroduzida v5)
+    expect(html).toContain('Sugestões de próximos passos');
     // Rastreabilidade
     expect(html).toContain('Rastreabilidade');
-    // Secoes eliminadas no CC079-v4
+    // Secoes eliminadas desde CC079-v4
     expect(html).not.toContain('Sumário');
-    expect(html).not.toContain('Sugestões de próximos passos');
     // Vocabulario 'canônico/canônica' nao pode aparecer no cliente
     expect(html).not.toContain('canônico');
     expect(html).not.toContain('canônica');
     // "SEÇÃO N" nao pode aparecer
     expect(html).not.toContain('SEÇÃO ');
     expect(html).not.toContain('Seção ');
+  });
+
+  it('renderNr1ReportHTML — v5: mantem a pagina com nota padronizada quando sem dados', () => {
+    // Entrada com todas as secoes opcionais vazias — a v5 nunca
+    // suprime pagina; renderiza a nota "Dados ainda insuficientes…".
+    const input: Nr1TemplateInput = {
+      ...CANON_NR1,
+      radaresPorDepartamento: [],
+      departamentosInsuficientes: [],
+      divergencias: [],
+      departamentoCritico: undefined,
+      alertas: [],
+      comparacaoCicloAnterior: undefined,
+      comparacaoHistorica: undefined,
+      sugestoesProximosPassos: [],
+    };
+    const html = renderNr1ReportHTML(input);
+    // Todas as paginas permanecem presentes.
+    expect(html).toContain('Radar por departamento');
+    expect(html).toContain('Departamentos com amostra insuficiente');
+    expect(html).toContain('Análise de convergência e divergência');
+    expect(html).toContain('Departamento em situação crítica');
+    expect(html).toContain('Alertas informativos');
+    expect(html).toContain('Comparação com ciclo anterior');
+    expect(html).toContain('Comparação histórica de longo prazo');
+    expect(html).toContain('Sugestões de próximos passos');
+    // Nota padrao renderizada em multiplas paginas.
+    const notas = html.match(/sem-dados-nota/g) ?? [];
+    expect(notas.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('renderNr1ReportHTML — v5: radar da empresa com legenda ABAIXO (padrao stacked)', () => {
+    const html = renderNr1ReportHTML(CANON_NR1);
+    expect(html).toContain('radar-stacked');
+    expect(html).toContain('radar-svg-centered');
+    expect(html).toContain('radar-legend-horizontal');
+    expect(html).toContain('respondentes efetivos');
+  });
+
+  it('renderNr1ReportHTML — v5: radar por dept usa legenda biparticao Empresa/Dept', () => {
+    const html = renderNr1ReportHTML(CANON_NR1);
+    expect(html).toContain('radar-legend-biparticao');
+    // Dois chips: Empresa (tracejado teal) + Departamento (navy solido)
+    expect(html).toMatch(/<span>Empresa<\/span>/);
+    expect(html).toMatch(/<span>Departamento<\/span>/);
   });
 
   it('renderNr1ReportHTML — nota de auditoria de edicao omitida quando ausente', () => {

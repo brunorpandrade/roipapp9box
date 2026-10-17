@@ -1,27 +1,40 @@
 /* eslint-disable @stylistic/max-len -- template HTML editorial com strings longas */
-// ROIP APP 9BOX — template PDF Radar NR-1 (ME-1.3c CC079-v4).
+// ROIP APP 9BOX — template PDF Radar NR-1 (ME-1.3c CC079-v5).
 //
 // Renderizacao HTML determinística do relatorio do Radar NR-1
 // (DOC 03 §11.12). Consumido por `nr1.downloadReport` (Route Handler);
 // convertido em PDF pela toolchain `pdfRenderer.ts`.
 //
-// Estrutura CC079-v4 (editorial, enxuta):
-// - Capa sem badge, hero em uma linha, meta grid compacta (empresa,
-//   ciclo, datas, data de geracao), cover-note ambar.
-// - Resumo executivo com 3 KPI cards horizontais (adesao, respostas
-//   invalidadas, fatores em alerta) e gauge de adesao.
-// - Pagina inteira para o radar da empresa (grafico em cima + tabela
-//   de 8 fatores embaixo).
-// - Pagina inteira seguinte para a descricao de cada fator (com os
-//   rotulos "Fator de risco" / "Fator de recurso" preservados).
-// - Radar por departamento (quando houver departamentos com nome e
-//   amostra suficiente).
-// - Alertas informativos por fator.
-// - Rastreabilidade.
+// Estrutura CC079-v5 (editorial, canonico espelhando a referencia
+// visual integral de 14 paginas trazida por Bruno):
+// - Capa sem badge, hero em uma linha, meta grid compacta, cover-note
+//   ambar.
+// - Resumo executivo com 3 KPI cards horizontais + gauge de adesao.
+// - Pagina do radar da empresa com titulo "Empresa" acima + numero de
+//   respondentes efetivos acima da legenda + legenda horizontal
+//   ABAIXO (nao mais ao lado) do SVG centralizado.
+// - Pagina da descricao dos 8 fatores (preservando "Fator de risco" /
+//   "Fator de recurso").
+// - UMA PAGINA por departamento com amostra suficiente, cabecalho
+//   identico (variacao so nos dados): radar comparado (poligono do
+//   dept em azul escuro + tracejado teal da empresa) + legenda
+//   horizontal abaixo + tabela 3 colunas FATOR / DEPARTAMENTO /
+//   EMPRESA (sem delta/setinhas — leitura visual por cor do semaforo).
+// - Pagina de departamentos com amostra insuficiente (cards tracejados).
+// - Analise de convergencia e divergencia, departamento critico,
+//   alertas informativos.
+// - Comparacao com ciclo anterior: SEMPRE renderizada; sem dado,
+//   mostra nota padronizada "Dados ainda insuficientes…".
+// - Comparacao historica de longo prazo: SEMPRE renderizada; sem
+//   dado, nota padronizada.
+// - Sugestoes de proximos passos (reintroduzida; nota padronizada
+//   quando sem sugestao).
+// - Rastreabilidade e integridade do relatorio.
 //
-// Secoes vazias (convergencia/divergencia sem dado, dept critico
-// ausente, ciclo anterior inexistente, historico insuficiente) sao
-// suprimidas integralmente. Sugestoes de proximos passos eliminada.
+// Mudanca de politica canonica v5: paginas sem dados nao sao
+// suprimidas; sao mantidas com nota padronizada. Isso preserva a
+// expectativa visual do relatorio e deixa claro o que ainda nao esta
+// disponivel para analise.
 //
 // Determinismo: mesmos dados -> mesmo HTML byte-exact exceto timestamp.
 
@@ -236,6 +249,12 @@ function renderRadarSvg(
 ): string {
   if (fatores.length < 3) return '';
   const scores = fatores.map((f) => f.score);
+  // CC079-v5: no modo comparativo (referencia presente), o poligono do
+  // dept vai em azul escuro navy e a empresa vem como tracejado teal.
+  // No modo simples (empresa sozinha), mantem o teal canonico de marca.
+  const polyFill = referencia ? RADAR_COLORS.navy : RADAR_COLORS.teal;
+  const polyStroke = referencia ? RADAR_COLORS.navy : RADAR_COLORS.teal;
+  const refStroke = referencia ? RADAR_COLORS.teal : RADAR_COLORS.mediaEmpresaStroke;
   const polygonPoints = projectRadarPolygon(
     scores,
     RADAR_SVG_CX,
@@ -261,52 +280,84 @@ function renderRadarSvg(
         RADAR_SVG_CX,
         RADAR_SVG_CY,
         RADAR_SVG_MAX_RADIUS,
-      )}" fill="none" stroke="${RADAR_COLORS.mediaEmpresaStroke}" stroke-width="1.5" stroke-dasharray="${RADAR_COLORS.mediaEmpresaDasharray}" />`
+      )}" fill="none" stroke="${refStroke}" stroke-width="1.8" stroke-dasharray="${RADAR_COLORS.mediaEmpresaDasharray}" />`
     : '';
   return `<svg viewBox="${RADAR_SVG_VIEWBOX}" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto; display:block;">
 ${renderRadarGridSvg(scores.length, RADAR_SVG_CX, RADAR_SVG_CY, RADAR_SVG_MAX_RADIUS, RADAR_SVG_NUM_RINGS, RADAR_COLORS.gridStroke)}
 ${referenciaPoly}
-<polygon points="${polygonPoints}" fill="${RADAR_COLORS.teal}" fill-opacity="${RADAR_COLORS.tealFillOpacity}" stroke="${RADAR_COLORS.teal}" stroke-width="2" />
-<g fill="${RADAR_COLORS.teal}">
+<polygon points="${polygonPoints}" fill="${polyFill}" fill-opacity="${RADAR_COLORS.tealFillOpacity}" stroke="${polyStroke}" stroke-width="2" />
+<g fill="${polyStroke}">
 ${dataPoints}
 </g>
 ${renderRadarAxisLabels(fatores)}
 </svg>`;
 }
 
-function renderRadarLegend(fatores: readonly Nr1FatorScore[]): string {
+/**
+ * Legenda horizontal canonica (CC079-v5): grid 2 colunas de dot + nome
+ * + score, para colocar ABAIXO do SVG do radar (padrao da referencia
+ * visual de 14 paginas).
+ */
+function renderRadarLegendHorizontal(fatores: readonly Nr1FatorScore[]): string {
   const items = fatores
     .map((f) => {
       const faixa: Nr1Faixa = classificarNr1Faixa(f.score);
       const dotColor = RADAR_NR1_CORES[faixa];
-      return `<tr>
-    <td style="padding:1.5mm 3mm 1.5mm 0; border-bottom:1px solid #F3F4F6;">
-      <span class="legend-dot" style="background:${dotColor};"></span>
-      <span style="color:#374151; font-weight:500;">${escapeHtml(f.nome)}</span>
-    </td>
-    <td class="right" style="padding:1.5mm 0; border-bottom:1px solid #F3F4F6; font-weight:700; color:${dotColor};">${fmtScore(f.score)}</td>
-  </tr>`;
+      return `<div class="leg-item">
+  <span class="legend-dot" style="background:${dotColor};"></span>
+  <span class="leg-nome">${escapeHtml(f.nome)}</span>
+  <span class="leg-score" style="color:${dotColor};">${fmtScore(f.score)}</span>
+</div>`;
     })
     .join('\n');
-  return `<table style="width:100%; border-collapse:collapse; font-size:9.5pt;">
+  return `<div class="radar-legend-horizontal">
 ${items}
-</table>`;
+</div>`;
 }
 
+/**
+ * Legenda de biparticao canonica para o radar comparado por
+ * departamento (CC079-v5): "Empresa" (linha tracejada teal) +
+ * "Departamento" (linha solida azul escuro).
+ */
+function renderRadarLegendBiparticao(): string {
+  return `<div class="radar-legend-biparticao">
+  <span class="leg-chip">
+    <span class="leg-swatch-line dashed"></span>
+    <span>Empresa</span>
+  </span>
+  <span class="leg-chip">
+    <span class="leg-swatch-line" style="background:${RADAR_COLORS.navy};"></span>
+    <span>Departamento</span>
+  </span>
+</div>`;
+}
+
+/**
+ * Card canonico do radar (CC079-v5): titulo e numero de respondentes
+ * acima, SVG centralizado no meio, legenda horizontal abaixo. Padrao
+ * `radar-stacked` do design system.
+ */
 function renderRadarCardBlock(
   titulo: string,
   subtitulo: string,
   fatores: readonly Nr1FatorScore[],
   referencia?: readonly Nr1FatorScore[],
 ): string {
+  let legenda: string;
+  if (referencia) {
+    legenda = renderRadarLegendBiparticao();
+  } else {
+    legenda = renderRadarLegendHorizontal(fatores);
+  }
   return `<div class="radar-block">
   <div class="radar-block-head">
     <span class="radar-block-title">${escapeHtml(titulo)}</span>
-    <span class="radar-block-subtitle">${escapeHtml(subtitulo)}</span>
   </div>
-  <div class="radar-row">
-    <div class="radar-svg-wrap">${renderRadarSvg(fatores, referencia)}</div>
-    <div class="radar-legend">${renderRadarLegend(fatores)}</div>
+  <div class="radar-stacked">
+    <div class="radar-respondentes-cap">${escapeHtml(subtitulo)}</div>
+    <div class="radar-svg-centered">${renderRadarSvg(fatores, referencia)}</div>
+    ${legenda}
   </div>
 </div>`;
 }
@@ -475,27 +526,94 @@ function renderDescricoesFatoresPagina(input: Nr1TemplateInput): string {
 </section>`;
 }
 
-function renderRadarDepartamentos(input: Nr1TemplateInput): string {
-  if (input.radaresPorDepartamento.length === 0) return '';
-  const blocks = input.radaresPorDepartamento
-    .map((d) =>
-      renderRadarCardBlock(
-        d.departamentoNome,
-        `${d.amostra} respondentes efetivos`,
-        d.fatores,
-        input.radarEmpresa,
-      ),
-    )
+/**
+ * CC079-v5: tabela 3 colunas FATOR / DEPARTAMENTO / EMPRESA, sem
+ * delta e sem setinhas. Leitura visual pela cor do semaforo em cada
+ * valor (verde >= 66, amarelo 50-65, vermelho < 50).
+ */
+function renderTabelaDeptVsEmpresa(
+  fatoresDept: readonly Nr1FatorScore[],
+  fatoresEmpresa: readonly Nr1FatorScore[],
+): string {
+  const empresaPorNome = new Map(fatoresEmpresa.map((f) => [f.nome, f.score]));
+  const rows = fatoresDept
+    .map((f) => {
+      const faixaD: Nr1Faixa = classificarNr1Faixa(f.score);
+      const corD = RADAR_NR1_CORES[faixaD];
+      const scoreEmp = empresaPorNome.get(f.nome) ?? 0;
+      const faixaE: Nr1Faixa = classificarNr1Faixa(scoreEmp);
+      const corE = RADAR_NR1_CORES[faixaE];
+      return `<tr>
+  <td>${escapeHtml(f.nome)}</td>
+  <td class="right" style="color:${corD};">${fmtScore(f.score)}</td>
+  <td class="right" style="color:${corE};">${fmtScore(scoreEmp)}</td>
+</tr>`;
+    })
     .join('\n');
+  return `<table class="data-table-3col">
+  <thead>
+    <tr>
+      <th>Fator</th>
+      <th class="right">Departamento</th>
+      <th class="right">Empresa</th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
+</table>`;
+}
+
+/**
+ * CC079-v5: UMA pagina por departamento com amostra suficiente,
+ * cabecalho identico (variacao so nos dados): titulo h2 "Radar por
+ * departamento — <Nome>" + radar comparado + legenda biparticao +
+ * tabela 3 colunas.
+ */
+function renderPaginaDepartamento(
+  dept: Nr1DepartamentoScore,
+  radarEmpresa: readonly Nr1FatorScore[],
+): string {
+  const radar = renderRadarCardBlock(
+    dept.departamentoNome,
+    `${dept.amostra} respondentes efetivos`,
+    dept.fatores,
+    radarEmpresa,
+  );
+  const tabela = renderTabelaDeptVsEmpresa(dept.fatores, radarEmpresa);
   return `<section class="page-break">
-  <h2>Radar por departamento</h2>
-  <p style="font-size:10pt;">Detalhamento dos 8 fatores por departamento com amostra suficiente. Polígono em teal: departamento. Tracejado cinza: média da empresa (referência comparativa).</p>
-  ${blocks}
+  <h2>Radar por departamento — ${escapeHtml(dept.departamentoNome)}</h2>
+  <p style="font-size:10pt;">Detalhamento dos 8 fatores no escopo do departamento, comparado com a média da empresa no mesmo ciclo. Polígono em azul escuro representa o departamento; tracejado teal representa a referência da empresa.</p>
+  ${radar}
+  ${tabela}
 </section>`;
 }
 
+function renderRadarDepartamentos(input: Nr1TemplateInput): string {
+  if (input.radaresPorDepartamento.length === 0) {
+    return `<section class="page-break">
+  <h2>Radar por departamento</h2>
+  <p style="font-size:10pt;">Detalhamento dos 8 fatores por departamento com amostra suficiente, comparado à média da empresa no mesmo ciclo.</p>
+  <div class="sem-dados-nota">
+    <strong>Dados ainda insuficientes para esta análise.</strong>
+    Nenhum departamento atingiu o piso canônico de 5 respondentes efetivos neste ciclo. A seção será preenchida automaticamente quando houver departamentos com amostra suficiente.
+  </div>
+</section>`;
+  }
+  return input.radaresPorDepartamento
+    .map((d) => renderPaginaDepartamento(d, input.radarEmpresa))
+    .join('\n');
+}
+
 function renderInsuficientes(input: Nr1TemplateInput): string {
-  if (input.departamentosInsuficientes.length === 0) return '';
+  if (input.departamentosInsuficientes.length === 0) {
+    return `<section class="page-break">
+  <h2>Departamentos com amostra insuficiente</h2>
+  <p style="font-size:10pt;">Departamentos com menos de 5 respondentes efetivos não geram radar próprio para preservar o anonimato dos respondentes.</p>
+  <div class="sem-dados-nota">
+    <strong>Nenhum departamento com amostra insuficiente neste ciclo.</strong>
+    Todos os departamentos com snapshot válido atingiram o piso de 5 respondentes efetivos.
+  </div>
+</section>`;
+  }
   const cards = input.departamentosInsuficientes
     .map(
       (i) => `<div class="dept-card" style="background:#F9FAFB; border-style:dashed;">
@@ -517,7 +635,16 @@ function renderInsuficientes(input: Nr1TemplateInput): string {
 }
 
 function renderDivergencias(input: Nr1TemplateInput): string {
-  if (input.divergencias.length === 0 || input.radaresPorDepartamento.length === 0) return '';
+  if (input.divergencias.length === 0 || input.radaresPorDepartamento.length === 0) {
+    return `<section class="page-break">
+  <h2>Análise de convergência e divergência</h2>
+  <p style="font-size:10pt;">Cada departamento é classificado conforme a magnitude da variação dos seus 8 fatores em relação à média da empresa.</p>
+  <div class="sem-dados-nota">
+    <strong>Dados ainda insuficientes para esta análise.</strong>
+    A análise exige pelo menos um departamento com amostra suficiente para comparação com o escopo empresa. A seção será preenchida automaticamente quando essa condição estiver atendida.
+  </div>
+</section>`;
+  }
   const divergPorDept = new Map<string, Nr1DivergenceEntry[]>();
   for (const d of input.divergencias) {
     const arr = divergPorDept.get(d.departamentoNome) ?? [];
@@ -584,7 +711,16 @@ function renderDivergencias(input: Nr1TemplateInput): string {
 }
 
 function renderCritico(input: Nr1TemplateInput): string {
-  if (!input.departamentoCritico) return '';
+  if (!input.departamentoCritico) {
+    return `<section class="page-break">
+  <h2>Departamento em situação crítica</h2>
+  <p style="font-size:10pt;">Identificação automática do departamento com maior magnitude de divergência negativa entre todos os avaliados no ciclo.</p>
+  <div class="sem-dados-nota">
+    <strong>Nenhum departamento em situação crítica neste ciclo.</strong>
+    Nenhum departamento apresentou divergência crítica (variação acima de 10 pontos negativos em relação à média da empresa).
+  </div>
+</section>`;
+  }
   const c = input.departamentoCritico;
   const badges = c.fatoresCriticos
     .map((f) => `<div class="critico-badge">${escapeHtml(f)}</div>`)
@@ -607,7 +743,16 @@ function renderCritico(input: Nr1TemplateInput): string {
 }
 
 function renderAlertas(input: Nr1TemplateInput): string {
-  if (input.alertas.length === 0) return '';
+  if (input.alertas.length === 0) {
+    return `<section class="page-break">
+  <h2>Alertas informativos por fator</h2>
+  <p style="font-size:10pt;">Registro de todos os fatores que ficaram com score inferior a 50 em qualquer escopo (empresa ou departamento) no ciclo.</p>
+  <div class="sem-dados-nota">
+    <strong>Nenhum fator em alerta neste ciclo.</strong>
+    Todos os fatores avaliados ficaram com score igual ou superior a 50 nos escopos empresa e departamento.
+  </div>
+</section>`;
+  }
   const cards = input.alertas
     .map((a) => {
       const isCritical = a.score < 40;
@@ -639,7 +784,16 @@ function renderAlertas(input: Nr1TemplateInput): string {
 
 function renderComparacaoAnterior(input: Nr1TemplateInput): string {
   const comp = input.comparacaoCicloAnterior;
-  if (!comp) return '';
+  if (!comp) {
+    return `<section class="page-break">
+  <h2>Comparação com ciclo anterior</h2>
+  <p style="font-size:10pt;">Variação dos scores por fator no escopo empresa em relação ao ciclo imediatamente anterior fechado.</p>
+  <div class="sem-dados-nota">
+    <strong>Dados ainda insuficientes para esta análise.</strong>
+    Este é o primeiro ciclo fechado da série ou o ciclo anterior não teve amostra válida no escopo empresa. A seção será preenchida automaticamente quando houver um ciclo anterior comparável.
+  </div>
+</section>`;
+  }
   const atualPorFator = new Map(input.radarEmpresa.map((f) => [f.nome, f.score]));
   const rows = comp.fatores
     .map((f) => {
@@ -693,7 +847,16 @@ const HIST_FATORES_ALVO = [
 
 function renderComparacaoHistorica(input: Nr1TemplateInput): string {
   const comps = input.comparacaoHistorica;
-  if (!comps || comps.length < 2) return '';
+  if (!comps || comps.length < 2) {
+    return `<section class="page-break">
+  <h2>Comparação histórica de longo prazo</h2>
+  <p style="font-size:10pt;">Evolução dos scores por fator ao longo dos últimos ciclos executados.</p>
+  <div class="sem-dados-nota">
+    <strong>Dados ainda insuficientes para esta análise.</strong>
+    A comparação histórica requer pelo menos dois ciclos fechados consecutivos. A seção será preenchida automaticamente conforme a cadência de aplicação do radar for acumulando novos ciclos.
+  </div>
+</section>`;
+  }
   const widthViewBox = 800;
   const heightViewBox = 280;
   const chartLeft = 60;
@@ -757,6 +920,81 @@ function renderComparacaoHistorica(input: Nr1TemplateInput): string {
 </section>`;
 }
 
+/**
+ * CC079-v5: reintroducao da secao "Sugestoes de proximos passos",
+ * reposicionando o canonico pos-alertas / pos-historico. Deriva as
+ * sugestoes dos alertas e divergencias quando o service nao preencher
+ * explicitamente, para que a pagina seja util mesmo sem enriquecimento.
+ */
+function derivarSugestoesCanonicas(input: Nr1TemplateInput): string[] {
+  if (input.sugestoesProximosPassos.length > 0) {
+    return [...input.sugestoesProximosPassos];
+  }
+  const out: string[] = [];
+  const alertasEmpresa = input.alertas.filter((a) => a.escopo === 'empresa');
+  for (const a of alertasEmpresa) {
+    out.push(
+      `Aprofundar diagnóstico em ${a.fatorNome} (escopo empresa, score ${fmtScore(a.score)}). ` +
+        'Recomenda-se conversas estruturadas com amostra de colaboradores, análise das rotinas de ' +
+        'trabalho vinculadas a este fator e revisão das práticas de gestão associadas.',
+    );
+  }
+  if (input.departamentoCritico) {
+    out.push(
+      `Investigação prioritária no departamento ${input.departamentoCritico.nome}. ` +
+        'Recomenda-se conversa com a liderança e os colaboradores da área para contextualizar ' +
+        'a divergência observada e identificar causas e intervenções operacionais.',
+    );
+  }
+  const historico = input.comparacaoHistorica;
+  if (historico && historico.length >= 2) {
+    out.push(
+      'Monitoramento da deterioração histórica em fatores de risco. ' +
+        'Manter a cadência regular de aplicação do radar e considerar investigação aprofundada ' +
+        'com profissional técnico habilitado, especialmente se o padrão persistir no próximo ciclo.',
+    );
+  }
+  return out;
+}
+
+function renderSugestoesProximosPassos(input: Nr1TemplateInput): string {
+  const sugestoes = derivarSugestoesCanonicas(input);
+  if (sugestoes.length === 0) {
+    return `<section class="page-break">
+  <h2>Sugestões de próximos passos</h2>
+  <div class="suggestion-intro">
+    Este radar identifica sinais preliminares nos oito fatores psicossociais avaliados. Os pontos a seguir são sugestões de investigação e aprofundamento, com base nos resultados do ciclo, para orientar as próximas ações da empresa.
+  </div>
+  <div class="sem-dados-nota">
+    <strong>Nenhuma sugestão específica para este ciclo.</strong>
+    Nenhum fator ficou abaixo do limite crítico e não há departamento em situação de divergência. Recomenda-se manter a cadência regular de aplicação do radar.
+  </div>
+</section>`;
+  }
+  const items = sugestoes
+    .map((texto) => {
+      // Primeira frase vira titulo da sugestao; o resto vai como descricao.
+      const match = /^([^.]+\.)\s*(.*)$/.exec(texto);
+      const titulo = match ? match[1] : texto;
+      const descricao = match ? match[2] : '';
+      return `<div class="suggestion-item">
+  <span class="suggestion-marker">▶</span>
+  <div class="suggestion-body">
+    <div class="suggestion-title">${escapeHtml(titulo ?? '')}</div>
+    ${descricao ? `<div class="suggestion-desc">${escapeHtml(descricao)}</div>` : ''}
+  </div>
+</div>`;
+    })
+    .join('\n');
+  return `<section class="page-break">
+  <h2>Sugestões de próximos passos</h2>
+  <div class="suggestion-intro">
+    Este radar identifica sinais preliminares nos oito fatores psicossociais avaliados. Os pontos a seguir são sugestões de investigação e aprofundamento, com base nos resultados do ciclo, para orientar as próximas ações da empresa.
+  </div>
+  ${items}
+</section>`;
+}
+
 function renderRastreabilidade(input: Nr1TemplateInput): string {
   const notaAuditoria = input.notaAuditoriaEdicao
     ? `<div class="edit-note"><strong>Nota de auditoria — data de fechamento editada.</strong> A data de fechamento original deste ciclo era ${escapeHtml(formatDateBR(input.notaAuditoriaEdicao.dataFechamentoOriginal))}. Foi alterada para ${escapeHtml(formatDateBR(input.notaAuditoriaEdicao.dataFechamentoAtual))} em ${escapeHtml(formatDateBR(input.notaAuditoriaEdicao.ultimaEdicaoEm))} por ${escapeHtml(input.notaAuditoriaEdicao.ultimaEdicaoPor)}. Motivo registrado: <em>${escapeHtml(input.notaAuditoriaEdicao.ultimaEdicaoJustificativa)}</em></div>`
@@ -786,8 +1024,10 @@ function renderRastreabilidade(input: Nr1TemplateInput): string {
 }
 
 /**
- * Renderiza o HTML do Radar NR-1 (ME-1.3c CC079-v4).
- * Secoes vazias sao suprimidas; sugestoes de proximos passos eliminada.
+ * Renderiza o HTML do Radar NR-1 (ME-1.3c CC079-v5).
+ * Ordem canonica do layout de 14 paginas de referencia; paginas sem
+ * dado sao mantidas com nota padronizada "Dados ainda insuficientes…";
+ * cada departamento com amostra suficiente ganha pagina propria.
  */
 export function renderNr1ReportHTML(input: Nr1TemplateInput): string {
   const partes: string[] = [];
@@ -802,6 +1042,7 @@ export function renderNr1ReportHTML(input: Nr1TemplateInput): string {
   partes.push(renderAlertas(input));
   partes.push(renderComparacaoAnterior(input));
   partes.push(renderComparacaoHistorica(input));
+  partes.push(renderSugestoesProximosPassos(input));
   partes.push(renderRastreabilidade(input));
   const bodyHtml = partes.filter((p) => p.length > 0).join('\n');
 

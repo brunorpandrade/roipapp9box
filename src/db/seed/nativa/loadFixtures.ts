@@ -63,6 +63,7 @@ import {
   copsoqFactorScores,
   copsoq_responses,
   cycleSchedule,
+  departments,
   employeeGoals,
   employeeLeaderHistory,
   employeeTerminationEvents,
@@ -664,11 +665,27 @@ export async function seedNativa(
     .from(employees)
     .where(and(...activeEmpsClauses));
 
+  // ME-1.3c CC079-v5: fix do bug raiz dos departamentos no snapshot
+  // do ciclo CORRENTE aberto. Antes gravava `departamentoId: null`
+  // hardcoded, invalidando o filtro por departamento na UI do Radar
+  // NR-1 (dropdown aparecia como "(N respondentes)" sem nome) e no
+  // PDF (secao "Radar por departamento" perdia o nome). Agora resolve
+  // pelo nome do enum `employees.departamento` (DEPARTAMENTO_VALUES)
+  // contra `departments.nome` (ja seedados pela migration 0000). O
+  // backfill do estado em producao vai pelo script
+  // `scripts/backfillSnapshotDepartamentoNativa.ts`.
+  const todosDepartamentosNr1 = await db
+    .select({ id: departments.id, nome: departments.nome })
+    .from(departments);
+  const idPorNomeDepartamentoNr1 = new Map<string, number>(
+    todosDepartamentosNr1.map((d) => [d.nome, d.id]),
+  );
+
   const openSnapshotRows = activeEmpsForOpenCycle.map((e) => ({
     cicloDbId: openCycleId.id,
     companyId: NATIVA_COMPANY_ID,
     employeeId: e.id,
-    departamentoId: null,
+    departamentoId: idPorNomeDepartamentoNr1.get(e.departamento) ?? null,
     respondeu: false,
     createdAt: openBoundFirst,
   }));
