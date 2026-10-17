@@ -758,7 +758,7 @@ describe('ME-057c — historico consolidado da empresa (MySQL real, §14.21)', (
           '2026-06',
           'rh',
           `Debug ${i}`,
-          new Date(`2026-07-${20 + i}T10:00:00.000Z`),
+          new Date(`2026-08-${20 + i}T10:00:00.000Z`),
         );
       }
       const r = await loadCompanyHistoryPage(
