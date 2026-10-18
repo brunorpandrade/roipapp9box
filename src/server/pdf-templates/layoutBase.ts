@@ -1021,6 +1021,200 @@ export const LAYOUT_BASE_CSS = `
     color: #374151;
     line-height: 1.55;
   }
+
+  /* ============================================================
+     ME-1.3c-Snapshot v1 — padrao do Snapshot 9-Box (espelho do Radar)
+     ============================================================ */
+
+  /* Pagina de departamento no 9-Box: garante que matriz + comparativo
+     caibam na mesma A4 sem corte (bug recorrente no v4). */
+  .ninebox-dept-page {
+    page-break-inside: avoid;
+  }
+  .ninebox-dept-page .radar-block {
+    margin-bottom: 3mm;
+    padding: 4mm 5mm;
+  }
+
+  /* Bloco "Comparativo com a empresa" dentro da dept-page: mini-matriz
+     à esquerda + texto comparativo à direita, em flex horizontal. */
+  .ninebox-comparativo-wrap {
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 10pt;
+    padding: 4mm 5mm;
+    margin-top: 3mm;
+    page-break-inside: avoid;
+  }
+  .ninebox-comparativo-head {
+    font-size: 12pt;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 2mm;
+    padding-bottom: 1.5mm;
+    border-bottom: 1px solid #E5E7EB;
+  }
+  .ninebox-comparativo-row {
+    display: flex;
+    gap: 6mm;
+    align-items: flex-start;
+  }
+  .ninebox-comparativo-mini {
+    width: 55mm;
+    flex-shrink: 0;
+  }
+  .ninebox-comparativo-mini-title {
+    font-size: 8pt;
+    color: #6B7280;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 1.5mm;
+    text-align: center;
+  }
+  .ninebox-comparativo-texto {
+    flex: 1;
+    font-size: 9pt;
+    color: #374151;
+    line-height: 1.55;
+  }
+  .ninebox-comparativo-texto p {
+    margin: 0 0 2mm;
+  }
+  .ninebox-comparativo-texto p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Resumão comparativo: grid de 8 mini-matrizes (empresa em destaque
+     teal + 7 depts) + barras empilhadas horizontais. */
+  .ninebox-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4mm;
+    margin: 4mm 0 6mm;
+  }
+  .ninebox-mini-cell {
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 8pt;
+    padding: 3mm;
+    page-break-inside: avoid;
+  }
+  .ninebox-mini-cell.destaque {
+    background: #F0FDFA;
+    border-color: #99F6E4;
+  }
+  .ninebox-mini-cell-title {
+    font-size: 9pt;
+    font-weight: 700;
+    color: #111827;
+    text-align: center;
+    margin-bottom: 1.5mm;
+  }
+
+  /* Participação relativa por quadrante: barras horizontais empilhadas. */
+  .ninebox-stacked-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 3mm;
+    margin-bottom: 2mm;
+    page-break-inside: avoid;
+  }
+  .ninebox-stacked-bar-label {
+    width: 32mm;
+    font-size: 9pt;
+    font-weight: 700;
+    color: #111827;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .ninebox-stacked-bar-wrap {
+    flex: 1;
+    display: flex;
+    height: 7mm;
+    border-radius: 3pt;
+    overflow: hidden;
+    background: #F3F4F6;
+  }
+  .ninebox-stacked-bar-seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    font-size: 8.5pt;
+    font-weight: 700;
+    min-width: 3mm;
+  }
+  .ninebox-stacked-bar-total {
+    width: 10mm;
+    font-size: 9pt;
+    font-weight: 700;
+    color: #6B7280;
+    text-align: left;
+    flex-shrink: 0;
+  }
+  .ninebox-legend-full {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2mm 4mm;
+    margin-top: 4mm;
+    font-size: 9pt;
+    color: #374151;
+  }
+  .ninebox-legend-full .leg-item {
+    display: flex;
+    align-items: center;
+    gap: 2mm;
+  }
+  .ninebox-legend-full .leg-swatch {
+    display: inline-block;
+    width: 4mm;
+    height: 4mm;
+    border-radius: 2pt;
+    flex-shrink: 0;
+  }
+
+  /* Nota introdutória padrão (card teal pastel) — usada em "Participação
+     relativa por quadrante" e seções com explicação de leitura. */
+  .ninebox-nota-intro {
+    background: #F0FDFA;
+    border: 1px solid #99F6E4;
+    border-radius: 8pt;
+    padding: 4mm 5mm;
+    font-size: 9.5pt;
+    color: #134E4A;
+    line-height: 1.55;
+    margin: 3mm 0 5mm;
+  }
+  .ninebox-nota-intro strong { color: #134E4A; font-weight: 700; }
+
+  /* Rastreabilidade final. */
+  .rastreabilidade-card {
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 10pt;
+    padding: 5mm 7mm;
+    margin: 4mm 0;
+  }
+  .rastreabilidade-row {
+    font-size: 9.5pt;
+    color: #374151;
+    margin-bottom: 2mm;
+    line-height: 1.55;
+  }
+  .rastreabilidade-row:last-child { margin-bottom: 0; }
+  .rastreabilidade-row strong {
+    color: #111827;
+    font-weight: 700;
+    margin-right: 1mm;
+  }
+  .rastreabilidade-nota {
+    font-size: 9pt;
+    color: #4B5563;
+    line-height: 1.55;
+    margin-top: 3mm;
+  }
+  .rastreabilidade-nota strong { color: #111827; font-weight: 700; }
 `;
 
 /**

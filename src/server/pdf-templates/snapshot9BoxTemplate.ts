@@ -1,21 +1,22 @@
 /* eslint-disable @stylistic/max-len -- template HTML editorial com strings de layout longas */
-// ROIP APP 9BOX — template PDF Snapshot 9-Box (ME-1.3c CC079-v4).
+// ROIP APP 9BOX — template PDF Snapshot 9-Box (ME-1.3c-Snapshot v1).
 //
-// Renderizacao HTML determinística do Snapshot do 9-Box (DOC 03 §13.7).
+// Renderizacao HTML deterministica do Snapshot do 9-Box (DOC 03 §13.7).
 // 100% template — sem IA. Consumido por `exports.getSnapshot9Box`
 // (Route Handler); convertido em PDF pelo `pdfRenderer.ts`.
 //
-// Estrutura CC079-v4 (editorial, espelho dos dashboards agregados):
-// - Capa sem badge, sem tabela, com hero + subtitulo + card editorial.
-// - Agregado empresa: pagina 1 com 9-Box em cima + texto editorial
-//   embaixo; lista de colaboradores a partir da pagina seguinte,
-//   ordenada por quadrante e por nome dentro de cada quadrante.
-// - Agregado por departamento: pagina 1 com 9-Box do dept +
-//   comparativo (mini 9-Box da empresa + texto automatico); lista do
-//   dept a partir da pagina seguinte.
-// - Resumao final: grade de mini 9-Boxes (um por dept + empresa em
-//   destaque) + barras empilhadas horizontais com participacao
-//   percentual por quadrante.
+// v1 adota o padrao canonico do Radar NR-1 (ME-1.3c CC079-v7.x) como
+// linguagem comum de todos os PDFs ROIP:
+// - Capa: hero em 2 linhas canonicas (preto bold + teal), logo canto
+//   superior direito, meta grid card, nota ambar "Sobre este relatorio",
+//   resumo executivo com 3 KPI cards + gauge semicircular do perfil.
+// - Secoes com H2 preto bold + underline teal 2pt.
+// - Matriz 9-Box dentro de card emoldurado (.radar-block).
+// - Pagina de departamento em UMA pagina (matriz + comparativo + mini
+//   matriz empresa + texto, tudo cabivel em A4 sem corte).
+// - Resumao com texto introdutorio canonico + legenda completa dos 9
+//   quadrantes cabivel na mesma pagina das barras.
+// - Rastreabilidade e integridade final em card cinza.
 //
 // Determinismo: mesmos dados -> mesmo HTML byte-exact.
 
@@ -93,6 +94,54 @@ function fmtPct(v: number): string {
   return `${Math.round(v)}%`;
 }
 
+const MESES_PT_BR = [
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
+] as const;
+
+/**
+ * Deriva a data civil (YYYY-MM-DD) em America/Sao_Paulo a partir do
+ * timestamp ISO UTC — espelho do helper canonico do Radar NR-1 v7.1.
+ * Debito D-DUP-DATA registrado para extracao futura em helper comum.
+ */
+function dataCivilBrtFromIso(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const partes = d
+    .toLocaleDateString('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    })
+    .split('/');
+  if (partes.length !== 3) return iso;
+  const [dd, mm, yyyy] = partes;
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function formatDataEditorial(iso: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (match === null) return iso;
+  const [, y, m, d] = match;
+  if (y === undefined || m === undefined || d === undefined) return iso;
+  const mi = Number(m) - 1;
+  if (mi < 0 || mi > 11) return iso;
+  const mesNome = MESES_PT_BR[mi];
+  if (mesNome === undefined) return iso;
+  return `${Number(d)} de ${mesNome} de ${y}`;
+}
+
 /** Compoe o nome do arquivo PDF (§13.7). */
 export function composeSnapshot9BoxFilename(
   razaoSocialSanitizada: string,
@@ -105,7 +154,7 @@ export function composeSnapshot9BoxFilename(
 }
 
 // ============================================================
-// Ordenacao da tabela de colaboradores (preservada do CC079-v3)
+// Ordenacao canonica (preservada do CC079-v3)
 // ============================================================
 
 export const NINE_BOX_PRIORIDADE: Readonly<Record<NineBoxQuadrante, number>> = Object.freeze(
@@ -126,22 +175,15 @@ export function ordenarColaboradoresCanonicos(
 }
 
 // ============================================================
-// Grid SVG do 9-Box (CC079-v4: delicado, com destaque de centro de massa)
+// Grid SVG do 9-Box (preservado + ajuste de tamanhos)
 // ============================================================
 
-// Ordem canonica das 9 caixas no grid 3x3 — plenitude alta no topo,
-// desempenho alto a direita (DOC 05 §UI mirror).
 const NINE_BOX_SVG_GRID = [
   ['POTENCIAL SUBUTILIZADO', 'DESEMPENHO REPRESADO', 'ALTO IMPACTO'],
   ['DESEMPENHO CRÍTICO', 'EQUILÍBRIO FRÁGIL', 'ALTA ENTREGA'],
   ['RISCO CRÍTICO', 'DESGASTE OCULTO', 'RISCO DE ESGOTAMENTO'],
 ] as const satisfies readonly (readonly NineBoxQuadrante[])[];
 
-/**
- * Identifica os quadrantes com o maior valor da distribuicao
- * (centro(s) de massa). Centros com valor 0 nao sao destacados.
- * Retorna Set para suportar empates como destaque simultaneo.
- */
 export function detectarCentrosDeMassa(distribuicao: NineBoxDistribuicao): Set<NineBoxQuadrante> {
   let max = 0;
   for (const q of NINE_BOX_QUADRANTES) {
@@ -156,14 +198,6 @@ export function detectarCentrosDeMassa(distribuicao: NineBoxDistribuicao): Set<N
   return centros;
 }
 
-/**
- * Renderiza o grid 9-Box como SVG inline em tamanho configuravel.
- * Padrao v4: cards arredondados pastel, numero + nome, destaque sutil
- * no(s) centro(s) de massa (borda escura + sombra interna sutil);
- * eixos como texto PLENITUDE na vertical lido de baixo para cima,
- * seta ↑ independente apontando genuinamente para cima, DESEMPENHO →
- * horizontal abaixo.
- */
 export interface Render9BoxOptions {
   readonly size: 'large' | 'medium' | 'mini';
   readonly destacarCentroMassa: boolean;
@@ -241,7 +275,7 @@ export function renderGrid9BoxSvg(
       const total = fmtInt(distribuicao[quadrante]);
       const ehCentro = centros.has(quadrante);
       const nomePartes = quadrante.split(' ');
-      const multilinha = options.size === 'mini' && nomePartes.length >= 2;
+      const multilinha = options.size !== 'large' && nomePartes.length >= 2;
       let nomeSvg: string;
       if (multilinha) {
         const half = Math.ceil(nomePartes.length / 2);
@@ -299,12 +333,6 @@ ${plenitudeArrowSvg}
 // Texto automatico de comparativo dept x empresa
 // ============================================================
 
-/**
- * Paragrafo automatico ao lado do mini 9-Box da empresa, com dados
- * reais (nao inventa). Destaca os 2 maiores desvios em pontos
- * percentuais do dept frente a empresa e sinaliza concentracao
- * (centro de massa).
- */
 export function composeTextoComparativoDeptEmpresa(
   dept: NineBoxBlocoEscopo,
   empresa: NineBoxBlocoEscopo,
@@ -348,61 +376,184 @@ export function composeTextoComparativoDeptEmpresa(
 }
 
 // ============================================================
-// Secoes editoriais
+// Perfil derivado da empresa (para KPIs e gauge do resumo executivo)
 // ============================================================
 
-function renderCapa(input: Snapshot9BoxTemplateInput): string {
+interface PerfilEmpresa {
+  readonly centroPrincipal: NineBoxQuadrante | undefined;
+  readonly centroCount: number;
+  readonly pctPositivos: number;
+  readonly countPositivos: number;
+  readonly pctCriticos: number;
+  readonly countCriticos: number;
+  readonly faixa: 'verde' | 'amarelo' | 'vermelho';
+}
+
+const QUADRANTES_POSITIVOS: readonly NineBoxQuadrante[] = [
+  'ALTO IMPACTO',
+  'ALTA ENTREGA',
+  'DESEMPENHO REPRESADO',
+];
+const QUADRANTES_CRITICOS: readonly NineBoxQuadrante[] = [
+  'RISCO CRÍTICO',
+  'RISCO DE ESGOTAMENTO',
+  'DESEMPENHO CRÍTICO',
+];
+
+function derivarPerfilEmpresa(bloco: NineBoxBlocoEscopo): PerfilEmpresa {
+  const total = bloco.totalClassificados;
+  const centros = detectarCentrosDeMassa(bloco.distribuicao);
+  const centroPrincipal = Array.from(centros)[0];
+  const centroCount = centroPrincipal ? bloco.distribuicao[centroPrincipal] : 0;
+  const countPositivos = QUADRANTES_POSITIVOS.reduce((acc, q) => acc + bloco.distribuicao[q], 0);
+  const pctPositivos = total > 0 ? (countPositivos / total) * 100 : 0;
+  const countCriticos = QUADRANTES_CRITICOS.reduce((acc, q) => acc + bloco.distribuicao[q], 0);
+  const pctCriticos = total > 0 ? (countCriticos / total) * 100 : 0;
+  const faixa: PerfilEmpresa['faixa'] =
+    pctPositivos >= 60 ? 'verde' : pctPositivos >= 40 ? 'amarelo' : 'vermelho';
+  return {
+    centroPrincipal,
+    centroCount,
+    pctPositivos,
+    countPositivos,
+    pctCriticos,
+    countCriticos,
+    faixa,
+  };
+}
+
+// ============================================================
+// Gauge semicircular (resumo executivo — padrao canonico Radar NR-1)
+// ============================================================
+
+function renderGaugeSvg(percent: number, faixa: 'verde' | 'amarelo' | 'vermelho'): string {
+  const clamp = Math.max(0, Math.min(100, percent));
+  const color = faixa === 'verde' ? '#16A34A' : faixa === 'amarelo' ? '#D97706' : '#DC2626';
+  const angle = Math.PI - (clamp / 100) * Math.PI;
+  const endX = 110 + 90 * Math.cos(angle);
+  const endY = 120 - 90 * Math.sin(angle);
+  const largeArc = clamp > 50 ? 1 : 0;
+  const label = `${Math.round(clamp)}%`;
+  return `<svg width="140" height="90" viewBox="0 0 220 140" xmlns="http://www.w3.org/2000/svg">
+  <path d="M 20 120 A 90 90 0 0 1 200 120" fill="none" stroke="#F3F4F6" stroke-width="16" stroke-linecap="round"/>
+  <path d="M 20 120 A 90 90 ${largeArc} 0 1 ${endX.toFixed(2)} ${endY.toFixed(2)}" fill="none" stroke="${color}" stroke-width="16" stroke-linecap="round"/>
+  <text x="110" y="115" font-family="Liberation Sans, system-ui, sans-serif" font-size="34" font-weight="700" fill="#111827" text-anchor="middle">${label}</text>
+</svg>`;
+}
+
+// ============================================================
+// Secoes canonicas v1
+// ============================================================
+
+/**
+ * Pagina 1 — Capa + Resumo executivo (padrao canonico Radar NR-1 v7.1).
+ *
+ * Hero em 2 linhas canonicas (preto bold + teal), logo canto superior
+ * direito via layoutBase, meta grid com 4 chaves, nota ambar "Sobre
+ * este relatorio", H2 "Resumo executivo" + 3 KPI cards + gauge do
+ * perfil do portfolio, tudo na mesma A4.
+ */
+function renderCapaMaisResumo(input: Snapshot9BoxTemplateInput): string {
+  const dataGeracao = formatDataEditorial(dataCivilBrtFromIso(input.geradoEmIso));
+  const perfil = derivarPerfilEmpresa(input.blocoPrincipal);
+  const highlightClass =
+    perfil.faixa === 'verde'
+      ? 'highlight-green'
+      : perfil.faixa === 'amarelo'
+        ? 'highlight-yellow'
+        : 'highlight-red';
+  const valueClass =
+    perfil.faixa === 'verde' ? 'green' : perfil.faixa === 'amarelo' ? 'yellow' : 'red';
+  const gaugeTitulo =
+    perfil.faixa === 'verde'
+      ? 'Perfil saudável'
+      : perfil.faixa === 'amarelo'
+        ? 'Perfil misto'
+        : 'Perfil preocupante';
+  const gaugeBody =
+    perfil.faixa === 'verde'
+      ? 'A maior parte dos colaboradores classificados está nos quadrantes de desempenho alto. Portfólio sustenta decisões de desenvolvimento, sucessão e investimento com segurança.'
+      : perfil.faixa === 'amarelo'
+        ? 'A concentração nos quadrantes positivos é moderada. Vale investigar os departamentos com maior dispersão e priorizar conversas de calibração antes do próximo ciclo.'
+        : 'A maioria dos colaboradores está em quadrantes de equilíbrio frágil ou crítico. Recomenda-se investigação prioritária com liderança operacional e revisão das rotinas de gestão.';
+
+  // KPI de criticos é alertante quando ≥ 10%.
+  const criticoAlertante = perfil.pctCriticos >= 10;
+
   return `<section class="cover-page">
-  <div class="cover-title">Snapshot<br/><span class="cover-title-accent">do 9-Box</span></div>
-  <div class="cover-subtitle">${escapeHtml(input.nomeFantasia)} · ${escapeHtml(formatTrimestreBR(input.trimestre))}</div>
-  <div class="cover-note" style="background:#F0FDFA; border-color:#99F6E4; color:#134E4A; margin-top:12mm;">
-    <p style="margin-bottom:3mm;"><strong>Sobre este relatório.</strong> O 9-Box cruza dois eixos. No eixo horizontal, o <strong>desempenho</strong> consolida resultados de entrega. No eixo vertical, a <strong>plenitude</strong> consolida condições de sustentabilidade pessoal e profissional. O cruzamento posiciona cada colaborador em um dos nove quadrantes, do canto superior direito (Alto Impacto) ao canto inferior esquerdo (Risco Crítico).</p>
-    <p style="margin-bottom:3mm;">A leitura executiva começa pela distribuição agregada da empresa inteira e desce em cascata para cada departamento. Em cada agregado, o <strong>centro de massa</strong> — o quadrante com maior concentração de colaboradores — é destacado como ponto de partida para conversas de gestão. Comparativos entre departamentos e com a empresa como um todo sinalizam onde há desvios relevantes.</p>
-    <p style="margin:0;">O material serve como apoio objetivo para reuniões de desenvolvimento, calibração entre pares e decisões sobre sucessão, promoção e investimento em capacitação. A renderização é determinística: os mesmos dados geram sempre a mesma saída.</p>
+  <div class="cover-hero">
+    <div class="cover-title-line1">Snapshot</div>
+    <div class="cover-title-line2">do 9-Box</div>
+  </div>
+  <div class="cover-meta">
+    <div class="cover-meta-row"><span class="cover-meta-label">Empresa</span><span class="cover-meta-value">${escapeHtml(input.nomeFantasia)}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">Trimestre</span><span class="cover-meta-value">${escapeHtml(formatTrimestreBR(input.trimestre))}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">Escopo</span><span class="cover-meta-value">${escapeHtml(input.escopoRotulo)}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">Data de geração do relatório</span><span class="cover-meta-value">${escapeHtml(dataGeracao)}</span></div>
+  </div>
+  <div class="cover-note">
+    <strong>⚠ Sobre este relatório:</strong> o 9-Box cruza desempenho e plenitude para posicionar cada colaborador em um dos nove quadrantes. A leitura começa pela distribuição agregada da empresa e desce em cascata para cada departamento. O centro de massa — quadrante com maior concentração — é o ponto de partida para conversas de gestão. Material deterministicamente derivado dos dados do ciclo; mesmos dados geram sempre a mesma saída.
+  </div>
+  <h2 class="h2-compact">Resumo executivo</h2>
+  <p class="resumo-exec-paragrafo">${fmtInt(input.blocoPrincipal.totalClassificados)} colaborador(es) classificado(s) no ciclo${perfil.centroPrincipal ? `, com centro de massa em <strong>${escapeHtml(perfil.centroPrincipal)}</strong>` : ''}.</p>
+  <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="kpi-card">
+      <div class="kpi-label">Classificados</div>
+      <div class="kpi-value">${fmtInt(input.blocoPrincipal.totalClassificados)}</div>
+      <div class="kpi-sub">${input.blocosCapilares.length} departamento(s) com visão própria</div>
+    </div>
+    <div class="kpi-card ${highlightClass}">
+      <div class="kpi-label">Em quadrantes positivos</div>
+      <div class="kpi-value ${valueClass}">${fmtPct(perfil.pctPositivos)}</div>
+      <div class="kpi-sub">${fmtInt(perfil.countPositivos)} em Alto Impacto, Alta Entrega ou Desempenho Represado</div>
+    </div>
+    <div class="kpi-card ${criticoAlertante ? 'highlight-red' : ''}">
+      <div class="kpi-label">Em quadrantes críticos</div>
+      <div class="kpi-value ${criticoAlertante ? 'red' : ''}">${fmtPct(perfil.pctCriticos)}</div>
+      <div class="kpi-sub">${fmtInt(perfil.countCriticos)} em Risco Crítico, Risco de Esgotamento ou Desempenho Crítico</div>
+    </div>
+  </div>
+  <div class="gauge-wrap">
+    ${renderGaugeSvg(perfil.pctPositivos, perfil.faixa)}
+    <div>
+      <div class="gauge-info-title cs-${perfil.faixa === 'verde' ? 'green' : perfil.faixa === 'amarelo' ? 'yellow' : 'red'}">${gaugeTitulo}</div>
+      <div class="gauge-info-body">${gaugeBody}</div>
+    </div>
   </div>
 </section>`;
 }
 
-/** Pagina 1 do bloco Empresa: 9-Box em cima + texto editorial embaixo. */
+/**
+ * Pagina 2 — Visao geral da empresa: matriz 9-Box dentro de card
+ * emoldurado (.radar-block) + card de leitura executiva.
+ */
 function renderPaginaEmpresaResumo(bloco: NineBoxBlocoEscopo): string {
-  const total = bloco.totalClassificados;
-  const centros = detectarCentrosDeMassa(bloco.distribuicao);
-  const centroPrincipal = Array.from(centros)[0];
-  const centroNomeTxt = centroPrincipal
-    ? `O centro de massa está em <strong>${escapeHtml(centroPrincipal)}</strong>, com ${fmtInt(bloco.distribuicao[centroPrincipal])} colaboradores concentrados nesse quadrante.`
+  const perfil = derivarPerfilEmpresa(bloco);
+  const centroTxt = perfil.centroPrincipal
+    ? `O centro de massa está em <strong>${escapeHtml(perfil.centroPrincipal)}</strong>, com ${fmtInt(perfil.centroCount)} colaborador(es) concentrado(s) nesse quadrante.`
     : 'Nenhum quadrante concentra colaboradores suficientes para caracterizar um centro de massa claro neste trimestre.';
 
-  const ladoDireitoBons: NineBoxQuadrante[] = [
-    'ALTO IMPACTO',
-    'ALTA ENTREGA',
-    'DESEMPENHO REPRESADO',
-  ];
-  const nosQuadrantesPositivos = ladoDireitoBons.reduce((acc, q) => acc + bloco.distribuicao[q], 0);
-  const pctPositivos = total > 0 ? (nosQuadrantesPositivos / total) * 100 : 0;
-
-  const quadrantesCriticos: NineBoxQuadrante[] = [
-    'RISCO CRÍTICO',
-    'RISCO DE ESGOTAMENTO',
-    'DESEMPENHO CRÍTICO',
-  ];
-  const nosCriticos = quadrantesCriticos.reduce((acc, q) => acc + bloco.distribuicao[q], 0);
-  const pctCriticos = total > 0 ? (nosCriticos / total) * 100 : 0;
-
-  return `<section>
-  <h2>Visão geral · ${escapeHtml(bloco.titulo)}</h2>
-  <p class="muted" style="font-size:10pt;">Total de colaboradores classificados: <strong>${fmtInt(total)}</strong></p>
-  <div style="max-width:140mm; margin:0 auto 6mm;">
-    ${renderGrid9BoxSvg(bloco.distribuicao, { size: 'large', destacarCentroMassa: true })}
+  return `<section class="page-break">
+  <h2>Visão geral — ${escapeHtml(bloco.titulo)}</h2>
+  <p>Distribuição consolidada dos ${fmtInt(bloco.totalClassificados)} colaboradores classificados no ciclo. O quadrante com maior concentração é destacado com borda escura.</p>
+  <div class="radar-block">
+    <div class="radar-block-head">
+      <span class="radar-block-title">${escapeHtml(bloco.titulo)}</span>
+      <span class="radar-block-subtitle">${fmtInt(bloco.totalClassificados)} colaborador(es) classificado(s)</span>
+    </div>
+    <div style="max-width:140mm; margin:0 auto;">
+      ${renderGrid9BoxSvg(bloco.distribuicao, { size: 'large', destacarCentroMassa: true })}
+    </div>
   </div>
-  <div class="info-card" style="margin-top:4mm;">
-    <p style="margin-bottom:3mm;"><strong>Leitura executiva.</strong> ${centroNomeTxt}</p>
-    <p style="margin-bottom:3mm;">No conjunto dos quadrantes de desempenho alto, concentram-se <strong>${fmtPct(pctPositivos)}</strong> dos colaboradores classificados (${fmtInt(nosQuadrantesPositivos)} de ${fmtInt(total)}). Nos quadrantes mais críticos (Risco Crítico, Risco de Esgotamento e Desempenho Crítico), encontram-se <strong>${fmtPct(pctCriticos)}</strong> (${fmtInt(nosCriticos)} de ${fmtInt(total)}).</p>
+  <div class="info-card">
+    <p><strong>Leitura executiva.</strong> ${centroTxt}</p>
+    <p>Nos quadrantes de desempenho alto (Alto Impacto, Alta Entrega e Desempenho Represado), concentram-se <strong>${fmtPct(perfil.pctPositivos)}</strong> dos classificados (${fmtInt(perfil.countPositivos)} de ${fmtInt(bloco.totalClassificados)}). Nos quadrantes mais críticos (Risco Crítico, Risco de Esgotamento e Desempenho Crítico), encontram-se <strong>${fmtPct(perfil.pctCriticos)}</strong> (${fmtInt(perfil.countCriticos)} de ${fmtInt(bloco.totalClassificados)}).</p>
     <p style="margin:0;">A seção a seguir detalha a lista nominal, ordenada do quadrante mais positivo ao mais crítico; dentro de cada quadrante, em ordem alfabética.</p>
   </div>
 </section>`;
 }
 
-/** Tabela de colaboradores de um bloco — ocupa quantas paginas forem necessarias. */
+/** Tabela de colaboradores (preservada com polish editorial). */
 function renderTabelaColaboradores(bloco: NineBoxBlocoEscopo): string {
   const ordenados = ordenarColaboradoresCanonicos(bloco.colaboradores);
   if (ordenados.length === 0) {
@@ -435,70 +586,81 @@ function renderTabelaColaboradores(bloco: NineBoxBlocoEscopo): string {
 </table>`;
 }
 
-/** Pagina 1 de cada bloco de departamento: 9-Box + comparativo com empresa. */
+/**
+ * Pagina de departamento (CANONICA v1): matriz dept + "Comparativo com
+ * a empresa" com mini-matriz à esquerda e texto à direita, tudo em UMA
+ * pagina sem corte. Preserva page-break-inside: avoid.
+ */
 function renderPaginaDeptResumo(dept: NineBoxBlocoEscopo, empresa: NineBoxBlocoEscopo): string {
-  return `<section>
-  <h2>${escapeHtml(dept.titulo)}</h2>
-  <p class="muted" style="font-size:10pt;">Total de colaboradores classificados: <strong>${fmtInt(dept.totalClassificados)}</strong></p>
-  <div style="max-width:140mm; margin:0 auto 6mm;">
-    ${renderGrid9BoxSvg(dept.distribuicao, { size: 'medium', destacarCentroMassa: true })}
-  </div>
-  <h3 style="margin-top:6mm;">Comparativo com a empresa</h3>
-  <div class="dept-vs-empresa">
-    <div class="mini-empresa">
-      <div style="font-size:9pt; color:#6B7280; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:2mm; text-align:center;">${escapeHtml(empresa.titulo)}</div>
-      ${renderGrid9BoxSvg(empresa.distribuicao, { size: 'mini', destacarCentroMassa: true })}
+  return `<section class="page-break">
+  <div class="ninebox-dept-page">
+    <h2>9-Box por departamento — ${escapeHtml(dept.titulo)}</h2>
+    <p>Distribuição dos ${fmtInt(dept.totalClassificados)} colaborador(es) do departamento comparada com a média da empresa. O quadrante com maior concentração é destacado com borda escura.</p>
+    <div class="radar-block">
+      <div class="radar-block-head">
+        <span class="radar-block-title">${escapeHtml(dept.titulo)}</span>
+        <span class="radar-block-subtitle">${fmtInt(dept.totalClassificados)} colaborador(es) classificado(s)</span>
+      </div>
+      <div style="max-width:120mm; margin:0 auto;">
+        ${renderGrid9BoxSvg(dept.distribuicao, { size: 'medium', destacarCentroMassa: true })}
+      </div>
     </div>
-    <div class="texto-comparativo">
-      ${composeTextoComparativoDeptEmpresa(dept, empresa)}
+    <div class="ninebox-comparativo-wrap">
+      <div class="ninebox-comparativo-head">Comparativo com a empresa</div>
+      <div class="ninebox-comparativo-row">
+        <div class="ninebox-comparativo-mini">
+          <div class="ninebox-comparativo-mini-title">${escapeHtml(empresa.titulo)}</div>
+          ${renderGrid9BoxSvg(empresa.distribuicao, { size: 'mini', destacarCentroMassa: true })}
+        </div>
+        <div class="ninebox-comparativo-texto">
+          ${composeTextoComparativoDeptEmpresa(dept, empresa)}
+        </div>
+      </div>
     </div>
   </div>
 </section>`;
 }
 
-/** Pagina da lista de colaboradores de cada bloco (empresa ou dept). */
 function renderPaginaListaColaboradores(bloco: NineBoxBlocoEscopo): string {
   return `<section class="page-break">
-  <h2>Colaboradores · ${escapeHtml(bloco.titulo)}</h2>
+  <h2>Colaboradores — ${escapeHtml(bloco.titulo)}</h2>
   ${renderTabelaColaboradores(bloco)}
 </section>`;
 }
 
 // ============================================================
-// Resumao comparativo final
+// Resumao comparativo final (grid mini + barras empilhadas)
 // ============================================================
 
-/** Grade de mini 9-Boxes: empresa em destaque + um por departamento. */
 function renderMiniGridResumo(input: Snapshot9BoxTemplateInput): string {
-  const miniEmpresa = `<div class="mini-empresa-destaque">
-    <div class="mini-titulo">${escapeHtml(input.blocoPrincipal.titulo)} · ${fmtInt(input.blocoPrincipal.totalClassificados)}</div>
+  const miniEmpresa = `<div class="ninebox-mini-cell destaque">
+    <div class="ninebox-mini-cell-title">${escapeHtml(input.blocoPrincipal.titulo)} · ${fmtInt(input.blocoPrincipal.totalClassificados)}</div>
     ${renderGrid9BoxSvg(input.blocoPrincipal.distribuicao, { size: 'mini', destacarCentroMassa: true })}
   </div>`;
   const miniDepts = input.blocosCapilares
     .map(
       (b) =>
-        `<div>
-      <div class="mini-titulo">${escapeHtml(b.titulo)} · ${fmtInt(b.totalClassificados)}</div>
+        `<div class="ninebox-mini-cell">
+      <div class="ninebox-mini-cell-title">${escapeHtml(b.titulo)} · ${fmtInt(b.totalClassificados)}</div>
       ${renderGrid9BoxSvg(b.distribuicao, { size: 'mini', destacarCentroMassa: true })}
     </div>`,
     )
     .join('\n');
-  return `<div class="mini-grid-row">
+  return `<div class="ninebox-mini-grid">
     ${miniEmpresa}
     ${miniDepts}
   </div>`;
 }
 
-/** Barras empilhadas horizontais por bloco (empresa + um por dept). */
 function renderBarrasEmpilhadas(input: Snapshot9BoxTemplateInput): string {
   const todosBlocos: NineBoxBlocoEscopo[] = [input.blocoPrincipal, ...input.blocosCapilares];
   const linhas = todosBlocos
     .map((b) => {
       if (b.totalClassificados === 0) {
-        return `<div class="stacked-bar-row">
-    <div class="nome-depto">${escapeHtml(b.titulo)}</div>
-    <div class="barra-wrap" style="background:#F3F4F6;"></div>
-    <div class="total-depto">0</div>
+        return `<div class="ninebox-stacked-bar-row">
+    <div class="ninebox-stacked-bar-label">${escapeHtml(b.titulo)}</div>
+    <div class="ninebox-stacked-bar-wrap"></div>
+    <div class="ninebox-stacked-bar-total">0</div>
   </div>`;
       }
       const segmentos = NINE_BOX_QUADRANTES.map((q) => {
@@ -506,14 +668,14 @@ function renderBarrasEmpilhadas(input: Snapshot9BoxTemplateInput): string {
         if (n === 0) return '';
         const pct = (n / b.totalClassificados) * 100;
         const paleta = NINE_BOX_PALETTE[q];
-        return `<div class="barra-seg" style="flex:${pct.toFixed(2)}; background:${paleta.text};">${n}</div>`;
+        return `<div class="ninebox-stacked-bar-seg" style="flex:${pct.toFixed(2)}; background:${paleta.text};">${n}</div>`;
       })
         .filter((s) => s.length > 0)
         .join('');
-      return `<div class="stacked-bar-row">
-    <div class="nome-depto">${escapeHtml(b.titulo)}</div>
-    <div class="barra-wrap">${segmentos}</div>
-    <div class="total-depto">${fmtInt(b.totalClassificados)}</div>
+      return `<div class="ninebox-stacked-bar-row">
+    <div class="ninebox-stacked-bar-label">${escapeHtml(b.titulo)}</div>
+    <div class="ninebox-stacked-bar-wrap">${segmentos}</div>
+    <div class="ninebox-stacked-bar-total">${fmtInt(b.totalClassificados)}</div>
   </div>`;
     })
     .join('\n');
@@ -521,9 +683,9 @@ function renderBarrasEmpilhadas(input: Snapshot9BoxTemplateInput): string {
     (q) =>
       `<div class="leg-item"><span class="leg-swatch" style="background:${NINE_BOX_PALETTE[q].text};"></span>${escapeHtml(q)}</div>`,
   ).join('');
-  return `<div style="margin-top:6mm;">
+  return `<div>
     ${linhas}
-    <div class="legenda-quadrantes" style="margin-top:4mm;">${legenda}</div>
+    <div class="ninebox-legend-full">${legenda}</div>
   </div>`;
 }
 
@@ -533,31 +695,54 @@ function renderResumaoFinal(input: Snapshot9BoxTemplateInput): string {
   }
   return `<section class="page-break">
   <h2>Resumão comparativo</h2>
-  <p style="font-size:10pt;">Visão consolidada da empresa frente a cada departamento. A grade superior mostra os nove quadrantes lado a lado em cada agregado. As barras inferiores apresentam a distribuição percentual por quadrante em cada agregado, do mais positivo (Alto Impacto, à esquerda) ao mais crítico (Risco Crítico, à direita).</p>
-  <h3 style="margin-top:5mm;">Distribuição por quadrante · cada agregado</h3>
+  <p>Visão consolidada da empresa frente a cada departamento. A grade abaixo mostra os nove quadrantes lado a lado em cada agregado — a empresa aparece em destaque teal.</p>
+  <h3>Distribuição por quadrante · cada agregado</h3>
   ${renderMiniGridResumo(input)}
-  <h3 style="margin-top:8mm;">Participação relativa por quadrante</h3>
+  <h3>Participação relativa por quadrante</h3>
+  <div class="ninebox-nota-intro">
+    <strong>Como ler.</strong> Cada barra representa 100% dos colaboradores classificados do agregado correspondente, segmentada por quadrante na mesma ordem — do mais positivo (Alto Impacto, à esquerda) ao mais crítico (Risco Crítico, à direita). A comparação visual entre as linhas revela onde cada departamento se afasta do perfil da empresa como um todo.
+  </div>
   ${renderBarrasEmpilhadas(input)}
-  <p class="muted" style="font-size:9pt; margin-top:5mm;">Cada barra reflete 100% dos colaboradores classificados do agregado correspondente. Segmentos extremamente pequenos podem não ter o número visível.</p>
+  <p class="muted" style="font-size:9pt; margin-top:4mm;">Segmentos extremamente pequenos podem não exibir o número por falta de espaço horizontal.</p>
 </section>`;
 }
 
-/** Renderiza o HTML do Snapshot 9-Box (ME-1.3c CC079-v4). */
+/**
+ * Pagina final — Rastreabilidade e integridade do relatorio (padrao
+ * canonico do Radar NR-1 p.17). Metadata chave:valor em card cinza +
+ * nota final em prosa curta. Timestamp em fuso BRT.
+ */
+function renderRastreabilidade(input: Snapshot9BoxTemplateInput): string {
+  const totalBlocos = 1 + input.blocosCapilares.length;
+  const totalColaboradores = input.blocoPrincipal.totalClassificados;
+  const timestampBrt = toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso;
+  return `<section class="page-break">
+  <h2>Rastreabilidade e integridade do relatório</h2>
+  <div class="rastreabilidade-card">
+    <div class="rastreabilidade-row"><strong>Empresa:</strong> ${escapeHtml(input.nomeFantasia)}</div>
+    <div class="rastreabilidade-row"><strong>Trimestre:</strong> ${escapeHtml(formatTrimestreBR(input.trimestre))}</div>
+    <div class="rastreabilidade-row"><strong>Escopo:</strong> ${escapeHtml(input.escopoRotulo)}</div>
+    <div class="rastreabilidade-row"><strong>Agregados renderizados:</strong> ${fmtInt(totalBlocos)} (empresa + ${fmtInt(input.blocosCapilares.length)} departamento(s))</div>
+    <div class="rastreabilidade-row"><strong>Colaboradores classificados:</strong> ${fmtInt(totalColaboradores)}</div>
+    <div class="rastreabilidade-row"><strong>Gerado em:</strong> ${escapeHtml(timestampBrt)}</div>
+  </div>
+  <p class="rastreabilidade-nota"><strong>Nota final.</strong> O trimestre, uma vez fechado, é imutável. Este relatório pode ser regerado a qualquer momento a partir da base de dados original, apresentando idêntico conteúdo.</p>
+</section>`;
+}
+
+/** Renderiza o HTML do Snapshot 9-Box (ME-1.3c-Snapshot v1). */
 export function renderSnapshot9BoxHTML(input: Snapshot9BoxTemplateInput): string {
   const partes: string[] = [];
-  partes.push(renderCapa(input));
-  partes.push(
-    `<section class="page-break">${renderPaginaEmpresaResumo(input.blocoPrincipal)}</section>`,
-  );
+  partes.push(renderCapaMaisResumo(input));
+  partes.push(renderPaginaEmpresaResumo(input.blocoPrincipal));
   partes.push(renderPaginaListaColaboradores(input.blocoPrincipal));
   for (const dept of input.blocosCapilares) {
-    partes.push(
-      `<section class="page-break">${renderPaginaDeptResumo(dept, input.blocoPrincipal)}</section>`,
-    );
+    partes.push(renderPaginaDeptResumo(dept, input.blocoPrincipal));
     partes.push(renderPaginaListaColaboradores(dept));
   }
   const resumao = renderResumaoFinal(input);
   if (resumao.length > 0) partes.push(resumao);
+  partes.push(renderRastreabilidade(input));
 
   const bodyHtml = partes.join('\n');
   return renderLayoutBase({
