@@ -90,9 +90,13 @@ export async function GET(req: Request): Promise<NextResponse> {
   const client = getDbClient();
   const db = client.db;
 
-  // Carrega empresa.
+  // Carrega empresa (ME-1.3c-Snapshot v2: inclui logoUrl para capa canonica).
   const companyRows = await db
-    .select({ nomeFantasia: companies.nomeFantasia, razaoSocial: companies.razaoSocial })
+    .select({
+      nomeFantasia: companies.nomeFantasia,
+      razaoSocial: companies.razaoSocial,
+      logoUrl: companies.logoUrl,
+    })
     .from(companies)
     .where(eq(companies.id, claims.companyId))
     .limit(1);
@@ -138,6 +142,7 @@ export async function GET(req: Request): Promise<NextResponse> {
   const razaoSocialSan = sanitizeRazaoSocial(company.razaoSocial);
   const html = renderSnapshot9BoxHTML({
     nomeFantasia: company.nomeFantasia,
+    logoUrl: company.logoUrl ?? undefined,
     razaoSocialSanitizada: razaoSocialSan,
     trimestre,
     escopoTipo,

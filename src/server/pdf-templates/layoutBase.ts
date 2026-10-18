@@ -1026,6 +1026,18 @@ export const LAYOUT_BASE_CSS = `
      ME-1.3c-Snapshot v1 — padrao do Snapshot 9-Box (espelho do Radar)
      ============================================================ */
 
+  /* v2: hero em UMA linha "Snapshot do 9-Box" (preto + teal). */
+  .cover-title-oneline {
+    font-size: 32pt;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    margin-bottom: 3mm;
+    white-space: nowrap;
+  }
+  .cover-title-oneline .cover-title-accent { color: #14B8A6; }
+
   /* Pagina de departamento no 9-Box: garante que matriz + comparativo
      caibam na mesma A4 sem corte (bug recorrente no v4). */
   .ninebox-dept-page {
@@ -1140,10 +1152,11 @@ export const LAYOUT_BASE_CSS = `
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #FFFFFF;
     font-size: 8.5pt;
     font-weight: 700;
     min-width: 3mm;
+    /* v2: cor do numero vem inline (paleta.text da celula) para legibilidade
+       sobre o fundo pastel (paleta.bg). */
   }
   .ninebox-stacked-bar-total {
     width: 10mm;

@@ -64,6 +64,8 @@ export interface NineBoxBlocoEscopo {
 /** Input do template. */
 export interface Snapshot9BoxTemplateInput {
   nomeFantasia: string;
+  /** URL do logo (companies.logoUrl) para o canto superior direito da capa. */
+  logoUrl?: string;
   razaoSocialSanitizada: string;
   trimestre: string;
   escopoTipo: 'empresa' | 'departamento' | 'equipe';
@@ -207,53 +209,62 @@ export function renderGrid9BoxSvg(
   distribuicao: NineBoxDistribuicao,
   options: Render9BoxOptions,
 ): string {
+  // v2: setas MAIORES (modelo mostra setas proeminentes), letter-spacing
+  // do PLENITUDE/DESEMPENHO maior (visual "P L E N I T U D E"), nome do
+  // quadrante sobe para o meio do caminho entre numero e base da celula.
   const dims =
     options.size === 'large'
       ? {
           svgWidth: 720,
           svgHeight: 720,
-          originX: 70,
-          originY: 10,
+          originX: 80,
+          originY: 20,
           gridSize: 600,
           gap: 10,
           radius: 14,
           numFontSize: 36,
           nameFontSize: 10,
           axisFontSize: 15,
-          axisArrowFontSize: 20,
-          axisGapX: 32,
-          axisGapY: 30,
+          axisArrowFontSize: 36,
+          axisGapX: 40,
+          axisGapY: 36,
+          axisLetterSpacing: 6,
+          arrowGapFromText: 24,
         }
       : options.size === 'medium'
         ? {
             svgWidth: 480,
             svgHeight: 480,
-            originX: 50,
-            originY: 10,
+            originX: 56,
+            originY: 14,
             gridSize: 400,
             gap: 7,
             radius: 10,
             numFontSize: 26,
             nameFontSize: 8,
             axisFontSize: 11,
-            axisArrowFontSize: 15,
-            axisGapX: 24,
-            axisGapY: 22,
+            axisArrowFontSize: 26,
+            axisGapX: 30,
+            axisGapY: 26,
+            axisLetterSpacing: 5,
+            arrowGapFromText: 18,
           }
         : {
             svgWidth: 240,
             svgHeight: 240,
-            originX: 24,
-            originY: 6,
+            originX: 28,
+            originY: 8,
             gridSize: 200,
             gap: 3,
             radius: 5,
             numFontSize: 15,
             nameFontSize: 5,
             axisFontSize: 6,
-            axisArrowFontSize: 8,
-            axisGapX: 12,
-            axisGapY: 10,
+            axisArrowFontSize: 13,
+            axisGapX: 15,
+            axisGapY: 12,
+            axisLetterSpacing: 3,
+            arrowGapFromText: 10,
           };
 
   const centros = options.destacarCentroMassa
@@ -276,21 +287,24 @@ export function renderGrid9BoxSvg(
       const ehCentro = centros.has(quadrante);
       const nomePartes = quadrante.split(' ');
       const multilinha = options.size !== 'large' && nomePartes.length >= 2;
+      const numY = y + cellSize / 2 + dims.numFontSize * 0.35;
+      // v2: nome do quadrante SOBE para o meio do caminho entre a base do
+      // numero (`numY`) e a base da celula — nao mais colado no fundo.
+      const baseCelY = y + cellSize - dims.gap - 4;
+      const nomeAncoraY = numY + (baseCelY - numY) * 0.55;
       let nomeSvg: string;
       if (multilinha) {
         const half = Math.ceil(nomePartes.length / 2);
         const linha1 = nomePartes.slice(0, half).join(' ');
         const linha2 = nomePartes.slice(half).join(' ');
-        const line2Y = y + cellSize - dims.gap - 4;
-        const line1Y = line2Y - dims.nameFontSize * 1.1;
+        const line1Y = nomeAncoraY;
+        const line2Y = line1Y + dims.nameFontSize * 1.15;
         nomeSvg =
           `<text x="${cxCell}" y="${line1Y}" text-anchor="middle" font-size="${dims.nameFontSize}" font-weight="700" fill="${paleta.text}" letter-spacing="0.3">${escapeHtml(linha1)}</text>` +
           `<text x="${cxCell}" y="${line2Y}" text-anchor="middle" font-size="${dims.nameFontSize}" font-weight="700" fill="${paleta.text}" letter-spacing="0.3">${escapeHtml(linha2)}</text>`;
       } else {
-        const nomeY = y + cellSize - dims.gap - 4;
-        nomeSvg = `<text x="${cxCell}" y="${nomeY}" text-anchor="middle" font-size="${dims.nameFontSize}" font-weight="700" fill="${paleta.text}" letter-spacing="0.3">${escapeHtml(quadrante)}</text>`;
+        nomeSvg = `<text x="${cxCell}" y="${nomeAncoraY}" text-anchor="middle" font-size="${dims.nameFontSize}" font-weight="700" fill="${paleta.text}" letter-spacing="0.3">${escapeHtml(quadrante)}</text>`;
       }
-      const numY = y + cellSize / 2 + dims.numFontSize * 0.35;
       const bordaStroke = ehCentro ? `stroke="${paleta.text}" stroke-width="2.5"` : 'stroke="none"';
       const shadowOverlay = ehCentro
         ? `<rect x="${x + 1.5}" y="${y + 1.5}" width="${cellSize - 3}" height="${cellSize - 3}" rx="${dims.radius - 1}" ry="${dims.radius - 1}" fill="none" stroke="${paleta.text}" stroke-opacity="0.15" stroke-width="4" />`
@@ -307,16 +321,21 @@ export function renderGrid9BoxSvg(
   const axisFill = RADAR_COLORS.textMuted;
   const gridEndY = dims.originY + dims.gridSize;
 
+  // Eixo DESEMPENHO: texto espacado com seta `→` grande separada por
+  // arrowGapFromText, baseline vertical compartilhada com o texto.
   const desempenhoY = gridEndY + dims.axisGapY;
   const desempenhoCx = dims.originX + dims.gridSize / 2;
   const desempenhoSvg =
-    `<text x="${desempenhoCx - 8}" y="${desempenhoY}" text-anchor="end" font-size="${dims.axisFontSize}" font-weight="700" fill="${axisFill}" letter-spacing="2.5">DESEMPENHO</text>` +
-    `<text x="${desempenhoCx + 4}" y="${desempenhoY}" text-anchor="start" font-size="${dims.axisArrowFontSize}" font-weight="700" fill="${axisFill}">→</text>`;
+    `<text x="${desempenhoCx - dims.arrowGapFromText}" y="${desempenhoY}" text-anchor="end" font-size="${dims.axisFontSize}" font-weight="700" fill="${axisFill}" letter-spacing="${dims.axisLetterSpacing}">DESEMPENHO</text>` +
+    `<text x="${desempenhoCx + dims.arrowGapFromText}" y="${desempenhoY + dims.axisArrowFontSize * 0.15}" text-anchor="start" font-size="${dims.axisArrowFontSize}" font-weight="700" fill="${axisFill}">→</text>`;
 
+  // Eixo PLENITUDE: texto rotacionado -90 (lido de baixo pra cima) com
+  // letter-spacing largo + seta `↑` SEPARADA do texto, posicionada acima
+  // do centro vertical (nao colada no topo do SVG).
   const plenitudeX = dims.originX - dims.axisGapX;
   const plenitudeCy = dims.originY + dims.gridSize / 2;
-  const plenitudeTextSvg = `<text x="${plenitudeX}" y="${plenitudeCy + 15}" text-anchor="start" font-size="${dims.axisFontSize}" font-weight="700" fill="${axisFill}" letter-spacing="2.5" transform="rotate(-90 ${plenitudeX} ${plenitudeCy})">PLENITUDE</text>`;
-  const plenitudeArrowY = dims.originY + 15;
+  const plenitudeTextSvg = `<text x="${plenitudeX}" y="${plenitudeCy + dims.axisFontSize * 0.4}" text-anchor="middle" font-size="${dims.axisFontSize}" font-weight="700" fill="${axisFill}" letter-spacing="${dims.axisLetterSpacing}" transform="rotate(-90 ${plenitudeX} ${plenitudeCy})">PLENITUDE</text>`;
+  const plenitudeArrowY = dims.originY - dims.arrowGapFromText * 0.3;
   const plenitudeArrowSvg = `<text x="${plenitudeX}" y="${plenitudeArrowY}" text-anchor="middle" font-size="${dims.axisArrowFontSize}" font-weight="700" fill="${axisFill}">↑</text>`;
 
   const viewBoxW = dims.svgWidth;
@@ -482,8 +501,7 @@ function renderCapaMaisResumo(input: Snapshot9BoxTemplateInput): string {
 
   return `<section class="cover-page">
   <div class="cover-hero">
-    <div class="cover-title-line1">Snapshot</div>
-    <div class="cover-title-line2">do 9-Box</div>
+    <div class="cover-title-oneline">Snapshot <span class="cover-title-accent">do 9-Box</span></div>
   </div>
   <div class="cover-meta">
     <div class="cover-meta-row"><span class="cover-meta-label">Empresa</span><span class="cover-meta-value">${escapeHtml(input.nomeFantasia)}</span></div>
@@ -562,7 +580,9 @@ function renderTabelaColaboradores(bloco: NineBoxBlocoEscopo): string {
   const rows = ordenados
     .map((c) => {
       const paleta = NINE_BOX_PALETTE[c.quadrante];
-      const badge = `<span style="display:inline-block; padding:1mm 2.5mm; border-radius:4pt; background:${paleta.bg}; color:${paleta.text}; font-size:8.5pt; font-weight:700; letter-spacing:0.03em;">${escapeHtml(c.quadrante)}</span>`;
+      // v2: badge padronizado — mesma largura/altura em todos os quadrantes,
+      // nome inteiro em UMA linha mesmo os mais longos (nowrap + fonte 8pt).
+      const badge = `<span style="display:inline-block; width:46mm; text-align:center; padding:1mm 1mm; border-radius:4pt; background:${paleta.bg}; color:${paleta.text}; font-size:8pt; font-weight:700; letter-spacing:0.03em; white-space:nowrap;">${escapeHtml(c.quadrante)}</span>`;
       return `<tr>
   <td>${escapeHtml(c.nome)}</td>
   <td>${escapeHtml(c.departamento)}</td>
@@ -663,12 +683,16 @@ function renderBarrasEmpilhadas(input: Snapshot9BoxTemplateInput): string {
     <div class="ninebox-stacked-bar-total">0</div>
   </div>`;
       }
+      // v2: cores das barras = cor DA CELULA da matriz (paleta.bg, nao
+      // paleta.text) para alinhar com a palette canonica do 9-Box.
+      // Numero dentro do segmento usa paleta.text (versao forte) para
+      // garantir legibilidade sobre o fundo pastel.
       const segmentos = NINE_BOX_QUADRANTES.map((q) => {
         const n = b.distribuicao[q];
         if (n === 0) return '';
         const pct = (n / b.totalClassificados) * 100;
         const paleta = NINE_BOX_PALETTE[q];
-        return `<div class="ninebox-stacked-bar-seg" style="flex:${pct.toFixed(2)}; background:${paleta.text};">${n}</div>`;
+        return `<div class="ninebox-stacked-bar-seg" style="flex:${pct.toFixed(2)}; background:${paleta.bg}; color:${paleta.text};">${n}</div>`;
       })
         .filter((s) => s.length > 0)
         .join('');
@@ -679,9 +703,11 @@ function renderBarrasEmpilhadas(input: Snapshot9BoxTemplateInput): string {
   </div>`;
     })
     .join('\n');
+  // Legenda: swatches tambem seguem a cor da CELULA (paleta.bg) para
+  // bater com as barras acima.
   const legenda = NINE_BOX_QUADRANTES.map(
     (q) =>
-      `<div class="leg-item"><span class="leg-swatch" style="background:${NINE_BOX_PALETTE[q].text};"></span>${escapeHtml(q)}</div>`,
+      `<div class="leg-item"><span class="leg-swatch" style="background:${NINE_BOX_PALETTE[q].bg}; border:1px solid ${NINE_BOX_PALETTE[q].text};"></span>${escapeHtml(q)}</div>`,
   ).join('');
   return `<div>
     ${linhas}
@@ -693,12 +719,16 @@ function renderResumaoFinal(input: Snapshot9BoxTemplateInput): string {
   if (input.blocosCapilares.length === 0) {
     return '';
   }
+  // v2: "Resumao" -> "Resumo" + "Participacao relativa" ganha pagina
+  // dedicada (page-break separando as duas secoes).
   return `<section class="page-break">
-  <h2>Resumão comparativo</h2>
+  <h2>Resumo comparativo</h2>
   <p>Visão consolidada da empresa frente a cada departamento. A grade abaixo mostra os nove quadrantes lado a lado em cada agregado — a empresa aparece em destaque teal.</p>
   <h3>Distribuição por quadrante · cada agregado</h3>
   ${renderMiniGridResumo(input)}
-  <h3>Participação relativa por quadrante</h3>
+</section>
+<section class="page-break">
+  <h2>Participação relativa por quadrante</h2>
   <div class="ninebox-nota-intro">
     <strong>Como ler.</strong> Cada barra representa 100% dos colaboradores classificados do agregado correspondente, segmentada por quadrante na mesma ordem — do mais positivo (Alto Impacto, à esquerda) ao mais crítico (Risco Crítico, à direita). A comparação visual entre as linhas revela onde cada departamento se afasta do perfil da empresa como um todo.
   </div>
@@ -747,7 +777,10 @@ export function renderSnapshot9BoxHTML(input: Snapshot9BoxTemplateInput): string
   const bodyHtml = partes.join('\n');
   return renderLayoutBase({
     title: 'Snapshot do 9-Box',
-    company: { nomeFantasia: input.nomeFantasia },
+    company: {
+      nomeFantasia: input.nomeFantasia,
+      ...(input.logoUrl ? { logoUrl: input.logoUrl } : {}),
+    },
     bodyHtml,
     footerLeft: `Snapshot 9-Box · ${input.nomeFantasia} · ${formatTrimestreBR(input.trimestre)}`,
     footerCenter: `Gerado em ${toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso}`,
