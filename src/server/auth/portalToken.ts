@@ -112,6 +112,12 @@ function resolveTtlSeconds(raw: number | undefined): number {
  */
 export async function signPortalToken(input: PortalTokenInput): Promise<string> {
   const ttl = resolveTtlSeconds(input.ttlSeconds);
+  // Patch L113 (ME-1.3c CC079-v7.2): captura `agora` em segundos uma unica
+  // vez e passa explicitamente para iat e exp, para evitar drift de 1s
+  // entre `setIssuedAt()` e `setExpirationTime(...s)` — ambos liam
+  // `Date.now()` internamente, o que gerava `exp - iat === ttl + 1` em
+  // full-run (débito órfão que travava `npm run validate`).
+  const agoraEpochSec = Math.floor(Date.now() / 1000);
   return new SignJWT({
     kind: 'portal',
     companyId: input.companyId,
@@ -119,8 +125,8 @@ export async function signPortalToken(input: PortalTokenInput): Promise<string> 
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(String(input.titularId))
-    .setIssuedAt()
-    .setExpirationTime(`${ttl}s`)
+    .setIssuedAt(agoraEpochSec)
+    .setExpirationTime(agoraEpochSec + ttl)
     .sign(getSecretKey());
 }
 
