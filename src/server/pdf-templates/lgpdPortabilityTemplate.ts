@@ -135,6 +135,33 @@ export interface LgpdPortabilityIndividualProfileRow {
   respostas: unknown;
 }
 
+/**
+ * Modo canonico de renderizacao (ME-1.12 Despacho A, itens [1.12.a] +
+ * [1.12.b] do roadmap V4). Discrimina duas superficies canonicamente
+ * distintas: autoacesso do colaborador vs. rastreabilidade do SA.
+ *  - `colaborador`: renderiza apenas cadastrais + termo de aceite.
+ *    Protege a plataforma de engenharia reversa das escalas por
+ *    extracao do proprio titular.
+ *  - `super_admin`: renderiza cadastrais + todas as respostas brutas
+ *    (§19.6 integral) + termo de aceite. Padrao historico bit-exact
+ *    pre-ME-1.12.a, preservado como superficie exclusiva do SA.
+ */
+export type LgpdPortabilityModo = 'colaborador' | 'super_admin';
+
+/**
+ * Snapshot canonico do termo LGPD aceito pelo titular (ME-1.12.c).
+ * `textoLiteral` resolvido pelo service via mapa versionado
+ * `src/lib/lgpd/termoLiteral.ts`. Fallback bit-exact quando a versao
+ * historica esta fora do mapa.
+ */
+export interface LgpdPortabilityTermoAceite {
+  readonly versao: string;
+  /** Data civil ISO `YYYY-MM-DD` do aceite (BRT fixo via helper canonico). */
+  readonly aceitoEmDate: string;
+  /** Texto literal canonico da versao aceita. `null` para versao fora do mapa. */
+  readonly textoLiteral: string | null;
+}
+
 /** Input canonico do template. */
 export interface LgpdPortabilityTemplateInput {
   company: LayoutBaseCompany;
@@ -143,6 +170,17 @@ export interface LgpdPortabilityTemplateInput {
   instrumentD: LgpdPortabilityInstrumentoRow[];
   copsoq: LgpdPortabilityCopsoqRow[];
   individualProfile: LgpdPortabilityIndividualProfileRow[];
+  /**
+   * Modo canonico de renderizacao (ME-1.12.a + [1.12.b]). Omitido ->
+   * `super_admin` por compatibilidade bit-exact com callers historicos.
+   */
+  modo?: LgpdPortabilityModo;
+  /**
+   * Termo LGPD vigente aceito pelo titular (ME-1.12.c). `null` quando
+   * o titular nunca aceitou nenhuma versao (caso raro). Renderizado
+   * em ambos os modos no final do PDF.
+   */
+  termoAceite?: LgpdPortabilityTermoAceite | null;
   /**
    * Data de geracao canonica — formato `YYYY-MM-DD`. Preservada
    * bit-exact: continua sendo a chave canonica do filename
@@ -427,23 +465,69 @@ ${tentativas}
 }
 
 /**
+ * Renderiza a secao canonica "Termo de aceite" (ME-1.12.c Despacho A,
+ * item [1.12.c] do roadmap V4). Presente em ambos os modos
+ * (colaborador e super_admin) no final do PDF. Fallback bit-exact
+ * quando `termoAceite === null` (titular nunca aceitou — caso raro)
+ * ou quando `textoLiteral === null` (versao historica fora do mapa).
+ */
+function renderTermoAceiteSection(
+  termoAceite: LgpdPortabilityTermoAceite | null | undefined,
+): string {
+  if (termoAceite === null || termoAceite === undefined) {
+    return `<section>
+  <h2>Termo de aceite</h2>
+  <p class="muted">Não há registro de aceite do termo LGPD para este titular na base canônica da plataforma.</p>
+</section>`;
+  }
+  const dataAceiteBr = formatDateBR(termoAceite.aceitoEmDate);
+  const corpoTermo =
+    termoAceite.textoLiteral !== null
+      ? `<p>${escapeHtml(termoAceite.textoLiteral)}</p>`
+      : `<p class="muted">(Versão histórica — texto literal não disponível no registro canônico atual.)</p>`;
+  return `<section>
+  <h2>Termo de aceite</h2>
+  <p class="muted">Texto literal da versão do termo LGPD vigente no momento do aceite pelo titular, preservado para rastreabilidade canônica (DOC 02 §7.3).</p>
+  <p><strong>Versão aceita:</strong> ${escapeHtml(termoAceite.versao)}</p>
+  <p><strong>Data do aceite:</strong> ${escapeHtml(dataAceiteBr)}</p>
+  <div style="margin-top:3mm; padding:4mm; background:#f9fafb; border:0.5pt solid #d1d5db; border-radius:1mm;">
+    ${corpoTermo}
+  </div>
+</section>`;
+}
+
+/**
  * Renderiza o HTML canonico do PDF de portabilidade LGPD.
  * Deterministico bit-exact: mesmos inputs -> mesma saida byte a byte.
+ *
+ * ME-1.12 Despacho A: comportamento canonico varia por `input.modo`:
+ *   - `colaborador`: cadastrais + termo de aceite (sem respostas
+ *     brutas aos instrumentos). Protege a plataforma de engenharia
+ *     reversa das escalas por extracao do proprio titular.
+ *   - `super_admin` (ou omitido): cadastrais + todas as respostas
+ *     brutas + termo de aceite. Padrao bit-exact pre-ME-1.12.a
+ *     preservado como superficie exclusiva do SA.
  */
 export function renderLgpdPortabilityHTML(input: LgpdPortabilityTemplateInput): string {
+  const modo: LgpdPortabilityModo = input.modo ?? 'super_admin';
+  const preambuloTexto =
+    modo === 'colaborador'
+      ? 'Documento canônico emitido em atendimento ao direito de acesso previsto na Lei Geral de Proteção de Dados Pessoais (LGPD, Lei nº 13.709/2018). Contém os dados cadastrais do titular e o registro canônico do termo de aceite vigente. Respostas aos instrumentos de avaliação são preservadas na base canônica da plataforma e disponibilizadas ao titular pelos canais de atendimento da empresa, conforme previsto em lei.'
+      : 'Documento canônico emitido em atendimento ao direito de portabilidade previsto na Lei Geral de Proteção de Dados Pessoais (LGPD, Lei nº 13.709/2018). Contém os dados cadastrais do titular e as respostas fornecidas pelo próprio titular aos instrumentos de avaliação da plataforma. Avaliações realizadas por terceiros sobre o titular não integram o escopo deste documento.';
   const preambulo = `<section>
-  <h1>Portabilidade de dados pessoais</h1>
-  <p class="muted">Documento canônico emitido em atendimento ao direito de portabilidade previsto na Lei Geral de Proteção de Dados Pessoais (LGPD, Lei nº 13.709/2018). Contém os dados cadastrais do titular e as respostas fornecidas pelo próprio titular aos instrumentos de avaliação da plataforma. Avaliações realizadas por terceiros sobre o titular não integram o escopo deste documento.</p>
+  <h1>${modo === 'colaborador' ? 'Meus dados pessoais' : 'Portabilidade de dados pessoais'}</h1>
+  <p class="muted">${escapeHtml(preambuloTexto)}</p>
 </section>`;
 
-  const bodyHtml = [
-    preambulo,
-    renderCadastraisSection(input.cadastrais),
-    renderInstrumentASection(input.instrumentA),
-    renderInstrumentDSection(input.instrumentD),
-    renderCopsoqSection(input.copsoq),
-    renderIndividualProfileSection(input.individualProfile),
-  ].join('\n\n');
+  const secoes: string[] = [preambulo, renderCadastraisSection(input.cadastrais)];
+  if (modo === 'super_admin') {
+    secoes.push(renderInstrumentASection(input.instrumentA));
+    secoes.push(renderInstrumentDSection(input.instrumentD));
+    secoes.push(renderCopsoqSection(input.copsoq));
+    secoes.push(renderIndividualProfileSection(input.individualProfile));
+  }
+  secoes.push(renderTermoAceiteSection(input.termoAceite ?? null));
+  const bodyHtml = secoes.join('\n\n');
 
   // ME-B11.1c PATCH2 (PDL10): rodape canonico com timestamp completo
   // humanizado quando `generatedAtTimestamp` esta presente. Fallback

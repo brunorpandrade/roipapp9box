@@ -1,5 +1,6 @@
 // ROIP APP 9BOX — Client canônico do gate LGPD do portal
-// (ME-B10-01, DOC 05 §6.2; estendido ME-B10-05 S256 — perímetro mobile).
+// (ME-B10-01, DOC 05 §6.2; estendido ME-B10-05 S256 — perímetro mobile;
+// refatorado ME-1.12.c Despacho A, item [1.12.c] do roadmap V4).
 //
 // Renderizado após identificação por CPF+matrícula quando
 // `versaoTermoAceita` diverge de `LGPD_TERM_VERSION`.
@@ -16,6 +17,16 @@
 // sessionStorage indica que já houve login anterior nesta aba
 // (`portalLgpdSeen === '1'`); "Primeiro acesso" caso contrário.
 //
+// ME-1.12.c Despacho A: refactor canonico do fluxo do primeiro login.
+// Caixa inicial com resumo curto (duas frases canonicas — finalidade +
+// direitos) + botao secundario `[Ler termo integral]` que abre modal
+// rolavel interno com `TERMO_LITERAL_V10` completo + botao primario
+// `[Concordar e continuar]`. Preserva bit-exact o comportamento
+// canonico de "não aparecer de novo após aceite" via sessionStorage e
+// `recordLGPDConsent`. Fonte unica dos textos canonicos:
+// `src/lib/lgpd/termoLiteral.ts` (L125 integral — refactor dos
+// callsites originais).
+//
 // Botão único primário [Concordar e continuar]. Consome
 // POST /api/portal/consent-lgpd com `{ portalToken }` do
 // sessionStorage. Sucesso → redirect para /colaborador/pendencias.
@@ -28,6 +39,8 @@
 import { useEffect, useState, type JSX } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { TERMO_LITERAL_V10, TERMO_RESUMO_V10 } from '../../lib/lgpd/termoLiteral';
+
 const NAVY = '#1F3A5F';
 const TEAL = '#14B8A6';
 const BORDER = '#E5E7EB';
@@ -39,14 +52,6 @@ const DANGER_BG = '#FEE2E2';
 const DANGER_TX = '#991B1B';
 
 const TITULO_CANONICO = 'Termo de tratamento de dados';
-const TERMO_LITERAL_V10 =
-  'Ao prosseguir, você declara estar ciente de que seus dados pessoais ' +
-  'serão tratados para as finalidades relacionadas ao uso desta ' +
-  'plataforma, conforme a legislação aplicável. O tratamento ocorrerá ' +
-  'com base nas hipóteses legais pertinentes previstas na LGPD. Você ' +
-  'poderá exercer os direitos previstos na lei, incluindo acesso, ' +
-  'correção e demais direitos aplicáveis, por meio dos canais ' +
-  'disponibilizados pela empresa.';
 
 interface ConsentSuccess {
   gateStep: 'pendencias';
@@ -62,6 +67,10 @@ export function GateLgpdClient(): JSX.Element {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tokenPresente, setTokenPresente] = useState(true);
+  // ME-1.12.c: estado do modal rolavel do termo integral. Controlado
+  // localmente — sem backend; abre quando o usuario clica em `[Ler
+  // termo integral]` e fecha com `[Fechar]` ou ESC.
+  const [modalAberto, setModalAberto] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -76,6 +85,20 @@ export function GateLgpdClient(): JSX.Element {
     const jaViu = window.sessionStorage.getItem('portalLgpdSeen');
     setEyebrow(jaViu === '1' ? 'atualizado' : 'primeiro');
   }, [router]);
+
+  // ME-1.12.c: ESC fecha o modal rolavel (acessibilidade canonica).
+  useEffect(() => {
+    if (!modalAberto) {
+      return;
+    }
+    function handleEsc(e: KeyboardEvent): void {
+      if (e.key === 'Escape') {
+        setModalAberto(false);
+      }
+    }
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [modalAberto]);
 
   async function handleConcordar(): Promise<void> {
     if (typeof window === 'undefined') {
@@ -181,6 +204,12 @@ export function GateLgpdClient(): JSX.Element {
           {TITULO_CANONICO}
         </h1>
 
+        {/*
+          ME-1.12.c: caixa canonica com RESUMO CURTO (duas frases
+          — finalidade + direitos). O texto literal integral e
+          acessivel via botao secundario `[Ler termo integral]`
+          abaixo, que abre modal rolavel.
+        */}
         <div
           style={{
             background: '#F9FAFB',
@@ -192,7 +221,7 @@ export function GateLgpdClient(): JSX.Element {
             color: TEXT_2,
           }}
         >
-          {TERMO_LITERAL_V10}
+          {TERMO_RESUMO_V10}
         </div>
 
         <div
@@ -223,8 +252,38 @@ export function GateLgpdClient(): JSX.Element {
 
         <div
           className="roip-lgpd-cta-row"
-          style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}
+          style={{
+            marginTop: 24,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+            alignItems: 'center',
+          }}
         >
+          {/*
+            ME-1.12.c: botao secundario canonico `[Ler termo
+            integral]`. Abre modal interno rolavel com
+            `TERMO_LITERAL_V10` completo. Nao bloqueia o botao
+            primario de aceite — leitura e opcional conforme pedido
+            canonico de Bruno.
+          */}
+          <button
+            type="button"
+            onClick={() => setModalAberto(true)}
+            style={{
+              padding: '8px 16px',
+              background: 'transparent',
+              color: TEXT_3,
+              border: `1px solid ${BORDER}`,
+              borderRadius: 8,
+              fontSize: 12.5,
+              fontWeight: 500,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            Ler termo integral
+          </button>
           <button
             type="button"
             onClick={handleConcordar}
@@ -246,10 +305,123 @@ export function GateLgpdClient(): JSX.Element {
             {loading ? 'Registrando…' : 'Concordar e continuar'}
           </button>
         </div>
-
-        {/* TEXT_3 reservado para variantes futuras — mantém RV-13 */}
-        <span style={{ display: 'none', color: TEXT_3 }} aria-hidden />
       </div>
+
+      {/*
+        ME-1.12.c: modal rolavel canonico com o termo integral.
+        Renderizado apenas quando `modalAberto === true`. Overlay
+        semi-transparente + caixa centralizada com scroll interno. ESC
+        e botao `[Fechar]` fecham o modal. Preserva comportamento
+        canonico pre-ME: nao interfere no fluxo de aceite.
+      */}
+      {modalAberto ? (
+        <div
+          onClick={() => setModalAberto(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(17, 24, 39, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            zIndex: 1000,
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="roip-lgpd-modal-title"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#FFFFFF',
+              borderRadius: 14,
+              maxWidth: 640,
+              width: '100%',
+              maxHeight: '85vh',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            }}
+          >
+            <div
+              style={{
+                padding: '20px 28px',
+                borderBottom: `1px solid ${BORDER}`,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <h2
+                id="roip-lgpd-modal-title"
+                style={{
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: TEXT_1,
+                  margin: 0,
+                }}
+              >
+                Termo de tratamento de dados — integral
+              </h2>
+              <button
+                type="button"
+                onClick={() => setModalAberto(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: 20,
+                  color: TEXT_3,
+                  cursor: 'pointer',
+                  padding: 0,
+                  lineHeight: 1,
+                }}
+                aria-label="Fechar"
+              >
+                ×
+              </button>
+            </div>
+            <div
+              style={{
+                padding: '20px 28px',
+                overflowY: 'auto',
+                fontSize: 13.5,
+                lineHeight: 1.7,
+                color: TEXT_2,
+                flex: 1,
+              }}
+            >
+              {TERMO_LITERAL_V10}
+            </div>
+            <div
+              style={{
+                padding: '14px 28px',
+                borderTop: `1px solid ${BORDER}`,
+                display: 'flex',
+                justifyContent: 'flex-end',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setModalAberto(false)}
+                style={{
+                  padding: '9px 22px',
+                  background: '#FFFFFF',
+                  color: TEXT_2,
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

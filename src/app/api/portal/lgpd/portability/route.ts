@@ -126,9 +126,21 @@ export async function GET(req: Request): Promise<NextResponse> {
   // SELECTs canonicos do payload (§19.6). Falha defensiva com 404 se
   // titular ou empresa nao existirem — cobre corrida com deletes
   // administrativos posteriores a emissao do token.
+  //
+  // ME-1.12.a Despacho A (item [1.12.a] do roadmap V4): modo
+  // canonico `colaborador` suprime SELECTs das respostas brutas aos
+  // instrumentos (A, D, COPSOQ, Perfil Individual). Protege a
+  // plataforma de engenharia reversa das escalas por extracao do
+  // proprio titular. Mantem cadastrais + termo de aceite (ME-1.12.c).
   let payload;
   try {
-    payload = await buildLgpdPortabilityPayload(db, companyId, titularType, titularId);
+    payload = await buildLgpdPortabilityPayload(
+      db,
+      companyId,
+      titularType,
+      titularId,
+      'colaborador',
+    );
   } catch (err) {
     if (err instanceof LgpdPortabilityTitularNotFoundError) {
       return returnTitularNotFound();
@@ -153,7 +165,8 @@ export async function GET(req: Request): Promise<NextResponse> {
   // "Gerado em DD/MM/YYYY as HH:mm (BRT)".
   const generatedAtTimestamp = now.toISOString();
 
-  // Renderiza HTML canonico bit-exact.
+  // Renderiza HTML canonico bit-exact. ME-1.12 Despacho A: propaga
+  // `modo: 'colaborador'` + `termoAceite` canonico ao template.
   const html = renderLgpdPortabilityHTML({
     company: { nomeFantasia: payload.companyNomeFantasia },
     cadastrais: payload.cadastrais,
@@ -161,6 +174,8 @@ export async function GET(req: Request): Promise<NextResponse> {
     instrumentD: payload.instrumentD,
     copsoq: payload.copsoq,
     individualProfile: payload.individualProfile,
+    modo: 'colaborador',
+    termoAceite: payload.termoAceite,
     generatedAtDate,
     generatedAtTimestamp,
   });

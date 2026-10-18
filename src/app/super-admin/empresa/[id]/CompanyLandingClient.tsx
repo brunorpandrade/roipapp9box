@@ -308,6 +308,20 @@ function AcoesBlock(props: {
         <Link href={`/super-admin/empresa/${companyId}/painel-rh-preview`} style={buttonStyle}>
           Painel RH (preview)
         </Link>
+        {/*
+          ME-1.12.b Despacho A (item [1.12.b] do roadmap V4): entry
+          point canonico da nova superficie LGPD exclusiva do SA.
+          Interface de busca por colaborador + botao "Exportar PDF"
+          que gera o PDF integral §19.6 do titular (cadastrais +
+          respostas brutas aos 4 instrumentos + termo de aceite) via
+          `GET /api/super-admin/lgpd/exportar`. Protege a plataforma
+          dos colaboradores exportarem suas proprias respostas brutas
+          — a exportacao do portal foi reduzida a cadastrais + termo
+          (ME-1.12.a).
+        */}
+        <Link href={`/super-admin/empresa/${companyId}/lgpd`} style={buttonStyle}>
+          LGPD
+        </Link>
       </div>
       <div
         style={{

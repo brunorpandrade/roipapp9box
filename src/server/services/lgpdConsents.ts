@@ -25,6 +25,7 @@ import { and, desc, eq } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../db/client';
 import { lgpdConsents } from '../../db/schema';
+import { getTermoLiteral } from '../../lib/lgpd/termoLiteral';
 
 /**
  * Insere o consentimento de um employee (padrao polimorfico A —
@@ -195,4 +196,78 @@ export async function recordLGPDConsent(
   return titularType === 'employee'
     ? await insertLgpdConsentForEmployee(db, companyId, titularId, versaoVigente)
     : await insertLgpdConsentForClevel(db, companyId, titularId, versaoVigente);
+}
+
+// ME-1.12.c Despacho A (item [1.12.c] do roadmap V4) ---------------------
+//
+// `getTermoAceiteDoTitular` — fonte canonica do consentimento mais
+// recente do titular para a renderizacao da secao "Termo de aceite" no
+// PDF LGPD (ambos os modos: colaborador e super_admin). Retorna versao
+// + data civil do aceite + texto literal canonico resolvido via
+// `src/lib/lgpd/termoLiteral.ts`. Rastreabilidade: o PDF do SA
+// renderiza o texto exatamente como o titular aceitou (preserva
+// versao antiga quando a base ja migrou).
+
+/**
+ * Retorno canonico de `getTermoAceiteDoTitular`. `aceitoEm` nunca e
+ * null pois o schema `lgpdConsents.aceitoEm` tem `defaultNow()` e o
+ * valor so e consultado quando o registro existe. `textoLiteral`
+ * pode ser `null` quando a versao historica aceita saiu do mapa
+ * `TERMO_LITERAL_POR_VERSAO` (fallback canonico renderizado pelo
+ * template).
+ */
+interface TermoAceiteDoTitular {
+  readonly versao: string;
+  readonly aceitoEm: Date;
+  readonly textoLiteral: string | null;
+}
+
+/**
+ * Resolve o consentimento LGPD mais recente do titular (polimorfico
+ * employee XOR clevel). Retorna `null` quando o titular nunca aceitou
+ * nenhuma versao do termo — caso raro em producao pois o gate bloqueia
+ * acesso ao portal sem aceite, mas o PDF do SA deve degradar
+ * graciosamente (titular criado e nunca logou).
+ *
+ * Carrega o `textoLiteral` canonico da versao aceita via
+ * `getTermoLiteral`. Versao historica desconhecida retorna
+ * `textoLiteral=null` sem lancar.
+ */
+export async function getTermoAceiteDoTitular(
+  db: RoipDatabase,
+  titularType: LgpdTitularType,
+  titularId: number,
+): Promise<TermoAceiteDoTitular | null> {
+  const rows =
+    titularType === 'employee'
+      ? await db
+          .select({
+            versao: lgpdConsents.versaoTermoAceita,
+            aceitoEm: lgpdConsents.aceitoEm,
+          })
+          .from(lgpdConsents)
+          .where(eq(lgpdConsents.employeeId, titularId))
+          .orderBy(desc(lgpdConsents.aceitoEm), desc(lgpdConsents.id))
+          .limit(1)
+      : await db
+          .select({
+            versao: lgpdConsents.versaoTermoAceita,
+            aceitoEm: lgpdConsents.aceitoEm,
+          })
+          .from(lgpdConsents)
+          .where(eq(lgpdConsents.clevelId, titularId))
+          .orderBy(desc(lgpdConsents.aceitoEm), desc(lgpdConsents.id))
+          .limit(1);
+  const row = rows[0];
+  if (row === undefined) {
+    return null;
+  }
+  if (row.aceitoEm === null) {
+    return null;
+  }
+  return {
+    versao: row.versao,
+    aceitoEm: row.aceitoEm,
+    textoLiteral: getTermoLiteral(row.versao),
+  };
 }

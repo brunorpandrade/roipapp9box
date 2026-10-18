@@ -49,6 +49,7 @@ import {
   instrumentA_responses,
   instrumentD_responses,
 } from '../../db/schema';
+import { getTermoAceiteDoTitular } from './lgpdConsents';
 
 // ============================================================
 // Tipos canonicos de retorno
@@ -124,6 +125,32 @@ export interface LgpdPortabilityIndividualProfileTentativa {
   respostas: unknown;
 }
 
+/**
+ * Modo canonico de composicao do payload (ME-1.12.a Despacho A, item
+ * [1.12.a] do roadmap V4):
+ *  - `colaborador`: PDF autoacesso do titular — SELECTs de respostas
+ *    brutas sao suprimidos (listas vazias no payload). Protege a
+ *    plataforma de engenharia reversa das escalas por extracao do
+ *    titular. Fica: dados cadastrais + termo de aceite.
+ *  - `super_admin`: PDF rastreabilidade do SA — SELECTs integrais
+ *    das respostas brutas aos 4 instrumentos (padrao historico
+ *    bit-exact pre-ME-1.12.a). Fica: tudo acima + termo de aceite.
+ */
+export type LgpdPortabilityModo = 'colaborador' | 'super_admin';
+
+/**
+ * Snapshot canonico do termo LGPD aceito pelo titular, no shape de
+ * apresentacao consumido pelo template PDF (ME-1.12.c). Formato
+ * canonico `aceitoEmDate = YYYY-MM-DD` (data civil BRT) — conversao
+ * aplicada aqui pela orquestracao canonica a partir do `Date` nativo
+ * retornado por `getTermoAceiteDoTitular` em `lgpdConsents.ts`.
+ */
+interface LgpdPortabilityTermoAceitePayload {
+  readonly versao: string;
+  readonly aceitoEmDate: string;
+  readonly textoLiteral: string | null;
+}
+
 /** Payload canonico agregado do titular (§19.6). */
 export interface LgpdPortabilityPayload {
   companyNomeFantasia: string;
@@ -132,6 +159,12 @@ export interface LgpdPortabilityPayload {
   instrumentD: LgpdPortabilityInstrumentoResposta[];
   copsoq: LgpdPortabilityCopsoqResposta[];
   individualProfile: LgpdPortabilityIndividualProfileTentativa[];
+  /**
+   * Termo LGPD vigente aceito pelo titular (ME-1.12.c — rastreabilidade
+   * canonica em ambos os modos). `null` quando o titular nunca aceitou
+   * nenhuma versao (caso raro: titular criado e nunca logou).
+   */
+  termoAceite: LgpdPortabilityTermoAceitePayload | null;
 }
 
 /** Erro canonico: titular nao encontrado na empresa. */
@@ -461,15 +494,24 @@ export async function getIndividualProfileTentativas(
 // ============================================================
 
 /**
- * Compoe o payload canonico integral da portabilidade LGPD (§19.6).
- * Coordena os SELECTs paralelos canonicos e agrega no formato bit-exact
- * consumido pelo template PDF.
+ * Compoe o payload canonico da portabilidade LGPD (§19.6).
+ * Coordena os SELECTs canonicos e agrega no formato bit-exact consumido
+ * pelo template PDF. O parametro `modo` discrimina:
+ *   - `colaborador` (ME-1.12.a): suprime SELECTs das respostas brutas
+ *     (listas vazias no payload); mantem cadastrais + termo de aceite.
+ *   - `super_admin` (ME-1.12.b): SELECTs integrais (padrao historico
+ *     bit-exact pre-ME-1.12.a). Preserva §19.6 completo para
+ *     rastreabilidade canonica do SA.
+ * Em ambos os modos, o `termoAceite` e lido via
+ * `getTermoAceiteDoTitular` para a secao canonica "Termo de aceite"
+ * (ME-1.12.c).
  */
 export async function buildLgpdPortabilityPayload(
   db: RoipDatabase,
   companyId: number,
   titularType: LgpdPortabilityTitularType,
   titularId: number,
+  modo: LgpdPortabilityModo = 'super_admin',
 ): Promise<LgpdPortabilityPayload> {
   // Empresa canonica primeiro — falha defensiva se company sumiu (nao
   // deve ocorrer com portalToken valido, mas cobre corrida rara).
@@ -481,14 +523,36 @@ export async function buildLgpdPortabilityPayload(
       ? await getCadastraisEmployee(db, companyId, titularId)
       : await getCadastraisClevel(db, companyId, titularId);
 
-  // SELECTs canonicos paralelos das respostas do titular. Paralelismo
-  // reduz latencia total; Drizzle tipado garante isolamento.
-  const [instrumentA, instrumentD, copsoq, individualProfile] = await Promise.all([
-    getInstrumentARespostas(db, companyId, titularType, titularId),
-    getInstrumentDRespostas(db, companyId, titularType, titularId),
-    getCopsoqRespostas(db, companyId, titularType, titularId),
-    getIndividualProfileTentativas(db, companyId, titularType, titularId),
+  // ME-1.12.a: SELECTs de respostas brutas sao condicionados ao modo
+  // super_admin. No modo colaborador, listas vazias preservam formato
+  // canonico do payload sem expor engenharia reversa das escalas.
+  const [instrumentA, instrumentD, copsoq, individualProfile, termoAceite] = await Promise.all([
+    modo === 'super_admin'
+      ? getInstrumentARespostas(db, companyId, titularType, titularId)
+      : Promise.resolve<LgpdPortabilityInstrumentoResposta[]>([]),
+    modo === 'super_admin'
+      ? getInstrumentDRespostas(db, companyId, titularType, titularId)
+      : Promise.resolve<LgpdPortabilityInstrumentoResposta[]>([]),
+    modo === 'super_admin'
+      ? getCopsoqRespostas(db, companyId, titularType, titularId)
+      : Promise.resolve<LgpdPortabilityCopsoqResposta[]>([]),
+    modo === 'super_admin'
+      ? getIndividualProfileTentativas(db, companyId, titularType, titularId)
+      : Promise.resolve<LgpdPortabilityIndividualProfileTentativa[]>([]),
+    getTermoAceiteDoTitular(db, titularType, titularId),
   ]);
+
+  // ME-1.12.c: converte o `aceitoEm: Date` nativo do db para
+  // `aceitoEmDate: YYYY-MM-DD` canonico de apresentacao. Preserva
+  // `null` quando o titular nunca aceitou (caso raro).
+  const termoAceitePayload: LgpdPortabilityTermoAceitePayload | null =
+    termoAceite === null
+      ? null
+      : {
+          versao: termoAceite.versao,
+          aceitoEmDate: toYYYYMMDD(termoAceite.aceitoEm),
+          textoLiteral: termoAceite.textoLiteral,
+        };
 
   return {
     companyNomeFantasia,
@@ -497,5 +561,6 @@ export async function buildLgpdPortabilityPayload(
     instrumentD,
     copsoq,
     individualProfile,
+    termoAceite: termoAceitePayload,
   };
 }
