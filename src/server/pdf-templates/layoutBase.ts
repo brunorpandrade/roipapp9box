@@ -809,6 +809,109 @@ export const LAYOUT_BASE_CSS = `
     color: #6B7280;
     font-weight: 500;
   }
+
+  /* ============================================================
+     ME-1.3c CC079-v6 — camada canonica para o layout de 14 paginas
+     do modelo. Hero da capa em duas linhas separadas, radar maior
+     com nomes completos, lista enxuta de deptos insuficientes.
+     ============================================================ */
+
+  /* Hero da capa em duas linhas separadas. */
+  .cover-hero {
+    margin-top: 2mm;
+    margin-bottom: 12mm;
+    padding-right: 50mm; /* reserva espaco para o logo no canto */
+  }
+  .cover-title-line1 {
+    font-size: 36pt;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    margin-bottom: 4mm;
+  }
+  .cover-title-line2 {
+    font-size: 28pt;
+    font-weight: 700;
+    color: #14B8A6;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+
+  /* Resumo executivo compacto (dentro da capa). */
+  .h2-compact {
+    font-size: 15pt;
+    margin-top: 8mm;
+    margin-bottom: 3mm;
+    padding-bottom: 1.5mm;
+    border-bottom: 2px solid #14B8A6;
+  }
+  .resumo-exec-paragrafo {
+    font-size: 10pt;
+    color: #374151;
+    margin-bottom: 3mm;
+    line-height: 1.5;
+  }
+
+  /* Radar centralizado — aumentado para a v6. */
+  .radar-stacked .radar-svg-centered {
+    width: 88%;
+    max-width: 150mm;
+  }
+
+  /* Pagina de departamento — nao deixa a tabela orfa. */
+  .dept-page {
+    page-break-inside: avoid;
+  }
+  .dept-page table.data-table-3col {
+    margin-top: 3mm;
+  }
+
+  /* Lista enxuta de departamentos com amostra insuficiente. */
+  .dept-insuf-list {
+    list-style: none;
+    padding: 0;
+    margin: 4mm 0 0;
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 8pt;
+    overflow: hidden;
+  }
+  .dept-insuf-item {
+    display: flex;
+    align-items: center;
+    gap: 2mm;
+    padding: 3mm 5mm;
+    border-bottom: 1px solid #F3F4F6;
+    font-size: 10.5pt;
+  }
+  .dept-insuf-item:last-child {
+    border-bottom: none;
+  }
+  .dept-insuf-nome {
+    font-weight: 600;
+    color: #111827;
+    flex: 1;
+  }
+  .dept-insuf-sep {
+    color: #9CA3AF;
+  }
+  .dept-insuf-count {
+    color: #6B7280;
+    font-weight: 500;
+    font-size: 10pt;
+  }
+
+  /* Suavizar visual (v6): bordas e paletas mais limpas. */
+  .info-card {
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 10pt;
+    padding: 4mm 5mm;
+    font-size: 9.5pt;
+    color: #374151;
+    line-height: 1.55;
+  }
 `;
 
 /**
@@ -831,12 +934,13 @@ export function renderLayoutBase(input: LayoutBaseInput): string {
     `<div class="string-set-only doc-header-left">${escapeHtml(headerLeft)}</div>` +
     `<div class="string-set-only doc-header-right">${escapeHtml(headerRight)}</div>` +
     `<div class="string-set-only doc-footer-left">${escapeHtml(footerLeftRaw)}</div>`;
-  // ME-1.3c CC079-v2: logo canonico injetado como marca discreta no
-  // canto superior direito da capa — espelho da identidade visual da
-  // empresa. Posicao absoluta nao interfere com o layout editorial.
+  // ME-1.3c CC079-v6: logo canonico injetado como marca independente
+  // no canto superior direito da capa. z-index acima do texto do hero
+  // e background branco opaco para evitar sobreposicao visual sobre
+  // qualquer texto do titulo em 2 linhas.
   const logoBrand = input.company.logoUrl
     ? `<img class="logo-brand" src="${escapeHtml(input.company.logoUrl)}" alt="Logo da empresa" ` +
-      `style="position:absolute; top:12mm; right:12mm; max-height:14mm; max-width:40mm; z-index:10;" />`
+      `style="position:absolute; top:14mm; right:14mm; max-height:18mm; max-width:40mm; z-index:20; background:#FFFFFF; border-radius:4pt;" />`
     : '';
 
   return `<!doctype html>

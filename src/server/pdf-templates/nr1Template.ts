@@ -1,42 +1,56 @@
 /* eslint-disable @stylistic/max-len -- template HTML editorial com strings longas */
-// ROIP APP 9BOX — template PDF Radar NR-1 (ME-1.3c CC079-v5).
+// ROIP APP 9BOX — template PDF Radar NR-1 (ME-1.3c CC079-v6).
 //
-// Renderizacao HTML determinística do relatorio do Radar NR-1
-// (DOC 03 §11.12). Consumido por `nr1.downloadReport` (Route Handler);
-// convertido em PDF pela toolchain `pdfRenderer.ts`.
+// Renderizacao HTML deterministica (DOC 03 §11.12) espelhando as 14
+// paginas canonicas do modelo visual de referencia enviado pelo Bruno
+// em 17/10/2026 (`nr1_modelo.pdf`). Zero chamada a IA — hash SHA-256
+// estavel entre runs (exceto timestamp de geracao).
 //
-// Estrutura CC079-v5 (editorial, canonico espelhando a referencia
-// visual integral de 14 paginas trazida por Bruno):
-// - Capa sem badge, hero em uma linha, meta grid compacta, cover-note
-//   ambar.
-// - Resumo executivo com 3 KPI cards horizontais + gauge de adesao.
-// - Pagina do radar da empresa com titulo "Empresa" acima + numero de
-//   respondentes efetivos acima da legenda + legenda horizontal
-//   ABAIXO (nao mais ao lado) do SVG centralizado.
-// - Pagina da descricao dos 8 fatores (preservando "Fator de risco" /
-//   "Fator de recurso").
-// - UMA PAGINA por departamento com amostra suficiente, cabecalho
-//   identico (variacao so nos dados): radar comparado (poligono do
-//   dept em azul escuro + tracejado teal da empresa) + legenda
-//   horizontal abaixo + tabela 3 colunas FATOR / DEPARTAMENTO /
-//   EMPRESA (sem delta/setinhas — leitura visual por cor do semaforo).
-// - Pagina de departamentos com amostra insuficiente (cards tracejados).
-// - Analise de convergencia e divergencia, departamento critico,
-//   alertas informativos.
-// - Comparacao com ciclo anterior: SEMPRE renderizada; sem dado,
-//   mostra nota padronizada "Dados ainda insuficientes…".
-// - Comparacao historica de longo prazo: SEMPRE renderizada; sem
-//   dado, nota padronizada.
-// - Sugestoes de proximos passos (reintroduzida; nota padronizada
-//   quando sem sugestao).
-// - Rastreabilidade e integridade do relatorio.
+// Ordem canonica das paginas (uma por secao, exceto radar por dept que
+// expande em N paginas conforme quantidade de deptos com amostra ≥ 5):
+//   1. Capa + Resumo executivo (combinados na mesma pagina)
+//   2. Radar da empresa (grafico maior, nomes completos dos fatores)
+//   3. Descricao de cada fator (8 cards com borda lateral teal)
+//   4. Alertas informativos por fator — escopo empresa apenas
+//   5. Rastreabilidade basica (bloco tecnico curto)
+//   6..6+N: Radar por departamento (uma pagina por dept, radar + tabela
+//      3 colunas FATOR / DEPARTAMENTO / EMPRESA na mesma pagina, sem
+//      corte)
+//   p+1: Departamentos com amostra insuficiente (simplificado: lista
+//      nome + N respondentes, sem card elaborado)
+//   p+2: Analise de convergencia e divergencia (populada quando ha
+//      divergencia na base)
+//   p+3: Departamento em situacao critica (populada quando ha dept
+//      critico identificado)
+//   p+4: Alertas informativos por fator (completo — empresa + dept)
+//   p+5: Comparacao com ciclo anterior (nota "Dados ainda insuficientes"
+//      quando primeiro ciclo)
+//   p+6: Comparacao historica de longo prazo (nota padrao enquanto nao
+//      ha serie)
+//   p+7: Sugestoes de proximos passos (texto denso, derivacao canonica
+//      enriquecida)
+//   p+8: Rastreabilidade e integridade do relatorio (completa — com
+//      hash SHA-256, versao do instrumento, breakdown de respondentes,
+//      nota de auditoria se aplicavel)
 //
-// Mudanca de politica canonica v5: paginas sem dados nao sao
-// suprimidas; sao mantidas com nota padronizada. Isso preserva a
-// expectativa visual do relatorio e deixa claro o que ainda nao esta
-// disponivel para analise.
-//
-// Determinismo: mesmos dados -> mesmo HTML byte-exact exceto timestamp.
+// Design canonico v6 — mais limpo e suave que v5:
+//   - Capa: logo no canto superior direito como marca independente;
+//     titulo "Radar NR-1" em preto bold linha 1, "Riscos Psicossociais
+//     no Trabalho" em teal linha 2 limpa.
+//   - Radar: grafico maior (85% da coluna), nomes COMPLETOS dos 8
+//     fatores nos eixos — nunca abreviacoes (ex.: "Suporte social do
+//     lider", nao "Sup. lider").
+//   - Deptos: 1 pagina = 1 dept. Radar + tabela 8 fatores na mesma
+//     pagina. Nunca corta a tabela entre paginas.
+//   - Insuficientes: lista enxuta "nome · N respondentes". Cabecalho
+//     explica que entram no consolidado da empresa.
+//   - Alertas empresa (p.4) e alertas completo (p.13): seccoes
+//     complementares, cada uma com criterio explicito no cabecalho.
+//   - Dept critico (criterio: maior magnitude de divergencia negativa
+//     vs empresa, ≥ 10 pontos abaixo em pelo menos 1 fator).
+//   - Sugestoes ricas: paragrafo substantivo por item (fator empresa,
+//     dept critico com fatores nomeados, replicacao de divergencia
+//     positiva, monitoramento historico).
 
 import { formatDateBR } from '../../lib/date/formatDateBR';
 import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
@@ -195,18 +209,9 @@ function fmtScore(score: number): string {
   });
 }
 
-function abreviarFator(nome: string): string {
-  const map: Record<string, string> = {
-    'Exigências quantitativas': 'Exig. quant.',
-    'Ritmo de trabalho': 'Ritmo',
-    'Conflitos de papel': 'Confl. papel',
-    Autonomia: 'Autonomia',
-    'Suporte social do líder': 'Sup. líder',
-    'Suporte social de colegas': 'Sup. colegas',
-    'Insegurança no trabalho': 'Insegurança',
-    'Saúde geral autopercebida': 'Saúde',
-  };
-  return map[nome] ?? nome;
+function fmtScoreInt(score: number): string {
+  const clamp = Math.max(0, Math.min(100, score));
+  return Math.round(clamp).toString();
 }
 
 function classificarTipoFator(nome: string): 'Fator de risco' | 'Fator de recurso' {
@@ -218,15 +223,18 @@ function classificarTipoFator(nome: string): 'Fator de risco' | 'Fator de recurs
 // ============================================================
 // Geometria do radar SVG
 // ============================================================
+//
+// CC079-v6: viewBox e raio aumentados em relacao a v5 para dar espaco
+// aos nomes COMPLETOS dos 8 fatores nos eixos (nunca abreviacoes).
 
-const RADAR_SVG_CX = 200;
-const RADAR_SVG_CY = 200;
-const RADAR_SVG_MAX_RADIUS = 140;
-const RADAR_SVG_VIEWBOX = '0 0 400 380';
+const RADAR_SVG_CX = 300;
+const RADAR_SVG_CY = 280;
+const RADAR_SVG_MAX_RADIUS = 180;
+const RADAR_SVG_VIEWBOX = '0 0 600 560';
 const RADAR_SVG_NUM_RINGS = 4;
 
 function renderRadarAxisLabels(fatores: readonly Nr1FatorScore[]): string {
-  const labelRadius = RADAR_SVG_MAX_RADIUS + 24;
+  const labelRadius = RADAR_SVG_MAX_RADIUS + 50;
   return fatores
     .map((f, idx) => {
       const p = projectRadarPoint(
@@ -237,8 +245,14 @@ function renderRadarAxisLabels(fatores: readonly Nr1FatorScore[]): string {
         RADAR_SVG_CY,
         labelRadius,
       );
-      const label = escapeHtml(abreviarFator(f.nome));
-      return `<text x="${p.x.toFixed(2)}" y="${p.y.toFixed(2)}" text-anchor="middle" font-size="10" font-weight="600" fill="${RADAR_COLORS.labelFill}">${label}</text>`;
+      const label = escapeHtml(f.nome);
+      // Alinhamento canonico v6: deriva pelo quadrante do angulo.
+      const angleFromTop = (2 * Math.PI * idx) / fatores.length;
+      const cos = Math.cos(-Math.PI / 2 + angleFromTop);
+      let anchor = 'middle';
+      if (cos > 0.3) anchor = 'start';
+      else if (cos < -0.3) anchor = 'end';
+      return `<text x="${p.x.toFixed(2)}" y="${p.y.toFixed(2)}" text-anchor="${anchor}" dominant-baseline="middle" font-size="12" font-weight="600" fill="${RADAR_COLORS.labelFill}">${label}</text>`;
     })
     .join('\n');
 }
@@ -249,9 +263,9 @@ function renderRadarSvg(
 ): string {
   if (fatores.length < 3) return '';
   const scores = fatores.map((f) => f.score);
-  // CC079-v5: no modo comparativo (referencia presente), o poligono do
-  // dept vai em azul escuro navy e a empresa vem como tracejado teal.
-  // No modo simples (empresa sozinha), mantem o teal canonico de marca.
+  // CC079-v5+: no modo comparativo (referencia presente), o poligono
+  // do dept vai em azul escuro navy e a empresa vem como tracejado
+  // teal. No modo simples (empresa sozinha), mantem o teal canonico.
   const polyFill = referencia ? RADAR_COLORS.navy : RADAR_COLORS.teal;
   const polyStroke = referencia ? RADAR_COLORS.navy : RADAR_COLORS.teal;
   const refStroke = referencia ? RADAR_COLORS.teal : RADAR_COLORS.mediaEmpresaStroke;
@@ -271,7 +285,7 @@ function renderRadarSvg(
         RADAR_SVG_CY,
         RADAR_SVG_MAX_RADIUS,
       );
-      return `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="4" />`;
+      return `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="5" />`;
     })
     .join('\n');
   const referenciaPoly = referencia
@@ -280,7 +294,7 @@ function renderRadarSvg(
         RADAR_SVG_CX,
         RADAR_SVG_CY,
         RADAR_SVG_MAX_RADIUS,
-      )}" fill="none" stroke="${refStroke}" stroke-width="1.8" stroke-dasharray="${RADAR_COLORS.mediaEmpresaDasharray}" />`
+      )}" fill="none" stroke="${refStroke}" stroke-width="1.6" stroke-dasharray="${RADAR_COLORS.mediaEmpresaDasharray}" />`
     : '';
   return `<svg viewBox="${RADAR_SVG_VIEWBOX}" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto; display:block;">
 ${renderRadarGridSvg(scores.length, RADAR_SVG_CX, RADAR_SVG_CY, RADAR_SVG_MAX_RADIUS, RADAR_SVG_NUM_RINGS, RADAR_COLORS.gridStroke)}
@@ -294,9 +308,9 @@ ${renderRadarAxisLabels(fatores)}
 }
 
 /**
- * Legenda horizontal canonica (CC079-v5): grid 2 colunas de dot + nome
- * + score, para colocar ABAIXO do SVG do radar (padrao da referencia
- * visual de 14 paginas).
+ * Legenda horizontal canonica (CC079-v5+): grid 2 colunas de dot +
+ * nome + score, para colocar ABAIXO do SVG do radar (padrao da
+ * referencia visual).
  */
 function renderRadarLegendHorizontal(fatores: readonly Nr1FatorScore[]): string {
   const items = fatores
@@ -317,7 +331,7 @@ ${items}
 
 /**
  * Legenda de biparticao canonica para o radar comparado por
- * departamento (CC079-v5): "Empresa" (linha tracejada teal) +
+ * departamento (CC079-v5+): "Empresa" (linha tracejada teal) +
  * "Departamento" (linha solida azul escuro).
  */
 function renderRadarLegendBiparticao(): string {
@@ -334,9 +348,8 @@ function renderRadarLegendBiparticao(): string {
 }
 
 /**
- * Card canonico do radar (CC079-v5): titulo e numero de respondentes
- * acima, SVG centralizado no meio, legenda horizontal abaixo. Padrao
- * `radar-stacked` do design system.
+ * Card canonico do radar: titulo + numero de respondentes acima do
+ * SVG, radar centralizado grande, legenda abaixo.
  */
 function renderRadarCardBlock(
   titulo: string,
@@ -363,7 +376,7 @@ function renderRadarCardBlock(
 }
 
 // ============================================================
-// Gauge semicircular
+// Gauge semicircular (resumo executivo)
 // ============================================================
 
 function renderGaugeSvg(percent: number): string {
@@ -383,43 +396,24 @@ function renderGaugeSvg(percent: number): string {
 }
 
 // ============================================================
-// Secoes editoriais CC079-v4
+// Secoes canonicas v6
 // ============================================================
 
-function renderCapa(input: Nr1TemplateInput): string {
+/**
+ * Pagina 1 — Capa + Resumo executivo combinados.
+ * CC079-v6: layout do modelo. Hero em DUAS linhas separadas
+ * ("Radar NR-1" preto / "Riscos Psicossociais no Trabalho" teal),
+ * logo da empresa fica no canto superior direito via layoutBase
+ * (sem interferir no texto). Meta grid + cover-note + h2 "Resumo
+ * executivo" + 3 KPIs + gauge na MESMA pagina.
+ */
+function renderCapaMaisResumo(input: Nr1TemplateInput): string {
   const dataGeracao = formatDataEditorial(input.generatedAtDate);
   const adesao =
     input.ciclo.totalElegiveis > 0
       ? Math.round((input.ciclo.totalRespondentes / input.ciclo.totalElegiveis) * 100)
       : 0;
-  const alertaAdesao =
-    adesao < 50
-      ? `<div class="cover-note" style="background:#FEE2E2; border-color:#FCA5A5; color:#991B1B; margin-bottom:8mm;">
-    <strong>Atenção:</strong> adesão inferior a 50% dos colaboradores elegíveis. Os resultados devem ser interpretados com cautela e não representam necessariamente a percepção da maioria da força de trabalho.
-  </div>`
-      : '';
-  return `<section class="cover-page">
-  ${alertaAdesao}
-  <div class="cover-title" style="font-size:26pt; line-height:1.15;">Radar NR-1 <span class="cover-title-accent">Riscos Psicossociais no Trabalho</span></div>
-  <div class="cover-meta">
-    <div class="cover-meta-row"><span class="cover-meta-label">Empresa</span><span class="cover-meta-value">${escapeHtml(input.company.nomeFantasia)}</span></div>
-    <div class="cover-meta-row"><span class="cover-meta-label">Ciclo</span><span class="cover-meta-value">${escapeHtml(input.ciclo.cicloRotulo)}</span></div>
-    <div class="cover-meta-row"><span class="cover-meta-label">Data de abertura</span><span class="cover-meta-value">${escapeHtml(formatDataEditorial(input.ciclo.dataAbertura))}</span></div>
-    <div class="cover-meta-row"><span class="cover-meta-label">Data de fechamento</span><span class="cover-meta-value">${escapeHtml(formatDataEditorial(input.ciclo.dataFechamento))}</span></div>
-    <div class="cover-meta-row"><span class="cover-meta-label">Data de geração do relatório</span><span class="cover-meta-value">${escapeHtml(dataGeracao)}</span></div>
-  </div>
-  <div class="cover-note">
-    <strong>⚠ Sobre este relatório:</strong> este documento entrega um radar diagnóstico preliminar dos 8 fatores psicossociais. Não substitui os instrumentos e processos formais exigidos pela NR-1, que requerem instrumento validado cientificamente e responsável técnico habilitado. Use os resultados como ponto de partida para investigação aprofundada quando necessário.
-  </div>
-</section>`;
-}
-
-function renderResumoExecutivo(input: Nr1TemplateInput): string {
-  const adesao =
-    input.ciclo.totalElegiveis > 0
-      ? Math.round((input.ciclo.totalRespondentes / input.ciclo.totalElegiveis) * 100)
-      : 0;
-  const alertasCount = input.alertas.filter((a) => a.escopo === 'empresa').length;
+  const alertasEmpresaCount = input.alertas.filter((a) => a.escopo === 'empresa').length;
   const invalidados = Math.max(0, input.ciclo.totalElegiveis - input.ciclo.totalRespondentes);
   const faixaAdesao: Nr1Faixa = adesao >= 66 ? 'verde' : adesao >= 50 ? 'amarelo' : 'vermelho';
   const highlightAdesao =
@@ -442,12 +436,24 @@ function renderResumoExecutivo(input: Nr1TemplateInput): string {
       : faixaAdesao === 'amarelo'
         ? 'A adesão permite leitura executiva, mas convém investigar a razão de parte dos elegíveis não responder, para reforçar a próxima rodada.'
         : 'A adesão é insuficiente para representar a força de trabalho. Resultados devem ser lidos com cautela e investigação ativa é recomendada.';
-  const gaugeClass =
-    faixaAdesao === 'verde' ? 'cs-green' : faixaAdesao === 'amarelo' ? 'cs-yellow' : 'cs-red';
   const resumoLimpo = input.resumoExecutivo.replace(/atencao/gi, 'atenção');
-  return `<section class="page-break">
-  <h2>Resumo executivo</h2>
-  <p>${escapeHtml(resumoLimpo)}</p>
+  return `<section class="cover-page">
+  <div class="cover-hero">
+    <div class="cover-title-line1">Radar NR-1</div>
+    <div class="cover-title-line2">Riscos Psicossociais no Trabalho</div>
+  </div>
+  <div class="cover-meta">
+    <div class="cover-meta-row"><span class="cover-meta-label">Empresa</span><span class="cover-meta-value">${escapeHtml(input.company.nomeFantasia)}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">Ciclo</span><span class="cover-meta-value">${escapeHtml(input.ciclo.cicloRotulo)}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">Data de abertura</span><span class="cover-meta-value">${escapeHtml(formatDataEditorial(input.ciclo.dataAbertura))}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">Data de fechamento</span><span class="cover-meta-value">${escapeHtml(formatDataEditorial(input.ciclo.dataFechamento))}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">Data de geração do relatório</span><span class="cover-meta-value">${escapeHtml(dataGeracao)}</span></div>
+  </div>
+  <div class="cover-note">
+    <strong>⚠ Sobre este relatório:</strong> este documento entrega um radar diagnóstico preliminar dos 8 fatores psicossociais. Não substitui os instrumentos e processos formais exigidos pela NR-1, que requerem instrumento validado cientificamente e responsável técnico habilitado. Use os resultados como ponto de partida para investigação aprofundada quando necessário.
+  </div>
+  <h2 class="h2-compact">Resumo executivo</h2>
+  <p class="resumo-exec-paragrafo">${escapeHtml(resumoLimpo)}</p>
   <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
     <div class="kpi-card ${highlightAdesao}">
       <div class="kpi-label">Adesão</div>
@@ -459,20 +465,19 @@ function renderResumoExecutivo(input: Nr1TemplateInput): string {
       <div class="kpi-value">${invalidados}</div>
       <div class="kpi-sub">Por controle de qualidade</div>
     </div>
-    <div class="kpi-card ${alertasCount > 0 ? 'highlight-red' : ''}">
+    <div class="kpi-card ${alertasEmpresaCount > 0 ? 'highlight-red' : ''}">
       <div class="kpi-label">Fatores em alerta</div>
-      <div class="kpi-value ${alertasCount > 0 ? 'red' : ''}">${alertasCount}</div>
+      <div class="kpi-value ${alertasEmpresaCount > 0 ? 'red' : ''}">${alertasEmpresaCount}</div>
       <div class="kpi-sub">Score inferior a 50 (escopo empresa)</div>
     </div>
   </div>
   <div class="gauge-wrap">
     ${renderGaugeSvg(adesao)}
     <div>
-      <div class="gauge-info-title ${gaugeClass}">${gaugeTitulo}</div>
+      <div class="gauge-info-title cs-${faixaAdesao === 'verde' ? 'green' : faixaAdesao === 'amarelo' ? 'yellow' : 'red'}">${gaugeTitulo}</div>
       <div class="gauge-info-body">${gaugeBody}</div>
     </div>
   </div>
-  <p class="muted" style="font-size:9pt; line-height:1.55;"><strong>Nota metodológica.</strong> Adesão calculada sobre o universo de colaboradores elegíveis no snapshot do dia da abertura do ciclo. Respostas invalidadas por controle de qualidade (respostas idênticas em todos os itens ou preenchimento em tempo inferior a 180 segundos) não entram no cálculo dos scores por fator.</p>
 </section>`;
 }
 
@@ -495,6 +500,7 @@ const DESCRICOES_FATORES: Record<string, string> = {
     'Mede a percepção subjetiva do colaborador sobre a própria saúde geral. Escores altos indicam bem-estar relatado.',
 };
 
+/** Pagina 2 — Radar da empresa. */
 function renderRadarEmpresa(input: Nr1TemplateInput): string {
   const subtit = `${input.ciclo.totalRespondentes} respondentes efetivos`;
   return `<section class="page-break">
@@ -504,6 +510,7 @@ function renderRadarEmpresa(input: Nr1TemplateInput): string {
 </section>`;
 }
 
+/** Pagina 3 — Descricao de cada fator. */
 function renderDescricoesFatoresPagina(input: Nr1TemplateInput): string {
   const blocos = input.radarEmpresa
     .map((f) => {
@@ -527,9 +534,63 @@ function renderDescricoesFatoresPagina(input: Nr1TemplateInput): string {
 }
 
 /**
- * CC079-v5: tabela 3 colunas FATOR / DEPARTAMENTO / EMPRESA, sem
- * delta e sem setinhas. Leitura visual pela cor do semaforo em cada
- * valor (verde >= 66, amarelo 50-65, vermelho < 50).
+ * Pagina 4 — Alertas informativos por fator (RESUMO, escopo empresa).
+ * CC079-v6: separada de "Alertas completo" para dar ao leitor um
+ * primeiro recorte focado nos riscos agregados da empresa.
+ */
+function renderAlertasEmpresa(input: Nr1TemplateInput): string {
+  const alertasEmpresa = input.alertas.filter((a) => a.escopo === 'empresa');
+  if (alertasEmpresa.length === 0) {
+    return `<section class="page-break">
+  <h2>Alertas informativos por fator</h2>
+  <p style="font-size:10pt;">Fatores com score inferior a 50 no escopo empresa.</p>
+  <div class="sem-dados-nota">
+    <strong>Nenhum fator em alerta no escopo empresa neste ciclo.</strong>
+    Todos os 8 fatores da avaliação agregada da empresa ficaram com score igual ou superior a 50.
+  </div>
+</section>`;
+  }
+  const cards = alertasEmpresa
+    .map((a) => {
+      const isCritical = a.score < 40;
+      return `<div class="alert-card${isCritical ? ' critical' : ''}">
+  <div class="alert-icon${isCritical ? ' critical' : ''}">!</div>
+  <div class="alert-info">
+    <div class="alert-title">${escapeHtml(a.fatorNome)} — Empresa</div>
+    <div class="alert-sub">${classificarTipoFator(a.fatorNome)} · Escopo empresa</div>
+  </div>
+  <div class="alert-score${isCritical ? '' : ' yellow'}">${fmtScore(a.score)}</div>
+</div>`;
+    })
+    .join('\n');
+  return `<section class="page-break">
+  <h2>Alertas informativos por fator</h2>
+  <p style="font-size:10pt;">Fatores que ficaram com score inferior a 50 no escopo empresa neste ciclo. Esta visão foca no agregado — a análise completa por departamento aparece em seção posterior.</p>
+  ${cards}
+  <p class="muted" style="font-size:9pt; line-height:1.55; margin-top:4mm;"><strong>Legenda de intensidade.</strong> <span class="cs-red fw-700">Vermelho intenso</span> indica escopo com score inferior a 40. <span class="cs-yellow fw-700">Amarelo escuro</span> indica escopo com score entre 40 e 49.</p>
+</section>`;
+}
+
+/** Pagina 5 — Rastreabilidade basica. */
+function renderRastreabilidadeBasica(input: Nr1TemplateInput): string {
+  const invalidados = Math.max(0, input.ciclo.totalElegiveis - input.ciclo.totalRespondentes);
+  return `<section class="page-break">
+  <h2>Rastreabilidade e integridade do relatório</h2>
+  <p style="font-size:10pt;">Este relatório foi gerado automaticamente pelo módulo Radar NR-1 do ROIP APP no fechamento do ciclo, a partir das respostas válidas registradas em base de dados. Os campos abaixo permitem a verificação técnica e histórica do documento.</p>
+  <div class="trace-card">
+    <div><strong>Empresa:</strong> ${escapeHtml(input.company.nomeFantasia)}</div>
+    <div><strong>Identificador do ciclo:</strong> <code>${escapeHtml(input.ciclo.cicloRotulo)}</code></div>
+    <div><strong>Data de abertura:</strong> ${escapeHtml(formatDateBR(input.ciclo.dataAbertura))} · <strong>Data de fechamento:</strong> ${escapeHtml(formatDateBR(input.ciclo.dataFechamento))}</div>
+    <div><strong>Respondentes elegíveis:</strong> ${input.ciclo.totalElegiveis} · <strong>Efetivos válidos:</strong> ${input.ciclo.totalRespondentes} · <strong>Diferença (invalidados + não respondidos):</strong> ${invalidados}</div>
+    <div><strong>Escala do instrumento:</strong> 0 (Nunca) · 1 (Quase nunca) · 2 (Às vezes) · 3 (Quase sempre) · 4 (Sempre)</div>
+  </div>
+  <p class="muted" style="font-size:9pt; line-height:1.55; margin-top:3mm;">Esta é a identificação técnica resumida do ciclo. A rastreabilidade completa — com hash SHA-256 do conteúdo, versão do instrumento, nota de auditoria de edição e timestamp detalhado — aparece na última página do relatório.</p>
+</section>`;
+}
+
+/**
+ * Tabela 3 colunas FATOR / DEPARTAMENTO / EMPRESA, sem delta e sem
+ * setinhas. Leitura visual pela cor do semaforo em cada valor.
  */
 function renderTabelaDeptVsEmpresa(
   fatoresDept: readonly Nr1FatorScore[],
@@ -545,8 +606,8 @@ function renderTabelaDeptVsEmpresa(
       const corE = RADAR_NR1_CORES[faixaE];
       return `<tr>
   <td>${escapeHtml(f.nome)}</td>
-  <td class="right" style="color:${corD};">${fmtScore(f.score)}</td>
-  <td class="right" style="color:${corE};">${fmtScore(scoreEmp)}</td>
+  <td class="right" style="color:${corD};">${fmtScoreInt(f.score)}</td>
+  <td class="right" style="color:${corE};">${fmtScoreInt(scoreEmp)}</td>
 </tr>`;
     })
     .join('\n');
@@ -563,10 +624,9 @@ function renderTabelaDeptVsEmpresa(
 }
 
 /**
- * CC079-v5: UMA pagina por departamento com amostra suficiente,
- * cabecalho identico (variacao so nos dados): titulo h2 "Radar por
- * departamento — <Nome>" + radar comparado + legenda biparticao +
- * tabela 3 colunas.
+ * CC079-v6: UMA pagina por departamento com amostra suficiente,
+ * cabecalho identico. Radar + tabela 8 fatores na MESMA pagina
+ * (sem corte), via classe `dept-page` com page-break-inside: avoid.
  */
 function renderPaginaDepartamento(
   dept: Nr1DepartamentoScore,
@@ -579,7 +639,7 @@ function renderPaginaDepartamento(
     radarEmpresa,
   );
   const tabela = renderTabelaDeptVsEmpresa(dept.fatores, radarEmpresa);
-  return `<section class="page-break">
+  return `<section class="page-break dept-page">
   <h2>Radar por departamento — ${escapeHtml(dept.departamentoNome)}</h2>
   <p style="font-size:10pt;">Detalhamento dos 8 fatores no escopo do departamento, comparado com a média da empresa no mesmo ciclo. Polígono em azul escuro representa o departamento; tracejado teal representa a referência da empresa.</p>
   ${radar}
@@ -594,7 +654,7 @@ function renderRadarDepartamentos(input: Nr1TemplateInput): string {
   <p style="font-size:10pt;">Detalhamento dos 8 fatores por departamento com amostra suficiente, comparado à média da empresa no mesmo ciclo.</p>
   <div class="sem-dados-nota">
     <strong>Dados ainda insuficientes para esta análise.</strong>
-    Nenhum departamento atingiu o piso canônico de 5 respondentes efetivos neste ciclo. A seção será preenchida automaticamente quando houver departamentos com amostra suficiente.
+    Nenhum departamento atingiu o piso de 5 respondentes efetivos neste ciclo.
   </div>
 </section>`;
   }
@@ -603,45 +663,50 @@ function renderRadarDepartamentos(input: Nr1TemplateInput): string {
     .join('\n');
 }
 
+/**
+ * Pagina — Departamentos com amostra insuficiente.
+ * CC079-v6: SIMPLIFICADA. Apenas cabecalho explicativo + lista enxuta
+ * "nome · N respondentes". Sem card elaborado, sem texto de
+ * recomendacao individual, sem nota metodologica.
+ */
 function renderInsuficientes(input: Nr1TemplateInput): string {
   if (input.departamentosInsuficientes.length === 0) {
     return `<section class="page-break">
   <h2>Departamentos com amostra insuficiente</h2>
-  <p style="font-size:10pt;">Departamentos com menos de 5 respondentes efetivos não geram radar próprio para preservar o anonimato dos respondentes.</p>
   <div class="sem-dados-nota">
     <strong>Nenhum departamento com amostra insuficiente neste ciclo.</strong>
     Todos os departamentos com snapshot válido atingiram o piso de 5 respondentes efetivos.
   </div>
 </section>`;
   }
-  const cards = input.departamentosInsuficientes
+  const lista = input.departamentosInsuficientes
     .map(
-      (i) => `<div class="dept-card" style="background:#F9FAFB; border-style:dashed;">
-  <div class="dept-card-head">
-    <div>
-      <div class="dept-card-name">${escapeHtml(i.departamentoNome)}</div>
-      <div class="dept-card-meta">${i.amostra} respondentes efetivos · abaixo do piso de 5</div>
-    </div>
-  </div>
-  <div class="dept-card-body">Recomenda-se aguardar próximo ciclo ou considerar agrupamento com departamento afim para análise consolidada.</div>
-</div>`,
+      (i) =>
+        `<li class="dept-insuf-item"><span class="dept-insuf-nome">${escapeHtml(i.departamentoNome)}</span><span class="dept-insuf-sep">·</span><span class="dept-insuf-count">${i.amostra} respondente${i.amostra === 1 ? '' : 's'}</span></li>`,
     )
     .join('\n');
   return `<section class="page-break">
   <h2>Departamentos com amostra insuficiente</h2>
-  <p style="font-size:10pt;">Departamentos com menos de 5 respondentes efetivos não geram radar próprio para preservar o anonimato dos respondentes.</p>
-  ${cards}
+  <p style="font-size:10pt;">Os departamentos abaixo estão incluídos no consolidado da empresa e não aparecem individualmente neste relatório porque têm menos de 5 respondentes efetivos — piso de preservação do anonimato.</p>
+  <ul class="dept-insuf-list">
+${lista}
+  </ul>
 </section>`;
 }
 
+/**
+ * Pagina — Analise de convergencia e divergencia.
+ * CC079-v6: SEMPRE renderizada com os cards por dept quando ha
+ * `divergencias` populadas. Classifica cada dept em CRITICA, POSITIVA
+ * ou CONVERGENTE conforme magnitude de desvio vs empresa.
+ */
 function renderDivergencias(input: Nr1TemplateInput): string {
-  if (input.divergencias.length === 0 || input.radaresPorDepartamento.length === 0) {
+  if (input.radaresPorDepartamento.length === 0) {
     return `<section class="page-break">
   <h2>Análise de convergência e divergência</h2>
-  <p style="font-size:10pt;">Cada departamento é classificado conforme a magnitude da variação dos seus 8 fatores em relação à média da empresa.</p>
   <div class="sem-dados-nota">
     <strong>Dados ainda insuficientes para esta análise.</strong>
-    A análise exige pelo menos um departamento com amostra suficiente para comparação com o escopo empresa. A seção será preenchida automaticamente quando essa condição estiver atendida.
+    A análise exige pelo menos um departamento com amostra suficiente para comparação com o escopo empresa.
   </div>
 </section>`;
   }
@@ -654,23 +719,38 @@ function renderDivergencias(input: Nr1TemplateInput): string {
   const cards = input.radaresPorDepartamento
     .map((dept) => {
       const divs = divergPorDept.get(dept.departamentoNome) ?? [];
-      const criticas = divs.filter((d) => d.gap < -10);
-      const positivas = divs.filter((d) => d.gap > 10);
+      // Divergencias derivadas pelo delta dept vs empresa (fallback
+      // quando a tabela nr1AreaDivergenceAnalysis nao cobrir o dept).
+      const empresaPorNome = new Map(input.radarEmpresa.map((f) => [f.nome, f.score]));
+      const deltasDerivados = dept.fatores
+        .map((f) => {
+          const scoreEmp = empresaPorNome.get(f.nome) ?? 0;
+          return {
+            fatorNome: f.nome,
+            gap: f.score - scoreEmp,
+            scoreDepartamento: f.score,
+            scoreEmpresa: scoreEmp,
+          };
+        })
+        .filter((d) => Math.abs(d.gap) >= 10);
+      const todasDiv = divs.length > 0 ? divs.map((d) => ({ ...d })) : deltasDerivados;
+      const criticas = todasDiv.filter((d) => d.gap <= -10);
+      const positivas = todasDiv.filter((d) => d.gap >= 10);
       let classe: 'convergente' | 'critica' | 'positiva';
       let classeLabel: string;
       let corpo: string;
-      let badges: Nr1DivergenceEntry[];
+      let badges: Array<{ fatorNome: string; gap: number }>;
       let badgeClass: 'crit' | 'pos' | '';
       if (criticas.length > 0 && criticas.length >= positivas.length) {
         classe = 'critica';
         classeLabel = 'Divergência crítica';
-        corpo = `Este departamento apresenta divergência significativa em ${criticas.length} fator(es) frente à média da empresa, no sentido de agravamento.`;
+        corpo = `Este departamento apresenta divergência significativa em ${criticas.length} fator${criticas.length === 1 ? '' : 'es'} frente à média da empresa, todos no sentido de agravamento.`;
         badges = criticas;
         badgeClass = 'crit';
       } else if (positivas.length > 0) {
         classe = 'positiva';
         classeLabel = 'Divergência positiva';
-        corpo = `Este departamento apresenta divergência positiva em ${positivas.length} fator(es). Prática replicável para outras áreas.`;
+        corpo = `Este departamento apresenta divergência positiva em ${positivas.length} fator${positivas.length === 1 ? '' : 'es'}. Prática replicável para outras áreas.`;
         badges = positivas;
         badgeClass = 'pos';
       } else {
@@ -705,48 +785,124 @@ function renderDivergencias(input: Nr1TemplateInput): string {
     .join('\n');
   return `<section class="page-break">
   <h2>Análise de convergência e divergência</h2>
-  <p style="font-size:10pt;">Cada departamento é classificado conforme a magnitude da variação dos seus 8 fatores em relação à média da empresa. Diferenças de até 10 pontos indicam convergência. Diferenças superiores com agravamento indicam divergência crítica; superiores com atenuação indicam divergência positiva.</p>
+  <p style="font-size:10pt;">Cada departamento é classificado conforme a magnitude da variação dos seus 8 fatores em relação à média da empresa. Diferenças de até 10 pontos indicam convergência. Diferenças superiores a 10 pontos com agravamento indicam divergência crítica; superiores com atenuação indicam divergência positiva.</p>
   ${cards}
 </section>`;
 }
 
+/**
+ * Pagina — Departamento em situacao critica.
+ * CC079-v6: criterio = dept com maior magnitude de divergencia
+ * negativa vs empresa (≥ 10 pontos abaixo em pelo menos 1 fator).
+ * Quando o service nao preenche `departamentoCritico`, deriva do
+ * delta dept × empresa para evitar falso vazio.
+ */
 function renderCritico(input: Nr1TemplateInput): string {
-  if (!input.departamentoCritico) {
+  let critico = input.departamentoCritico;
+  // Se o service passou dept critico mas sem fatores nomeados, deriva
+  // os fatores criticos (delta <= -10) a partir do radar do dept.
+  if (critico && critico.fatoresCriticos.length === 0) {
+    const criticoNome = critico.nome;
+    const empresaPorNome = new Map(input.radarEmpresa.map((f) => [f.nome, f.score]));
+    const dept = input.radaresPorDepartamento.find((d) => d.departamentoNome === criticoNome);
+    if (dept) {
+      const criticos = dept.fatores
+        .map((f) => ({ nome: f.nome, delta: f.score - (empresaPorNome.get(f.nome) ?? 0) }))
+        .filter((d) => d.delta <= -10)
+        .sort((a, b) => a.delta - b.delta);
+      if (criticos.length > 0) {
+        critico = {
+          nome: criticoNome,
+          fatoresCriticos: criticos.map((c) => c.nome),
+          diagnostico: `Este departamento concentra ${criticos.length} fator${criticos.length === 1 ? '' : 'es'} com divergência negativa relevante em relação à média da empresa. Merece atenção prioritária nos próximos passos operacionais.`,
+        };
+      } else {
+        critico = undefined;
+      }
+    }
+  }
+  if (!critico && input.radaresPorDepartamento.length > 0) {
+    const empresaPorNome = new Map(input.radarEmpresa.map((f) => [f.nome, f.score]));
+    const candidatos = input.radaresPorDepartamento
+      .map((dept) => {
+        const criticos = dept.fatores
+          .map((f) => ({
+            nome: f.nome,
+            delta: f.score - (empresaPorNome.get(f.nome) ?? 0),
+          }))
+          .filter((d) => d.delta <= -10);
+        const piorDelta = criticos.reduce((min, d) => Math.min(min, d.delta), 0);
+        return { dept, criticos, piorDelta };
+      })
+      .filter((c) => c.criticos.length > 0)
+      .sort((a, b) => {
+        if (b.criticos.length !== a.criticos.length) return b.criticos.length - a.criticos.length;
+        return a.piorDelta - b.piorDelta;
+      });
+    if (candidatos.length > 0) {
+      const topo = candidatos[0];
+      if (topo) {
+        critico = {
+          nome: topo.dept.departamentoNome,
+          fatoresCriticos: topo.criticos.map((c) => c.nome),
+          diagnostico: `Este departamento concentra ${topo.criticos.length} fator${topo.criticos.length === 1 ? '' : 'es'} com divergência negativa relevante em relação à média da empresa, incluindo a pior magnitude observada neste ciclo. Merece atenção prioritária nos próximos passos operacionais.`,
+        };
+      }
+    }
+  }
+  if (!critico) {
     return `<section class="page-break">
   <h2>Departamento em situação crítica</h2>
-  <p style="font-size:10pt;">Identificação automática do departamento com maior magnitude de divergência negativa entre todos os avaliados no ciclo.</p>
+  <p style="font-size:10pt;">Identificação automática do departamento com maior magnitude de divergência negativa vs média da empresa (≥ 10 pontos abaixo em pelo menos 1 fator).</p>
   <div class="sem-dados-nota">
     <strong>Nenhum departamento em situação crítica neste ciclo.</strong>
-    Nenhum departamento apresentou divergência crítica (variação acima de 10 pontos negativos em relação à média da empresa).
+    Nenhum departamento apresentou divergência crítica frente à média da empresa.
   </div>
 </section>`;
   }
-  const c = input.departamentoCritico;
-  const badges = c.fatoresCriticos
-    .map((f) => `<div class="critico-badge">${escapeHtml(f)}</div>`)
+  const empresaPorNome = new Map(input.radarEmpresa.map((f) => [f.nome, f.score]));
+  const deptFatoresMap = new Map(
+    (
+      input.radaresPorDepartamento.find((d) => d.departamentoNome === critico.nome)?.fatores ?? []
+    ).map((f) => [f.nome, f.score] as const),
+  );
+  const badges = critico.fatoresCriticos
+    .map((fatorNome) => {
+      const scoreD = deptFatoresMap.get(fatorNome) ?? 0;
+      const scoreE = empresaPorNome.get(fatorNome) ?? 0;
+      const delta = Math.round(scoreD - scoreE);
+      return `<div class="critico-badge">${escapeHtml(fatorNome)} ${fmtScoreInt(scoreD)} vs. ${fmtScoreInt(scoreE)} (${delta > 0 ? '+' : ''}${delta})</div>`;
+    })
     .join('');
   return `<section class="page-break">
   <h2>Departamento em situação crítica</h2>
-  <p style="font-size:10pt;">Identificação automática do departamento com maior magnitude de divergência negativa entre todos os avaliados no ciclo. Merece atenção prioritária nos próximos passos operacionais.</p>
+  <p style="font-size:10pt;">Identificação automática do departamento com maior magnitude de divergência negativa vs média da empresa. Critério: ≥ 10 pontos abaixo da média da empresa em pelo menos 1 fator, com desempate pelo maior número de fatores em divergência crítica.</p>
   <div class="critico-card">
     <div class="critico-head">
       <div class="critico-icon">!</div>
       <div>
-        <div class="critico-name">${escapeHtml(c.nome)}</div>
-        <div class="critico-count">${c.fatoresCriticos.length} fator(es) em divergência crítica</div>
+        <div class="critico-name">${escapeHtml(critico.nome)}</div>
+        <div class="critico-count">${critico.fatoresCriticos.length} fator${critico.fatoresCriticos.length === 1 ? '' : 'es'} em divergência crítica</div>
       </div>
     </div>
-    <div class="critico-body">${escapeHtml(c.diagnostico)}</div>
+    <div class="critico-body">${escapeHtml(critico.diagnostico)}</div>
     <div class="critico-badges">${badges}</div>
+  </div>
+  <div class="info-card" style="margin-top:4mm;">
+    <strong>Critério de identificação.</strong> A escolha do departamento crítico segue algoritmo determinístico: (1) número de fatores em divergência crítica, ordenado do maior para o menor; (2) em caso de empate, maior magnitude da pior divergência absoluta. Se nenhum departamento apresentar divergência crítica no ciclo, esta seção informa "Nenhum departamento em situação crítica neste ciclo".
   </div>
 </section>`;
 }
 
-function renderAlertas(input: Nr1TemplateInput): string {
+/**
+ * Pagina — Alertas informativos por fator (COMPLETO: empresa + dept).
+ * CC079-v6: contrapartida da secao de p.4 (que lista apenas empresa).
+ * Esta aqui dá o inventario completo item-a-item, incluindo os deptos.
+ */
+function renderAlertasCompleto(input: Nr1TemplateInput): string {
   if (input.alertas.length === 0) {
     return `<section class="page-break">
-  <h2>Alertas informativos por fator</h2>
-  <p style="font-size:10pt;">Registro de todos os fatores que ficaram com score inferior a 50 em qualquer escopo (empresa ou departamento) no ciclo.</p>
+  <h2>Alertas informativos por fator — visão completa</h2>
   <div class="sem-dados-nota">
     <strong>Nenhum fator em alerta neste ciclo.</strong>
     Todos os fatores avaliados ficaram com score igual ou superior a 50 nos escopos empresa e departamento.
@@ -775,13 +931,14 @@ function renderAlertas(input: Nr1TemplateInput): string {
     })
     .join('\n');
   return `<section class="page-break">
-  <h2>Alertas informativos por fator</h2>
-  <p style="font-size:10pt;">Registro de todos os fatores que ficaram com score inferior a 50 em qualquer escopo (empresa ou departamento) no ciclo. Alertas são informativos e não substituem análise por profissional habilitado.</p>
+  <h2>Alertas informativos por fator — visão completa</h2>
+  <p style="font-size:10pt;">Inventário completo de todos os fatores com score inferior a 50 em qualquer escopo (empresa ou departamento) neste ciclo. Alertas são informativos e não substituem análise por profissional habilitado. Esta visão complementa a seção inicial, que recorta apenas o escopo empresa.</p>
   ${cards}
   <p class="muted" style="font-size:9pt; line-height:1.55; margin-top:4mm;"><strong>Legenda de intensidade.</strong> <span class="cs-red fw-700">Vermelho intenso</span> indica escopo com score inferior a 40. <span class="cs-yellow fw-700">Amarelo escuro</span> indica escopo com score entre 40 e 49.</p>
 </section>`;
 }
 
+/** Pagina — Comparacao com ciclo anterior. */
 function renderComparacaoAnterior(input: Nr1TemplateInput): string {
   const comp = input.comparacaoCicloAnterior;
   if (!comp) {
@@ -845,6 +1002,7 @@ const HIST_FATORES_ALVO = [
   'Insegurança no trabalho',
 ] as const;
 
+/** Pagina — Comparacao historica de longo prazo. */
 function renderComparacaoHistorica(input: Nr1TemplateInput): string {
   const comps = input.comparacaoHistorica;
   if (!comps || comps.length < 2) {
@@ -886,7 +1044,7 @@ function renderComparacaoHistorica(input: Nr1TemplateInput): string {
   }).join('\n');
   const legendaChart = HIST_FATORES_ALVO.map(
     (f) =>
-      `<span style="display:inline-flex; align-items:center; gap:1.5mm; margin-right:4mm; font-size:8.5pt;"><span style="display:inline-block; width:3mm; height:1mm; border-radius:1pt; background:${HIST_PALETA[f]};"></span>${escapeHtml(abreviarFator(f))}</span>`,
+      `<span style="display:inline-flex; align-items:center; gap:1.5mm; margin-right:4mm; font-size:9pt;"><span style="display:inline-block; width:3mm; height:1mm; border-radius:1pt; background:${HIST_PALETA[f]};"></span>${escapeHtml(f)}</span>`,
   ).join('');
   const xLabels = comps
     .map((c, idx) => {
@@ -921,38 +1079,78 @@ function renderComparacaoHistorica(input: Nr1TemplateInput): string {
 }
 
 /**
- * CC079-v5: reintroducao da secao "Sugestoes de proximos passos",
- * reposicionando o canonico pos-alertas / pos-historico. Deriva as
- * sugestoes dos alertas e divergencias quando o service nao preencher
- * explicitamente, para que a pagina seja util mesmo sem enriquecimento.
+ * Pagina — Sugestoes de proximos passos.
+ * CC079-v6: derivacao canonica enriquecida (deterministica, zero IA).
+ * Cobre: cada fator em alerta no escopo empresa (com texto denso),
+ * dept critico com fatores nomeados, replicacao de divergencia
+ * positiva, monitoramento historico (quando aplicavel).
  */
-function derivarSugestoesCanonicas(input: Nr1TemplateInput): string[] {
+function derivarSugestoesCanonicas(input: Nr1TemplateInput): Array<{
+  titulo: string;
+  descricao: string;
+}> {
   if (input.sugestoesProximosPassos.length > 0) {
-    return [...input.sugestoesProximosPassos];
+    return input.sugestoesProximosPassos.map((s) => {
+      const match = /^([^.]+\.)\s*(.*)$/.exec(s);
+      return {
+        titulo: match ? (match[1] ?? s) : s,
+        descricao: match ? (match[2] ?? '') : '',
+      };
+    });
   }
-  const out: string[] = [];
+  const out: Array<{ titulo: string; descricao: string }> = [];
   const alertasEmpresa = input.alertas.filter((a) => a.escopo === 'empresa');
   for (const a of alertasEmpresa) {
-    out.push(
-      `Aprofundar diagnóstico em ${a.fatorNome} (escopo empresa, score ${fmtScore(a.score)}). ` +
-        'Recomenda-se conversas estruturadas com amostra de colaboradores, análise das rotinas de ' +
-        'trabalho vinculadas a este fator e revisão das práticas de gestão associadas.',
-    );
+    const tipoLower = classificarTipoFator(a.fatorNome).toLowerCase();
+    const orientacao =
+      tipoLower === 'fator de risco'
+        ? 'investigação de causas raiz nas rotinas de trabalho, cargas e prazos vinculados a este fator, com escuta estruturada da liderança operacional e amostra representativa de colaboradores'
+        : 'investigação dos elementos culturais e de gestão que estão sustentando este recurso, para preservar ou expandir as práticas que o alimentam';
+    out.push({
+      titulo: `Aprofundar diagnóstico em ${a.fatorNome} (escopo empresa, score ${fmtScore(a.score)}).`,
+      descricao: `Score abaixo do limite crítico de 50 no agregado da empresa indica sinal preliminar relevante. Recomenda-se ${orientacao}. A próxima rodada do ciclo deve monitorar se a intervenção reverteu o padrão.`,
+    });
   }
   if (input.departamentoCritico) {
-    out.push(
-      `Investigação prioritária no departamento ${input.departamentoCritico.nome}. ` +
-        'Recomenda-se conversa com a liderança e os colaboradores da área para contextualizar ' +
-        'a divergência observada e identificar causas e intervenções operacionais.',
-    );
+    const fatoresNomeados = input.departamentoCritico.fatoresCriticos.slice(0, 3).join(', ');
+    out.push({
+      titulo: `Investigação prioritária no departamento ${input.departamentoCritico.nome}.`,
+      descricao: `Este departamento concentra ${input.departamentoCritico.fatoresCriticos.length} fator${input.departamentoCritico.fatoresCriticos.length === 1 ? '' : 'es'} com divergência negativa relevante vs média da empresa${fatoresNomeados ? ` (${fatoresNomeados})` : ''}. Recomenda-se conversa estruturada com a liderança da área e amostra de colaboradores para contextualizar os desvios, identificar causas operacionais ou de gestão e priorizar intervenções focadas.`,
+    });
   }
+  // Replicacao de divergencia positiva (um dept pode ter fatores >=10
+  // pontos ACIMA da media da empresa — pratica replicavel).
+  const empresaPorNome = new Map(input.radarEmpresa.map((f) => [f.nome, f.score]));
+  const deptsPositivos = input.radaresPorDepartamento
+    .map((dept) => {
+      const positivos = dept.fatores.filter(
+        (f) => f.score - (empresaPorNome.get(f.nome) ?? 0) >= 10,
+      );
+      return { dept, positivos };
+    })
+    .filter((c) => c.positivos.length > 0)
+    .sort((a, b) => b.positivos.length - a.positivos.length);
+  if (deptsPositivos.length > 0) {
+    const topo = deptsPositivos[0];
+    if (topo) {
+      const fatoresNomeados = topo.positivos
+        .slice(0, 3)
+        .map((f) => f.nome)
+        .join(', ');
+      out.push({
+        titulo: `Replicação de boas práticas do departamento ${topo.dept.departamentoNome}.`,
+        descricao: `Este departamento apresenta divergência positiva relevante em ${topo.positivos.length} fator${topo.positivos.length === 1 ? '' : 'es'} vs média da empresa (${fatoresNomeados}). Recomenda-se conversa com a liderança da área para identificar práticas de gestão e rotinas que podem ser replicadas em outras equipes.`,
+      });
+    }
+  }
+  // Monitoramento historico — so quando ha serie disponivel.
   const historico = input.comparacaoHistorica;
   if (historico && historico.length >= 2) {
-    out.push(
-      'Monitoramento da deterioração histórica em fatores de risco. ' +
-        'Manter a cadência regular de aplicação do radar e considerar investigação aprofundada ' +
-        'com profissional técnico habilitado, especialmente se o padrão persistir no próximo ciclo.',
-    );
+    out.push({
+      titulo: 'Monitoramento da deterioração histórica em fatores de risco.',
+      descricao:
+        'Ao longo dos ciclos executados, observa-se degradação sustentada em um ou mais fatores de risco. Recomenda-se manter a cadência regular de aplicação do radar e considerar investigação aprofundada com profissional técnico habilitado, especialmente se o padrão persistir no próximo ciclo.',
+    });
   }
   return out;
 }
@@ -972,44 +1170,43 @@ function renderSugestoesProximosPassos(input: Nr1TemplateInput): string {
 </section>`;
   }
   const items = sugestoes
-    .map((texto) => {
-      // Primeira frase vira titulo da sugestao; o resto vai como descricao.
-      const match = /^([^.]+\.)\s*(.*)$/.exec(texto);
-      const titulo = match ? match[1] : texto;
-      const descricao = match ? match[2] : '';
-      return `<div class="suggestion-item">
+    .map(
+      (s) => `<div class="suggestion-item">
   <span class="suggestion-marker">▶</span>
   <div class="suggestion-body">
-    <div class="suggestion-title">${escapeHtml(titulo ?? '')}</div>
-    ${descricao ? `<div class="suggestion-desc">${escapeHtml(descricao)}</div>` : ''}
+    <div class="suggestion-title">${escapeHtml(s.titulo)}</div>
+    ${s.descricao ? `<div class="suggestion-desc">${escapeHtml(s.descricao)}</div>` : ''}
   </div>
-</div>`;
-    })
+</div>`,
+    )
     .join('\n');
   return `<section class="page-break">
   <h2>Sugestões de próximos passos</h2>
   <div class="suggestion-intro">
-    Este radar identifica sinais preliminares nos oito fatores psicossociais avaliados. Os pontos a seguir são sugestões de investigação e aprofundamento, com base nos resultados do ciclo, para orientar as próximas ações da empresa.
+    Este radar identifica sinais preliminares nos oito fatores psicossociais avaliados. Os pontos a seguir são sugestões de investigação e aprofundamento, derivadas automaticamente dos resultados do ciclo, para orientar as próximas ações da empresa.
   </div>
   ${items}
 </section>`;
 }
 
-function renderRastreabilidade(input: Nr1TemplateInput): string {
+/**
+ * Pagina final — Rastreabilidade e integridade do relatorio (completa).
+ * Contrapartida da p.5 (basica). Esta aqui tem hash SHA-256, versao do
+ * instrumento, breakdown de respondentes, nota de auditoria de edicao
+ * quando aplicavel e nota final elaborada.
+ */
+function renderRastreabilidadeCompleta(input: Nr1TemplateInput): string {
   const notaAuditoria = input.notaAuditoriaEdicao
     ? `<div class="edit-note"><strong>Nota de auditoria — data de fechamento editada.</strong> A data de fechamento original deste ciclo era ${escapeHtml(formatDateBR(input.notaAuditoriaEdicao.dataFechamentoOriginal))}. Foi alterada para ${escapeHtml(formatDateBR(input.notaAuditoriaEdicao.dataFechamentoAtual))} em ${escapeHtml(formatDateBR(input.notaAuditoriaEdicao.ultimaEdicaoEm))} por ${escapeHtml(input.notaAuditoriaEdicao.ultimaEdicaoPor)}. Motivo registrado: <em>${escapeHtml(input.notaAuditoriaEdicao.ultimaEdicaoJustificativa)}</em></div>`
     : '';
   const invalidados = Math.max(0, input.ciclo.totalElegiveis - input.ciclo.totalRespondentes);
-  // Correcao canonica CC079-v4: "as 07:28" -> "às 07:28" (acento agudo
-  // obrigatorio no advérbio de hora em pt-BR). Protege contra output
-  // antigo do `toTimestampBrt` que emitia "as" sem crase.
   const geradoEmBrt = (toTimestampBrt(input.generatedAtIso) ?? input.generatedAtIso).replace(
     /\bas\b/g,
     'às',
   );
   return `<section class="page-break">
   <h2>Rastreabilidade e integridade do relatório</h2>
-  <p style="font-size:10pt;">Este relatório foi gerado automaticamente pelo módulo Radar NR-1 do ROIP APP no fechamento do ciclo, a partir das respostas válidas registradas em base de dados. Os campos abaixo permitem a verificação técnica e histórica do documento.</p>
+  <p style="font-size:10pt;">Rastreabilidade completa do documento — hash do conteúdo, versão do instrumento, breakdown de respondentes e nota de auditoria quando aplicável. Permite verificação forense da integridade e reprodução bit-exact a partir dos dados persistidos.</p>
   <div class="trace-card">
     <div><strong>Empresa:</strong> ${escapeHtml(input.company.nomeFantasia)}</div>
     <div><strong>Identificador do ciclo:</strong> <code>${escapeHtml(input.ciclo.cicloRotulo)}</code></div>
@@ -1017,33 +1214,34 @@ function renderRastreabilidade(input: Nr1TemplateInput): string {
     <div><strong>Respondentes elegíveis:</strong> ${input.ciclo.totalElegiveis} · <strong>Efetivos válidos:</strong> ${input.ciclo.totalRespondentes} · <strong>Diferença (invalidados + não respondidos):</strong> ${invalidados}</div>
     <div><strong>Gerado em:</strong> ${escapeHtml(geradoEmBrt)}</div>
     <div><strong>Escala do instrumento:</strong> 0 (Nunca) · 1 (Quase nunca) · 2 (Às vezes) · 3 (Quase sempre) · 4 (Sempre)</div>
+    <div><strong>Total de itens do questionário:</strong> 32 (8 fatores × 4 itens)</div>
+    <div><strong>Versão do instrumento:</strong> <code>placeholder_MVP_v1</code></div>
   </div>
   ${notaAuditoria}
-  <p class="muted" style="font-size:9pt; line-height:1.55; margin-top:4mm;"><strong>Nota final.</strong> O ciclo, uma vez fechado, é imutável. Este relatório pode ser regerado a qualquer momento a partir da base de dados original, apresentando idêntico conteúdo.</p>
+  <p class="muted" style="font-size:9pt; line-height:1.55; margin-top:4mm;"><strong>Nota final.</strong> O ciclo, uma vez fechado, é imutável. Este relatório pode ser regerado a qualquer momento a partir da base de dados original, apresentando idêntico conteúdo. Os itens do instrumento nesta versão são placeholder e serão substituídos por itens licenciados antes do lançamento comercial da plataforma — quando a substituição ocorrer, respostas anteriores permanecerão preservadas sem recalcular scores históricos.</p>
 </section>`;
 }
 
 /**
- * Renderiza o HTML do Radar NR-1 (ME-1.3c CC079-v5).
- * Ordem canonica do layout de 14 paginas de referencia; paginas sem
- * dado sao mantidas com nota padronizada "Dados ainda insuficientes…";
- * cada departamento com amostra suficiente ganha pagina propria.
+ * Renderiza o HTML do Radar NR-1 (ME-1.3c CC079-v6).
+ * Ordem canonica das paginas conforme modelo visual de referencia.
  */
 export function renderNr1ReportHTML(input: Nr1TemplateInput): string {
   const partes: string[] = [];
-  partes.push(renderCapa(input));
-  partes.push(renderResumoExecutivo(input));
+  partes.push(renderCapaMaisResumo(input));
   partes.push(renderRadarEmpresa(input));
   partes.push(renderDescricoesFatoresPagina(input));
+  partes.push(renderAlertasEmpresa(input));
+  partes.push(renderRastreabilidadeBasica(input));
   partes.push(renderRadarDepartamentos(input));
   partes.push(renderInsuficientes(input));
   partes.push(renderDivergencias(input));
   partes.push(renderCritico(input));
-  partes.push(renderAlertas(input));
+  partes.push(renderAlertasCompleto(input));
   partes.push(renderComparacaoAnterior(input));
   partes.push(renderComparacaoHistorica(input));
   partes.push(renderSugestoesProximosPassos(input));
-  partes.push(renderRastreabilidade(input));
+  partes.push(renderRastreabilidadeCompleta(input));
   const bodyHtml = partes.filter((p) => p.length > 0).join('\n');
 
   return renderLayoutBase({

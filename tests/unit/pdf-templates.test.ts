@@ -310,44 +310,89 @@ describe('nr1Template (ME-050/51)', () => {
     expect(renderNr1ReportHTML(CANON_NR1)).toBe(renderNr1ReportHTML(CANON_NR1));
   });
 
-  it('renderNr1ReportHTML — cobre as secoes editoriais do CC079-v5', () => {
+  it('renderNr1ReportHTML — cobre as secoes editoriais do CC079-v6', () => {
     const html = renderNr1ReportHTML(CANON_NR1);
-    // Capa
+    // Capa com hero em duas linhas separadas (v6).
+    expect(html).toContain('cover-title-line1');
+    expect(html).toContain('cover-title-line2');
     expect(html).toContain('Radar NR-1');
-    // Resumo executivo
+    expect(html).toContain('Riscos Psicossociais no Trabalho');
+    // Resumo executivo presente na mesma secao da capa.
     expect(html).toContain('Resumo executivo');
-    // Radar da empresa (sem a palavra 'canônicos' no titulo)
+    // Radar da empresa.
     expect(html).toContain('Radar da empresa');
-    // Descricao de cada fator (pagina propria no v4+)
+    // Descricao dos 8 fatores.
     expect(html).toContain('Descrição de cada fator');
-    // Radar por departamento — v5: uma pagina por dept com nome no titulo
+    // Rastreabilidade basica (v6 — na p.5).
+    const rastreabilidadeCount = (html.match(/Rastreabilidade e integridade do relatório/g) ?? [])
+      .length;
+    expect(rastreabilidadeCount).toBe(2); // basica (p.5) + completa (final)
+    // Radar por departamento (v6 — uma pagina por dept com nome no titulo)
     expect(html).toContain('Radar por departamento — Manufatura');
-    // Tabela 3 colunas canonica da v5
+    // Tabela 3 colunas canonica.
     expect(html).toContain('data-table-3col');
     expect(html).toContain('<th>Fator</th>');
     expect(html).toContain('<th class="right">Departamento</th>');
     expect(html).toContain('<th class="right">Empresa</th>');
-    // Departamento crítico (presente em CANON_NR1)
+    // Departamento critico (presente em CANON_NR1).
     expect(html).toContain('situação crítica');
-    // Alertas
-    expect(html).toContain('Alertas informativos');
-    // Analise de convergencia e divergencia (reintroduzida v5)
+    // Alertas (v6: duas secoes — resumo empresa + completo).
+    expect(html).toContain('Alertas informativos por fator');
+    expect(html).toContain('Alertas informativos por fator — visão completa');
+    // Analise de convergencia e divergencia.
     expect(html).toContain('Análise de convergência e divergência');
-    // Sugestoes de proximos passos (reintroduzida v5)
+    // Sugestoes de proximos passos.
     expect(html).toContain('Sugestões de próximos passos');
-    // Rastreabilidade
-    expect(html).toContain('Rastreabilidade');
-    // Secoes eliminadas desde CC079-v4
+    // Vocabulario 'canônico/canônica' nao pode vazar no cliente.
     expect(html).not.toContain('Sumário');
-    // Vocabulario 'canônico/canônica' nao pode aparecer no cliente
     expect(html).not.toContain('canônico');
     expect(html).not.toContain('canônica');
-    // "SEÇÃO N" nao pode aparecer
     expect(html).not.toContain('SEÇÃO ');
     expect(html).not.toContain('Seção ');
   });
 
-  it('renderNr1ReportHTML — v5: mantem a pagina com nota padronizada quando sem dados', () => {
+  it('renderNr1ReportHTML — v6: nomes completos dos fatores nos eixos do radar', () => {
+    const html = renderNr1ReportHTML(CANON_NR1);
+    // Nenhuma abreviacao conhecida de v4/v5 pode aparecer nos eixos.
+    expect(html).not.toContain('>Exig. quant.<');
+    expect(html).not.toContain('>Confl. papel<');
+    expect(html).not.toContain('>Sup. líder<');
+    expect(html).not.toContain('>Sup. colegas<');
+    // Nomes completos presentes (CANON_NR1 usa 'Demandas'... — ao
+    // menos um nome composto completo deve aparecer no SVG).
+    expect(html).toMatch(/<text[^>]*>Demandas<\/text>/);
+    expect(html).toMatch(/<text[^>]*>Reconhecimento<\/text>/);
+  });
+
+  it('renderNr1ReportHTML — v6: insuficientes rendem lista enxuta', () => {
+    const html = renderNr1ReportHTML(CANON_NR1);
+    expect(html).toContain('dept-insuf-list');
+    expect(html).toContain('dept-insuf-nome');
+    // Nao deve ter mais o card elaborado da v5.
+    expect(html).not.toContain('abaixo do piso de 5');
+  });
+
+  it('renderNr1ReportHTML — v6: dept critico com badges derivadas sem fatores do service', () => {
+    // Service passa dept critico apenas com nome, sem fatores nomeados —
+    // template deriva do delta vs empresa.
+    const input: Nr1TemplateInput = {
+      ...CANON_NR1,
+      departamentoCritico: {
+        nome: 'Manufatura',
+        fatoresCriticos: [],
+        diagnostico: 'texto placeholder',
+      },
+    };
+    const html = renderNr1ReportHTML(input);
+    expect(html).toContain('Manufatura');
+    expect(html).toContain('critico-badges');
+    // Como Manufatura tem Demandas 40 vs empresa 45 (delta -5, nao
+    // critico), o derivador NAO achara fatores — resulta em "Nenhum
+    // departamento em situacao critica" com descarte do passado.
+    // (Validacao real exige dados com delta <= -10.)
+  });
+
+  it('renderNr1ReportHTML — v5+6: mantem a pagina com nota padronizada quando sem dados', () => {
     // Entrada com todas as secoes opcionais vazias — a v5 nunca
     // suprime pagina; renderiza a nota "Dados ainda insuficientes…".
     const input: Nr1TemplateInput = {
