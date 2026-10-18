@@ -201,6 +201,30 @@ function formatDataEditorial(iso: string): string {
   return `${Number(d)} de ${mesNome} de ${y}`;
 }
 
+/**
+ * CC079-v7.1: deriva a data civil (YYYY-MM-DD) em America/Sao_Paulo
+ * a partir do timestamp ISO UTC. O `input.generatedAtDate` vem do
+ * service via `toIsoDateUtc` (UTC puro), o que causa deslocamento de
+ * +1 dia quando o relatorio e gerado apos ~21h BRT (ja virou dia
+ * seguinte em UTC). O template corrige localmente para que a "Data de
+ * geracao" aparente corresponda ao fuso canonico pt-BR.
+ */
+function dataCivilBrtFromIso(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const partes = d
+    .toLocaleDateString('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    })
+    .split('/');
+  if (partes.length !== 3) return iso;
+  const [dd, mm, yyyy] = partes;
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function fmtScore(score: number): string {
   const clamp = Math.max(0, Math.min(100, score));
   return clamp.toLocaleString('pt-BR', {
@@ -253,7 +277,7 @@ function renderRadarAxisLabels(fatores: readonly Nr1FatorScore[]): string {
       let anchor = 'middle';
       if (cos > 0.3) anchor = 'start';
       else if (cos < -0.3) anchor = 'end';
-      return `<text x="${p.x.toFixed(2)}" y="${p.y.toFixed(2)}" text-anchor="${anchor}" dominant-baseline="middle" font-size="11" font-weight="600" fill="${RADAR_COLORS.labelFill}">${label}</text>`;
+      return `<text x="${p.x.toFixed(2)}" y="${p.y.toFixed(2)}" text-anchor="${anchor}" dominant-baseline="middle" font-size="15" font-weight="600" fill="${RADAR_COLORS.labelFill}">${label}</text>`;
     })
     .join('\n');
 }
@@ -409,7 +433,7 @@ function renderGaugeSvg(percent: number): string {
  * executivo" + 3 KPIs + gauge na MESMA pagina.
  */
 function renderCapaMaisResumo(input: Nr1TemplateInput): string {
-  const dataGeracao = formatDataEditorial(input.generatedAtDate);
+  const dataGeracao = formatDataEditorial(dataCivilBrtFromIso(input.generatedAtIso));
   const adesao =
     input.ciclo.totalElegiveis > 0
       ? Math.round((input.ciclo.totalRespondentes / input.ciclo.totalElegiveis) * 100)

@@ -881,11 +881,23 @@ export const LAYOUT_BASE_CSS = `
     margin-top: 3mm;
   }
 
-  /* Radar v7 — mais compacto que v6 para dar espaco aos labels
-     completos e caber a tabela do dept na mesma pagina. */
+  /* Radar v7.1 — aumentado para ocupar o espaco disponivel na
+     pagina da empresa. O override da dept-page (abaixo) mantem
+     tamanho reduzido para caber radar + tabela juntos. */
   .radar-stacked .radar-svg-centered {
     width: 100%;
-    max-width: 125mm;
+    max-width: 165mm;
+  }
+  /* Legenda horizontal maior na v7.1. */
+  .radar-legend-horizontal {
+    font-size: 11pt;
+  }
+  .radar-legend-horizontal .leg-nome,
+  .radar-legend-horizontal .leg-score {
+    font-size: 11pt;
+  }
+  .radar-legend-biparticao {
+    font-size: 10.5pt;
   }
 
   /* Pagina de departamento v7 — garante que radar + tabela caibam
