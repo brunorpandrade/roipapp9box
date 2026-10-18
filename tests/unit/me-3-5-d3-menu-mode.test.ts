@@ -1,10 +1,11 @@
-// ROIP APP 9BOX — teste unit ME 3.5 Dispatch 3.
+// ROIP APP 9BOX — teste unit ME 3.5 Dispatch 3 + ampliacao ME-1.16
+// (Conversa 4b, Despacho B — D-B8).
 //
 // Regua RV-03 dirigida a `parseMenuMode` e `resolveMenuMode` — funcoes
-// puras canonicas que decidem qual painel (clevel ou rh) o C-level com
-// isRH=true esta operando. Cobre canonicamente:
+// puras canonicas que decidem qual painel (clevel, rh ou lider) a sessao
+// esta operando. Cobre canonicamente:
 //
-//   1. parseMenuMode reconhece 'clevel' e 'rh' bit-exact.
+//   1. parseMenuMode reconhece 'clevel', 'rh' e 'lider' bit-exact.
 //   2. parseMenuMode retorna null para cookie ausente/vazio/corrompido.
 //   3. resolveMenuMode aplica fallback canonico MENU_MODE_DEFAULT.
 //   4. MENU_MODE_COOKIE_NAME e o literal canonico 'roip.menu.mode'.
@@ -28,13 +29,17 @@ import {
 // 1) parseMenuMode — enum canonico
 // -----------------------------------------------------------------------
 
-describe('ME 3.5 D3 — parseMenuMode reconhece enum canonico', () => {
+describe('ME 3.5 D3 + ME-1.16 — parseMenuMode reconhece enum canonico', () => {
   it("'clevel' → 'clevel'", () => {
     expect(parseMenuMode('clevel')).toBe('clevel');
   });
 
   it("'rh' → 'rh'", () => {
     expect(parseMenuMode('rh')).toBe('rh');
+  });
+
+  it("'lider' → 'lider' (ampliacao ME-1.16)", () => {
+    expect(parseMenuMode('lider')).toBe('lider');
   });
 });
 
@@ -60,6 +65,7 @@ describe('ME 3.5 D3 — parseMenuMode tolera input invalido', () => {
     expect(parseMenuMode('CLEVEL')).toBeNull();
     expect(parseMenuMode('Rh')).toBeNull();
     expect(parseMenuMode('  clevel  ')).toBeNull();
+    expect(parseMenuMode('Lider')).toBeNull();
   });
 });
 
@@ -76,6 +82,10 @@ describe('ME 3.5 D3 — resolveMenuMode aplica MENU_MODE_DEFAULT', () => {
     expect(resolveMenuMode('rh')).toBe('rh');
   });
 
+  it("cookie 'lider' → 'lider' (ampliacao ME-1.16)", () => {
+    expect(resolveMenuMode('lider')).toBe('lider');
+  });
+
   it('cookie null → MENU_MODE_DEFAULT', () => {
     expect(resolveMenuMode(null)).toBe(MENU_MODE_DEFAULT);
   });
@@ -85,7 +95,7 @@ describe('ME 3.5 D3 — resolveMenuMode aplica MENU_MODE_DEFAULT', () => {
   });
 
   it('cookie invalido → MENU_MODE_DEFAULT', () => {
-    expect(resolveMenuMode('lider')).toBe(MENU_MODE_DEFAULT);
+    expect(resolveMenuMode('super_admin')).toBe(MENU_MODE_DEFAULT);
     expect(resolveMenuMode('')).toBe(MENU_MODE_DEFAULT);
   });
 });
@@ -103,9 +113,10 @@ describe('ME 3.5 D3 — constantes canonicas (RV-13)', () => {
     expect(MENU_MODE_DEFAULT).toBe('clevel');
   });
 
-  it("tipo MenuMode e 'clevel' | 'rh'", () => {
+  it("tipo MenuMode cobre 'clevel' | 'rh' | 'lider' (ME-1.16)", () => {
     const a: MenuMode = 'clevel';
     const b: MenuMode = 'rh';
-    expect([a, b]).toEqual(['clevel', 'rh']);
+    const c: MenuMode = 'lider';
+    expect([a, b, c]).toEqual(['clevel', 'rh', 'lider']);
   });
 });

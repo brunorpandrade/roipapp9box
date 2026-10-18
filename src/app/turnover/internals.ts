@@ -57,7 +57,12 @@ export function parseGrupoDrilldown(
   return null;
 }
 
-/** Le `?trimestre=` (`YYYY-QN`). */
+/**
+ * Le `?trimestre=` (`YYYY-QN`). ME-1.14 — aceita tambem o trimestre em
+ * andamento; a decisao canonica de abrir parcial vs cair no fechado mais
+ * recente e feita por `loadTurnoverPage` com base em `getTrimestreEm
+ * Andamento(now)`.
+ */
 export function parseTrimestreParam(raw: string | string[] | undefined): string | null {
   if (typeof raw !== 'string') {
     return null;

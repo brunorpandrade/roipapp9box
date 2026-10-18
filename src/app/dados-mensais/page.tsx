@@ -96,7 +96,9 @@ export default async function DadosMensaisRHPage(props: PageProps): Promise<JSX.
       <Layout
         menuItems={rhCtx.menuItems}
         panelToggle={
-          rhCtx.canToggleMenuMode ? <PainelToggle currentMode={rhCtx.menuMode} /> : undefined
+          rhCtx.menuModeScenario !== null ? (
+            <PainelToggle currentMode={rhCtx.menuMode} scenario={rhCtx.menuModeScenario} />
+          ) : undefined
         }
         header={{
           leftMode: 'in_company',

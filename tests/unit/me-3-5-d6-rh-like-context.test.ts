@@ -35,6 +35,7 @@ function rhFlags(overrides: Partial<RhSessionFlags> = {}): RhSessionFlags {
     isLider: false,
     isResponsavelFinanceiro: false,
     hasDescendingChain: false,
+    countLiderados: 0,
     ...overrides,
   };
 }

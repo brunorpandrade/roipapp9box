@@ -161,6 +161,11 @@ export const CANDIDATO_GRUPO_4_ITEM_SCHEMA = z.object({
   candidatoId: z.number().int().positive(),
 });
 
+// ME-1.13 (Conversa 4b, Despacho B) — mensagens canonicas de validacao
+// da data civil de desligamento, locais ao router (RV-13 — sem export).
+const MSG_LT_DATA_DESLIGAMENTO_FUTURA = 'A data de desligamento nao pode ser posterior a hoje.';
+const MSG_LT_DATA_DESLIGAMENTO_FORMATO = 'A data de desligamento deve estar no formato YYYY-MM-DD.';
+
 /**
  * Input canonico de `execute` — inclui `motivoSaida` (E01 aprovado). O
  * modal C3e canonico captura antes do M2 v2 abrir; o Passo 6 do §14.9
@@ -178,6 +183,17 @@ export const EXECUTE_INPUT_SCHEMA = z
     motivoSaida: z.enum(MOTIVO_TERMINATION_VALUES),
     // ME-fila6 D2 — formulario A/B obrigatorio, gravado na mesma transacao.
     formulario: FORMULARIO_DESLIGAMENTO_SCHEMA,
+    // ME-1.13 (Conversa 4b, Despacho B) — data civil do desligamento.
+    dataDesligamento: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, { message: MSG_LT_DATA_DESLIGAMENTO_FORMATO })
+      .refine(
+        (v) => {
+          const today = new Date().toISOString().slice(0, 10);
+          return v <= today;
+        },
+        { message: MSG_LT_DATA_DESLIGAMENTO_FUTURA },
+      ),
   })
   .refine((v) => v.formulario.tipo === v.motivoSaida, {
     message: MSG_FORMULARIO_MOTIVO_DIVERGENTE,
@@ -871,9 +887,11 @@ export function createLeadershipTransferRouter(deps: LeadershipTransferRouterDep
           }
 
           // Passo 6 — UPDATE status='inativo' + INSERT terminationEvents (E01 §12.6).
+          // ME-1.13 (Conversa 4b, Despacho B) — dataDesligamento gravada na
+          // mesma transacao.
           const [upd] = await tx
             .update(employees)
-            .set({ status: 'inativo' })
+            .set({ status: 'inativo', dataDesligamento: input.dataDesligamento })
             .where(eq(employees.id, input.liderOriginalId));
           if (upd.affectedRows !== 1) {
             throw new TRPCError({

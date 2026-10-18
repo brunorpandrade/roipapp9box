@@ -421,6 +421,7 @@ describe('employees — contratos publicos exportados', () => {
         employeeId: 1,
         motivoSaida: 'voluntario',
         formulario: FORMULARIO_VOLUNTARIO_TESTE,
+        dataDesligamento: '2026-10-18',
       }).success,
     ).toBe(true);
     expect(
@@ -428,6 +429,7 @@ describe('employees — contratos publicos exportados', () => {
         employeeId: 1,
         motivoSaida: 'involuntario',
         formulario: FORMULARIO_INVOLUNTARIO_TESTE,
+        dataDesligamento: '2026-10-18',
       }).success,
     ).toBe(true);
     expect(
@@ -435,6 +437,7 @@ describe('employees — contratos publicos exportados', () => {
         employeeId: 1,
         motivoSaida: 'voluntario',
         formulario: FORMULARIO_INVOLUNTARIO_TESTE,
+        dataDesligamento: '2026-10-18',
       }).success,
     ).toBe(false);
     expect(
@@ -446,6 +449,7 @@ describe('employees — contratos publicos exportados', () => {
         employeeId: 1,
         motivoSaida: 'outro',
         formulario: FORMULARIO_VOLUNTARIO_TESTE,
+        dataDesligamento: '2026-10-18',
       }).success,
     ).toBe(false);
     expect(INACTIVATE_EMPLOYEE_INPUT_SCHEMA.safeParse({ employeeId: 1 }).success).toBe(false);
@@ -724,6 +728,7 @@ describe('employees.inactivate — RH + Bruno, transacao §12.6', () => {
       employeeId: alvoComVinculo,
       motivoSaida: 'voluntario',
       formulario: FORMULARIO_VOLUNTARIO_TESTE,
+      dataDesligamento: '2026-10-18',
     })) as InactivateEmployeeResult;
 
     expect(res.employeeId).toBe(alvoComVinculo);
@@ -761,6 +766,7 @@ describe('employees.inactivate — RH + Bruno, transacao §12.6', () => {
       employeeId: alvo,
       motivoSaida: 'involuntario',
       formulario: FORMULARIO_INVOLUNTARIO_TESTE,
+      dataDesligamento: '2026-10-18',
     })) as InactivateEmployeeResult;
     const [ev] = await client.db
       .select()
@@ -780,6 +786,7 @@ describe('employees.inactivate — RH + Bruno, transacao §12.6', () => {
         employeeId: alvoRF,
         motivoSaida: 'voluntario',
         formulario: FORMULARIO_VOLUNTARIO_TESTE,
+        dataDesligamento: '2026-10-18',
       }),
     ).rejects.toMatchObject({ code: 'CONFLICT', message: MSG_INACTIVATE_RF_BLOQUEADO });
   });
@@ -793,6 +800,7 @@ describe('employees.inactivate — RH + Bruno, transacao §12.6', () => {
         employeeId: alvoLiderComLiderados,
         motivoSaida: 'voluntario',
         formulario: FORMULARIO_VOLUNTARIO_TESTE,
+        dataDesligamento: '2026-10-18',
       }),
     ).rejects.toMatchObject({
       code: 'CONFLICT',
@@ -808,6 +816,7 @@ describe('employees.inactivate — RH + Bruno, transacao §12.6', () => {
       employeeId: alvoLiderSemLiderados,
       motivoSaida: 'voluntario',
       formulario: FORMULARIO_VOLUNTARIO_TESTE,
+      dataDesligamento: '2026-10-18',
     })) as InactivateEmployeeResult;
     expect(res.terminationEventId).toBeGreaterThan(0);
   });
@@ -821,6 +830,7 @@ describe('employees.inactivate — RH + Bruno, transacao §12.6', () => {
         employeeId: alvoAtivo,
         motivoSaida: 'voluntario',
         formulario: FORMULARIO_VOLUNTARIO_TESTE,
+        dataDesligamento: '2026-10-18',
       }),
     ).resolves.toBeDefined();
     await expect(
@@ -828,6 +838,7 @@ describe('employees.inactivate — RH + Bruno, transacao §12.6', () => {
         employeeId: alvoAtivo,
         motivoSaida: 'voluntario',
         formulario: FORMULARIO_VOLUNTARIO_TESTE,
+        dataDesligamento: '2026-10-18',
       }),
     ).rejects.toMatchObject({ code: 'CONFLICT', message: MSG_JA_INATIVO });
   });

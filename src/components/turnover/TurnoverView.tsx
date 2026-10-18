@@ -29,6 +29,18 @@ import {
 import type { TurnoverDrilldownRow, TurnoverPageData } from '../../server/services/turnoverPanel';
 import { FormularioDesligamentoLeitura } from '../desligamento/FormularioDesligamentoLeitura';
 
+/** Formata ISO `YYYY-MM-DD` em "DD/MM/AAAA" (ME-1.13 — D-B3). */
+function formatDataCivilBR(iso: string): string {
+  const parts = iso.slice(0, 10).split('-');
+  if (parts.length !== 3) {
+    return iso;
+  }
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+/** ME-1.14 — rotulo local do badge "Parcial" (RV-13 — sem export). */
+const LABEL_PARCIAL = 'Parcial';
+
 import { DocumentosPadraoClient, type DocumentoPadraoView } from './DocumentosPadraoClient';
 
 export interface TurnoverViewProps {
@@ -153,7 +165,27 @@ export function TurnoverView(props: TurnoverViewProps): JSX.Element {
             ) : (
               <span style={{ color: COLORS.text.tertiary }}>← Trimestre anterior</span>
             )}
-            <strong style={{ fontSize: 16, color: COLORS.text.primary }}>{resumo.label}</strong>
+            <strong style={{ fontSize: 16, color: COLORS.text.primary }}>
+              {resumo.label}
+              {resumo.estado === 'parcial' ? (
+                <span
+                  style={{
+                    marginLeft: 8,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: '2px 8px',
+                    background: COLORS.badge.warningBg,
+                    color: COLORS.badge.warningText,
+                    border: `1px solid ${COLORS.semantic.warning}`,
+                    borderRadius: 999,
+                    verticalAlign: 'middle',
+                  }}
+                  aria-label={`Trimestre em andamento — ${LABEL_PARCIAL.toLowerCase()}`}
+                >
+                  {LABEL_PARCIAL}
+                </span>
+              ) : null}
+            </strong>
             {data.trimestreSeguinte !== null ? (
               <Link href={`${basePath}?trimestre=${data.trimestreSeguinte}`}>
                 Trimestre seguinte →
@@ -205,18 +237,30 @@ export function TurnoverView(props: TurnoverViewProps): JSX.Element {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {drilldown.map((r) => (
-                    <details key={r.terminationEventId} style={CARD}>
-                      <summary style={{ cursor: 'pointer', fontSize: 14 }}>
-                        <strong>{r.name}</strong> · {r.departamento} ·{' '}
-                        {NIVEL_HIERARQUICO_LABELS[r.nivelHierarquico]} · inativado em{' '}
-                        {formatDateBR(r.dataInativacao)}
-                      </summary>
-                      <div style={{ marginTop: 12 }}>
-                        <FormularioDesligamentoLeitura formulario={r.formulario} />
-                      </div>
-                    </details>
-                  ))}
+                  {drilldown.map((r) => {
+                    const desligadoEm =
+                      r.dataDesligamento !== null && r.dataDesligamento.length > 0
+                        ? `desligado em ${formatDataCivilBR(r.dataDesligamento)}`
+                        : null;
+                    const inativadoEm = `inativado em ${formatDateBR(r.dataInativacao)}`;
+                    const sumarioDatas =
+                      desligadoEm !== null ? `${desligadoEm} · ${inativadoEm}` : inativadoEm;
+                    return (
+                      <details key={r.terminationEventId} style={CARD}>
+                        <summary style={{ cursor: 'pointer', fontSize: 14 }}>
+                          <strong>{r.name}</strong> · {r.departamento} ·{' '}
+                          {NIVEL_HIERARQUICO_LABELS[r.nivelHierarquico]} · {sumarioDatas}
+                        </summary>
+                        <div style={{ marginTop: 12 }}>
+                          <FormularioDesligamentoLeitura
+                            formulario={r.formulario}
+                            dataDesligamento={r.dataDesligamento}
+                            dataInativacao={r.dataInativacao}
+                          />
+                        </div>
+                      </details>
+                    );
+                  })}
                 </div>
               )}
             </section>

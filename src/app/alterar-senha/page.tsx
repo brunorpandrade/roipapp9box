@@ -94,9 +94,10 @@ export default async function AlterarSenhaPage(): Promise<JSX.Element> {
     }
     const menuItems = menu.menuItems;
     const showNotificationBell = menu.showNotificationBell;
-    const panelToggleNode = menu.canToggleMenuMode ? (
-      <PainelToggle currentMode={menu.menuMode} />
-    ) : undefined;
+    const panelToggleNode =
+      menu.menuModeScenario !== null ? (
+        <PainelToggle currentMode={menu.menuMode} scenario={menu.menuModeScenario} />
+      ) : undefined;
 
     const companyInfo = await findCompanyDisplayInfo(client.db, session.companyId);
     const companyDisplayName = companyInfo?.nomeFantasia ?? session.companyDisplayName;

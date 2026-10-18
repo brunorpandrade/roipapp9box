@@ -31,7 +31,7 @@
 // **RV-14 canonica.** Um statement por linha, largura maxima 100 cols.
 
 import { listActiveLeaders } from '../../../../../server/services/painelNavigation';
-import { loadTurnoverCard } from '../../../../../server/services/turnoverPanel';
+import { loadTurnoverCardLive } from '../../../../../server/services/turnoverPanel';
 import { notFound, redirect } from 'next/navigation';
 import type { JSX } from 'react';
 
@@ -127,7 +127,7 @@ export default async function PainelRHPreviewPage(props: PageProps): Promise<JSX
       throw new Error(`Menu canonico ausente para ${profileKey} em preview — inconsistencia §3`);
     }
 
-    const turnoverCard = await loadTurnoverCard(client.db, companyId);
+    const turnoverCard = await loadTurnoverCardLive(client.db, companyId);
     // ME-UX-CONSOLIDACAO-P3b D4b/D4c — preview do super-admin recebe
     // a mesma lista canonica de lideres ativos. O `hrefPrefix` do
     // `PainelRHClient` (variant='super_admin_preview') roteia os

@@ -152,9 +152,10 @@ async function resolvePlatformPresentation(
   const destinatarioEmployeeId = rhCtx.isCLevelActingAsRH ? null : session.userId;
   return {
     menuItems: rhCtx.menuItems,
-    panelToggle: rhCtx.canToggleMenuMode ? (
-      <PainelToggle currentMode={rhCtx.menuMode} />
-    ) : undefined,
+    panelToggle:
+      rhCtx.menuModeScenario !== null ? (
+        <PainelToggle currentMode={rhCtx.menuMode} scenario={rhCtx.menuModeScenario} />
+      ) : undefined,
     // Sino canonico §4.1 — C-level operando como RH nao recebe sino.
     showNotificationBell: !rhCtx.isCLevelActingAsRH,
     destinatarioTipo: 'rh',

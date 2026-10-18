@@ -18,8 +18,9 @@
 import { CardPendenciasDialogos } from '../../components/dialogos/CardPendenciasDialogos';
 import { Card9BoxEquipeDireta } from '../../components/paineis/Card9BoxEquipeDireta';
 import { TurnoverIndicatorCard } from '../../components/turnover/TurnoverIndicatorCard';
+import { buildTurnoverHref } from '../../lib/shared/turnoverHref';
 import { countCLevelDiretos } from '../../server/services/painelNavigation';
-import { loadTurnoverCard, type TurnoverCardData } from '../../server/services/turnoverPanel';
+import { loadTurnoverCardLive, type TurnoverCardData } from '../../server/services/turnoverPanel';
 import { redirect } from 'next/navigation';
 import { and, count, eq } from 'drizzle-orm';
 import type { JSX } from 'react';
@@ -191,7 +192,7 @@ export default async function PainelCLevelPage(): Promise<JSX.Element> {
     companyCollaboratorsCount = await loadCompanyCollaboratorsCount(client.db, session);
     // ME-fila6 D2 — card "Turnover" apenas para C-level com acesso total (§5/§7).
     if (menu !== null && menu.profileKey === 'clevel_full') {
-      turnoverCard = await loadTurnoverCard(client.db, session.companyId);
+      turnoverCard = await loadTurnoverCardLive(client.db, session.companyId);
     }
     // ME-PAINEL-PENDENCIAS-DIALOGOS — pendencias ativas do C-level lider
     // direto (clevelId = session.userId no contexto C-level). Padrao v6
@@ -228,7 +229,9 @@ export default async function PainelCLevelPage(): Promise<JSX.Element> {
       // o C-level tem `cLevelMembers.isRH=true` (matriz canonica do
       // `PlatformMenuContext.canToggleMenuMode`, D3).
       panelToggle={
-        menu.canToggleMenuMode ? <PainelToggle currentMode={menu.menuMode} /> : undefined
+        menu.menuModeScenario !== null ? (
+          <PainelToggle currentMode={menu.menuMode} scenario={menu.menuModeScenario} />
+        ) : undefined
       }
       header={{
         leftMode: 'in_company',
@@ -274,7 +277,12 @@ export default async function PainelCLevelPage(): Promise<JSX.Element> {
               sub="Visão global"
             />
           ) : null}
-          {isFullScope ? <TurnoverIndicatorCard data={turnoverCard} href="/turnover" /> : null}
+          {isFullScope ? (
+            <TurnoverIndicatorCard
+              data={turnoverCard}
+              href={buildTurnoverHref('/turnover', turnoverCard)}
+            />
+          ) : null}
           {isFullScope ? null : (
             <ComingSoonBlock
               title="Colaboradores ativos abaixo dele"

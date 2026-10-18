@@ -66,6 +66,9 @@ export interface CLevelMenuFlags {
   readonly isRH: boolean;
 }
 
+/** Cenario canonico de alternancia do menu (ME-1.16 Conversa 4b D-B8). */
+export type MenuModeScenario = 'clevel_rh' | 'rh_lider';
+
 /** Contexto resolvido para montar o `Layout` de qualquer page platform. */
 export interface PlatformMenuContext {
   readonly profileKey: ProfileKey;
@@ -76,16 +79,23 @@ export interface PlatformMenuContext {
   readonly cLevel: CLevelMenuFlags | null;
   /**
    * ME 3.5 D3 — modo do menu efetivamente aplicado. Sempre 'clevel' para
-   * roles nao-clevel e para C-level sem `isRH`. Para C-level+isRH=true,
-   * reflete o valor lido do cookie `roip.menu.mode` (fallback 'clevel').
+   * roles nao-clevel sem alternancia; 'rh' default para RH-Lider; valor
+   * canonico do cookie quando aplicavel.
    */
   readonly menuMode: MenuMode;
   /**
-   * ME 3.5 D3 — true apenas quando `role='clevel' AND isRH=true`. O
-   * componente `<PainelToggle />` (Dispatch 4) so renderiza quando este
-   * flag e true.
+   * ME 3.5 D3 + ME-1.16 — true quando a sessao pode alternar o menu via
+   * `<PainelToggle />`. Equivalente canonicamente a `menuModeScenario !==
+   * null`.
    */
   readonly canToggleMenuMode: boolean;
+  /**
+   * ME-1.16 (Conversa 4b, Despacho B — D-B8) — cenario canonico de
+   * alternancia. `'clevel_rh'` para C-level com isRH=true (precedente
+   * ME 3.5). `'rh_lider'` para `role='rh_lider'` com liderados ativos.
+   * `null` quando nao ha alternancia disponivel.
+   */
+  readonly menuModeScenario: MenuModeScenario | null;
 }
 
 /**
@@ -125,9 +135,15 @@ export async function loadPlatformMenuContext(
     const isResponsavelFinanceiro = cctx.isResponsavelFinanceiro;
     // Toggle disponivel apenas para C-level com isRH=true.
     const canToggleMenuMode = cctx.isRH === true;
+    const scenarioClevel: MenuModeScenario | null = canToggleMenuMode ? 'clevel_rh' : null;
     // Modo efetivo: para C-level sem isRH, forca 'clevel' (o toggle nao
-    // existe; ignora silenciosamente qualquer cookie legado).
-    const effectiveMode: MenuMode = canToggleMenuMode ? menuMode : 'clevel';
+    // existe; ignora silenciosamente qualquer cookie legado). Para
+    // C-level com isRH, aceita 'rh' do cookie; valor 'lider' (herdado
+    // de outra sessao) e tratado como 'clevel' (sentinel canonico).
+    let effectiveMode: MenuMode = 'clevel';
+    if (canToggleMenuMode) {
+      effectiveMode = menuMode === 'rh' ? 'rh' : 'clevel';
+    }
     // ProfileKey escolhido pelo modo:
     //   - modo 'rh' → profileKey 'rh' (menu de RH puro §3.3).
     //   - modo 'clevel' → resolveProfileKey normal (§3.8/3.9).
@@ -153,6 +169,7 @@ export async function loadPlatformMenuContext(
       cLevel,
       effectiveMode,
       canToggleMenuMode,
+      scenarioClevel,
     );
   }
 
@@ -160,8 +177,24 @@ export async function loadPlatformMenuContext(
   if (flags === null) {
     return null;
   }
+  // ME-1.16 — alternancia RH <-> Lider habilitada quando RH-Lider tem
+  // liderados ativos. O cenario canonico decide qual profileKey resolver:
+  //   - menuMode='lider' + rh_lider com liderados → profileKey 'lider_c*'.
+  //   - menuMode='rh' (default) ou roles outras → comportamento historico.
+  const isRhLiderComLiderados =
+    session.role === 'rh_lider' && flags.isLider === true && flags.countLiderados > 0;
+  const canToggleRhLider = isRhLiderComLiderados;
+  const scenarioRhLider: MenuModeScenario | null = canToggleRhLider ? 'rh_lider' : null;
+  // Modo efetivo para rh_lider: 'rh' default. 'lider' quando cookie
+  // explicitamente pediu E alternancia disponivel. 'clevel' sentinel
+  // canonico "sem toggle" para as demais roles.
+  let effectiveMode: MenuMode = 'clevel';
+  if (canToggleRhLider) {
+    effectiveMode = menuMode === 'lider' ? 'lider' : 'rh';
+  }
+  // ProfileKey rotacionado quando modo 'lider' esta efetivo.
   const profileKey = resolveProfileKey({
-    session,
+    session: effectiveMode === 'lider' ? { ...session, role: 'lider' } : session,
     isRH: flags.isRH,
     isLider: flags.isLider,
     acessoTotal: false,
@@ -170,16 +203,15 @@ export async function loadPlatformMenuContext(
     isSuperAdminInCompany: false,
   });
   const showNotificationBell = session.role === 'rh' || session.role === 'rh_lider';
-  // Roles nao-clevel nunca alternam menu — modo 'clevel' e sentinel
-  // canonico "sem toggle" para atender a assinatura do contexto.
   return buildContext(
     profileKey,
     flags.isResponsavelFinanceiro,
     flags.hasDescendingChain,
     showNotificationBell,
     null,
-    'clevel',
-    false,
+    effectiveMode,
+    canToggleRhLider,
+    scenarioRhLider,
   );
 }
 
@@ -191,6 +223,7 @@ function buildContext(
   cLevel: CLevelMenuFlags | null,
   menuMode: MenuMode,
   canToggleMenuMode: boolean,
+  menuModeScenario: MenuModeScenario | null,
 ): PlatformMenuContext {
   const menuItems = resolveMenuItems(profileKey, isResponsavelFinanceiro);
   if (menuItems === null) {
@@ -205,5 +238,6 @@ function buildContext(
     cLevel,
     menuMode,
     canToggleMenuMode,
+    menuModeScenario,
   };
 }

@@ -288,6 +288,8 @@ export async function inativarColaboradorRHAction(input: {
   readonly motivoSaida: 'voluntario' | 'involuntario';
   /** ME-fila6 D2 — Formulario A/B, gravado na mesma transacao. */
   readonly formulario: FormularioDesligamento;
+  /** ME-1.13 (Conversa 4b, Despacho B) — data civil YYYY-MM-DD. */
+  readonly dataDesligamento: string;
 }): Promise<ActionResult<InactivateEmployeeResult>> {
   await requireRHSessionAndCompanyId('inativarColaboradorRHAction');
 
@@ -336,6 +338,8 @@ export async function executarTransferenciaRHAction(input: {
   readonly motivoSaida: 'voluntario' | 'involuntario';
   /** ME-fila6 D2 — Formulario A/B, gravado na mesma transacao. */
   readonly formulario: FormularioDesligamento;
+  /** ME-1.13 (Conversa 4b, Despacho B) — data civil YYYY-MM-DD. */
+  readonly dataDesligamento: string;
 }): Promise<ActionResult<ExecuteResult>> {
   await requireRHSessionAndCompanyId('executarTransferenciaRHAction');
 
@@ -361,6 +365,7 @@ export async function executarTransferenciaRHAction(input: {
       reason: input.reason,
       motivoSaida: input.motivoSaida,
       formulario: input.formulario,
+      dataDesligamento: input.dataDesligamento,
     });
     return { ok: true, data: result };
   } catch (err) {

@@ -92,7 +92,9 @@ export default async function TodosColaboradoresRHPage(props: PageProps): Promis
       <Layout
         menuItems={menu.menuItems}
         panelToggle={
-          menu.canToggleMenuMode ? <PainelToggle currentMode={menu.menuMode} /> : undefined
+          menu.menuModeScenario !== null ? (
+            <PainelToggle currentMode={menu.menuMode} scenario={menu.menuModeScenario} />
+          ) : undefined
         }
         header={{
           leftMode: 'in_company',

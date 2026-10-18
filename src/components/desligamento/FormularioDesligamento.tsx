@@ -78,6 +78,21 @@ const MSG_TRANSFERENCIA_AUSENTE =
   'O mapeamento de redistribuição dos liderados não foi encontrado. Volte à edição do ' +
   'colaborador e refaça a inativação.';
 const MSG_FALHA_ENVIO = 'Não foi possível concluir a inativação. Tente novamente.';
+// ME-1.13 (Conversa 4b, Despacho B) — labels e validacao de UI, locais
+// (RV-13 — sem export; consumo apenas no proprio componente).
+const LABEL_DATA_DESLIGAMENTO = 'Data de desligamento';
+const AJUDA_DATA_DESLIGAMENTO =
+  'Data civil em que o colaborador deixou efetivamente a empresa. Pode ser hoje ou ' +
+  'uma data anterior; não aceita datas futuras.';
+const MSG_DATA_DESLIGAMENTO_UI_FUTURA = 'A data de desligamento não pode ser posterior a hoje.';
+const MSG_DATA_DESLIGAMENTO_UI_AUSENTE = 'Informe a data de desligamento.';
+
+/** Hoje em BRT no formato canonico YYYY-MM-DD (default do input date). */
+function hojeBRT(): string {
+  const agora = new Date();
+  const brtMs = agora.getTime() - 3 * 60 * 60 * 1000;
+  return new Date(brtMs).toISOString().slice(0, 10);
+}
 
 const CARD_STYLE: CSSProperties = {
   background: COLORS.background.card,
@@ -241,6 +256,11 @@ export function FormularioDesligamentoClient(
   const [erros, setErros] = useState<Readonly<Record<string, string>>>({});
   const [erroEnvio, setErroEnvio] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  // ME-1.13 (Conversa 4b, Despacho B) — data civil de desligamento (D-B2).
+  // Default canonico "hoje" em BRT (data civil percebida pelo RH). O
+  // backend valida contra UTC today, com margem de ±1 dia natural
+  // irrelevante para a semantica canonica da data civil.
+  const [dataDesligamento, setDataDesligamento] = useState<string>(() => hojeBRT());
 
   useEffect(() => {
     if (!requerTransferencia) {
@@ -316,8 +336,16 @@ export function FormularioDesligamentoClient(
   const enviar = async (): Promise<void> => {
     setErroEnvio(null);
     const validacao = validarFormularioDesligamento(rascunho);
-    if (!validacao.ok) {
-      setErros(validacao.erros);
+    // ME-1.13 (Conversa 4b, Despacho B) — validacao local da data civil
+    // antes do submit; o backend valida de novo (defense-in-depth RV-11).
+    const errosData: Record<string, string> = {};
+    if (dataDesligamento.length === 0) {
+      errosData.dataDesligamento = MSG_DATA_DESLIGAMENTO_UI_AUSENTE;
+    } else if (dataDesligamento > hojeBRT()) {
+      errosData.dataDesligamento = MSG_DATA_DESLIGAMENTO_UI_FUTURA;
+    }
+    if (!validacao.ok || Object.keys(errosData).length > 0) {
+      setErros({ ...(validacao.ok ? {} : validacao.erros), ...errosData });
       return;
     }
     setErros({});
@@ -332,11 +360,13 @@ export function FormularioDesligamentoClient(
               reason: transferencia.reason,
               motivoSaida: motivo,
               formulario: validacao.data,
+              dataDesligamento,
             })
           : await props.actions.inativarColaborador({
               employeeId,
               motivoSaida: motivo,
               formulario: validacao.data,
+              dataDesligamento,
             });
       if (!resultado.ok) {
         setErroEnvio(resultado.message);
@@ -383,6 +413,28 @@ export function FormularioDesligamentoClient(
           {MSG_TRANSFERENCIA_AUSENTE}
         </div>
       ) : null}
+
+      <div style={CARD_STYLE}>
+        <div>
+          <div style={QUESTION_STYLE}>{LABEL_DATA_DESLIGAMENTO}</div>
+          <div style={HELP_STYLE}>{AJUDA_DATA_DESLIGAMENTO}</div>
+          <input
+            type="date"
+            value={dataDesligamento}
+            max={hojeBRT()}
+            onChange={(e): void => setDataDesligamento(e.target.value)}
+            style={{
+              padding: '8px 10px',
+              fontSize: 14,
+              border: `1px solid ${COLORS.border.default}`,
+              borderRadius: 6,
+              width: 220,
+            }}
+            aria-label={LABEL_DATA_DESLIGAMENTO}
+          />
+          <Erro msg={erros.dataDesligamento} />
+        </div>
+      </div>
 
       {motivo === 'voluntario' ? (
         <div style={CARD_STYLE}>

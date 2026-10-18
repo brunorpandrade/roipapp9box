@@ -28,7 +28,7 @@
 // **RV-14 canonica.** Um statement por linha, largura maxima 100 cols.
 
 import { listActiveLeaders } from '../../server/services/painelNavigation';
-import { loadTurnoverCard } from '../../server/services/turnoverPanel';
+import { loadTurnoverCardLive } from '../../server/services/turnoverPanel';
 import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
 
@@ -121,7 +121,7 @@ export default async function PainelRHPage(): Promise<JSX.Element> {
         loadPerfisIndividuaisInconsistentes(client.db, session.companyId),
       ]);
 
-    const turnoverCard = await loadTurnoverCard(client.db, session.companyId);
+    const turnoverCard = await loadTurnoverCardLive(client.db, session.companyId);
     // ME-UX-CONSOLIDACAO-P3b D4b — lista canonica de lideres ativos
     // alimenta o card "Ver equipes" (rota nativa `/dashboard-recorte/
     // equipe/[alvo]`). Ordem alfabetica preservada bit-a-bit.
@@ -131,7 +131,9 @@ export default async function PainelRHPage(): Promise<JSX.Element> {
       <Layout
         menuItems={rhCtx.menuItems}
         panelToggle={
-          rhCtx.canToggleMenuMode ? <PainelToggle currentMode={rhCtx.menuMode} /> : undefined
+          rhCtx.menuModeScenario !== null ? (
+            <PainelToggle currentMode={rhCtx.menuMode} scenario={rhCtx.menuModeScenario} />
+          ) : undefined
         }
         header={{
           leftMode: 'in_company',

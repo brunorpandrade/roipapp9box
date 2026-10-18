@@ -1,48 +1,43 @@
-// ROIP APP 9BOX — helpers canonicos de menuMode (ME 3.5 Dispatch 3).
+// ROIP APP 9BOX — helpers canonicos de menuMode (ME 3.5 Dispatch 3 +
+// ampliacao ME-1.16 Conversa 4b Despacho B — D-B8).
 //
-// Escopo canonicamente aprovado em bloco (D2, D3):
-//   - `session.role` continua sendo o enum de 5 valores fechado (§2.2
-//     DOC 02); NAO cria role nova `clevel_rh`.
-//   - Dupla identidade "C-level + operador de RH" e organizada
-//     visualmente via toggle "Painel C-level / Painel RH" (Dispatch 4)
-//     que persiste o modo em cookie server-readable.
+// Escopo canonicamente aprovado:
+//   - `session.role` continua sendo o enum fechado de 5 valores (§2.2
+//     DOC 02); NAO cria roles novas.
+//   - Duas identidades canonicas usam o toggle:
+//       (a) C-level com `cLevelMembers.isRH=true` → alterna 'clevel' <->
+//           'rh' (preserva comportamento historico da ME 3.5).
+//       (b) RH-Lider (`role='rh_lider'`) com liderados ativos > 0 →
+//           alterna 'rh' <-> 'lider' (ampliacao ME-1.16).
 //   - O menu de cada modo continua sendo o menu canonico ja existente
-//     (§3.3 MENU_RH ou §3.8/3.9 MENU_CLEVEL_*) — nenhuma configuracao de
-//     menu nova, apenas selecao entre configuracoes existentes.
+//     (§3.3 MENU_RH, §3.6/§3.7 MENU_LIDER_*, §3.8/§3.9 MENU_CLEVEL_*).
 //
 // Este arquivo abriga:
-//   - Tipo `MenuMode`.
-//   - Constante `MENU_MODE_COOKIE_NAME` (nome canonico do cookie).
-//   - Funcao pura `parseMenuMode(raw)` (tolerante a cookie corrompido).
+//   - Tipo `MenuMode` (ampliado para incluir 'lider').
+//   - Constante `MENU_MODE_COOKIE_NAME`.
+//   - Funcao pura `parseMenuMode(raw)` tolerante a cookie corrompido.
 //   - Funcao pura `resolveMenuMode(rawCookie)` com fallback canonico.
 //
-// I/O de cookie (`cookies()` do next/headers) fica no consumidor
-// server-side (ex.: `loadPlatformMenuContext`) — aqui e apenas logica
-// pura, testavel sem Next.
-//
-// **RV-13.** Consumidores reais: `loadPlatformMenuContext` (Dispatch 3);
-// server action `setMenuMode` (Dispatch 4); teste unit unico
+// **RV-13.** Consumidores reais: `loadPlatformMenuContext`,
+// `loadPlatformMenuCtxCookie`, `setMenuModeAction`, teste unit
 // `tests/unit/me-3-5-d3-menu-mode.test.ts`.
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
 /**
- * Modo canonico do menu para C-level que tambem opera RH (ME 3.5).
+ * Modo canonico do menu. Dois cenarios canonicos usam alternancia:
  *
- *   - 'clevel': mostra `MENU_CLEVEL_FULL` ou `MENU_CLEVEL_RESTRICTED`
- *      conforme `acessoTotal` e `cLevelCount` (comportamento historico
- *      pre-ME 3.5 preservado).
- *   - 'rh': mostra `MENU_RH` (§3.3) — mesmo menu que um RH puro veria.
+ *   (a) C-level com `cLevelMembers.isRH=true` → `'clevel'` | `'rh'`.
+ *   (b) RH-Lider com liderados ativos > 0 → `'rh'` | `'lider'`.
  *
- * Consumido apenas quando `session.role === 'clevel' AND
- * cLevelMembers.isRH === true`. Para as demais roles (rh, rh_lider,
- * lider, super_admin) o modo e ignorado.
+ * Nos demais casos (clevel sem isRH, lider puro, rh puro sem liderados)
+ * o modo e ignorado — o toggle nem renderiza.
  */
-export type MenuMode = 'clevel' | 'rh';
+export type MenuMode = 'clevel' | 'rh' | 'lider';
 
 /**
  * Nome canonico do cookie server-readable que persiste o modo do menu
- * entre requests. Escrito pela server action `setMenuMode` (Dispatch 4);
- * lido pelo `loadPlatformMenuContext` (Dispatch 3).
+ * entre requests. Escrito pela server action `setMenuMode`; lido pelo
+ * `loadPlatformMenuContext`.
  *
  * Atributos canonicos aplicados na escrita:
  *   - `httpOnly: true` — SSR le; JS do cliente nao le nem escreve.
@@ -57,8 +52,8 @@ export const MENU_MODE_DEFAULT: MenuMode = 'clevel';
 
 /**
  * Parser puro tolerante do valor do cookie. Retorna `null` para valores
- * fora do enum canonico (`clevel` ou `rh`) — o consumidor decide o
- * fallback (tipicamente `MENU_MODE_DEFAULT`).
+ * fora do enum canonico (`clevel`, `rh` ou `lider`) — o consumidor
+ * decide o fallback (tipicamente `MENU_MODE_DEFAULT`).
  *
  * Trata cookie ausente, string vazia, valor desconhecido ou qualquer
  * outro input nao esperado como `null` (nao lanca).
@@ -69,6 +64,9 @@ export function parseMenuMode(raw: string | null | undefined): MenuMode | null {
   }
   if (raw === 'rh') {
     return 'rh';
+  }
+  if (raw === 'lider') {
+    return 'lider';
   }
   return null;
 }

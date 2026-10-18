@@ -501,8 +501,35 @@ async function composeAssiduidadeTrimestre(
 const DIALOGOS_RECENTES_CAP = 10;
 
 /**
+ * ME-1.15.a (Conversa 4b, Despacho B — D-B6) — cap de caracteres por
+ * corpo de dialogo enviado ao motor IA. 10 dialogos × 2000 chars ~ 20k
+ * chars ~ 6k tokens. Alem desse cap, trunca com sufixo canonico.
+ */
+export const DIALOGO_CORPO_MAX_CHARS = 2000;
+export const DIALOGO_CORPO_SUFIXO_TRUNCADO = ' […texto truncado]';
+
+/**
+ * Trunca canonicamente o corpo de um dialogo preservando o cap total.
+ * Zero caracteres sao duplicados pelo sufixo (RV-14).
+ */
+export function truncateCorpoDialogo(
+  corpo: string | null,
+  maxChars: number = DIALOGO_CORPO_MAX_CHARS,
+): string | null {
+  if (corpo === null) {
+    return null;
+  }
+  if (corpo.length <= maxChars) {
+    return corpo;
+  }
+  const limite = Math.max(0, maxChars - DIALOGO_CORPO_SUFIXO_TRUNCADO.length);
+  return `${corpo.slice(0, limite)}${DIALOGO_CORPO_SUFIXO_TRUNCADO}`;
+}
+
+/**
  * Dialogos de Desenvolvimento recentes (§8.3.1): nao arquivados do
- * colaborador, mais recentes primeiro, cap defensivo de 10.
+ * colaborador, mais recentes primeiro, cap defensivo de 10. ME-1.15.a
+ * inclui o `corpo` truncado em 2000 chars canonicos.
  */
 async function composeDialogosRecentes(
   db: RoipDatabase,
@@ -514,6 +541,7 @@ async function composeDialogosRecentes(
       status: developmentDialogs.status,
       pendencia: developmentDialogs.pendencia,
       createdAt: developmentDialogs.createdAt,
+      corpo: developmentDialogs.corpo,
     })
     .from(developmentDialogs)
     .where(
@@ -526,6 +554,7 @@ async function composeDialogosRecentes(
     created_at: row.createdAt.toISOString().slice(0, 10),
     status: row.status,
     pendencia: row.pendencia,
+    corpo: truncateCorpoDialogo(row.corpo ?? null),
   }));
 }
 

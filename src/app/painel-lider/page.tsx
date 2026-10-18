@@ -21,11 +21,13 @@ import type { JSX } from 'react';
 import { Layout } from '../../components/shell/Layout';
 import { CardPendenciasDialogos } from '../../components/dialogos/CardPendenciasDialogos';
 import { Card9BoxEquipeDireta } from '../../components/paineis/Card9BoxEquipeDireta';
+import { PainelToggle } from '../../components/shell/PainelToggle';
 import { createDbClient } from '../../db/client';
 import { companies, employees, employeeLeaderHistory } from '../../db/schema';
 import { COLORS } from '../../lib/design-tokens/colors';
 import { resolveMenuItems } from '../../lib/menu/menuConfig';
 import { resolveProfileKey } from '../../lib/session/resolveProfileKey';
+import { loadPlatformMenuCtxCookie } from '../../lib/session/platformMenuCookie';
 import { getServerSession } from '../../server/session/serverSession';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
 import { headerUserFromSession } from '../../lib/session/headerUser';
@@ -218,10 +220,12 @@ export default async function PainelLiderPage(): Promise<JSX.Element> {
   if (session.passwordSet === false) {
     redirect('/alterar-senha');
   }
-  if (session.role !== 'lider') {
-    // rh_lider → §2.3 precedencia canonica → /painel-rh (middleware
-    // ja resolve; defense-in-depth aqui).
-    if (session.role === 'rh_lider' || session.role === 'rh') {
+  // ME-1.16 (Conversa 4b, Despacho B — D-B8) — admite tambem rh_lider com
+  // cookie `menu.mode='lider'` E countLiderados > 0 (lido via contexto
+  // de menu). Precedente canonico analogo ao C-level operando como RH
+  // em /painel-rh (ME 3.5).
+  if (session.role !== 'lider' && session.role !== 'rh_lider') {
+    if (session.role === 'rh') {
       redirect('/painel-rh');
     }
     redirect('/');
@@ -233,8 +237,29 @@ export default async function PainelLiderPage(): Promise<JSX.Element> {
   }
   const { flags, data, companyLogoUrl, pendencias } = result;
 
+  const clientMenu = createDbClient(resolveDatabaseUrl());
+  let liderMenu;
+  try {
+    liderMenu = await loadPlatformMenuCtxCookie(clientMenu.db, session);
+  } finally {
+    await clientMenu.pool.end();
+  }
+  if (liderMenu === null) {
+    redirect('/');
+  }
+
+  // rh_lider so entra na rota se o cookie estiver em 'lider' E a
+  // alternancia estiver realmente habilitada (toggle `rh_lider`).
+  if (session.role === 'rh_lider') {
+    const alternanciaOk =
+      liderMenu.menuModeScenario === 'rh_lider' && liderMenu.menuMode === 'lider';
+    if (!alternanciaOk) {
+      redirect('/painel-rh');
+    }
+  }
+
   const profileKey = resolveProfileKey({
-    session,
+    session: session.role === 'rh_lider' ? { ...session, role: 'lider' } : session,
     isRH: flags.isRH,
     isLider: flags.isLider,
     acessoTotal: false,
@@ -249,16 +274,23 @@ export default async function PainelLiderPage(): Promise<JSX.Element> {
   }
 
   const isCenario2 = profileKey === 'lider_c2';
+  const panelToggleNode =
+    liderMenu.menuModeScenario !== null ? (
+      <PainelToggle currentMode={liderMenu.menuMode} scenario={liderMenu.menuModeScenario} />
+    ) : undefined;
 
   return (
     <Layout
       menuItems={menuItems}
+      panelToggle={panelToggleNode}
       header={{
         leftMode: 'in_company',
         companyDisplayName: session.companyDisplayName,
         companyLogoUrl: companyLogoUrl ?? undefined,
         user: headerUserFromSession(session),
-        // Regra Q1 canonica §4.1: Lider NAO tem sino (S474).
+        // Regra Q1 canonica §4.1: Lider NAO tem sino (S474). RH-Lider
+        // operando como lider segue a mesma regra (sem sino no modo
+        // lider — bit-exact ao Lider puro para evitar vazamento de UI).
         showNotificationBell: false,
       }}
     >

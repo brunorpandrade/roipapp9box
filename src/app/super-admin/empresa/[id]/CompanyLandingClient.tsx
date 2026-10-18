@@ -23,6 +23,7 @@ import type { JSX } from 'react';
 import { ClickableIndicatorCard } from '../../../../components/painel/ClickableIndicatorCard';
 import { CardVerEquipes } from '../../../../components/paineis/CardVerEquipes';
 import { TurnoverIndicatorCard } from '../../../../components/turnover/TurnoverIndicatorCard';
+import { buildTurnoverHref } from '../../../../lib/shared/turnoverHref';
 import type { ActiveLeaderRow } from '../../../../server/services/painelNavigation';
 import type { BlocoClimaIndicatorData } from '../../../../server/services/blocoClimaDashboard';
 import type { TurnoverCardData } from '../../../../server/services/turnoverPanel';
@@ -459,7 +460,10 @@ export function CompanyLandingClient(props: CompanyLandingClientProps): JSX.Elem
         />
         <TurnoverIndicatorCard
           data={props.turnoverCard}
-          href={`/super-admin/empresa/${company.id}/turnover`}
+          href={buildTurnoverHref(
+            `/super-admin/empresa/${company.id}/turnover`,
+            props.turnoverCard,
+          )}
         />
         {/*
           ME-B2-01b Fase 2 hotfix2 — card canonico "Clima e engajamento"

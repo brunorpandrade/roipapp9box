@@ -249,6 +249,8 @@ export async function inativarColaboradorAction(input: {
   readonly motivoSaida: 'voluntario' | 'involuntario';
   /** ME-fila6 D2 — Formulario A/B, gravado na mesma transacao. */
   readonly formulario: FormularioDesligamento;
+  /** ME-1.13 (Conversa 4b, Despacho B) — data civil YYYY-MM-DD. */
+  readonly dataDesligamento: string;
 }): Promise<ActionResult<InactivateEmployeeResult>> {
   const token = await resolveRawToken();
   if (token === null) {
@@ -305,6 +307,8 @@ export async function executarTransferenciaAction(input: {
   readonly motivoSaida: 'voluntario' | 'involuntario';
   /** ME-fila6 D2 — Formulario A/B, gravado na mesma transacao. */
   readonly formulario: FormularioDesligamento;
+  /** ME-1.13 (Conversa 4b, Despacho B) — data civil YYYY-MM-DD. */
+  readonly dataDesligamento: string;
 }): Promise<ActionResult<ExecuteResult>> {
   const token = await resolveRawToken();
   if (token === null) {
@@ -328,6 +332,7 @@ export async function executarTransferenciaAction(input: {
       reason: input.reason,
       motivoSaida: input.motivoSaida,
       formulario: input.formulario,
+      dataDesligamento: input.dataDesligamento,
     });
     return { ok: true, data: result };
   } catch (err) {

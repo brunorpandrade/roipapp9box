@@ -22,6 +22,13 @@
       "when": 1754960000000,
       "tag": "0002_add_cargo_to_employees",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1760745600000,
+      "tag": "0011_add_data_desligamento_to_employees",
+      "breakpoints": true
     }
   ]
 }

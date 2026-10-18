@@ -39,7 +39,7 @@ import type { MenuMode } from '../menu/menuMode';
 
 import { loadCLevelSessionContext, type CLevelSessionContext } from './cLevelSessionContext';
 import { loadPlatformMenuCtxCookie } from './platformMenuCookie';
-import type { PlatformSession } from './platformMenuContext';
+import type { MenuModeScenario, PlatformSession } from './platformMenuContext';
 import { loadRhSessionFlags, type RhSessionFlags } from './rhSessionFlags';
 
 // -----------------------------------------------------------------------
@@ -66,6 +66,12 @@ export interface RhLikePageContext {
   readonly hasDescendingChain: boolean;
   /** true quando a sessao e um C-level operando como RH. */
   readonly isCLevelActingAsRH: boolean;
+  /**
+   * ME-1.16 (Conversa 4b, Despacho B — D-B8) — cenario canonico de
+   * alternancia (`'clevel_rh'` ou `'rh_lider'`), ou `null` quando nao
+   * ha alternancia. Repassado pelo `PlatformMenuContext`.
+   */
+  readonly menuModeScenario: MenuModeScenario | null;
 }
 
 // -----------------------------------------------------------------------
@@ -176,6 +182,7 @@ export async function loadRhLikePageContext(
       isResponsavelFinanceiro: ctx.isResponsavelFinanceiro,
       hasDescendingChain: false,
       isCLevelActingAsRH: true,
+      menuModeScenario: menu.menuModeScenario,
     };
   }
 
@@ -191,5 +198,6 @@ export async function loadRhLikePageContext(
     isResponsavelFinanceiro: flags.isResponsavelFinanceiro,
     hasDescendingChain: flags.hasDescendingChain,
     isCLevelActingAsRH: false,
+    menuModeScenario: menu.menuModeScenario,
   };
 }

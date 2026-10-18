@@ -109,6 +109,7 @@ CREATE TABLE `employees` (
   `photoUrl` MEDIUMTEXT DEFAULT NULL,
   `dataNascimento` DATE NOT NULL,
   `dataAdmissao` DATE NOT NULL,
+  `dataDesligamento` DATE DEFAULT NULL,
   `cargo` VARCHAR(100) NOT NULL DEFAULT '',
   `cbo` VARCHAR(10) NOT NULL,
   `descricaoCBO` VARCHAR(255) NOT NULL,

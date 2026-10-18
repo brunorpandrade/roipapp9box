@@ -560,6 +560,13 @@ export const UPDATE_EMPLOYEE_INPUT_SCHEMA = z
     { message: 'Informe ao menos um campo a atualizar.' },
   );
 
+// ME-1.13 (Conversa 4b, Despacho B) — mensagens canonicas de validacao da
+// data civil de desligamento. "no futuro" refere-se a data civil hoje em
+// UTC (TZ=UTC), lida no servidor para evitar bypass de time zone no cliente.
+// Consumo canonico: apenas pelo Zod abaixo (RV-13 — sem export).
+const MSG_DATA_DESLIGAMENTO_FUTURA = 'A data de desligamento nao pode ser posterior a hoje.';
+const MSG_DATA_DESLIGAMENTO_FORMATO = 'A data de desligamento deve estar no formato YYYY-MM-DD.';
+
 /** §12.6 — input de `employees.inactivate` com `motivoSaida` obrigatorio. */
 export const INACTIVATE_EMPLOYEE_INPUT_SCHEMA = z
   .object({
@@ -567,6 +574,19 @@ export const INACTIVATE_EMPLOYEE_INPUT_SCHEMA = z
     motivoSaida: z.enum(MOTIVO_TERMINATION_VALUES),
     // ME-fila6 D2 — formulario A/B obrigatorio, gravado na mesma transacao.
     formulario: FORMULARIO_DESLIGAMENTO_SCHEMA,
+    // ME-1.13 (Conversa 4b, Despacho B) — data civil do desligamento
+    // (YYYY-MM-DD). Separa fato (desligamento efetivo) de registro
+    // (dataInativacao, timestamp sistemico). Validacao: hoje em UTC.
+    dataDesligamento: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, { message: MSG_DATA_DESLIGAMENTO_FORMATO })
+      .refine(
+        (v) => {
+          const today = new Date().toISOString().slice(0, 10);
+          return v <= today;
+        },
+        { message: MSG_DATA_DESLIGAMENTO_FUTURA },
+      ),
   })
   .refine((v) => v.formulario.tipo === v.motivoSaida, {
     message: MSG_FORMULARIO_MOTIVO_DIVERGENTE,
@@ -2705,7 +2725,7 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
         return await ctx.db.transaction(async (tx) => {
           const [updateResult] = await tx
             .update(employees)
-            .set({ status: 'inativo' })
+            .set({ status: 'inativo', dataDesligamento: input.dataDesligamento })
             .where(eq(employees.id, input.employeeId));
           if (updateResult.affectedRows !== 1) {
             throw new TRPCError({

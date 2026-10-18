@@ -94,9 +94,10 @@ export default async function MeusDadosPage(): Promise<JSX.Element> {
       }
       menuItems = menu.menuItems;
       showNotificationBell = menu.showNotificationBell;
-      panelToggleNode = menu.canToggleMenuMode ? (
-        <PainelToggle currentMode={menu.menuMode} />
-      ) : undefined;
+      panelToggleNode =
+        menu.menuModeScenario !== null ? (
+          <PainelToggle currentMode={menu.menuMode} scenario={menu.menuModeScenario} />
+        ) : undefined;
     }
 
     let companyLogoResolved: string | null = null;

@@ -403,6 +403,7 @@ describe('ME-fila6 D2 — turnover e desligamento (MySQL real)', () => {
         employeeId: alvo,
         motivoSaida: 'voluntario',
         formulario: FORMULARIO_VOLUNTARIO_TESTE,
+        dataDesligamento: '2026-10-18',
       });
       const [form] = await client.db
         .select()
@@ -425,6 +426,7 @@ describe('ME-fila6 D2 — turnover e desligamento (MySQL real)', () => {
           employeeId: alvo,
           motivoSaida: 'voluntario',
           formulario: { ...FORMULARIO_VOLUNTARIO_TESTE, oQuePoderiaReter: 'curto demais' },
+          dataDesligamento: '2026-10-18',
         }),
       ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
       await expect(
@@ -432,6 +434,7 @@ describe('ME-fila6 D2 — turnover e desligamento (MySQL real)', () => {
           employeeId: alvo,
           motivoSaida: 'voluntario',
           formulario: FORMULARIO_INVOLUNTARIO_TESTE,
+          dataDesligamento: '2026-10-18',
         }),
       ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
       const [emp] = await client.db.select().from(employees).where(eq(employees.id, alvo));
@@ -466,6 +469,7 @@ describe('ME-fila6 D2 — turnover e desligamento (MySQL real)', () => {
         reason: 'x'.repeat(120),
         motivoSaida: 'involuntario',
         formulario: FORMULARIO_INVOLUNTARIO_TESTE,
+        dataDesligamento: '2026-10-18',
       });
       const [form] = await client.db
         .select()

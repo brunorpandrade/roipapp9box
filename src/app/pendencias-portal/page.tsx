@@ -65,7 +65,9 @@ export default async function PendenciasPortalPage(props: PageProps): Promise<JS
       <Layout
         menuItems={rhCtx.menuItems}
         panelToggle={
-          rhCtx.canToggleMenuMode ? <PainelToggle currentMode={rhCtx.menuMode} /> : undefined
+          rhCtx.menuModeScenario !== null ? (
+            <PainelToggle currentMode={rhCtx.menuMode} scenario={rhCtx.menuModeScenario} />
+          ) : undefined
         }
         header={{
           leftMode: 'in_company',

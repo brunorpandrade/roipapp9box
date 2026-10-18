@@ -56,9 +56,16 @@ export default async function TurnoverPage(props: PageProps): Promise<JSX.Elemen
       parseTrimestreParam(params.trimestre),
     );
     const grupo = access.podeDrilldown ? parseGrupoDrilldown(params.grupo) : null;
+    const permitirEmAndamento = data.resumo?.estado === 'parcial';
     const drilldown =
       grupo !== null && data.resumo !== null
-        ? await listTurnoverDrilldown(client.db, access.companyId, data.resumo.trimestre, grupo)
+        ? await listTurnoverDrilldown(
+            client.db,
+            access.companyId,
+            data.resumo.trimestre,
+            grupo,
+            permitirEmAndamento,
+          )
         : [];
 
     return (

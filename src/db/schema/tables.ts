@@ -188,6 +188,15 @@ export const employees = mysqlTable(
     photoUrl: mediumtext('photoUrl'),
     dataNascimento: date('dataNascimento').notNull(),
     dataAdmissao: date('dataAdmissao').notNull(),
+    // ME-1.13 (Conversa 4b, Despacho B) — data civil do desligamento.
+    // Fato (data civil) separado do registro (dataInativacao em
+    // employeeTerminationEvents, timestamp sistemico). Nullable:
+    // colaborador ativo nao tem data de desligamento. Backfill canonico
+    // via migration 0011 preenche com DATE(dataInativacao) nos registros
+    // historicos. `mode: 'string'` canonicamente devolve a data como ISO
+    // `YYYY-MM-DD` para evitar conversao de time zone a cada leitura
+    // (contrato com a UI e com o PDF que exibem a data civil literal).
+    dataDesligamento: date('dataDesligamento', { mode: 'string' }),
     cargo: varchar('cargo', { length: 100 }).notNull().default(''),
     cbo: varchar('cbo', { length: 10 }).notNull(),
     descricaoCBO: varchar('descricaoCBO', { length: 255 }).notNull(),

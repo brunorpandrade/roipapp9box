@@ -64,8 +64,15 @@ import { AI_CHAT_CHIPS_EQUIPE } from '../../../../lib/chat-ia/chatIaChips';
 
 export { AI_CHAT_CHIPS_EQUIPE };
 
-/** Largura fixa canonica do drawer (§8.1). */
-const DRAWER_WIDTH = 420;
+/**
+ * Largura canonica do drawer. ME-1.15.b (Conversa 4b, Despacho B — D-B7)
+ * alinhou bit-exact ao padrao canonico do `DialogosDrawer` (`54vw`,
+ * clamp 360px/720px) para que o Assistente IA de equipe abra com a
+ * mesma largura dos dialogos de desenvolvimento.
+ */
+const DRAWER_WIDTH_CSS = '54vw';
+const DRAWER_MIN_WIDTH_PX = 360;
+const DRAWER_MAX_WIDTH_PX = 720;
 
 /** Cor teal canonica da borda esquerda (§8.1). */
 const TEAL_BORDER = '#14B8A6';
@@ -84,7 +91,9 @@ const DRAWER_OVERLAY: CSSProperties = {
   top: 0,
   right: 0,
   bottom: 0,
-  width: DRAWER_WIDTH,
+  width: DRAWER_WIDTH_CSS,
+  minWidth: DRAWER_MIN_WIDTH_PX,
+  maxWidth: DRAWER_MAX_WIDTH_PX,
   background: COLORS.background.card,
   borderLeft: `3px solid ${TEAL_BORDER}`,
   boxShadow: '-8px 0 24px rgba(0, 0, 0, 0.12)',

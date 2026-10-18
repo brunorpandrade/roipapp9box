@@ -56,9 +56,20 @@ export default async function TurnoverBrunoPage(props: PageProps): Promise<JSX.E
       parseTrimestreParam(params.trimestre),
     );
     const grupo = parseGrupoDrilldown(params.grupo);
+    // ME-1.14 — drill-down permitido tambem no trimestre em andamento
+    // (`estado === 'parcial'`), de modo que o card em tempo real nao abra
+    // tela cega. `permitirEmAndamento = true` sinaliza a flex do
+    // `listTurnoverDrilldown` para aceitar trimestre nao-fechado.
+    const permitirEmAndamento = data.resumo?.estado === 'parcial';
     const drilldown =
       grupo !== null && data.resumo !== null
-        ? await listTurnoverDrilldown(client.db, companyId, data.resumo.trimestre, grupo)
+        ? await listTurnoverDrilldown(
+            client.db,
+            companyId,
+            data.resumo.trimestre,
+            grupo,
+            permitirEmAndamento,
+          )
         : [];
 
     const profileKey = resolveProfileKey({

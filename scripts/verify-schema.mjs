@@ -441,13 +441,14 @@ function main() {
 
   // Invariantes (§20). Colunas: 696 em ME-080b; 721 em ME-fila6 D2;
   // 722 em ME 3.5 D1; 723 em ME Etapa 1 patch v6; 724 em ME-B2-01a.1.1.
-  // 686 em ME-B2-01b Q1=D — aposentadoria da tabela `climateEngagementData`
-  // (38 colunas removidas: 7 identificadoras + 4 contagens/adesao + 4
-  // dimensoes + 20 questoes + 3 timestamps).
-  if (totalSqlCols !== 686) {
+  // 686 em ME-B2-01b Q1=D — aposentadoria da tabela `climateEngagementData`.
+  // 687 em ME-1.13 (Conversa 4b, Despacho B) — nova coluna
+  // `employees.dataDesligamento` (data civil separada do timestamp
+  // sistemico em employeeTerminationEvents.dataInativacao).
+  if (totalSqlCols !== 687) {
     console.log(
       `${YELLOW}AVISO:${RESET} migration tem ${totalSqlCols} colunas; ` +
-        `esperado 686 (ME-B2-01b Q1=D — aposenta climateEngagementData).`,
+        `esperado 687 (ME-1.13 — nova coluna employees.dataDesligamento).`,
     );
   }
   // FKs: 111 em ME-B2-01a.1.1. 108 em ME-B2-01b Q1=D (removidas 3 FKs

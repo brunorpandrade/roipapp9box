@@ -138,6 +138,15 @@ export interface DashboardIndividualContextPayload {
     created_at: string;
     status: 'verde' | 'vermelho';
     pendencia: boolean;
+    /**
+     * ME-1.15.a (Conversa 4b, Despacho B — D-B6) — corpo do dialogo
+     * (`developmentDialogs.corpo`). `null` quando o dialogo nao tem
+     * corpo gravado. Truncado em 2000 caracteres com sufixo "
+     * […texto truncado]" quando ultrapassar (cap defensivo para evitar
+     * estouro de tokens no motor IA — 10 dialogos × 2000 chars ~ 20k
+     * chars ~ 6k tokens).
+     */
+    corpo: string | null;
   }>;
   /**
    * Bloco `perfil_individual` — omitido quando §5.3 nao atende as 3

@@ -49,7 +49,7 @@
 //
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, count, eq, isNull } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../db/client';
 import { employees, employeeLeaderHistory } from '../../db/schema';
@@ -68,6 +68,13 @@ export interface RhSessionFlags {
   readonly isLider: boolean;
   readonly isResponsavelFinanceiro: boolean;
   readonly hasDescendingChain: boolean;
+  /**
+   * ME-1.16 (Conversa 4b, Despacho B — D-B8) — quantidade de liderados
+   * ATIVOS diretos. Zero em RH puro ou RH-Lider sem liderados vigentes.
+   * Consumido pelo `loadPlatformMenuContext` para decidir se o toggle
+   * "Painel RH / Painel Líder" aparece.
+   */
+  readonly countLiderados: number;
 }
 
 // -----------------------------------------------------------------------
@@ -115,10 +122,26 @@ export async function loadRhSessionFlags(
       ),
     )
     .limit(1);
+  // ME-1.16 — contagem de liderados ativos diretos. Reconstruida aqui
+  // (sem reuso do `countActiveLiderados` do router de employees para
+  // evitar dependencia circular lib/session <-> server/routers).
+  const countRows = await db
+    .select({ n: count() })
+    .from(employeeLeaderHistory)
+    .innerJoin(employees, eq(employees.id, employeeLeaderHistory.employeeId))
+    .where(
+      and(
+        eq(employeeLeaderHistory.liderId, userId),
+        isNull(employeeLeaderHistory.dataFim),
+        eq(employees.status, 'ativo'),
+      ),
+    );
+  const countLiderados = Number(countRows[0]?.n ?? 0);
   return {
     isRH: row.isRH === true,
     isLider: row.isLider === true,
     isResponsavelFinanceiro: row.isResponsavelFinanceiro === true,
     hasDescendingChain: chainRows.length > 0,
+    countLiderados,
   };
 }

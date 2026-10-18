@@ -384,6 +384,7 @@ describe('leadershipTransfer — contratos publicos exportados', () => {
       reason: curta,
       motivoSaida: 'voluntario',
       formulario: FORMULARIO_VOLUNTARIO_TESTE,
+      dataDesligamento: '2026-10-18',
     });
     expect(parsedCurta.success).toBe(false);
     if (!parsedCurta.success) {
@@ -400,6 +401,7 @@ describe('leadershipTransfer — contratos publicos exportados', () => {
       reason: longa,
       motivoSaida: 'voluntario',
       formulario: FORMULARIO_VOLUNTARIO_TESTE,
+      dataDesligamento: '2026-10-18',
     });
     expect(parsedLonga.success).toBe(false);
     if (!parsedLonga.success) {
@@ -691,6 +693,7 @@ describe('leadershipTransfer.execute — transacao atomica §14.9', () => {
       reason: REASON_VALIDA,
       motivoSaida: 'voluntario',
       formulario: FORMULARIO_VOLUNTARIO_TESTE,
+      dataDesligamento: '2026-10-18',
     });
 
     // Retorno canonico.
@@ -770,6 +773,7 @@ describe('leadershipTransfer.execute — transacao atomica §14.9', () => {
         reason: REASON_VALIDA,
         motivoSaida: 'voluntario',
         formulario: FORMULARIO_VOLUNTARIO_TESTE,
+        dataDesligamento: '2026-10-18',
       }),
     ).rejects.toMatchObject({ code: 'CONFLICT', message: MSG_EMAIL_VAZIO_GRUPO_4 });
   });
@@ -795,6 +799,7 @@ describe('leadershipTransfer.execute — transacao atomica §14.9', () => {
         reason: REASON_VALIDA,
         motivoSaida: 'involuntario',
         formulario: FORMULARIO_INVOLUNTARIO_TESTE,
+        dataDesligamento: '2026-10-18',
       }),
     ).rejects.toMatchObject({ code: 'BAD_REQUEST', message: MSG_NOVO_LIDER_INVALIDO_LT });
   });
@@ -817,6 +822,7 @@ describe('leadershipTransfer.execute — transacao atomica §14.9', () => {
         reason: REASON_VALIDA,
         motivoSaida: 'voluntario',
         formulario: FORMULARIO_VOLUNTARIO_TESTE,
+        dataDesligamento: '2026-10-18',
       }),
     ).rejects.toMatchObject({ code: 'CONFLICT', message: MSG_LOOP_CONDICIONAL_VIOLADO });
   });
@@ -838,6 +844,7 @@ describe('leadershipTransfer.execute — transacao atomica §14.9', () => {
         reason: REASON_VALIDA,
         motivoSaida: 'voluntario',
         formulario: FORMULARIO_VOLUNTARIO_TESTE,
+        dataDesligamento: '2026-10-18',
       }),
     ).rejects.toMatchObject({
       code: 'CONFLICT',

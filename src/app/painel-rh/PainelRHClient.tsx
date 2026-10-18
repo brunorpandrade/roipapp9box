@@ -30,6 +30,7 @@ import type { JSX } from 'react';
 import { ClickableIndicatorCard } from '../../components/painel/ClickableIndicatorCard';
 import { CardVerEquipes } from '../../components/paineis/CardVerEquipes';
 import { TurnoverIndicatorCard } from '../../components/turnover/TurnoverIndicatorCard';
+import { buildTurnoverHref } from '../../lib/shared/turnoverHref';
 import type { ActiveLeaderRow } from '../../server/services/painelNavigation';
 import type { TurnoverCardData } from '../../server/services/turnoverPanel';
 import { OnboardingKanbanMini } from '../../components/painel/OnboardingKanbanMini';
@@ -481,7 +482,10 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
             href={`${hrefPrefix}/nr1`}
             ariaLabel="Abrir módulo Radar NR-1"
           />
-          <TurnoverIndicatorCard data={props.turnoverCard} href={`${hrefPrefix}/turnover`} />
+          <TurnoverIndicatorCard
+            data={props.turnoverCard}
+            href={buildTurnoverHref(`${hrefPrefix}/turnover`, props.turnoverCard)}
+          />
         </div>
       </section>
 
