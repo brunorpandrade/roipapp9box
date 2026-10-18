@@ -39,7 +39,7 @@
 import { useEffect, useState, type JSX } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { TERMO_LITERAL_V10, TERMO_RESUMO_V10 } from '../../lib/lgpd/termoLiteral';
+import { TERMO_LITERAL_V10_HTML, TERMO_RESUMO_V10 } from '../../lib/lgpd/termoLiteral';
 
 const NAVY = '#1F3A5F';
 const TEAL = '#14B8A6';
@@ -381,18 +381,51 @@ export function GateLgpdClient(): JSX.Element {
                 ×
               </button>
             </div>
+            {/*
+              ME-1.12.d: termo juridico V1.0 definitivo e estruturado
+              em 13 secoes (DOC 02 §7.3). HTML canonico vem do mapa
+              versionado `TERMO_LITERAL_V10_HTML` em
+              `src/lib/lgpd/termoLiteral.ts`. Zero risco XSS por
+              construcao — constante no codigo, nao vem de user input.
+              Estilo canonico embutido via <style> escopado por classe
+              para controlar h4, p, ul em contexto de modal.
+            */}
             <div
+              className="roip-lgpd-termo-integral"
               style={{
                 padding: '20px 28px',
                 overflowY: 'auto',
                 fontSize: 13.5,
-                lineHeight: 1.7,
+                lineHeight: 1.65,
                 color: TEXT_2,
                 flex: 1,
               }}
-            >
-              {TERMO_LITERAL_V10}
-            </div>
+              dangerouslySetInnerHTML={{ __html: TERMO_LITERAL_V10_HTML }}
+            />
+            <style>{`
+              .roip-lgpd-termo-integral h4 {
+                font-size: 14.5px;
+                font-weight: 700;
+                color: ${TEXT_1};
+                margin: 18px 0 8px 0;
+              }
+              .roip-lgpd-termo-integral h4:first-of-type {
+                margin-top: 0;
+              }
+              .roip-lgpd-termo-integral p {
+                margin: 0 0 10px 0;
+              }
+              .roip-lgpd-termo-integral ul {
+                margin: 0 0 10px 0;
+                padding-left: 20px;
+              }
+              .roip-lgpd-termo-integral li {
+                margin-bottom: 4px;
+              }
+              .roip-lgpd-termo-integral strong {
+                color: ${TEXT_1};
+              }
+            `}</style>
             <div
               style={{
                 padding: '14px 28px',

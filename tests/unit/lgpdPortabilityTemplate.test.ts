@@ -89,7 +89,7 @@ describe('lgpdPortabilityTemplate — modo colaborador (ME-1.12.a)', () => {
     expect(html).not.toContain('Portabilidade de dados pessoais');
   });
 
-  it('inclui secao de termo de aceite quando termoAceite presente', () => {
+  it('inclui secao de termo de aceite quando termoAceite presente (HTML estruturado V1.0)', () => {
     const html = renderLgpdPortabilityHTML({
       ...BASE_INPUT,
       modo: 'colaborador',
@@ -102,7 +102,10 @@ describe('lgpdPortabilityTemplate — modo colaborador (ME-1.12.a)', () => {
     expect(html).toContain('Termo de aceite');
     expect(html).toContain('Versão aceita:');
     expect(html).toContain('1.0');
-    expect(html).toContain('direitos previstos na lei');
+    expect(html).toContain('<h4>Termo de ciência e política de privacidade</h4>');
+    expect(html).toContain('<h4>1. Quem é controlador e quem é operador</h4>');
+    expect(html).toContain('<h4>14. Registro de aceite</h4>');
+    expect(html).toContain('LGPD');
   });
 
   it('renderiza fallback canonico quando termoAceite === null', () => {
@@ -142,6 +145,7 @@ describe('lgpdPortabilityTemplate — modo super_admin (ME-1.12.b)', () => {
     });
     expect(html).toContain('Termo de aceite');
     expect(html).toContain('1.0');
+    expect(html).toContain('<h4>1. Quem é controlador e quem é operador</h4>');
   });
 });
 

@@ -46,6 +46,7 @@ import { formatTrimestreBR } from '../../lib/cycle/formatTrimestreBR';
 import { formatDateBR } from '../../lib/date/formatDateBR';
 import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
 import { formatJobFamily } from '../../lib/job-family/formatJobFamily';
+import { getTermoLiteralHtml } from '../../lib/lgpd/termoLiteral';
 
 import { escapeHtml, type LayoutBaseCompany, renderLayoutBase } from './layoutBase';
 
@@ -466,10 +467,19 @@ ${tentativas}
 
 /**
  * Renderiza a secao canonica "Termo de aceite" (ME-1.12.c Despacho A,
- * item [1.12.c] do roadmap V4). Presente em ambos os modos
- * (colaborador e super_admin) no final do PDF. Fallback bit-exact
- * quando `termoAceite === null` (titular nunca aceitou — caso raro)
- * ou quando `textoLiteral === null` (versao historica fora do mapa).
+ * item [1.12.c] do roadmap V4; estendido ME-1.12.d — renderiza HTML
+ * estruturado quando a versao esta no mapa canonico). Presente em
+ * ambos os modos (colaborador e super_admin) no final do PDF.
+ * Fallback bit-exact quando `termoAceite === null` (titular nunca
+ * aceitou — caso raro) ou quando `textoLiteral === null` (versao
+ * historica fora do mapa).
+ *
+ * ME-1.12.d: para versoes cujo HTML estruturado existe no mapa
+ * `TERMO_LITERAL_HTML_POR_VERSAO`, renderiza o HTML diretamente
+ * (preservando h4, p, ul, strong canonicos do termo juridico). Para
+ * versoes antigas sem HTML (so plain-text), renderiza o texto como
+ * paragrafo escapado. Zero risco XSS por construcao — o HTML vem de
+ * constante no codigo, nao de user input.
  */
 function renderTermoAceiteSection(
   termoAceite: LgpdPortabilityTermoAceite | null | undefined,
@@ -481,16 +491,35 @@ function renderTermoAceiteSection(
 </section>`;
   }
   const dataAceiteBr = formatDateBR(termoAceite.aceitoEmDate);
-  const corpoTermo =
-    termoAceite.textoLiteral !== null
-      ? `<p>${escapeHtml(termoAceite.textoLiteral)}</p>`
-      : `<p class="muted">(Versão histórica — texto literal não disponível no registro canônico atual.)</p>`;
+  const htmlEstruturado = getTermoLiteralHtml(termoAceite.versao);
+  const corpoTermo = (() => {
+    if (htmlEstruturado !== null) {
+      return htmlEstruturado;
+    }
+    if (termoAceite.textoLiteral !== null) {
+      return `<p>${escapeHtml(termoAceite.textoLiteral)}</p>`;
+    }
+    return `<p class="muted">(Versão histórica — texto literal não disponível no registro canônico atual.)</p>`;
+  })();
+  const styleTermo =
+    `background:#f9fafb; border:0.5pt solid #d1d5db; border-radius:1mm; ` +
+    `padding:4mm; margin-top:3mm; font-size:9.5pt; line-height:1.5;`;
+  const styleH4 = `font-size:11pt; font-weight:700; margin:3mm 0 1.5mm 0; color:#111827;`;
+  const styleP = `margin:0 0 2mm 0;`;
+  const styleUl = `margin:0 0 2mm 0; padding-left:6mm;`;
+  const styleLi = `margin-bottom:1mm;`;
   return `<section>
   <h2>Termo de aceite</h2>
   <p class="muted">Texto literal da versão do termo LGPD vigente no momento do aceite pelo titular, preservado para rastreabilidade canônica (DOC 02 §7.3).</p>
   <p><strong>Versão aceita:</strong> ${escapeHtml(termoAceite.versao)}</p>
   <p><strong>Data do aceite:</strong> ${escapeHtml(dataAceiteBr)}</p>
-  <div style="margin-top:3mm; padding:4mm; background:#f9fafb; border:0.5pt solid #d1d5db; border-radius:1mm;">
+  <div style="${styleTermo}">
+    <style>
+      section div h4 { ${styleH4} }
+      section div p { ${styleP} }
+      section div ul { ${styleUl} }
+      section div li { ${styleLi} }
+    </style>
     ${corpoTermo}
   </div>
 </section>`;
