@@ -47,9 +47,11 @@ const VALIDATE_DB = 'roip_validate';
 // migration 0008). Tabelas: 55 → 54; colunas: 724 → 686 (removidas
 // 38: 7 id + 4 contagens + 4 dimensoes + 20 questoes + 3 timestamps);
 // FKs: 111 → 108 (removidas 3: companyId, liderId, clevelId).
+// ME-1.13 (Conversa 4b, Despacho B) — colunas 686 → 687 (nova coluna
+// `employees.dataDesligamento` via migration 0011); FKs inalteradas.
 const EXPECTED = {
   tables: 54,
-  columns: 686,
+  columns: 687,
   fks: 108,
   departments: 19,
 };
