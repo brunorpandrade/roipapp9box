@@ -1124,17 +1124,19 @@ export const LAYOUT_BASE_CSS = `
     margin-bottom: 1.5mm;
   }
 
-  /* Participação relativa por quadrante: barras horizontais empilhadas. */
+  /* Participação relativa por quadrante: barras horizontais empilhadas.
+     v3: gaps verticais maiores + barras mais altas para aproveitar o
+     espaço da página dedicada. */
   .ninebox-stacked-bar-row {
     display: flex;
     align-items: center;
-    gap: 3mm;
-    margin-bottom: 2mm;
+    gap: 4mm;
+    margin-bottom: 5mm;
     page-break-inside: avoid;
   }
   .ninebox-stacked-bar-label {
-    width: 32mm;
-    font-size: 9pt;
+    width: 36mm;
+    font-size: 10pt;
     font-weight: 700;
     color: #111827;
     text-align: right;
@@ -1143,7 +1145,7 @@ export const LAYOUT_BASE_CSS = `
   .ninebox-stacked-bar-wrap {
     flex: 1;
     display: flex;
-    height: 7mm;
+    height: 10mm;
     border-radius: 3pt;
     overflow: hidden;
     background: #F3F4F6;
@@ -1169,9 +1171,9 @@ export const LAYOUT_BASE_CSS = `
   .ninebox-legend-full {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 2mm 4mm;
-    margin-top: 4mm;
-    font-size: 9pt;
+    gap: 4mm 6mm;
+    margin-top: 10mm;
+    font-size: 10pt;
     color: #374151;
   }
   .ninebox-legend-full .leg-item {

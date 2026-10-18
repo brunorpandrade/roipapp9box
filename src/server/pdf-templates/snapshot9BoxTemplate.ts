@@ -321,22 +321,68 @@ export function renderGrid9BoxSvg(
   const axisFill = RADAR_COLORS.textMuted;
   const gridEndY = dims.originY + dims.gridSize;
 
-  // Eixo DESEMPENHO: texto espacado com seta `→` grande separada por
-  // arrowGapFromText, baseline vertical compartilhada com o texto.
+  // v3: setas desenhadas como poligonos SVG (haste + ponta triangular)
+  // para evitar glyphs de font que podem nao renderizar corretamente no
+  // Puppeteer (bug observado em v2 — glyphs ↑ → viravam "|" ou "-"). O
+  // texto dos eixos usa `textLength` + `lengthAdjust="spacing"` para
+  // forcar o navegador a calcular a largura total ja considerando o
+  // letter-spacing largo, resolvendo o deslocamento do text-anchor
+  // middle (bug observado em v2 — PLENITUDE descentralizado).
+  const arrowStroke = Math.max(1, dims.axisArrowFontSize * 0.12);
+  const arrowSize = dims.axisArrowFontSize;
+
+  // Eixo DESEMPENHO (horizontal abaixo do grid, centralizado em X).
   const desempenhoY = gridEndY + dims.axisGapY;
   const desempenhoCx = dims.originX + dims.gridSize / 2;
+  // Largura total aproximada do texto DESEMPENHO com letter-spacing.
+  const desempenhoTextLen = 10 * dims.axisFontSize * 0.6 + 9 * dims.axisLetterSpacing;
+  const desempenhoTextStartX = desempenhoCx - desempenhoTextLen / 2;
+  const desempenhoArrowBaseX = desempenhoCx + desempenhoTextLen / 2 + dims.arrowGapFromText * 0.5;
+  const desempenhoArrowCy = desempenhoY - dims.axisFontSize * 0.35;
+  const desempenhoArrowTipX = desempenhoArrowBaseX + arrowSize;
+  const desempenhoArrowHeadStartX = desempenhoArrowBaseX + arrowSize * 0.55;
+  const desempenhoArrowHeadH = arrowSize * 0.5;
   const desempenhoSvg =
-    `<text x="${desempenhoCx - dims.arrowGapFromText}" y="${desempenhoY}" text-anchor="end" font-size="${dims.axisFontSize}" font-weight="700" fill="${axisFill}" letter-spacing="${dims.axisLetterSpacing}">DESEMPENHO</text>` +
-    `<text x="${desempenhoCx + dims.arrowGapFromText}" y="${desempenhoY + dims.axisArrowFontSize * 0.15}" text-anchor="start" font-size="${dims.axisArrowFontSize}" font-weight="700" fill="${axisFill}">→</text>`;
+    `<text x="${desempenhoTextStartX}" y="${desempenhoY}" text-anchor="start" ` +
+    `font-size="${dims.axisFontSize}" font-weight="700" fill="${axisFill}" ` +
+    `letter-spacing="${dims.axisLetterSpacing}" textLength="${desempenhoTextLen.toFixed(2)}" ` +
+    `lengthAdjust="spacing">DESEMPENHO</text>` +
+    `<line x1="${desempenhoArrowBaseX}" y1="${desempenhoArrowCy}" ` +
+    `x2="${desempenhoArrowHeadStartX}" y2="${desempenhoArrowCy}" ` +
+    `stroke="${axisFill}" stroke-width="${arrowStroke}" />` +
+    `<polygon points="${desempenhoArrowTipX},${desempenhoArrowCy} ` +
+    `${desempenhoArrowHeadStartX},${desempenhoArrowCy - desempenhoArrowHeadH / 2} ` +
+    `${desempenhoArrowHeadStartX},${desempenhoArrowCy + desempenhoArrowHeadH / 2}" ` +
+    `fill="${axisFill}" />`;
 
-  // Eixo PLENITUDE: texto rotacionado -90 (lido de baixo pra cima) com
-  // letter-spacing largo + seta `↑` SEPARADA do texto, posicionada acima
-  // do centro vertical (nao colada no topo do SVG).
+  // Eixo PLENITUDE (vertical a esquerda do grid, centralizado em Y).
+  // Dentro de um <g> com translate(plenitudeX, plenitudeCy) rotate(-90),
+  // o texto e desenhado em (0,0) com text-anchor middle — resulta em
+  // texto vertical lido de baixo pra cima, centralizado perfeitamente
+  // em (plenitudeX, plenitudeCy) no sistema final.
   const plenitudeX = dims.originX - dims.axisGapX;
   const plenitudeCy = dims.originY + dims.gridSize / 2;
-  const plenitudeTextSvg = `<text x="${plenitudeX}" y="${plenitudeCy + dims.axisFontSize * 0.4}" text-anchor="middle" font-size="${dims.axisFontSize}" font-weight="700" fill="${axisFill}" letter-spacing="${dims.axisLetterSpacing}" transform="rotate(-90 ${plenitudeX} ${plenitudeCy})">PLENITUDE</text>`;
-  const plenitudeArrowY = dims.originY - dims.arrowGapFromText * 0.3;
-  const plenitudeArrowSvg = `<text x="${plenitudeX}" y="${plenitudeArrowY}" text-anchor="middle" font-size="${dims.axisArrowFontSize}" font-weight="700" fill="${axisFill}">↑</text>`;
+  const plenitudeTextLen = 9 * dims.axisFontSize * 0.6 + 8 * dims.axisLetterSpacing;
+  const plenitudeTextSvg =
+    `<g transform="translate(${plenitudeX} ${plenitudeCy}) rotate(-90)">` +
+    `<text x="0" y="${dims.axisFontSize * 0.35}" text-anchor="middle" ` +
+    `font-size="${dims.axisFontSize}" font-weight="700" fill="${axisFill}" ` +
+    `letter-spacing="${dims.axisLetterSpacing}" textLength="${plenitudeTextLen.toFixed(2)}" ` +
+    `lengthAdjust="spacing">PLENITUDE</text>` +
+    `</g>`;
+  // Seta ↑ acima do texto PLENITUDE, mesma coluna X do texto.
+  const plenitudeArrowBaseY = plenitudeCy - plenitudeTextLen / 2 - dims.arrowGapFromText * 0.8;
+  const plenitudeArrowTipY = plenitudeArrowBaseY - arrowSize;
+  const plenitudeArrowHeadStartY = plenitudeArrowBaseY - arrowSize * 0.55;
+  const plenitudeArrowHeadW = arrowSize * 0.5;
+  const plenitudeArrowSvg =
+    `<line x1="${plenitudeX}" y1="${plenitudeArrowBaseY}" ` +
+    `x2="${plenitudeX}" y2="${plenitudeArrowHeadStartY}" ` +
+    `stroke="${axisFill}" stroke-width="${arrowStroke}" />` +
+    `<polygon points="${plenitudeX},${plenitudeArrowTipY} ` +
+    `${plenitudeX - plenitudeArrowHeadW / 2},${plenitudeArrowHeadStartY} ` +
+    `${plenitudeX + plenitudeArrowHeadW / 2},${plenitudeArrowHeadStartY}" ` +
+    `fill="${axisFill}" />`;
 
   const viewBoxW = dims.svgWidth;
   const viewBoxH = dims.svgHeight;
@@ -551,12 +597,14 @@ function renderPaginaEmpresaResumo(bloco: NineBoxBlocoEscopo): string {
     ? `O centro de massa está em <strong>${escapeHtml(perfil.centroPrincipal)}</strong>, com ${fmtInt(perfil.centroCount)} colaborador(es) concentrado(s) nesse quadrante.`
     : 'Nenhum quadrante concentra colaboradores suficientes para caracterizar um centro de massa claro neste trimestre.';
 
+  // v3: cabecalho canonico "Visao geral — Empresa" (nome fixo, nao
+  // duplicado) + caption do radar-block tambem com "Empresa".
   return `<section class="page-break">
-  <h2>Visão geral — ${escapeHtml(bloco.titulo)}</h2>
+  <h2>Visão geral — Empresa</h2>
   <p>Distribuição consolidada dos ${fmtInt(bloco.totalClassificados)} colaboradores classificados no ciclo. O quadrante com maior concentração é destacado com borda escura.</p>
   <div class="radar-block">
     <div class="radar-block-head">
-      <span class="radar-block-title">${escapeHtml(bloco.titulo)}</span>
+      <span class="radar-block-title">Empresa</span>
       <span class="radar-block-subtitle">${fmtInt(bloco.totalClassificados)} colaborador(es) classificado(s)</span>
     </div>
     <div style="max-width:140mm; margin:0 auto;">
@@ -612,9 +660,10 @@ function renderTabelaColaboradores(bloco: NineBoxBlocoEscopo): string {
  * pagina sem corte. Preserva page-break-inside: avoid.
  */
 function renderPaginaDeptResumo(dept: NineBoxBlocoEscopo, empresa: NineBoxBlocoEscopo): string {
+  // v3: cabecalho enxuto "Departamento — <nome>".
   return `<section class="page-break">
   <div class="ninebox-dept-page">
-    <h2>9-Box por departamento — ${escapeHtml(dept.titulo)}</h2>
+    <h2>Departamento — ${escapeHtml(dept.titulo)}</h2>
     <p>Distribuição dos ${fmtInt(dept.totalClassificados)} colaborador(es) do departamento comparada com a média da empresa. O quadrante com maior concentração é destacado com borda escura.</p>
     <div class="radar-block">
       <div class="radar-block-head">

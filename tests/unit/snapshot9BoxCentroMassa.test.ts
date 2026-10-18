@@ -87,19 +87,21 @@ describe('renderGrid9BoxSvg', () => {
     expect(occurrencesLimpo).toBe(0);
   });
 
-  it('eixo PLENITUDE vem com seta ↑ independente apontando para cima', () => {
+  it('eixos PLENITUDE e DESEMPENHO vem com setas desenhadas como polygons SVG', () => {
+    // v3: setas agora sao <line> + <polygon> para evitar glyphs de font
+    // que o Puppeteer renderizava como "|" ou "-" em alguns casos.
     const svg = renderGrid9BoxSvg(distNativa, { size: 'large', destacarCentroMassa: false });
-    // Seta ↑ como glifo independente (nao dentro do text rotacionado).
-    expect(svg).toContain('>↑</text>');
     expect(svg).toContain('PLENITUDE');
-    // Seta → do eixo horizontal
-    expect(svg).toContain('>→</text>');
     expect(svg).toContain('DESEMPENHO');
-    // Pega o <text ...>↑</text> especifico e garante que esse elemento
-    // nao carrega transform=rotate (= seta aponta pra cima no SVG).
-    const arrowMatch = /<text[^>]*>↑<\/text>/.exec(svg);
-    expect(arrowMatch).not.toBeNull();
-    expect(arrowMatch?.[0]).not.toContain('transform');
+    // Pelo menos 2 pares <line> + <polygon> para as duas setas
+    // (vertical PLENITUDE + horizontal DESEMPENHO).
+    const lineCount = (svg.match(/<line /g) ?? []).length;
+    const polygonCount = (svg.match(/<polygon /g) ?? []).length;
+    expect(lineCount).toBeGreaterThanOrEqual(2);
+    expect(polygonCount).toBeGreaterThanOrEqual(2);
+    // Glyphs antigos ↑ e → nao devem mais estar presentes.
+    expect(svg).not.toContain('>↑</text>');
+    expect(svg).not.toContain('>→</text>');
   });
 
   it('tamanhos mini / medium / large produzem SVGs de dimensoes diferentes', () => {

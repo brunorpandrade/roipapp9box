@@ -106,13 +106,16 @@ export async function GET(req: Request): Promise<NextResponse> {
   }
 
   // Carrega classificações 9-Box + nomes.
+  // v3: titulo canonico do bloco principal — "Empresa" quando escopo
+  // consolidado, nome do escopo quando departamento/equipe.
+  const tituloBlocoPrincipal = escopoTipo === 'empresa' ? 'Empresa' : (escopoRef ?? 'Visão geral');
   const blocoPrincipal = await buildBlocoEscopo(
     db,
     claims.companyId,
     trimestre,
     escopoTipo,
     escopoRef,
-    'Visão geral',
+    tituloBlocoPrincipal,
   );
 
   // Blocos capilares canonicos: cascata quando escopo=empresa por
@@ -140,9 +143,9 @@ export async function GET(req: Request): Promise<NextResponse> {
 
   const geradoEmIso = now.toISOString();
   const razaoSocialSan = sanitizeRazaoSocial(company.razaoSocial);
+  // v3: logo removida da capa a pedido do produto — nao passa logoUrl.
   const html = renderSnapshot9BoxHTML({
     nomeFantasia: company.nomeFantasia,
-    logoUrl: company.logoUrl ?? undefined,
     razaoSocialSanitizada: razaoSocialSan,
     trimestre,
     escopoTipo,
