@@ -9,9 +9,13 @@
 //   - 401 token expirado (exp no passado).
 //   - 200 titular employee sem respostas — Content-Type + filename
 //     canonicos + binario do stub renderer.
-//   - 200 titular employee COM respostas em todos os instrumentos.
-//   - 200 titular C-level (payload canonico com A/D/Copsoq vazios
-//     por S344).
+//   - 200 titular employee COM respostas no banco — PDF modo
+//     `colaborador` suprime secoes de respostas brutas (ME-1.12.a,
+//     item [1.12.a] do roadmap V4).
+//   - 200 titular C-level — PDF modo `colaborador` suprime secoes
+//     canonicamente (modo propagado pelo route handler desde a
+//     ME-1.12.a; a politica de supressao vale para ambos os tipos
+//     de titular pelo portal).
 //   - Determinismo bit-exact: 2 chamadas com mesmo token e mesmo `now`
 //     retornam mesmo binario (o stub captura o HTML canonico).
 //   - Filename canonico bit-exact `dados_pessoais_{nome}_{YYYYMMDD}.pdf`.
@@ -20,6 +24,16 @@
 //   - Cache-Control canonico no-store.
 //   - S343: token do titular A retorna dados de A — Route Handler
 //     deriva identidade exclusivamente do token (sem input tampering).
+//
+// ME-1.12.a Despacho A canonizada: as asserçoes dos casos "COM
+// respostas" + "titular C-level" foram atualizadas para refletir o
+// novo comportamento canonico — o route handler `/api/portal/lgpd/
+// portability` passa `modo: 'colaborador'` ao template, suprimindo
+// as 4 secoes de respostas brutas (Instrumento A, Instrumento D,
+// Radar NR-1 e Perfil Individual). O PDF integral §19.6 preservado
+// bit-exact pre-ME-1.12.a e exportado pelo novo endpoint SA
+// `/api/super-admin/lgpd/exportar` (modo `super_admin`), coberto
+// pelo teste `tests/integration/me-1-12-lgpd-despacho-a.test.ts`.
 //
 // Faixa CNPJ desta ME (S344 canonizada): principal
 // 10270000000001..049.
@@ -310,7 +324,7 @@ describe('Route Handler GET /api/portal/lgpd/portability — 200 sucesso', () =>
     expect(buf).toEqual(STUB_PDF_BYTES);
   });
 
-  it('200 titular employee COM respostas em todos os instrumentos (§19.6 escopo integral)', async () => {
+  it('200 titular employee COM respostas no banco — PDF modo colaborador suprime brutas (ME-1.12.a)', async () => {
     const cid = await seedCompany('10270000000003', 'Empresa Completa');
     const eid = await seedEmployee(cid, '33344455560', 'Titular Completo');
     const cycleId = await seedCopsoqCycle(cid);
@@ -359,17 +373,24 @@ describe('Route Handler GET /api/portal/lgpd/portability — 200 sucesso', () =>
     expect(res.status).toBe(200);
     expect(capturedHtml).not.toBeNull();
     const html = capturedHtml ?? '';
-    // Preserva referencias canonicas literais do template §19.6.
-    expect(html).toContain('Portabilidade de dados pessoais');
-    expect(html).toContain('Instrumento A — Autoavaliação');
-    expect(html).toContain('Instrumento D — Avaliação do líder direto');
-    expect(html).toContain('Radar NR-1 (COPSOQ)');
-    expect(html).toContain('Perfil Individual — respostas brutas');
+    // ME-1.12.a: PDF do portal passa `modo: 'colaborador'` ao
+    // template. As 4 secoes de respostas brutas sao SUPRIMIDAS mesmo
+    // quando o banco tem respostas. Titulo canonico passa a ser
+    // "Meus dados pessoais"; a secao "Termo de aceite" aparece no
+    // final. O PDF integral §19.6 fica no endpoint SA (coberto por
+    // `tests/integration/me-1-12-lgpd-despacho-a.test.ts`).
+    expect(html).toContain('Meus dados pessoais');
+    expect(html).not.toContain('Portabilidade de dados pessoais');
+    expect(html).not.toContain('Instrumento A — Autoavaliação');
+    expect(html).not.toContain('Instrumento D — Avaliação do líder direto');
+    expect(html).not.toContain('Radar NR-1 (COPSOQ)');
+    expect(html).not.toContain('Perfil Individual — respostas brutas');
+    expect(html).toContain('Termo de aceite');
     expect(html).toContain('Titular Completo');
     expect(html).toContain('Empresa Completa');
   });
 
-  it('200 titular C-level — payload canonico com A/D/Copsoq vazios por S344', async () => {
+  it('200 titular C-level — PDF modo colaborador suprime secoes brutas (ME-1.12.a)', async () => {
     const cid = await seedCompany('10270000000004', 'Empresa Clevel');
     const clid = await seedClevel(cid, '44455566670', 'CTO Titular');
     await db.insert(individualProfileAssessments).values({
@@ -393,13 +414,19 @@ describe('Route Handler GET /api/portal/lgpd/portability — 200 sucesso', () =>
     expect(cd).toContain(`dados_pessoais_CTO_Titular_${NOW_FIXO_YYYYMMDD_COMPACT}.pdf`);
     expect(capturedHtml).not.toBeNull();
     const html = capturedHtml ?? '';
-    // Secoes A/D/Copsoq presentes canonicamente mas com "Nenhuma resposta"
-    // (S344 bit-exact).
-    const contarOcorrencias = (needle: string): number =>
-      (html.match(new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) ?? []).length;
-    // A secao de Instrumento A + D + COPSOQ tem "Nenhuma resposta registrada."
-    expect(contarOcorrencias('Nenhuma resposta registrada.')).toBeGreaterThanOrEqual(3);
-    // Perfil Individual da C-level nao esta vazio.
+    // ME-1.12.a: PDF do portal passa `modo: 'colaborador'` ao
+    // template para C-levels tambem. As 4 secoes de respostas brutas
+    // sao SUPRIMIDAS (nao renderizam "Nenhuma resposta registrada."
+    // porque as secoes inteiras saem do HTML no modo colaborador).
+    // Cadastrais do C-level + termo de aceite preservados canonicamente.
+    expect(html).toContain('Meus dados pessoais');
+    expect(html).not.toContain('Portabilidade de dados pessoais');
+    expect(html).not.toContain('Instrumento A — Autoavaliação');
+    expect(html).not.toContain('Instrumento D — Avaliação do líder direto');
+    expect(html).not.toContain('Radar NR-1 (COPSOQ)');
+    expect(html).not.toContain('Perfil Individual — respostas brutas');
+    expect(html).not.toContain('Nenhuma resposta registrada.');
+    expect(html).toContain('Termo de aceite');
     expect(html).toContain('CTO Titular');
     expect(html).toContain('C-Level');
   });
