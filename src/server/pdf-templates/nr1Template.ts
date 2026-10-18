@@ -224,17 +224,18 @@ function classificarTipoFator(nome: string): 'Fator de risco' | 'Fator de recurs
 // Geometria do radar SVG
 // ============================================================
 //
-// CC079-v6: viewBox e raio aumentados em relacao a v5 para dar espaco
-// aos nomes COMPLETOS dos 8 fatores nos eixos (nunca abreviacoes).
+// CC079-v7: viewBox LARGO (900x560) para acomodar com folga os nomes
+// COMPLETOS dos 8 fatores sem corte. Raio reduzido para que os labels
+// das pontas tenham espaco horizontal. Font-size 11pt.
 
-const RADAR_SVG_CX = 300;
+const RADAR_SVG_CX = 450;
 const RADAR_SVG_CY = 280;
-const RADAR_SVG_MAX_RADIUS = 180;
-const RADAR_SVG_VIEWBOX = '0 0 600 560';
+const RADAR_SVG_MAX_RADIUS = 170;
+const RADAR_SVG_VIEWBOX = '0 0 900 560';
 const RADAR_SVG_NUM_RINGS = 4;
 
 function renderRadarAxisLabels(fatores: readonly Nr1FatorScore[]): string {
-  const labelRadius = RADAR_SVG_MAX_RADIUS + 50;
+  const labelRadius = RADAR_SVG_MAX_RADIUS + 32;
   return fatores
     .map((f, idx) => {
       const p = projectRadarPoint(
@@ -252,7 +253,7 @@ function renderRadarAxisLabels(fatores: readonly Nr1FatorScore[]): string {
       let anchor = 'middle';
       if (cos > 0.3) anchor = 'start';
       else if (cos < -0.3) anchor = 'end';
-      return `<text x="${p.x.toFixed(2)}" y="${p.y.toFixed(2)}" text-anchor="${anchor}" dominant-baseline="middle" font-size="12" font-weight="600" fill="${RADAR_COLORS.labelFill}">${label}</text>`;
+      return `<text x="${p.x.toFixed(2)}" y="${p.y.toFixed(2)}" text-anchor="${anchor}" dominant-baseline="middle" font-size="11" font-weight="600" fill="${RADAR_COLORS.labelFill}">${label}</text>`;
     })
     .join('\n');
 }
@@ -481,6 +482,87 @@ function renderCapaMaisResumo(input: Nr1TemplateInput): string {
 </section>`;
 }
 
+/**
+ * CC079-v7: as 32 afirmacoes do instrumento MVP, agrupadas pelos 8
+ * fatores canonicos (4 itens por fator). Renderizadas em pagina
+ * propria "Instrumento aplicado — os 32 itens" para transparencia
+ * metodologica e auditabilidade do relatorio.
+ */
+const ITENS_INSTRUMENTO_32: ReadonlyArray<{ fator: string; itens: readonly string[] }> = [
+  {
+    fator: 'Exigências quantitativas',
+    itens: [
+      'Tenho mais tarefas do que o tempo disponível permite concluir com qualidade.',
+      'Costumo acumular trabalho pendente ao final do dia ou da semana.',
+      'Para dar conta das minhas atividades, preciso trabalhar em ritmo acima do que considero sustentável.',
+      'Com frequência sinto que o volume de trabalho excede a capacidade da equipe.',
+    ],
+  },
+  {
+    fator: 'Ritmo de trabalho',
+    itens: [
+      'Preciso trabalhar muito rápido para cumprir as demandas diárias.',
+      'Tenho pouco tempo para pausas ou intervalos entre uma tarefa e outra.',
+      'O ritmo cobrado no meu trabalho me deixa mentalmente exausto ao final do dia.',
+      'Sinto pressão constante por entregar mais em menos tempo.',
+    ],
+  },
+  {
+    fator: 'Conflitos de papel',
+    itens: [
+      'Recebo demandas contraditórias de pessoas diferentes na organização.',
+      'Sou cobrado por resultados que dependem de fatores fora do meu controle.',
+      'Preciso executar tarefas que considero fora do meu escopo de trabalho.',
+      'Meus deveres e responsabilidades não estão claramente definidos.',
+    ],
+  },
+  {
+    fator: 'Autonomia',
+    itens: [
+      'Tenho liberdade para decidir como executar as minhas principais tarefas.',
+      'Posso organizar minha sequência de atividades de forma que faça sentido para mim.',
+      'Costumo participar das decisões que afetam diretamente meu trabalho diário.',
+      'Tenho flexibilidade para ajustar meus horários conforme necessidades pessoais ou da equipe.',
+    ],
+  },
+  {
+    fator: 'Suporte social do líder',
+    itens: [
+      'Meu líder está disponível quando preciso de orientação ou apoio.',
+      'Meu líder valoriza e reconhece o meu trabalho.',
+      'Recebo do meu líder feedback claro sobre o meu desempenho.',
+      'Meu líder demonstra interesse genuíno pelo meu bem-estar.',
+    ],
+  },
+  {
+    fator: 'Suporte social de colegas',
+    itens: [
+      'Posso contar com meus colegas quando preciso de ajuda para resolver um problema.',
+      'Meus colegas demonstram respeito e consideração no dia a dia.',
+      'Existe cooperação e parceria entre as pessoas da minha equipe.',
+      'Sinto que faço parte de uma equipe que trabalha junto por objetivos comuns.',
+    ],
+  },
+  {
+    fator: 'Insegurança no trabalho',
+    itens: [
+      'Sinto que meu vínculo com a empresa é estável.',
+      'Tenho clareza sobre as perspectivas do meu cargo nos próximos meses.',
+      'Costumo me preocupar com mudanças organizacionais que possam afetar minha posição.',
+      'As mudanças na empresa costumam ser comunicadas com transparência.',
+    ],
+  },
+  {
+    fator: 'Saúde geral autopercebida',
+    itens: [
+      'Considero meu estado geral de saúde bom.',
+      'Tenho energia suficiente para enfrentar as demandas do meu dia de trabalho.',
+      'Nos últimos meses, meu bem-estar físico e emocional tem se mantido estável.',
+      'Sinto que minha saúde permite desempenhar meu trabalho sem grande desgaste.',
+    ],
+  },
+] as const;
+
 const DESCRICOES_FATORES: Record<string, string> = {
   'Exigências quantitativas':
     'Mede a percepção do respondente sobre volume de trabalho e prazo disponível. Escores altos indicam demandas dimensionadas de forma saudável.',
@@ -571,20 +653,30 @@ function renderAlertasEmpresa(input: Nr1TemplateInput): string {
 </section>`;
 }
 
-/** Pagina 5 — Rastreabilidade basica. */
-function renderRastreabilidadeBasica(input: Nr1TemplateInput): string {
-  const invalidados = Math.max(0, input.ciclo.totalElegiveis - input.ciclo.totalRespondentes);
-  return `<section class="page-break">
-  <h2>Rastreabilidade e integridade do relatório</h2>
-  <p style="font-size:10pt;">Este relatório foi gerado automaticamente pelo módulo Radar NR-1 do ROIP APP no fechamento do ciclo, a partir das respostas válidas registradas em base de dados. Os campos abaixo permitem a verificação técnica e histórica do documento.</p>
-  <div class="trace-card">
-    <div><strong>Empresa:</strong> ${escapeHtml(input.company.nomeFantasia)}</div>
-    <div><strong>Identificador do ciclo:</strong> <code>${escapeHtml(input.ciclo.cicloRotulo)}</code></div>
-    <div><strong>Data de abertura:</strong> ${escapeHtml(formatDateBR(input.ciclo.dataAbertura))} · <strong>Data de fechamento:</strong> ${escapeHtml(formatDateBR(input.ciclo.dataFechamento))}</div>
-    <div><strong>Respondentes elegíveis:</strong> ${input.ciclo.totalElegiveis} · <strong>Efetivos válidos:</strong> ${input.ciclo.totalRespondentes} · <strong>Diferença (invalidados + não respondidos):</strong> ${invalidados}</div>
-    <div><strong>Escala do instrumento:</strong> 0 (Nunca) · 1 (Quase nunca) · 2 (Às vezes) · 3 (Quase sempre) · 4 (Sempre)</div>
+/**
+ * CC079-v7: Pagina "Instrumento aplicado — os 32 itens". Logo apos a
+ * descricao de cada fator, apresenta as 32 afirmacoes do instrumento
+ * agrupadas pelos 8 fatores (4 itens por fator). Sem escala — a
+ * escala eh referenciada apenas na rastreabilidade final.
+ */
+function renderInstrumentoAplicado(): string {
+  const blocos = ITENS_INSTRUMENTO_32.map((bloco) => {
+    const itens = bloco.itens
+      .map((texto) => `<li class="instrumento-item">${escapeHtml(texto)}</li>`)
+      .join('\n');
+    return `<div class="instrumento-fator">
+  <div class="instrumento-fator-header">${escapeHtml(bloco.fator)}</div>
+  <ol class="instrumento-item-list">
+${itens}
+  </ol>
+</div>`;
+  }).join('\n');
+  return `<section class="page-break instrumento-page">
+  <h2>Instrumento aplicado — os 32 itens</h2>
+  <p style="font-size:9.5pt;">As 32 afirmações apresentadas aos respondentes, agrupadas pelos 8 fatores psicossociais avaliados.</p>
+  <div class="instrumento-grid">
+${blocos}
   </div>
-  <p class="muted" style="font-size:9pt; line-height:1.55; margin-top:3mm;">Esta é a identificação técnica resumida do ciclo. A rastreabilidade completa — com hash SHA-256 do conteúdo, versão do instrumento, nota de auditoria de edição e timestamp detalhado — aparece na última página do relatório.</p>
 </section>`;
 }
 
@@ -1190,10 +1282,12 @@ function renderSugestoesProximosPassos(input: Nr1TemplateInput): string {
 }
 
 /**
- * Pagina final — Rastreabilidade e integridade do relatorio (completa).
- * Contrapartida da p.5 (basica). Esta aqui tem hash SHA-256, versao do
- * instrumento, breakdown de respondentes, nota de auditoria de edicao
- * quando aplicavel e nota final elaborada.
+ * Pagina final — Rastreabilidade e integridade do relatorio.
+ * CC079-v7: unica aparicao de rastreabilidade (basica removida da
+ * pipeline). Layout minimalista: card tecnico enxuto + nota final +
+ * nota de auditoria ambar quando aplicavel. Sem hash SHA-256, sem
+ * versao do instrumento, sem total de itens, sem texto introdutorio
+ * longo — padrao canonico v7 definido pelo Bruno.
  */
 function renderRastreabilidadeCompleta(input: Nr1TemplateInput): string {
   const notaAuditoria = input.notaAuditoriaEdicao
@@ -1206,7 +1300,6 @@ function renderRastreabilidadeCompleta(input: Nr1TemplateInput): string {
   );
   return `<section class="page-break">
   <h2>Rastreabilidade e integridade do relatório</h2>
-  <p style="font-size:10pt;">Rastreabilidade completa do documento — hash do conteúdo, versão do instrumento, breakdown de respondentes e nota de auditoria quando aplicável. Permite verificação forense da integridade e reprodução bit-exact a partir dos dados persistidos.</p>
   <div class="trace-card">
     <div><strong>Empresa:</strong> ${escapeHtml(input.company.nomeFantasia)}</div>
     <div><strong>Identificador do ciclo:</strong> <code>${escapeHtml(input.ciclo.cicloRotulo)}</code></div>
@@ -1214,11 +1307,9 @@ function renderRastreabilidadeCompleta(input: Nr1TemplateInput): string {
     <div><strong>Respondentes elegíveis:</strong> ${input.ciclo.totalElegiveis} · <strong>Efetivos válidos:</strong> ${input.ciclo.totalRespondentes} · <strong>Diferença (invalidados + não respondidos):</strong> ${invalidados}</div>
     <div><strong>Gerado em:</strong> ${escapeHtml(geradoEmBrt)}</div>
     <div><strong>Escala do instrumento:</strong> 0 (Nunca) · 1 (Quase nunca) · 2 (Às vezes) · 3 (Quase sempre) · 4 (Sempre)</div>
-    <div><strong>Total de itens do questionário:</strong> 32 (8 fatores × 4 itens)</div>
-    <div><strong>Versão do instrumento:</strong> <code>placeholder_MVP_v1</code></div>
   </div>
   ${notaAuditoria}
-  <p class="muted" style="font-size:9pt; line-height:1.55; margin-top:4mm;"><strong>Nota final.</strong> O ciclo, uma vez fechado, é imutável. Este relatório pode ser regerado a qualquer momento a partir da base de dados original, apresentando idêntico conteúdo. Os itens do instrumento nesta versão são placeholder e serão substituídos por itens licenciados antes do lançamento comercial da plataforma — quando a substituição ocorrer, respostas anteriores permanecerão preservadas sem recalcular scores históricos.</p>
+  <p class="muted" style="font-size:9pt; line-height:1.55; margin-top:4mm;"><strong>Nota final.</strong> O ciclo, uma vez fechado, é imutável. Este relatório pode ser regerado a qualquer momento a partir da base de dados original, apresentando idêntico conteúdo.</p>
 </section>`;
 }
 
@@ -1231,8 +1322,8 @@ export function renderNr1ReportHTML(input: Nr1TemplateInput): string {
   partes.push(renderCapaMaisResumo(input));
   partes.push(renderRadarEmpresa(input));
   partes.push(renderDescricoesFatoresPagina(input));
+  partes.push(renderInstrumentoAplicado());
   partes.push(renderAlertasEmpresa(input));
-  partes.push(renderRastreabilidadeBasica(input));
   partes.push(renderRadarDepartamentos(input));
   partes.push(renderInsuficientes(input));
   partes.push(renderDivergencias(input));

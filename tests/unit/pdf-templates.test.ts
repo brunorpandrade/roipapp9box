@@ -310,9 +310,9 @@ describe('nr1Template (ME-050/51)', () => {
     expect(renderNr1ReportHTML(CANON_NR1)).toBe(renderNr1ReportHTML(CANON_NR1));
   });
 
-  it('renderNr1ReportHTML — cobre as secoes editoriais do CC079-v6', () => {
+  it('renderNr1ReportHTML — cobre as secoes editoriais do CC079-v7', () => {
     const html = renderNr1ReportHTML(CANON_NR1);
-    // Capa com hero em duas linhas separadas (v6).
+    // Capa com hero em duas linhas separadas (v6+).
     expect(html).toContain('cover-title-line1');
     expect(html).toContain('cover-title-line2');
     expect(html).toContain('Radar NR-1');
@@ -323,11 +323,19 @@ describe('nr1Template (ME-050/51)', () => {
     expect(html).toContain('Radar da empresa');
     // Descricao dos 8 fatores.
     expect(html).toContain('Descrição de cada fator');
-    // Rastreabilidade basica (v6 — na p.5).
+    // Instrumento aplicado — nova pagina da v7.
+    expect(html).toContain('Instrumento aplicado — os 32 itens');
+    expect(html).toContain('instrumento-grid');
+    expect(html).toContain('instrumento-fator-header');
+    // Rastreabilidade UNICA (basica removida na v7).
     const rastreabilidadeCount = (html.match(/Rastreabilidade e integridade do relatório/g) ?? [])
       .length;
-    expect(rastreabilidadeCount).toBe(2); // basica (p.5) + completa (final)
-    // Radar por departamento (v6 — uma pagina por dept com nome no titulo)
+    expect(rastreabilidadeCount).toBe(1);
+    // Nao deve ter mais o texto introdutorio longo nem versao do instrumento.
+    expect(html).not.toContain('Rastreabilidade completa do documento — hash');
+    expect(html).not.toContain('placeholder_MVP_v1');
+    expect(html).not.toContain('verificação forense');
+    // Radar por departamento (v6+ — uma pagina por dept com nome no titulo)
     expect(html).toContain('Radar por departamento — Manufatura');
     // Tabela 3 colunas canonica.
     expect(html).toContain('data-table-3col');
@@ -336,19 +344,43 @@ describe('nr1Template (ME-050/51)', () => {
     expect(html).toContain('<th class="right">Empresa</th>');
     // Departamento critico (presente em CANON_NR1).
     expect(html).toContain('situação crítica');
-    // Alertas (v6: duas secoes — resumo empresa + completo).
+    // Alertas (v6+: duas secoes — resumo empresa + completo).
     expect(html).toContain('Alertas informativos por fator');
     expect(html).toContain('Alertas informativos por fator — visão completa');
     // Analise de convergencia e divergencia.
     expect(html).toContain('Análise de convergência e divergência');
     // Sugestoes de proximos passos.
     expect(html).toContain('Sugestões de próximos passos');
-    // Vocabulario 'canônico/canônica' nao pode vazar no cliente.
+    // Vocabulario proibido nao pode vazar no cliente.
     expect(html).not.toContain('Sumário');
     expect(html).not.toContain('canônico');
     expect(html).not.toContain('canônica');
     expect(html).not.toContain('SEÇÃO ');
     expect(html).not.toContain('Seção ');
+  });
+
+  it('renderNr1ReportHTML — v7: pagina do instrumento contem os 32 itens', () => {
+    const html = renderNr1ReportHTML(CANON_NR1);
+    // Headers dos 8 fatores.
+    expect(html).toContain('>Exigências quantitativas</div>');
+    expect(html).toContain('>Ritmo de trabalho</div>');
+    expect(html).toContain('>Conflitos de papel</div>');
+    expect(html).toContain('>Autonomia</div>');
+    expect(html).toContain('>Suporte social do líder</div>');
+    expect(html).toContain('>Suporte social de colegas</div>');
+    expect(html).toContain('>Insegurança no trabalho</div>');
+    expect(html).toContain('>Saúde geral autopercebida</div>');
+    // 32 itens no total (4 por fator).
+    const itensCount = (html.match(/<li class="instrumento-item">/g) ?? []).length;
+    expect(itensCount).toBe(32);
+    // Primeiro item (ancora de amostragem).
+    expect(html).toContain(
+      'Tenho mais tarefas do que o tempo disponível permite concluir com qualidade.',
+    );
+    // Ultimo item (ancora de amostragem).
+    expect(html).toContain(
+      'Sinto que minha saúde permite desempenhar meu trabalho sem grande desgaste.',
+    );
   });
 
   it('renderNr1ReportHTML — v6: nomes completos dos fatores nos eixos do radar', () => {

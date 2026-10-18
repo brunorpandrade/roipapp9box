@@ -816,55 +816,154 @@ export const LAYOUT_BASE_CSS = `
      com nomes completos, lista enxuta de deptos insuficientes.
      ============================================================ */
 
-  /* Hero da capa em duas linhas separadas. */
+  /* Hero da capa — v7: compacto, line2 em UMA linha. */
   .cover-hero {
-    margin-top: 2mm;
-    margin-bottom: 12mm;
+    margin-top: 0;
+    margin-bottom: 7mm;
     padding-right: 50mm; /* reserva espaco para o logo no canto */
   }
   .cover-title-line1 {
-    font-size: 36pt;
+    font-size: 32pt;
     font-weight: 700;
     color: #111827;
-    line-height: 1.1;
+    line-height: 1.05;
     letter-spacing: -0.01em;
-    margin-bottom: 4mm;
+    margin-bottom: 3mm;
+    white-space: nowrap;
   }
   .cover-title-line2 {
-    font-size: 28pt;
+    font-size: 20pt;
     font-weight: 700;
     color: #14B8A6;
-    line-height: 1.15;
+    line-height: 1.1;
     letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
   }
 
-  /* Resumo executivo compacto (dentro da capa). */
+  /* Resumo executivo compacto (dentro da capa — v7). */
   .h2-compact {
-    font-size: 15pt;
-    margin-top: 8mm;
-    margin-bottom: 3mm;
-    padding-bottom: 1.5mm;
+    font-size: 14pt;
+    margin-top: 6mm;
+    margin-bottom: 2.5mm;
+    padding-bottom: 1.2mm;
     border-bottom: 2px solid #14B8A6;
   }
   .resumo-exec-paragrafo {
-    font-size: 10pt;
+    font-size: 9.5pt;
     color: #374151;
     margin-bottom: 3mm;
-    line-height: 1.5;
+    line-height: 1.45;
+  }
+  /* Capa v7: reduzir meta-grid para caber tudo numa pagina. */
+  .cover-page .cover-meta {
+    padding: 4mm 6mm;
+    margin-bottom: 5mm;
+  }
+  .cover-page .cover-meta-row {
+    padding: 1.5mm 0;
+    font-size: 9.5pt;
+  }
+  .cover-page .cover-note {
+    padding: 3mm 5mm;
+    font-size: 9pt;
+    margin-bottom: 4mm;
+  }
+  .cover-page .kpi-card {
+    padding: 2.5mm 4mm;
+  }
+  .cover-page .kpi-value {
+    font-size: 18pt;
+  }
+  .cover-page .gauge-wrap {
+    padding: 3mm 5mm;
+    margin-bottom: 0;
+    margin-top: 3mm;
   }
 
-  /* Radar centralizado — aumentado para a v6. */
+  /* Radar v7 — mais compacto que v6 para dar espaco aos labels
+     completos e caber a tabela do dept na mesma pagina. */
   .radar-stacked .radar-svg-centered {
-    width: 88%;
-    max-width: 150mm;
+    width: 100%;
+    max-width: 125mm;
   }
 
-  /* Pagina de departamento — nao deixa a tabela orfa. */
+  /* Pagina de departamento v7 — garante que radar + tabela caibam
+     na mesma pagina sem corte. */
   .dept-page {
     page-break-inside: avoid;
   }
+  .dept-page .radar-block {
+    margin-bottom: 2mm;
+    padding: 3mm 4mm;
+  }
+  .dept-page .radar-stacked {
+    gap: 2mm;
+  }
+  .dept-page .radar-stacked .radar-svg-centered {
+    width: 72%;
+    max-width: 90mm;
+  }
+  .dept-page .radar-respondentes-cap {
+    font-size: 8.5pt;
+  }
+  .dept-page .radar-legend-biparticao {
+    margin: 1mm 0;
+    font-size: 8.5pt;
+  }
   .dept-page table.data-table-3col {
+    margin-top: 2mm;
+    font-size: 9.5pt;
+  }
+  .dept-page table.data-table-3col tbody td {
+    padding: 1.8mm 3mm;
+  }
+  .dept-page table.data-table-3col thead th {
+    padding: 2mm 3mm;
+  }
+  .dept-page p {
+    margin-bottom: 2mm;
+  }
+
+  /* ============================================================
+     ME-1.3c CC079-v7 — pagina "Instrumento aplicado — os 32 itens".
+     Grid de 8 blocos (um por fator) em 2 colunas; 4 itens numerados
+     por bloco. Sem a escala — ela aparece apenas na rastreabilidade.
+     ============================================================ */
+  .instrumento-page {
+    page-break-inside: avoid;
+  }
+  .instrumento-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3mm 5mm;
     margin-top: 3mm;
+  }
+  .instrumento-fator {
+    page-break-inside: avoid;
+  }
+  .instrumento-fator-header {
+    font-size: 9pt;
+    font-weight: 700;
+    color: #0F766E;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding-bottom: 1mm;
+    margin-bottom: 1.5mm;
+    border-bottom: 1px solid #99F6E4;
+  }
+  .instrumento-item-list {
+    padding-left: 5mm;
+    margin: 0;
+    font-size: 8.5pt;
+    color: #374151;
+    line-height: 1.4;
+  }
+  .instrumento-item {
+    margin-bottom: 1.3mm;
+  }
+  .instrumento-item:last-child {
+    margin-bottom: 0;
   }
 
   /* Lista enxuta de departamentos com amostra insuficiente. */
