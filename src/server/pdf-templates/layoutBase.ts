@@ -900,41 +900,39 @@ export const LAYOUT_BASE_CSS = `
     font-size: 10.5pt;
   }
 
-  /* Pagina de departamento v7 — garante que radar + tabela caibam
-     na mesma pagina sem corte. */
+  /* Pagina de departamento v7.2 — radar GRANDE igual ao da pagina
+     da empresa (max-width 165mm, mesma legenda 10.5pt), com tabela
+     3 colunas compactada para caber radar + tabela na mesma pagina
+     sem corte. Nao ha mais override reduzindo o SVG do radar nem a
+     legenda da biparticao — a dept-page herda os valores da v7.1. */
   .dept-page {
     page-break-inside: avoid;
   }
   .dept-page .radar-block {
     margin-bottom: 2mm;
-    padding: 3mm 4mm;
+    padding: 2.5mm 4mm;
   }
   .dept-page .radar-stacked {
-    gap: 2mm;
-  }
-  .dept-page .radar-stacked .radar-svg-centered {
-    width: 72%;
-    max-width: 90mm;
-  }
-  .dept-page .radar-respondentes-cap {
-    font-size: 8.5pt;
-  }
-  .dept-page .radar-legend-biparticao {
-    margin: 1mm 0;
-    font-size: 8.5pt;
+    gap: 2.5mm;
+    margin-top: 1mm;
   }
   .dept-page table.data-table-3col {
     margin-top: 2mm;
-    font-size: 9.5pt;
+    font-size: 9pt;
   }
   .dept-page table.data-table-3col tbody td {
-    padding: 1.8mm 3mm;
+    padding: 1.5mm 3mm;
+    font-size: 9pt;
   }
   .dept-page table.data-table-3col thead th {
-    padding: 2mm 3mm;
+    padding: 1.5mm 3mm;
+    font-size: 8pt;
   }
   .dept-page p {
     margin-bottom: 2mm;
+  }
+  .dept-page .dept-page-head {
+    margin-bottom: 1.5mm;
   }
 
   /* ============================================================
