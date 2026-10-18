@@ -1171,15 +1171,18 @@ export const LAYOUT_BASE_CSS = `
   .ninebox-legend-full {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 4mm 6mm;
+    gap: 5mm 4mm;
     margin-top: 10mm;
-    font-size: 10pt;
+    font-size: 9pt;
     color: #374151;
   }
+  /* v4: nowrap em cada item + fonte 9pt para que nenhum rotulo quebre em
+     duas linhas; 3 colunas x 3 linhas canonicas. */
   .ninebox-legend-full .leg-item {
     display: flex;
     align-items: center;
     gap: 2mm;
+    white-space: nowrap;
   }
   .ninebox-legend-full .leg-swatch {
     display: inline-block;
