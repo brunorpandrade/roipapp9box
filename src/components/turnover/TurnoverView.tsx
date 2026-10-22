@@ -140,19 +140,21 @@ export function TurnoverView(props: TurnoverViewProps): JSX.Element {
         <DocumentosPadraoClient documentos={documentos} />
       </div>
 
-      {resumo === null || data.rolling12m === null ? (
+      {resumo === null ? (
         <div style={{ ...CARD, fontSize: 14, color: COLORS.text.secondary }}>
           {TURNOVER_SEM_TRIMESTRE_FECHADO}
         </div>
       ) : (
         <>
-          <section aria-label="Últimos 4 trimestres fechados">
-            <Indicador
-              titulo="Últimos 4 trimestres fechados (rolling 12 meses)"
-              saidas={data.rolling12m.saidas}
-              percentual={data.rolling12m.percentual}
-            />
-          </section>
+          {data.rolling12m !== null ? (
+            <section aria-label="Últimos 4 trimestres fechados">
+              <Indicador
+                titulo="Últimos 4 trimestres fechados (rolling 12 meses)"
+                saidas={data.rolling12m.saidas}
+                percentual={data.rolling12m.percentual}
+              />
+            </section>
+          ) : null}
 
           <nav
             aria-label="Navegação por trimestre"

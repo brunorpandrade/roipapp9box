@@ -32,7 +32,8 @@ import {
 } from '../../../components/dados-mensais/MeusLideradosClient';
 import { closeDbClient, createDbClient } from '../../../db/client';
 import { resolveDatabaseUrl } from '../../../lib/db/resolveDatabaseUrl';
-import { loadPlatformMenuContext } from '../../../lib/session/platformMenuContext';
+import { loadPlatformMenuCtxCookie } from '../../../lib/session/platformMenuCookie';
+import { PainelToggle } from '../../../components/shell/PainelToggle';
 import { getServerSession } from '../../../server/session/serverSession';
 import { getMonthlyClosureStatusByMonth } from '../../../server/services/monthlyClosureStatus';
 import { headerUserFromSession } from '../../../lib/session/headerUser';
@@ -94,7 +95,9 @@ export default async function MeusLideradosPage(): Promise<JSX.Element> {
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    const menu = await loadPlatformMenuContext(client.db, session);
+    // CC079-2 (ME-1.16) — le cookie `menu.mode` para que rh_lider em
+    // modo lider veja o menu canonico de lider (menuMode='lider').
+    const menu = await loadPlatformMenuCtxCookie(client.db, session);
     if (menu === null) {
       redirect('/');
     }
@@ -112,6 +115,11 @@ export default async function MeusLideradosPage(): Promise<JSX.Element> {
     return (
       <Layout
         menuItems={menu.menuItems}
+        panelToggle={
+          menu.menuModeScenario !== null ? (
+            <PainelToggle currentMode={menu.menuMode} scenario={menu.menuModeScenario} />
+          ) : undefined
+        }
         header={{
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,

@@ -466,31 +466,35 @@ describe('ME-057c — historico consolidado da empresa (MySQL real, §14.21)', (
     });
 
     it('UNION real de 4 fontes retorna todas', async () => {
+      // CC079-4 L113 — datas relativas a NOW. Correcao do defeito
+      // pre-existente D-TEST-TIME-DEPENDENT: datas fixas em 2026-07-25..28
+      // caiam fora do range -90d uma vez que `Date.now()` passasse de
+      // 2026-10-22 ~ 10h UTC em diante. Granularidade de hora relevante
+      // porque NOW=Date.now()+1d (hora atual) e os eventos seedavam com
+      // :10:00:00 UTC; a janela movia 1 hora por hora rodada do dia.
+      const d1 = new Date(NOW.getTime() - 4 * 86400000);
+      const d2 = new Date(NOW.getTime() - 3 * 86400000);
+      const d3 = new Date(NOW.getTime() - 2 * 86400000);
+      const d4 = new Date(NOW.getTime() - 1 * 86400000);
       await seedRespfin(
         companyIdA,
         'atribuido',
         { type: 'none', id: null },
         { type: 'employee', id: colabIdA },
         'RF 1',
-        new Date('2026-07-25T10:00:00.000Z'),
+        d1,
       );
-      await seedDesbloqueio(
-        companyIdA,
-        '2026-06',
-        'rh',
-        'Deblo 1',
-        new Date('2026-07-26T10:00:00.000Z'),
-      );
+      await seedDesbloqueio(companyIdA, '2026-06', 'rh', 'Deblo 1', d2);
       await seedTransferBatch(
         '22222222-2222-2222-2222-222222222222',
         'Trans 1',
         [colabIdA],
         { liderId: liderIdA },
-        new Date('2026-07-27T10:00:00.000Z'),
+        d3,
       );
       await seedSolicitacao(companyIdA, 'employee', rhIdA, '2026-05', 'rh', 'aprovada', 'Sol 1', {
         decididoPor: 1,
-        createdAt: new Date('2026-07-28T10:00:00.000Z'),
+        createdAt: d4,
       });
       const r = await loadCompanyHistoryPage(
         client.db,

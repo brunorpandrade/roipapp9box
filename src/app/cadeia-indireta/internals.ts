@@ -17,6 +17,7 @@
 
 import type { RoipDatabase } from '../../db/client';
 import type { ProfileKey } from '../../lib/menu/menuConfig';
+import { MENU_MODE_DEFAULT, type MenuMode } from '../../lib/menu/menuMode';
 import {
   loadPlatformMenuContext,
   type PlatformMenuContext,
@@ -58,8 +59,13 @@ export interface CadeiaIndiretaAccess {
 export async function resolveCadeiaIndiretaAccess(
   db: RoipDatabase,
   session: PlatformSession,
+  menuMode: MenuMode = MENU_MODE_DEFAULT,
 ): Promise<CadeiaIndiretaAccess | null> {
-  const menu = await loadPlatformMenuContext(db, session);
+  // CC079-3 (ME-1.16) — mantem a funcao pura (sem I/O de headers): o
+  // `page.tsx` le o cookie via `loadPlatformMenuCtxCookie` e injeta o
+  // `menuMode` resolvido aqui. Preserva callers de teste (que invocam
+  // esta funcao fora de request scope do Next 15).
+  const menu = await loadPlatformMenuContext(db, session, menuMode);
   if (menu === null) {
     return null;
   }

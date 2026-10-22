@@ -75,7 +75,8 @@ import { Layout } from '../../components/shell/Layout';
 import { closeDbClient, createDbClient } from '../../db/client';
 import { COLORS } from '../../lib/design-tokens/colors';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
-import { loadPlatformMenuContext } from '../../lib/session/platformMenuContext';
+import { loadPlatformMenuCtxCookie } from '../../lib/session/platformMenuCookie';
+import { PainelToggle } from '../../components/shell/PainelToggle';
 import { getServerSession } from '../../server/session/serverSession';
 import { carregarFichaCadastralAction } from '../_shared/fichaCadastral/actions';
 
@@ -113,7 +114,9 @@ export default async function MinhaEquipePage(props: PageProps): Promise<JSX.Ele
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    const menu = await loadPlatformMenuContext(client.db, session);
+    // CC079-2 (ME-1.16) — le cookie `menu.mode` para que rh_lider em
+    // modo lider veja o menu canonico de lider.
+    const menu = await loadPlatformMenuCtxCookie(client.db, session);
     if (menu === null) {
       // Registro deletado entre emissao e verificacao — sessao invalida.
       redirect('/');
@@ -136,6 +139,11 @@ export default async function MinhaEquipePage(props: PageProps): Promise<JSX.Ele
     return (
       <Layout
         menuItems={menu.menuItems}
+        panelToggle={
+          menu.menuModeScenario !== null ? (
+            <PainelToggle currentMode={menu.menuMode} scenario={menu.menuModeScenario} />
+          ) : undefined
+        }
         header={{
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,

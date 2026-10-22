@@ -14,13 +14,16 @@
 //
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { JSX } from 'react';
 
 import { Layout } from '../../components/shell/Layout';
+import { PainelToggle } from '../../components/shell/PainelToggle';
 import { closeDbClient, createDbClient } from '../../db/client';
 import { COLORS } from '../../lib/design-tokens/colors';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import { MENU_MODE_COOKIE_NAME, resolveMenuMode } from '../../lib/menu/menuMode';
 import { getServerSession } from '../../server/session/serverSession';
 import { carregarFichaCadastralAction } from '../_shared/fichaCadastral/actions';
 import { TodosColaboradoresClient } from '../minha-equipe/_client';
@@ -55,7 +58,11 @@ export default async function CadeiaIndiretaPage(props: PageProps): Promise<JSX.
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    const access = await resolveCadeiaIndiretaAccess(client.db, session);
+    // CC079-3 (ME-1.16) — le cookie `menu.mode` aqui (dentro de request
+    // scope do Next 15) e injeta o `menuMode` resolvido no helper puro.
+    const cookieStore = await cookies();
+    const menuMode = resolveMenuMode(cookieStore.get(MENU_MODE_COOKIE_NAME)?.value);
+    const access = await resolveCadeiaIndiretaAccess(client.db, session, menuMode);
     if (access === null) {
       redirect('/access-denied?rota=/cadeia-indireta');
     }
@@ -74,6 +81,14 @@ export default async function CadeiaIndiretaPage(props: PageProps): Promise<JSX.
     return (
       <Layout
         menuItems={access.menu.menuItems}
+        panelToggle={
+          access.menu.menuModeScenario !== null ? (
+            <PainelToggle
+              currentMode={access.menu.menuMode}
+              scenario={access.menu.menuModeScenario}
+            />
+          ) : undefined
+        }
         header={{
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,

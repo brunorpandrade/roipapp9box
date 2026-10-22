@@ -22,7 +22,8 @@ import type { FaturamentoClientProps } from '../../components/faturamento/intern
 import { Layout } from '../../components/shell/Layout';
 import { closeDbClient, createDbClient } from '../../db/client';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
-import { loadPlatformMenuContext } from '../../lib/session/platformMenuContext';
+import { loadPlatformMenuCtxCookie } from '../../lib/session/platformMenuCookie';
+import { PainelToggle } from '../../components/shell/PainelToggle';
 import { createRateLimiter } from '../../server/auth/rateLimit';
 import { createMonthlyClosureRouter } from '../../server/routers/monthlyClosure';
 import { createRevenueRouter } from '../../server/routers/revenue';
@@ -52,7 +53,9 @@ export default async function FaturamentoMensalPage(): Promise<JSX.Element> {
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    const menuCtx = await loadPlatformMenuContext(client.db, session);
+    // CC079-2 (ME-1.16) — le cookie `menu.mode` para que rh_lider em
+    // modo lider veja o menu canonico de lider.
+    const menuCtx = await loadPlatformMenuCtxCookie(client.db, session);
     if (menuCtx === null) {
       redirect('/');
     }
@@ -85,6 +88,11 @@ export default async function FaturamentoMensalPage(): Promise<JSX.Element> {
     return (
       <Layout
         menuItems={menuCtx.menuItems}
+        panelToggle={
+          menuCtx.menuModeScenario !== null ? (
+            <PainelToggle currentMode={menuCtx.menuMode} scenario={menuCtx.menuModeScenario} />
+          ) : undefined
+        }
         header={{
           leftMode: 'in_company',
           companyDisplayName: session.companyDisplayName,

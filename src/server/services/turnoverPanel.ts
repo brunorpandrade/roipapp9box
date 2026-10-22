@@ -229,19 +229,29 @@ export async function loadTurnoverPage(
   const maisRecente = fechados[0];
   const trimestreAtual = getTrimestreEmAndamento(now);
   // ME-1.14 — abertura canonica do trimestre em andamento quando pedido
-  // explicitamente via URL (link do card em tempo real).
-  if (trimestrePedido === trimestreAtual && maisRecente !== undefined) {
+  // explicitamente via URL (link do card em tempo real). CC079-2: path
+  // parcial funciona MESMO SEM trimestre fechado (empresa recem-ativada
+  // tipo Embrastec — fechados=[], maisRecente=undefined). rolling12m
+  // fica null nesse caso (sem referencia canonica historica), e
+  // trimestreAnterior aponta para o ultimo fechado quando existe.
+  if (trimestrePedido === trimestreAtual) {
     const parcialItem: ClosedQuarterItem = {
       trimestre: trimestreAtual,
       label: formatTrimestreEmAndamentoLabel(trimestreAtual),
     };
     const { resumo } = await resumoDoTrimestre(db, companyId, parcialItem, departamento, 'parcial');
-    const referencia = await resumoDoTrimestre(db, companyId, maisRecente, departamento);
+    const rolling12m =
+      maisRecente !== undefined
+        ? {
+            ...(await resumoDoTrimestre(db, companyId, maisRecente, departamento)).anualizado,
+            trimestreReferencia: maisRecente.trimestre,
+          }
+        : null;
     return {
       trimestresFechados: fechados,
       resumo,
-      rolling12m: { ...referencia.anualizado, trimestreReferencia: maisRecente.trimestre },
-      trimestreAnterior: maisRecente.trimestre,
+      rolling12m,
+      trimestreAnterior: maisRecente?.trimestre ?? null,
       trimestreSeguinte: null,
     };
   }
