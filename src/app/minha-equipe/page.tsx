@@ -75,6 +75,14 @@ import { Layout } from '../../components/shell/Layout';
 import { closeDbClient, createDbClient } from '../../db/client';
 import { COLORS } from '../../lib/design-tokens/colors';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import {
+  buildFamilyLabelsForCompany,
+  type FamilyLabelsByKey,
+} from '../../lib/job-family/buildFamilyLabelsForCompany';
+import {
+  buildActiveFamilyKeysForCompany,
+  type ActiveFamilyKeys,
+} from '../../lib/job-family/buildActiveFamilyKeysForCompany';
 import { loadPlatformMenuCtxCookie } from '../../lib/session/platformMenuCookie';
 import { PainelToggle } from '../../components/shell/PainelToggle';
 import { getServerSession } from '../../server/session/serverSession';
@@ -135,6 +143,13 @@ export default async function MinhaEquipePage(props: PageProps): Promise<JSX.Ele
       scopedFilters,
       leaderTipo,
     );
+    // ME-1.17.c CC079-1c-2+ — labels canonicos + lista de ativas da
+    // familia da empresa (dropdown mostra apenas o que ela ativou).
+    const familyLabels: FamilyLabelsByKey = await buildFamilyLabelsForCompany(client.db, companyId);
+    const activeFamilyKeys: ActiveFamilyKeys = await buildActiveFamilyKeysForCompany(
+      client.db,
+      companyId,
+    );
 
     return (
       <Layout
@@ -191,6 +206,8 @@ export default async function MinhaEquipePage(props: PageProps): Promise<JSX.Ele
             initialDepartamentos={pageData.departamentos}
             initialLideres={pageData.lideres}
             searchIndex={pageData.searchIndex}
+            familyLabels={familyLabels}
+            activeFamilyKeys={activeFamilyKeys}
             variant="rh"
             novoColaboradorHref="/colaborador/novo"
             editarColaboradorHrefBase="/colaborador"

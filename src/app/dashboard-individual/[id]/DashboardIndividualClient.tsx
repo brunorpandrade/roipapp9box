@@ -6,6 +6,7 @@ import type { CSSProperties, JSX } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { COLORS } from '../../../lib/design-tokens/colors';
+import { formatJobFamily } from '../../../lib/job-family/formatJobFamily';
 import { formatSeniority } from '../../../lib/seniority/formatSeniority';
 import { formatHierarchyLevel } from '../../../lib/hierarchy-level/formatHierarchyLevel';
 
@@ -733,7 +734,8 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
                   {employee.name}
                 </div>
                 <div style={{ fontSize: 12, color: COLORS.text.tertiary }}>
-                  {employee.jobFamily} · {employee.departamento}
+                  {familyLabels?.[employee.jobFamily] ?? formatJobFamily(employee.jobFamily)} ·{' '}
+                  {employee.departamento}
                 </div>
                 {employee.liderDireto !== null ? (
                   <div style={{ fontSize: 12, color: COLORS.text.tertiary }}>

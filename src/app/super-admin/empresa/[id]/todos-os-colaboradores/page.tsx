@@ -61,6 +61,10 @@ import {
   buildFamilyLabelsForCompany,
   type FamilyLabelsByKey,
 } from '../../../../../lib/job-family/buildFamilyLabelsForCompany';
+import {
+  buildActiveFamilyKeysForCompany,
+  type ActiveFamilyKeys,
+} from '../../../../../lib/job-family/buildActiveFamilyKeysForCompany';
 import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 import { headerUserFromSession } from '../../../../../lib/session/headerUser';
 
@@ -101,6 +105,13 @@ export default async function TodosColaboradoresPage(props: PageProps): Promise<
     // `nomeCustomizado` da empresa; propagado ao Client que resolve
     // dropdown de filtro + celulas da tabela + FichaCadastralModal.
     const familyLabels: FamilyLabelsByKey = await buildFamilyLabelsForCompany(client.db, companyId);
+    // ME-1.17.c CC079-1c-2+ — lista das familias ATIVAS da empresa
+    // para o dropdown de filtro (mostra apenas o que a empresa
+    // ativou, nunca os 20 slots custom placeholder).
+    const activeFamilyKeys: ActiveFamilyKeys = await buildActiveFamilyKeysForCompany(
+      client.db,
+      companyId,
+    );
 
     const profileKey = resolveProfileKey({
       session,
@@ -171,6 +182,7 @@ export default async function TodosColaboradoresPage(props: PageProps): Promise<
             initialLideres={pageData.lideres}
             searchIndex={pageData.searchIndex}
             familyLabels={familyLabels}
+            activeFamilyKeys={activeFamilyKeys}
             variant="super_admin"
             novoColaboradorHref={`/super-admin/empresa/${companyId}/colaborador/novo`}
             editarColaboradorHrefBase={`/super-admin/empresa/${companyId}/colaborador`}

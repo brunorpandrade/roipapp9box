@@ -22,6 +22,14 @@ import { PainelToggle } from '../../components/shell/PainelToggle';
 import { closeDbClient, createDbClient } from '../../db/client';
 import { COLORS } from '../../lib/design-tokens/colors';
 import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
+import {
+  buildFamilyLabelsForCompany,
+  type FamilyLabelsByKey,
+} from '../../lib/job-family/buildFamilyLabelsForCompany';
+import {
+  buildActiveFamilyKeysForCompany,
+  type ActiveFamilyKeys,
+} from '../../lib/job-family/buildActiveFamilyKeysForCompany';
 import { loadPlatformMenuCtxCookie } from '../../lib/session/platformMenuCookie';
 import { getServerSession } from '../../server/session/serverSession';
 import { carregarFichaCadastralAction } from '../_shared/fichaCadastral/actions';
@@ -87,6 +95,13 @@ export default async function TodosColaboradoresRHPage(props: PageProps): Promis
     const filters = parseColaboradoresFiltersFromSearchParams(rawParams);
     const serviceFilters = colaboradoresFiltersToServiceInput(filters);
     const pageData = await loadTodosColaboradoresPageForRH(client.db, companyId, serviceFilters);
+    // ME-1.17.c CC079-1c-2+ — labels canonicos + lista de ativas da
+    // familia da empresa (dropdown mostra apenas o que ela ativou).
+    const familyLabels: FamilyLabelsByKey = await buildFamilyLabelsForCompany(client.db, companyId);
+    const activeFamilyKeys: ActiveFamilyKeys = await buildActiveFamilyKeysForCompany(
+      client.db,
+      companyId,
+    );
 
     return (
       <Layout
@@ -144,6 +159,8 @@ export default async function TodosColaboradoresRHPage(props: PageProps): Promis
               initialDepartamentos={pageData.departamentos}
               initialLideres={pageData.lideres}
               searchIndex={pageData.searchIndex}
+              familyLabels={familyLabels}
+              activeFamilyKeys={activeFamilyKeys}
               variant="rh"
               novoColaboradorHref="/colaborador/novo"
               editarColaboradorHrefBase="/colaborador"
@@ -160,6 +177,8 @@ export default async function TodosColaboradoresRHPage(props: PageProps): Promis
               initialDepartamentos={pageData.departamentos}
               initialLideres={pageData.lideres}
               searchIndex={pageData.searchIndex}
+              familyLabels={familyLabels}
+              activeFamilyKeys={activeFamilyKeys}
               variant="rh"
               novoColaboradorHref="/colaborador/novo"
               editarColaboradorHrefBase="/colaborador"

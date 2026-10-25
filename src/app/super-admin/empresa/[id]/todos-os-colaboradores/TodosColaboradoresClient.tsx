@@ -110,6 +110,14 @@ export interface TodosColaboradoresClientProps {
    */
   readonly familyLabels?: Readonly<Record<string, string>>;
   /**
+   * ME-1.17.c CC079-1c-2+ — lista ordenada das familias ATIVAS da
+   * empresa (via `buildActiveFamilyKeysForCompany`). Usada pelo
+   * dropdown de filtro para mostrar apenas o que a empresa ativou,
+   * nunca os 20 slots custom placeholder. Ausente -> fallback bit-
+   * exact a `JOB_FAMILY_VALUES` (preserva callers nao migrados).
+   */
+  readonly activeFamilyKeys?: readonly JobFamily[];
+  /**
    * ME-084 D-ME084-1/2 — variante da tabela por perfil do autenticado.
    * `'super_admin'` (default preserva callsite pre-ME-084) usa hrefs Bruno
    * `/super-admin/empresa/{id}/…`. `'rh'` usa hrefs base RH `/colaborador/
@@ -595,7 +603,11 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
     canEditCadastro = true,
     searchIndex = [],
     familyLabels,
+    activeFamilyKeys,
   } = props;
+  // ME-1.17.c CC079-1c-2+ — fallback canonico: callers nao migrados
+  // caem no enum completo (preserva comportamento pre-expansao).
+  const familyKeysForDropdown: readonly JobFamily[] = activeFamilyKeys ?? JOB_FAMILY_VALUES;
   // ME-084 D-ME084-1/2 — `variant` retido para eventual telemetria por
   // perfil / testes de analise estatica. Nao afeta comportamento atual
   // pois hrefs/actions ja sao injetados. Referencia mantida via cast
@@ -1163,7 +1175,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
             aria-label="Filtrar por família de função"
           >
             <option value="">Família: Todos</option>
-            {JOB_FAMILY_VALUES.map((f) => (
+            {familyKeysForDropdown.map((f) => (
               <option key={f} value={f}>
                 {familyLabels?.[f] ?? JOB_FAMILY_LABELS[f]}
               </option>
