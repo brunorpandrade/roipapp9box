@@ -102,6 +102,14 @@ export interface TodosColaboradoresClientProps {
   readonly initialDepartamentos: readonly Departamento[];
   readonly initialLideres: readonly { id: number; name: string; tipo: 'employee' | 'clevel' }[];
   /**
+   * ME-1.17.c — labels canonicos de familia pre-resolvidos pelo
+   * caller via `buildFamilyLabelsForCompany(db, companyId)`. Prioriza
+   * `nomeCustomizado` da empresa quando preenchido. Ausente ->
+   * fallback bit-exact ao `JOB_FAMILY_LABELS[key]` canonico
+   * (preserva callers nao migrados).
+   */
+  readonly familyLabels?: Readonly<Record<string, string>>;
+  /**
    * ME-084 D-ME084-1/2 — variante da tabela por perfil do autenticado.
    * `'super_admin'` (default preserva callsite pre-ME-084) usa hrefs Bruno
    * `/super-admin/empresa/{id}/…`. `'rh'` usa hrefs base RH `/colaborador/
@@ -586,6 +594,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
     fichaCadastralAction,
     canEditCadastro = true,
     searchIndex = [],
+    familyLabels,
   } = props;
   // ME-084 D-ME084-1/2 — `variant` retido para eventual telemetria por
   // perfil / testes de analise estatica. Nao afeta comportamento atual
@@ -1156,7 +1165,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
             <option value="">Família: Todos</option>
             {JOB_FAMILY_VALUES.map((f) => (
               <option key={f} value={f}>
-                {JOB_FAMILY_LABELS[f]}
+                {familyLabels?.[f] ?? JOB_FAMILY_LABELS[f]}
               </option>
             ))}
           </select>
@@ -1271,8 +1280,12 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                 </thead>
                 <tbody>
                   {result.rows.map((row) =>
-                    renderRow(row, hideLiderColumn, hideRfBadgeAndFilter, (id, name) =>
-                      setFichaAlvo({ id, name }),
+                    renderRow(
+                      row,
+                      hideLiderColumn,
+                      hideRfBadgeAndFilter,
+                      (id, name) => setFichaAlvo({ id, name }),
+                      familyLabels,
                     ),
                   )}
                 </tbody>
@@ -1390,6 +1403,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
           editHref={canEditCadastro ? `${editarColaboradorHrefBase}/${fichaAlvo.id}/editar` : null}
           hideRf={hideRfBadgeAndFilter}
           onClose={() => setFichaAlvo(null)}
+          familyLabels={familyLabels}
         />
       ) : null}
 
@@ -1456,6 +1470,7 @@ function renderRow(
   hideLiderColumn: boolean,
   hideRfBadgeAndFilter: boolean,
   onOpenFicha: (id: number, name: string) => void,
+  familyLabels: Readonly<Record<string, string>> | undefined,
 ): JSX.Element {
   // ME-fila6 D1 — o icone 📇 abre o pop-up de ficha cadastral (§14.10) em
   // vez de navegar para a rota de edicao (exclusiva de Bruno e RH). O href
@@ -1511,7 +1526,7 @@ function renderRow(
       <td style={TD_STYLE}>{formatCpfMasked(row.cpf)}</td>
       <td style={TD_STYLE}>{row.cargo}</td>
       <td style={TD_STYLE}>{SENIORIDADE_LABELS[row.senioridade]}</td>
-      <td style={TD_STYLE}>{JOB_FAMILY_LABELS[row.jobFamily]}</td>
+      <td style={TD_STYLE}>{familyLabels?.[row.jobFamily] ?? JOB_FAMILY_LABELS[row.jobFamily]}</td>
       <td style={TD_STYLE}>
         <span style={nivelStyle}>{NIVEL_HIERARQUICO_LABELS[row.nivelHierarquico]}</span>
       </td>

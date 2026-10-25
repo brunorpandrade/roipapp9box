@@ -544,6 +544,7 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
     editHref,
     hideRf,
     podeVerAcoesLiderDireto,
+    familyLabels,
   } = props;
   const [view, setView] = useState<QuarterView>(props.view);
   const [carregandoNav, setCarregandoNav] = useState<boolean>(false);
@@ -1117,6 +1118,7 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
           editHref={editHref}
           hideRf={hideRf}
           onClose={() => setDetalhesOpen(false)}
+          familyLabels={familyLabels}
         />
       ) : null}
       {chatIaOpen && podeVerAcoesLiderDireto ? (

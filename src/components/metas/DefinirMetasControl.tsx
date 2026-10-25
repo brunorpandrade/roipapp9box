@@ -48,6 +48,14 @@ export interface DefinirMetasControlProps {
   readonly initialStatus: MetasStatus;
   /** Exibe o selo ao lado do botao (ficha de edicao). */
   readonly mostrarSelo?: boolean;
+  /**
+   * ME-1.17.c — labels canonicos de familia pre-resolvidos pelo
+   * caller via `buildFamilyLabelsForCompany(db, companyId)`. Prioriza
+   * `nomeCustomizado` da empresa quando preenchido. Ausente ->
+   * fallback bit-exact ao `JOB_FAMILY_LABELS[key]` canonico
+   * (preserva callers nao migrados).
+   */
+  readonly familyLabels?: Readonly<Record<string, string>>;
 }
 
 const BTN_STYLE: CSSProperties = {
@@ -95,7 +103,7 @@ function paraRascunho(linhas: readonly MetaLinha[]): MetaRascunho[] {
 }
 
 export function DefinirMetasControl(props: DefinirMetasControlProps): JSX.Element {
-  const { companyId, employeeId, mostrarSelo = true } = props;
+  const { companyId, employeeId, mostrarSelo = true, familyLabels } = props;
   const [status, setStatus] = useState<MetasStatus>(props.initialStatus);
   const [aberto, setAberto] = useState(false);
   const [dados, setDados] = useState<MetasModalData | null>(null);
@@ -244,7 +252,8 @@ export function DefinirMetasControl(props: DefinirMetasControlProps): JSX.Elemen
                 </h2>
                 {dados !== null ? (
                   <div style={{ fontSize: 13, color: COLORS.text.secondary, marginTop: 4 }}>
-                    Família de função: {JOB_FAMILY_LABELS[dados.jobFamily]} ·{' '}
+                    Família de função:{' '}
+                    {familyLabels?.[dados.jobFamily] ?? JOB_FAMILY_LABELS[dados.jobFamily]} ·{' '}
                     <Selo status={status} />
                   </div>
                 ) : null}

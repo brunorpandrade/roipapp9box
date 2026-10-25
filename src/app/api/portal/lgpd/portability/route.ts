@@ -56,6 +56,11 @@ import {
   composeLgpdPortabilityFilename,
   renderLgpdPortabilityHTML,
 } from '../../../../../server/pdf-templates/lgpdPortabilityTemplate';
+import {
+  buildFamilyLabelsForCompany,
+  type FamilyLabelsByKey,
+} from '../../../../../lib/job-family/buildFamilyLabelsForCompany';
+import type { JobFamily } from '../../../../../db/schema/enums';
 
 import {
   MSG_COMPANY_NOT_FOUND_LGPD_PORTABILITY,
@@ -167,9 +172,22 @@ export async function GET(req: Request): Promise<NextResponse> {
 
   // Renderiza HTML canonico bit-exact. ME-1.12 Despacho A: propaga
   // `modo: 'colaborador'` + `termoAceite` canonico ao template.
+  // ME-1.17.c — mesma logica canonica do super-admin: resolve label
+  // da familia respeitando `nomeCustomizado` da empresa + enriquece
+  // `cadastrais.familyLabel`. Fallback bit-exact no template quando
+  // `familyLabel` null/undefined.
+  const familyLabels: FamilyLabelsByKey = await buildFamilyLabelsForCompany(db, companyId);
+  const familyLabelResolvido =
+    payload.cadastrais.jobFamily !== null
+      ? (familyLabels[payload.cadastrais.jobFamily as JobFamily] ?? null)
+      : null;
+  const cadastraisEnriquecidos = {
+    ...payload.cadastrais,
+    familyLabel: familyLabelResolvido,
+  };
   const html = renderLgpdPortabilityHTML({
     company: { nomeFantasia: payload.companyNomeFantasia },
-    cadastrais: payload.cadastrais,
+    cadastrais: cadastraisEnriquecidos,
     instrumentA: payload.instrumentA,
     instrumentD: payload.instrumentD,
     copsoq: payload.copsoq,

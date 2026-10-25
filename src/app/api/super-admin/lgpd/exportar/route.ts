@@ -40,6 +40,11 @@ import {
 } from '../../../../../server/pdf-templates/lgpdPortabilityTemplate';
 import { DEFAULT_PDF_RENDERER_FACADE } from '../../../../../server/services/pdfRenderer';
 import { getServerSession } from '../../../../../server/session/serverSession';
+import {
+  buildFamilyLabelsForCompany,
+  type FamilyLabelsByKey,
+} from '../../../../../lib/job-family/buildFamilyLabelsForCompany';
+import type { JobFamily } from '../../../../../db/schema/enums';
 
 function parsePositiveInt(raw: string | null): number | null {
   if (raw === null || !/^\d+$/.test(raw)) {
@@ -81,9 +86,22 @@ async function renderLgpdSuperAdminHtml(
     const dd = String(now.getUTCDate()).padStart(2, '0');
     const generatedAtDate = `${yy}-${mm}-${dd}`;
     const generatedAtTimestamp = now.toISOString();
+    // ME-1.17.c — resolve label canonico da familia respeitando
+    // `nomeCustomizado` da empresa. Enriquece `cadastrais` com
+    // `familyLabel`; template aplica fallback bit-exact quando
+    // null/undefined (preservando comportamento pre-ME-1.17.c).
+    const familyLabels: FamilyLabelsByKey = await buildFamilyLabelsForCompany(client.db, companyId);
+    const familyLabelResolvido =
+      payload.cadastrais.jobFamily !== null
+        ? (familyLabels[payload.cadastrais.jobFamily as JobFamily] ?? null)
+        : null;
+    const cadastraisEnriquecidos = {
+      ...payload.cadastrais,
+      familyLabel: familyLabelResolvido,
+    };
     const html = renderLgpdPortabilityHTML({
       company: { nomeFantasia: payload.companyNomeFantasia },
-      cadastrais: payload.cadastrais,
+      cadastrais: cadastraisEnriquecidos,
       instrumentA: payload.instrumentA,
       instrumentD: payload.instrumentD,
       copsoq: payload.copsoq,

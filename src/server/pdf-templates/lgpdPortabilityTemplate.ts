@@ -78,6 +78,16 @@ export interface LgpdPortabilityCadastrais {
   senioridade: 'junior' | 'pleno' | 'senior' | null;
   /** Exclusivo employee (`jobFamily`). Null para C-level. */
   jobFamily: string | null;
+  /**
+   * ME-1.17.c — label canonico resolvido pelo caller via
+   * `buildFamilyLabelsForCompany(db, companyId)`. Prioriza
+   * `nomeCustomizado` da empresa quando preenchido; cai no
+   * `JOB_FAMILY_LABELS[key]` canonico quando NULL. Ausente
+   * (undefined) ou null -> fallback bit-exact ao
+   * `formatJobFamily(jobFamily)` pre-ME-1.17.c (preserva callers
+   * historicos nao migrados).
+   */
+  familyLabel?: string | null;
   status: 'ativo' | 'inativo';
 }
 
@@ -310,12 +320,16 @@ function renderCadastraisSection(c: LgpdPortabilityCadastrais): string {
     );
   }
   if (c.jobFamily !== null) {
-    // ME-B11.1c PATCH2 (PDL4): humanizacao canonica da familia via
-    // helper compartilhado `formatJobFamily` — alinhado bit-exact com
-    // os cards do grid de familias (DOC 05 §13.1 Aba 2).
-    linhas.push(
-      `<p><strong>Família de cargo:</strong> ${escapeHtml(formatJobFamily(c.jobFamily))}</p>`,
-    );
+    // ME-1.17.c — prioriza `familyLabel` pre-resolvido pelo caller
+    // (via `buildFamilyLabelsForCompany`) que ja respeita
+    // `nomeCustomizado` da empresa. Fallback bit-exact ao
+    // `formatJobFamily(jobFamily)` pre-ME-1.17.c quando `familyLabel`
+    // ausente/null (caller nao migrado).
+    const labelResolvido =
+      c.familyLabel !== undefined && c.familyLabel !== null
+        ? c.familyLabel
+        : formatJobFamily(c.jobFamily);
+    linhas.push(`<p><strong>Família de cargo:</strong> ${escapeHtml(labelResolvido)}</p>`);
   }
   return `<section>
   <h2>Dados cadastrais</h2>

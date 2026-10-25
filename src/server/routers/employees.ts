@@ -91,6 +91,7 @@ import {
 } from '../../db/schema';
 
 import { rhAllowedProcedure } from '../auth/rhAllowedProcedure';
+import { buildFamilyLabelsForCompany } from '../../lib/job-family/buildFamilyLabelsForCompany';
 import {
   createCallerFactory,
   roleProcedure,
@@ -2412,6 +2413,7 @@ export const SHEET_PROTECTION_PASSWORD_EMP = 'roip' as const;
  */
 export async function buildEmployeesExportBuffer(
   rows: readonly EmployeeListRow[],
+  familyLabels?: Readonly<Record<string, string>>,
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet(NOME_ABA_EMPLOYEES_EXPORT);
@@ -2423,12 +2425,20 @@ export async function buildEmployeesExportBuffer(
 
   // Uma linha por colaborador.
   for (const r of rows) {
+    // ME-1.17.c — prioriza `familyLabels[key]` do caller (respeita
+    // `nomeCustomizado` da empresa). Fallback bit-exact ao
+    // `EXPORT_LABEL_JOB_FAMILY[key]` pre-ME-1.17.c (formato historico
+    // sem acentos para as 6 canonicas; para slots custom, cai no
+    // `r.jobFamily` chave tecnica snake_case — nunca aparece em
+    // producao enquanto Despacho 2 nao ativar slot custom via UI).
+    const familyCellLabel =
+      familyLabels?.[r.jobFamily] ?? EXPORT_LABEL_JOB_FAMILY[r.jobFamily] ?? r.jobFamily;
     ws.addRow([
       r.name,
       r.cpf,
       r.cargo,
       EXPORT_LABEL_SENIORIDADE[r.senioridade],
-      EXPORT_LABEL_JOB_FAMILY[r.jobFamily] ?? r.jobFamily,
+      familyCellLabel,
       EXPORT_LABEL_NIVEL[r.nivelHierarquico],
       r.departamento,
       r.liderName ?? '—',
@@ -3266,7 +3276,10 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           }
           throw err;
         }
-        const buf = await buildEmployeesExportBuffer(rows);
+        // ME-1.17.c — labels de familia pre-resolvidos por empresa
+        // (respeita `nomeCustomizado`); propagados ao builder XLSX.
+        const familyLabelsForExport = await buildFamilyLabelsForCompany(ctx.db, input.companyId);
+        const buf = await buildEmployeesExportBuffer(rows, familyLabelsForExport);
         const dateStr = formatIsoDateForExport(now());
         const filename = `colaboradores_${sanitizeRazaoSocialEmp(razaoSocial)}_${dateStr}.xlsx`;
         return {

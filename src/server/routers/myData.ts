@@ -27,6 +27,7 @@ import { z } from 'zod';
 
 import { employeeLeaderHistory } from '../../db/schema';
 import { formatJobFamily } from '../../lib/job-family/formatJobFamily';
+import { buildFamilyLabelsForCompany } from '../../lib/job-family/buildFamilyLabelsForCompany';
 import { requireSuperAdmin } from '../../lib/routes/requireSuperAdmin';
 import type { RoipDatabase } from '../../db/client';
 import {
@@ -177,16 +178,19 @@ async function loadH1bEmployee(
     throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessao expirada.' });
   }
   const liderDireto = await findLiderDiretoName(db, employeeId);
+  // ME-1.17.c — resolucao canonica da familia respeita
+  // `nomeCustomizado` da empresa quando preenchido. Fallback bit-exact
+  // ao `formatJobFamily(emp.jobFamily)` pre-ME-1.17.c quando o label
+  // resolvido equivale ao canonico (empresa sem customizacao).
+  const familyLabels = await buildFamilyLabelsForCompany(db, emp.companyId);
+  const familiaFuncaoResolvida = familyLabels[emp.jobFamily] ?? formatJobFamily(emp.jobFamily);
   const vinculo: H1bVinculo = {
     tipo: 'employee',
     papelPlataforma: resolvePapelPlataformaEmployee(role),
     cargo: emp.cargo,
     cbo: emp.cbo,
     descricaoCBO: emp.descricaoCBO,
-    // ME-B11.1c PATCH2 (MD1): humanizacao canonica da familia via
-    // helper compartilhado `formatJobFamily` — alinhado bit-exact com
-    // os cards do grid de familias (DOC 05 §13.1 Aba 2).
-    familiaFuncao: formatJobFamily(emp.jobFamily),
+    familiaFuncao: familiaFuncaoResolvida,
     senioridade: emp.senioridade,
     nivelHierarquico: emp.nivelHierarquico,
     departamento: emp.departamento,

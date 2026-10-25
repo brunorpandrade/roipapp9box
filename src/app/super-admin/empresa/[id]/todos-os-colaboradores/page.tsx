@@ -57,6 +57,10 @@ import {
   parseColaboradoresFiltersFromSearchParams,
 } from './filters';
 import { loadTodosColaboradoresPage, parseCompanyIdParam } from './internals';
+import {
+  buildFamilyLabelsForCompany,
+  type FamilyLabelsByKey,
+} from '../../../../../lib/job-family/buildFamilyLabelsForCompany';
 import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 import { headerUserFromSession } from '../../../../../lib/session/headerUser';
 
@@ -93,6 +97,10 @@ export default async function TodosColaboradoresPage(props: PageProps): Promise<
     const filters = parseColaboradoresFiltersFromSearchParams(rawParams);
     const serviceFilters = colaboradoresFiltersToServiceInput(filters);
     const pageData = await loadTodosColaboradoresPage(client.db, companyId, serviceFilters);
+    // ME-1.17.c — labels canonicos de familia respeitando
+    // `nomeCustomizado` da empresa; propagado ao Client que resolve
+    // dropdown de filtro + celulas da tabela + FichaCadastralModal.
+    const familyLabels: FamilyLabelsByKey = await buildFamilyLabelsForCompany(client.db, companyId);
 
     const profileKey = resolveProfileKey({
       session,
@@ -162,6 +170,7 @@ export default async function TodosColaboradoresPage(props: PageProps): Promise<
             initialDepartamentos={pageData.departamentos}
             initialLideres={pageData.lideres}
             searchIndex={pageData.searchIndex}
+            familyLabels={familyLabels}
             variant="super_admin"
             novoColaboradorHref={`/super-admin/empresa/${companyId}/colaborador/novo`}
             editarColaboradorHrefBase={`/super-admin/empresa/${companyId}/colaborador`}

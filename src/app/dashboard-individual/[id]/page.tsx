@@ -32,6 +32,7 @@ import { createCallerFactory, createContextInner } from '../../../server/trpc';
 import { carregarFichaCadastralAction } from '../../_shared/fichaCadastral/actions';
 import { translateDashboardCallerError } from './callerErrorRedirect';
 import { DashboardIndividualClient } from './DashboardIndividualClient';
+import { buildFamilyLabelsForCompany } from '../../../lib/job-family/buildFamilyLabelsForCompany';
 import { headerUserFromSession } from '../../../lib/session/headerUser';
 import {
   buildQuarterView,
@@ -181,6 +182,10 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
         podeVerAcoesLiderDireto = true;
       }
     }
+    // ME-1.17.c — labels canonicos de familia da empresa do titular,
+    // propagados ao Client / FichaCadastralModal. Fallback bit-exact
+    // quando ausente (empresa sem settings customizados).
+    const familyLabels = await buildFamilyLabelsForCompany(client.db, empCompanyId);
     const clientProps: DashboardIndividualClientProps = {
       variant: isSuper ? 'super_admin' : 'platform',
       employee: {
@@ -204,6 +209,7 @@ export default async function DashboardIndividualPage(props: PageProps): Promise
       editHref,
       hideRf: !isSuper,
       podeVerAcoesLiderDireto,
+      familyLabels,
     };
 
     if (session.kind === 'super_admin') {

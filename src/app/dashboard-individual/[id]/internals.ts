@@ -160,6 +160,14 @@ export interface DashboardIndividualClientProps {
    * renderizacao para botoes sem permissao").
    */
   readonly podeVerAcoesLiderDireto: boolean;
+  /**
+   * ME-1.17.c — labels canonicos de familia pre-resolvidos pela page
+   * via `buildFamilyLabelsForCompany(db, companyId)`. Prioriza
+   * `nomeCustomizado` da empresa quando preenchido. Ausente ->
+   * `FichaCadastralModal` cai no fallback bit-exact
+   * `JOB_FAMILY_LABELS[key]` canonico.
+   */
+  readonly familyLabels?: Readonly<Record<string, string>>;
 }
 
 const MESES_QUADRIMESTRE: Readonly<Record<string, string>> = {

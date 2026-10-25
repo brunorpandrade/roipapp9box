@@ -46,6 +46,14 @@ export interface FichaCadastralModalProps {
   readonly editHref: string | null;
   readonly hideRf: boolean;
   readonly onClose: () => void;
+  /**
+   * ME-1.17.c — labels canonicos de familia pre-resolvidos pelo
+   * caller via `buildFamilyLabelsForCompany(db, companyId)`. Prioriza
+   * `nomeCustomizado` da empresa quando preenchido. Ausente ->
+   * fallback bit-exact ao `JOB_FAMILY_LABELS[key]` canonico
+   * (preserva callers nao migrados).
+   */
+  readonly familyLabels?: Readonly<Record<string, string>>;
 }
 
 const OVERLAY_STYLE: CSSProperties = {
@@ -145,7 +153,16 @@ function Campo(props: { readonly label: string; readonly value: string }): JSX.E
 }
 
 export function FichaCadastralModal(props: FichaCadastralModalProps): JSX.Element {
-  const { companyId, employeeId, employeeName, loadAction, editHref, hideRf, onClose } = props;
+  const {
+    companyId,
+    employeeId,
+    employeeName,
+    loadAction,
+    editHref,
+    hideRf,
+    onClose,
+    familyLabels,
+  } = props;
   const [ficha, setFicha] = useState<FichaCadastral | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -280,7 +297,10 @@ export function FichaCadastralModal(props: FichaCadastralModalProps): JSX.Elemen
               <Campo label="Descrição CBO" value={ficha.descricaoCBO} />
               <Campo label="Departamento" value={DEPARTAMENTO_LABELS[ficha.departamento]} />
               <Campo label="Senioridade" value={SENIORIDADE_LABELS[ficha.senioridade]} />
-              <Campo label="Família de função" value={JOB_FAMILY_LABELS[ficha.jobFamily]} />
+              <Campo
+                label="Família de função"
+                value={familyLabels?.[ficha.jobFamily] ?? JOB_FAMILY_LABELS[ficha.jobFamily]}
+              />
               <Campo
                 label="Nível hierárquico"
                 value={NIVEL_HIERARQUICO_LABELS[ficha.nivelHierarquico]}
@@ -298,6 +318,7 @@ export function FichaCadastralModal(props: FichaCadastralModalProps): JSX.Elemen
                 companyId={companyId}
                 employeeId={ficha.id}
                 initialStatus={ficha.metasStatus}
+                familyLabels={familyLabels}
               />
             ) : (
               <span />
