@@ -366,10 +366,10 @@ function main() {
   console.log(`Schema TS: ${tsTables.size} tabelas`);
 
   // Nivel 1: contagem
-  if (sqlTables.size !== 54) {
+  if (sqlTables.size !== 55) {
     fail(
-      `Migration tem ${sqlTables.size} tabelas, esperado 54 ` +
-        `(ME-B2-01b — climateEngagementData aposentada).`,
+      `Migration tem ${sqlTables.size} tabelas, esperado 55 ` +
+        `(ME-1.17 — nova tabela companyRoleFamilySettings).`,
     );
   }
   if (tsTables.size !== sqlTables.size) {
@@ -445,18 +445,23 @@ function main() {
   // 687 em ME-1.13 (Conversa 4b, Despacho B) — nova coluna
   // `employees.dataDesligamento` (data civil separada do timestamp
   // sistemico em employeeTerminationEvents.dataInativacao).
-  if (totalSqlCols !== 687) {
+  // 696 em ME-1.17 (Conversa 5) — nova tabela
+  // `companyRoleFamilySettings` com 9 colunas (id, companyId, jobFamily,
+  // nomeCustomizado, ativo, ordem, updatedBy, createdAt, updatedAt).
+  if (totalSqlCols !== 696) {
     console.log(
       `${YELLOW}AVISO:${RESET} migration tem ${totalSqlCols} colunas; ` +
-        `esperado 687 (ME-1.13 — nova coluna employees.dataDesligamento).`,
+        `esperado 696 (ME-1.17 — nova tabela companyRoleFamilySettings).`,
     );
   }
   // FKs: 111 em ME-B2-01a.1.1. 108 em ME-B2-01b Q1=D (removidas 3 FKs
   // da tabela aposentada: companyId, liderId, clevelId).
-  if (totalSqlFks !== 108) {
+  // 110 em ME-1.17 — 2 FKs novas na tabela companyRoleFamilySettings:
+  // companyId → companies, updatedBy → superAdmins.
+  if (totalSqlFks !== 110) {
     console.log(
       `${YELLOW}AVISO:${RESET} migration tem ${totalSqlFks} FKs; ` +
-        `esperado 108 (ME-B2-01b Q1=D).`,
+        `esperado 110 (ME-1.17 — 2 FKs novas em companyRoleFamilySettings).`,
     );
   }
 
@@ -466,7 +471,7 @@ function main() {
     process.exit(1);
   }
 
-  console.log(`\n${GREEN}OK${RESET} — schema conforme. Tabelas: 54/54; colunas: ${totalTsCols}.`);
+  console.log(`\n${GREEN}OK${RESET} — schema conforme. Tabelas: 55/55; colunas: ${totalTsCols}.`);
   process.exit(0);
 }
 

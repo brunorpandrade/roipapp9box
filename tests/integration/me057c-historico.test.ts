@@ -730,13 +730,20 @@ describe('ME-057c — historico consolidado da empresa (MySQL real, §14.21)', (
   // -------------------------------------------------------------------
   describe('Grupo 5 — ordenacao canonica + paginacao', () => {
     it('ordenacao desc(createdAt) — evento mais recente vem primeiro', async () => {
+      // L113 CC079-5 ME-1.17.a (24/10/2026): datas relativas a NOW
+      // substituem as fixas 2026-07-20 e 2026-07-28, que a partir de
+      // 2026-10-24 cairam fora do range canonico -90d do
+      // CANONICAL_HISTORICO_DEFAULT_FILTERS e deixavam r.rows vazio.
+      // Mesmo padrao canonico L113 aplicado em "filtro periodo=30"
+      // acima e no bloco Grupo 4 (ambos ME-086b RETOMADA).
+      const dayMs = 86400000;
       await seedRespfin(
         companyIdA,
         'atribuido',
         { type: 'none', id: null },
         { type: 'employee', id: colabIdA },
         'RF antigo',
-        new Date('2026-07-20T00:00:00.000Z'),
+        new Date(NOW.getTime() - 10 * dayMs),
       );
       await seedRespfin(
         companyIdA,
@@ -744,7 +751,7 @@ describe('ME-057c — historico consolidado da empresa (MySQL real, §14.21)', (
         { type: 'employee', id: colabIdA },
         { type: 'cLevel', id: cLevelIdA },
         'RF recente',
-        new Date('2026-07-28T00:00:00.000Z'),
+        new Date(NOW.getTime() - 2 * dayMs),
       );
       const r = await loadCompanyHistoryPage(
         client.db,

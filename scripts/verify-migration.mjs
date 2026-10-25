@@ -49,10 +49,15 @@ const VALIDATE_DB = 'roip_validate';
 // FKs: 111 → 108 (removidas 3: companyId, liderId, clevelId).
 // ME-1.13 (Conversa 4b, Despacho B) — colunas 686 → 687 (nova coluna
 // `employees.dataDesligamento` via migration 0011); FKs inalteradas.
+// ME-1.17 (Conversa 5 — Famílias de função customizáveis) — tabelas
+// 54 → 55 (nova tabela `companyRoleFamilySettings`); colunas 687 → 696
+// (9 colunas novas: id, companyId, jobFamily, nomeCustomizado, ativo,
+// ordem, updatedBy, createdAt, updatedAt); FKs 108 → 110 (2 FKs novas:
+// companyId → companies, updatedBy → superAdmins).
 const EXPECTED = {
-  tables: 54,
-  columns: 687,
-  fks: 108,
+  tables: 55,
+  columns: 696,
+  fks: 110,
   departments: 19,
 };
 

@@ -2250,8 +2250,17 @@ const EXPORT_LABEL_NIVEL: Record<NivelHierarquico, string> = {
 /**
  * ME-fila5 D2 — mapa canonico `jobFamily` enum → rotulo humano. Espelho
  * inverso do `MAP_FAMILIA_FUNCAO` do parser upload.
+ *
+ * ME-1.17 (CC079-1 pos-dispatch 1.a): enum expandido de 6 para 26
+ * valores (6 canonicas + 20 slots `custom1..custom20`). Este mapa
+ * cobre apenas as 6 canonicas no formato bit-exact pre-ME-1.17 (sem
+ * acentos — contrato historico do XLSX de export). Para os slots
+ * custom o acesso cai no fallback `r.jobFamily` (chave tecnica
+ * snake_case) via nullish coalescing no callsite — comportamento
+ * canonico pos-ME-1.17 enquanto o Despacho 1.b nao propaga settings
+ * ate aqui para resolver via `getJobFamilyLabel`.
  */
-const EXPORT_LABEL_JOB_FAMILY: Record<(typeof JOB_FAMILY_VALUES)[number], string> = {
+const EXPORT_LABEL_JOB_FAMILY: Partial<Record<(typeof JOB_FAMILY_VALUES)[number], string>> = {
   vendas_comercial: 'Vendas e comercial',
   producao_operacoes: 'Producao e operacoes',
   tecnico_especialista: 'Tecnico e especialista',
@@ -2346,7 +2355,7 @@ export async function buildEmployeesExportBuffer(
       r.cpf,
       r.cargo,
       EXPORT_LABEL_SENIORIDADE[r.senioridade],
-      EXPORT_LABEL_JOB_FAMILY[r.jobFamily],
+      EXPORT_LABEL_JOB_FAMILY[r.jobFamily] ?? r.jobFamily,
       EXPORT_LABEL_NIVEL[r.nivelHierarquico],
       r.departamento,
       r.liderName ?? '—',

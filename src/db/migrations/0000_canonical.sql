@@ -113,7 +113,7 @@ CREATE TABLE `employees` (
   `cargo` VARCHAR(100) NOT NULL DEFAULT '',
   `cbo` VARCHAR(10) NOT NULL,
   `descricaoCBO` VARCHAR(255) NOT NULL,
-  `jobFamily` ENUM('vendas_comercial','producao_operacoes','tecnico_especialista','administrativo_suporte','atendimento_relacionamento','lideranca_gestao') NOT NULL,
+  `jobFamily` ENUM('vendas_comercial','producao_operacoes','tecnico_especialista','administrativo_suporte','atendimento_relacionamento','lideranca_gestao','custom1','custom2','custom3','custom4','custom5','custom6','custom7','custom8','custom9','custom10','custom11','custom12','custom13','custom14','custom15','custom16','custom17','custom18','custom19','custom20') NOT NULL,
   `senioridade` ENUM('junior','pleno','senior') NOT NULL,
   `nivelHierarquico` ENUM('operacional','tatico','estrategico') NOT NULL,
   `departamento` ENUM('Comercial','Marketing','Operações','Produção','Logística','Compras','Financeiro','Contabilidade','Recursos Humanos','Tecnologia da Informação','Jurídico','Qualidade','Manutenção','Projetos','Atendimento ao Cliente','Pós-venda','Administrativo','Diretoria','Outros') NOT NULL,
@@ -154,7 +154,7 @@ CREATE TABLE `employeeLeaderHistory` (
 CREATE TABLE `employeeGoals` (
   `id` INT PRIMARY KEY AUTO_INCREMENT,
   `employeeId` INT NOT NULL,
-  `jobFamily` ENUM('vendas_comercial','producao_operacoes','tecnico_especialista','administrativo_suporte','atendimento_relacionamento','lideranca_gestao') NOT NULL,
+  `jobFamily` ENUM('vendas_comercial','producao_operacoes','tecnico_especialista','administrativo_suporte','atendimento_relacionamento','lideranca_gestao','custom1','custom2','custom3','custom4','custom5','custom6','custom7','custom8','custom9','custom10','custom11','custom12','custom13','custom14','custom15','custom16','custom17','custom18','custom19','custom20') NOT NULL,
   `variableIndex` INT NOT NULL,
   `variableName` VARCHAR(255) NOT NULL,
   `unit` VARCHAR(50) NOT NULL,
@@ -888,7 +888,7 @@ CREATE TABLE `portalReminderLog` (
 CREATE TABLE `companyJobFamilies` (
   `id` INT PRIMARY KEY AUTO_INCREMENT,
   `companyId` INT NOT NULL,
-  `jobFamily` ENUM('vendas_comercial','producao_operacoes','tecnico_especialista','administrativo_suporte','atendimento_relacionamento','lideranca_gestao') NOT NULL,
+  `jobFamily` ENUM('vendas_comercial','producao_operacoes','tecnico_especialista','administrativo_suporte','atendimento_relacionamento','lideranca_gestao','custom1','custom2','custom3','custom4','custom5','custom6','custom7','custom8','custom9','custom10','custom11','custom12','custom13','custom14','custom15','custom16','custom17','custom18','custom19','custom20') NOT NULL,
   `variableIndex` INT NOT NULL,
   `variableName` VARCHAR(255) NOT NULL,
   `unit` VARCHAR(50) NOT NULL,
@@ -900,6 +900,51 @@ CREATE TABLE `companyJobFamilies` (
   FOREIGN KEY (`companyId`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`updatedBy`) REFERENCES `superAdmins`(`id`) ON DELETE RESTRICT
 );
+
+-- ME-1.17 (Conversa 5 — Famílias de função 100% customizáveis).
+-- Configuracoes canonicas de familias de funcao por empresa.
+-- 1 linha por familia (nao por variavel: variaveis vivem em
+-- `companyJobFamilies` acima). Chave unica (companyId, jobFamily).
+-- `nomeCustomizado` NULL = usa label canonico; preenchido = overlay
+-- da empresa. `ativo` controla visibilidade no dropdown de cadastro.
+-- `ordem` controla posicao canonica. Trava absoluta de
+-- `lideranca_gestao` (nome fixo, ativo sempre TRUE, 4 variaveis fixas,
+-- unidade fixa) e aplicada no servico `companyRoleFamilySettings`
+-- (nao via CHECK constraint — S004 canoniza regra de aplicacao
+-- fora do schema SQL).
+CREATE TABLE `companyRoleFamilySettings` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `companyId` INT NOT NULL,
+  `jobFamily` ENUM('vendas_comercial','producao_operacoes','tecnico_especialista','administrativo_suporte','atendimento_relacionamento','lideranca_gestao','custom1','custom2','custom3','custom4','custom5','custom6','custom7','custom8','custom9','custom10','custom11','custom12','custom13','custom14','custom15','custom16','custom17','custom18','custom19','custom20') NOT NULL,
+  `nomeCustomizado` VARCHAR(100) DEFAULT NULL,
+  `ativo` BOOLEAN NOT NULL DEFAULT TRUE,
+  `ordem` INT NOT NULL,
+  `updatedBy` INT NOT NULL,
+  `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY `uq_crfs` (`companyId`, `jobFamily`),
+  FOREIGN KEY (`companyId`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`updatedBy`) REFERENCES `superAdmins`(`id`) ON DELETE RESTRICT
+);
+
+-- Seed canonico ME-1.17: para cada empresa existente insere as 6
+-- canonicas ativas com nomeCustomizado=NULL e ordem=1..6. updatedBy=1
+-- (super admin canonico semeado em M015). Idempotente: usa INSERT
+-- IGNORE sobre a chave unica (companyId, jobFamily). Segunda execucao
+-- e no-op para linhas ja presentes.
+INSERT IGNORE INTO `companyRoleFamilySettings`
+  (`companyId`, `jobFamily`, `nomeCustomizado`, `ativo`, `ordem`, `updatedBy`)
+SELECT c.`id`, 'vendas_comercial', NULL, TRUE, 1, 1 FROM `companies` c
+UNION ALL
+SELECT c.`id`, 'producao_operacoes', NULL, TRUE, 2, 1 FROM `companies` c
+UNION ALL
+SELECT c.`id`, 'tecnico_especialista', NULL, TRUE, 3, 1 FROM `companies` c
+UNION ALL
+SELECT c.`id`, 'administrativo_suporte', NULL, TRUE, 4, 1 FROM `companies` c
+UNION ALL
+SELECT c.`id`, 'atendimento_relacionamento', NULL, TRUE, 5, 1 FROM `companies` c
+UNION ALL
+SELECT c.`id`, 'lideranca_gestao', NULL, TRUE, 6, 1 FROM `companies` c;
 
 -- =====================================================================
 -- M012 — Notificações por e-mail e ciclos

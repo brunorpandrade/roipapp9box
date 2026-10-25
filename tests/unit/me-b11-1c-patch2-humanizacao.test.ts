@@ -86,8 +86,33 @@ describe('ME-B11.1c PATCH2 · formatJobFamily (PDL4 + MD1) — fonte unica', () 
     expect(formatJobFamily('')).toBe('');
   });
 
-  it('mapa exportado tem exatamente as 6 entradas canonicas', () => {
-    expect(Object.keys(JOB_FAMILY_LABELS)).toHaveLength(6);
+  it('mapa exportado tem exatamente 26 entradas (6 canonicas + 20 slots custom)', () => {
+    // L113 CC079-5 ME-1.17.a (24/10/2026): JOB_FAMILY_VALUES expandido
+    // de 6 para 26 valores (6 canonicas pre-populadas como seed
+    // universal + 20 slots custom1..custom20 como reserva de
+    // capacidade por empresa, ocupados sob demanda via
+    // activateCustomSlot do service companyRoleFamilySettings).
+    // Padrao canonico preservado: as 6 canonicas permanecem em
+    // JOB_FAMILY_CANONICAL_VALUES; os 20 custom em
+    // JOB_FAMILY_CUSTOM_VALUES; JOB_FAMILY_LABELS cobre todos os 26
+    // com labels placeholder para os custom (sobrescritos em tempo
+    // de resolucao pelo getJobFamilyLabel quando settings tem
+    // nomeCustomizado preenchido).
+    expect(Object.keys(JOB_FAMILY_LABELS)).toHaveLength(26);
+    const canonicasPresentes = [
+      'vendas_comercial',
+      'producao_operacoes',
+      'tecnico_especialista',
+      'administrativo_suporte',
+      'atendimento_relacionamento',
+      'lideranca_gestao',
+    ];
+    for (const canonica of canonicasPresentes) {
+      expect(JOB_FAMILY_LABELS).toHaveProperty(canonica);
+    }
+    for (let i = 1; i <= 20; i += 1) {
+      expect(JOB_FAMILY_LABELS).toHaveProperty(`custom${i}`);
+    }
   });
 });
 

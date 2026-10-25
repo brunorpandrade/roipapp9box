@@ -1273,6 +1273,57 @@ export const companyJobFamilies = mysqlTable(
 );
 
 // =====================================================================
+// M011 — ME-1.17 — Configuracoes canonicas de familias de funcao por
+// empresa (Conversa 5, item [1.17] do ROADMAP_V6).
+//
+// Uma linha POR FAMILIA (nao por variavel — isso ja e papel de
+// companyJobFamilies acima). Chave unica (companyId, jobFamily).
+//
+// `nomeCustomizado`: NULL = usa o label canonico do resolver
+// `getJobFamilyLabel` (JOB_FAMILY_LABELS[familyKey]); preenchido =
+// nome exibido na superficie da empresa (dropdown de cadastro de
+// colaborador, PDFs do PDF do colaborador, dashboards individuais).
+// Para `lideranca_gestao` esta coluna e SEMPRE NULL (trava canonica
+// no servico; UI nao expoe input de renomeacao).
+//
+// `ativo`: FALSE = familia nao aparece no dropdown de cadastro, nao
+// aparece em listagens de familias ativas. Para `lideranca_gestao`
+// esta coluna e SEMPRE TRUE (trava canonica no servico; UI nao
+// expoe toggle de desativacao).
+//
+// `ordem`: posicao canonica da familia na superficie da empresa.
+// Valor minimo 1. Para `lideranca_gestao` fica cristalizada em 6
+// (posicao canonica das 6 iniciais) ou outro valor que a empresa
+// configurar — a familia pode ser reordenada, apenas nao desativada.
+//
+// Seed canonico pre-populado na migration 0012: para cada empresa
+// existente insere as 6 canonicas ativas com nomeCustomizado=NULL
+// e ordem=1..6. Novas empresas criadas apos a migration recebem o
+// seed via trigger do servico `createCompany` (nao coberto nesta
+// ME; abertura futura em F-SEED-CRIAR-EMPRESA).
+export const companyRoleFamilySettings = mysqlTable(
+  'companyRoleFamilySettings',
+  {
+    id: int('id').autoincrement().primaryKey(),
+    companyId: int('companyId')
+      .notNull()
+      .references(() => companies.id, { onDelete: 'cascade' }),
+    jobFamily: mysqlEnum('jobFamily', JOB_FAMILY_VALUES).notNull(),
+    nomeCustomizado: varchar('nomeCustomizado', { length: 100 }),
+    ativo: boolean('ativo').notNull().default(true),
+    ordem: int('ordem').notNull(),
+    updatedBy: int('updatedBy')
+      .notNull()
+      .references(() => superAdmins.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('createdAt').notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt').notNull().defaultNow().onUpdateNow(),
+  },
+  (t) => ({
+    uqCrfs: uniqueIndex('uq_crfs').on(t.companyId, t.jobFamily),
+  }),
+);
+
+// =====================================================================
 // M012 — Notificacoes por e-mail e ciclos
 // Nota: a FK monthlyUnlockLog.unlockRequestId -> cycleUnlockRequests(id)
 // vive apenas na migration (ALTER TABLE em M012). tables.ts declara a

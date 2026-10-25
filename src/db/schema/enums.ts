@@ -71,9 +71,30 @@ export type AbaUnlock = (typeof ABA_UNLOCK_VALUES)[number];
 export const NIVEL_HIERARQUICO_VALUES = ['operacional', 'tatico', 'estrategico'] as const;
 export type NivelHierarquico = (typeof NIVEL_HIERARQUICO_VALUES)[number];
 
-// §15.3 — jobFamily (6 familias fixas, hard-coded, nao configuraveis).
-// Customizacao por empresa em companyJobFamilies altera nomes/unidades/pesos
-// de variaveis, nunca as familias.
+// §15.3 — jobFamily (26 valores: 6 canonicas + 20 slots customizaveis).
+//
+// Expansao canonica em ME-1.17 (Conversa 5 — Famílias de função 100%
+// customizáveis): as 6 canonicas permanecem como seed universal pre-
+// populado para toda empresa; a tabela `companyRoleFamilySettings`
+// (nova em ME-1.17) permite por empresa: renomear o nome exibido
+// (campo `nomeCustomizado`), reordenar (`ordem`), e desativar as
+// canonicas 5 ajustaveis — a familia `lideranca_gestao` tem trava
+// canonica absoluta (nunca desativavel, nome fixo, 4 variaveis fixas,
+// unidade fixa; apenas os pesos sao editaveis, sempre com soma = 100).
+//
+// Os 20 slots `custom1..custom20` sao reservas de capacidade: cada
+// empresa pode ocupar ate 20 familias totalmente customizaveis (nome
+// via `nomeCustomizado` + 4 variaveis em `companyJobFamilies` nascem
+// com nomes `Variável 1..4`, unidade vazia e pesos 25% cada). Slots
+// nao ocupados nao aparecem em cadastro de colaborador nem em nenhuma
+// outra superficie.
+//
+// Comparacao cross-empresa (benchmarks setoriais) continua ancorada
+// nas chaves canonicas (`vendas_comercial`, ...); `nomeCustomizado`
+// pertence apenas a superficie da propria empresa (decisao executiva
+// de Bruno em 24/10/2026: nao ha planos de benchmark cross-empresa,
+// agora nem no futuro — resolver pode retornar nome customizado em
+// qualquer superficie sem reserva).
 export const JOB_FAMILY_VALUES = [
   'vendas_comercial',
   'producao_operacoes',
@@ -81,8 +102,94 @@ export const JOB_FAMILY_VALUES = [
   'administrativo_suporte',
   'atendimento_relacionamento',
   'lideranca_gestao',
+  'custom1',
+  'custom2',
+  'custom3',
+  'custom4',
+  'custom5',
+  'custom6',
+  'custom7',
+  'custom8',
+  'custom9',
+  'custom10',
+  'custom11',
+  'custom12',
+  'custom13',
+  'custom14',
+  'custom15',
+  'custom16',
+  'custom17',
+  'custom18',
+  'custom19',
+  'custom20',
 ] as const;
 export type JobFamily = (typeof JOB_FAMILY_VALUES)[number];
+
+/**
+ * As 6 familias canonicas (seed universal pre-populado em toda empresa).
+ * Narrow do tipo `JobFamily` que exclui os slots `custom*`. Consumido
+ * pelo resolver `getJobFamilyLabel` e por validacoes server-side que
+ * precisam distinguir "canonica" de "custom".
+ */
+export const JOB_FAMILY_CANONICAL_VALUES = [
+  'vendas_comercial',
+  'producao_operacoes',
+  'tecnico_especialista',
+  'administrativo_suporte',
+  'atendimento_relacionamento',
+  'lideranca_gestao',
+] as const;
+export type JobFamilyCanonical = (typeof JOB_FAMILY_CANONICAL_VALUES)[number];
+
+/**
+ * Os 20 slots customizaveis (reserva de capacidade por empresa).
+ * Narrow do tipo `JobFamily` que inclui apenas slots `custom*`.
+ * Consumido pela UI de /familias (listagem de slots disponiveis) e
+ * pelo service `companyRoleFamilySettings.activateCustomSlot`.
+ */
+export const JOB_FAMILY_CUSTOM_VALUES = [
+  'custom1',
+  'custom2',
+  'custom3',
+  'custom4',
+  'custom5',
+  'custom6',
+  'custom7',
+  'custom8',
+  'custom9',
+  'custom10',
+  'custom11',
+  'custom12',
+  'custom13',
+  'custom14',
+  'custom15',
+  'custom16',
+  'custom17',
+  'custom18',
+  'custom19',
+  'custom20',
+] as const;
+export type JobFamilyCustom = (typeof JOB_FAMILY_CUSTOM_VALUES)[number];
+
+/**
+ * Guard canonico: `true` se o valor e um dos 20 slots `custom*`.
+ * Resolve ambiguidade "canonica vs. custom" em codigo que precisa
+ * aplicar logica diferenciada (trava de `lideranca_gestao`, decisao
+ * de qual label mostrar quando `nomeCustomizado` e NULL, etc).
+ */
+export function isJobFamilyCustom(v: JobFamily): v is JobFamilyCustom {
+  return (JOB_FAMILY_CUSTOM_VALUES as readonly string[]).includes(v);
+}
+
+/**
+ * Guard canonico: `true` se o valor e `lideranca_gestao`. Familia
+ * estrutural com trava canonica absoluta (ME-1.17): nunca desativavel,
+ * nome fixo "Liderança e gestão", 4 variaveis fixas, unidade fixa
+ * "pontos (1-5)", apenas pesos editaveis com soma = 100.
+ */
+export function isJobFamilyStructural(v: JobFamily): v is 'lideranca_gestao' {
+  return v === 'lideranca_gestao';
+}
 
 // §15.3 — tipoCiclo (cycleSchedule).
 export const TIPO_CICLO_VALUES = [
@@ -208,6 +315,9 @@ export type EmailQueueKind = (typeof EMAIL_QUEUE_KIND_VALUES)[number];
 // array pelo TypeScript).
 export const DEPARTAMENTO_COUNT = 19 as const;
 export const NOTIFICATION_TIPO_COUNT = 17 as const;
+export const JOB_FAMILY_COUNT = 26 as const;
+export const JOB_FAMILY_CANONICAL_COUNT = 6 as const;
+export const JOB_FAMILY_CUSTOM_COUNT = 20 as const;
 
 // Verificacao em tempo de compilacao: se alguem adicionar/remover valor sem
 // mexer no COUNT correspondente, o TypeScript falha (largura tuple != numero).
@@ -220,6 +330,13 @@ type _AssertNotificationDestinatarioTipoCount =
 type _AssertEmailQueueKindCount = (typeof EMAIL_QUEUE_KIND_VALUES)['length'] extends 2
   ? true
   : never;
+type _AssertJobFamilyCount = (typeof JOB_FAMILY_VALUES)['length'] extends 26 ? true : never;
+type _AssertJobFamilyCanonicalCount = (typeof JOB_FAMILY_CANONICAL_VALUES)['length'] extends 6
+  ? true
+  : never;
+type _AssertJobFamilyCustomCount = (typeof JOB_FAMILY_CUSTOM_VALUES)['length'] extends 20
+  ? true
+  : never;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _CHECK_DEPARTAMENTO: _AssertDepartamentoCount = true;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -228,3 +345,9 @@ const _CHECK_NOTIFICATION_TIPO: _AssertNotificationTipoCount = true;
 const _CHECK_NOTIFICATION_DESTINATARIO_TIPO: _AssertNotificationDestinatarioTipoCount = true;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _CHECK_EMAIL_QUEUE_KIND: _AssertEmailQueueKindCount = true;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _CHECK_JOB_FAMILY: _AssertJobFamilyCount = true;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _CHECK_JOB_FAMILY_CANONICAL: _AssertJobFamilyCanonicalCount = true;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _CHECK_JOB_FAMILY_CUSTOM: _AssertJobFamilyCustomCount = true;

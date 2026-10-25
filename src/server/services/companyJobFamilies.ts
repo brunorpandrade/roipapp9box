@@ -11,6 +11,12 @@
 // consumido pelo router `company.updateJobFamilies` (§13.1 Aba 2 DOC 05 +
 // §12.2 DOC 01). UPSERT via `.onDuplicateKeyUpdate()` do Drizzle MySQL —
 // pre-decisao 1 aprovada por Bruno na abertura da ME.
+//
+// ME-1.17 (Conversa 5) nao modifica este arquivo: o seed canonico de 4
+// variaveis a 25% para familias custom recem-ativadas acontece inline
+// no service `companyRoleFamilySettings.activateCustomSlot` via chamada
+// direta ao `upsertJobFamilyVariables` ja canonico aqui (reaproveitamento
+// do mecanismo existente — zero duplicacao de persistencia).
 
 import { and, asc, eq } from 'drizzle-orm';
 
