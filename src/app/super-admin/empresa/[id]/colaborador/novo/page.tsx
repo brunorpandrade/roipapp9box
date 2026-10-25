@@ -37,7 +37,7 @@ import {
   type CompanyRoleFamilySettings,
 } from '../../../../../../server/services/companyRoleFamilySettings';
 import { getJobFamilyLabel } from '../../../../../../lib/job-family/formatJobFamily';
-import { JOB_FAMILY_OPTIONS, type FamilyOption } from '../ColaboradorForm';
+import { JOB_FAMILY_OPTIONS, type FamilyOption } from '../_shared/jobFamilyOptionsCanonical';
 
 interface PageProps {
   readonly params: Promise<{ id: string }>;

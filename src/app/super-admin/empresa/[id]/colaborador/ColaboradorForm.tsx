@@ -42,41 +42,29 @@ import { ImageUploader } from '../../../../../components/forms/ImageUploader';
 import { COLORS } from '../../../../../lib/design-tokens/colors';
 
 /** §13.4 canonizado — 6 familias hard-coded (DOC canonico documental). */
-export const JOB_FAMILY_OPTIONS = [
-  {
-    id: 'vendas_comercial',
-    titulo: 'Vendas e comercial',
-    descricao:
-      'Cargos de vendas, prospecção, negociação, gestão de carteira e resultados comerciais.',
-  },
-  {
-    id: 'producao_operacoes',
-    titulo: 'Produção e operações',
-    descricao: 'Cargos de execução operacional, produção, logística, manutenção e processos.',
-  },
-  {
-    id: 'tecnico_especialista',
-    titulo: 'Técnico especialista',
-    descricao: 'Cargos com conhecimento técnico especializado, engenharia, TI e P&D.',
-  },
-  {
-    id: 'administrativo_suporte',
-    titulo: 'Administrativo e suporte',
-    descricao: 'Cargos de apoio administrativo, financeiro, contábil, jurídico e RH.',
-  },
-  {
-    id: 'atendimento_relacionamento',
-    titulo: 'Atendimento e relacionamento',
-    descricao: 'Cargos de atendimento ao cliente, pós-venda, suporte e experiência do cliente.',
-  },
-  {
-    id: 'lideranca_gestao',
-    titulo: 'Liderança e gestão',
-    descricao: 'Cargos com pessoas subordinadas — coordenadores, gerentes e diretores.',
-  },
-] as const;
+/**
+ * ME-1.17.b `CC079-1b-2` — import LOCAL + re-export canonico bit-
+ * exact das 3 constantes/tipos extraidos para `_shared/
+ * jobFamilyOptionsCanonical.ts` (modulo neutro, server-safe).
+ *
+ * Import local eh necessario porque o proprio `ColaboradorForm`
+ * consome `JOB_FAMILY_OPTIONS` + `JobFamilyId` + `FamilyOption` em
+ * seu corpo (fallback no grid de Secao 3 quando `familyOptions` prop
+ * ausente + tipagem do `jobFamily` em `ColaboradorFormValues`).
+ * Re-export preserva o contrato publico desta superficie para
+ * callers client que historicamente importam de `../ColaboradorForm`.
+ * Server components importam direto do `_shared` para evitar o proxy
+ * Server Reference que quebrava `.find()` em producao (digests
+ * 3653058121 + 980829730 — 25/10/2026 10:19-10:33 BRT).
+ */
+import {
+  JOB_FAMILY_OPTIONS,
+  type FamilyOption,
+  type JobFamilyId,
+} from './_shared/jobFamilyOptionsCanonical';
 
-export type JobFamilyId = (typeof JOB_FAMILY_OPTIONS)[number]['id'];
+export { JOB_FAMILY_OPTIONS } from './_shared/jobFamilyOptionsCanonical';
+export type { FamilyOption, JobFamilyId } from './_shared/jobFamilyOptionsCanonical';
 
 /** §4.5 canonico documental — 19 departamentos hard-coded. */
 export const DEPARTAMENTO_OPTIONS = [
@@ -156,20 +144,9 @@ export interface LiderCandidate {
   readonly departamento: string;
 }
 
-/**
- * ME-1.17.b — opcao canonica de familia carregada por empresa do
- * server scope. Compartilha o shape do `JOB_FAMILY_OPTIONS` estatico
- * mas com `id` tipado como `string` (JobFamily inclui os 26 valores
- * canonicos pos-ME-1.17.a: 6 canonicas + custom1..custom20). Quando
- * uma empresa customiza o nome via `companyRoleFamilySettings.
- * nomeCustomizado`, `titulo` ja vem resolvido do server via
- * `getJobFamilyLabel`.
- */
-export interface FamilyOption {
-  readonly id: string;
-  readonly titulo: string;
-  readonly descricao: string;
-}
+// `FamilyOption` ja re-exportado acima junto com JOB_FAMILY_OPTIONS +
+// JobFamilyId (bloco canonico `CC079-1b-2`). Comentario antigo
+// removido para evitar duplicacao de export.
 
 export interface ColaboradorFormProps {
   readonly mode: 'novo' | 'editar';
