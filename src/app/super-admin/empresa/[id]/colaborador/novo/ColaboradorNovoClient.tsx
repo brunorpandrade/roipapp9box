@@ -32,6 +32,7 @@ import {
   ColaboradorForm,
   EMPTY_COLABORADOR_FORM_VALUES,
   type ColaboradorFormValues,
+  type FamilyOption,
   type LiderCandidate,
 } from '../ColaboradorForm';
 
@@ -84,7 +85,10 @@ export type DefinirRFActionType = (input: {
   readonly newHolderId: number;
   readonly justificativa?: string;
 }) => Promise<
-  | { readonly ok: true; readonly data: { readonly senhaInicial: string | null } }
+  | {
+      readonly ok: true;
+      readonly data: { readonly senhaInicial: string | null };
+    }
   | { readonly ok: false; readonly message: string }
 >;
 
@@ -93,7 +97,10 @@ export type PesquisarLiderCandidatosActionType = (input: {
   readonly query: string;
   readonly excludeEmployeeId?: number;
 }) => Promise<
-  | { readonly ok: true; readonly data: { readonly candidates: readonly LiderCandidate[] } }
+  | {
+      readonly ok: true;
+      readonly data: { readonly candidates: readonly LiderCandidate[] };
+    }
   | { readonly ok: false; readonly message: string }
 >;
 
@@ -123,6 +130,19 @@ interface Props {
   readonly criarColaborador: CriarColaboradorActionType;
   readonly definirRF: DefinirRFActionType;
   readonly pesquisarLiderCandidatos: PesquisarLiderCandidatosActionType;
+  /**
+   * ME-1.17.b — opcoes canonicas de familia filtradas pelas ATIVAS da
+   * empresa, com `titulo` ja resolvido pelo server via
+   * `getJobFamilyLabel`. Propagado bit-exact para `ColaboradorForm`.
+   *
+   * Backward-compat canonico: AUSENTE (undefined) em rotas que ainda
+   * nao carregam settings (ex: `/app/colaborador/novo/page.tsx` RH-
+   * facing pre-Despacho 1.c). `ColaboradorForm` cai no
+   * `JOB_FAMILY_OPTIONS` estatico das 6 canonicas. PRESENTE em pages
+   * canonicas pos-ME-1.17.b (`/super-admin/empresa/[id]/colaborador/
+   * novo/page.tsx`).
+   */
+  readonly familyOptions?: readonly FamilyOption[];
 }
 
 const FOOTER_STYLE = {
@@ -191,6 +211,7 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
     criarColaborador,
     definirRF,
     pesquisarLiderCandidatos,
+    familyOptions,
   } = props;
   const router = useRouter();
 
@@ -409,7 +430,13 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
           />
         ) : null}
         <div style={SUCCESS_CARD_STYLE}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: COLORS.text.primary }}>
+          <div
+            style={{
+              fontSize: 16,
+              fontWeight: 600,
+              color: COLORS.text.primary,
+            }}
+          >
             Colaborador cadastrado com sucesso
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
@@ -434,6 +461,7 @@ export function ColaboradorNovoClient(props: Props): JSX.Element {
         searchLiderCandidates={handleSearchLider}
         presetIsRH={presetIsRH}
         variant={variant}
+        familyOptions={familyOptions}
       />
       {errorMsg !== null ? <div style={ERROR_STYLE}>{errorMsg}</div> : null}
       <div style={FOOTER_STYLE}>

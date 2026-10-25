@@ -36,6 +36,12 @@ import {
 } from './actions';
 import { loadColaboradorEditarPage, parseCompanyIdParam, parseEmployeeIdParam } from './internals';
 import { headerUserFromSession } from '../../../../../../../lib/session/headerUser';
+import {
+  listActiveFamilySettingsForCompany,
+  type CompanyRoleFamilySettings,
+} from '../../../../../../../server/services/companyRoleFamilySettings';
+import { getJobFamilyLabel } from '../../../../../../../lib/job-family/formatJobFamily';
+import { JOB_FAMILY_OPTIONS, type FamilyOption } from '../../ColaboradorForm';
 
 interface PageProps {
   readonly params: Promise<{ id: string; employeeId: string }>;
@@ -96,6 +102,22 @@ export default async function ColaboradorEditarPage(props: PageProps): Promise<J
       pageData.employee.jobFamily,
     );
 
+    // ME-1.17.b — familias ativas da empresa + resolucao canonica do
+    // `titulo` via `getJobFamilyLabel`. Mesma logica da `novo/page.tsx`.
+    const familySettings = await listActiveFamilySettingsForCompany(client.db, companyId);
+    const familyOptions: readonly FamilyOption[] = familySettings.map(
+      (s: CompanyRoleFamilySettings) => {
+        const canonicaMatch = JOB_FAMILY_OPTIONS.find((o) => o.id === s.jobFamily);
+        return {
+          id: s.jobFamily,
+          titulo: getJobFamilyLabel(s.jobFamily, s),
+          descricao:
+            canonicaMatch?.descricao ??
+            'Família customizada da empresa — 4 variáveis configuráveis mensalmente.',
+        };
+      },
+    );
+
     return (
       <Layout
         menuItems={menuItems}
@@ -138,6 +160,7 @@ export default async function ColaboradorEditarPage(props: PageProps): Promise<J
             todosColaboradoresHref={`/super-admin/empresa/${companyId}/todos-os-colaboradores`}
             initialMetasStatus={metasStatus}
             desligamentoHref={desligamentoHref}
+            familyOptions={familyOptions}
             actions={{
               atualizarColaborador: atualizarColaboradorAction,
               buscarCandidatosTransferencia: buscarCandidatosTransferenciaAction,

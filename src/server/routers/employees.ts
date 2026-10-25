@@ -1003,16 +1003,28 @@ export async function assertLiderAtivoDaEmpresa(
     .limit(1);
   const row = rows[0];
   if (!row) {
-    throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_LIDER_INICIAL_INVALIDO });
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: MSG_LIDER_INICIAL_INVALIDO,
+    });
   }
   if (row.companyId !== companyId) {
-    throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_LIDER_INICIAL_INVALIDO });
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: MSG_LIDER_INICIAL_INVALIDO,
+    });
   }
   if (row.status !== 'ativo') {
-    throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_LIDER_INICIAL_INVALIDO });
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: MSG_LIDER_INICIAL_INVALIDO,
+    });
   }
   if (row.isLider !== true) {
-    throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_LIDER_INICIAL_INVALIDO });
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: MSG_LIDER_INICIAL_INVALIDO,
+    });
   }
 }
 
@@ -1038,13 +1050,22 @@ export async function assertClevelAtivoDaEmpresa(
     .limit(1);
   const row = rows[0];
   if (!row) {
-    throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_LIDER_INICIAL_INVALIDO });
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: MSG_LIDER_INICIAL_INVALIDO,
+    });
   }
   if (row.companyId !== companyId) {
-    throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_LIDER_INICIAL_INVALIDO });
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: MSG_LIDER_INICIAL_INVALIDO,
+    });
   }
   if (row.status !== 'ativo') {
-    throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_LIDER_INICIAL_INVALIDO });
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: MSG_LIDER_INICIAL_INVALIDO,
+    });
   }
 }
 
@@ -1070,7 +1091,10 @@ export function rethrowMysqlError(err: unknown): never {
     (n) => n.errno === MYSQL_ERR_ROW_IS_REFERENCED || n.code === 'ER_ROW_IS_REFERENCED_2',
   );
   if (ref) {
-    throw new TRPCError({ code: 'CONFLICT', message: MSG_DELETE_COM_HISTORICO });
+    throw new TRPCError({
+      code: 'CONFLICT',
+      message: MSG_DELETE_COM_HISTORICO,
+    });
   }
   throw err as Error;
 }
@@ -1126,10 +1150,16 @@ export async function readEmployeesWorkbook(
   try {
     buf = Buffer.from(contentBase64, 'base64');
   } catch {
-    throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_UPLOAD_ARQUIVO_INVALIDO });
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: MSG_UPLOAD_ARQUIVO_INVALIDO,
+    });
   }
   if (buf.length === 0) {
-    throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_UPLOAD_ARQUIVO_INVALIDO });
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: MSG_UPLOAD_ARQUIVO_INVALIDO,
+    });
   }
   const wb = new ExcelJS.Workbook();
   if (contentType === 'xlsx') {
@@ -1139,11 +1169,17 @@ export async function readEmployeesWorkbook(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await wb.xlsx.load(buf as any);
     } catch {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_UPLOAD_ARQUIVO_INVALIDO });
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: MSG_UPLOAD_ARQUIVO_INVALIDO,
+      });
     }
     const ws = wb.worksheets[0];
     if (!ws) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_UPLOAD_ARQUIVO_INVALIDO });
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: MSG_UPLOAD_ARQUIVO_INVALIDO,
+      });
     }
     return ws;
   }
@@ -1153,7 +1189,10 @@ export async function readEmployeesWorkbook(
     const ws = await wb.csv.read(stream);
     return ws;
   } catch {
-    throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_UPLOAD_ARQUIVO_INVALIDO });
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: MSG_UPLOAD_ARQUIVO_INVALIDO,
+    });
   }
 }
 
@@ -1361,14 +1400,20 @@ export async function parseEmployeesUpload(
     const esperado = COLUNAS_CANONICAS_EMPLOYEES[i]!;
     const encontrado = upCellString(ws, 1, i + 1);
     if (encontrado !== esperado) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_UPLOAD_CABECALHOS_INVALIDOS });
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: MSG_UPLOAD_CABECALHOS_INVALIDOS,
+      });
     }
   }
 
   const last = upUsedRowCount(ws);
   const totalLinhas = last - 1;
   if (totalLinhas > UPLOAD_MAX_LINHAS) {
-    throw new TRPCError({ code: 'BAD_REQUEST', message: MSG_UPLOAD_LINHAS_EXCEDIDAS });
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: MSG_UPLOAD_LINHAS_EXCEDIDAS,
+    });
   }
 
   const linhas: UploadLinhaParsed[] = [];
@@ -1422,16 +1467,28 @@ export async function parseEmployeesUpload(
       continue;
     }
     if (cpfRaw === '') {
-      erros.push({ linha: r, coluna: 'CPF', mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO });
+      erros.push({
+        linha: r,
+        coluna: 'CPF',
+        mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO,
+      });
       continue;
     }
     const cpf = cpfRaw.replace(/\D+/g, '');
     if (cpf.length !== CPF_LENGTH) {
-      erros.push({ linha: r, coluna: 'CPF', mensagem: MSG_UPLOAD_CPF_INVALIDO });
+      erros.push({
+        linha: r,
+        coluna: 'CPF',
+        mensagem: MSG_UPLOAD_CPF_INVALIDO,
+      });
       continue;
     }
     if (cpfsVistosNoArquivo.has(cpf)) {
-      erros.push({ linha: r, coluna: 'CPF', mensagem: MSG_UPLOAD_CPF_DUPLICADO_ARQUIVO });
+      erros.push({
+        linha: r,
+        coluna: 'CPF',
+        mensagem: MSG_UPLOAD_CPF_DUPLICADO_ARQUIVO,
+      });
       continue;
     }
 
@@ -1470,7 +1527,11 @@ export async function parseEmployeesUpload(
       continue;
     }
     if (cbo === '') {
-      erros.push({ linha: r, coluna: 'CBO', mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO });
+      erros.push({
+        linha: r,
+        coluna: 'CBO',
+        mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO,
+      });
       continue;
     }
     if (descCBO === '') {
@@ -1490,7 +1551,11 @@ export async function parseEmployeesUpload(
       continue;
     }
     if (!SET_DEPARTAMENTO_CANONICO.has(departamentoRaw)) {
-      erros.push({ linha: r, coluna: 'Departamento', mensagem: MSG_UPLOAD_ENUM_INVALIDO });
+      erros.push({
+        linha: r,
+        coluna: 'Departamento',
+        mensagem: MSG_UPLOAD_ENUM_INVALIDO,
+      });
       continue;
     }
     if (senioridadeRaw === '') {
@@ -1503,7 +1568,11 @@ export async function parseEmployeesUpload(
     }
     const senioridade = MAP_SENIORIDADE[senioridadeRaw];
     if (!senioridade) {
-      erros.push({ linha: r, coluna: 'Senioridade', mensagem: MSG_UPLOAD_ENUM_INVALIDO });
+      erros.push({
+        linha: r,
+        coluna: 'Senioridade',
+        mensagem: MSG_UPLOAD_ENUM_INVALIDO,
+      });
       continue;
     }
     if (nivelRaw === '') {
@@ -1606,7 +1675,11 @@ export async function parseEmployeesUpload(
     if (emailNormalizado !== undefined) {
       const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNormalizado);
       if (!emailOk) {
-        erros.push({ linha: r, coluna: 'E-mail', mensagem: MSG_UPLOAD_EMAIL_INVALIDO });
+        erros.push({
+          linha: r,
+          coluna: 'E-mail',
+          mensagem: MSG_UPLOAD_EMAIL_INVALIDO,
+        });
         continue;
       }
     }
@@ -2388,7 +2461,10 @@ export async function buildEmployeesExportBuffer(
  * injetam `now` explicito.
  */
 export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
-  const { now, employeesFacade } = { ...DEFAULT_EMPLOYEES_ROUTER_DEPS, ...deps };
+  const { now, employeesFacade } = {
+    ...DEFAULT_EMPLOYEES_ROUTER_DEPS,
+    ...deps,
+  };
 
   return router({
     // --------------------------------------------------------
@@ -2573,7 +2649,10 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           .limit(1);
         const row = target[0];
         if (!row) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: MSG_EMPLOYEE_NAO_ENCONTRADO });
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: MSG_EMPLOYEE_NAO_ENCONTRADO,
+          });
         }
         assertCompanyScope(ctx.user, row.companyId);
 
@@ -2611,6 +2690,30 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           (input.isRH === true && row.isRH !== true);
         if (ativaAcessoPainelAgora && (row.passwordHash === null || row.passwordHash === '')) {
           senhaProvisionada = await provisionInitialPassword();
+        }
+
+        // ME-1.17.b — validacao canonica L1: colaborador com liderados
+        // ATIVOS exige `jobFamily === 'lideranca_gestao'`. Decisao
+        // executiva de Bruno em 24/10/2026: trava absoluta de
+        // `lideranca_gestao` como familia estrutural para quem tem
+        // subordinados diretos. Mensagem canonica clara (sem modal) —
+        // SA corrige manualmente no form e salva de novo.
+        //
+        // Semantica: se o UPDATE resulta em jobFamily !=
+        // 'lideranca_gestao' E o colaborador tem liderados ativos,
+        // rejeita com 400 BAD_REQUEST. Caso contrario (familia
+        // estrutural, sem liderados, ou nao mudou), segue adiante.
+        const nextJobFamily = input.jobFamily !== undefined ? input.jobFamily : row.jobFamily;
+        if (nextJobFamily !== 'lideranca_gestao') {
+          const activeLideradosCount = await countActiveLiderados(ctx.db, input.employeeId);
+          if (activeLideradosCount > 0) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message:
+                `Este colaborador tem ${activeLideradosCount} liderado(s) direto(s) ativo(s). ` +
+                `Para salvar, mantenha a família de função em "Liderança e gestão".`,
+            });
+          }
         }
 
         const patch: Partial<typeof employees.$inferInsert> = {};
@@ -2707,14 +2810,20 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           .limit(1);
         const row = target[0];
         if (!row) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: MSG_EMPLOYEE_NAO_ENCONTRADO });
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: MSG_EMPLOYEE_NAO_ENCONTRADO,
+          });
         }
         assertCompanyScope(ctx.user, row.companyId);
         if (row.status === 'inativo') {
           throw new TRPCError({ code: 'CONFLICT', message: MSG_JA_INATIVO });
         }
         if (row.isResponsavelFinanceiro === true) {
-          throw new TRPCError({ code: 'CONFLICT', message: MSG_INACTIVATE_RF_BLOQUEADO });
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: MSG_INACTIVATE_RF_BLOQUEADO,
+          });
         }
         if (row.isLider === true) {
           const liderados = await countActiveLiderados(ctx.db, input.employeeId);
@@ -2734,7 +2843,10 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
         return await ctx.db.transaction(async (tx) => {
           const [updateResult] = await tx
             .update(employees)
-            .set({ status: 'inativo', dataDesligamento: input.dataDesligamento })
+            .set({
+              status: 'inativo',
+              dataDesligamento: input.dataDesligamento,
+            })
             .where(eq(employees.id, input.employeeId));
           if (updateResult.affectedRows !== 1) {
             throw new TRPCError({
@@ -2809,7 +2921,10 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           .limit(1);
         const row = target[0];
         if (!row) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: MSG_EMPLOYEE_NAO_ENCONTRADO });
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: MSG_EMPLOYEE_NAO_ENCONTRADO,
+          });
         }
         assertCompanyScope(ctx.user, row.companyId);
         if (row.status === 'ativo') {
@@ -2873,17 +2988,29 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           .limit(1);
         const row = target[0];
         if (!row) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: MSG_EMPLOYEE_NAO_ENCONTRADO });
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: MSG_EMPLOYEE_NAO_ENCONTRADO,
+          });
         }
         if (row.status === 'ativo') {
-          throw new TRPCError({ code: 'CONFLICT', message: MSG_DELETE_COLABORADOR_ATIVO });
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: MSG_DELETE_COLABORADOR_ATIVO,
+          });
         }
         if (row.isResponsavelFinanceiro === true) {
-          throw new TRPCError({ code: 'CONFLICT', message: MSG_DELETE_RF_BLOQUEADO });
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: MSG_DELETE_RF_BLOQUEADO,
+          });
         }
         const temHistorico = await hasHistoricoAnalitico(ctx.db, input.employeeId);
         if (temHistorico) {
-          throw new TRPCError({ code: 'CONFLICT', message: MSG_DELETE_COM_HISTORICO });
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: MSG_DELETE_COM_HISTORICO,
+          });
         }
 
         try {
@@ -3207,7 +3334,10 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
       .query(async ({ ctx, input }): Promise<GetByIdEmployeeResult> => {
         const result = await getEmployeeById(ctx.db, input.employeeId);
         if (result === null) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: MSG_EMPLOYEE_NAO_ENCONTRADO });
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: MSG_EMPLOYEE_NAO_ENCONTRADO,
+          });
         }
         assertCompanyScope(ctx.user, result.companyId);
         return result;
@@ -3252,7 +3382,10 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           .limit(1);
         const row = target[0];
         if (!row) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: MSG_EMPLOYEE_NAO_ENCONTRADO });
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: MSG_EMPLOYEE_NAO_ENCONTRADO,
+          });
         }
         assertCompanyScope(ctx.user, row.companyId);
 
@@ -3285,7 +3418,10 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           .limit(1);
         const row = target[0];
         if (!row) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: MSG_EMPLOYEE_NAO_ENCONTRADO });
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: MSG_EMPLOYEE_NAO_ENCONTRADO,
+          });
         }
         assertCompanyScope(ctx.user, row.companyId);
 
@@ -3357,7 +3493,10 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           .limit(1);
         const row = target[0];
         if (!row) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: MSG_EMPLOYEE_NAO_ENCONTRADO });
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: MSG_EMPLOYEE_NAO_ENCONTRADO,
+          });
         }
         assertCompanyScope(ctx.user, row.companyId);
 

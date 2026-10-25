@@ -121,7 +121,11 @@ export interface ColaboradorFormValues {
   isRH: boolean;
   isLider: boolean;
   isResponsavelFinanceiro: boolean;
-  liderInicial: { tipo: 'employee' | 'clevel'; id: number; label: string } | null;
+  liderInicial: {
+    tipo: 'employee' | 'clevel';
+    id: number;
+    label: string;
+  } | null;
 }
 
 export const EMPTY_COLABORADOR_FORM_VALUES: ColaboradorFormValues = {
@@ -152,6 +156,21 @@ export interface LiderCandidate {
   readonly departamento: string;
 }
 
+/**
+ * ME-1.17.b — opcao canonica de familia carregada por empresa do
+ * server scope. Compartilha o shape do `JOB_FAMILY_OPTIONS` estatico
+ * mas com `id` tipado como `string` (JobFamily inclui os 26 valores
+ * canonicos pos-ME-1.17.a: 6 canonicas + custom1..custom20). Quando
+ * uma empresa customiza o nome via `companyRoleFamilySettings.
+ * nomeCustomizado`, `titulo` ja vem resolvido do server via
+ * `getJobFamilyLabel`.
+ */
+export interface FamilyOption {
+  readonly id: string;
+  readonly titulo: string;
+  readonly descricao: string;
+}
+
 export interface ColaboradorFormProps {
   readonly mode: 'novo' | 'editar';
   readonly initialValues: ColaboradorFormValues;
@@ -166,6 +185,20 @@ export interface ColaboradorFormProps {
   readonly searchLiderCandidates: (query: string) => Promise<readonly LiderCandidate[]>;
   /** Preset canonico §13.9 — cadastro de RH pre-ativa isRH. */
   readonly presetIsRH?: boolean;
+  /**
+   * ME-1.17.b — lista canonica das familias ATIVAS da empresa,
+   * ordenada por `ordem` crescente, com `titulo` ja resolvido via
+   * `getJobFamilyLabel` (prioriza `nomeCustomizado` quando preenchido;
+   * cai no `JOB_FAMILY_LABELS[familyKey]` canonico quando NULL).
+   *
+   * Backward-compat canonico: quando AUSENTE (undefined), o form cai
+   * no `JOB_FAMILY_OPTIONS` estatico pre-ME-1.17.b com as 6 canonicas
+   * em ordem fixa. Nenhuma rota existente que renderiza
+   * `ColaboradorForm` sem conhecer settings quebra. Pages canonicas
+   * novas (`novo/page.tsx` + `editar/page.tsx`) passam a lista
+   * dinamica carregada via `listActiveFamilySettingsForCompany`.
+   */
+  readonly familyOptions?: readonly FamilyOption[];
   /**
    * ME-084 D-ME084-1/2 canonizada — variante do formulario por perfil do
    * autenticado. `'super_admin'` (default, preserva comportamento pre-ME-
@@ -362,7 +395,15 @@ export function ColaboradorForm(props: ColaboradorFormProps): JSX.Element {
     presetIsRH,
     variant = 'super_admin',
     metasSlot,
+    familyOptions,
   } = props;
+  // ME-1.17.b — opcoes de familia canonicas usadas pelo grid Secao 3.
+  // Quando `familyOptions` AUSENTE, cai no `JOB_FAMILY_OPTIONS`
+  // estatico pre-ME-1.17.b (backward-compat bit-exact — 6 canonicas em
+  // ordem fixa). Quando PRESENTE, usa a lista dinamica da empresa
+  // (ativas + ordem canonica + nome customizado ja resolvido).
+  const effectiveFamilyOptions: readonly FamilyOption[] =
+    familyOptions !== undefined ? familyOptions : (JOB_FAMILY_OPTIONS as readonly FamilyOption[]);
   // ME-084 D-ME084-1/2 — flags derivadas bit-exact de `variant`. RH nao
   // ve toggles Bruno-exclusive; alem disso `isRH` e `isResponsavelFinanceiro`
   // do payload permanecem inalteraveis pela UI RH (guarded backend via
@@ -450,7 +491,13 @@ export function ColaboradorForm(props: ColaboradorFormProps): JSX.Element {
             previewVariant="circle"
             previewSize={72}
           />
-          <div style={{ fontSize: 12, color: COLORS.text.tertiary, fontStyle: 'italic' }}>
+          <div
+            style={{
+              fontSize: 12,
+              color: COLORS.text.tertiary,
+              fontStyle: 'italic',
+            }}
+          >
             Prerrogativa do RH. Quando sem foto, listagens exibem o avatar canônico de iniciais do
             nome.
           </div>
@@ -710,12 +757,12 @@ export function ColaboradorForm(props: ColaboradorFormProps): JSX.Element {
           variáveis de desempenho avaliadas mensalmente.
         </p>
         <div style={GRID_3_STYLE}>
-          {JOB_FAMILY_OPTIONS.map((f) => {
+          {effectiveFamilyOptions.map((f) => {
             const isSelected = values.jobFamily === f.id;
             return (
               <div
                 key={f.id}
-                onClick={() => updateField('jobFamily', f.id)}
+                onClick={() => updateField('jobFamily', f.id as JobFamilyId)}
                 style={isSelected ? FAMILIA_CARD_SELECTED_STYLE : FAMILIA_CARD_STYLE_BASE}
                 role="button"
                 aria-pressed={isSelected}
@@ -723,12 +770,18 @@ export function ColaboradorForm(props: ColaboradorFormProps): JSX.Element {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    updateField('jobFamily', f.id);
+                    updateField('jobFamily', f.id as JobFamilyId);
                   }
                 }}
               >
                 <strong style={{ fontSize: 14, color: COLORS.text.primary }}>{f.titulo}</strong>
-                <span style={{ fontSize: 12, color: COLORS.text.secondary, lineHeight: 1.4 }}>
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: COLORS.text.secondary,
+                    lineHeight: 1.4,
+                  }}
+                >
                   {f.descricao}
                 </span>
               </div>
@@ -743,7 +796,13 @@ export function ColaboradorForm(props: ColaboradorFormProps): JSX.Element {
         {showToggleIsRH ? (
           <div style={TOGGLE_ROW_STYLE}>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 500, color: COLORS.text.primary }}>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: COLORS.text.primary,
+                }}
+              >
                 Permitir acesso como RH
               </div>
               <div style={{ fontSize: 12, color: COLORS.text.tertiary }}>
@@ -763,7 +822,13 @@ export function ColaboradorForm(props: ColaboradorFormProps): JSX.Element {
         ) : null}
         <div style={TOGGLE_ROW_STYLE}>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 500, color: COLORS.text.primary }}>
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 500,
+                color: COLORS.text.primary,
+              }}
+            >
               Permitir acesso como Líder
             </div>
             <div style={{ fontSize: 12, color: COLORS.text.tertiary }}>
@@ -801,7 +866,13 @@ export function ColaboradorForm(props: ColaboradorFormProps): JSX.Element {
           <h2 style={SECTION_TITLE_STYLE}>Papéis funcionais</h2>
           <div style={TOGGLE_ROW_STYLE}>
             <div style={{ maxWidth: '80%' }}>
-              <div style={{ fontSize: 14, fontWeight: 500, color: COLORS.text.primary }}>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: COLORS.text.primary,
+                }}
+              >
                 Ativar como Responsável financeiro
               </div>
               <div style={{ fontSize: 12, color: COLORS.text.tertiary }}>

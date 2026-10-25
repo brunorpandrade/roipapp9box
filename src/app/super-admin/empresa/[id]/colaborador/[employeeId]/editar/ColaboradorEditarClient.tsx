@@ -41,6 +41,7 @@ import {
   type DepartamentoId,
   type JobFamilyId,
   type LiderCandidate,
+  type FamilyOption,
 } from '../../ColaboradorForm';
 import type {
   atualizarColaboradorAction,
@@ -112,6 +113,19 @@ interface Props {
   readonly initialMetasStatus: MetasStatus;
   /** ME-084 — bag de actions injetada conforme rota. */
   readonly actions: ColaboradorEditarActions;
+  /**
+   * ME-1.17.b — opcoes canonicas de familia filtradas pelas ATIVAS da
+   * empresa, com `titulo` ja resolvido pelo server via
+   * `getJobFamilyLabel`. Propagado bit-exact para `ColaboradorForm`.
+   *
+   * Backward-compat canonico: AUSENTE (undefined) em rotas que ainda
+   * nao carregam settings (ex: `/app/colaborador/[employeeId]/editar/
+   * page.tsx` RH-facing pre-Despacho 1.c). `ColaboradorForm` cai no
+   * `JOB_FAMILY_OPTIONS` estatico das 6 canonicas. PRESENTE em pages
+   * canonicas pos-ME-1.17.b (`/super-admin/empresa/[id]/colaborador/
+   * [employeeId]/editar/page.tsx`).
+   */
+  readonly familyOptions?: readonly FamilyOption[];
 }
 
 const FOOTER_STYLE = {
@@ -315,6 +329,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
     desligamentoHref,
     initialMetasStatus,
     actions,
+    familyOptions,
   } = props;
   const router = useRouter();
 
@@ -937,7 +952,10 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
           return;
         }
         setCurrentMatricula(res.data.matricula);
-        setPostRegenCreds({ matricula: res.data.matricula, senhaInicial: null });
+        setPostRegenCreds({
+          matricula: res.data.matricula,
+          senhaInicial: null,
+        });
       } else {
         const res = await actions.regenerarSenhaColaborador({
           employeeId: initialEmployee.id,
@@ -996,6 +1014,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
         cpfReadonly={true}
         searchLiderCandidates={handleSearchLider}
         variant={variant}
+        familyOptions={familyOptions}
         metasSlot={
           <DefinirMetasControl
             companyId={companyId}
@@ -1006,7 +1025,14 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
       />
       <div style={CREDENTIALS_SECTION_STYLE}>
         <h3 style={CREDENTIALS_TITLE_STYLE}>Credenciais de acesso</h3>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12 }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 16,
+            alignItems: 'center',
+            marginBottom: 12,
+          }}
+        >
           <div style={{ flex: 1 }}>
             {/* ME-B11.1c (EC6): acentuacao canonica "Matrícula" */}
             <div style={CREDENTIALS_LABEL_STYLE}>Matrícula (portal do colaborador)</div>
@@ -1128,10 +1154,22 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
       {showBlockerModal ? (
         <div style={BLOCKER_MODAL_OVERLAY_STYLE} role="dialog" aria-modal="true">
           <div style={BLOCKER_MODAL_BOX_STYLE}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: COLORS.text.primary }}>
+            <div
+              style={{
+                fontSize: 16,
+                fontWeight: 600,
+                color: COLORS.text.primary,
+              }}
+            >
               Não é possível inativar
             </div>
-            <div style={{ fontSize: 13, color: COLORS.text.secondary, lineHeight: 1.5 }}>
+            <div
+              style={{
+                fontSize: 13,
+                color: COLORS.text.secondary,
+                lineHeight: 1.5,
+              }}
+            >
               {MSG_LEADERSHIPTRANSFER_BLOQUEADO_LITERAL.replace(
                 'este colaborador',
                 initialEmployee.name,
@@ -1168,10 +1206,22 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
       {showBlockerDesmarcarLiderModal ? (
         <div style={BLOCKER_MODAL_OVERLAY_STYLE} role="dialog" aria-modal="true">
           <div style={BLOCKER_MODAL_BOX_STYLE}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: COLORS.text.primary }}>
+            <div
+              style={{
+                fontSize: 16,
+                fontWeight: 600,
+                color: COLORS.text.primary,
+              }}
+            >
               Não é possível inativar
             </div>
-            <div style={{ fontSize: 13, color: COLORS.text.secondary, lineHeight: 1.5 }}>
+            <div
+              style={{
+                fontSize: 13,
+                color: COLORS.text.secondary,
+                lineHeight: 1.5,
+              }}
+            >
               Desmarque como líder antes de inativar colaborador.
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -1213,10 +1263,22 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
       {showDeletarModal ? (
         <div style={BLOCKER_MODAL_OVERLAY_STYLE} role="dialog" aria-modal="true">
           <div style={BLOCKER_MODAL_BOX_STYLE}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: COLORS.text.primary }}>
+            <div
+              style={{
+                fontSize: 16,
+                fontWeight: 600,
+                color: COLORS.text.primary,
+              }}
+            >
               Deletar permanentemente?
             </div>
-            <div style={{ fontSize: 13, color: COLORS.text.secondary, lineHeight: 1.5 }}>
+            <div
+              style={{
+                fontSize: 13,
+                color: COLORS.text.secondary,
+                lineHeight: 1.5,
+              }}
+            >
               Esta ação é irreversível. O colaborador <strong>{initialEmployee.name}</strong> será
               removido permanentemente da base de dados. Confirmar?
             </div>

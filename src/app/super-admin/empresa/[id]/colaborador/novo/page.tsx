@@ -32,6 +32,12 @@ import { criarColaboradorAction, definirRFAction, pesquisarLiderCandidatosAction
 import { resolveDatabaseUrl } from '../../../../../../lib/db/resolveDatabaseUrl';
 import { loadColaboradorNovoPage, parseCompanyIdParam, parsePresetParam } from './internals';
 import { headerUserFromSession } from '../../../../../../lib/session/headerUser';
+import {
+  listActiveFamilySettingsForCompany,
+  type CompanyRoleFamilySettings,
+} from '../../../../../../server/services/companyRoleFamilySettings';
+import { getJobFamilyLabel } from '../../../../../../lib/job-family/formatJobFamily';
+import { JOB_FAMILY_OPTIONS, type FamilyOption } from '../ColaboradorForm';
 
 interface PageProps {
   readonly params: Promise<{ id: string }>;
@@ -64,6 +70,25 @@ export default async function ColaboradorNovoPage(props: PageProps): Promise<JSX
     }
 
     const pageData = await loadColaboradorNovoPage(client.db, companyId, preset);
+
+    // ME-1.17.b — carrega as familias ativas da empresa + resolve
+    // `titulo` canonico via `getJobFamilyLabel` (prioriza
+    // `nomeCustomizado`). `descricao` cai no texto canonico pre-ME-
+    // 1.17.b para as 6 canonicas; slots custom (nomeados pelo SA via
+    // Despacho 2 futuro `/familias`) recebem placeholder canonico.
+    const familySettings = await listActiveFamilySettingsForCompany(client.db, companyId);
+    const familyOptions: readonly FamilyOption[] = familySettings.map(
+      (s: CompanyRoleFamilySettings) => {
+        const canonicaMatch = JOB_FAMILY_OPTIONS.find((o) => o.id === s.jobFamily);
+        return {
+          id: s.jobFamily,
+          titulo: getJobFamilyLabel(s.jobFamily, s),
+          descricao:
+            canonicaMatch?.descricao ??
+            'Família customizada da empresa — 4 variáveis configuráveis mensalmente.',
+        };
+      },
+    );
 
     const profileKey = resolveProfileKey({
       session,
@@ -127,6 +152,7 @@ export default async function ColaboradorNovoPage(props: PageProps): Promise<JSX
             criarColaborador={criarColaboradorAction}
             definirRF={definirRFAction}
             pesquisarLiderCandidatos={pesquisarLiderCandidatosAction}
+            familyOptions={familyOptions}
           />
         </div>
       </Layout>
