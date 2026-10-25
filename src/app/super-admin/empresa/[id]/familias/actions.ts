@@ -1,21 +1,31 @@
-// ROIP APP 9BOX — server actions da rota Bruno
-// `/super-admin/empresa/[id]/familias` (§13.1 Aba 2, ME-075).
+// ROIP APP 9BOX — server actions canonicas da rota Bruno
+// `/super-admin/empresa/[id]/familias` (ME-075 + ME-1.17.2).
 //
-// Save canonico bit-exact por familia (§13.1 Aba 2 mockup linha 399:
-// "Cada familia tem seu proprio botao Salvar"). Chama o service
-// `upsertJobFamilyVariables` diretamente via `.onDuplicateKeyUpdate()`
-// (pre-decisao 1 aprovada por Bruno).
+// Actions canonicas:
+// - `saveJobFamilyAction` (ME-075 bit-exact preservada) — save das 4
+//   variaveis (nome, unidade, peso) de UMA familia.
+// - `activateCustomSlotAction` (ME-1.17.2 nova) — ativa proximo slot
+//   custom livre via `activateCustomSlot` + seed canonico de 4
+//   variaveis a 25%.
+// - `toggleFamilyActiveAction` (ME-1.17.2 nova) — ativar/desativar
+//   familia canonica OU custom. Guard D6: bloqueado quando familia
+//   tem colaboradores ATIVOS vinculados.
+// - `renameFamilyAction` (ME-1.17.2 nova) — edicao inline do
+//   `nomeCustomizado`.
+// - `reorderFamilyAction` (ME-1.17.2 nova) — swap de `ordem` com
+//   vizinho (direcao up/down) entre familias ATIVAS.
 //
-// **RV-13.** Consumida por `FamiliasClient.tsx` + testes de integracao
-// `me075-familias.test.ts`.
+// Autorizacao canonica: todas as actions sob `requireSuperAdmin`.
+// RV-12: Drizzle tipado. RV-13: todas consumidas por FamiliasClient.
+// RV-14: um statement por linha, 100 cols.
 
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 import { closeDbClient, createDbClient } from '../../../../../db/client';
-import { companies } from '../../../../../db/schema';
+import { companies, companyRoleFamilySettings } from '../../../../../db/schema';
 import { JOB_FAMILY_VALUES, type JobFamily } from '../../../../../db/schema/enums';
 import {
   LIDERANCA_GESTAO_VAR_NAMES,
@@ -27,8 +37,15 @@ import {
   upsertJobFamilyVariables,
   type JobFamilyVariableInput,
 } from '../../../../../server/services/companyJobFamilies';
+import {
+  activateCustomSlot,
+  FamilySettingsError,
+  listActiveFamilySettingsForCompany,
+  updateFamilySettings,
+} from '../../../../../server/services/companyRoleFamilySettings';
 import { getServerSession } from '../../../../../server/session/serverSession';
 import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
+import { countEmployeesByJobFamily } from '../../../../../lib/job-family/countEmployeesByJobFamily';
 
 export type ActionResult<T = null> =
   { readonly ok: true; readonly data: T } | { readonly ok: false; readonly message: string };
@@ -44,16 +61,20 @@ async function requireSuperAdmin(actionName: string): Promise<number> {
   return session.superAdminId;
 }
 
+async function assertCompanyExists(
+  db: Awaited<ReturnType<typeof createDbClient>>['db'],
+  companyId: number,
+): Promise<boolean> {
+  const companyRows = await db
+    .select({ id: companies.id })
+    .from(companies)
+    .where(eq(companies.id, companyId))
+    .limit(1);
+  return companyRows[0] !== undefined;
+}
+
 /**
- * Persiste as 4 variaveis de UMA familia via UPSERT canonico bit-exact
- * (`.onDuplicateKeyUpdate()`). Aplica canonicamente bit-exact as
- * validacoes bit-exact do router `updateJobFamilies`:
- *   - Existencia da empresa.
- *   - `jobFamily` em `JOB_FAMILY_VALUES` (6 valores).
- *   - `variables.length === 4` cobrindo indices {0,1,2,3}.
- *   - Soma dos pesos = 100 (tolerancia 0.01).
- *   - Familia 6 (`lideranca_gestao`): nomes e unidades canonicos bit-
- *     exact hard-coded no server (mockup linha 352 `estrutural:true`).
+ * ME-075 bit-exact preservada. Persiste as 4 variaveis de UMA familia.
  */
 export async function saveJobFamilyAction(input: {
   readonly companyId: number;
@@ -99,15 +120,9 @@ export async function saveJobFamilyAction(input: {
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
-    const companyRows = await client.db
-      .select({ id: companies.id })
-      .from(companies)
-      .where(eq(companies.id, input.companyId))
-      .limit(1);
-    if (companyRows[0] === undefined) {
+    if (!(await assertCompanyExists(client.db, input.companyId))) {
       return { ok: false, message: 'Empresa nao encontrada.' };
     }
-
     const finalVars: JobFamilyVariableInput[] =
       input.jobFamily === 'lideranca_gestao'
         ? input.variables.map((v) => ({
@@ -122,7 +137,6 @@ export async function saveJobFamilyAction(input: {
             unit: v.unit.trim(),
             weight: v.weight,
           }));
-
     await upsertJobFamilyVariables(
       client.db,
       input.companyId,
@@ -130,6 +144,252 @@ export async function saveJobFamilyAction(input: {
       finalVars,
       updatedBy,
     );
+    revalidatePath(`/super-admin/empresa/${input.companyId}/familias`);
+    return { ok: true, data: null };
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+/**
+ * ME-1.17.2 — ativa proximo slot custom livre. O service canonico
+ * `activateCustomSlot` ja aloca o proximo slot numerico, insere linha
+ * em `companyRoleFamilySettings` + seeda 4 variaveis a 25% em
+ * `companyJobFamilies`. Caller informa apenas o nome.
+ */
+export async function activateCustomSlotAction(input: {
+  readonly companyId: number;
+  readonly nomeCustomizado: string;
+}): Promise<ActionResult<{ chosen: JobFamily }>> {
+  const updatedBy = await requireSuperAdmin('activateCustomSlotAction');
+  if (!Number.isInteger(input.companyId) || input.companyId <= 0) {
+    return { ok: false, message: 'companyId invalido.' };
+  }
+  const nome = input.nomeCustomizado.trim();
+  if (nome.length === 0) {
+    return { ok: false, message: 'Nome da nova familia obrigatorio.' };
+  }
+  if (nome.length > 60) {
+    return { ok: false, message: 'Nome da familia deve ter no maximo 60 caracteres.' };
+  }
+
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    if (!(await assertCompanyExists(client.db, input.companyId))) {
+      return { ok: false, message: 'Empresa nao encontrada.' };
+    }
+    try {
+      const chosen = await activateCustomSlot(client.db, input.companyId, nome, updatedBy);
+      revalidatePath(`/super-admin/empresa/${input.companyId}/familias`);
+      return { ok: true, data: { chosen } };
+    } catch (err) {
+      if (err instanceof FamilySettingsError) {
+        return { ok: false, message: err.message };
+      }
+      throw err;
+    }
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+/**
+ * ME-1.17.2 — toggle de ativacao/desativacao de familia.
+ *
+ * Guard D6: desativacao bloqueada quando `countEmployeesByJobFamily`
+ * retorna > 0 para essa familia. Mensagem orienta migrar primeiro.
+ *
+ * Trava absoluta `lideranca_gestao`: reforcada pelo service
+ * `updateFamilySettings` (lanca `LOCKED_STRUCTURAL`).
+ */
+export async function toggleFamilyActiveAction(input: {
+  readonly companyId: number;
+  readonly jobFamily: JobFamily;
+  readonly ativo: boolean;
+}): Promise<ActionResult> {
+  const updatedBy = await requireSuperAdmin('toggleFamilyActiveAction');
+  if (!Number.isInteger(input.companyId) || input.companyId <= 0) {
+    return { ok: false, message: 'companyId invalido.' };
+  }
+  const validValues = JOB_FAMILY_VALUES as ReadonlyArray<string>;
+  if (!validValues.includes(input.jobFamily)) {
+    return { ok: false, message: 'Familia de funcao invalida.' };
+  }
+
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    if (!(await assertCompanyExists(client.db, input.companyId))) {
+      return { ok: false, message: 'Empresa nao encontrada.' };
+    }
+    if (!input.ativo) {
+      const counts = await countEmployeesByJobFamily(client.db, input.companyId);
+      const n = counts[input.jobFamily];
+      if (n > 0) {
+        return {
+          ok: false,
+          message:
+            `Nao e possivel desativar: ${n} colaborador(es) ativo(s) ` +
+            'ainda usam esta familia. Migre-os antes.',
+        };
+      }
+    }
+    try {
+      await updateFamilySettings(
+        client.db,
+        input.companyId,
+        input.jobFamily,
+        { ativo: input.ativo },
+        updatedBy,
+      );
+      revalidatePath(`/super-admin/empresa/${input.companyId}/familias`);
+      return { ok: true, data: null };
+    } catch (err) {
+      if (err instanceof FamilySettingsError) {
+        return { ok: false, message: err.message };
+      }
+      throw err;
+    }
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+/**
+ * ME-1.17.2 — renomeia familia (define `nomeCustomizado`). Passe
+ * `nomeCustomizado = null` para voltar ao label canonico.
+ *
+ * Trava absoluta `lideranca_gestao`: reforcada pelo service
+ * `updateFamilySettings` (lanca `LOCKED_STRUCTURAL`).
+ */
+export async function renameFamilyAction(input: {
+  readonly companyId: number;
+  readonly jobFamily: JobFamily;
+  readonly nomeCustomizado: string | null;
+}): Promise<ActionResult> {
+  const updatedBy = await requireSuperAdmin('renameFamilyAction');
+  if (!Number.isInteger(input.companyId) || input.companyId <= 0) {
+    return { ok: false, message: 'companyId invalido.' };
+  }
+  const validValues = JOB_FAMILY_VALUES as ReadonlyArray<string>;
+  if (!validValues.includes(input.jobFamily)) {
+    return { ok: false, message: 'Familia de funcao invalida.' };
+  }
+  let normalized: string | null = null;
+  if (input.nomeCustomizado !== null) {
+    const trimmed = input.nomeCustomizado.trim();
+    if (trimmed.length === 0) {
+      normalized = null;
+    } else if (trimmed.length > 60) {
+      return { ok: false, message: 'Nome da familia deve ter no maximo 60 caracteres.' };
+    } else {
+      normalized = trimmed;
+    }
+  }
+
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    if (!(await assertCompanyExists(client.db, input.companyId))) {
+      return { ok: false, message: 'Empresa nao encontrada.' };
+    }
+    try {
+      await updateFamilySettings(
+        client.db,
+        input.companyId,
+        input.jobFamily,
+        { nomeCustomizado: normalized },
+        updatedBy,
+      );
+      revalidatePath(`/super-admin/empresa/${input.companyId}/familias`);
+      return { ok: true, data: null };
+    } catch (err) {
+      if (err instanceof FamilySettingsError) {
+        return { ok: false, message: err.message };
+      }
+      throw err;
+    }
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+/**
+ * ME-1.17.2 — reordena familia (setas up/down). Carrega lista de
+ * ATIVAS ordenada por `ordem ASC`, encontra o vizinho na `direcao`
+ * (anterior para 'up', seguinte para 'down') e faz swap de `ordem`.
+ *
+ * Idempotente nos extremos: se a familia ja esta no topo e `direcao
+ * = 'up'`, ou ja esta no fim e `direcao = 'down'`, retorna ok sem
+ * mudanca. UI canonica desabilita o botao nesses casos.
+ */
+export async function reorderFamilyAction(input: {
+  readonly companyId: number;
+  readonly jobFamily: JobFamily;
+  readonly direcao: 'up' | 'down';
+}): Promise<ActionResult> {
+  const updatedBy = await requireSuperAdmin('reorderFamilyAction');
+  if (!Number.isInteger(input.companyId) || input.companyId <= 0) {
+    return { ok: false, message: 'companyId invalido.' };
+  }
+  const validValues = JOB_FAMILY_VALUES as ReadonlyArray<string>;
+  if (!validValues.includes(input.jobFamily)) {
+    return { ok: false, message: 'Familia de funcao invalida.' };
+  }
+
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    if (!(await assertCompanyExists(client.db, input.companyId))) {
+      return { ok: false, message: 'Empresa nao encontrada.' };
+    }
+    const activeSettings = await listActiveFamilySettingsForCompany(client.db, input.companyId);
+    const idx = activeSettings.findIndex((s) => s.jobFamily === input.jobFamily);
+    if (idx === -1) {
+      return {
+        ok: false,
+        message: 'Familia nao ativa — ative antes de reordenar.',
+      };
+    }
+    const neighborIdx = input.direcao === 'up' ? idx - 1 : idx + 1;
+    if (neighborIdx < 0 || neighborIdx >= activeSettings.length) {
+      return { ok: true, data: null };
+    }
+    const self = activeSettings[idx];
+    const neighbor = activeSettings[neighborIdx];
+    if (self === undefined || neighbor === undefined) {
+      return { ok: false, message: 'Estado inconsistente no reorder.' };
+    }
+    const selfOrdem = self.ordem;
+    const neighborOrdem = neighbor.ordem;
+    // Swap em 2 updates (sem FK, sem UNIQUE no par — safe sem tx).
+    // Usa valor sentinela temporario para evitar colisao do UNIQUE
+    // (companyId, ordem) caso exista — defesa canonica.
+    const sentinel = -1 * (Date.now() % 1_000_000);
+    await client.db
+      .update(companyRoleFamilySettings)
+      .set({ ordem: sentinel, updatedBy })
+      .where(
+        and(
+          eq(companyRoleFamilySettings.companyId, input.companyId),
+          eq(companyRoleFamilySettings.jobFamily, self.jobFamily),
+        ),
+      );
+    await client.db
+      .update(companyRoleFamilySettings)
+      .set({ ordem: selfOrdem, updatedBy })
+      .where(
+        and(
+          eq(companyRoleFamilySettings.companyId, input.companyId),
+          eq(companyRoleFamilySettings.jobFamily, neighbor.jobFamily),
+        ),
+      );
+    await client.db
+      .update(companyRoleFamilySettings)
+      .set({ ordem: neighborOrdem, updatedBy })
+      .where(
+        and(
+          eq(companyRoleFamilySettings.companyId, input.companyId),
+          eq(companyRoleFamilySettings.jobFamily, self.jobFamily),
+        ),
+      );
     revalidatePath(`/super-admin/empresa/${input.companyId}/familias`);
     return { ok: true, data: null };
   } finally {

@@ -1,14 +1,18 @@
 // ROIP APP 9BOX — rota canonica Bruno
-// `/super-admin/empresa/[id]/familias` (§13.1 Aba 2, ME-075).
+// `/super-admin/empresa/[id]/familias` (ME-075 + ME-1.17.2).
 //
-// Origem canonica:
-// - CAMADA_UI §13.1 Aba 2 (Familias de funcao — 6 familias × 4 variaveis).
-// - CAMADA_DADOS §12.2 (`companyJobFamilies` — UPSERT por familia).
-// - CAMADA_AUTENTICACAO_AUTORIZACAO §10.9 (cadastro de empresa —
-//   exclusivo Bruno) + §12 (matriz de acoes administrativas).
-// - MASTER_ESCOPO_B8.md §2.1 (pattern) + §3.2 (ficha).
+// ME-1.17.2 — expansao para contemplar as decisoes D1..D9:
+// (D1) Canonicas inativas visiveis no mesmo grid com toggle. (D2) 20
+// slots custom nao aparecem como placeholders — apenas as ativadas +
+// botao "+ Nova". (D4) Nome editavel inline. (D5) Setas up/down.
+// (D6) Guard de desativacao (counts por familia). (D7) Save por
+// familia. (D8) Trava liderança. (D9) Warning prospectivo de pesos.
 //
-// **RV-14.** Um statement por linha, largura maxima 100 cols.
+// Carga canonica consolidada via `loadFamiliasPageData` — expoe
+// settings + variaveis persistidas + contagem de colaboradores em
+// uma unica Promise.all paralelizada.
+//
+// RV-14: um statement por linha, 100 cols.
 
 import { notFound, redirect } from 'next/navigation';
 import { eq } from 'drizzle-orm';
@@ -24,11 +28,7 @@ import { getServerSession } from '../../../../../server/session/serverSession';
 import { FamiliasClient } from './FamiliasClient';
 import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 import { headerUserFromSession } from '../../../../../lib/session/headerUser';
-import {
-  buildInitialFamiliesState,
-  loadJobFamiliesForCompany,
-  parseCompanyIdParam,
-} from './internals';
+import { loadFamiliasPageData, parseCompanyIdParam } from './internals';
 
 interface PageProps {
   readonly params: Promise<{ id: string }>;
@@ -67,8 +67,8 @@ export default async function SuperAdminCompanyFamiliasPage(
       notFound();
     }
 
-    const persisted = await loadJobFamiliesForCompany(client.db, companyId);
-    const initialFamilies = buildInitialFamiliesState(persisted);
+    // ME-1.17.2 — carga unica canonica: settings + variaveis + counts.
+    const pageData = await loadFamiliasPageData(client.db, companyId);
 
     const profileKey = resolveProfileKey({
       session,
@@ -99,7 +99,7 @@ export default async function SuperAdminCompanyFamiliasPage(
         <FamiliasClient
           companyId={companyId}
           companyNomeFantasia={company.nomeFantasia}
-          initialFamilies={initialFamilies}
+          pageData={pageData}
         />
       </Layout>
     );
