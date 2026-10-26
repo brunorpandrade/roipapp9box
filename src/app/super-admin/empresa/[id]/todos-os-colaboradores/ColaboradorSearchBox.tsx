@@ -148,7 +148,7 @@ export function ColaboradorSearchBox(props: ColaboradorSearchBoxProps): JSX.Elem
     const term = normalizeForSearch(debounced.trim());
     if (term.length === 0) return [];
     return suggestions
-      .filter((entry) => normalizeForSearch(`${entry.name} ${entry.cargo}`).includes(term))
+      .filter((entry) => normalizeForSearch(entry.name).includes(term))
       .slice(0, SUGGESTION_LIMIT);
   }, [suggestions, debounced]);
 
@@ -159,7 +159,7 @@ export function ColaboradorSearchBox(props: ColaboradorSearchBoxProps): JSX.Elem
       <input
         style={INPUT}
         type="text"
-        placeholder="Nome, CPF ou cargo."
+        placeholder="Nome do colaborador"
         value={value}
         maxLength={maxLength}
         onChange={(e): void => {

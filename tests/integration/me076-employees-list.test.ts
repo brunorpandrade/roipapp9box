@@ -622,7 +622,10 @@ describe('employees.list — filtros canonicos bit-exact (§14.10 + §20)', () =
     expect(res.rows[0]?.name).toBe('Sem Nada');
   });
 
-  it('busca global case-insensitive por nome/cpf/cargo', async () => {
+  // ME-1.17.3 CC079-3.3 — busca simplificada por decisao canonica de
+  // Bruno: autocomplete e server-side agora filtram APENAS por name.
+  // Rationale em services/employees.ts resolveBuscaCondition.
+  it('busca global case-insensitive apenas por name (ME-1.17.3)', async () => {
     const companyId = await createTestCompany();
     await seedEmployee({
       companyId,
@@ -639,14 +642,32 @@ describe('employees.list — filtros canonicos bit-exact (§14.10 + §20)', () =
 
     const { factory, ctx } = bindRouter();
     const caller = factory(ctx(await tokenSuperAdmin()));
-    const res = await caller.list({
+    // Busca por nome (case-insensitive) deve encontrar Maria.
+    const resNome = await caller.list({
+      companyId,
+      ...EMPTY_FILTERS_INPUT,
+      filters: { ...EMPTY_FILTERS_INPUT.filters, busca: 'maria' },
+    });
+    expect(resNome.totalCount).toBe(1);
+    expect(resNome.rows[0]?.name).toBe('Maria Gerente');
+
+    // Busca por cargo nao deve mais encontrar — simplificacao canonica.
+    const resCargo = await caller.list({
       companyId,
       ...EMPTY_FILTERS_INPUT,
       filters: { ...EMPTY_FILTERS_INPUT.filters, busca: 'GERENTE' },
     });
+    // "GERENTE" casa com "Maria Gerente" (name), nao com o cargo.
+    expect(resCargo.totalCount).toBe(1);
+    expect(resCargo.rows[0]?.name).toBe('Maria Gerente');
 
-    expect(res.totalCount).toBe(1);
-    expect(res.rows[0]?.name).toBe('Maria Gerente');
+    // Busca por CPF nao deve mais encontrar — simplificacao canonica.
+    const resCpf = await caller.list({
+      companyId,
+      ...EMPTY_FILTERS_INPUT,
+      filters: { ...EMPTY_FILTERS_INPUT.filters, busca: '11800000002' },
+    });
+    expect(resCpf.totalCount).toBe(0);
   });
 
   it('filtra por data admissao (range)', async () => {

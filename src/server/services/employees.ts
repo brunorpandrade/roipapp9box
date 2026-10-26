@@ -30,7 +30,6 @@ import {
   like,
   lte,
   max,
-  or,
 } from 'drizzle-orm';
 import type { AnyColumn, SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/mysql-core';
@@ -371,19 +370,20 @@ function resolveStatusCondition(status: 'ativo' | 'inativo' | 'todos'): SQL | un
 }
 
 /**
- * §14.10 — busca global canonica bit-exact (name/cpf/cargo). Case-
- * insensitive via collation padrao MySQL 8 (`utf8mb4_0900_ai_ci`) — o
- * `LIKE` do MySQL ja e case-insensitive por default sob esta collation,
- * consistente bit-exact com a producao Railway (MySQL 8.4 LTS).
+ * §14.10 — busca global canonica. ME-1.17.3 CC079-3.3: simplificada
+ * por decisao canonica de Bruno para buscar APENAS por `name`.
+ * Rationale: autocomplete por cargo/CBO tinha semantica confusa
+ * (campo `cargo` livre vazio nas empresas semeadas via CBO; usuario
+ * sofria ao buscar por cargo-federal e nao receber match). CPF e
+ * lookup transacional que o usuario abre pelo cadastro direto, nao
+ * pela listagem. Padrao SaaS canonico: autocomplete da listagem
+ * busca por nome; filtros especificos cobrem cargo/CPF/outros.
+ * Case-insensitive via collation padrao MySQL 8 (`utf8mb4_0900_ai_ci`).
  */
 function resolveBuscaCondition(busca: string): SQL | undefined {
   if (busca === '') return undefined;
   const pattern = `%${busca}%`;
-  return or(
-    like(employees.name, pattern),
-    like(employees.cpf, pattern),
-    like(employees.descricaoCBO, pattern),
-  );
+  return like(employees.name, pattern);
 }
 
 /**

@@ -376,7 +376,9 @@ export function FamiliasClient(props: FamiliasClientProps): JSX.Element {
             migrateFromFamily
           }
           fromCount={families.find((fa) => fa.jobFamily === migrateFromFamily)?.employeeCount ?? 0}
-          toOptions={activeFamilies.filter((fa) => fa.jobFamily !== migrateFromFamily)}
+          toOptions={activeFamilies.filter(
+            (fa) => fa.jobFamily !== migrateFromFamily && !fa.estrutural,
+          )}
           toFamily={migrateToFamily}
           saving={migrateSaving}
           error={migrateError}
