@@ -19,7 +19,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition, type JSX } from 'react';
+import { useEffect, useRef, useState, useTransition, type JSX } from 'react';
 
 import {
   activateCustomSlotAction,
@@ -69,6 +69,35 @@ export function FamiliasClient(props: FamiliasClientProps): JSX.Element {
   const [modalName, setModalName] = useState<string>('');
   const [modalSaving, setModalSaving] = useState<boolean>(false);
   const [modalError, setModalError] = useState<string | null>(null);
+
+  // ME-1.17.2 CC079-2.1 — sincronizacao canonica estado client ↔
+  // props server pos router.refresh(). O `useState` inicial so roda
+  // no mount; sem este efeito as mudancas de toggle/rename/reorder
+  // persistidas no backend nao refletem na UI ate recarregar a pagina.
+  // `pageDataFirstMount` evita sobrescrever flags transitorios (saving,
+  // mensagens) na primeira renderizacao.
+  const pageDataFirstMount = useRef<boolean>(true);
+  useEffect(() => {
+    if (pageDataFirstMount.current) {
+      pageDataFirstMount.current = false;
+      return;
+    }
+    setFamilies((prev) => {
+      const prevByKey = new Map(prev.map((f) => [f.jobFamily, f] as const));
+      return props.pageData.families.map((fresh) => {
+        const prevLocal = prevByKey.get(fresh.jobFamily);
+        return {
+          ...fresh,
+          savingFlag: false,
+          togglingFlag: false,
+          reorderingFlag: false,
+          renamingFlag: false,
+          errorMessage: null,
+          successMessage: prevLocal?.successMessage ?? null,
+        };
+      });
+    });
+  }, [props.pageData]);
 
   const activeFamilies = families.filter((f) => f.ativo);
 
