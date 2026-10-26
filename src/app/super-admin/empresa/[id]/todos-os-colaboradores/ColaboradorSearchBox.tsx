@@ -159,7 +159,7 @@ export function ColaboradorSearchBox(props: ColaboradorSearchBoxProps): JSX.Elem
       <input
         style={INPUT}
         type="text"
-        placeholder="Buscar por nome, CPF ou cargo..."
+        placeholder="Nome, CPF ou cargo."
         value={value}
         maxLength={maxLength}
         onChange={(e): void => {

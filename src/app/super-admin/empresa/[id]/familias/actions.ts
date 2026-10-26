@@ -1,19 +1,26 @@
 // ROIP APP 9BOX — server actions canonicas da rota Bruno
-// `/super-admin/empresa/[id]/familias` (ME-075 + ME-1.17.2).
+// `/super-admin/empresa/[id]/familias` (ME-075 + ME-1.17.2 + ME-1.17.3).
 //
 // Actions canonicas:
 // - `saveJobFamilyAction` (ME-075 bit-exact preservada) — save das 4
 //   variaveis (nome, unidade, peso) de UMA familia.
-// - `activateCustomSlotAction` (ME-1.17.2 nova) — ativa proximo slot
-//   custom livre via `activateCustomSlot` + seed canonico de 4
-//   variaveis a 25%.
-// - `toggleFamilyActiveAction` (ME-1.17.2 nova) — ativar/desativar
-//   familia canonica OU custom. Guard D6: bloqueado quando familia
-//   tem colaboradores ATIVOS vinculados.
-// - `renameFamilyAction` (ME-1.17.2 nova) — edicao inline do
+// - `activateCustomSlotAction` (ME-1.17.2) — ativa proximo slot custom
+//   livre via `activateCustomSlot` + seed canonico de 4 variaveis a
+//   25%.
+// - `toggleFamilyActiveAction` (ME-1.17.2) — ativar/desativar familia
+//   canonica OU custom. Guard: bloqueado quando familia tem
+//   colaboradores ATIVOS vinculados (fluxo canonico ME-1.17.3 chama
+//   `migrateAndDeactivateFamilyAction` nesse caso).
+// - `renameFamilyAction` (ME-1.17.2) — edicao inline do
 //   `nomeCustomizado`.
-// - `reorderFamilyAction` (ME-1.17.2 nova) — swap de `ordem` com
-//   vizinho (direcao up/down) entre familias ATIVAS.
+// - `reorderFamilyAction` (ME-1.17.2) — swap de `ordem` com vizinho
+//   (direcao up/down) entre familias ATIVAS.
+// - `migrateAndDeactivateFamilyAction` (ME-1.17.3 nova) — move em
+//   lote os N colaboradores ATIVOS de `fromFamily` para `toFamily`
+//   via `migrateEmployeesJobFamily` + desativa `fromFamily` em
+//   seguida via `updateFamilySettings`. Operacao sequencial canonica
+//   (ambos UPDATEs em Drizzle tipado; sem FK/UNIQUE problematico
+//   entre eles, safe sem transacao explicita).
 //
 // Autorizacao canonica: todas as actions sob `requireSuperAdmin`.
 // RV-12: Drizzle tipado. RV-13: todas consumidas por FamiliasClient.
@@ -43,6 +50,7 @@ import {
   listActiveFamilySettingsForCompany,
   updateFamilySettings,
 } from '../../../../../server/services/companyRoleFamilySettings';
+import { migrateEmployeesJobFamily } from '../../../../../server/services/employees';
 import { getServerSession } from '../../../../../server/session/serverSession';
 import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 import { countEmployeesByJobFamily } from '../../../../../lib/job-family/countEmployeesByJobFamily';
@@ -392,6 +400,82 @@ export async function reorderFamilyAction(input: {
       );
     revalidatePath(`/super-admin/empresa/${input.companyId}/familias`);
     return { ok: true, data: null };
+  } finally {
+    await closeDbClient(client);
+  }
+}
+
+/**
+ * ME-1.17.3 — migra N colaboradores ATIVOS de `fromFamily` para
+ * `toFamily` + desativa `fromFamily` em seguida. UX helper canonica
+ * para o fluxo "desativar familia ocupada" (D6 ME-1.17.2 bloqueava
+ * via guard; esta action desbloqueia via migracao previa).
+ *
+ * Validacoes canonicas:
+ * - `fromFamily != toFamily` (migracao real).
+ * - `toFamily` ATIVA (nao pode migrar para familia desativada).
+ * - `fromFamily` nao pode ser `lideranca_gestao` (trava absoluta
+ *   reforcada pelo `updateFamilySettings` server-side).
+ * - Ambas em `JOB_FAMILY_VALUES`.
+ *
+ * Sequencia canonica (sem transacao explicita — UPDATEs sao
+ * independentes e idempotentes isoladamente):
+ *   1. `migrateEmployeesJobFamily(from -> to)` — UPDATE em lote.
+ *   2. `updateFamilySettings(from, { ativo: false })` — desativa.
+ * Retorna numero de colaboradores migrados.
+ */
+export async function migrateAndDeactivateFamilyAction(input: {
+  readonly companyId: number;
+  readonly fromFamily: JobFamily;
+  readonly toFamily: JobFamily;
+}): Promise<ActionResult<{ migrated: number }>> {
+  const updatedBy = await requireSuperAdmin('migrateAndDeactivateFamilyAction');
+  if (!Number.isInteger(input.companyId) || input.companyId <= 0) {
+    return { ok: false, message: 'companyId invalido.' };
+  }
+  const validValues = JOB_FAMILY_VALUES as ReadonlyArray<string>;
+  if (!validValues.includes(input.fromFamily) || !validValues.includes(input.toFamily)) {
+    return { ok: false, message: 'Familia de funcao invalida.' };
+  }
+  if (input.fromFamily === input.toFamily) {
+    return { ok: false, message: 'Familia destino nao pode ser igual a origem.' };
+  }
+
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    if (!(await assertCompanyExists(client.db, input.companyId))) {
+      return { ok: false, message: 'Empresa nao encontrada.' };
+    }
+    const activeSettings = await listActiveFamilySettingsForCompany(client.db, input.companyId);
+    const destinoAtivo = activeSettings.some((s) => s.jobFamily === input.toFamily);
+    if (!destinoAtivo) {
+      return {
+        ok: false,
+        message: 'Familia destino precisa estar ATIVA para receber a migracao.',
+      };
+    }
+    try {
+      const migrated = await migrateEmployeesJobFamily(
+        client.db,
+        input.companyId,
+        input.fromFamily,
+        input.toFamily,
+      );
+      await updateFamilySettings(
+        client.db,
+        input.companyId,
+        input.fromFamily,
+        { ativo: false },
+        updatedBy,
+      );
+      revalidatePath(`/super-admin/empresa/${input.companyId}/familias`);
+      return { ok: true, data: { migrated } };
+    } catch (err) {
+      if (err instanceof FamilySettingsError) {
+        return { ok: false, message: err.message };
+      }
+      throw err;
+    }
   } finally {
     await closeDbClient(client);
   }

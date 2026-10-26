@@ -327,10 +327,31 @@ const FILTRO_SELECT: CSSProperties = {
   minWidth: 160,
 };
 
-const FILTRO_DATE: CSSProperties = {
-  padding: '7px 12px',
+const FILTRO_DATE_GROUP: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '4px 10px',
   border: `1px solid ${COLORS.border.default}`,
   borderRadius: 8,
+  background: '#FFFFFF',
+};
+
+const FILTRO_DATE_LABEL: CSSProperties = {
+  fontSize: 12,
+  color: COLORS.text.tertiary,
+  fontWeight: 500,
+};
+
+const FILTRO_DATE_SEP: CSSProperties = {
+  fontSize: 11,
+  color: COLORS.text.quaternary,
+};
+
+const FILTRO_DATE: CSSProperties = {
+  padding: '5px 8px',
+  border: `1px solid ${COLORS.border.default}`,
+  borderRadius: 6,
   fontSize: 12,
   color: COLORS.text.primary,
   background: '#FFFFFF',
@@ -828,27 +849,8 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
     [filters, refetch],
   );
 
-  const handleDataCadastroInicioChange = useCallback(
-    (v: string): void => {
-      void refetch({
-        ...filters,
-        dataCadastroInicio: inputValueToDate(v),
-        page: 1,
-      });
-    },
-    [filters, refetch],
-  );
-
-  const handleDataCadastroFimChange = useCallback(
-    (v: string): void => {
-      void refetch({
-        ...filters,
-        dataCadastroFim: inputValueToDate(v),
-        page: 1,
-      });
-    },
-    [filters, refetch],
-  );
+  // ME-1.17.3 — handlers de dataCadastro removidos (filtro aposentado;
+  // ordenacao pela coluna da tabela preserva o caso de uso canonico).
 
   const handleLimparFiltros = useCallback((): void => {
     void refetch({
@@ -920,8 +922,6 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
     filters.jobFamily !== null ||
     filters.dataAdmissaoInicio !== null ||
     filters.dataAdmissaoFim !== null ||
-    filters.dataCadastroInicio !== null ||
-    filters.dataCadastroFim !== null ||
     filters.papelFuncional !== 'todos';
 
   const hasNoRegistrosInicial = result.totalCount === 0 && !hasAnyFilter && filters.busca === '';
@@ -930,20 +930,21 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* Toolbar canonica — busca + 5 botoes de acao (ME 3.5.1 Debitos A + C:
-          botao [RH] antigo removido, redundante com dropdown §20 "Papel
-          funcional"; botao "Baixar matriculas" inserido entre Exportar
-          planilha e Baixar planilha modelo). */}
+      {/* Toolbar canonica — busca + 6 botoes de acao em LINHA UNICA
+          (ME-1.17.3). Busca a esquerda, botoes a direita; flex-wrap
+          fallback canonico para viewports menores. */}
       <div style={CARD_STYLE}>
         <div style={TOOLBAR_ROW}>
-          <ColaboradorSearchBox
-            value={buscaDraft}
-            maxLength={BUSCA_MAX_LEN}
-            suggestions={searchIndex}
-            onChange={setBuscaDraft}
-            onSubmit={handleBuscaSubmit}
-            onSelectSuggestion={handleSelectSuggestion}
-          />
+          <div style={{ flex: '0 0 auto', marginRight: 'auto' }}>
+            <ColaboradorSearchBox
+              value={buscaDraft}
+              maxLength={BUSCA_MAX_LEN}
+              suggestions={searchIndex}
+              onChange={setBuscaDraft}
+              onSubmit={handleBuscaSubmit}
+              onSelectSuggestion={handleSelectSuggestion}
+            />
+          </div>
           {hideActionsButtons ? null : (
             <>
               {/* ME 3.5.1 — 5 botoes canonicos (ordem: Exportar,
@@ -960,9 +961,9 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                     ? 'Exportacao indisponivel neste contexto'
                     : 'Exportar planilha XLSX com a listagem atual'
                 }
-                aria-label="Exportar planilha"
+                aria-label="Exportar"
               >
-                📥 Exportar planilha
+                📥 Exportar
               </button>
               <button
                 type="button"
@@ -976,9 +977,9 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                     ? 'Download de matriculas indisponivel neste contexto'
                     : 'Baixar XLSX com Nome, CPF e Matricula de todos os colaboradores ativos'
                 }
-                aria-label="Baixar matriculas"
+                aria-label="Baixar matrículas"
               >
-                📇 Baixar matriculas
+                📇 Baixar matrículas
               </button>
               <button
                 type="button"
@@ -992,9 +993,9 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                     ? 'Download de modelo indisponivel neste contexto'
                     : 'Baixar planilha modelo canonica (.xlsx)'
                 }
-                aria-label="Baixar planilha modelo"
+                aria-label="Planilha modelo"
               >
-                📄 Baixar planilha modelo
+                📄 Planilha modelo
               </button>
               <button
                 type="button"
@@ -1010,9 +1011,9 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                     ? 'Importacao indisponivel neste contexto'
                     : 'Importar colaboradores em massa via XLSX'
                 }
-                aria-label="Importar em massa"
+                aria-label="Importar"
               >
-                📤 Importar em massa
+                📤 Importar
               </button>
               {/* ME-B9.3 Fase B — botao canonico `[📸 Fotos em massa]`
                   (upload de fotos de colaboradores por CPF). */}
@@ -1028,25 +1029,30 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                     ? 'Upload de fotos em massa indisponivel neste contexto'
                     : 'Upload em massa de fotos (matching por CPF no nome do arquivo)'
                 }
-                aria-label="Fotos em massa"
+                aria-label="Fotos"
               >
-                📸 Fotos em massa
+                📸 Fotos
               </button>
+              {/* ME-1.17.3 — CTA canonico teal com padding/fonte
+                  alinhados aos outros botoes da toolbar para a linha
+                  unica canonica da ME-1.17.3. */}
               <Link
                 href={novoColaboradorHref}
                 style={{
-                  padding: '10px 20px',
-                  fontSize: 14,
+                  padding: '7px 12px',
+                  fontSize: 12,
                   fontWeight: 500,
                   border: `1px solid ${COLORS.accent.teal}`,
-                  borderRadius: 6,
+                  borderRadius: 8,
                   background: COLORS.accent.teal,
                   color: '#FFFFFF',
                   textDecoration: 'none',
-                  display: 'inline-block',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
                 }}
               >
-                + Cadastrar colaborador
+                + Novo colaborador
               </Link>
             </>
           )}
@@ -1198,38 +1204,29 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
             )}
             <option value="sem_papel">Papel funcional: Sem papel</option>
           </select>
-          <input
-            style={FILTRO_DATE}
-            type="date"
-            value={dateToInputValue(filters.dataAdmissaoInicio)}
-            onChange={(e): void => handleDataAdmissaoInicioChange(e.target.value)}
-            aria-label="Data de admissão — início"
-            title="Data de admissão — início"
-          />
-          <input
-            style={FILTRO_DATE}
-            type="date"
-            value={dateToInputValue(filters.dataAdmissaoFim)}
-            onChange={(e): void => handleDataAdmissaoFimChange(e.target.value)}
-            aria-label="Data de admissão — fim"
-            title="Data de admissão — fim"
-          />
-          <input
-            style={FILTRO_DATE}
-            type="date"
-            value={dateToInputValue(filters.dataCadastroInicio)}
-            onChange={(e): void => handleDataCadastroInicioChange(e.target.value)}
-            aria-label="Data de cadastro — início"
-            title="Data de cadastro — início"
-          />
-          <input
-            style={FILTRO_DATE}
-            type="date"
-            value={dateToInputValue(filters.dataCadastroFim)}
-            onChange={(e): void => handleDataCadastroFimChange(e.target.value)}
-            aria-label="Data de cadastro — fim"
-            title="Data de cadastro — fim"
-          />
+          {/* ME-1.17.3 — filtro canonico de admissao agrupado com
+              label visivel. Filtro de data de cadastro removido
+              (ordenacao da coluna preservada). */}
+          <div style={FILTRO_DATE_GROUP}>
+            <span style={FILTRO_DATE_LABEL}>Admissão:</span>
+            <input
+              style={FILTRO_DATE}
+              type="date"
+              value={dateToInputValue(filters.dataAdmissaoInicio)}
+              onChange={(e): void => handleDataAdmissaoInicioChange(e.target.value)}
+              aria-label="Data de admissão — início"
+              title="Data de admissão — início"
+            />
+            <span style={FILTRO_DATE_SEP}>até</span>
+            <input
+              style={FILTRO_DATE}
+              type="date"
+              value={dateToInputValue(filters.dataAdmissaoFim)}
+              onChange={(e): void => handleDataAdmissaoFimChange(e.target.value)}
+              aria-label="Data de admissão — fim"
+              title="Data de admissão — fim"
+            />
+          </div>
           {hasAnyFilter ? (
             <button
               type="button"

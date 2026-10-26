@@ -92,6 +92,44 @@ export async function listEmployeesByCompany(db: RoipDatabase, companyId: number
 }
 
 /**
+ * ME-1.17.3 — migra em LOTE a `jobFamily` de TODOS os colaboradores
+ * ATIVOS de uma empresa que estao numa familia origem para a familia
+ * destino. Usado pelo fluxo canonico de desativacao de familia
+ * ocupada: antes de desativar `fromFamily` (que tem N colaboradores),
+ * o SA escolhe `toFamily` e esses N colaboradores sao movidos em um
+ * unico UPDATE tipado Drizzle.
+ *
+ * Retorna o numero de linhas afetadas. Zero quando nao ha colaboradores
+ * ATIVOS em `fromFamily` (idempotente canonicamente).
+ *
+ * Nao atualiza `employeeGoals` (snapshot individual canonico): o
+ * proximo acionamento do modal "Definir metas" pelo RH ja carrega
+ * template da nova familia (fonte unica S366 - `employeeVariables`).
+ * Comportamento canonicamente alinhado com o motor do Eixo X.
+ */
+export async function migrateEmployeesJobFamily(
+  db: RoipDatabase,
+  companyId: number,
+  fromFamily: JobFamily,
+  toFamily: JobFamily,
+): Promise<number> {
+  if (fromFamily === toFamily) {
+    return 0;
+  }
+  const [result] = await db
+    .update(employees)
+    .set({ jobFamily: toFamily })
+    .where(
+      and(
+        eq(employees.companyId, companyId),
+        eq(employees.jobFamily, fromFamily),
+        eq(employees.status, 'ativo'),
+      ),
+    );
+  return result.affectedRows;
+}
+
+/**
  * Atualiza apenas o campo `status` de um colaborador. Nao toca em outros
  * campos. Retorna o numero de linhas afetadas.
  */

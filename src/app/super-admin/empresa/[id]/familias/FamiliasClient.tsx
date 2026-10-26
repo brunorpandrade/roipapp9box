@@ -23,6 +23,7 @@ import { useEffect, useRef, useState, useTransition, type JSX } from 'react';
 
 import {
   activateCustomSlotAction,
+  migrateAndDeactivateFamilyAction,
   renameFamilyAction,
   reorderFamilyAction,
   saveJobFamilyAction,
@@ -35,6 +36,7 @@ import {
   type FamiliaState,
   type FamiliasPageData,
 } from './internals';
+import type { JobFamily } from '../../../../../db/schema/enums';
 
 export interface FamiliasClientProps {
   readonly companyId: number;
@@ -69,6 +71,13 @@ export function FamiliasClient(props: FamiliasClientProps): JSX.Element {
   const [modalName, setModalName] = useState<string>('');
   const [modalSaving, setModalSaving] = useState<boolean>(false);
   const [modalError, setModalError] = useState<string | null>(null);
+  // ME-1.17.3 — estado do modal canonico de migracao em massa (fluxo
+  // "desativar familia ocupada": seleciona destino + confirma).
+  const [migrateOpen, setMigrateOpen] = useState<boolean>(false);
+  const [migrateFromFamily, setMigrateFromFamily] = useState<JobFamily | null>(null);
+  const [migrateToFamily, setMigrateToFamily] = useState<JobFamily | ''>('');
+  const [migrateSaving, setMigrateSaving] = useState<boolean>(false);
+  const [migrateError, setMigrateError] = useState<string | null>(null);
 
   // ME-1.17.2 CC079-2.1 — sincronizacao canonica estado client ↔
   // props server pos router.refresh(). O `useState` inicial so roda
@@ -162,6 +171,17 @@ export function FamiliasClient(props: FamiliasClientProps): JSX.Element {
     if (f === undefined) {
       return;
     }
+    // ME-1.17.3 — fluxo canonico desativar com migracao: se familia
+    // ATIVA com colaboradores vinculados, abre modal de migracao em
+    // vez de chamar toggleFamilyActiveAction (que bloquearia no guard
+    // server-side).
+    if (f.ativo && f.employeeCount > 0) {
+      setMigrateFromFamily(f.jobFamily);
+      setMigrateToFamily('');
+      setMigrateError(null);
+      setMigrateOpen(true);
+      return;
+    }
     patchFamily(familyIdx, { togglingFlag: true, errorMessage: null, successMessage: null });
     const result = await toggleFamilyActiveAction({
       companyId: props.companyId,
@@ -176,6 +196,29 @@ export function FamiliasClient(props: FamiliasClientProps): JSX.Element {
     if (result.ok) {
       startTransition(() => router.refresh());
     }
+  }
+
+  async function handleMigrateAndDeactivate(): Promise<void> {
+    if (migrateFromFamily === null || migrateToFamily === '') {
+      setMigrateError('Selecione uma família destino.');
+      return;
+    }
+    setMigrateSaving(true);
+    setMigrateError(null);
+    const result = await migrateAndDeactivateFamilyAction({
+      companyId: props.companyId,
+      fromFamily: migrateFromFamily,
+      toFamily: migrateToFamily,
+    });
+    setMigrateSaving(false);
+    if (!result.ok) {
+      setMigrateError(result.message);
+      return;
+    }
+    setMigrateOpen(false);
+    setMigrateFromFamily(null);
+    setMigrateToFamily('');
+    startTransition(() => router.refresh());
   }
 
   async function handleRename(familyIdx: number, nomeCustomizado: string | null): Promise<void> {
@@ -324,6 +367,29 @@ export function FamiliasClient(props: FamiliasClientProps): JSX.Element {
           onConfirm={() => void handleActivateCustom()}
         />
       ) : null}
+
+      {migrateOpen && migrateFromFamily !== null ? (
+        <MigrateFamilyModal
+          fromFamily={migrateFromFamily}
+          fromLabel={
+            families.find((fa) => fa.jobFamily === migrateFromFamily)?.displayLabel ??
+            migrateFromFamily
+          }
+          fromCount={families.find((fa) => fa.jobFamily === migrateFromFamily)?.employeeCount ?? 0}
+          toOptions={activeFamilies.filter((fa) => fa.jobFamily !== migrateFromFamily)}
+          toFamily={migrateToFamily}
+          saving={migrateSaving}
+          error={migrateError}
+          onChangeToFamily={setMigrateToFamily}
+          onCancel={() => {
+            setMigrateOpen(false);
+            setMigrateFromFamily(null);
+            setMigrateToFamily('');
+            setMigrateError(null);
+          }}
+          onConfirm={() => void handleMigrateAndDeactivate()}
+        />
+      ) : null}
     </div>
   );
 }
@@ -351,8 +417,10 @@ function FamiliaCard(props: FamiliaCardProps): JSX.Element {
   const f = props.familia;
   const total = sumWeights(f.variables);
   const savable = isFamiliaSavable(f.variables) && !f.savingFlag && f.ativo;
-  const canToggleOff = !f.estrutural && f.employeeCount === 0;
-  const toggleDisabled = f.estrutural || f.togglingFlag || (f.ativo && !canToggleOff);
+  // ME-1.17.3 — guard preventivo removido: desativar familia com
+  // colaboradores agora abre modal canonico de migracao em massa
+  // (handleToggleActive detecta employeeCount > 0 e desvia o fluxo).
+  const toggleDisabled = f.estrutural || f.togglingFlag;
 
   return (
     <div style={cardStyle(f.ativo)}>
@@ -441,8 +509,8 @@ function FamiliaCard(props: FamiliaCardProps): JSX.Element {
             onClick={props.onToggleActive}
             disabled={toggleDisabled}
             title={
-              f.ativo && !canToggleOff
-                ? `${f.employeeCount} colaborador(es) usam esta família. Migre-os antes.`
+              f.ativo && f.employeeCount > 0
+                ? `${f.employeeCount} colaborador(es) serão migrados antes da desativação.`
                 : undefined
             }
             style={toggleButtonStyle(f.ativo, toggleDisabled)}
@@ -651,6 +719,84 @@ function ActivateCustomModal(props: {
             style={saveButtonStyle(!props.saving && props.name.trim() !== '')}
           >
             {props.saving ? 'Ativando…' : 'Ativar família'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MigrateFamilyModal(props: {
+  readonly fromFamily: JobFamily;
+  readonly fromLabel: string;
+  readonly fromCount: number;
+  readonly toOptions: readonly FamiliaLocalState[];
+  readonly toFamily: JobFamily | '';
+  readonly saving: boolean;
+  readonly error: string | null;
+  readonly onChangeToFamily: (v: JobFamily | '') => void;
+  readonly onCancel: () => void;
+  readonly onConfirm: () => void;
+}): JSX.Element {
+  const canConfirm = !props.saving && props.toFamily !== '' && props.toOptions.length > 0;
+  return (
+    <div style={modalBackdropStyle} role="dialog" aria-modal="true">
+      <div style={modalCardStyle}>
+        <h2 style={{ fontSize: '18px', fontWeight: 600, margin: '0 0 8px 0' }}>
+          Desativar família com migração
+        </h2>
+        <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 16px 0' }}>
+          A família <strong>{props.fromLabel}</strong> tem{' '}
+          <strong>{props.fromCount} colaborador(es) ativo(s)</strong>. Escolha para qual família
+          eles serão migrados antes da desativação.
+        </p>
+        <label
+          style={{ fontSize: '12px', color: '#374151', display: 'block', marginBottom: '4px' }}
+        >
+          Família destino
+        </label>
+        <select
+          autoFocus
+          value={props.toFamily}
+          onChange={(e) => props.onChangeToFamily(e.target.value as JobFamily | '')}
+          disabled={props.saving || props.toOptions.length === 0}
+          style={{ ...inputStyle(false), marginBottom: '12px' }}
+        >
+          <option value="">Selecione…</option>
+          {props.toOptions.map((opt) => (
+            <option key={opt.jobFamily} value={opt.jobFamily}>
+              {opt.displayLabel}
+            </option>
+          ))}
+        </select>
+        {props.toOptions.length === 0 ? (
+          <div style={{ fontSize: '12px', color: '#991B1B', marginBottom: '12px' }}>
+            Nenhuma família ativa disponível como destino. Reative ou crie outra família antes.
+          </div>
+        ) : (
+          <div style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '16px' }}>
+            Os colaboradores migrados herdam a nova família imediatamente. As metas individuais
+            serão recarregadas pelo template da família destino no próximo acionamento de [Definir
+            metas] pelo RH.
+          </div>
+        )}
+        {props.error !== null ? <ErrorBox message={props.error} /> : null}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+          <button
+            type="button"
+            onClick={props.onCancel}
+            disabled={props.saving}
+            style={cancelButtonStyle}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={props.onConfirm}
+            disabled={!canConfirm}
+            style={saveButtonStyle(canConfirm)}
+          >
+            {props.saving ? 'Migrando…' : 'Migrar e desativar'}
           </button>
         </div>
       </div>
