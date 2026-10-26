@@ -1233,6 +1233,160 @@ export const LAYOUT_BASE_CSS = `
     margin-top: 3mm;
   }
   .rastreabilidade-nota strong { color: #111827; font-weight: 700; }
+
+  /* ME-1.3d — classes canonicas compartilhadas por board_deck +
+     relatorio_executivo + clima_engajamento (polimento visual estrutural). */
+  .h3-compact {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #111827;
+    margin: 4mm 0 2mm 0;
+    letter-spacing: 0.02em;
+  }
+  .radar-legenda-biparticao {
+    display: flex;
+    flex-direction: column;
+    gap: 2mm;
+    margin-top: 3mm;
+    font-size: 9.5pt;
+    color: #374151;
+    line-height: 1.5;
+  }
+  .radar-legenda-item {
+    display: flex;
+    align-items: center;
+    gap: 2mm;
+  }
+  .radar-legenda-swatch {
+    display: inline-block;
+    width: 4mm;
+    height: 4mm;
+    border-radius: 2pt;
+    flex-shrink: 0;
+  }
+  .turnover-bars { margin-top: 2mm; }
+  .turnover-bar-row {
+    display: grid;
+    grid-template-columns: 32mm 1fr 32mm;
+    align-items: center;
+    gap: 2mm;
+    margin-bottom: 2mm;
+    font-size: 10pt;
+  }
+  .turnover-bar-label {
+    font-weight: 600;
+    color: #111827;
+  }
+  .turnover-bar-track {
+    background: #F3F4F6;
+    border: 1px solid #E5E7EB;
+    border-radius: 3pt;
+    height: 7mm;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+  }
+  .turnover-bar-fill {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 2mm;
+    font-weight: 700;
+    font-size: 9pt;
+    white-space: nowrap;
+    min-width: 10mm;
+    box-sizing: border-box;
+  }
+  .turnover-bar-value {
+    text-align: right;
+    color: #4B5563;
+    font-size: 9pt;
+  }
+
+  /* Dimensao horizontal canonica para blocos clima/plenitude (dim-bar). */
+  .dim-bars { margin-top: 2mm; }
+  .dim-bar-row {
+    display: grid;
+    grid-template-columns: 42mm 1fr 20mm;
+    align-items: center;
+    gap: 2mm;
+    margin-bottom: 2mm;
+    font-size: 10pt;
+  }
+  .dim-bar-label {
+    font-weight: 600;
+    color: #111827;
+  }
+  .dim-bar-track {
+    background: #F3F4F6;
+    border: 1px solid #E5E7EB;
+    border-radius: 3pt;
+    height: 6mm;
+    overflow: hidden;
+    position: relative;
+  }
+  .dim-bar-fill {
+    height: 100%;
+    background: #14B8A6;
+    border-radius: 3pt 0 0 3pt;
+  }
+  .dim-bar-value {
+    text-align: right;
+    font-weight: 700;
+    color: #111827;
+    font-size: 10pt;
+  }
+
+  /* Comparativo deptos — tabela colorizada canonica para o executivo. */
+  .exec-dept-table-wrap {
+    margin-top: 3mm;
+    overflow: hidden;
+    border-radius: 4pt;
+    border: 1px solid #E5E7EB;
+  }
+  .exec-dept-table-wrap table.data-table {
+    border: none;
+    margin: 0;
+  }
+  .exec-info-row {
+    display: flex;
+    align-items: center;
+    gap: 3mm;
+    margin-top: 3mm;
+    padding: 3mm 4mm;
+    background: #F0FDFA;
+    border-left: 3pt solid #14B8A6;
+    border-radius: 3pt;
+    font-size: 10pt;
+    color: #0F766E;
+    line-height: 1.55;
+  }
+  .exec-info-row strong {
+    color: #0F766E;
+    font-weight: 700;
+  }
+
+  /* Agregacao em cascata do clima_engajamento. */
+  .clima-nivel-empresa { }
+  .clima-nivel-dept {
+    margin-top: 6mm;
+    padding-top: 4mm;
+    border-top: 1px solid #E5E7EB;
+  }
+  .clima-nivel-equipe {
+    margin-top: 4mm;
+    padding-left: 6mm;
+    border-left: 2pt solid #CFFAFE;
+  }
+  .clima-anonimato-nota {
+    margin-top: 2mm;
+    padding: 2mm 3mm;
+    background: #FEFCE8;
+    border-left: 3pt solid #D97706;
+    font-size: 9pt;
+    color: #78350F;
+    border-radius: 2pt;
+  }
 `;
 
 /**

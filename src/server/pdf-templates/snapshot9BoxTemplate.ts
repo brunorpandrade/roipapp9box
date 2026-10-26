@@ -21,6 +21,7 @@
 // Determinismo: mesmos dados -> mesmo HTML byte-exact.
 
 import { formatTrimestreBR } from '../../lib/cycle/formatTrimestreBR';
+import { dataCivilBrtFromIso, formatDataEditorial } from '../../lib/date/formatDataEditorial';
 import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
 import { NINE_BOX_PALETTE, RADAR_COLORS } from '../../lib/svg/pdfVisualTokens';
 import { escapeHtml, renderLayoutBase } from './layoutBase';
@@ -96,53 +97,9 @@ function fmtPct(v: number): string {
   return `${Math.round(v)}%`;
 }
 
-const MESES_PT_BR = [
-  'janeiro',
-  'fevereiro',
-  'março',
-  'abril',
-  'maio',
-  'junho',
-  'julho',
-  'agosto',
-  'setembro',
-  'outubro',
-  'novembro',
-  'dezembro',
-] as const;
-
-/**
- * Deriva a data civil (YYYY-MM-DD) em America/Sao_Paulo a partir do
- * timestamp ISO UTC — espelho do helper canonico do Radar NR-1 v7.1.
- * Debito D-DUP-DATA registrado para extracao futura em helper comum.
- */
-function dataCivilBrtFromIso(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const partes = d
-    .toLocaleDateString('pt-BR', {
-      timeZone: 'America/Sao_Paulo',
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    })
-    .split('/');
-  if (partes.length !== 3) return iso;
-  const [dd, mm, yyyy] = partes;
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-function formatDataEditorial(iso: string): string {
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-  if (match === null) return iso;
-  const [, y, m, d] = match;
-  if (y === undefined || m === undefined || d === undefined) return iso;
-  const mi = Number(m) - 1;
-  if (mi < 0 || mi > 11) return iso;
-  const mesNome = MESES_PT_BR[mi];
-  if (mesNome === undefined) return iso;
-  return `${Number(d)} de ${mesNome} de ${y}`;
-}
+// ME-1.3d (26/10/2026): `MESES_PT_BR`, `dataCivilBrtFromIso` e
+// `formatDataEditorial` extraidos para `src/lib/date/formatDataEditorial.ts`
+// como fonte canonica unica (debito D-DUP-DATA fechado via L125 integral).
 
 /** Compoe o nome do arquivo PDF (§13.7). */
 export function composeSnapshot9BoxFilename(
@@ -491,7 +448,7 @@ function derivarPerfilEmpresa(bloco: NineBoxBlocoEscopo): PerfilEmpresa {
 // Gauge semicircular (resumo executivo — padrao canonico Radar NR-1)
 // ============================================================
 
-function renderGaugeSvg(percent: number, faixa: 'verde' | 'amarelo' | 'vermelho'): string {
+export function renderGaugeSvg(percent: number, faixa: 'verde' | 'amarelo' | 'vermelho'): string {
   const clamp = Math.max(0, Math.min(100, percent));
   const color = faixa === 'verde' ? '#16A34A' : faixa === 'amarelo' ? '#D97706' : '#DC2626';
   const angle = Math.PI - (clamp / 100) * Math.PI;

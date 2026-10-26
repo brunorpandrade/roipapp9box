@@ -53,6 +53,7 @@
 //     positiva, monitoramento historico).
 
 import { formatDateBR } from '../../lib/date/formatDateBR';
+import { dataCivilBrtFromIso, formatDataEditorial } from '../../lib/date/formatDataEditorial';
 import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
 import {
   projectRadarPoint,
@@ -173,57 +174,10 @@ export function composeNr1ReportFilename(
 // ============================================================
 // Helpers de formatacao editorial
 // ============================================================
-
-const MESES_PT_BR = [
-  'janeiro',
-  'fevereiro',
-  'março',
-  'abril',
-  'maio',
-  'junho',
-  'julho',
-  'agosto',
-  'setembro',
-  'outubro',
-  'novembro',
-  'dezembro',
-] as const;
-
-function formatDataEditorial(iso: string): string {
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-  if (match === null) return iso;
-  const [, y, m, d] = match;
-  if (y === undefined || m === undefined || d === undefined) return iso;
-  const mi = Number(m) - 1;
-  if (mi < 0 || mi > 11) return iso;
-  const mesNome = MESES_PT_BR[mi];
-  if (mesNome === undefined) return iso;
-  return `${Number(d)} de ${mesNome} de ${y}`;
-}
-
-/**
- * CC079-v7.1: deriva a data civil (YYYY-MM-DD) em America/Sao_Paulo
- * a partir do timestamp ISO UTC. O `input.generatedAtDate` vem do
- * service via `toIsoDateUtc` (UTC puro), o que causa deslocamento de
- * +1 dia quando o relatorio e gerado apos ~21h BRT (ja virou dia
- * seguinte em UTC). O template corrige localmente para que a "Data de
- * geracao" aparente corresponda ao fuso canonico pt-BR.
- */
-function dataCivilBrtFromIso(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const partes = d
-    .toLocaleDateString('pt-BR', {
-      timeZone: 'America/Sao_Paulo',
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    })
-    .split('/');
-  if (partes.length !== 3) return iso;
-  const [dd, mm, yyyy] = partes;
-  return `${yyyy}-${mm}-${dd}`;
-}
+//
+// ME-1.3d (26/10/2026): `MESES_PT_BR`, `formatDataEditorial` e
+// `dataCivilBrtFromIso` extraidos para `src/lib/date/formatDataEditorial.ts`
+// como fonte canonica unica (debito D-DUP-DATA fechado via L125 integral).
 
 function fmtScore(score: number): string {
   const clamp = Math.max(0, Math.min(100, score));
