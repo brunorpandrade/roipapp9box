@@ -33,8 +33,8 @@ describe('ME lupa+autocomplete — componente ColaboradorSearchBox', () => {
     expect(src).toContain('🔍');
   });
 
-  it('preserva o placeholder canonico §14.10', () => {
-    expect(src).toContain('Buscar por nome, CPF ou cargo...');
+  it('preserva o placeholder canonico ME-1.17.3 (encurtado por Bruno)', () => {
+    expect(src).toContain('Nome, CPF ou cargo.');
   });
 
   it('reusa o normalizeForSearch compartilhado (RV-14)', () => {
