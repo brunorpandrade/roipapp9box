@@ -1413,9 +1413,14 @@ export function renderLayoutBase(input: LayoutBaseInput): string {
   // no canto superior direito da capa. z-index acima do texto do hero
   // e background branco opaco para evitar sobreposicao visual sobre
   // qualquer texto do titulo em 2 linhas.
+  // ME-1.3d-REV DIS-A: reposicionamento canonico da logo. Antes ocupava
+  // area dentro do conteudo (`top:14mm`) e invadia o H1/H2 da capa. Agora
+  // fica acima da margem canonica da pagina (@page margin: 20mm), no
+  // canto superior direito, menor (max-height: 14mm). D-LOGO-POSICAO
+  // fechado.
   const logoBrand = input.company.logoUrl
     ? `<img class="logo-brand" src="${escapeHtml(input.company.logoUrl)}" alt="Logo da empresa" ` +
-      `style="position:absolute; top:14mm; right:14mm; max-height:18mm; max-width:40mm; z-index:20; background:#FFFFFF; border-radius:4pt;" />`
+      `style="position:absolute; top:6mm; right:14mm; max-height:14mm; max-width:34mm; z-index:20; background:#FFFFFF; border-radius:3pt; padding:1pt;" />`
     : '';
 
   return `<!doctype html>

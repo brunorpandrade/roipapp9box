@@ -35,6 +35,9 @@ const basePayload: ExecutiveReportFinalPayload = {
       folhaTotalMedia: 100000,
       percMetaAtingidaAgregada: 95.5,
       colaboradoresAtivos: 42,
+      percFolhaFaturamento: 20.0,
+      folhaPercMinimaIdeal: 18.0,
+      folhaPercMaximaIdeal: 25.0,
     },
     comparativoTrimestreAnterior: {
       roiAgregado: 1.15,
@@ -96,6 +99,10 @@ const basePayload: ExecutiveReportFinalPayload = {
         realizacao: 3.85,
       },
       respondentes: 36,
+      notasPorAspecto: Array.from(
+        { length: 20 },
+        (_, i) => Math.round((7 + (i % 3) * 0.3) * 10) / 10,
+      ),
     },
     comparativoTrimestreAnterior: {
       notaClima: 3.7,
@@ -112,6 +119,13 @@ const basePayload: ExecutiveReportFinalPayload = {
       saidasTotais: 2,
       saidasVoluntarias: 1,
       saidasInvoluntarias: 1,
+      turnoverVoluntarioPercentual: 2.38,
+      turnoverInvoluntarioPercentual: 2.38,
+    },
+    ultimos12Meses: {
+      turnoverPercentual: 15.5,
+      saidasTotais: 7,
+      headcountInicio: 45,
     },
     aberturaPorNivelHierarquico: {
       estrategico: { turnoverPercentual: 0, saidas: 0 },
@@ -139,6 +153,8 @@ const basePayload: ExecutiveReportFinalPayload = {
             colaboradoresAtivos: 6,
             scoreDesempenhoMedio: 86.0,
             plenitudeScoreMedio: 81.0,
+            tipoLider: 'colaborador',
+            departamentoDoLider: null,
           },
         ],
       },
@@ -150,6 +166,11 @@ const basePayload: ExecutiveReportFinalPayload = {
   paragrafoClima: 'Paragrafo interpretativo de clima canonico.',
   paragrafoTurnover: 'Paragrafo interpretativo de turnover canonico.',
   resumoExecutivoGeral: 'Resumo executivo geral canonico integrado dos 5 blocos.',
+  topDestaques: [
+    'ROI subiu 6,95% vs trimestre anterior.',
+    'Desempenho medio: 82,50.',
+    'Nota de clima: 3,85.',
+  ] as const,
   geradoEmIso: '2026-01-15T12:00:00.000Z',
 };
 

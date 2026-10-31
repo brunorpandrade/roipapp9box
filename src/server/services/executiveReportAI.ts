@@ -45,6 +45,7 @@ import {
 import {
   buildExecutiveReportPayload,
   type BuildExecutiveReportArgs,
+  derivarTopDestaquesDeterministicos,
 } from './executiveReportEngine';
 import {
   DEFAULT_EXECUTIVE_REPORT_STORAGE,
@@ -281,6 +282,9 @@ export async function generateExecutiveReport(
 
   const resumoExecutivoGeral = sinteseResult.content;
   const geradoEmIso = deps.now().toISOString();
+  // ME-1.3d-REV DIS-A: topDestaques derivados deterministicamente dos
+  // blocos do payload (zero chamada IA — preserva determinismo bit-exact).
+  const topDestaques = derivarTopDestaquesDeterministicos(payload);
   const finalPayload: ExecutiveReportFinalPayload = {
     ...payload,
     paragrafoFinanceiro: paragrafos.financeiro,
@@ -289,6 +293,7 @@ export async function generateExecutiveReport(
     paragrafoClima: paragrafos.clima,
     paragrafoTurnover: paragrafos.turnover,
     resumoExecutivoGeral,
+    topDestaques,
     geradoEmIso,
   };
 

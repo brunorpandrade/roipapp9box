@@ -40,17 +40,24 @@
 // (`companies.timezone` afeta apenas o trimestre canonico, resolvido
 // no router).
 
-import { and, avg, eq, inArray, isNotNull } from 'drizzle-orm';
+import { and, avg, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 
 import type { RoipDatabase } from '../../db/client';
 import {
+  cLevelMembers,
+  companies,
   companyEconomicDiagnosis,
+  employeeLeaderHistory,
   employees,
   performanceData,
   performanceQuarterlyData,
   plenitudeData,
 } from '../../db/schema';
-import { type ClimateLiderTipo, resolveClimateBlockComCascata } from './climateCalculationEngine';
+import {
+  type ClimateLiderTipo,
+  NUM_QUESTOES_CLIMATE,
+  resolveClimateBlockComCascata,
+} from './climateCalculationEngine';
 import {
   formatTrimestreCicloReferencia,
   getPreviousTrimestre,
@@ -58,7 +65,12 @@ import {
 } from '../../lib/cycleDates';
 import { getQuarterMonths } from '../../lib/quarterlyPeriod';
 import type { NivelHierarquico } from '../../db/schema/enums';
-import { computeTurnoverByCompany, computeTurnoverByDepartamento } from './turnoverEngine';
+import {
+  computeTurnoverByCompany,
+  computeTurnoverByDepartamento,
+  computeTurnoverRate,
+  computeTurnoverUltimos12Meses,
+} from './turnoverEngine';
 import type {
   ExecReportBlocoClima,
   ExecReportBlocoDesempenho,
@@ -166,6 +178,125 @@ export interface BuildExecutiveReportArgs {
  * Compoe o payload deterministico completo do Relatorio executivo
  * trimestral para o escopo e trimestre canonicos informados.
  */
+/**
+ * ME-1.3d-REV DIS-A: deriva 3 destaques canonicos determiniscamente dos
+ * blocos do payload. Zero chamada IA — preserva determinismo bit-exact
+ * canonico do payload. Convencao canonica de prioridade (do mais forte
+ * ao mais fraco):
+ *   1. Maior variacao POSITIVA vs trimestre anterior (ROI, desempenho,
+ *      plenitude, clima — exclui turnover).
+ *   2. Maior variacao NEGATIVA (sinal de alerta) vs trimestre anterior.
+ *   3. Maior alerta transversal (turnover trimestral, % alerta divergencia,
+ *      ou % folha fora da faixa ideal).
+ * Fallback canonico quando nao ha dados comparativos: 3 destaques
+ * descritivos simples (ROI, desempenho, respondentes clima).
+ */
+/* eslint-disable @stylistic/max-len -- textos canonicos em pt-BR superam 100 colunas */
+export function derivarTopDestaquesDeterministicos(
+  payload: ExecutiveReportDeterministicoPayload,
+): readonly [string, string, string] {
+  const fmt = (v: number | null, d = 2): string =>
+    v === null || !Number.isFinite(v)
+      ? '—'
+      : v.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fmtPct = (v: number | null): string => (v === null ? '—' : `${fmt(v)}%`);
+
+  const candidatos: Array<{ prioridade: number; texto: string }> = [];
+
+  // 1. Variacoes positivas canonicas
+  const varRoi =
+    payload.blocoFinanceiro.comparativoTrimestreAnterior?.variacaoPercentualRoi ?? null;
+  if (varRoi !== null && varRoi > 0) {
+    candidatos.push({
+      prioridade: 100 + varRoi,
+      texto: `ROI subiu ${fmtPct(varRoi)} vs trimestre anterior, alcançando ${fmt(payload.blocoFinanceiro.trimestreAtual.roiAgregado)}.`,
+    });
+  }
+  const varDes = payload.blocoDesempenho.comparativoTrimestreAnterior?.variacaoPercentual ?? null;
+  if (varDes !== null && varDes > 0) {
+    candidatos.push({
+      prioridade: 90 + varDes,
+      texto: `Desempenho médio subiu ${fmtPct(varDes)} vs trimestre anterior, alcançando ${fmt(payload.blocoDesempenho.trimestreAtual.scoreDesempenhoMedioAgregado)}.`,
+    });
+  }
+  const varPlen = payload.blocoPlenitude.comparativoTrimestreAnterior?.variacaoPercentual ?? null;
+  const plen = payload.blocoPlenitude.trimestreAtual.plenitudeScoreMedioAgregado;
+  if (varPlen !== null && varPlen > 0) {
+    candidatos.push({
+      prioridade: 80 + varPlen,
+      texto: `Plenitude média subiu ${fmtPct(varPlen)} vs trimestre anterior, alcançando ${fmt(plen)}.`,
+    });
+  }
+
+  // 2. Variacoes negativas (sinal de alerta)
+  const roi = payload.blocoFinanceiro.trimestreAtual.roiAgregado;
+  const des = payload.blocoDesempenho.trimestreAtual.scoreDesempenhoMedioAgregado;
+  if (varRoi !== null && varRoi < 0) {
+    candidatos.push({
+      prioridade: 70 + Math.abs(varRoi),
+      texto: `ROI recuou ${fmtPct(Math.abs(varRoi))} vs trimestre anterior, caindo para ${fmt(roi)}.`,
+    });
+  }
+  if (varDes !== null && varDes < 0) {
+    candidatos.push({
+      prioridade: 60 + Math.abs(varDes),
+      texto: `Desempenho médio recuou ${fmtPct(Math.abs(varDes))} vs trimestre anterior, caindo para ${fmt(des)}.`,
+    });
+  }
+  if (varPlen !== null && varPlen < 0) {
+    candidatos.push({
+      prioridade: 55 + Math.abs(varPlen),
+      texto: `Plenitude média recuou ${fmtPct(Math.abs(varPlen))} vs trimestre anterior, caindo para ${fmt(plen)}.`,
+    });
+  }
+
+  // 3. Alertas transversais canonicos
+  const alertaDiv = payload.blocoPlenitude.trimestreAtual.percColaboradoresComAlertaDivergencia;
+  if (alertaDiv !== null && alertaDiv >= 20) {
+    candidatos.push({
+      prioridade: 50 + alertaDiv,
+      texto: `${fmtPct(alertaDiv)} dos colaboradores com alerta de divergência jornada vs expectativa.`,
+    });
+  }
+  if (payload.blocoTurnover !== null) {
+    const t = payload.blocoTurnover.trimestreAtual.turnoverTrimestralPercentual;
+    if (t >= 10) {
+      candidatos.push({
+        prioridade: 40 + t,
+        texto: `Turnover trimestral de ${fmtPct(t)} supera o limiar de atenção (10%).`,
+      });
+    }
+  }
+  const fin = payload.blocoFinanceiro.trimestreAtual;
+  if (
+    fin.percFolhaFaturamento !== null &&
+    fin.folhaPercMaximaIdeal !== null &&
+    fin.percFolhaFaturamento > fin.folhaPercMaximaIdeal
+  ) {
+    const dist = fin.percFolhaFaturamento - fin.folhaPercMaximaIdeal;
+    candidatos.push({
+      prioridade: 45 + dist,
+      texto: `Folha é ${fmtPct(fin.percFolhaFaturamento)} do faturamento, ${fmt(dist)} p.p. acima do ideal.`,
+    });
+  }
+
+  // Ordena por prioridade decrescente + pega top 3; completa com fallback.
+  candidatos.sort((a, b) => b.prioridade - a.prioridade);
+  const topTres = candidatos.slice(0, 3).map((c) => c.texto);
+  while (topTres.length < 3) {
+    if (topTres.length === 0) {
+      topTres.push(`ROI do trimestre: ${fmt(roi)}.`);
+    } else if (topTres.length === 1) {
+      topTres.push(`Desempenho médio: ${fmt(des)}.`);
+    } else {
+      const notaClima = payload.blocoClima.trimestreAtual?.notaClima ?? null;
+      topTres.push(`Nota de clima: ${fmt(notaClima)}.`);
+    }
+  }
+  return [topTres[0]!, topTres[1]!, topTres[2]!] as const;
+}
+/* eslint-enable @stylistic/max-len */
+
 export async function buildExecutiveReportPayload(
   db: RoipDatabase,
   args: BuildExecutiveReportArgs,
@@ -356,6 +487,37 @@ async function buildBlocoFinanceiro(
     ? toNumberOrNull(econAno?.roiEmpresa ?? null)
     : await avgRoiEstimadoByEmployees(db, args.companyId, trimestreAno, employeeIds);
 
+  // 1d. ME-1.3d-REV DIS-A: faixa canonica ideal da folha vs faturamento
+  //     carregada da configuracao da empresa. Ambas podem ser `null` (empresa
+  //     sem config); nesse caso o template omite a comparacao.
+  let folhaPercMinimaIdeal: number | null = null;
+  let folhaPercMaximaIdeal: number | null = null;
+  if (isEmpresa) {
+    const rows = await db
+      .select({
+        folhaPercMinima: companies.folhaPercMinima,
+        folhaPercMaxima: companies.folhaPercMaxima,
+      })
+      .from(companies)
+      .where(eq(companies.id, args.companyId))
+      .limit(1);
+    const row = rows[0] ?? null;
+    if (row !== null) {
+      folhaPercMinimaIdeal = toNumberOrNull(row.folhaPercMinima ?? null);
+      folhaPercMaximaIdeal = toNumberOrNull(row.folhaPercMaxima ?? null);
+    }
+  }
+
+  // 1e. ME-1.3d-REV DIS-A: percentual canonico `folha / faturamento * 100`.
+  const faturamentoAtual = isEmpresa
+    ? toNumberOrNull(econAtual?.faturamentoMedioTrimestral ?? null)
+    : null;
+  const folhaAtual = isEmpresa ? toNumberOrNull(econAtual?.folhaTotalMedia ?? null) : null;
+  const percFolhaFaturamento =
+    faturamentoAtual !== null && folhaAtual !== null && faturamentoAtual > 0
+      ? Math.round((folhaAtual / faturamentoAtual) * 10000) / 100
+      : null;
+
   return {
     escopo: {
       tipo: args.escopo.tipo,
@@ -364,12 +526,13 @@ async function buildBlocoFinanceiro(
     },
     trimestreAtual: {
       roiAgregado: roiAtualEscopo,
-      faturamentoMedioTrimestral: isEmpresa
-        ? toNumberOrNull(econAtual?.faturamentoMedioTrimestral ?? null)
-        : null,
-      folhaTotalMedia: isEmpresa ? toNumberOrNull(econAtual?.folhaTotalMedia ?? null) : null,
+      faturamentoMedioTrimestral: faturamentoAtual,
+      folhaTotalMedia: folhaAtual,
       percMetaAtingidaAgregada: percMetaAtualEscopo,
       colaboradoresAtivos: employeeIds.length,
+      percFolhaFaturamento,
+      folhaPercMinimaIdeal,
+      folhaPercMaximaIdeal,
     },
     comparativoTrimestreAnterior:
       roiAntEscopo === null && percMetaAntEscopo === null
@@ -798,6 +961,15 @@ async function buildBlocoClima(
         ? EXEC_REPORT_NOTA_AGREGACAO_EMPRESA
         : null;
 
+  // ME-1.3d-REV DIS-A: notas canonicas por aspecto (20 posicoes,
+  // convencao `(dim-1)*5+(item-1)`). O template PDF da DIS-B consome
+  // apenas no bloco agregado da empresa; dept e equipe ignoram, mas o
+  // payload sempre carrega para consistencia de schema.
+  const notasPorAspecto: readonly (number | null)[] =
+    cascata.payload.notasQuestao.length === NUM_QUESTOES_CLIMATE
+      ? [...cascata.payload.notasQuestao]
+      : Array.from({ length: NUM_QUESTOES_CLIMATE }, () => null);
+
   return {
     escopo: escopoBloco,
     trimestreReferencia: args.trimestre,
@@ -812,6 +984,7 @@ async function buildBlocoClima(
         realizacao: cascata.payload.notaRealizacao,
       },
       respondentes: cascata.payload.countCobertura,
+      notasPorAspecto,
     },
     comparativoTrimestreAnterior: !anterior.dadosDisponiveis
       ? null
@@ -885,6 +1058,7 @@ async function buildBlocoTurnover(
   if (args.escopo.tipo === 'empresa') {
     const atual = await computeTurnoverByCompany(db, args.companyId, args.trimestre);
     const anterior = await computeTurnoverByCompany(db, args.companyId, trimestreAnt);
+    const ultimos12 = await computeTurnoverUltimos12Meses(db, args.companyId, args.trimestre);
     const aberturaPorNivel = mapAberturaPorNivel(atual.aberturaPorNivel);
     return {
       escopo: {
@@ -899,6 +1073,19 @@ async function buildBlocoTurnover(
         saidasTotais: atual.totalSaidasTrimestre,
         saidasVoluntarias: atual.aberturaPorMotivo.voluntario,
         saidasInvoluntarias: atual.aberturaPorMotivo.involuntario,
+        turnoverVoluntarioPercentual: computeTurnoverRate(
+          atual.aberturaPorMotivo.voluntario,
+          atual.totalHeadcountInicioTrimestre,
+        ),
+        turnoverInvoluntarioPercentual: computeTurnoverRate(
+          atual.aberturaPorMotivo.involuntario,
+          atual.totalHeadcountInicioTrimestre,
+        ),
+      },
+      ultimos12Meses: {
+        turnoverPercentual: ultimos12.taxaUltimos12Meses,
+        saidasTotais: ultimos12.totalSaidas12Meses,
+        headcountInicio: ultimos12.headcountInicio12Meses,
       },
       aberturaPorNivelHierarquico: aberturaPorNivel,
       comparativoTrimestreAnterior: {
@@ -925,6 +1112,7 @@ async function buildBlocoTurnover(
     departamento,
     trimestreAnt,
   );
+  const ultimos12 = await computeTurnoverUltimos12Meses(db, args.companyId, args.trimestre);
   return {
     escopo: {
       tipo: 'departamento',
@@ -938,6 +1126,19 @@ async function buildBlocoTurnover(
       saidasTotais: atual.totalSaidasTrimestre,
       saidasVoluntarias: atual.aberturaPorMotivo.voluntario,
       saidasInvoluntarias: atual.aberturaPorMotivo.involuntario,
+      turnoverVoluntarioPercentual: computeTurnoverRate(
+        atual.aberturaPorMotivo.voluntario,
+        atual.totalHeadcountInicioTrimestre,
+      ),
+      turnoverInvoluntarioPercentual: computeTurnoverRate(
+        atual.aberturaPorMotivo.involuntario,
+        atual.totalHeadcountInicioTrimestre,
+      ),
+    },
+    ultimos12Meses: {
+      turnoverPercentual: ultimos12.taxaUltimos12Meses,
+      saidasTotais: ultimos12.totalSaidas12Meses,
+      headcountInicio: ultimos12.headcountInicio12Meses,
     },
     aberturaPorNivelHierarquico: null,
     comparativoTrimestreAnterior: {
@@ -1079,9 +1280,16 @@ async function listEquipesByDepartamento(
   args: BuildExecutiveReportArgs,
   departamento: string,
 ): Promise<ExecReportEquipeLinha[]> {
-  // Equipes = lideres ativos no departamento com pelo menos 1 liderado.
-  const lideresRows = await db
-    .select({ id: employees.id, name: employees.name })
+  // ME-1.3d-REV DIS-A — Opcao B canonica: lideres que lideram
+  // colaboradores do departamento, independente do departamento do
+  // proprio lider. Inclui C-levels (via `clevelId` em
+  // `employeeLeaderHistory`). Carrega metainformacao canonica
+  // (`tipoLider`, `departamentoDoLider`) para o template PDF renderizar
+  // entre parenteses quando o lider for externo ao bloco.
+
+  // 1. Colaboradores ativos do departamento no trimestre.
+  const colaboradoresDoDepto = await db
+    .select({ id: employees.id })
     .from(employees)
     .where(
       and(
@@ -1089,21 +1297,120 @@ async function listEquipesByDepartamento(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- validado no router
         eq(employees.departamento, departamento as any),
         eq(employees.status, 'ativo'),
-        eq(employees.isLider, true),
       ),
     );
+  const colaboradoresIds = colaboradoresDoDepto.map((r) => r.id);
+  if (colaboradoresIds.length === 0) {
+    return [];
+  }
+
+  // 2. Vinculos ativos de lideranca (dataFim IS NULL) desses colaboradores.
+  //    Note: `employeeLeaderHistory` nao tem companyId direto; o filtro
+  //    por companyId e feito via `colaboradoresIds` acima (ja restritos
+  //    ao companyId da empresa). FK canonica: employeeId → employees.id.
+  const vinculos = await db
+    .select({
+      employeeId: employeeLeaderHistory.employeeId,
+      liderId: employeeLeaderHistory.liderId,
+      clevelId: employeeLeaderHistory.clevelId,
+    })
+    .from(employeeLeaderHistory)
+    .where(
+      and(
+        inArray(employeeLeaderHistory.employeeId, colaboradoresIds),
+        isNull(employeeLeaderHistory.dataFim),
+      ),
+    );
+
+  // 3. Agrupa liderados por lider (chave canonica: 'lider:<id>' ou 'clevel:<id>').
+  const liderados = new Map<string, number[]>();
+  for (const v of vinculos) {
+    const key =
+      v.liderId !== null
+        ? `lider:${v.liderId}`
+        : v.clevelId !== null
+          ? `clevel:${v.clevelId}`
+          : null;
+    if (key === null) continue;
+    const arr = liderados.get(key);
+    if (arr === undefined) {
+      liderados.set(key, [v.employeeId]);
+    } else {
+      arr.push(v.employeeId);
+    }
+  }
+  if (liderados.size === 0) {
+    return [];
+  }
+
+  // 4. Resolve nome + departamento canonico para cada lider.
+  const liderIds: number[] = [];
+  const clevelIds: number[] = [];
+  for (const key of liderados.keys()) {
+    const [tipo, idStr] = key.split(':');
+    const id = Number.parseInt(idStr ?? '', 10);
+    if (!Number.isFinite(id)) continue;
+    if (tipo === 'lider') liderIds.push(id);
+    else if (tipo === 'clevel') clevelIds.push(id);
+  }
+
+  const liderMeta = new Map<string, { nome: string; departamento: string | null }>();
+  if (liderIds.length > 0) {
+    const rows = await db
+      .select({
+        id: employees.id,
+        name: employees.name,
+        departamento: employees.departamento,
+      })
+      .from(employees)
+      .where(and(eq(employees.companyId, args.companyId), inArray(employees.id, liderIds)));
+    for (const r of rows) {
+      liderMeta.set(`lider:${r.id}`, { nome: r.name, departamento: r.departamento });
+    }
+  }
+  if (clevelIds.length > 0) {
+    const rows = await db
+      .select({ id: cLevelMembers.id, name: cLevelMembers.name })
+      .from(cLevelMembers)
+      .where(
+        and(eq(cLevelMembers.companyId, args.companyId), inArray(cLevelMembers.id, clevelIds)),
+      );
+    for (const r of rows) {
+      liderMeta.set(`clevel:${r.id}`, { nome: r.name, departamento: null });
+    }
+  }
+
+  // 5. Monta as linhas canonicas de equipe com metainformacao Opcao B.
   const out: ExecReportEquipeLinha[] = [];
-  for (const l of lideresRows) {
-    const liderados = await listLideradosDiretosIds(db, args.companyId, l.id);
-    if (liderados.length === 0) continue;
-    const desemp = await computeDesempenhoAgregado(db, args.companyId, args.trimestre, liderados);
-    const plen = await computePlenitudeAgregado(db, args.companyId, args.trimestre, liderados);
+  for (const [key, lideradosIds] of liderados.entries()) {
+    if (lideradosIds.length === 0) continue;
+    const meta = liderMeta.get(key);
+    if (meta === undefined) continue;
+    const [tipo, idStr] = key.split(':');
+    const id = Number.parseInt(idStr ?? '', 10);
+    if (!Number.isFinite(id)) continue;
+    const tipoLider: 'colaborador' | 'clevel' = tipo === 'clevel' ? 'clevel' : 'colaborador';
+    const departamentoDoLider =
+      tipoLider === 'clevel'
+        ? 'C-level'
+        : meta.departamento !== null && meta.departamento !== departamento
+          ? meta.departamento
+          : null;
+    const desemp = await computeDesempenhoAgregado(
+      db,
+      args.companyId,
+      args.trimestre,
+      lideradosIds,
+    );
+    const plen = await computePlenitudeAgregado(db, args.companyId, args.trimestre, lideradosIds);
     out.push({
-      liderId: l.id,
-      liderNome: l.name,
-      colaboradoresAtivos: liderados.length,
+      liderId: id,
+      liderNome: meta.nome,
+      colaboradoresAtivos: lideradosIds.length,
       scoreDesempenhoMedio: desemp.scoreMedio,
       plenitudeScoreMedio: plen.plenitudeMedio,
+      tipoLider,
+      departamentoDoLider,
     });
   }
   return out;

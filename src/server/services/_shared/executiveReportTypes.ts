@@ -62,6 +62,19 @@ export interface ExecReportBlocoFinanceiro {
     folhaTotalMedia: number | null;
     percMetaAtingidaAgregada: number | null;
     colaboradoresAtivos: number;
+    /**
+     * ME-1.3d-REV DIS-A: percentual canonico da folha total media sobre o
+     * faturamento medio trimestral (0..100). `null` quando qualquer dos
+     * dois agregados for `null` ou faturamento = 0.
+     */
+    percFolhaFaturamento: number | null;
+    /**
+     * Faixa canonica ideal da folha em % do faturamento, vinda de
+     * `companies.folhaPercMinima` / `.folhaPercMaxima`. Quando ambas
+     * `null` (empresa sem config), o template omite a comparacao.
+     */
+    folhaPercMinimaIdeal: number | null;
+    folhaPercMaximaIdeal: number | null;
   };
   comparativoTrimestreAnterior: {
     roiAgregado: number | null;
@@ -150,6 +163,14 @@ export interface ExecReportBlocoClima {
       realizacao: number | null;
     };
     respondentes: number;
+    /**
+     * ME-1.3d-REV DIS-A: notas canonicas por aspecto do instrumento de
+     * clima. Convencao `(dimensao - 1) * 5 + (itemIndex - 1)` com 20
+     * posicoes (4 dimensoes x 5 aspectos). Espelha `notasQuestao` do
+     * `climateCalculationEngine`. Consumido APENAS pelo bloco agregado
+     * da empresa no template PDF (DIS-B); dept e equipe ignoram.
+     */
+    notasPorAspecto: readonly (number | null)[];
   } | null;
   comparativoTrimestreAnterior: {
     notaClima: number | null;
@@ -181,6 +202,23 @@ export interface ExecReportBlocoTurnover {
     saidasTotais: number;
     saidasVoluntarias: number;
     saidasInvoluntarias: number;
+    /**
+     * ME-1.3d-REV DIS-A: taxas canonicas de rotatividade abertas por
+     * motivo (voluntario vs involuntario) sobre o denominador trimestral.
+     * `saidasVoluntarias / headcountInicio × 100` e simetrico. Precisao
+     * canonica 2 casas (igual `TURNOVER_PRECISION_DECIMALS`).
+     */
+    turnoverVoluntarioPercentual: number;
+    turnoverInvoluntarioPercentual: number;
+  };
+  /**
+   * ME-1.3d-REV DIS-A: janela movel canonica de 12 meses encerrando no
+   * fim do trimestre. Presente em todos os escopos (empresa e dept).
+   */
+  ultimos12Meses: {
+    turnoverPercentual: number;
+    saidasTotais: number;
+    headcountInicio: number;
   };
   /** Presente apenas quando `escopo.tipo='empresa'`. */
   aberturaPorNivelHierarquico: {
@@ -291,6 +329,18 @@ export interface ExecReportEquipeLinha {
   colaboradoresAtivos: number;
   scoreDesempenhoMedio: number | null;
   plenitudeScoreMedio: number | null;
+  /**
+   * ME-1.3d-REV DIS-A: tipo canonico do lider para distinguir
+   * colaboradores comuns (lider_f6) de C-levels na agregacao Opcao B.
+   */
+  tipoLider: 'colaborador' | 'clevel';
+  /**
+   * ME-1.3d-REV DIS-A: departamento canonico de origem do lider. Quando
+   * difere do departamento do bloco (lider externo liderando colaboradores
+   * do bloco), o template exibe entre parenteses. Para C-level, carrega
+   * o rotulo canonico 'C-level' em vez de departamento.
+   */
+  departamentoDoLider: string | null;
 }
 
 /**
@@ -317,6 +367,13 @@ export interface ExecutiveReportFinalPayload extends ExecutiveReportDeterministi
   paragrafoClima: string;
   paragrafoTurnover: string | null;
   resumoExecutivoGeral: string;
+  /**
+   * ME-1.3d-REV DIS-A: 3 destaques canonicos derivados deterministicamente
+   * dos proprios blocos (zero chamada IA — preserva determinismo bit-exact
+   * do payload). Renderizados como bullets no topo do resumo executivo
+   * geral pelo template PDF (DIS-B). Sempre exatamente 3 strings.
+   */
+  topDestaques: readonly [string, string, string];
   /** Data e hora canonica de geracao (rodape + rastreabilidade). */
   geradoEmIso: string;
 }

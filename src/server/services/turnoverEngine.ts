@@ -117,6 +117,20 @@ export interface TurnoverBoundaries {
 export const TURNOVER_PRECISION_DECIMALS = 2 as const;
 
 /**
+ * ME-1.3d-REV DIS-A: resultado canonico da janela movel de 12 meses
+ * encerrando no fim do trimestre informado. Consumido pelo
+ * `executiveReportEngine.buildBlocoTurnover` para popular o card
+ * "Ultimos 12 meses" dos PDFs board_deck e relatorio_executivo.
+ */
+export interface TurnoverUltimos12MesesResult {
+  companyId: number;
+  trimestre: string;
+  taxaUltimos12Meses: number;
+  totalSaidas12Meses: number;
+  headcountInicio12Meses: number;
+}
+
+/**
  * Meses inclusos por trimestre canonico. `endExclusive` e o proximo mes
  * apos o trimestre (usado para computar `trimestreFim` como o primeiro
  * dia do mes seguinte ao termino — semantica de intervalo `[inicio, fim)`
@@ -427,6 +441,44 @@ export async function computeTurnoverByDepartamento(
       voluntario: saidasTrim.voluntario,
       involuntario: saidasTrim.involuntario,
     },
+  };
+}
+
+// ============================================================
+// Motor publico — janela movel canonica 12 meses (ME-1.3d-REV DIS-A)
+// ============================================================
+
+/**
+ * ME-1.3d-REV DIS-A: taxa canonica de turnover sobre a janela movel de
+ * 12 meses encerrando no fim do trimestre informado. Formula canonica:
+ *   - `inicio12m` = primeiro instante do mes exatamente 12 meses antes
+ *     de `trimestreFim` (ou seja, mesmo dia/mes 1 ano antes do fim).
+ *   - `saidas12m` = total de desligamentos canonicos (`terminationsWindow`)
+ *     na janela `[inicio12m, trimestreFim)`.
+ *   - `headcount12m` = `headcountByFilter(companyId, inicio12m)` — ativos
+ *     no primeiro instante da janela.
+ *   - `taxa` = `computeTurnoverRate(saidas12m, headcount12m)`.
+ *
+ * Semantica canonica: diferente da "projecao anualizada" (`taxaTrimestral x 4`),
+ * a janela movel reflete o fluxo REAL de 12 meses encerrando no trimestre.
+ * Preferida em comites executivos por absorver sazonalidade intra-anual.
+ */
+export async function computeTurnoverUltimos12Meses(
+  db: RoipDatabase,
+  companyId: number,
+  trimestre: string,
+): Promise<TurnoverUltimos12MesesResult> {
+  const b = computeTurnoverBoundaries(trimestre);
+  const fim = b.trimestreFim;
+  const inicio12m = new Date(Date.UTC(fim.getUTCFullYear() - 1, fim.getUTCMonth(), 1, 0, 0, 0, 0));
+  const saidas = await terminationsWindow(db, companyId, inicio12m, fim);
+  const headcount = await headcountByFilter(db, companyId, inicio12m);
+  return {
+    companyId,
+    trimestre,
+    taxaUltimos12Meses: computeTurnoverRate(saidas.total, headcount),
+    totalSaidas12Meses: saidas.total,
+    headcountInicio12Meses: headcount,
   };
 }
 

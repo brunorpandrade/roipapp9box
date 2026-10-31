@@ -940,7 +940,11 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
 
         // Lider direto (nome) para a identificacao do PDF. C-level nao
         // tem lider direto no modelo; employee resolve pelo historico
-        // ativo (mesmo padrao do dashboard). Vazio quando nao ha vinculo.
+        // ativo (mesmo padrao do dashboard).
+        // ME-1.3d-REV DIS-A: D-PERFIL-LIDER-DIRETO-VAZIO fechado — agora
+        // considera tambem `clevelId` do historico (quando o colaborador
+        // reporta diretamente a um C-level) e aplica fallback canonico
+        // "— (sem líder direto)" quando nao ha vinculo ativo.
         let liderDiretoNome = 'Não se aplica';
         if (input.userType === 'employee') {
           const leaderLink = await getActiveLeaderHistoryByEmployee(ctx.db, input.userId);
@@ -950,9 +954,16 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
               .from(employees)
               .where(eq(employees.id, leaderLink.liderId))
               .limit(1);
-            liderDiretoNome = liderRows[0]?.name ?? '';
+            liderDiretoNome = liderRows[0]?.name ?? '— (sem líder direto)';
+          } else if (leaderLink?.clevelId != null) {
+            const clevelRows = await ctx.db
+              .select({ name: cLevelMembers.name })
+              .from(cLevelMembers)
+              .where(eq(cLevelMembers.id, leaderLink.clevelId))
+              .limit(1);
+            liderDiretoNome = clevelRows[0]?.name ?? '— (sem líder direto)';
           } else {
-            liderDiretoNome = '';
+            liderDiretoNome = '— (sem líder direto)';
           }
         }
 

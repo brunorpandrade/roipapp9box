@@ -906,7 +906,7 @@ function ExportCard(props: ExportCardProps): JSX.Element {
                 })
                 .map((q) => (
                   <option key={q.trimestre} value={q.trimestre}>
-                    {q.label} (Instrumento D)
+                    {q.label}
                   </option>
                 ))}
             </select>
