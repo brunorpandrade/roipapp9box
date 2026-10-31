@@ -11,8 +11,8 @@
 // - Funcao pura sem I/O. Recebe `ServerSession` (Bloco A) + 6 flags
 //   calculadas pelo consumidor + rota corrente, devolve o `ProfileKey`
 //   canonico §3.1-§3.10 renderizavel.
-// - As 6 flags separam a resolucao "quem esta autenticado" (JWT) da
-//   resolucao "em que cenario canonico esta" (banco). Isso permite
+// - As 6 flags separam a resolução "quem está autenticado" (JWT) da
+//   resolução "em que cenário canônico está" (banco). Isso permite
 //   teste bit-exact de todas as 10 combinacoes canonicas §3.1-§3.10
 //   sem depender de MySQL. As queries que calculam as flags vivem no
 //   consumidor (paineis Blocos C+D) e sao verificadas em test

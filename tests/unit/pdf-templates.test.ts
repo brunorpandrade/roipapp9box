@@ -99,7 +99,7 @@ const CANON_INDIVIDUAL: IndividualProfileTemplateInput = {
     { bloco: 'Postura', rotulo: 'Assertividade e ritmo', valor: 62.5 },
     { bloco: 'Estrutura', rotulo: 'Abertura à experiência', valor: 78 },
     { bloco: 'Motor', rotulo: 'Maestria', valor: 71.3 },
-    { bloco: 'Equilibrio', rotulo: 'Autoconsciência', valor: 84 },
+    { bloco: 'Equilíbrio', rotulo: 'Autoconsciência', valor: 84 },
     { bloco: 'Assinatura', rotulo: 'Sabedoria', valor: 66 },
   ],
   generatedAtDate: '2026-07-28',
@@ -231,7 +231,7 @@ describe('individualProfileTemplate (ME-050/51)', () => {
 
   it('renderIndividualProfileHTML — contem todas as secoes canonicas §10.10', () => {
     const html = renderIndividualProfileHTML(CANON_INDIVIDUAL);
-    expect(html).toContain('Perfil Individual');
+    expect(html).toContain('Perfil individual');
     expect(html).toContain('Identificação');
     expect(html).toContain('Síntese executiva');
     expect(html).toContain('Como essa pessoa age');

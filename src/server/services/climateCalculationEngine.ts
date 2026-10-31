@@ -210,7 +210,7 @@ function round2(v: number): number {
 }
 
 /**
- * §9.4 canonica — `notaClima = media aritmetica(scoreA) / 10`.
+ * §9.4 canonica — `notaClima = média aritmética(scoreA) / 10`.
  * `scoreA` em escala 0..100 (§6.4); `notaClima` em 0..10.
  */
 function computeNotaClima(scoresA: readonly number[]): number | null {
@@ -236,7 +236,7 @@ function computeAdesao(cobertura: number, total: number): number | null {
 }
 
 /**
- * §9.4 canonica — `notaDimensao = media aritmetica(scoreDimensaoA)
+ * §9.4 canonica — `notaDimensao = média aritmética(scoreDimensaoA)
  * / 10`. Consumida com `plenitudeData.engajamentoA`,
  * `desenvolvimentoA`, `pertencimentoA` ou `realizacaoA` (0..100).
  */

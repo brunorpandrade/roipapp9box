@@ -88,7 +88,7 @@ export function requireLiderRHLiderOrClevel(
   actionName: string,
 ): LiderRHLiderOrClevelSession {
   if (session === null) {
-    throw new Error(`${actionName}: sessao ausente ou expirada`);
+    throw new Error(`${actionName}: sessão ausente ou expirada`);
   }
   if (session.kind !== 'platform') {
     throw new Error(`${actionName}: acesso restrito.`);

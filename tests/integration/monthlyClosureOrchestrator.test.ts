@@ -982,7 +982,7 @@ describe('service monthlyClosureOrchestrator — runDailyClosureJob (ME-031)', (
   it('empresa inexistente: lanca no refreshCycleSchedule', async () => {
     const now = new Date('2026-02-15T12:00:00Z');
     await expect(runDailyClosureJob(client.db, 999999, now)).rejects.toThrow(
-      /company 999999 nao existe/,
+      /company 999999 não existe/,
     );
   });
 });

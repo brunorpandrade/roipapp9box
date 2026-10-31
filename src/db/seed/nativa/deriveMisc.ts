@@ -410,9 +410,9 @@ export function deriveRfTransferLog(
       actorSuperAdminId: superAdminId,
       eventType: 'atribuido' as const,
       reason:
-        'Nomeacao inicial canonica do Responsavel Financeiro da Nativa ' +
-        'Alimentos Ltda. Patricia Menezes (CFO) assume o papel funcional desde ' +
-        'a adocao da plataforma em 2025-11-15. Fonte: MD Nativa §2 v1.1.',
+        'Nomeação inicial canônica do Responsável financeiro da Nativa ' +
+        'Alimentos Ltda. Patrícia Menezes (CFO) assume o papel funcional desde ' +
+        'a adoção da plataforma em 2025-11-15. Fonte: MD Nativa §2 v1.1.',
       createdAt: new Date('2025-11-15T10:00:00.000Z'),
     },
     {
@@ -424,9 +424,9 @@ export function deriveRfTransferLog(
       actorSuperAdminId: superAdminId,
       eventType: 'transferido' as const,
       reason:
-        'Transferencia canonica bit-exact do papel funcional de Responsavel ' +
-        'Financeiro de Patricia Menezes (CFO) para Juliana Freitas (Controller) ' +
-        'em 2027-01-15. Motivo canonico: Patricia mantem titulo CFO mas Juliana ' +
+        'Transferência canônica bit-exact do papel funcional de Responsável ' +
+        'financeiro de Patrícia Menezes (CFO) para Juliana Freitas (Controller) ' +
+        'em 2027-01-15. Motivo canônico: Patrícia mantém título CFO mas Juliana ' +
         'passa a responder operacionalmente pelos fechamentos mensais. ' +
         'Fonte: MD Nativa §2.1 v1.1.',
       createdAt: new Date('2027-01-15T10:00:00.000Z'),
@@ -467,7 +467,7 @@ export interface DerivedCycleSchedule {
  * Configuracao inerte: motores canonicos filtram `companies.isDemo = false`
  * antes de processar, portanto nenhum ciclo agendado sera efetivamente aberto.
  * Este registro existe apenas para satisfazer o schema (routers de dashboard
- * consultam cycleSchedule para exibir 'proximo ciclo').
+ * consultam cycleSchedule para exibir 'próximo ciclo').
  *
  * Configurado apontando para T9 (2028-Q1), o proximo ciclo natural pos-seed.
  */

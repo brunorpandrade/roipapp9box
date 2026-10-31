@@ -52,7 +52,7 @@
 //       totalBlocos, itensPorBloco}`. Cria tentativa `em_andamento`
 //     automaticamente se ausente.
 // (c) Renderiza o modal pop-up 80% com o bloco `blocoAtual`.
-// (d) Ao clicar `[Proximo bloco]`: valida completude do bloco local,
+// (d) Ao clicar `[Próximo bloco]`: valida completude do bloco local,
 //     POST `save-profile-block` -> atualiza estado com o novo
 //     `blocoAtual` retornado pelo backend.
 // (e) Ao clicar `[Bloco anterior]`: decrementa `blocoAtual` local
@@ -151,7 +151,7 @@ const INSTRUCAO_BLOCO_1 =
   ' descreve você.';
 const CONFIRM_TITULO = 'Suas respostas foram enviadas!';
 const CONFIRM_SUB =
-  'Obrigado por responder o Perfil Individual. Suas respostas foram registradas com sucesso.';
+  'Obrigado por responder o Perfil individual. Suas respostas foram registradas com sucesso.';
 
 // ME-1.3b item 5: estimativa canonica de tempo por item do PI para
 // preview temporal "~Y min restantes". Baseline conservador de 10
@@ -690,7 +690,7 @@ export function PerfilIndividualFormShell(props: PerfilIndividualFormShellProps)
         {/* HEADER */}
         <div style={estilos.header}>
           <div style={estilos.headerTop}>
-            <div style={estilos.titulo}>Perfil Individual</div>
+            <div style={estilos.titulo}>Perfil individual</div>
             {!ehBlocoFinal ? (
               <div style={estilos.headerActions}>
                 <button

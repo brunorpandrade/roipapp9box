@@ -237,7 +237,7 @@ describe('exports.getResumoDashboard', () => {
         escopoReferencia: null,
         trimestre: '2026-Q1',
       }),
-    ).rejects.toThrow(/permissao/i);
+    ).rejects.toThrow(/permissão/i);
   });
 });
 
@@ -337,7 +337,7 @@ describe('exports — guard cruzado §2.4 (ME-B9-SEC)', () => {
         escopoReferencia: null,
         trimestre: '2026-Q1',
       }),
-    ).rejects.toThrow(/Empresa nao pertence ao seu escopo/);
+    ).rejects.toThrow(/Empresa não pertence ao seu escopo/);
   });
 
   it('getSnapshot9Box: RH da empresa A com companyId=B -> FORBIDDEN', async () => {
@@ -354,6 +354,6 @@ describe('exports — guard cruzado §2.4 (ME-B9-SEC)', () => {
         escopoReferencia: null,
         trimestre: '2026-Q1',
       }),
-    ).rejects.toThrow(/Empresa nao pertence ao seu escopo/);
+    ).rejects.toThrow(/Empresa não pertence ao seu escopo/);
   });
 });

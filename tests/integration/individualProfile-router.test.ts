@@ -419,7 +419,7 @@ describe('individualProfile — contratos publicos exportados', () => {
 
   it('MSG_PC1E reproduz literalmente o DOC 02 §11.5', () => {
     expect(MSG_PC1E_PERFIL_INDIVIDUAL_CLEVEL).toBe(
-      'Você não tem permissão para acessar o Perfil Individual deste colaborador. ' +
+      'Você não tem permissão para acessar o Perfil individual deste colaborador. ' +
         'Este espaço é restrito ao Super Admin. Se acredita que isso é um erro, ' +
         'contate o Super Admin.',
     );
@@ -911,7 +911,7 @@ describe('individualProfile.getReport — PC1e §10.11/§15.5', () => {
     await createScore(companyId, clevelId, a, 1, {}, 'clevel');
   });
 
-  it('Bruno le o Perfil Individual de C-level', async () => {
+  it('Bruno le o Perfil individual de C-level', async () => {
     const { factory, ctx } = bindRouter();
     const caller = factory(ctx(await tokenSuperAdmin()));
     const out = await caller.getReport({ companyId, userType: 'clevel', userId: clevelId });
@@ -1172,7 +1172,7 @@ describe('individualProfile.releaseRetest — autorizacao S212/S231', () => {
 // 8) generatePDF — autorizacao (ME pos-fila7, correcao D8)
 // ============================================================
 //
-// §10.13/§9.2: PDF do Perfil Individual e de Bruno e RH — RH-Lider
+// §10.13/§9.2: PDF do Perfil individual e de Bruno e RH — RH-Lider
 // incluido porque acumula as permissoes de RH (DOC 02 §69). A whitelist
 // canonica passa a ser ['super_admin', 'rh', 'rh_lider']; 'lider' e
 // 'clevel' seguem fora. Prova nos dois sentidos: rh_lider autorizado

@@ -1,7 +1,7 @@
 // ROIP APP 9BOX — ME-078b canonico — ModalInativacaoMotivoSaida (§13.6).
 //
 // Modal canonico bit-exact de inativacao de colaborador comum com
-// campo obrigatorio "Motivo de saida" (voluntario | involuntario).
+// campo obrigatório "Motivo de saída" (voluntário | involuntário).
 //
 // Estrutura canonica bit-exact (mockup `delta_modal_inativacao_motivo_saida_v1.html`):
 //   - Titulo: "Inativar colaborador"

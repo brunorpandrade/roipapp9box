@@ -14,11 +14,11 @@
 //      renderizado visualmente bit-exact ao mockup como componente
 //      canonico, mas NAO persiste (selecao visualmente registrada).
 //   4. Escopo de visualizacao (`acessoTotal` + banner Contexto A/B).
-//   5. Papeis funcionais (toggle "Ativar como Responsavel financeiro" +
+//   5. Papéis funcionais (toggle "Ativar como Responsável financeiro" +
 //      ME 3.5 D5 patch2: toggle "Ativar como RH" — D9 §12 DOC 02 herdada
 //      via `roleProcedure(['super_admin'])` no server. Ambos os toggles
 //      operam com a mesma semantica de UI e a decisao D3 anterior de
-//      "nota canonica" foi substituida por este novo toggle em regime).
+//      "nota canônica" foi substituída por este novo toggle em regime).
 //   6. Status inicial (badge verde — novo C-level sempre nasce ativo;
 //      em edicao, o toggle Ativar/Inativar aparece + botao dedicado).
 //
@@ -705,16 +705,16 @@ export function CLevelForm(props: CLevelFormProps): JSX.Element {
         {/* -----------------------------------------------------------
          * ME 3.5 D5 patch2 — Toggle canonico "Ativar como RH".
          *
-         * Substitui a antiga "Nota canonica — decisao D3" (que negava o
+         * Substitui a antiga "Nota canônica — decisão D3" (que negava o
          * toggle no cadastro). D9 aprovada em ME 3.5: apenas Super Admin
          * pode ativar o flag, semantica herdada via `roleProcedure`
          * (['super_admin'])` nas procedures `cLevelMembers.create` e
-         * `cLevelMembers.update` — o guard fino de UI e servidor sao
+         * `cLevelMembers.update` — o guard fino de UI e servidor são
          * redundantes por design (defense-in-depth).
          *
-         * Quando `isRH=true`, no proximo login o C-level vera:
+         * Quando `isRH=true`, no próximo login o C-level verá:
          *   - `/painel-clevel` como landing default (menu C-level);
-         *   - Toggle "Painel C-level / Painel RH" no rodape do Sidebar;
+         *   - Toggle "Painel C-level / Painel RH" no rodapé do Sidebar;
          *   - Ao alternar para "Painel RH", `/painel-rh` fica acessivel
          *     e o menu troca para o conjunto canonico do RH.
          * ----------------------------------------------------------- */}

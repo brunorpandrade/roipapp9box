@@ -16,7 +16,7 @@
 //     seca. UPDATE `status='inativo'` apenas. Guard §5.6 (RF sem
 //     substituto). SEM `employeeTerminationEvents` (§12.2 canoniza
 //     C-levels fora da populacao turnover). SEM `motivoSaida` (§12.6
-//     canoniza modal do C-level "sem alteracao").
+//     canoniza modal do C-level "sem alteração").
 //   - `cLevelMembers.reactivate` — UPDATE `status='ativo'`.
 //   - `cLevelMembers.delete`     — S129: deleta apenas se `status='inativo'`
 //     E sem historico E nao e RF. Transacao: DELETE do placeholder +
@@ -104,54 +104,54 @@ export const PHOTO_URL_MAX_LENGTH_CL = 400 * 1024;
 // ============================================================
 
 /** §2.4 — guard cruzado companyId. */
-export const MSG_COMPANY_MISMATCH_CL = 'C-level nao pertence a sua empresa.' as const;
+export const MSG_COMPANY_MISMATCH_CL = 'C-level não pertence à sua empresa.' as const;
 
 /** §4.4 — C-level nao encontrado pelo id. */
-export const MSG_CLEVEL_NAO_ENCONTRADO = 'C-level nao encontrado.' as const;
+export const MSG_CLEVEL_NAO_ENCONTRADO = 'C-level não encontrado.' as const;
 
 /** §4.4 — CPF ja existe (uq_clevel_cpf). */
 export const MSG_CPF_DUPLICADO_CL =
-  'Ja existe C-level cadastrado com este CPF nesta empresa.' as const;
+  'Já existe C-level cadastrado com este CPF nesta empresa.' as const;
 
 /** §16.4 — RF nao pode ser deletado em qualquer condicao. */
 export const MSG_DELETE_RF_BLOQUEADO_CL =
-  'Nao e possivel excluir o Responsavel financeiro. Transfira o papel antes de excluir.' as const;
+  'Não é possível excluir o Responsável financeiro. Transfira o papel antes de excluir.' as const;
 
 /** §16.4 — deletar C-level ativo e proibido; inative primeiro. */
 export const MSG_DELETE_CLEVEL_ATIVO =
-  'C-level ativo nao pode ser deletado. Inative antes.' as const;
+  'C-level ativo não pode ser deletado. Inative antes.' as const;
 
 /** §16.7 (`cLevelMembers.delete`) — bloqueio canonico se ha historico. */
 export const MSG_DELETE_COM_HISTORICO_CL =
-  'C-level possui dados historicos. Deletar nao e permitido; mantenha inativo.' as const;
+  'C-level possui dados históricos. Deletar não é permitido; mantenha inativo.' as const;
 
 /** §5.6 (adaptado a C-level) — inativar C-level RF sem substituto. */
 export const MSG_INACTIVATE_RF_BLOQUEADO_CL =
-  'Este C-level e o Responsavel financeiro da empresa. Antes de inativar, ' +
-  'atribua o papel de Responsavel financeiro a outro colaborador.';
+  'Este C-level é o Responsável financeiro da empresa. Antes de inativar, ' +
+  'atribua o papel de Responsável financeiro a outro colaborador.';
 
 /** §4.4 — C-level ja esta inativo. */
-export const MSG_JA_INATIVO_CL = 'C-level ja esta inativo.' as const;
+export const MSG_JA_INATIVO_CL = 'C-level já está inativo.' as const;
 
 /** §4.4 — C-level ja esta ativo. */
-export const MSG_JA_ATIVO_CL = 'C-level ja esta ativo.' as const;
+export const MSG_JA_ATIVO_CL = 'C-level já está ativo.' as const;
 
 /**
  * ME-080b Dispatch 2b (S515) — matricula em formato invalido.
  * Formato canonico: AA00 (2 letras + 2 digitos, uppercase).
  */
 export const MSG_MATRICULA_FORMATO_INVALIDO_CL =
-  'Matricula deve ter 2 letras seguidas de 2 numeros (formato AA00).' as const;
+  'Matrícula deve ter 2 letras seguidas de 2 números (formato AA00).' as const;
 
 /**
  * ME-080b Dispatch 2b (S515) — matricula duplicada na empresa.
  */
 export const MSG_MATRICULA_DUPLICADA_CL =
-  'Matricula ja em uso nesta empresa. Escolha outra ou clique em Gerar.' as const;
+  'Matrícula já em uso nesta empresa. Escolha outra ou clique em Gerar.' as const;
 
 /** S127 — toggle RF fora da ME-043. */
 export const MSG_TOGGLE_RF_FORA_ESCOPO_CL =
-  'Alteracao de Responsavel financeiro nao e permitida por esta rota; ' +
+  'Alteração de Responsável financeiro não é permitida por esta rota; ' +
   'use company.setResponsavelFinanceiro.';
 
 // ============================================================
@@ -172,19 +172,19 @@ const cpfSchemaBaseCl = z
   .string()
   .transform((v) => v.replace(/\D+/g, ''))
   .refine((v) => v.length === CPF_LENGTH_CL, {
-    message: 'CPF deve ter 11 digitos apos normalizacao.',
+    message: 'CPF deve ter 11 dígitos após normalização.',
   });
 
 /** §4.4 — CPF canonico normalizado (S125 superficial). */
 export const CPF_SCHEMA_CL = cpfSchemaBaseCl;
 
-const emailSchemaCl = z.string().email({ message: 'E-mail invalido.' }).max(EMAIL_MAX_LENGTH_CL);
+const emailSchemaCl = z.string().email({ message: 'E-mail inválido.' }).max(EMAIL_MAX_LENGTH_CL);
 
 const dateFieldSchemaCl = z.union([z.date(), z.string().transform((v) => new Date(v))]);
 
 const custoMensalSchema = z.union([
   z.number(),
-  z.string().refine((v) => !Number.isNaN(Number(v)), { message: 'custoMensal invalido.' }),
+  z.string().refine((v) => !Number.isNaN(Number(v)), { message: 'custoMensal inválido.' }),
 ]);
 
 /**
@@ -451,7 +451,7 @@ export function assertCompanyScopeCl(user: AuthenticatedUser, companyId: number)
  * `nineBoxCalculationLog` deliberadamente FORA — DOC 02 §11.3 canoniza
  * que C-levels nao entram no 9-Box por regra estrutural (§7.5), portanto
  * nao ha linha do C-level naquela tabela. Lista minima suficiente para
- * caracterizar "C-level com dados historicos" no MVP; ampliavel.
+ * caracterizar "C-level com dados históricos" no MVP; ampliável.
  */
 export async function hasHistoricoCl(db: RoipDatabase, cLevelId: number): Promise<boolean> {
   const checks = [

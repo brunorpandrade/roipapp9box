@@ -3,7 +3,7 @@
 // Origem canonica: DOC 02 §4.10 (Modal dirty state canonico).
 //
 // Comportamento canonico bit-exact §4.10:
-//   - Titulo literal: "Descartar alteracoes?" (com cedilha e til).
+//   - Título literal: "Descartar alterações?" (com cedilha e til).
 //   - Corpo literal: "Voce tem dados nao salvos. Se sair agora, as
 //     alteracoes serao perdidas."
 //   - Botao outline: "Continuar editando" (fecha modal, retorna a

@@ -77,7 +77,7 @@ import { loadDashboardIndividualContext } from './_shared/dashboardIndividualCon
 
 /**
  * `max_tokens` canonico do Chat IA. Respostas concisas por padrao
- * (§9.2 §6 — "tipica entre 3 e 8 linhas"); teto de 2000 tokens cobre
+ * (§9.2 §6 — "típica entre 3 e 8 linhas"); teto de 2000 tokens cobre
  * respostas mais longas quando o gestor pede analise aprofundada.
  */
 export const AI_CHAT_MAX_TOKENS = 2_000;

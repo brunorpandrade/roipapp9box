@@ -157,7 +157,7 @@ const ITEM_SAIR: MenuLinkItem = {
 
 // §3.1 — Super Admin global (`/super-admin`).
 // "Logs administrativos" carrega 2 subitens (§3.1 item 5, ordem canonica):
-// (1) "Transferencias de Responsavel financeiro" → /super-admin/logs/
+// (1) "Transferências de Responsável financeiro" → /super-admin/logs/
 // responsavel-financeiro (ME-057b) e (2) "Log de acesso individual" →
 // /super-admin/logs/acesso-individual (ME-055b). Os subitens reaproveitam
 // o icone `FileText` do pai (padrao CC039 + nota canonica ME-057b sobre
@@ -764,7 +764,7 @@ export const MENU_CONFIG_BY_PROFILE: Record<ProfileKey, MenuConfig | null> = {
  * `resolveMenuItems(profileKey, isResponsavelFinanceiro, companyId)`.
  *
  * Debito canonico D088 (ME-074): o comentario da linha 194 declarava
- * "Placeholder [id] na URL sera substituido pelo consumidor (ME-056)" —
+ * "Placeholder [id] na URL será substituído pelo consumidor (ME-056)" —
  * mas a substituicao nunca havia sido implementada. Consumidores atuais
  * (`pendencias-portal/page.tsx`, `historico/page.tsx`) recebiam hrefs
  * literais com `[id]` e a navegacao lateral do menu retornava 404.

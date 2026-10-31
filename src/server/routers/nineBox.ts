@@ -220,7 +220,7 @@ function assertCompanyScopeNineBox(user: AuthenticatedUser, companyId: number): 
 }
 
 /** Mensagem canonica de alvo fora da cadeia (S066 → PC1h). */
-const MSG_FORA_DA_CADEIA_NINE_BOX = 'Colaborador fora da cadeia direta do lider.';
+const MSG_FORA_DA_CADEIA_NINE_BOX = 'Colaborador fora da cadeia direta do líder.';
 
 /**
  * Guard de cadeia descendente (PC1h) — substitui S066 (cadeia direta de
@@ -378,13 +378,13 @@ export function createNineBoxRouter() {
         if (!emp) {
           throw new TRPCError({
             code: 'NOT_FOUND',
-            message: 'Colaborador nao encontrado.',
+            message: 'Colaborador não encontrado.',
           });
         }
         if (emp.companyId !== input.companyId) {
           throw new TRPCError({
             code: 'NOT_FOUND',
-            message: 'Colaborador nao encontrado na empresa informada.',
+            message: 'Colaborador não encontrado na empresa informada.',
           });
         }
 
@@ -437,13 +437,13 @@ export function createNineBoxRouter() {
         if (!emp) {
           throw new TRPCError({
             code: 'NOT_FOUND',
-            message: 'Colaborador nao encontrado.',
+            message: 'Colaborador não encontrado.',
           });
         }
         if (emp.companyId !== input.companyId) {
           throw new TRPCError({
             code: 'NOT_FOUND',
-            message: 'Colaborador nao encontrado na empresa informada.',
+            message: 'Colaborador não encontrado na empresa informada.',
           });
         }
 

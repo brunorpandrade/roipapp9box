@@ -251,7 +251,7 @@ describe('MENU_CONFIG_BY_PROFILE — composicao canonica DOC 05 §3.1-§3.10', (
 // 3 tests — filtro condicional "Faturamento da empresa" (S461/S463/S464/S465).
 // -----------------------------------------------------------------------
 
-describe('resolveMenuItems — filtro condicional Responsavel financeiro', () => {
+describe('resolveMenuItems — filtro condicional Responsável financeiro', () => {
   it('RH-Lider C1 com isResponsavelFinanceiro=true inclui "Faturamento da empresa"', () => {
     const items = resolveMenuItems('rh_lider_c1', true);
     expect(items).not.toBeNull();

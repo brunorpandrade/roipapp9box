@@ -685,7 +685,7 @@ export const EXPORT_MAX_ROWS = 10_000 as const;
 
 /** Mensagem canonica ME-fila5 D2 — teto de export excedido. */
 export const MSG_EXPORT_TETO_EXCEDIDO =
-  'Empresa excede o teto canonico de 10000 colaboradores para exportacao.' as const;
+  'Empresa excede o teto canônico de 10.000 colaboradores para exportação.' as const;
 
 /** Erro tipado canonico ME-fila5 D2 — teto de export excedido. */
 export class ExportTetoExcedidoError extends Error {
@@ -749,7 +749,7 @@ export async function listAllEmployeesForExport(
 //
 // UNIAO canonica bit-exact de employees + cLevelMembers ATIVOS da
 // empresa, ordenada por nome (collator pt-BR sensitivity base). Fonte
-// de dados exclusiva do XLSX "Baixar matriculas" servido pela proc
+// de dados exclusiva do XLSX "Baixar matrículas" servido pela proc
 // `employees.downloadMatriculas`.
 //
 // **Excecao canonica explicita a PC1a §11.1 DOC 02**: RH canonicamente

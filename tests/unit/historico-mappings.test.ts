@@ -125,11 +125,14 @@ describe('historico-mappings — estados vazios (mockup 324-326)', () => {
 
 describe('historico-mappings — SYSTEM_ACTOR_TRANSFERENCIA (S322)', () => {
   it('literal canonico bit-exact', () => {
-    expect(SYSTEM_ACTOR_TRANSFERENCIA).toBe('Sistema (transferência de líderados)');
+    expect(SYSTEM_ACTOR_TRANSFERENCIA).toBe('Sistema (transferência de liderados)');
   });
 
-  it('acentuacao explicita (nao substituir por "lideradoS")', () => {
-    expect(SYSTEM_ACTOR_TRANSFERENCIA.includes('líderados')).toBe(true);
+  it('grafia canonica (sem acento indevido no primeiro "i" de "liderados")', () => {
+    // Correcao ME-TEXTUAL-001: "líderados" -> "liderados" (plural de "liderado",
+    // sem acento). Teste anterior validava o bug; agora valida a grafia correta.
+    expect(SYSTEM_ACTOR_TRANSFERENCIA.includes('liderados')).toBe(true);
+    expect(SYSTEM_ACTOR_TRANSFERENCIA.includes('líderados')).toBe(false);
   });
 });
 

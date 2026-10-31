@@ -251,7 +251,7 @@ describe('platformLogs.listResponsavelFinanceiroTransfers — ordem DESC', () =>
       null,
       'employee',
       100,
-      'Primeira atribuicao de Responsavel financeiro',
+      'Primeira atribuição de Responsável financeiro',
       new Date('2026-01-15T10:00:00Z'),
     );
     await insertLogEntry(
@@ -331,7 +331,7 @@ describe('platformLogs.listResponsavelFinanceiroTransfers — vazio e guards', (
       null,
       'employee',
       rhId,
-      'Primeira atribuicao de Responsavel financeiro',
+      'Primeira atribuição de Responsável financeiro',
       new Date('2026-06-01T10:00:00Z'),
     );
 

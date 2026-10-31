@@ -192,7 +192,7 @@ export interface CicloOption {
 }
 
 /**
- * Opcoes canonicas do filtro 3 "Lider direto" (select §14.23 linha 2617).
+ * Opções canônicas do filtro 3 "Líder direto" (select §14.23 linha 2617).
  * Ordem canonica: nome asc.
  */
 export interface LiderDiretoOption {

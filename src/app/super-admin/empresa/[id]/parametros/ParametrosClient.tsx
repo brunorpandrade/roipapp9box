@@ -4,7 +4,7 @@
 // `/super-admin/empresa/[id]/parametros` (§13.1 Aba 1, ME-075).
 //
 // Renderiza o form canonico bit-exact das 9 secoes da Aba 1 §13.1 +
-// rodape com botoes `[Cancelar alteracoes]` e `[Salvar alteracoes]` +
+// rodapé com botões `[Cancelar alterações]` e `[Salvar alterações]` +
 // toggle status ativa/inativa integrado a Secao 9.
 //
 // Escopo canonico bit-exact desta ME (S499b) — MVP funcional focado no
@@ -377,7 +377,7 @@ export function ParametrosClient(props: ParametrosClientProps): JSX.Element {
               style={inputStyle}
             />
           </Field>
-          <Field label="URL política privacidade (opcional)">
+          <Field label="URL da política de privacidade (opcional)">
             <input
               value={state.values.encarregadoLgpdPoliticaUrl ?? ''}
               onChange={(e) =>

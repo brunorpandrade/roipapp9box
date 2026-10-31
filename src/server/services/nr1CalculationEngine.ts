@@ -1056,7 +1056,7 @@ export async function closeNr1Cycle(
       .where(and(eq(copsoqCycles.id, cicloDbId), eq(copsoqCycles.status, 'aberto')));
 
     if (transicao.affectedRows === 0) {
-      throw new Error('closeNr1Cycle: transicao aberto -> fechado nao afetou linha');
+      throw new Error('closeNr1Cycle: transição aberto -> fechado não afetou linha');
     }
 
     return { alertasGravados, scoresGravados, divergenciasGravadas, notificacoesGravadas };

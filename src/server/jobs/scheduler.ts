@@ -707,7 +707,7 @@ export function createCronScheduler(
     const entry = registry.get(name);
     if (entry === undefined) {
       const cadence = CRON_JOB_CADENCE_BY_NAME[name];
-      const errorMessage = `cron scheduler: job "${name}" nao registrado`;
+      const errorMessage = `cron scheduler: job "${name}" não registrado`;
       logCronWarn({ name, cadence, status: 'error', error: errorMessage });
       return {
         name,

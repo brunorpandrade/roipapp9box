@@ -22,7 +22,7 @@
 //   vigente do titular. Divergiu (troca de senha/e-mail) → sessao invalida.
 // - §8.3 — distincao canonica: sessao expirada/invalida NUNCA vira
 //   AccessDenied. No transporte tRPC isso e UNAUTHORIZED (o front trata
-//   como "sessao expirou", nao renderiza AccessDeniedPage). Perfil errado
+//   como "sessão expirou", nao renderiza AccessDeniedPage). Perfil errado
 //   em rota valida e FORBIDDEN.
 // - §8.4 — os 8 passos do middleware server-side canonico, aqui compostos
 //   como: `authed` (passos 1,2,6,7 + pwv/§5.7) e `roleProcedure` (passos
@@ -223,17 +223,17 @@ export const publicProcedure = t.procedure;
  */
 const authed = t.middleware(async ({ ctx, next }) => {
   if (ctx.bearerToken === null) {
-    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessao ausente.' });
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessão ausente.' });
   }
 
   const result = await verifyToken(ctx.bearerToken);
   if (!result.valid) {
-    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessao expirada.' });
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessão expirada.' });
   }
 
   const expected = await currentCredentialVersion(ctx.db, result.token);
   if (expected === null || expected !== result.token.claims.credentialVersion) {
-    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessao expirada.' });
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessão expirada.' });
   }
 
   const token = result.token;
@@ -285,7 +285,7 @@ export function roleProcedure(roles: readonly Role[]) {
   const allowed = new Set<Role>(roles);
   return protectedProcedure.use(({ ctx, next }) => {
     if (!allowed.has(ctx.user.role)) {
-      throw new TRPCError({ code: 'FORBIDDEN', message: 'Perfil sem permissao para a rota.' });
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'Perfil sem permissão para a rota.' });
     }
     return next({ ctx });
   });

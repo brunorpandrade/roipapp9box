@@ -229,7 +229,7 @@ describe('service cycleScheduleEngine — timezone da empresa (ME-030)', () => {
       .where(eq(cycleSchedule.companyId, companyIdUTC))
       .limit(1);
     // A linha mais recente para o trimestre corrente deve estar em UTC
-    // (dia 16 do ultimo mes do trimestre 00:00 UTC).
+    // (dia 16 do último mês do trimestre 00:00 UTC).
     expect(q1?.dataAbertura).not.toBeNull();
   });
 });

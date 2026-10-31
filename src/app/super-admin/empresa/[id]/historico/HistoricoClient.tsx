@@ -11,7 +11,7 @@
 //   Descricao resumida.
 // - Filtros canonicos (mockup linhas 168-183): Periodo (dropdown),
 //   Tipo de evento (dropdown com opcao desabilitada canonica literal
-//   "Mudanca de meta de ROI (indisponivel — placeholder)"), Ator (busca
+//   "Mudança de meta de ROI (indisponível — placeholder)"), Ator (busca
 //   livre).
 // - Comportamento acordeao de expansao unica (mockup linhas 336-372):
 //   clicar em qualquer linha alterna a expansao daquela linha; clicar

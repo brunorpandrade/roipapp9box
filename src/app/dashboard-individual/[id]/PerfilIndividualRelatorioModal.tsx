@@ -596,7 +596,7 @@ function TextosExpandido(props: { exp: unknown }): JSX.Element {
           itens={riGet(riGet(e, 'naturalmente_excelente'), 'onde_gera_valor')}
         />
         <RiSubLista
-          rotulo="Riscos de overuse"
+          rotulo="Riscos de uso excessivo"
           itens={riGet(riGet(e, 'naturalmente_excelente'), 'riscos_de_overuse')}
         />
       </RiSecao>

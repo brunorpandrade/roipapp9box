@@ -138,7 +138,7 @@ export function deriveUbatubaProfileScoresSemAssessmentId(): readonly ScoreRowSe
   const rows: ScoreRowSemFk[] = scores.data.map((r) => {
     const resolved = lookup.get(r.nome);
     if (resolved === undefined) {
-      throw new Error(`deriveUbatubaProfileScoresSemAssessmentId: nome nao encontrado='${r.nome}'`);
+      throw new Error(`deriveUbatubaProfileScoresSemAssessmentId: nome não encontrado='${r.nome}'`);
     }
     const s = r.scores ?? {};
     // Bit-exact: lookup lowercase por chave; JSON canonico tem UPPERCASE

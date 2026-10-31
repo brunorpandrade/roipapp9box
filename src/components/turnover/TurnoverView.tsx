@@ -149,7 +149,7 @@ export function TurnoverView(props: TurnoverViewProps): JSX.Element {
           {data.rolling12m !== null ? (
             <section aria-label="Últimos 4 trimestres fechados">
               <Indicador
-                titulo="Últimos 4 trimestres fechados (rolling 12 meses)"
+                titulo="Últimos 4 trimestres fechados (12 meses móveis)"
                 saidas={data.rolling12m.saidas}
                 percentual={data.rolling12m.percentual}
               />

@@ -32,9 +32,9 @@ describe('deriveDataNascimento', () => {
   });
 
   it('rejeita string invalida (fix TS18048)', () => {
-    expect(() => deriveDataNascimento(1, 'abc')).toThrow(/dataAdmissao invalida/);
-    expect(() => deriveDataNascimento(1, '2020-06')).toThrow(/dataAdmissao invalida/);
-    expect(() => deriveDataNascimento(1, '')).toThrow(/dataAdmissao invalida/);
+    expect(() => deriveDataNascimento(1, 'abc')).toThrow(/dataAdmissao inválida/);
+    expect(() => deriveDataNascimento(1, '2020-06')).toThrow(/dataAdmissao inválida/);
+    expect(() => deriveDataNascimento(1, '')).toThrow(/dataAdmissao inválida/);
   });
 });
 

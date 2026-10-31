@@ -15,7 +15,7 @@
 //   1. Empresa sem settings (zero linhas em
 //      `companyRoleFamilySettings`) → todas as 26 chaves caem no
 //      label canonico `JOB_FAMILY_LABELS[key]`.
-//   2. Empresa com 6 canonicas seedadas sem customizacao
+//   2. Empresa com 6 canonicas seedadas sem customização
 //      (`nomeCustomizado=NULL`) → labels canonicos pt-BR das 6 +
 //      placeholders dos 20 slots custom.
 //   3. Empresa com uma canonica renomeada (`nomeCustomizado='Hunter

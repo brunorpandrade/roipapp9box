@@ -60,16 +60,16 @@ export async function listarMinhaEquipeAction(
 ): Promise<ListEmployeesResult> {
   const session = await getServerSession();
   if (session === null) {
-    throw new Error('listarMinhaEquipeAction: sessao ausente ou expirada.');
+    throw new Error('listarMinhaEquipeAction: sessão ausente ou expirada.');
   }
   if (session.kind !== 'platform') {
     throw new Error(
-      'listarMinhaEquipeAction: Super Admin nao acessa /minha-equipe (matriz §10.4).',
+      'listarMinhaEquipeAction: Super Admin não acessa /minha-equipe (matriz §10.4).',
     );
   }
   // ME-fila6 D1 — DOC 02 §10.4: RH-Lider, Lider e C-level (CU/CT/CF).
   if (session.role !== 'rh_lider' && session.role !== 'lider' && session.role !== 'clevel') {
-    throw new Error('listarMinhaEquipeAction: rota restrita a RH-Lider, Lider e C-level.');
+    throw new Error('listarMinhaEquipeAction: rota restrita a RH-Líder, Líder e C-level.');
   }
   const companyId = session.companyId;
   // Validacao paranoica: se o cliente enviou companyId diferente do
@@ -79,7 +79,7 @@ export async function listarMinhaEquipeAction(
     companyIdIgnored > 0 &&
     companyIdIgnored !== companyId
   ) {
-    throw new Error('listarMinhaEquipeAction: companyId divergente da sessao.');
+    throw new Error('listarMinhaEquipeAction: companyId divergente da sessão.');
   }
 
   const leaderTipo = session.role === 'clevel' ? 'clevel' : 'employee';

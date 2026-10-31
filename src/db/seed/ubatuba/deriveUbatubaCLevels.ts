@@ -52,7 +52,7 @@ export interface DerivedUbatubaCLevelRow {
 function rewriteEmailDomain(originalEmail: string): string {
   const atIndex = originalEmail.indexOf('@');
   if (atIndex === -1) {
-    throw new Error(`rewriteEmailDomain: email invalido (sem '@'): '${originalEmail}'`);
+    throw new Error(`rewriteEmailDomain: e-mail inválido (sem '@'): '${originalEmail}'`);
   }
   const localPart = originalEmail.slice(0, atIndex);
   return `${localPart}@${UBATUBA_EMAIL_DOMAIN}`;

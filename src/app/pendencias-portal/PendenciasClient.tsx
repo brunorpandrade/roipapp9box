@@ -383,8 +383,8 @@ export function PendenciasClient(props: PendenciasClientProps): JSX.Element {
       }).then((res) => {
         setModalMassa(false);
         setToast(
-          `Envio processado: ${res.enviados} lembretes enviados, ` +
-            `${res.puladosCooldown} pulados por cooldown, ${res.falhas} falharam.`,
+          `Envio processado: ${res.enviados} lembrete(s) enviado(s), ` +
+            `${res.puladosCooldown} pulado(s) por cooldown, ${res.falhas} falha(s).`,
         );
         refetch(filters, result.page, result.pageSize);
       });

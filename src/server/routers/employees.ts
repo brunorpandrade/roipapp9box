@@ -172,7 +172,7 @@ export const REASON_CADASTRO_INICIAL = 'Cadastro inicial do colaborador' as cons
  * §4.6 — reason canonico da reativacao (novo vinculo pos-reativacao).
  * Analogo ao `REASON_CADASTRO_INICIAL`; distinto do padrao 100-500.
  */
-export const REASON_REATIVACAO = 'Reativacao do colaborador' as const;
+export const REASON_REATIVACAO = 'Reativação do colaborador' as const;
 
 /**
  * ME-080b Dispatch 3.3 (S519) — motivo canonico para reatribuicao
@@ -181,7 +181,7 @@ export const REASON_REATIVACAO = 'Reativacao do colaborador' as const;
  * INSERT nova. Distinto do REASON_CADASTRO_INICIAL e do padrao de
  * transferencia coletiva 100-500 chars (leadershipTransfer.execute).
  */
-export const REASON_REATRIBUICAO_INDIVIDUAL = 'Reatribuicao individual de lider' as const;
+export const REASON_REATRIBUICAO_INDIVIDUAL = 'Reatribuição individual de líder' as const;
 
 // ============================================================
 // Constantes canonicas do uploadCSV (§16.6 — S190, S191)
@@ -256,22 +256,22 @@ export const UPLOAD_MAX_LINHAS = 10_000 as const;
 // ============================================================
 
 /** §2.4 guard cruzado companyId — Super Admin atravessa, demais restritos. */
-export const MSG_COMPANY_MISMATCH_EMP = 'Colaborador nao pertence a sua empresa.' as const;
+export const MSG_COMPANY_MISMATCH_EMP = 'Colaborador não pertence à sua empresa.' as const;
 
 /** §4.5 — colaborador nao encontrado pelo id (soft NOT_FOUND canonico). */
-export const MSG_EMPLOYEE_NAO_ENCONTRADO = 'Colaborador nao encontrado.' as const;
+export const MSG_EMPLOYEE_NAO_ENCONTRADO = 'Colaborador não encontrado.' as const;
 
 /** §4.5 — CPF ja existe na mesma empresa (uq_employee_cpf). */
 export const MSG_CPF_DUPLICADO =
-  'Ja existe colaborador cadastrado com este CPF nesta empresa.' as const;
+  'Já existe colaborador cadastrado com este CPF nesta empresa.' as const;
 
 /** §16.4 — deletar colaborador ativo e proibido; inative primeiro. */
 export const MSG_DELETE_COLABORADOR_ATIVO =
-  'Colaborador ativo nao pode ser deletado. Inative antes.' as const;
+  'Colaborador ativo não pode ser deletado. Inative antes.' as const;
 
 /** §16.4 — deletar colaborador com historico analitico e proibido. */
 export const MSG_DELETE_COM_HISTORICO =
-  'Colaborador possui dados historicos. Deletar nao e permitido; mantenha inativo.' as const;
+  'Colaborador possui dados históricos. Deletar não é permitido; mantenha inativo.' as const;
 
 /**
  * §16.4 (literal do DOC 03 §16.4 quinta linha) — RF nao pode ser deletado
@@ -279,7 +279,7 @@ export const MSG_DELETE_COM_HISTORICO =
  * canonico ("possivel excluir").
  */
 export const MSG_DELETE_RF_BLOQUEADO =
-  'Nao e possivel excluir o Responsavel financeiro. Transfira o papel antes de excluir.' as const;
+  'Não é possível excluir o Responsável financeiro. Transfira o papel antes de excluir.' as const;
 
 /**
  * §5.6 (literal) — inativar colaborador com `isResponsavelFinanceiro=true`
@@ -287,8 +287,8 @@ export const MSG_DELETE_RF_BLOQUEADO =
  * literal do §5.6 primeira nota. Autoridade canonica: DOC 03 §5.6.
  */
 export const MSG_INACTIVATE_RF_BLOQUEADO =
-  'Este colaborador e o Responsavel financeiro da empresa. Antes de inativar, ' +
-  'atribua o papel de Responsavel financeiro a outro colaborador.';
+  'Este colaborador é o Responsável financeiro da empresa. Antes de inativar, ' +
+  'atribua o papel de Responsável financeiro a outro colaborador.';
 
 /**
  * S148 — fechamento canonico de R1 na ME-045. O DOC 03 §16.3 canoniza que
@@ -303,14 +303,14 @@ export const MSG_INACTIVATE_RF_BLOQUEADO =
  */
 export const MSG_LIDER_COM_LIDERADOS_USE_M2V2 =
   'Este colaborador possui liderados ativos. Use leadershipTransfer.execute ' +
-  'para transferir liderados e inativar em transacao atomica canonica (§14.9).';
+  'para transferir liderados e inativar em transação atômica canônica (§14.9).';
 
 /**
  * §12.6 — motivoSaida obrigatorio para colaborador comum. Mensagem
  * canonica exata literal §12.6 segunda nota.
  */
 export const MSG_MOTIVO_SAIDA_OBRIGATORIO =
-  'Selecione o motivo de saida (voluntario ou involuntario) antes de confirmar a inativacao.';
+  'Selecione o motivo de saída (voluntário ou involuntário) antes de confirmar a inativação.';
 
 /**
  * S127 — toggle RF fora da ME-043. Input com
@@ -318,7 +318,7 @@ export const MSG_MOTIVO_SAIDA_OBRIGATORIO =
  * Aponta o consumidor canonico da ME-044.
  */
 export const MSG_TOGGLE_RF_FORA_ESCOPO =
-  'Alteracao de Responsavel financeiro nao e permitida por esta rota; ' +
+  'Alteração de Responsável financeiro não é permitida por esta rota; ' +
   'use company.setResponsavelFinanceiro.';
 
 /**
@@ -334,8 +334,8 @@ export const MSG_ISRH_APENAS_BRUNO = 'Apenas o Super Admin pode alterar o acesso
  * no schema — regra aplica-se apenas a employees.
  */
 export const MSG_EMAIL_OBRIGATORIO_PAINEL: string =
-  'E-mail obrigatorio para colaborador com acesso ao painel ' +
-  '(Lider, RH ou Responsavel financeiro).';
+  'E-mail obrigatório para colaborador com acesso ao painel ' +
+  '(Líder, RH ou Responsável financeiro).';
 
 /**
  * ME-080b Dispatch 2 (S515) — matricula duplicada no escopo da empresa.
@@ -343,46 +343,46 @@ export const MSG_EMAIL_OBRIGATORIO_PAINEL: string =
  * employee/C-level da mesma empresa (UNIQUE canonico `(companyId, matricula)`).
  */
 export const MSG_MATRICULA_DUPLICADA =
-  'Matricula ja em uso nesta empresa. Escolha outra ou clique em Gerar.' as const;
+  'Matrícula já em uso nesta empresa. Escolha outra ou clique em Gerar.' as const;
 
 /**
  * ME-080b Dispatch 2 (S515) — matricula em formato invalido. Formato
  * canonico: exatamente 2 letras maiusculas seguidas de 2 digitos (AA00).
  */
 export const MSG_MATRICULA_FORMATO_INVALIDO =
-  'Matricula deve ter 2 letras seguidas de 2 numeros (formato AA00).' as const;
+  'Matrícula deve ter 2 letras seguidas de 2 números (formato AA00).' as const;
 
 /**
  * §4.5 — colaborador ja esta inativo (pre-condicao violada em `inactivate`
  * ou `delete`).
  */
-export const MSG_JA_INATIVO = 'Colaborador ja esta inativo.' as const;
+export const MSG_JA_INATIVO = 'Colaborador já está inativo.' as const;
 
 /**
  * §4.5 — colaborador ja esta ativo (pre-condicao violada em `reactivate`).
  */
-export const MSG_JA_ATIVO = 'Colaborador ja esta ativo.' as const;
+export const MSG_JA_ATIVO = 'Colaborador já está ativo.' as const;
 
 /**
  * §4.5 — o novo lider informado no `reactivate` (ou no `create`) nao
  * pertence a mesma empresa OU nao e lider ativo.
  */
 export const MSG_LIDER_INICIAL_INVALIDO =
-  'Lider informado nao existe, nao pertence a esta empresa ou nao esta ativo.' as const;
+  'Líder informado não existe, não pertence a esta empresa ou não está ativo.' as const;
 
 /**
  * ME-080b Dispatch 3.3 (S519) — retorno canonico quando o handler
  * `reassignLider` recebe o mesmo lider ja vigente. No-op: nao fecha
  * historia nem insere linha. UI trata como sucesso silencioso.
  */
-export const MSG_LIDER_IGUAL_AO_ATUAL = 'Lider informado ja e o vigente.' as const;
+export const MSG_LIDER_IGUAL_AO_ATUAL = 'Líder informado já é o vigente.' as const;
 
 /**
  * ME-080b Dispatch 3.3 (S519) — colaborador nao pode ser lider de si
  * mesmo. Guard adicional canonico (o assert de "lider ativo" cobriria
  * pelo `isLider`, mas este guard e explicito para UX clara).
  */
-export const MSG_LIDER_MESMO_COLABORADOR = 'Colaborador nao pode ser lider de si mesmo.' as const;
+export const MSG_LIDER_MESMO_COLABORADOR = 'Colaborador não pode ser líder de si mesmo.' as const;
 
 // ============================================================
 // Mensagens canonicas do uploadCSV (§16.6 — S073/S091 replicado; S196)
@@ -392,55 +392,55 @@ export const MSG_LIDER_MESMO_COLABORADOR = 'Colaborador nao pode ser lider de si
  * §16.6 — cabecalho do arquivo divergente dos 14 rotulos canonicos em
  * ordem. Mensagem global (aborta upload); nao entra em `LinhaErro`.
  */
-export const MSG_UPLOAD_CABECALHOS_INVALIDOS = 'Cabecalhos do arquivo invalidos.' as const;
+export const MSG_UPLOAD_CABECALHOS_INVALIDOS = 'Cabeçalhos do arquivo inválidos.' as const;
 
 /** S189 — `contentType` fora do conjunto canonico `{xlsx, csv}`. */
 export const MSG_UPLOAD_CONTENT_TYPE_INVALIDO =
-  'Tipo de arquivo invalido. Aceitos: xlsx e csv.' as const;
+  'Tipo de arquivo inválido. Aceitos: xlsx e csv.' as const;
 
 /** S196 — teto de linhas excedido (proteção de memoria). */
 export const MSG_UPLOAD_LINHAS_EXCEDIDAS =
-  'Arquivo excede o limite canonico de 10000 linhas de dados.' as const;
+  'Arquivo excede o limite canônico de 10.000 linhas de dados.' as const;
 
 /** §16.6 — payload base64 vazio, corrompido ou nao decodificavel. */
-export const MSG_UPLOAD_ARQUIVO_INVALIDO = 'Arquivo invalido ou corrompido.' as const;
+export const MSG_UPLOAD_ARQUIVO_INVALIDO = 'Arquivo inválido ou corrompido.' as const;
 
 /** §16.6 — algum campo obrigatorio da linha esta vazio (§16.2). */
-export const MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO = 'Campo obrigatorio vazio.' as const;
+export const MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO = 'Campo obrigatório vazio.' as const;
 
 /** §16.6 — mesmo CPF aparece em duas ou mais linhas do proprio arquivo. */
 export const MSG_UPLOAD_CPF_DUPLICADO_ARQUIVO = 'CPF duplicado dentro do arquivo.' as const;
 
 /** §16.6 — CPF ja existe na empresa (dedupe canonico — linha ignorada). */
-export const MSG_UPLOAD_CPF_JA_EXISTE = 'CPF ja cadastrado nesta empresa.' as const;
+export const MSG_UPLOAD_CPF_JA_EXISTE = 'CPF já cadastrado nesta empresa.' as const;
 
 /** §16.6 — nome do lider direto informado nao corresponde a lider ativo. */
-export const MSG_UPLOAD_LIDER_NAO_ENCONTRADO = 'Lider direto nao encontrado.' as const;
+export const MSG_UPLOAD_LIDER_NAO_ENCONTRADO = 'Líder direto não encontrado.' as const;
 
 /**
  * S192 — dois ou mais lideres ativos com nome identico na empresa
  * impedem a resolucao univoca; linha ignorada com esta mensagem.
  */
 export const MSG_UPLOAD_LIDER_AMBIGUO =
-  'Lider direto ambiguo — ha mais de um lider ativo com este nome.' as const;
+  'Líder direto ambíguo — há mais de um líder ativo com este nome.' as const;
 
 /** S191 — rotulo de Departamento/Familia/Senioridade/Nivel nao canonico. */
-export const MSG_UPLOAD_ENUM_INVALIDO = 'Valor invalido para o campo.' as const;
+export const MSG_UPLOAD_ENUM_INVALIDO = 'Valor inválido para o campo.' as const;
 
 /** §16.6 — data invalida (formato ou valor). */
-export const MSG_UPLOAD_DATA_INVALIDA = 'Data invalida.' as const;
+export const MSG_UPLOAD_DATA_INVALIDA = 'Data inválida.' as const;
 
 /** §16.6 — CPF nao normaliza para 11 digitos (S125 superficial). */
-export const MSG_UPLOAD_CPF_INVALIDO = 'CPF invalido.' as const;
+export const MSG_UPLOAD_CPF_INVALIDO = 'CPF inválido.' as const;
 
 /** §16.6 — e-mail com formato invalido. */
-export const MSG_UPLOAD_EMAIL_INVALIDO = 'E-mail invalido.' as const;
+export const MSG_UPLOAD_EMAIL_INVALIDO = 'E-mail inválido.' as const;
 
 /**
  * §16.6 — booleano fora de `{SIM, NAO}` (case-insensitive; vazio = NAO).
- * Aplicavel a colunas "Ativar como Lider" e "Ativar como RH".
+ * Aplicável às colunas "Ativar como Líder" e "Ativar como RH".
  */
-export const MSG_UPLOAD_BOOLEANO_INVALIDO = 'Valor invalido — use SIM ou NAO.' as const;
+export const MSG_UPLOAD_BOOLEANO_INVALIDO = 'Valor inválido — use SIM ou NAO.' as const;
 
 // ============================================================
 // Codigos MySQL usados como salvaguarda de conversao para TRPCError
@@ -464,13 +464,13 @@ const cpfSchemaBase = z
   .string()
   .transform((v) => v.replace(/\D+/g, ''))
   .refine((v) => v.length === CPF_LENGTH, {
-    message: 'CPF deve ter 11 digitos apos normalizacao.',
+    message: 'CPF deve ter 11 dígitos após normalização.',
   });
 
 /** §4.5 — CPF canonico normalizado para 11 digitos (S125 superficial). */
 export const CPF_SCHEMA_EMP = cpfSchemaBase;
 
-const emailSchema = z.string().email({ message: 'E-mail invalido.' }).max(EMAIL_MAX_LENGTH);
+const emailSchema = z.string().email({ message: 'E-mail inválido.' }).max(EMAIL_MAX_LENGTH);
 
 const dateFieldSchema = z.union([z.date(), z.string().transform((v) => new Date(v))]);
 
@@ -565,7 +565,7 @@ export const UPDATE_EMPLOYEE_INPUT_SCHEMA = z
 // data civil de desligamento. "no futuro" refere-se a data civil hoje em
 // UTC (TZ=UTC), lida no servidor para evitar bypass de time zone no cliente.
 // Consumo canonico: apenas pelo Zod abaixo (RV-13 — sem export).
-const MSG_DATA_DESLIGAMENTO_FUTURA = 'A data de desligamento nao pode ser posterior a hoje.';
+const MSG_DATA_DESLIGAMENTO_FUTURA = 'A data de desligamento não pode ser posterior a hoje.';
 const MSG_DATA_DESLIGAMENTO_FORMATO = 'A data de desligamento deve estar no formato YYYY-MM-DD.';
 
 /** §12.6 — input de `employees.inactivate` com `motivoSaida` obrigatorio. */
@@ -1513,7 +1513,7 @@ export async function parseEmployeesUpload(
     if (dtAdmRaw === '') {
       erros.push({
         linha: r,
-        coluna: 'Data de admissao',
+        coluna: 'Data de admissão',
         mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO,
       });
       continue;
@@ -1522,7 +1522,7 @@ export async function parseEmployeesUpload(
     if (!dtAdm) {
       erros.push({
         linha: r,
-        coluna: 'Data de admissao',
+        coluna: 'Data de admissão',
         mensagem: MSG_UPLOAD_DATA_INVALIDA,
       });
       continue;
@@ -1538,7 +1538,7 @@ export async function parseEmployeesUpload(
     if (descCBO === '') {
       erros.push({
         linha: r,
-        coluna: 'Descricao do CBO',
+        coluna: 'Descrição do CBO',
         mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO,
       });
       continue;
@@ -1579,7 +1579,7 @@ export async function parseEmployeesUpload(
     if (nivelRaw === '') {
       erros.push({
         linha: r,
-        coluna: 'Nivel hierarquico',
+        coluna: 'Nível hierárquico',
         mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO,
       });
       continue;
@@ -1588,7 +1588,7 @@ export async function parseEmployeesUpload(
     if (!nivelHierarquico) {
       erros.push({
         linha: r,
-        coluna: 'Nivel hierarquico',
+        coluna: 'Nível hierárquico',
         mensagem: MSG_UPLOAD_ENUM_INVALIDO,
       });
       continue;
@@ -1596,7 +1596,7 @@ export async function parseEmployeesUpload(
     if (familiaRaw === '') {
       erros.push({
         linha: r,
-        coluna: 'Familia de funcao',
+        coluna: 'Família de função',
         mensagem: MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO,
       });
       continue;
@@ -1605,7 +1605,7 @@ export async function parseEmployeesUpload(
     if (!jobFamily) {
       erros.push({
         linha: r,
-        coluna: 'Familia de funcao',
+        coluna: 'Família de função',
         mensagem: MSG_UPLOAD_ENUM_INVALIDO,
       });
       continue;
@@ -1615,7 +1615,7 @@ export async function parseEmployeesUpload(
     if (isLider === undefined) {
       erros.push({
         linha: r,
-        coluna: 'Ativar como Lider',
+        coluna: 'Ativar como Líder',
         mensagem: MSG_UPLOAD_BOOLEANO_INVALIDO,
       });
       continue;
@@ -1641,7 +1641,7 @@ export async function parseEmployeesUpload(
       if (res.tipo === 'not_found') {
         erros.push({
           linha: r,
-          coluna: 'Nome do lider direto',
+          coluna: 'Nome do líder direto',
           mensagem: MSG_UPLOAD_LIDER_NAO_ENCONTRADO,
         });
         continue;
@@ -1649,7 +1649,7 @@ export async function parseEmployeesUpload(
       if (res.tipo === 'ambiguous') {
         erros.push({
           linha: r,
-          coluna: 'Nome do lider direto',
+          coluna: 'Nome do líder direto',
           mensagem: MSG_UPLOAD_LIDER_AMBIGUO,
         });
         continue;
@@ -2204,20 +2204,20 @@ export const COLUNAS_CANONICAS_EMPLOYEES_EXPORT = [
   'CPF',
   'Cargo',
   'Senioridade',
-  'Familia de funcao',
-  'Nivel hierarquico',
+  'Família de função',
+  'Nível hierárquico',
   'Departamento',
-  'Lider direto',
-  'Data de admissao',
+  'Líder direto',
+  'Data de admissão',
   'Data de cadastro',
   'Status',
-  'Ativo como Lider',
+  'Ativo como Líder',
   'Ativo como RH',
-  'Responsavel financeiro',
+  'Responsável financeiro',
 ] as const;
 
 /** ME-fila5 D2 — mensagem canonica: empresa nao encontrada nas 2 procs. */
-export const MSG_EMPRESA_NAO_ENCONTRADA_EXPORT = 'Empresa nao encontrada.' as const;
+export const MSG_EMPRESA_NAO_ENCONTRADA_EXPORT = 'Empresa não encontrada.' as const;
 
 /** ME-fila5 D2 — input canonico da proc `employees.downloadTemplate`. */
 export const DOWNLOAD_EMPLOYEES_TEMPLATE_INPUT_SCHEMA = z.object({
@@ -3361,7 +3361,7 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
     // --------------------------------------------------------
     // §14.3 CAMADA_NEGOCIO — union canonica de candidatos elegiveis a
     // lider direto (C-LEVELS ATIVOS + LIDERES ATIVOS). Consumido pelo
-    // autocomplete de "Lider direto" no ColaboradorForm (§13.4). Nunca
+    // autocomplete de "Líder direto" no ColaboradorForm (§13.4). Nunca
     // inclui colaboradores nao-lider (Grupo 4 exige modal secundario de
     // promocao — canonizado em M2 v2 §13.8, nao aplicavel ao cadastro
     // inicial). Autorizacao canonica §10.9 + §10.3.
@@ -3444,8 +3444,8 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message:
-              'Colaborador sem acesso ao painel nao possui senha. ' +
-              'Marque como Lider, RH ou Responsavel financeiro antes de regenerar senha.',
+              'Colaborador sem acesso ao painel não possui senha. ' +
+              'Marque como Líder, RH ou Responsável financeiro antes de regenerar senha.',
           });
         }
 
@@ -3652,13 +3652,13 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           if (row.status !== 'ativo') {
             throw new TRPCError({
               code: 'BAD_REQUEST',
-              message: 'Colaborador inativo nao pode ser desmarcado como lider.',
+              message: 'Colaborador inativo não pode ser desmarcado como líder.',
             });
           }
           if (row.isLider !== true) {
             throw new TRPCError({
               code: 'BAD_REQUEST',
-              message: 'Colaborador nao e lider ativo.',
+              message: 'Colaborador não é líder ativo.',
             });
           }
 
@@ -3678,14 +3678,14 @@ export function createEmployeesRouter(deps: EmployeesRouterDeps = {}) {
           if (lideradosIds.size !== mappingIds.size) {
             throw new TRPCError({
               code: 'BAD_REQUEST',
-              message: 'Mapeamento nao cobre todos os liderados ativos.',
+              message: 'Mapeamento não cobre todos os liderados ativos.',
             });
           }
           for (const id of lideradosIds) {
             if (!mappingIds.has(id)) {
               throw new TRPCError({
                 code: 'BAD_REQUEST',
-                message: `Liderado ${id} nao mapeado.`,
+                message: `Liderado ${id} não mapeado.`,
               });
             }
           }

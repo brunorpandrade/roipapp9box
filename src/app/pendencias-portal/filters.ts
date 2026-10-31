@@ -268,7 +268,7 @@ export function parsePendenciasFilters(input: PendenciasFilterInput): Pendencias
  * canonico (nenhum filtro efetivo)? Consumido por `PendenciasClient.tsx`
  * para decidir se exibe empty state global (§14.23 "Todos os
  * colaboradores estao em dia") vs empty state por filtro (§14.23
- * "Nenhuma pendencia atende aos filtros aplicados"), e por `page.tsx`
+ * "Nenhuma pendência atende aos filtros aplicados"), e por `page.tsx`
  * para decidir se emite Link canonico limpo.
  */
 export function isDefaultFilters(filters: PendenciasFilters): boolean {

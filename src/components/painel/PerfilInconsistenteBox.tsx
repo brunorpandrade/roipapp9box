@@ -86,11 +86,11 @@ export interface PerfilInconsistenteBoxActions {
  * Titulo canonico da Secao 6 §5.5 nova. Preserva rotulagem DOC 03
  * §10.6 pt.6 bit-a-bit.
  */
-export const PERFIL_INCONSISTENTE_TITULO = 'Perfil Individual inconsistente';
+export const PERFIL_INCONSISTENTE_TITULO = 'Perfil individual inconsistente';
 
 /** Estado vazio canonico. */
 export const PERFIL_INCONSISTENTE_VAZIO_TEXTO =
-  'Nenhum Perfil Individual inconsistente no momento.';
+  'Nenhum Perfil individual inconsistente no momento.';
 
 /** Rotulo canonico do botao de acao — status='inconsistente'. */
 export const BOTAO_LIBERAR_LABEL = 'Liberar teste novamente';
@@ -104,7 +104,7 @@ export const BOTAO_MOTIVO_LABEL = 'Motivo';
 /**
  * Texto canonico literal DOC 03 §10.7 — exibido no modal de confirmacao
  * antes de disparar o release. Mantido bit-a-bit ao paragrafo canonico
- * "Efeito canonico no portal do colaborador".
+ * "Efeito canônico no portal do colaborador".
  */
 export const MODAL_CORPO_TEXTO =
   'Na próxima visita ao portal (ou refresh), o colaborador vê o card ' +
@@ -145,7 +145,7 @@ function ModalConfirm(props: ModalConfirmProps): JSX.Element {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`Liberar novo Perfil Individual para ${linha.userDisplayName}`}
+      aria-label={`Liberar novo Perfil individual para ${linha.userDisplayName}`}
       style={{
         position: 'fixed',
         inset: 0,
@@ -184,7 +184,7 @@ function ModalConfirm(props: ModalConfirmProps): JSX.Element {
               fontWeight: 700,
             }}
           >
-            Liberar novo Perfil Individual para {linha.userDisplayName}
+            Liberar novo Perfil individual para {linha.userDisplayName}
           </h3>
         </header>
         <div style={{ padding: '20px 24px' }}>
@@ -289,7 +289,7 @@ export function PerfilInconsistenteBox(props: PerfilInconsistenteBoxProps): JSX.
     setModalLinha(linha);
   };
 
-  // ME-1.11: abre modal "Motivo da inconsistencia" para a linha dada.
+  // ME-1.11: abre modal "Motivo da inconsistência" para a linha dada.
   // Funciona nos dois estados do placeholder (`inconsistente` e
   // `aguardando_nova_resposta`) — a `motivoInconsistencia` vem do
   // service referenciando a ultima tentativa `inconsistente` do
@@ -412,7 +412,7 @@ export function PerfilInconsistenteBox(props: PerfilInconsistenteBoxProps): JSX.
                       <button
                         type="button"
                         onClick={() => handleOpenMotivo(linha)}
-                        aria-label={`Ver motivo da inconsistencia de ${linha.userDisplayName}`}
+                        aria-label={`Ver motivo da inconsistência de ${linha.userDisplayName}`}
                         style={{
                           padding: '6px 12px',
                           borderRadius: 6,

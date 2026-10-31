@@ -54,10 +54,10 @@ export function deriveNativaEmployeeGoals(): readonly DerivedEmployeeGoal[] {
     const metasCargo = NATIVA_METAS_POR_CARGO[emp.cargoCodigo];
 
     if (variaveisFamilia === undefined) {
-      throw new Error(`deriveNativaEmployeeGoals: familia sem variaveis canonicas='${jobFamily}'`);
+      throw new Error(`deriveNativaEmployeeGoals: família sem variáveis canônicas='${jobFamily}'`);
     }
     if (metasCargo === undefined) {
-      throw new Error(`deriveNativaEmployeeGoals: cargo sem metas canonicas='${emp.cargoCodigo}'`);
+      throw new Error(`deriveNativaEmployeeGoals: cargo sem metas canônicas='${emp.cargoCodigo}'`);
     }
 
     // 4 registros por employee.
@@ -65,7 +65,7 @@ export function deriveNativaEmployeeGoals(): readonly DerivedEmployeeGoal[] {
       const varFamilia = variaveisFamilia[i];
       const metaCargo = metasCargo[i];
       if (varFamilia === undefined || metaCargo === undefined) {
-        throw new Error(`deriveNativaEmployeeGoals: indice ${i} ausente para emp.id=${emp.id}`);
+        throw new Error(`deriveNativaEmployeeGoals: índice ${i} ausente para emp.id=${emp.id}`);
       }
       goals.push({
         employeeId: emp.id,

@@ -55,7 +55,7 @@ import { assertUserCompanyScope } from '../../lib/scope/userCompanyScope';
  * proprio schema de input canonico — RV-13).
  */
 export const TRIMESTRE_INPUT_SCHEMA_ECON = z.string().regex(/^\d{4}-Q[1-4]$/, {
-  message: 'Trimestre canonico deve seguir o formato YYYY-QN (N in 1..4).',
+  message: 'Trimestre canônico deve seguir o formato YYYY-QN (N = 1..4).',
 });
 
 /**

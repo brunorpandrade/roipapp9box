@@ -5,7 +5,7 @@
 //
 // ME-1.17.2 — editor expandido das familias de funcao:
 // (D1) Grid unico com canonicas ATIVAS + INATIVAS + custom ATIVADAS.
-// (D2) Botao "+ Nova familia customizada" ao final (ate 20 slots).
+// (D2) Botão "+ Nova família customizada" ao final (até 20 slots).
 // (D3) Modal canonico de ativacao de slot custom (nome obrigatorio;
 //      variaveis seedadas canonicamente a 25% cada no backend).
 // (D4) Nome editavel INLINE no cabecalho (click, blur salva).
@@ -72,7 +72,7 @@ export function FamiliasClient(props: FamiliasClientProps): JSX.Element {
   const [modalSaving, setModalSaving] = useState<boolean>(false);
   const [modalError, setModalError] = useState<string | null>(null);
   // ME-1.17.3 — estado do modal canonico de migracao em massa (fluxo
-  // "desativar familia ocupada": seleciona destino + confirma).
+  // "desativar família ocupada": seleciona destino + confirma).
   const [migrateOpen, setMigrateOpen] = useState<boolean>(false);
   const [migrateFromFamily, setMigrateFromFamily] = useState<JobFamily | null>(null);
   const [migrateToFamily, setMigrateToFamily] = useState<JobFamily | ''>('');
@@ -348,8 +348,8 @@ export function FamiliasClient(props: FamiliasClientProps): JSX.Element {
         </button>
       ) : (
         <div style={allSlotsUsedBoxStyle}>
-          Todos os 20 slots customizados estão em uso. Desative uma família custom antes de criar
-          outra.
+          Todos os 20 slots customizados estão em uso. Desative uma família customizada antes de
+          criar outra.
         </div>
       )}
 

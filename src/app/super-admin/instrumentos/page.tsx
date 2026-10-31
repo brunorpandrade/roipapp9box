@@ -4,7 +4,7 @@
 // Substitui o placeholder "em breve" (ME-B11.1g / G7) pela aba de
 // demonstracao real dos instrumentos canonicos: lista dinamica em
 // ordem A, B, C, D, PI; apresentacao textual (o-que-faz / para-que-serve
-// / periodicidade / quem-preenche); e "Experiencia do usuario" com os
+// / periodicidade / quem-preenche); e "Experiência do usuário" com os
 // shells reais em canal `demo` (sem persistencia).
 //
 // Server component: aplica o guard canonico de Super Admin (DOC 05

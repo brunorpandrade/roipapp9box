@@ -41,7 +41,7 @@ export interface SuperAdminSession {
  */
 export function requireSuperAdmin(session: ServerSession | null): SuperAdminSession {
   if (session === null || session.kind !== 'super_admin') {
-    throw new TRPCError({ code: 'FORBIDDEN', message: 'Operacao restrita.' });
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Operação restrita.' });
   }
   return {
     kind: 'super_admin',

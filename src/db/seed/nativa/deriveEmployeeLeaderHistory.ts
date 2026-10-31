@@ -2,7 +2,7 @@
 //
 // Regra canonica bit-exact (E-068-13 fechada em Opcao X — MD Nativa v1.1 §4.3):
 //   - 66 linhas iniciais: uma por employee, criada no cadastro (reason canonico
-//     literal 'Atribuicao inicial no cadastro').
+//     literal 'Atribuição inicial no cadastro').
 //   - +2 linhas por transferencia disparada por promocao:
 //       * Marina Lopes (promovida 2027-07-01) recebe Tatiane Freitas como
 //         liderada direta (antes reportava a Renata Lima).
@@ -155,17 +155,17 @@ export function deriveNativaEmployeeLeaderHistory(): readonly DerivedEmployeeLea
   const rows: DerivedEmployeeLeaderHistory[] = [];
 
   const REASON_INICIAL =
-    'Atribuicao inicial no cadastro do colaborador. Vinculo canonico bit-exact ' +
+    'Atribuição inicial no cadastro do colaborador. Vínculo canônico bit-exact ' +
     'conforme organograma inicial da fixture demo Nativa Alimentos Ltda. ' +
     'Origem: MD Nativa §4.3 v1.1.';
   const REASON_PROMOCAO_MARINA =
-    'Transferencia por promocao canonica bit-exact de Marina Lopes (id=46) a ' +
-    'Coordenadora Adjunta de RH em 2027-07-01. Nova vinculo canonico: Tatiane ' +
+    'Transferência por promoção canônica bit-exact de Marina Lopes (id=46) a ' +
+    'Coordenadora Adjunta de RH em 2027-07-01. Novo vínculo canônico: Tatiane ' +
     'Freitas (id=47) reporta agora a Marina, antes reportava a Renata Lima ' +
     '(id=12). Fonte: MD Nativa §4.2 Arco A v1.1.';
   const REASON_PROMOCAO_LEONARDO =
-    'Transferencia por promocao canonica bit-exact de Leonardo Pires (id=43) a ' +
-    'Supervisor Comercial em 2027-04-01. Nova vinculo canonico: Beatriz Nogueira ' +
+    'Transferência por promoção canônica bit-exact de Leonardo Pires (id=43) a ' +
+    'Supervisor Comercial em 2027-04-01. Novo vínculo canônico: Beatriz Nogueira ' +
     '(id=59) reporta agora a Leonardo, antes reportava a Thiago Costa (id=11). ' +
     'Fonte: MD Nativa §4.2 Arco B v1.1.';
 
@@ -175,7 +175,7 @@ export function deriveNativaEmployeeLeaderHistory(): readonly DerivedEmployeeLea
     if (vinculo === undefined) {
       throw new Error(
         `deriveNativaEmployeeLeaderHistory: employee id=${emp.id} ` +
-          `(${emp.nomeCompleto}) sem vinculo inicial no mapping canonico`,
+          `(${emp.nomeCompleto}) sem vínculo inicial no mapping canônico`,
       );
     }
 

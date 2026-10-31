@@ -17,7 +17,7 @@
 // `FileText`. Total de 23 → 25 sem alterar mapeamentos preexistentes.
 //
 // Nota canonica ME-057b (correcao retroativa canonica in-scope): label
-// "Transferencias de Responsavel financeiro" acrescentado — subitem
+// "Transferências de Responsável financeiro" acrescentado — subitem
 // canonico de "Logs administrativos" (§3.1 item 5, PRIMEIRO subitem
 // canonico) que a ME-055 esqueceu de adicionar. Mapeia para `FileText`
 // (padrao CC039 — subitens de "Logs administrativos" reaproveitam o

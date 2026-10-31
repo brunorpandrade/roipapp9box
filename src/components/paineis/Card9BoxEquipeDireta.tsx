@@ -25,7 +25,7 @@
 //     do unico liderado.
 //
 // **RV-13.** Consumido em `src/app/painel-lider/page.tsx` (secao
-// "Visao geral") e futuramente em `src/app/painel-clevel/page.tsx`
+// "Visão geral") e futuramente em `src/app/painel-clevel/page.tsx`
 // (P3 da ME-UX-CONSOLIDACAO — depende de novo loader canonico).
 // **RV-14.** Um statement por linha, largura maxima 100 colunas.
 

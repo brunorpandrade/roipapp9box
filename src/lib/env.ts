@@ -26,7 +26,7 @@ const RAW_LGPD_VERSION = process.env.LGPD_TERM_VERSION ?? '1.0';
 export const LGPD_TERM_VERSION: string = (() => {
   if (RAW_LGPD_VERSION.length === 0 || RAW_LGPD_VERSION.length > 10) {
     throw new Error(
-      `LGPD_TERM_VERSION invalida: comprimento ${RAW_LGPD_VERSION.length} (esperado 1..10). ` +
+      `LGPD_TERM_VERSION inválida: comprimento ${RAW_LGPD_VERSION.length} (esperado 1..10). ` +
         'Ver DOC 01 §14.1 e DOC 02 §7.3.',
     );
   }

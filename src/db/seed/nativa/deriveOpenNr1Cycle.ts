@@ -29,7 +29,7 @@
 //
 // Snapshot canonico: derivado pelo `loadFixtures.ts` apos o INSERT dos
 // employees + termination events, filtrando `dataAdmissao <= 2026-09-15
-// E NAO desligado antes de 2026-09-15`. Aplica o mesmo predicado
+// E NÃO desligado antes de 2026-09-15`. Aplica o mesmo predicado
 // canonico do `activeInMonthWhere` (`src/lib/scope/activeInMonth.ts`)
 // materializado inline no consumidor (o seed nao chama routers).
 //

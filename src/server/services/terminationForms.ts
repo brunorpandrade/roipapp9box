@@ -3,7 +3,7 @@
 //
 // - `insertTerminationForm`: gravado DENTRO da transacao da inativacao
 //   (`employees.inactivate` e `leadershipTransfer.execute`) — nao existe
-//   estado de "inativo sem formulario".
+//   estado de "inativo sem formulário".
 // - `loadTerminationFormsByEventIds`: leitura para o drill-down nominal
 //   da pagina de turnover.
 //

@@ -28,7 +28,7 @@
  * - `perfil_individual` — reusa `PerfilIndividualFormShell` com
  *   `canalAutenticacao='demo'`.
  * - `nao_disponivel` — apenas tela de apresentacao textual, sem botao
- *   "Experiencia do usuario". Reservado para instrumentos futuros que
+ *   "Experiência do usuário". Reservado para instrumentos futuros que
  *   ainda nao tenham catalogo canonico publicado.
  */
 export type InstrumentDemoKind =
@@ -52,7 +52,7 @@ export interface InstrumentDemoEntry {
   /**
    * Nota canonica exibida abaixo das 4 secoes na tela de apresentacao
    * quando `kind === 'nao_disponivel'`. Para os demais `kind`, fica
-   * ausente e o botao "Experiencia do usuario" e renderizado.
+   * ausente e o botão "Experiência do usuário" é renderizado.
    */
   readonly notaDisponibilidade?: string;
 }
@@ -131,7 +131,7 @@ const INSTRUMENTOS_DEMO: readonly InstrumentDemoEntry[] = [
         '20 perguntas em escala de frequência em que o colaborador avalia o próprio líder ' +
         'direto, dando voz ao liderado sobre a qualidade da liderança recebida.',
       paraQueServe:
-        'Produz leitura 360º da liderança a partir dos liderados. Alimenta os painéis de líder ' +
+        'Produz leitura 360° da liderança a partir dos liderados. Alimenta os painéis de líder ' +
         'e de C-level e sinaliza oportunidades de desenvolvimento gerencial.',
       periodicidade:
         'Semestral (apenas Q1 e Q3). Snapshot de vínculo canônico no dia 16 do mês de abertura.',

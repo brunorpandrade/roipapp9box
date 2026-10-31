@@ -104,7 +104,7 @@ export async function pesquisarLiderCandidatosRHAction(input: {
     }
     const companyId = authed.companyId;
     if (Number.isInteger(input.companyId) && input.companyId > 0 && input.companyId !== companyId) {
-      return { ok: false, message: 'companyId divergente da sessao.' };
+      return { ok: false, message: 'companyId divergente da sessão.' };
     }
     const result = await searchLiderCandidatesForCompany(
       client.db,
@@ -170,11 +170,11 @@ export async function criarColaboradorRHAction(input: {
     }
     const companyId = authed.companyId;
     if (Number.isInteger(input.companyId) && input.companyId > 0 && input.companyId !== companyId) {
-      return { ok: false, message: 'companyId divergente da sessao.' };
+      return { ok: false, message: 'companyId divergente da sessão.' };
     }
     const token = await resolveRawToken();
     if (token === null) {
-      return { ok: false, message: 'Sessao ausente ou expirada.' };
+      return { ok: false, message: 'Sessão ausente ou expirada.' };
     }
     const caller = createEmployeesCaller(
       createContextInner({
@@ -234,11 +234,11 @@ export async function definirRFRHAction(input: {
     }
     const companyId = authed.companyId;
     if (Number.isInteger(input.companyId) && input.companyId > 0 && input.companyId !== companyId) {
-      return { ok: false, message: 'companyId divergente da sessao.' };
+      return { ok: false, message: 'companyId divergente da sessão.' };
     }
     const token = await resolveRawToken();
     if (token === null) {
-      return { ok: false, message: 'Sessao ausente ou expirada.' };
+      return { ok: false, message: 'Sessão ausente ou expirada.' };
     }
     const caller = createCompanyCaller(
       createContextInner({

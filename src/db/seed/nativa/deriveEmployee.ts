@@ -156,7 +156,7 @@ export function deriveDataNascimento(id: number, dataAdmissao: string): string {
   const idadeAnos = 26 + (id % 22);
   const partes = dataAdmissao.split('-').map((s) => parseInt(s, 10));
   if (partes.length !== 3 || partes.some((n) => Number.isNaN(n))) {
-    throw new Error(`deriveDataNascimento: dataAdmissao invalida='${dataAdmissao}'`);
+    throw new Error(`deriveDataNascimento: dataAdmissao inválida='${dataAdmissao}'`);
   }
   const ano = partes[0]!;
   const mes = partes[1]!;

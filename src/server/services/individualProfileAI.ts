@@ -483,7 +483,7 @@ export const defaultLoadPayloadContext: LoadPayloadContext = async (db, scoreId)
 
   const scoreRow = await getScore(db, scoreId);
   if (!scoreRow) {
-    throw new Error(`defaultLoadPayloadContext: score ${scoreId} nao encontrado`);
+    throw new Error(`defaultLoadPayloadContext: score ${scoreId} não encontrado`);
   }
 
   const [assessment] = await db
@@ -515,8 +515,8 @@ export const defaultLoadPayloadContext: LoadPayloadContext = async (db, scoreId)
       nome: row?.name ?? '',
       cargo: row?.cargo ?? '',
       nivel_hierarquico: 'estrategico',
-      departamento: 'Alta lideranca',
-      lider_direto: 'Nao se aplica',
+      departamento: 'Alta liderança',
+      lider_direto: 'Não se aplica',
       data_aplicacao: dataAplicacao,
     };
   } else {

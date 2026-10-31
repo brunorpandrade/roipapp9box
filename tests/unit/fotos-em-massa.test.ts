@@ -95,7 +95,7 @@ describe('Constantes canonicas literais', () => {
   });
 
   it('MSG_CAP_EXCEDIDO literal', () => {
-    expect(MSG_CAP_EXCEDIDO).toBe('Maximo de 100 arquivos por envio. Divida em lotes menores.');
+    expect(MSG_CAP_EXCEDIDO).toBe('Máximo de 100 arquivos por envio. Divida em lotes menores.');
   });
 
   it('MSG_CPF_INVALIDO literal', () => {

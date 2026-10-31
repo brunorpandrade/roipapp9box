@@ -161,7 +161,7 @@ describe('deriveUbatubaPerformanceVariables — bit-exact (ME-080e D2)', () => {
 
   it('erro claro se chave employeeId:mes ausente do indice', () => {
     expect(() => deriveUbatubaPerformanceVariables(new Map())).toThrow(
-      /performanceDataId nao encontrado/,
+      /performanceDataId não encontrado/,
     );
   });
 

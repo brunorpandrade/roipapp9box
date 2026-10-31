@@ -61,7 +61,7 @@ async function requireAuthorizedSession(actionName: string): Promise<{
 }> {
   const session = await getServerSession();
   if (session === null) {
-    throw new Error(`${actionName}: sessao ausente ou expirada`);
+    throw new Error(`${actionName}: sessão ausente ou expirada`);
   }
   if (session.kind === 'super_admin') {
     return {
@@ -114,7 +114,7 @@ export async function atualizarPendenciasAction(
   } else {
     // Super Admin — usar companyId do input (contexto dentro-de-empresa).
     if (input.companyId === null || !Number.isInteger(input.companyId) || input.companyId <= 0) {
-      throw new Error('atualizarPendenciasAction: companyId obrigatorio para Super Admin');
+      throw new Error('atualizarPendenciasAction: companyId obrigatório para Super Admin');
     }
     effectiveCompanyId = input.companyId;
   }
@@ -180,13 +180,13 @@ export async function enviarLembreteAction(
     effectiveCompanyId = auth.companyIdOverride;
   } else {
     if (input.companyId === null || !Number.isInteger(input.companyId) || input.companyId <= 0) {
-      throw new Error('enviarLembreteAction: companyId obrigatorio para Super Admin');
+      throw new Error('enviarLembreteAction: companyId obrigatório para Super Admin');
     }
     effectiveCompanyId = input.companyId;
   }
 
   if (!Number.isInteger(input.employeeId) || input.employeeId <= 0) {
-    throw new Error('enviarLembreteAction: employeeId invalido');
+    throw new Error('enviarLembreteAction: employeeId inválido');
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -289,7 +289,7 @@ export async function enviarLembretesEmMassaAction(
     effectiveCompanyId = auth.companyIdOverride;
   } else {
     if (input.companyId === null || !Number.isInteger(input.companyId) || input.companyId <= 0) {
-      throw new Error('enviarLembretesEmMassaAction: companyId obrigatorio para Super Admin');
+      throw new Error('enviarLembretesEmMassaAction: companyId obrigatório para Super Admin');
     }
     effectiveCompanyId = input.companyId;
   }

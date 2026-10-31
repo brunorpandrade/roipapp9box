@@ -871,7 +871,7 @@ describe('instrumentC — saveInstrumentCAssessment (janela)', () => {
     await bindVinculoLider(empColab, empLider);
   });
 
-  it('antes do dia 16 do ultimo mes -> CONFLICT MSG_TRIMESTRE_NAO_ABERTO', async () => {
+  it('antes do dia 16 do último mês -> CONFLICT MSG_TRIMESTRE_NAO_ABERTO', async () => {
     const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_ABERTURA_Q1_2024 });
     const caller = factory(ctx(await tokenPlatform('lider', empLider, companyId)));
     await expect(
@@ -1130,7 +1130,7 @@ describe('instrumentC — getAssessment', () => {
     });
   });
 
-  it('statusJanela = nao_aberta antes do dia 16 do ultimo mes', async () => {
+  it('statusJanela = nao_aberta antes do dia 16 do último mês', async () => {
     const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_ABERTURA_Q1_2024 });
     const caller = factory(ctx(await tokenSuperAdmin()));
     const res: GetAssessmentResult = await caller.getAssessment({
@@ -1664,7 +1664,7 @@ describe('instrumentC — getPendencies contratos e constantes (ME-042)', () => 
     expect(status).toBe('pendente');
   });
 
-  it('classifyStatusPendenciaC — trimestre invalido cai em `pendente` (conservador)', () => {
+  it('classifyStatusPendenciaC — trimestre inválido cai em `pendente` (conservador)', () => {
     const now = new Date('2024-04-20T12:00:00Z');
     const status = classifyStatusPendenciaC('LIXO', 'America/Sao_Paulo', now);
     expect(status).toBe('pendente');
@@ -1923,7 +1923,7 @@ describe('instrumentC — getPendencies (cross-company e schema, ME-042)', () =>
     ).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 
-  it('trimestre invalido -> BAD_REQUEST', async () => {
+  it('trimestre inválido -> BAD_REQUEST', async () => {
     const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
     const token = await tokenSuperAdmin();
     const caller = factory(ctx(token));

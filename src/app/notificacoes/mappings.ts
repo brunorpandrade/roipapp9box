@@ -59,7 +59,7 @@ export const CATEGORIA_UI_LABEL: Readonly<Record<CategoriaUi, string>> = {
   assiduidade: 'Assiduidade',
   plenitude: 'Plenitude',
   radar_nr1: 'Radar NR-1',
-  perfil_individual: 'Perfil Individual',
+  perfil_individual: 'Perfil individual',
   administrativos: 'Administrativos',
   ciclos_automaticos: 'Ciclos automáticos',
 };

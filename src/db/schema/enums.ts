@@ -173,7 +173,7 @@ export type JobFamilyCustom = (typeof JOB_FAMILY_CUSTOM_VALUES)[number];
 
 /**
  * Guard canonico: `true` se o valor e um dos 20 slots `custom*`.
- * Resolve ambiguidade "canonica vs. custom" em codigo que precisa
+ * Resolve ambiguidade "canônica vs. custom" em código que precisa
  * aplicar logica diferenciada (trava de `lideranca_gestao`, decisao
  * de qual label mostrar quando `nomeCustomizado` e NULL, etc).
  */

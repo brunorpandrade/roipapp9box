@@ -183,7 +183,7 @@ export type NineBoxMotivoAusencia = 'eixo_x_ausente' | 'eixo_y_ausente' | 'ambos
  *     efetuado; log `status='calculado'` gravado (S111).
  *   - `calculated: false` — apenas linha em `nineBoxCalculationLog` foi
  *     gravada com `status = motivo`; NAO ha registro em classifications
- *     (§7.1 literal — "NAO criar registro em nineBoxClassifications").
+ *     (§7.1 literal — "NÃO criar registro em nineBoxClassifications").
  */
 export type NineBoxCalculationResult =
   | {

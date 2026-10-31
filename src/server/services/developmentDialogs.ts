@@ -139,7 +139,7 @@ export async function archiveDevelopmentDialog(db: RoipDatabase, id: number): Pr
 /**
  * Descarta um dialogo (DELETE fisico) — canonico exclusivamente antes do
  * primeiro salvamento (§14.26 CAMADA_UI "elimina sem modal"). O router
- * valida a pre-condicao `titulo IS NULL/'' AND corpo IS NULL/''` antes de
+ * valida a pre-condicao `título IS NULL/'' AND corpo IS NULL/''` antes de
  * chamar — este setter e cru. Retorna linhas afetadas.
  */
 export async function deleteDevelopmentDialogById(db: RoipDatabase, id: number): Promise<number> {

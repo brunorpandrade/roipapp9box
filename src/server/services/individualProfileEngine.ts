@@ -647,7 +647,7 @@ export function computeMotorHierarchy(norm: NormalizadosPorSubvetor): {
   const segundo = ordenados[1];
   const ultimo = ordenados[ordenados.length - 1];
   if (!primeiro || !segundo || !ultimo) {
-    throw new Error('computeMotorHierarchy: SUBVETORES_MOTOR vazio (estado impossivel)');
+    throw new Error('computeMotorHierarchy: SUBVETORES_MOTOR vazio (estado impossível)');
   }
   const empateMot = primeiro.val - segundo.val < 5;
   return {
@@ -675,7 +675,7 @@ export function computeTop3Assinatura(norm: NormalizadosPorSubvetor): {
   const primeiro = ordenados[0];
   const segundo = ordenados[1];
   if (!primeiro || !segundo) {
-    throw new Error('computeTop3Assinatura: SUBVETORES_ASSINATURA vazio (estado impossivel)');
+    throw new Error('computeTop3Assinatura: SUBVETORES_ASSINATURA vazio (estado impossível)');
   }
   const equilAss = primeiro.val - segundo.val < 5;
   return { top3, equilAss };
@@ -784,7 +784,7 @@ export async function runAssessment(
   // -------- 1) Le a tentativa --------
   const assessment = await getIndividualProfileAssessmentById(db, assessmentId);
   if (!assessment) {
-    throw new Error(`runAssessment: tentativa nao encontrada (assessmentId=${assessmentId})`);
+    throw new Error(`runAssessment: tentativa não encontrada (assessmentId=${assessmentId})`);
   }
   const respostas = normalizeRespostas(assessment.respostas);
   const enviadoEm = now;
@@ -823,7 +823,7 @@ export async function runAssessment(
       calculadoEm: now,
       // ME-1.11 do ROADMAP_V3: grava `enviadoEm` tambem no caminho
       // inconsistente (simetria com o caminho consistente da linha
-      // 872). A coluna "Ultima resposta" do box "Perfil Individual
+      // 872). A coluna "Última resposta" do box "Perfil Individual
       // inconsistente" do painel RH consome este campo via service
       // `listInconsistentesEnriquecidoByCompany`. Sem este campo, a
       // coluna fica em travessao para quem respondeu e caiu em baixa

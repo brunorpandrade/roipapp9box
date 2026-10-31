@@ -524,7 +524,7 @@ async function assertAcessoTotalAndResolveCompanyId(
   // apenas `acessoTotal`, bloqueando C-level unico com `acessoTotal=false`.
   const menu = await loadPlatformMenuContext(db, session);
   if (menu === null) {
-    throw new Error(`${actionName}: perfil C-level nao encontrado.`);
+    throw new Error(`${actionName}: perfil C-level não encontrado.`);
   }
   if (menu.profileKey !== 'clevel_full') {
     throw new Error(`${actionName}: acesso restrito.`);

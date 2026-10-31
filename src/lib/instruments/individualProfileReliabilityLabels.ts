@@ -91,38 +91,38 @@ export const MOTIVO_LABELS: Readonly<
   >
 > = {
   ia_att: {
-    titulo: 'Falhas em perguntas de atencao',
+    titulo: 'Falhas em perguntas de atenção',
     descricao:
-      'As duas perguntas de verificacao de atencao do instrumento nao receberam a resposta ' +
-      'esperada. Indica que o colaborador pode ter respondido rapido demais ou sem ler o ' +
+      'As duas perguntas de verificação de atenção do instrumento não receberam a resposta ' +
+      'esperada. Indica que o colaborador pode ter respondido rápido demais ou sem ler o ' +
       'enunciado com cuidado.',
   },
   ia_soc: {
-    titulo: 'Padrao de resposta socialmente desejavel',
+    titulo: 'Padrão de resposta socialmente desejável',
     descricao:
-      'Varias perguntas-chave foram respondidas no sentido mais favoravel socialmente, com ' +
-      'pouca variacao. Indica que o colaborador pode ter respondido o que acredita ser ' +
-      'esperado, em vez de como realmente percebe o proprio comportamento.',
+      'Várias perguntas-chave foram respondidas no sentido mais favorável socialmente, com ' +
+      'pouca variação. Indica que o colaborador pode ter respondido o que acredita ser ' +
+      'esperado, em vez de como realmente percebe o próprio comportamento.',
   },
   ia_acq: {
-    titulo: 'Tendencia de concordar sem avaliar',
+    titulo: 'Tendência de concordar sem avaliar',
     descricao:
-      'Pares de perguntas com conteudo oposto foram respondidos no mesmo sentido (ambas em ' +
-      'concordancia alta ou ambas em discordancia alta). Indica que o colaborador pode ter ' +
-      'respondido no automatico, sem avaliar cada afirmacao individualmente.',
+      'Pares de perguntas com conteúdo oposto foram respondidos no mesmo sentido (ambas em ' +
+      'concordância alta ou ambas em discordância alta). Indica que o colaborador pode ter ' +
+      'respondido no automático, sem avaliar cada afirmação individualmente.',
   },
   ia_cons: {
-    titulo: 'Respostas contraditorias entre si',
+    titulo: 'Respostas contraditórias entre si',
     descricao:
       'Perguntas que medem o mesmo aspecto por caminhos diferentes receberam respostas ' +
-      'incompativeis entre si. Indica inconsistencia interna que compromete a leitura do ' +
+      'incompatíveis entre si. Indica inconsistência interna que compromete a leitura do ' +
       'perfil.',
   },
   ia_ext: {
     titulo: 'Uso excessivo das extremidades da escala',
     descricao:
       'Mais de 75% das respostas usaram as pontas extremas da escala (1 ou 5), com pouca ' +
-      'variacao intermediaria. Indica padrao de resposta polarizado que compromete a ' +
+      'variação intermediária. Indica padrão de resposta polarizado que compromete a ' +
       'granularidade da leitura.',
   },
 };

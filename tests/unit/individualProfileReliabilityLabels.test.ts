@@ -1,5 +1,5 @@
 // ROIP APP 9BOX — Testes unit do catalogo canonico de motivos de
-// inconsistencia do Perfil Individual (ME-1.11 do ROADMAP_V3).
+// inconsistencia do Perfil individual (ME-1.11 do ROADMAP_V3).
 //
 // Escopo: 15 cenarios canonicos cobrindo as 3 severidades (ok, medio,
 // critico) x 5 subindices (att, soc, acq, cons, ext) + ordem de

@@ -70,7 +70,7 @@ describe('ME-057a — mappings.ts (rota /notificacoes)', () => {
       expect(CATEGORIA_UI_LABEL.assiduidade).toBe('Assiduidade');
       expect(CATEGORIA_UI_LABEL.plenitude).toBe('Plenitude');
       expect(CATEGORIA_UI_LABEL.radar_nr1).toBe('Radar NR-1');
-      expect(CATEGORIA_UI_LABEL.perfil_individual).toBe('Perfil Individual');
+      expect(CATEGORIA_UI_LABEL.perfil_individual).toBe('Perfil individual');
       expect(CATEGORIA_UI_LABEL.administrativos).toBe('Administrativos');
       expect(CATEGORIA_UI_LABEL.ciclos_automaticos).toBe('Ciclos automáticos');
     });

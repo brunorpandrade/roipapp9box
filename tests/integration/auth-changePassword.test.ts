@@ -7,7 +7,7 @@
 //   (e) politica de senha nova violada → 400 canonica §13.3;
 //   (f) novaSenha === senhaAtual (bcrypt.compare) → 400 canonica §13.3;
 //   (g) sucesso: UPDATE passwordHash + reset rate limit;
-//   (h) §5.7 "exceto a sessao atual" (S029): `ctx.reissuedToken.value`
+//   (h) §5.7 "exceto a sessão atual" (S029): `ctx.reissuedToken.value`
 //       recebe token novo com pwv derivado do NOVO hash. Cobertura para
 //       os 5 branches de perfil (super_admin, rh, rh_lider, clevel, lider).
 //   (i) contrato de resposta canonico literal: `{ msg }` sem token no body.

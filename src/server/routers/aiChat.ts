@@ -52,14 +52,14 @@ import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
  * `departamento` (S263). Exposta como constante para assercao literal.
  */
 export const MSG_CHAT_IA_LEVEL_FORA_MVP =
-  'Nivel de dashboard nao suportado pelo Chat IA no MVP. Somente equipe e individual sao aceitos.';
+  'Nível de dashboard não suportado pelo Chat IA no MVP. Somente equipe e individual são aceitos.';
 
 /**
  * Mensagem canonica exata quando o contexto do dashboard (colaborador
  * ou lider) nao existe.
  */
 export const MSG_CHAT_IA_CONTEXTO_NAO_ENCONTRADO =
-  'Contexto do dashboard nao encontrado ou fora de escopo.';
+  'Contexto do dashboard não encontrado ou fora de escopo.';
 
 // ============================================================
 // Schemas Zod canonicos
@@ -85,11 +85,11 @@ export const SEND_MESSAGE_INPUT_SCHEMA = z.object({
   content: z.string().min(1).max(CHAT_IA_USER_MESSAGE_MAX_CHARS),
   // ME-B9-IA-TRIMESTRE — trimestre canonico `YYYY-QN` opcional selecionado
   // na UI do gestor. Quando informado, o payload da IA alinha-se a este
-  // trimestre (vs. default de "latest do banco"). Padrao YYYY-QN com
+  // trimestre (vs. default de "latest do banco"). Padrão YYYY-QN com
   // validacao leve regex.
   trimestre: z
     .string()
-    .regex(/^\d{4}-Q[1-4]$/, 'Formato invalido. Use YYYY-QN.')
+    .regex(/^\d{4}-Q[1-4]$/, 'Formato inválido. Use YYYY-QN.')
     .optional(),
 });
 

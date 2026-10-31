@@ -48,7 +48,7 @@ import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 async function requireSuperAdmin(actionName: string): Promise<void> {
   const session = await getServerSession();
   if (session === null) {
-    throw new Error(`${actionName}: sessao ausente ou expirada`);
+    throw new Error(`${actionName}: sessão ausente ou expirada`);
   }
   if (session.kind !== 'super_admin') {
     throw new Error(`${actionName}: acesso restrito ao Super Admin (§10.3 CAMADA_AUTH)`);
@@ -72,7 +72,7 @@ export async function listarColaboradoresAction(
   await requireSuperAdmin('listarColaboradoresAction');
 
   if (!Number.isInteger(companyId) || companyId <= 0) {
-    throw new Error('listarColaboradoresAction: companyId invalido.');
+    throw new Error('listarColaboradoresAction: companyId inválido.');
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -206,11 +206,11 @@ export async function uploadCSVColaboradoresAction(
 }
 
 /**
- * ME 3.5.1 Debito A — Download XLSX "Baixar matriculas" (variante Bruno).
+ * ME 3.5.1 Débito A — Download XLSX "Baixar matrículas" (variante Bruno).
  * Delega bit-exact a proc canonica `employees.downloadMatriculas`.
  * Autorizacao: super_admin exclusivo (aplicado por `requireSuperAdmin`
  * no topo + `assertCompanyScope` dentro da proc). Consumido pelo botao
- * canonico `[📇 Baixar matriculas]` da toolbar de `/super-admin/empresa/
+ * canônico `[📇 Baixar matrículas]` da toolbar de `/super-admin/empresa/
  * [id]/todos-os-colaboradores`.
  */
 export async function downloadMatriculasColaboradoresAction(

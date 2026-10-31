@@ -86,36 +86,36 @@ export const REASON_MAX_LENGTH = 500 as const;
  * testes asseriarem a estrutura literal.
  */
 export const MSG_BLOQUEIO_PREVIO_SEM_CANDIDATO =
-  'Nao e possivel inativar {nome}. Nao ha nenhum outro C-level ou colaborador com ' +
+  'Não é possível inativar {nome}. Não há nenhum outro C-level ou colaborador com ' +
   'isLider=true ativo na empresa. Cadastre outro C-level ou promova um colaborador a ' +
-  'Lider antes de prosseguir.';
+  'Líder antes de prosseguir.';
 
 /** §14.11 segunda linha — loop condicional violado §14.4. */
 export const MSG_LOOP_CONDICIONAL_VIOLADO =
-  'Este colaborador precisa ter novo lider atribuido antes de poder liderar outros.';
+  'Este colaborador precisa ter novo líder atribuído antes de poder liderar outros.';
 
 /** §14.11 terceira linha — e-mail vazio ao promover Grupo 4 §14.5. */
 export const MSG_EMAIL_VAZIO_GRUPO_4 =
-  'E-mail obrigatorio para ativar acesso como Lider. Cadastre o e-mail em C3e antes.';
+  'E-mail obrigatório para ativar acesso como Líder. Cadastre o e-mail em C3e antes.';
 
 /** §14.11 quarta linha — justificativa abaixo do minimo 100. */
-export const MSG_JUSTIFICATIVA_MIN_100 = 'A justificativa deve ter no minimo 100 caracteres.';
+export const MSG_JUSTIFICATIVA_MIN_100 = 'A justificativa deve ter no mínimo 100 caracteres.';
 
 /** §14.11 quinta linha — justificativa acima do maximo 500. */
-export const MSG_JUSTIFICATIVA_MAX_500 = 'A justificativa deve ter no maximo 500 caracteres.';
+export const MSG_JUSTIFICATIVA_MAX_500 = 'A justificativa deve ter no máximo 500 caracteres.';
 
 /** §2.4 — guard cruzado de escopo empresa quebrou. */
-export const MSG_COMPANY_MISMATCH_LT = 'Colaborador nao pertence a sua empresa.' as const;
+export const MSG_COMPANY_MISMATCH_LT = 'Colaborador não pertence à sua empresa.' as const;
 
 /** Alvo `employeeId` do canInactivate/execute inexistente. */
-export const MSG_EMPLOYEE_NAO_ENCONTRADO_LT = 'Colaborador nao encontrado.' as const;
+export const MSG_EMPLOYEE_NAO_ENCONTRADO_LT = 'Colaborador não encontrado.' as const;
 
 /** Alvo `candidatoId` do checkEmailForPromotion inexistente. */
-export const MSG_CANDIDATO_NAO_ENCONTRADO_LT = 'Candidato nao encontrado.' as const;
+export const MSG_CANDIDATO_NAO_ENCONTRADO_LT = 'Candidato não encontrado.' as const;
 
 /** Novo lider indicado no mapeamento nao existe / nao esta ativo / cross-company. */
 export const MSG_NOVO_LIDER_INVALIDO_LT =
-  'Novo lider indicado nao existe, nao pertence a esta empresa ou nao esta ativo.';
+  'Novo líder indicado não existe, não pertence a esta empresa ou não está ativo.';
 
 /** Reason ausente no schema Zod — mesma familia da MIN. */
 export function buildReasonMinMessage(): string {
@@ -163,7 +163,7 @@ export const CANDIDATO_GRUPO_4_ITEM_SCHEMA = z.object({
 
 // ME-1.13 (Conversa 4b, Despacho B) — mensagens canonicas de validacao
 // da data civil de desligamento, locais ao router (RV-13 — sem export).
-const MSG_LT_DATA_DESLIGAMENTO_FUTURA = 'A data de desligamento nao pode ser posterior a hoje.';
+const MSG_LT_DATA_DESLIGAMENTO_FUTURA = 'A data de desligamento não pode ser posterior a hoje.';
 const MSG_LT_DATA_DESLIGAMENTO_FORMATO = 'A data de desligamento deve estar no formato YYYY-MM-DD.';
 
 /**
@@ -445,7 +445,7 @@ export function createLeadershipTransferRouter(deps: LeadershipTransferRouterDep
         const nCLevels = await countActiveCLevels(ctx.db, row.companyId);
         const nLideres = await countActiveLideresExcept(ctx.db, row.companyId, input.employeeId);
         if (nCLevels + nLideres > 0) {
-          return { canInactivate: true, reason: 'Ha candidatos elegiveis na empresa.' };
+          return { canInactivate: true, reason: 'Há candidatos elegíveis na empresa.' };
         }
         const literal = MSG_BLOQUEIO_PREVIO_SEM_CANDIDATO.replace('{nome}', row.name);
         return { canInactivate: false, reason: literal };
@@ -697,7 +697,7 @@ export function createLeadershipTransferRouter(deps: LeadershipTransferRouterDep
         }
         assertCompanyScopeLT(ctx.user, lider.companyId);
         if (lider.status === 'inativo') {
-          throw new TRPCError({ code: 'CONFLICT', message: 'Colaborador ja esta inativo.' });
+          throw new TRPCError({ code: 'CONFLICT', message: 'Colaborador já está inativo.' });
         }
 
         // ------ Passo 0: canInactivate ------

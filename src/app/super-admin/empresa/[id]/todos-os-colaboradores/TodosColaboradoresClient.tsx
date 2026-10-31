@@ -23,7 +23,7 @@
 //   side + ordenacao 10 colunas + estados canonicos empty/loading.
 // - Difere ME-078: pop-up ficha cadastral (icone 📇 render como texto
 //   informativo, sem clique); botao `[+ Cadastrar colaborador]` render
-//   desabilitado com tooltip "Disponivel apos ME-078".
+//   desabilitado com tooltip "Disponível após ME-078".
 // - Difere ME-080: 3 botoes de export/import (render desabilitados).
 // - Difere Bloco B9: pop-up 80% Dashboard individual (clique Foto/Nome
 //   sem acao); icone Perfil individual (🧠) render como badge informa-
@@ -209,7 +209,7 @@ export interface TodosColaboradoresClientProps {
   readonly uploadCSVAction?: typeof uploadCSVColaboradoresAction;
   /**
    * ME 3.5.1 Debito A — server action canonica bit-exact do botao
-   * `[📇 Baixar matriculas]`. Consumida via `useCallback` no
+   * `[📇 Baixar matrículas]`. Consumida via `useCallback` no
    * `handleDownloadMatriculas`. `undefined` desabilita o botao
    * (contextos read-only como C-level `clevel_full` que usam
    * `hideActionsButtons=true`).
@@ -708,7 +708,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
     }
   }, [downloadTemplateAction, companyId]);
 
-  // ME 3.5.1 Debito A — handler canonico `[📇 Baixar matriculas]`.
+  // ME 3.5.1 Debito A — handler canônico `[📇 Baixar matrículas]`.
   // Bit-exact ao `handleDownloadTemplate` (single-arg proc que retorna
   // `{filename, xlsxBase64}`); XLSX inclui employees + cLevelMembers
   // ativos (excecao a PC1a documentada no service).
@@ -719,7 +719,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
       const res = await downloadMatriculasAction(companyId);
       triggerXlsxDownload(res.xlsxBase64, res.filename);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Falha ao gerar planilha de matriculas.';
+      const msg = err instanceof Error ? err.message : 'Falha ao gerar planilha de matrículas.';
       setActionToast(msg);
     }
   }, [downloadMatriculasAction, companyId]);
@@ -727,7 +727,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
   // ME-fila5 D2 — handler passado ao modal para chamar template.
   const handleModalDownloadTemplate = useCallback(async () => {
     if (downloadTemplateAction === undefined) {
-      throw new Error('Download template nao disponivel neste contexto.');
+      throw new Error('Download de template não disponível neste contexto.');
     }
     const res = await downloadTemplateAction(companyId);
     return { filename: res.filename, xlsxBase64: res.xlsxBase64 };
@@ -738,7 +738,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
   const handleModalUpload = useCallback(
     async (file: File) => {
       if (uploadCSVAction === undefined) {
-        throw new Error('Upload em massa nao disponivel neste contexto.');
+        throw new Error('Upload em massa não disponível neste contexto.');
       }
       const arrayBuffer = await file.arrayBuffer();
       const bytes = new Uint8Array(arrayBuffer);
@@ -958,7 +958,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                 }
                 title={
                   exportSpreadsheetAction === undefined
-                    ? 'Exportacao indisponivel neste contexto'
+                    ? 'Exportação indisponível neste contexto'
                     : 'Exportar planilha XLSX com a listagem atual'
                 }
                 aria-label="Exportar"
@@ -974,8 +974,8 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                 }
                 title={
                   downloadMatriculasAction === undefined
-                    ? 'Download de matriculas indisponivel neste contexto'
-                    : 'Baixar XLSX com Nome, CPF e Matricula de todos os colaboradores ativos'
+                    ? 'Download de matrículas indisponível neste contexto'
+                    : 'Baixar XLSX com Nome, CPF e Matrícula de todos os colaboradores ativos'
                 }
                 aria-label="Baixar matrículas"
               >
@@ -990,8 +990,8 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                 }
                 title={
                   downloadTemplateAction === undefined
-                    ? 'Download de modelo indisponivel neste contexto'
-                    : 'Baixar planilha modelo canonica (.xlsx)'
+                    ? 'Download de modelo indisponível neste contexto'
+                    : 'Baixar planilha modelo canônica (.xlsx)'
                 }
                 aria-label="Planilha modelo"
               >
@@ -1008,7 +1008,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                 }
                 title={
                   uploadCSVAction === undefined || downloadTemplateAction === undefined
-                    ? 'Importacao indisponivel neste contexto'
+                    ? 'Importação indisponível neste contexto'
                     : 'Importar colaboradores em massa via XLSX'
                 }
                 aria-label="Importar"
@@ -1026,7 +1026,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                 }
                 title={
                   uploadFotosEmMassaAction === undefined
-                    ? 'Upload de fotos em massa indisponivel neste contexto'
+                    ? 'Upload de fotos em massa indisponível neste contexto'
                     : 'Upload em massa de fotos (matching por CPF no nome do arquivo)'
                 }
                 aria-label="Fotos"
@@ -1034,7 +1034,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
                 📸 Fotos
               </button>
               {/* ME-1.17.3 — CTA canonico teal com padding/fonte
-                  alinhados aos outros botoes da toolbar para a linha
+                  alinhados aos outros botões da toolbar para a linha
                   unica canonica da ME-1.17.3. */}
               <Link
                 href={novoColaboradorHref}
@@ -1205,7 +1205,7 @@ export function TodosColaboradoresClient(props: TodosColaboradoresClientProps): 
             <option value="sem_papel">Papel funcional: Sem papel</option>
           </select>
           {/* ME-1.17.3 — filtro canonico de admissao agrupado com
-              label visivel. Filtro de data de cadastro removido
+              label visível. Filtro de data de cadastro removido
               (ordenacao da coluna preservada). */}
           <div style={FILTRO_DATE_GROUP}>
             <span style={FILTRO_DATE_LABEL}>Admissão:</span>

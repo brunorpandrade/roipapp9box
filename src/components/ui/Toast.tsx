@@ -217,7 +217,7 @@ function ToastStack(props: ToastStackProps): JSX.Element {
   return (
     <div
       role="region"
-      aria-label="Notificacoes toast"
+      aria-label="Notificações toast"
       style={{
         position: 'fixed',
         bottom: 24,
@@ -282,7 +282,7 @@ function ToastCard(props: ToastCardProps): JSX.Element {
       <button
         type="button"
         onClick={() => onDismiss(item.id)}
-        aria-label="Dispensar notificacao"
+        aria-label="Dispensar notificação"
         style={{
           border: 'none',
           background: 'transparent',

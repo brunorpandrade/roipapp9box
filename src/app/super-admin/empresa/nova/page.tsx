@@ -4,7 +4,7 @@
 // Origem canonica:
 // - DOC 05 §5.3 (botao [+ Cadastrar nova empresa] no painel Super Admin
 //   global) → destino canonico bit-exact desta rota.
-// - DOC 05 §13.1 (Aba 1 "Parametros gerais" — 9 secoes canonicas com save
+// - DOC 05 §13.1 (Aba 1 "Parâmetros gerais" — 9 seções canônicas com save
 //   unico bit-exact). Referencia visual: `cadastro_empresa_v1.html` +
 //   `delta_cadastro_empresa_lgpd_v1.html`.
 // - DOC 05 §18.7 (mensagens canonicas literais bit-exact para toast e
@@ -66,7 +66,7 @@ export default async function NovaEmpresaPage(): Promise<JSX.Element> {
 
   const menuItems = resolveMenuItems(profileKey, false);
   if (menuItems === null) {
-    throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
+    throw new Error(`Menu canônico ausente para ${profileKey} — inconsistência §3`);
   }
 
   return (

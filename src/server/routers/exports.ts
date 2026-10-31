@@ -76,21 +76,21 @@ import { formatTrimestreBR } from '../../lib/cycle/formatTrimestreBR';
 /** Mensagem canonica de trimestre nao fechado (§13.2 pre-condicao). */
 export const MSG_EXPORTS_TRIMESTRE_NAO_FECHADO =
   // eslint-disable-next-line @stylistic/max-len -- mensagem canonica literal §13.2
-  'Trimestre exigido esta com pelo menos um mes ainda em aberto. Feche os 3 meses do trimestre para gerar o artefato.';
+  'Trimestre exigido está com pelo menos um mês ainda em aberto. Feche os 3 meses do trimestre para gerar o artefato.';
 
 /** Mensagem canonica de escopo invalido. */
 export const MSG_EXPORTS_ESCOPO_INVALIDO =
-  'Escopo canonico invalido para este artefato ou referencia ausente/inconsistente.';
+  'Escopo canônico inválido para este artefato ou referência ausente/inconsistente.';
 
 /** Mensagem canonica de C-level sem acessoTotal para artefatos restritos. */
 export const MSG_EXPORTS_ACESSO_LIMITADO =
   // eslint-disable-next-line @stylistic/max-len -- mensagem canonica literal §13.8
-  'C-level acessoTotal=false nao possui permissao para este artefato — contem indicadores agregados restritos.';
+  'C-level acessoTotal=false não possui permissão para este artefato — contém indicadores agregados restritos.';
 
 /** Mensagem canonica de cache ausente do Relatorio executivo. */
 export const MSG_EXPORTS_CACHE_AUSENTE =
   // eslint-disable-next-line @stylistic/max-len -- mensagem canonica literal
-  'Relatorio executivo para este escopo e trimestre ainda nao foi gerado. Dispare `generateRelatorioExecutivo`.';
+  'Relatório executivo para este escopo e trimestre ainda não foi gerado. Dispare `generateRelatorioExecutivo`.';
 
 /**
  * Mensagem canonica de mismatch de empresa (DOC 02 §2.4 — isolamento
@@ -98,7 +98,7 @@ export const MSG_EXPORTS_CACHE_AUSENTE =
  * (`MSG_COMPANY_MISMATCH_RF` em company.ts, `MSG_COMPANY_MISMATCH_REV`
  * em revenue.ts). ME-B9-SEC (achado A1).
  */
-export const MSG_COMPANY_MISMATCH_EXP = 'Empresa nao pertence ao seu escopo.' as const;
+export const MSG_COMPANY_MISMATCH_EXP = 'Empresa não pertence ao seu escopo.' as const;
 
 // ============================================================
 // Facade DI canonica (S258)
@@ -202,7 +202,7 @@ async function getCompanyInfo(
     .limit(1);
   const c = rows[0];
   if (!c) {
-    throw new TRPCError({ code: 'NOT_FOUND', message: 'Empresa nao encontrada.' });
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'Empresa não encontrada.' });
   }
   return {
     nomeFantasia: c.nomeFantasia,
@@ -220,7 +220,7 @@ async function assertTrimestreFechado(
 ): Promise<void> {
   const meses = getQuarterMonths(trimestre);
   if (!meses) {
-    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Trimestre invalido.' });
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Trimestre inválido.' });
   }
   const rows = await db
     .select({ mes: monthlyClosureStatus.mes, status: monthlyClosureStatus.status })
@@ -409,7 +409,7 @@ export function createExportsRouter(deps: ExportsRouterDeps = {}) {
             return {
               trimestreResolvido: null,
               pdfPath: null,
-              message: 'Sem dados de clima disponiveis para a empresa.',
+              message: 'Sem dados de clima disponíveis para a empresa.',
             };
           }
           // No MVP a proc retorna metadados canonicos; a materializacao
@@ -811,7 +811,7 @@ async function buildEvolucaoTrimestralRows(
   return out;
 }
 
-// ME-EVOLUCAO-WIDE-FORMAT — a planilha "Evolucao trimestral" passa a ter
+// ME-EVOLUCAO-WIDE-FORMAT — a planilha "Evolução trimestral" passa a ter
 // uma linha por colaborador (wide format). O long format anterior
 // (4 linhas por pessoa) era adequado para auditoria mas inutil para
 // leitura de evolucao. Novo layout:

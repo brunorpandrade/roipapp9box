@@ -9,7 +9,7 @@
 //   mockup prevalece sobre texto §14.21 em divergencia (subtitulo
 //   estendido).
 // - S322 canonizada nesta ME: ator canonico da transferencia de
-//   liderados = literal "Sistema (transferencia de liderados)".
+//   liderados = literal "Sistema (transferência de liderados)".
 // - S323 canonizada nesta ME: agrupamento canonico batch de
 //   transferencia = 1 linha visual por (transferBatchId, novoLiderId).
 //
@@ -44,7 +44,7 @@ import type { AbaUnlock } from '../../../../../db/schema/enums';
  *
  * `performanceMultiplierLog` (5a fonte canonica §14.21) esta como
  * placeholder canonico (nao retorna linhas nesta fase — decisao
- * documental do §14.21 "placeholder — nao retorna linhas nesta fase") e
+ * documental do §14.21 "placeholder — não retorna linhas nesta fase") e
  * portanto nao possui `HistoryEventType` dedicado.
  */
 export const HISTORY_EVENT_TYPE_VALUES = [
@@ -145,7 +145,7 @@ export const HISTORY_EMPTY_FILTRO = 'Nenhum registro encontrado com os filtros a
  * decisao reversivel quando D065 for FECHADO (adicao de
  * `actorSuperAdminId` em B5.4 junto com a rota `/transferencia-liderados`).
  */
-export const SYSTEM_ACTOR_TRANSFERENCIA = 'Sistema (transferência de líderados)';
+export const SYSTEM_ACTOR_TRANSFERENCIA = 'Sistema (transferência de liderados)';
 
 /**
  * Formata `transferBatchId` UUID (36 chars) em short-form para exibicao

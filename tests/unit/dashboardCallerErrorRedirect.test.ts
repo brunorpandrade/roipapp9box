@@ -49,12 +49,12 @@ describe('translateDashboardCallerError — casos mapeados', () => {
   });
 
   it('UNAUTHORIZED (plataforma) -> redirect /', () => {
-    const err = new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessao expirada.' });
+    const err = new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessão expirada.' });
     expect(() => translateDashboardCallerError(err, 'platform')).toThrowError('NEXT_REDIRECT /');
   });
 
   it('UNAUTHORIZED (super_admin) -> redirect /login-super-admin', () => {
-    const err = new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessao expirada.' });
+    const err = new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessão expirada.' });
     expect(() => translateDashboardCallerError(err, 'super_admin')).toThrowError(
       'NEXT_REDIRECT /login-super-admin',
     );

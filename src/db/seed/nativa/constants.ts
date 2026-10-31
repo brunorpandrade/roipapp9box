@@ -969,7 +969,7 @@ export const NATIVA_CLEVELS: readonly NativaCLevelRow[] = [
     cargo: 'CFO',
     descricaoCargo:
       'Chief Financial Officer — direção financeira. Papel funcional de Responsável ' +
-      'Financeiro transferido a Juliana Freitas em 15/01/2027 (Patrícia manteve título CFO).',
+      'financeiro transferido a Juliana Freitas em 15/01/2027 (Patrícia manteve título CFO).',
     departamento: 'Diretoria',
     acessoTotal: true,
     isResponsavelFinanceiro: false,

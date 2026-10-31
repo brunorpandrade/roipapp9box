@@ -121,7 +121,7 @@ export async function pesquisarLiderCandidatosEditarRHAction(input: {
 }): Promise<ActionResult<SearchLiderCandidatesResult>> {
   const companyId = await requireRHSessionAndCompanyId('pesquisarLiderCandidatosEditarRHAction');
   if (Number.isInteger(input.companyId) && input.companyId > 0 && input.companyId !== companyId) {
-    return { ok: false, message: 'companyId divergente da sessao.' };
+    return { ok: false, message: 'companyId divergente da sessão.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -163,7 +163,7 @@ export async function atualizarColaboradorRHAction(input: {
 
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -212,12 +212,12 @@ export async function definirRFEditarRHAction(input: {
 }): Promise<ActionResult<SetResponsavelFinanceiroResult>> {
   const companyId = await requireRHSessionAndCompanyId('definirRFEditarRHAction');
   if (Number.isInteger(input.companyId) && input.companyId > 0 && input.companyId !== companyId) {
-    return { ok: false, message: 'companyId divergente da sessao.' };
+    return { ok: false, message: 'companyId divergente da sessão.' };
   }
 
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -254,7 +254,7 @@ export async function verificarInativacaoRHAction(input: {
 
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -295,7 +295,7 @@ export async function inativarColaboradorRHAction(input: {
 
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -345,7 +345,7 @@ export async function executarTransferenciaRHAction(input: {
 
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -391,12 +391,12 @@ export async function buscarCandidatosTransferenciaRHAction(input: {
 }): Promise<ActionResult<GetCandidatesResult>> {
   const companyId = await requireRHSessionAndCompanyId('buscarCandidatosTransferenciaRHAction');
   if (Number.isInteger(input.companyId) && input.companyId > 0 && input.companyId !== companyId) {
-    return { ok: false, message: 'companyId divergente da sessao.' };
+    return { ok: false, message: 'companyId divergente da sessão.' };
   }
 
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -448,7 +448,7 @@ export async function listarLideradosRHAction(input: {
   await requireRHSessionAndCompanyId('listarLideradosRHAction');
 
   if (!Number.isInteger(input.employeeId) || input.employeeId <= 0) {
-    return { ok: false, message: 'employeeId invalido.' };
+    return { ok: false, message: 'employeeId inválido.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -489,7 +489,7 @@ export async function reativarColaboradorRHAction(input: {
 
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -525,7 +525,7 @@ export async function excluirColaboradorRHAction(input: {
 
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -561,7 +561,7 @@ export async function regenerarMatriculaColaboradorRHAction(input: {
 
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -597,7 +597,7 @@ export async function regenerarSenhaColaboradorRHAction(input: {
 
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -635,7 +635,7 @@ export async function reatribuirLiderColaboradorRHAction(input: {
 
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -694,7 +694,7 @@ export async function desmarcarComoLiderRHAction(input: {
 
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());

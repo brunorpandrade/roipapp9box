@@ -107,7 +107,7 @@ describe('ME 3.5 D2 — decideRhAllowed(lider, *) e sempre forbid', () => {
 
 describe('ME 3.5 D2 — MSG_RH_ALLOWED_FORBIDDEN (RV-13)', () => {
   it('mensagem literal esperada', () => {
-    expect(MSG_RH_ALLOWED_FORBIDDEN).toBe('Perfil sem permissao para a rota.');
+    expect(MSG_RH_ALLOWED_FORBIDDEN).toBe('Perfil sem permissão para a rota.');
   });
 });
 

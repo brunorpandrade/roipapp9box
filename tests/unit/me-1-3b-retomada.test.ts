@@ -38,7 +38,7 @@ import {
   LABEL_REALIZADO,
 } from '../../src/server/routers/spreadsheets';
 
-describe('ME-1.3b · XLSX RH header canonico — Lider direto -> Líder direto', () => {
+describe('ME-1.3b · XLSX RH header canonico — Líder direto -> Líder direto', () => {
   it('bit-exact: coluna 4 canonicamente acentuada', () => {
     expect(COLUNAS_CANONICAS_RH[3]).toBe('Líder direto');
   });

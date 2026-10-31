@@ -8,7 +8,7 @@
 // v1 adota o padrao canonico do Radar NR-1 (ME-1.3c CC079-v7.x) como
 // linguagem comum de todos os PDFs ROIP:
 // - Capa: hero em 2 linhas canonicas (preto bold + teal), logo canto
-//   superior direito, meta grid card, nota ambar "Sobre este relatorio",
+//   superior direito, meta grid card, nota âmbar "Sobre este relatório",
 //   resumo executivo com 3 KPI cards + gauge semicircular do perfil.
 // - Secoes com H2 preto bold + underline teal 2pt.
 // - Matriz 9-Box dentro de card emoldurado (.radar-block).
@@ -554,7 +554,7 @@ function renderPaginaEmpresaResumo(bloco: NineBoxBlocoEscopo): string {
     ? `O centro de massa está em <strong>${escapeHtml(perfil.centroPrincipal)}</strong>, com ${fmtInt(perfil.centroCount)} colaborador(es) concentrado(s) nesse quadrante.`
     : 'Nenhum quadrante concentra colaboradores suficientes para caracterizar um centro de massa claro neste trimestre.';
 
-  // v3: cabecalho canonico "Visao geral — Empresa" (nome fixo, nao
+  // v3: cabeçalho canônico "Visão geral — Empresa" (nome fixo, não
   // duplicado) + caption do radar-block tambem com "Empresa".
   return `<section class="page-break">
   <h2>Visão geral — Empresa</h2>
@@ -725,7 +725,7 @@ function renderResumaoFinal(input: Snapshot9BoxTemplateInput): string {
   if (input.blocosCapilares.length === 0) {
     return '';
   }
-  // v2: "Resumao" -> "Resumo" + "Participacao relativa" ganha pagina
+  // v2: "Resumão" -> "Resumo" + "Participação relativa" ganha página
   // dedicada (page-break separando as duas secoes).
   return `<section class="page-break">
   <h2>Resumo comparativo</h2>

@@ -181,12 +181,12 @@ export interface ColaboradorFormProps {
    * autenticado. `'super_admin'` (default, preserva comportamento pre-ME-
    * 084) renderiza todos os toggles. `'rh'` OCULTA os 2 toggles exclusivos
    * do Bruno (§13.4 canonico):
-   *   - Secao 4 Perfis de acesso: toggle "Permitir acesso como RH" (DOC 02
+   *   - Seção 4 Perfis de acesso: toggle "Permitir acesso como RH" (DOC 02
    *     §10.9 linha 864 — cadastro/edicao de C-level e privilegios elevados
    *     exclusivos Bruno + assertCanChangeIsRH em `employees.create/update`).
-   *   - Secao 5 Papeis funcionais: toggle "Ativar como Responsavel financeiro"
+   *   - Seção 5 Papéis funcionais: toggle "Ativar como Responsável financeiro"
    *     (DOC 02 §5 — RF exclusivo Bruno).
-   * Toggle "Permitir acesso como Lider" da Secao 4 permanece VISIVEL a RH
+   * Toggle "Permitir acesso como Líder" da Seção 4 permanece VISÍVEL a RH
    * (§13.4 canonico + roleProcedure 'rh'/'rh_lider' em employees.update).
    */
   readonly variant?: 'super_admin' | 'rh';

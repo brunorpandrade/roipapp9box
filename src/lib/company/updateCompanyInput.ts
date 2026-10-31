@@ -2,7 +2,7 @@
 // (ME-075). Fecha D086 canonico bit-exact (company router incompleto).
 //
 // Origem canonica:
-// - DOC 05 §13.1 (Aba 1 "Parametros gerais" — 9 secoes bit-exact:
+// - DOC 05 §13.1 (Aba 1 "Parâmetros gerais" — 9 secoes bit-exact:
 //   Dados / Contatos / Encarregado LGPD / Perfil / Ano fiscal /
 //   Parametros de ROI / Thresholds 9-Box / Radar NR-1 / Status).
 // - DOC 01 §4.2 (schema canonico bit-exact `companies` — 40 colunas +
@@ -245,7 +245,7 @@ export class UpdateCompanyValidationError extends Error {
  *
  * Comparacao com tolerancia canonica bit-exact: valores decimais do MySQL
  * chegam como string (Drizzle). O predicado normaliza para `number|null`
- * antes de comparar, tratando `null == null` como "sem mudanca".
+ * antes de comparar, tratando `null == null` como "sem mudança".
  */
 export function hasAnyMetaROIChanged(
   current: MetaROIsCurrent,

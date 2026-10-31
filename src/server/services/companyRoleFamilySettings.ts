@@ -232,7 +232,7 @@ export async function seedCanonicalFamilySettingsForCompany(
  *     coluna VARCHAR(100) no banco).
  *
  * Rejeita string vazia ou somente-espacos — `null` e o canal canonico
- * para "sem customizacao". Rejeita acima de 100 chars — a coluna
+ * para "sem customização". Rejeita acima de 100 chars — a coluna
  * truncaria silenciosamente.
  */
 function assertValidNomeCustomizado(value: string | null): void {
@@ -241,13 +241,13 @@ function assertValidNomeCustomizado(value: string | null): void {
   if (trimmed.length === 0) {
     throw new FamilySettingsError(
       FAMILY_SETTINGS_ERROR_CODES.INVALID_NOME_CUSTOMIZADO,
-      'nomeCustomizado nao pode ser string vazia (use null para resetar).',
+      'nomeCustomizado não pode ser string vazia (use null para resetar).',
     );
   }
   if (value.length > 100) {
     throw new FamilySettingsError(
       FAMILY_SETTINGS_ERROR_CODES.INVALID_NOME_CUSTOMIZADO,
-      `nomeCustomizado com ${value.length} chars excede o maximo canonico de 100.`,
+      `nomeCustomizado com ${value.length} chars excede o máximo canônico de 100.`,
     );
   }
 }
@@ -278,7 +278,7 @@ export async function updateFamilySettings(
   if (current === null) {
     throw new FamilySettingsError(
       FAMILY_SETTINGS_ERROR_CODES.SETTINGS_NOT_FOUND,
-      `Settings nao encontradas para companyId=${companyId} jobFamily=${jobFamily}.`,
+      `Settings não encontradas para companyId=${companyId} jobFamily=${jobFamily}.`,
     );
   }
 
@@ -286,13 +286,13 @@ export async function updateFamilySettings(
     if (patch.ativo !== undefined && patch.ativo !== true) {
       throw new FamilySettingsError(
         FAMILY_SETTINGS_ERROR_CODES.LOCKED_STRUCTURAL,
-        'Familia estrutural `lideranca_gestao` nao pode ser desativada.',
+        'Família estrutural `lideranca_gestao` não pode ser desativada.',
       );
     }
     if (patch.nomeCustomizado !== undefined && patch.nomeCustomizado !== null) {
       throw new FamilySettingsError(
         FAMILY_SETTINGS_ERROR_CODES.LOCKED_STRUCTURAL,
-        'Familia estrutural `lideranca_gestao` nao pode ser renomeada.',
+        'Família estrutural `lideranca_gestao` não pode ser renomeada.',
       );
     }
   }
@@ -304,7 +304,7 @@ export async function updateFamilySettings(
   if (patch.ordem !== undefined && (!Number.isInteger(patch.ordem) || patch.ordem < 1)) {
     throw new FamilySettingsError(
       FAMILY_SETTINGS_ERROR_CODES.INVALID_NOME_CUSTOMIZADO,
-      `ordem invalida: ${patch.ordem} — minimo canonico 1.`,
+      `ordem inválida: ${patch.ordem} — mínimo canônico 1.`,
     );
   }
 
@@ -333,7 +333,7 @@ export async function updateFamilySettings(
   if (refreshed === null) {
     throw new FamilySettingsError(
       FAMILY_SETTINGS_ERROR_CODES.SETTINGS_NOT_FOUND,
-      'Settings desapareceram apos UPDATE (estado inconsistente).',
+      'Settings desapareceram após UPDATE (estado inconsistente).',
     );
   }
   return refreshed;
@@ -389,7 +389,7 @@ export async function activateCustomSlot(
   if (chosen === null) {
     throw new FamilySettingsError(
       FAMILY_SETTINGS_ERROR_CODES.NO_FREE_CUSTOM_SLOT,
-      `Nenhum slot custom livre: todos os 20 estao ativos na empresa ${companyId}.`,
+      `Nenhum slot custom livre: todos os 20 estão ativos na empresa ${companyId}.`,
     );
   }
 
@@ -450,7 +450,7 @@ export async function deactivateCustomSlot(
   if (!isJobFamilyCustom(jobFamily)) {
     throw new FamilySettingsError(
       FAMILY_SETTINGS_ERROR_CODES.LOCKED_STRUCTURAL,
-      `jobFamily=${jobFamily} nao e um slot custom (use updateFamilySettings).`,
+      `jobFamily=${jobFamily} não é um slot custom (use updateFamilySettings).`,
     );
   }
   await updateFamilySettings(db, companyId, jobFamily, { ativo: false }, updatedBy);

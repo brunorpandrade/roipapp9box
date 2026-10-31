@@ -114,7 +114,7 @@ export const MSG_SEM_VINCULO_SNAPSHOT_D = 'Sem vínculo hierárquico ativo no di
 
 /**
  * §8.2 combinado com §8.4 — resposta duplicada. §8.1 canoniza que o
- * D "nao ha fechamento", mas §8.2 "sem salvamento parcial + resposta
+ * D "não há fechamento", mas §8.2 "sem salvamento parcial + resposta
  * imutavel" implica que uma vez respondido o ciclo, o mesmo
  * respondente nao pode reenviar (a UNIQUE `uq_iD_unica_resposta`
  * garantiria isso por construcao). Mensagem canonica.

@@ -43,7 +43,7 @@ import { type AlertTipo, getTipoMetadata } from './typeDictionary';
  * - `destinatarioTipo`: 'rh' | 'bruno'. Nota canonica §7.3 sobre D050:
  *   quando o RF nomeado e um colaborador ou C-level, o registro em
  *   `notifications` usa `destinatarioTipo='rh'` como marcador de
- *   "destinatario administrativo intracompanhia com sino proprio" —
+ *   "destinatário administrativo intracompanhia com sino próprio" —
  *   nao significa que o RF seja RH da empresa.
  * - `destinatarioEmail`: e-mail canonico para envio SMTP.
  * - `destinatarioEmployeeId`: para 'rh' preenche o id em `employees`

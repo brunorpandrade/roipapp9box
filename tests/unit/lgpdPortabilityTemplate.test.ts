@@ -74,7 +74,7 @@ describe('lgpdPortabilityTemplate — modo colaborador (ME-1.12.a)', () => {
     expect(html).not.toContain('Instrumento A — Autoavaliação');
     expect(html).not.toContain('Instrumento D — Avaliação do líder direto');
     expect(html).not.toContain('Radar NR-1 (COPSOQ)');
-    expect(html).not.toContain('Perfil Individual — respostas brutas');
+    expect(html).not.toContain('Perfil individual — respostas brutas');
   });
 
   it('inclui secao canonica de dados cadastrais', () => {
@@ -125,7 +125,7 @@ describe('lgpdPortabilityTemplate — modo super_admin (ME-1.12.b)', () => {
     expect(html).toContain('Instrumento A — Autoavaliação');
     expect(html).toContain('Instrumento D — Avaliação do líder direto');
     expect(html).toContain('Radar NR-1 (COPSOQ)');
-    expect(html).toContain('Perfil Individual — respostas brutas');
+    expect(html).toContain('Perfil individual — respostas brutas');
   });
 
   it('usa titulo canonico "Portabilidade de dados pessoais" no preambulo', () => {

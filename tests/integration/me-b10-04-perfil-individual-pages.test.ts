@@ -44,7 +44,7 @@ describe('ME-B10-04 — arquivos canonicos entregues', () => {
   });
 });
 
-describe('ME-B10-04 — habilitacao canonica de rotas Perfil Individual', () => {
+describe('ME-B10-04 — habilitacao canonica de rotas Perfil individual', () => {
   it('MeuPortalClient habilita href do meuPerfil (S255)', () => {
     const src = readSrc('src/app/meu-portal/MeuPortalClient.tsx');
     expect(src).toContain("meuPerfil: '/meu-portal/perfil-individual'");
@@ -101,7 +101,7 @@ describe('ME-B10-04 — limpeza CC079 acumulativa (RV-13 canonico)', () => {
   });
 });
 
-describe('ME-B10-04 — paginas canonicas do Perfil Individual', () => {
+describe('ME-B10-04 — paginas canonicas do Perfil individual', () => {
   it('pagina portal e client component com PortalLayout + guard sessionStorage', () => {
     const src = readSrc('src/app/colaborador/responder/perfil-individual/page.tsx');
     expect(src).toContain("'use client'");

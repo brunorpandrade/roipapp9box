@@ -78,20 +78,20 @@ export const MSG_DIAGNOSTICO_IA_FALLBACK =
   'Não foi possível gerar o diagnóstico agora. Tente novamente em alguns instantes.';
 
 /**
- * Mensagem canonica exata de guard "trimestre nao e atual" (§6.6).
+ * Mensagem canonica exata de guard "trimestre não é atual" (§6.6).
  * Nao esta em §11 canonicamente — canonizada aqui como constante
  * para consistencia S206.
  */
 export const MSG_DIAGNOSTICO_IA_NOT_CURRENT_QUARTER =
   // eslint-disable-next-line @stylistic/max-len -- mensagem canonica literal §6.6
-  'Somente o trimestre atual permite geracao ou atualizacao do diagnostico. Trimestres anteriores sao read-only.';
+  'Somente o trimestre atual permite geração ou atualização do diagnóstico. Trimestres anteriores são read-only.';
 
 /**
  * Mensagem canonica exata de guard "colaborador nao encontrado ou
  * sem dados do trimestre".
  */
 export const MSG_DIAGNOSTICO_IA_QUARTERLY_NAO_ENCONTRADO =
-  'Colaborador nao encontrado ou sem dados calculados para o trimestre.';
+  'Colaborador não encontrado ou sem dados calculados para o trimestre.';
 
 // ============================================================
 // Composicao canonica do user prompt (§8.4 + §6.3)
@@ -105,7 +105,7 @@ export const MSG_DIAGNOSTICO_IA_QUARTERLY_NAO_ENCONTRADO =
 export function composeDiagnosticoIAUserPrompt(payload: DashboardIndividualContextPayload): string {
   const preamble =
     // eslint-disable-next-line @stylistic/max-len -- preambulo canonico literal §8.4
-    'Contexto do dashboard individual do colaborador para o qual voce esta gerando um diagnostico executivo do trimestre. Todos os dados abaixo foram calculados pelos motores deterministicos do backend. Voce interpreta.';
+    'Contexto do dashboard individual do colaborador para o qual você está gerando um diagnóstico executivo do trimestre. Todos os dados abaixo foram calculados pelos motores determinísticos do backend. Você interpreta.';
   const instrucao =
     payload.financeiro === null
       ? DIAGNOSTICO_IA_INSTRUCAO_SEM_FINANCEIRO

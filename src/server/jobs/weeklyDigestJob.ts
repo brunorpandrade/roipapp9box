@@ -351,7 +351,7 @@ export async function processDigestForCompany(
       // envio, sem gravacao em emailNotifications. Marca como enviadas
       // com emailNotificationId=null (schema aceita — CC052 canonizada +
       // markEmailQueueSent ampliado) para preservar rastreabilidade
-      // "linhas ja foram vistas neste ciclo canonico".
+      // "linhas já foram vistas neste ciclo canônico".
       for (const qid of group.queueIds) {
         await markEmailQueueSent(db, qid, null);
       }

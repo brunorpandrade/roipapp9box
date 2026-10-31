@@ -128,7 +128,7 @@ export default async function OnboardingLideresPage(props: PageProps): Promise<J
     // nos hrefs do menu §3.2.
     const menuItems = resolveMenuItems(profileKey, false, companyId);
     if (menuItems === null) {
-      throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
+      throw new Error(`Menu canônico ausente para ${profileKey} — inconsistência §3`);
     }
 
     return (

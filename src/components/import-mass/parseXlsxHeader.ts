@@ -29,7 +29,7 @@ export type HeaderValidationResult =
 /**
  * Mensagem canonica exibida no modal quando cabecalho diverge — segue
  * o padrao de §14 linha 2197 ("mensagem inline listando colunas ausen-
- * tes"). Formato canonico: "Colunas ausentes: X, Y, Z" ou "Colunas
+ * tes"). Formato canônico: "Colunas ausentes: X, Y, Z" ou "Colunas
  * inesperadas: A, B" ou ambos.
  */
 export function buildHeaderMismatchMessage(
@@ -44,7 +44,7 @@ export function buildHeaderMismatchMessage(
     parts.push(`Colunas inesperadas: ${extra.join(', ')}`);
   }
   if (parts.length === 0) {
-    return 'Cabecalho do arquivo diverge do modelo canonico.';
+    return 'Cabeçalho do arquivo diverge do modelo canônico.';
   }
   return parts.join('. ') + '.';
 }
@@ -87,7 +87,7 @@ export async function validateXlsxHeader(
       ok: false,
       missing: [],
       extra: [],
-      canonicalMessage: 'Nao foi possivel ler o arquivo. Verifique se e um XLSX valido.',
+      canonicalMessage: 'Não foi possível ler o arquivo. Verifique se é um XLSX válido.',
     };
   }
 
@@ -99,7 +99,7 @@ export async function validateXlsxHeader(
       ok: false,
       missing: [],
       extra: [],
-      canonicalMessage: 'Arquivo XLSX invalido ou corrompido.',
+      canonicalMessage: 'Arquivo XLSX inválido ou corrompido.',
     };
   }
 

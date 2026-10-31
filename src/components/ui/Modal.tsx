@@ -143,7 +143,7 @@ export interface ModalProps {
   readonly children: ReactNode;
   /**
    * Rotulo ARIA para acessibilidade. Consumidor deve passar descricao do
-   * modal (ex.: "Confirmar exclusao", "Termo LGPD").
+   * modal (ex.: "Confirmar exclusão", "Termo LGPD").
    */
   readonly ariaLabel?: string;
 }

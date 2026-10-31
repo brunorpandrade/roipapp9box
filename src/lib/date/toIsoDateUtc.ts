@@ -66,7 +66,7 @@ export function toIsoDateUtc(v: Date | string | null | undefined): string | null
  *   (fuso canonico UTC-3 America/Sao_Paulo exibido como "BRT").
  *   O deslocamento canonico aplicado e UTC-3 fixo (sem horario de
  *   verao — Brasil nao adota HV desde 2019); formato de saida:
- *   `DD/MM/YYYY as HH:mm (BRT)`.
+ *   `DD/MM/YYYY às HH:mm (BRT)`.
  */
 export function toTimestampBrt(v: Date | string | null | undefined): string | null {
   if (v === null || v === undefined) {
@@ -83,5 +83,5 @@ export function toTimestampBrt(v: Date | string | null | undefined): string | nu
   const dia = String(dBrt.getUTCDate()).padStart(2, '0');
   const hh = String(dBrt.getUTCHours()).padStart(2, '0');
   const mm = String(dBrt.getUTCMinutes()).padStart(2, '0');
-  return `${dia}/${mes}/${ano} as ${hh}:${mm} (BRT)`;
+  return `${dia}/${mes}/${ano} às ${hh}:${mm} (BRT)`;
 }

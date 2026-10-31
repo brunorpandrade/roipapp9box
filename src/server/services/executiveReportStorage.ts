@@ -2,7 +2,7 @@
 // trimestral (ME-053, S276).
 //
 // Escreve/le o binario PDF no filesystem local seguindo caminho
-// canonico (§7.8 DOC 04 — "padrao a decidir em DOC 06"; S276 canoniza
+// canonico (§7.8 DOC 04 — "padrão a decidir em DOC 06"; S276 canoniza
 // path local para o MVP). Storage remoto (S3/GCS) e decisao pos-MVP em
 // DOC 06.
 //
@@ -48,8 +48,8 @@ function resolveExecutiveReportStorageDir(): string {
 
 /**
  * Sanitiza um segmento de caminho (referencia de escopo). Evita
- * `path traversal` removendo `..`, `/` e `\`. Substitui espacos por
- * `_` e mantem acentos removidos.
+ * `path traversal` removendo `..`, `/` e `\`. Substitui espaços por
+ * `_` e mantém acentos removidos.
  */
 function sanitizePathSegment(raw: string | null): string {
   if (raw === null || raw.length === 0) return 'root';
@@ -61,7 +61,7 @@ function sanitizePathSegment(raw: string | null): string {
 }
 
 /**
- * Compoe o path canonico do PDF para uma entrada de cache.
+ * Compõe o path canônico do PDF para uma entrada de cache.
  */
 function composeExecutiveReportPdfPath(args: {
   companyId: number;
@@ -76,12 +76,12 @@ function composeExecutiveReportPdfPath(args: {
 }
 
 /**
- * Facade canonica do storage — substituivel em teste (S258).
+ * Facade canônica do storage — substituível em teste (S258).
  */
 export interface ExecutiveReportStorageFacade {
   /**
-   * Escreve o binario no path canonico e devolve o caminho gravado.
-   * Cria diretorios intermediarios idempotentemente.
+   * Escreve o binário no path canônico e devolve o caminho gravado.
+   * Cria diretórios intermediários idempotentemente.
    */
   writePdf: (args: {
     companyId: number;
@@ -91,7 +91,7 @@ export interface ExecutiveReportStorageFacade {
     bytes: Uint8Array;
   }) => Promise<string>;
   /**
-   * Le o binario PDF de um path canonico ja gravado. Retorna `null`
+   * Lê o binário PDF de um path canônico já gravado. Retorna `null`
    * quando o arquivo nao existe (nao lanca; permite o Route Handler
    * responder 404).
    */

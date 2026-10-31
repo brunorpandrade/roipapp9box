@@ -79,7 +79,7 @@ async function seedCompany(cnpj: string, nome: string): Promise<number> {
       nomeFantasia: nome,
       cnpj,
       telefone: '1633330099',
-      endereco: `Rua Seguranca ${cnpj}`,
+      endereco: `Rua Segurança ${cnpj}`,
       cidade: 'Ribeirão Preto',
       estado: 'SP',
       contatoPrincipalNome: 'Contato',
@@ -88,7 +88,7 @@ async function seedCompany(cnpj: string, nome: string): Promise<number> {
       contatoRHEmail: `rh-${cnpj}@example.com`,
       segmento: 'Serviço',
       tipoAtividade: 'Consultoria',
-      descricaoAtividade: 'Seguranca',
+      descricaoAtividade: 'Segurança',
       contextoMercado: 'PMEs BR',
       metaROIOperacional: '3.00',
       metaROITatico: '4.00',
@@ -187,8 +187,8 @@ beforeAll(async () => {
   client = createDbClient(TEST_URL);
   db = client.db;
 
-  A.company = await seedCompany('93000000000001', 'Seguranca A');
-  B.company = await seedCompany('93000000000002', 'Seguranca B');
+  A.company = await seedCompany('93000000000001', 'Segurança A');
+  B.company = await seedCompany('93000000000002', 'Segurança B');
 
   A.ct1 = await seedClevel(A.company, 'Ct Restrito A', false);
   A.ct2 = await seedClevel(A.company, 'Ct Total A', true);

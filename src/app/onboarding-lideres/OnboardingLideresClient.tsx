@@ -274,7 +274,7 @@ export function OnboardingLideresClient(props: OnboardingLideresClientProps): JS
       // que o kanban re-renderiza com dado fresco.
       const refetch = await listOnboardingCardsAction({ companyId });
       if (!refetch.ok) {
-        setModalError(`Salvamento efetivado, mas falhou recarregar: ${refetch.message}`);
+        setModalError(`Salvamento efetivado, mas falhou ao recarregar: ${refetch.message}`);
         setModalSaving(false);
         return;
       }

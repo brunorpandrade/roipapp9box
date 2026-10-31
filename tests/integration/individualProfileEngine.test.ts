@@ -1,7 +1,7 @@
 // ROIP APP 9BOX — teste de integracao do motor
 // `individualProfileEngine` (ME-049a).
 //
-// Exercita o motor deterministico canonico do Perfil Individual
+// Exercita o motor deterministico canonico do Perfil individual
 // (DOC 03 §10.4-§10.6 + Perfil_Individual__instrumento_completo_.md
 // §5.1-§5.5) contra MySQL real. Cobre:
 //

@@ -16,7 +16,7 @@
 //     `tests/integration/plenitudeCalculationEngine.test.ts`. A Facade
 //     e o DEFAULT sao consumidos pelo router `instrumentC` e pelo
 //     Route Handler `POST /api/portal/save-instrument-a`.
-//   - Idempotencia canonica (§6.4 literal — "Reexecucao idempotente"):
+//   - Idempotencia canonica (§6.4 literal — "Reexecução idempotente"):
 //     reexecucao para o mesmo (companyId, employeeId, trimestre)
 //     sobrescreve `plenitudeData` via UPSERT. `calculadoEm` atualizado
 //     a cada execucao.
@@ -26,7 +26,7 @@
 //     na ME-038 e ME-039). Se o motor falhar, a resposta do submit
 //     falha; o instrumento ja foi persistido pela transacao anterior;
 //     motor pode ser reexecutado no proximo submit ou por reprocessing
-//     manual. §6.4 canoniza "reexecucao idempotente".
+//     manual. §6.4 canoniza "reexecução idempotente".
 //   - Persistencia canonica (§6.4 literal): motor SEMPRE upserta uma
 //     linha em `plenitudeData` para o trio canonico. Se A ou C esta
 //     ausente ou incompleto, todos os campos de score ficam nulos
@@ -523,7 +523,7 @@ export async function recalculatePlenitude(
     // (o caller ja validou vinculo canonico do employee → company).
     if (!comp) {
       throw new Error(
-        `recalculatePlenitude: empresa nao encontrada ` +
+        `recalculatePlenitude: empresa não encontrada ` +
           `(companyId=${companyId}, employeeId=${employeeId}, trimestre=${trimestre})`,
       );
     }

@@ -30,7 +30,7 @@
 // novo comportamento canonico — o route handler `/api/portal/lgpd/
 // portability` passa `modo: 'colaborador'` ao template, suprimindo
 // as 4 secoes de respostas brutas (Instrumento A, Instrumento D,
-// Radar NR-1 e Perfil Individual). O PDF integral §19.6 preservado
+// Radar NR-1 e Perfil individual). O PDF integral §19.6 preservado
 // bit-exact pre-ME-1.12.a e exportado pelo novo endpoint SA
 // `/api/super-admin/lgpd/exportar` (modo `super_admin`), coberto
 // pelo teste `tests/integration/me-1-12-lgpd-despacho-a.test.ts`.
@@ -384,7 +384,7 @@ describe('Route Handler GET /api/portal/lgpd/portability — 200 sucesso', () =>
     expect(html).not.toContain('Instrumento A — Autoavaliação');
     expect(html).not.toContain('Instrumento D — Avaliação do líder direto');
     expect(html).not.toContain('Radar NR-1 (COPSOQ)');
-    expect(html).not.toContain('Perfil Individual — respostas brutas');
+    expect(html).not.toContain('Perfil individual — respostas brutas');
     expect(html).toContain('Termo de aceite');
     expect(html).toContain('Titular Completo');
     expect(html).toContain('Empresa Completa');
@@ -424,11 +424,11 @@ describe('Route Handler GET /api/portal/lgpd/portability — 200 sucesso', () =>
     expect(html).not.toContain('Instrumento A — Autoavaliação');
     expect(html).not.toContain('Instrumento D — Avaliação do líder direto');
     expect(html).not.toContain('Radar NR-1 (COPSOQ)');
-    expect(html).not.toContain('Perfil Individual — respostas brutas');
+    expect(html).not.toContain('Perfil individual — respostas brutas');
     expect(html).not.toContain('Nenhuma resposta registrada.');
     expect(html).toContain('Termo de aceite');
     expect(html).toContain('CTO Titular');
-    expect(html).toContain('C-Level');
+    expect(html).toContain('C-level');
   });
 });
 

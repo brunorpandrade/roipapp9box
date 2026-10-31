@@ -23,7 +23,7 @@
 // carrega um resumo do `passwordHash` vigente (para Super Admin, de
 // `passwordHash + email`); o middleware compara com o valor derivado do
 // registro atual. Troca de senha ou de e-mail muda a derivacao e todos os
-// tokens anteriores caem. O comportamento "exceto a sessao atual" do
+// tokens anteriores caem. O comportamento "exceto a sessão atual" do
 // `/alterar-senha` e preservado pela reemissao de token novo na resposta
 // 200 da propria operacao (ME-022).
 

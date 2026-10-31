@@ -284,8 +284,8 @@ function bindRouter() {
 
 describe('turnover — contratos publicos exportados', () => {
   it('mensagens literais canonicas', () => {
-    expect(MSG_COMPANY_MISMATCH_TURN).toBe('Empresa nao pertence ao seu escopo.');
-    expect(MSG_COMPANY_NAO_ENCONTRADA_TURN).toBe('Empresa nao encontrada.');
+    expect(MSG_COMPANY_MISMATCH_TURN).toBe('Empresa não pertence ao seu escopo.');
+    expect(MSG_COMPANY_NAO_ENCONTRADA_TURN).toBe('Empresa não encontrada.');
   });
 
   it('schemas Zod aceitam formato canonico', () => {

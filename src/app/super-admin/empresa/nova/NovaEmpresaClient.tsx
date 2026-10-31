@@ -4,7 +4,7 @@
 // (ME-Rota-C-D074 — fechamento canonico bit-exact de D074).
 //
 // Origem canonica:
-// - DOC 05 §13.1 (Aba 1 "Parametros gerais" — 9 secoes canonicas com
+// - DOC 05 §13.1 (Aba 1 "Parâmetros gerais" — 9 seções canônicas com
 //   save unico bit-exact). Referencia visual: `cadastro_empresa_v1.html`
 //   + `delta_cadastro_empresa_lgpd_v1.html`.
 // - DOC 05 §18.7 (mensagens canonicas literais bit-exact — toast verde

@@ -28,7 +28,7 @@
 //
 // Decisoes de autor registradas ate esta ME:
 //   - S018 — fatiamento ME-022 em 022a/b/c.
-//   - S019 — CPF administrativo ambiguo trata-se como "nao encontrado"
+//   - S019 — CPF administrativo ambíguo trata-se como "não encontrado"
 //     em `loginPlatform` e `forgotPassword` branch CPF. Divida D004.
 //   - S020 — codigos tRPC canonicos: UNAUTHORIZED (credenciais/token),
 //     FORBIDDEN (colaborador puro, empresa inativa, usuario inativo em
@@ -113,7 +113,7 @@ export const MSG_RATE_LIMIT = 'Muitas tentativas. Tente novamente em X minutos.'
  * Retornada em 200 SEMPRE (encontrado ou nao — anti-enumeracao).
  */
 export const MSG_FORGOT_PASSWORD_SENT =
-  'Enviamos um link para alteracao de senha no e-mail cadastrado.';
+  'Enviamos um link para alteração de senha no e-mail cadastrado.';
 
 /**
  * Mensagem canonica exata de token invalido/expirado/usado/type incompativel/
@@ -128,14 +128,14 @@ export const MSG_TOKEN_EXPIRED = 'Este link expirou. Solicite um novo.';
  * Retornada em BAD_REQUEST com `cause: { field: 'novaSenha' }`.
  */
 export const MSG_PASSWORD_POLICY =
-  'A senha deve ter no minimo 8 caracteres, pelo menos 1 letra e pelo menos 1 numero.';
+  'A senha deve ter no mínimo 8 caracteres, pelo menos 1 letra e pelo menos 1 número.';
 
 /**
  * Mensagem canonica exata de sucesso de reset/first-access (§4.5 10f, §13.3).
  * Retornada em 200 apos gravacao bem-sucedida do novo `passwordHash`.
  */
 export const MSG_PASSWORD_CHANGED_SUCCESS =
-  'Senha alterada com sucesso. Faca login com a nova senha.';
+  'Senha alterada com sucesso. Faça login com a nova senha.';
 
 /**
  * Mensagem canonica exata de senha atual incorreta (§13.3, primeira linha).
@@ -171,7 +171,7 @@ export const MSG_PASSWORD_CHANGE_SUCCESS = 'Senha alterada com sucesso.';
  * NOW()) e tenta iniciar outra. O front renderiza Bloco B canonico.
  */
 export const MSG_EMAIL_CHANGE_PENDING =
-  'Existe uma solicitacao pendente. Cancele-a antes de iniciar uma nova.';
+  'Existe uma solicitação pendente. Cancele-a antes de iniciar uma nova.';
 
 /**
  * Mensagem canonica exata de novo e-mail identico ao atual (§4.8 fluxo
@@ -182,7 +182,7 @@ export const MSG_NEW_EMAIL_MUST_DIFFER = 'O novo e-mail deve ser diferente do at
 /**
  * Mensagem canonica exata do titulo da tela de confirmacao de e-mail
  * (§13.2 2a linha) para status `expirado` ou `invalido`. O front renderiza
- * como titulo; corpo canonico "Solicite uma nova alteracao de e-mail."
+ * como título; corpo canônico "Solicite uma nova alteração de e-mail."
  * fica no front (§13.2). O backend so devolve o `status` no `cause`; a
  * `message` do TRPCError usa este literal para preservar a fonte canonica
  * unica em um so lugar.
@@ -792,7 +792,7 @@ export const authRouter = router({
       const candidates = await findPlatformUserByCpf(ctx.db, input.cpf);
 
       // (d) — Nao encontrado + (S019) ambiguidade cross-company. Ambos
-      // sao tratados como "nao encontrado" para preservar anti-enumeracao.
+      // são tratados como "não encontrado" para preservar antienumeração.
       if (candidates.length !== 1) {
         ctx.rateLimiter.registerFailure(key, rule);
         throw new TRPCError({ code: 'UNAUTHORIZED', message: MSG_LOGIN_INVALID });
@@ -800,7 +800,7 @@ export const authRouter = router({
       const only = candidates[0];
       if (only === undefined) {
         // Inalcancavel (candidates.length === 1 acima), mas o narrowing
-        // do TS exige. Trata como "nao encontrado" defensivamente.
+        // do TS exige. Trata como "não encontrado" defensivamente.
         ctx.rateLimiter.registerFailure(key, rule);
         throw new TRPCError({ code: 'UNAUTHORIZED', message: MSG_LOGIN_INVALID });
       }
@@ -1092,7 +1092,7 @@ export const authRouter = router({
    * `passwordHash` muda; qualquer JWT de sessao em circulacao cai no
    * middleware `authed`. Sem codigo adicional.
    *
-   * §4.5 "Regra canonica de reutilizacao": PERMITE nova senha == anterior
+   * §4.5 "Regra canônica de reutilização": PERMITE nova senha == anterior
    * (backend nao conhece plaintext). Distincao ao `/alterar-senha` (§4.7)
    * fora do escopo desta ME.
    */
@@ -1143,7 +1143,7 @@ export const authRouter = router({
    *   - Update grava tambem `passwordSet=true` (libera o botao de login
    *     na ficha, §5.5).
    *
-   * §5.7 "primeiro acesso NAO invalida sessoes" — nao ha sessoes previas
+   * §5.7 "primeiro acesso NÃO invalida sessões" — não há sessões prévias
    * por definicao (o titular nunca fez login antes).
    */
   firstAccess: publicProcedure
@@ -1200,7 +1200,7 @@ export const authRouter = router({
    * passo a passo.
    *
    * Contrato de resposta canonico literal (§4.7 3i): `{ msg }` — SEM
-   * token no body. A reemissao "exceto a sessao atual" (§5.7 primeira
+   * token no body. A reemissão "exceto a sessão atual" (§5.7 primeira
    * linha) usa a mecanica S011 + S013 estendida por S029: o resolver
    * assina novo JWT com pwv derivado do NOVO passwordHash e sobrepoe em
    * `ctx.reissuedToken.value`; o adapter fetch publica no header
@@ -1243,20 +1243,20 @@ export const authRouter = router({
       if (ctx.user.role === 'super_admin') {
         const admin = await getSuperAdminById(ctx.db, ctx.user.superAdminId);
         if (admin === undefined) {
-          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessao expirada.' });
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessão expirada.' });
         }
         currentHash = admin.passwordHash;
         userEmail = admin.email;
       } else if (ctx.user.role === 'clevel') {
         const member = await getCLevelMemberById(ctx.db, ctx.user.userId);
         if (member === undefined || member.passwordHash === null) {
-          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessao expirada.' });
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessão expirada.' });
         }
         currentHash = member.passwordHash;
       } else {
         const employee = await getEmployeeById(ctx.db, ctx.user.userId);
         if (employee === undefined || employee.passwordHash === null) {
-          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessao expirada.' });
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessão expirada.' });
         }
         currentHash = employee.passwordHash;
       }
@@ -1317,7 +1317,7 @@ export const authRouter = router({
         });
       }
 
-      // (h) — §5.7 "exceto a sessao atual" (S029): reemite JWT com pwv
+      // (h) — §5.7 "exceto a sessão atual" (S029): reemite JWT com pwv
       //       derivado do NOVO material e sobrepoe `ctx.reissuedToken.value`.
       //       O middleware `authed` ja havia gravado o bearer velho para
       //       reemissao sliding (perfis administrativos); esta atribuicao
@@ -1369,7 +1369,7 @@ export const authRouter = router({
       // roleProcedure garante ctx.user.role === 'super_admin' — narrowing.
       if (ctx.user.role !== 'super_admin') {
         // Inalcancavel: roleProcedure ja filtrou. Narrowing defensivo.
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Perfil sem permissao.' });
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Perfil sem permissão.' });
       }
       const superAdminId = ctx.user.superAdminId;
 
@@ -1399,7 +1399,7 @@ export const authRouter = router({
       if (admin === undefined) {
         // S014 defensiva — sessao valida com superAdmin sumido e estado
         // corrompido. UNAUTHORIZED coerente com §8.3.
-        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessao expirada.' });
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessão expirada.' });
       }
       const senhaAtualOk = await verifyPassword(input.senhaAtual, admin.passwordHash);
       if (!senhaAtualOk) {
@@ -1477,7 +1477,7 @@ export const authRouter = router({
     }),
 
   /**
-   * Botao `[Cancelar solicitacao]` do Bloco B do fluxo H3 (§4.8 ultimo
+   * Botão `[Cancelar solicitação]` do Bloco B do fluxo H3 (§4.8 último
    * paragrafo). EXCLUSIVO do Super Admin. Invalida qualquer token de
    * alteracao de e-mail ativo do titular, marcando `usedAt = NOW()`. NAO
    * afeta tokens de reset comum (`tipo=reset`) — a filtragem por metadado
@@ -1491,7 +1491,7 @@ export const authRouter = router({
     .input(cancelEmailChangeInput)
     .mutation(async ({ ctx }): Promise<CancelEmailChangeResult> => {
       if (ctx.user.role !== 'super_admin') {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Perfil sem permissao.' });
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Perfil sem permissão.' });
       }
       const superAdminId = ctx.user.superAdminId;
 

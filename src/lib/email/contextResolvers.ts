@@ -1,7 +1,7 @@
 // ROIP APP 9BOX — resolvers canonicos de contexto por tipo (ME-060).
 //
 // Origem canonica:
-// - DOC 06 §12.6 "Regras canonicas de renderizacao de contexto por tipo".
+// - DOC 06 §12.6 "Regras canônicas de renderização de contexto por tipo".
 // - Templates de contexto literais (reproducao bit-exact das strings
 //   entre aspas do §12.6 linhas 1414-1426).
 // - DOC 06 §4 (snapshots canonicos de `alerts.metadados` por tipo).
@@ -54,7 +54,7 @@
 //     "Instrumento C do trimestre {cicloReferencia} de {empresaNome}
 //      encerrado. Taxa de resposta: {taxaResposta}%"
 //   ciclo_mensal_fechado:
-//     "Mes {cicloReferencia} de {empresaNome} fechado para lancamentos"
+//     "Mês {cicloReferencia} de {empresaNome} fechado para lançamentos"
 //   fechamento_bloqueado_sem_resp_financeiro (D049):
 //     "{empresaNome} — fechamento mensal de {mesReferencia} sem
 //      Responsavel financeiro atribuido. Nomeie um titular antes do
@@ -83,7 +83,7 @@ export type AlertMetadadosRaw = Readonly<Record<string, unknown>>;
  * D050 durante processamento.
  */
 export const D050_NAO_RENDERIZA_MOTIVO =
-  'D050 (responsavel_financeiro_nomeado) severidade info — nao renderiza corpo ' + 'em template A.';
+  'D050 (responsavel_financeiro_nomeado) severidade info — não renderiza corpo ' + 'em template A.';
 
 // -----------------------------------------------------------------------
 // Utilitarios de acesso seguro a metadados
@@ -126,7 +126,7 @@ function resolveDesempenhoEstagnacao(meta: AlertMetadadosRaw): string {
   const indiceAnterior2 = n(meta, 'indiceAnterior2');
   const mesAnterior2 = s(meta, 'mesAnterior2');
   return (
-    `${nome} — indice de desempenho ${indiceAtual} em ${mesAtual}, ` +
+    `${nome} — índice de desempenho ${indiceAtual} em ${mesAtual}, ` +
     `${indiceAnterior1} em ${mesAnterior1}, ${indiceAnterior2} em ${mesAnterior2}`
   );
 }
@@ -139,7 +139,7 @@ function resolveAssiduidadeBaixa(meta: AlertMetadadosRaw): string {
   const diasUteis = n(meta, 'diasUteis');
   return (
     `${nome} — assiduidade ${assiduidade}% em ${mes} ` +
-    `(${faltas} faltas em ${diasUteis} dias uteis)`
+    `(${faltas} faltas em ${diasUteis} dias úteis)`
   );
 }
 
@@ -181,14 +181,14 @@ function resolveDesbloqueioAprovado(meta: AlertMetadadosRaw): string {
   const solicitante = s(meta, 'solicitanteNome');
   const mes = s(meta, 'mes');
   const expiraEm = s(meta, 'expiraEm');
-  return `Solicitacao de ${solicitante} para ${mes} aprovada. Janela expira em ${expiraEm}`;
+  return `Solicitação de ${solicitante} para ${mes} aprovada. Janela expira em ${expiraEm}`;
 }
 
 function resolveDesbloqueioRecusado(meta: AlertMetadadosRaw): string {
   const solicitante = s(meta, 'solicitanteNome');
   const mes = s(meta, 'mes');
   const motivo = s(meta, 'motivoRecusa');
-  return `Solicitacao de ${solicitante} para ${mes} recusada. Motivo: ${motivo}`;
+  return `Solicitação de ${solicitante} para ${mes} recusada. Motivo: ${motivo}`;
 }
 
 function resolveCicloInstrumentoEncerrado(meta: AlertMetadadosRaw): string {
@@ -204,15 +204,15 @@ function resolveCicloInstrumentoEncerrado(meta: AlertMetadadosRaw): string {
 function resolveCicloMensalFechado(meta: AlertMetadadosRaw): string {
   const cicloReferencia = s(meta, 'cicloReferencia');
   const empresaNome = s(meta, 'empresaNome');
-  return `Mes ${cicloReferencia} de ${empresaNome} fechado para lancamentos`;
+  return `Mês ${cicloReferencia} de ${empresaNome} fechado para lançamentos`;
 }
 
 function resolveFechamentoBloqueadoSemRF(meta: AlertMetadadosRaw): string {
   const empresaNome = s(meta, 'empresaNome');
   const mesReferencia = s(meta, 'mesReferencia');
   return (
-    `${empresaNome} — fechamento mensal de ${mesReferencia} sem Responsavel ` +
-    'financeiro atribuido. Nomeie um titular antes do proximo ciclo.'
+    `${empresaNome} — fechamento mensal de ${mesReferencia} sem Responsável ` +
+    'financeiro atribuído. Nomeie um titular antes do próximo ciclo.'
   );
 }
 

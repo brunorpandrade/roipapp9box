@@ -137,7 +137,7 @@ function isCredentialUserType(value: unknown): value is CredentialUserType {
  */
 export async function signCredentialToken(input: CredentialTokenInput): Promise<string> {
   if (input.tipo === 'email_change' && input.novoEmail === undefined) {
-    throw new Error('signCredentialToken: `novoEmail` obrigatorio para tipo=email_change (S028)');
+    throw new Error('signCredentialToken: `novoEmail` obrigatório para tipo=email_change (S028)');
   }
   // S032 — compactacao do payload para `email_change`:
   //   - jti de 8 bytes (64 bits, 11 chars base64url), nao 16 bytes;

@@ -174,7 +174,7 @@ export class LgpdPortabilityTitularNotFoundError extends Error {
   public readonly titularId: number;
   constructor(companyId: number, titularType: LgpdPortabilityTitularType, titularId: number) {
     super(
-      `LgpdPortability: titular ${titularType}#${titularId} nao encontrado em company#${companyId}`,
+      `LgpdPortability: titular ${titularType}#${titularId} não encontrado em company#${companyId}`,
     );
     this.companyId = companyId;
     this.titularType = titularType;
@@ -186,7 +186,7 @@ export class LgpdPortabilityTitularNotFoundError extends Error {
 export class LgpdPortabilityCompanyNotFoundError extends Error {
   public readonly companyId: number;
   constructor(companyId: number) {
-    super(`LgpdPortability: company#${companyId} nao encontrada`);
+    super(`LgpdPortability: company#${companyId} não encontrada`);
     this.companyId = companyId;
   }
 }

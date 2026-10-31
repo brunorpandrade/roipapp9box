@@ -10,7 +10,7 @@
 //      valores + null), ator (LIKE com min 2 chars — S324).
 //   5. Ordenacao canonica desc(createdAt, id) e paginacao 25/50/100.
 //   6. S322 canonizada — ator canonico da transferencia = literal
-//      "Sistema (transferencia de liderados)"; filtro "Ator" com padrao
+//      "Sistema (transferência de liderados)"; filtro "Ator" com padrao
 //      que casa esse literal in-memory.
 //   7. S323 canonizada — agrupamento canonico de batch de transferencia:
 //      1 linha visual por (transferBatchId, novoLiderId) com contador
@@ -408,7 +408,7 @@ describe('ME-057c — historico consolidado da empresa (MySQL real, §14.21)', (
       expect(r.totalCount).toBe(1);
       const row = r.rows[0];
       expect(row?.tipo).toBe('transferencia');
-      expect(row?.atorNome).toBe('Sistema (transferência de líderados)');
+      expect(row?.atorNome).toBe('Sistema (transferência de liderados)');
       expect(row?.detalhes.find((d) => d.label === 'Liderado(s) afetado(s)')?.valor).toBe(
         '3 colaboradores',
       );

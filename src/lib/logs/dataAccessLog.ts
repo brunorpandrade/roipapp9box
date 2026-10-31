@@ -28,8 +28,8 @@
 //   quando NULL, escopo cross-empresa (Bruno); quando number, escopo
 //   filtrado a essa empresa (RH ou Bruno selecionando pelo dropdown).
 // - `resolveTipoAcessoLabel` — mapeamento canonico enum → label UI
-//   (`Dashboard individual`, `Relatorio do Perfil Individual`,
-//   `Exportacao em planilha`).
+//   (`Dashboard individual`, `Relatório do Perfil Individual`,
+//   `Exportação em planilha`).
 // - `normalizeSearchTitularAgente` — normaliza busca unificada, trim,
 //   min 2 / max 100 chars (padrao ME-057a).
 //
@@ -72,7 +72,7 @@ const agentEmp = alias(employees, 'agentEmp');
 
 /**
  * Estado canonico dos filtros da rota. Todos os campos opcionais — filtro
- * ausente equivale a "sem restricao". `search` unificado em uma unica
+ * ausente equivale a "sem restrição". `search` unificado em uma unica
  * string (CC043 — mockup canonico usa 1 campo de busca).
  */
 export interface DALFilters {
@@ -128,7 +128,7 @@ export interface DALListResult {
  */
 const TIPO_ACESSO_LABEL: Readonly<Record<TipoAcesso, string>> = {
   dashboard_individual: 'Dashboard individual',
-  relatorio_perfil_individual: 'Relatório do Perfil Individual',
+  relatorio_perfil_individual: 'Relatório do Perfil individual',
   exportacao_planilha: 'Exportação em planilha',
 };
 

@@ -177,7 +177,7 @@ function resolveSuperAdminPresentation(
   });
   const items = resolveMenuItems(profileKey, false);
   if (items === null) {
-    throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
+    throw new Error(`Menu canônico ausente para ${profileKey} — inconsistência §3`);
   }
   return {
     menuItems: items,

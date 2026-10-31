@@ -115,7 +115,7 @@ export const DASHBOARD_HISTORY_LIMIT_CAP = 20 as const;
  * sub-router para desacoplar de outros (RV-13).
  */
 export const TRIMESTRE_INPUT_SCHEMA_DASHBOARD = z.string().regex(/^\d{4}-Q[1-4]$/, {
-  message: 'Trimestre canonico deve seguir o formato YYYY-QN (N in 1..4).',
+  message: 'Trimestre canônico deve seguir o formato YYYY-QN (N = 1..4).',
 });
 
 /**
@@ -366,7 +366,7 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
         if (!emp) {
           throw new TRPCError({
             code: 'NOT_FOUND',
-            message: 'Colaborador nao encontrado.',
+            message: 'Colaborador não encontrado.',
           });
         }
 
@@ -581,7 +581,7 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
         if (ctx.user.role === 'lider') {
           throw new TRPCError({
             code: 'FORBIDDEN',
-            message: 'Lideres nao visualizam cards financeiros da empresa.',
+            message: 'Líderes não visualizam cards financeiros da empresa.',
           });
         }
 
@@ -682,7 +682,7 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
         if (!emp) {
           throw new TRPCError({
             code: 'NOT_FOUND',
-            message: 'Colaborador nao encontrado.',
+            message: 'Colaborador não encontrado.',
           });
         }
         if (ctx.user.role !== 'super_admin') {
@@ -744,7 +744,7 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
         if (!emp) {
           throw new TRPCError({
             code: 'NOT_FOUND',
-            message: 'Colaborador nao encontrado.',
+            message: 'Colaborador não encontrado.',
           });
         }
         if (ctx.user.role !== 'super_admin') {
@@ -818,7 +818,7 @@ export function createDashboardRouter(deps: DashboardRouterDeps = {}) {
           .where(eq(employees.id, input.employeeId))
           .limit(1);
         if (!emp) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Colaborador nao encontrado.' });
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Colaborador não encontrado.' });
         }
         if (ctx.user.role !== 'super_admin') {
           if (ctx.user.companyId !== emp.companyId) {

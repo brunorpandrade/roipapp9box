@@ -375,12 +375,12 @@ function renderElementoROI(input: BoardDeckTemplateInput): string {
       <div class="kpi-sub">Agregado da base ativa no período</div>
     </div>
     <div class="kpi-card ${classeTri}">
-      <div class="kpi-label">Variação vs trimestre anterior</div>
+      <div class="kpi-label">Variação vs. trimestre anterior</div>
       <div class="kpi-value ${valueClassTri}">${fmtPct(r.variacaoTrimestreAnterior)}</div>
       <div class="kpi-sub">Comparação com o fechamento imediatamente anterior</div>
     </div>
     <div class="kpi-card ${classeAno}">
-      <div class="kpi-label">Variação vs mesmo trim. ano anterior</div>
+      <div class="kpi-label">Variação vs. mesmo trim. ano anterior</div>
       <div class="kpi-value ${valueClassAno}">${fmtPct(r.variacaoAnoAnterior)}</div>
       <div class="kpi-sub">Sazonalidade controlada ano a ano</div>
     </div>

@@ -63,24 +63,24 @@ import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
 
 /** Mensagem canonica quando o colaborador alvo nao existe / cross-empresa. */
 export const MSG_DIALOGOS_COLABORADOR_NAO_ENCONTRADO =
-  'Colaborador nao encontrado ou fora de escopo.';
+  'Colaborador não encontrado ou fora de escopo.';
 
 /**
  * Mensagem canonica quando o usuario autenticado (super_admin, lider ou
  * clevel restrito) nao tem alvo no proprio escopo. Aplicada aos guards
  * internos APOS o role gate canonico do tRPC. Papeis fora do role gate
  * (rh/rh_lider em qualquer proc; clevel em procs de escrita) recebem
- * antes a mensagem canonica generica "Perfil sem permissao para a rota"
+ * antes a mensagem canônica genérica "Perfil sem permissão para a rota"
  * — semantica canonica de defesa em profundidade.
  */
 export const MSG_DIALOGOS_APENAS_LIDER_DIRETO =
-  'Apenas o lider direto atual pode criar ou editar dialogos.';
+  'Apenas o líder direto atual pode criar ou editar diálogos.';
 
 /** Mensagem canonica quando o dialogo alvo nao existe. */
-export const MSG_DIALOGO_NAO_ENCONTRADO = 'Dialogo nao encontrado.';
+export const MSG_DIALOGO_NAO_ENCONTRADO = 'Diálogo não encontrado.';
 
 /** Mensagem canonica quando o dialogo nao pertence ao par (lider, colaborador). */
-export const MSG_DIALOGO_FORA_DO_ESCOPO = 'Dialogo fora do escopo do usuario.';
+export const MSG_DIALOGO_FORA_DO_ESCOPO = 'Diálogo fora do escopo do usuário.';
 
 /**
  * Mensagem canonica quando discard e chamado sobre um dialogo que ja
@@ -132,7 +132,7 @@ export const DIALOGOS_UPDATE_INPUT_SCHEMA = z
       v.corpo !== undefined ||
       v.status !== undefined ||
       v.pendencia !== undefined,
-    { message: 'Ao menos um campo do patch e obrigatorio.' },
+    { message: 'Ao menos um campo do patch é obrigatório.' },
   );
 
 /** Input de `developmentDialogs.archive` e `developmentDialogs.discard`. */

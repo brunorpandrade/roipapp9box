@@ -31,7 +31,7 @@ describe('ME-UX-CONSOLIDACAO-P3a — chips canonicos consolidados', () => {
   it('AI_CHAT_CHIPS_INDIVIDUAL preservado bit-a-bit (compat P1)', () => {
     expect(AI_CHAT_CHIPS_INDIVIDUAL).toHaveLength(3);
     expect(AI_CHAT_CHIPS_INDIVIDUAL[0]).toBe(
-      'Monte um roteiro para minha próxima conversa de feedback com esse colaborador.',
+      'Monte um roteiro para minha próxima conversa de feedback com este colaborador.',
     );
   });
 

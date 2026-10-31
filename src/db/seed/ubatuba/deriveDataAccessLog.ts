@@ -102,7 +102,7 @@ export function deriveDataAccessLog(
         agentId: rhAgent.id,
         titularEmployeeId: emp.id,
         tipoAcesso: 'dashboard_individual',
-        contexto: `Auditoria RH — revisao de dashboard (${i + 1}/2)`,
+        contexto: `Auditoria RH — revisão de dashboard (${i + 1}/2)`,
         createdAt: gerarTimestamp(prng),
       });
     }
@@ -124,7 +124,7 @@ export function deriveDataAccessLog(
       agentId: lider.id,
       titularEmployeeId: titular.id,
       tipoAcesso: 'relatorio_perfil_individual',
-      contexto: `Consulta de perfil individual pelo lider (${lider.name})`,
+      contexto: `Consulta de perfil individual pelo líder (${lider.name})`,
       createdAt: gerarTimestamp(prng),
     });
   }
@@ -138,7 +138,7 @@ export function deriveDataAccessLog(
       agentId: UBATUBA_SUPER_ADMIN_ID,
       titularEmployeeId: titular.id,
       tipoAcesso: 'exportacao_planilha',
-      contexto: 'Exportacao regulatoria — auditoria interna',
+      contexto: 'Exportação regulatória — auditoria interna',
       createdAt: gerarTimestamp(prng),
     });
   }

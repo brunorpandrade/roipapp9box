@@ -58,7 +58,7 @@ export async function alterarSenhaAction(input: {
 }): Promise<ActionResult<{ passwordSet: boolean }>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());

@@ -339,7 +339,7 @@ export async function buildNr1TemplateInput(
   // Nota de auditoria de edicao (§11.12) — condicional.
   //
   // **N2 (ME-B11.1b).** Antes desta ME, `ultimaEdicaoPor` era hardcoded
-  // como 'Autor da edicao'. Fix canonico: JOIN condicional com
+  // como 'Autor da edição'. Fix canonico: JOIN condicional com
   // `employees` ou `superAdmins` segundo qual FK esta preenchida em
   // `copsoqCycles.ultimaEdicaoPorEmployeeId` /
   // `ultimaEdicaoPorSuperAdminId` (mutuamente exclusivos pelo fluxo
@@ -392,7 +392,7 @@ export async function buildNr1TemplateInput(
     resumoExecutivo:
       alertas.length > 0
         ? `Ciclo com ${alertas.length} alerta(s) informativo(s) — ` +
-          'atencao aos fatores com score abaixo de 50.'
+          'atenção aos fatores com score abaixo de 50.'
         : 'Ciclo sem fatores em alerta.',
     radarEmpresa,
     radaresPorDepartamento,

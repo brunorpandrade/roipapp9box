@@ -131,7 +131,7 @@ export default async function LgpdSuperAdminPage(props: PageProps): Promise<JSX.
     });
     const menuItems = resolveMenuItems(profileKey, false, companyId);
     if (menuItems === null) {
-      throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
+      throw new Error(`Menu canônico ausente para ${profileKey} — inconsistência §3`);
     }
 
     return (

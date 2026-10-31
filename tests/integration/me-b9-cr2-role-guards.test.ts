@@ -274,7 +274,7 @@ describe('ME-B9-CR2 — getResumoDashboard (aceita rh_lider, bloqueia clevel/lid
         escopoReferencia: null,
         trimestre: '2026-Q1',
       }),
-    ).rejects.toThrow(/permissao/i);
+    ).rejects.toThrow(/permissão/i);
   });
 
   it('lider FORBIDDEN', async () => {
@@ -290,7 +290,7 @@ describe('ME-B9-CR2 — getResumoDashboard (aceita rh_lider, bloqueia clevel/lid
         escopoReferencia: null,
         trimestre: '2026-Q1',
       }),
-    ).rejects.toThrow(/permissao/i);
+    ).rejects.toThrow(/permissão/i);
   });
 });
 
@@ -321,7 +321,7 @@ describe('ME-B9-CR2 — getEvolucaoTrimestral (aceita rh_lider, bloqueia clevel/
         escopoReferencia: null,
         trimestreFinal: '2026-Q1',
       }),
-    ).rejects.toThrow(/permissao/i);
+    ).rejects.toThrow(/permissão/i);
   });
 
   it('lider FORBIDDEN', async () => {
@@ -336,7 +336,7 @@ describe('ME-B9-CR2 — getEvolucaoTrimestral (aceita rh_lider, bloqueia clevel/
         escopoReferencia: null,
         trimestreFinal: '2026-Q1',
       }),
-    ).rejects.toThrow(/permissao/i);
+    ).rejects.toThrow(/permissão/i);
   });
 });
 
@@ -376,7 +376,7 @@ describe('ME-B9-CR2 — getClimaEngajamento (aceita rh_lider, bloqueia lider)', 
     const empId = await seedEmployee(companyId, 'Lider');
     const { factory, ctx } = mkRouter();
     const caller = factory(await ctx(await tokenPlatform(empId, 'lider', companyId)));
-    await expect(caller.getClimaEngajamento({ companyId })).rejects.toThrow(/permissao/i);
+    await expect(caller.getClimaEngajamento({ companyId })).rejects.toThrow(/permissão/i);
   });
 });
 
@@ -410,7 +410,7 @@ describe('ME-B9-CR2 — generateRelatorioExecutivo (aceita rh_lider, bloqueia li
         escopoReferencia: null,
         trimestre: '2026-Q1',
       }),
-    ).rejects.toThrow(/permissao/i);
+    ).rejects.toThrow(/permissão/i);
   });
 });
 
@@ -444,7 +444,7 @@ describe('ME-B9-CR2 — getSnapshot9Box (aceita rh_lider, bloqueia lider)', () =
         escopoReferencia: null,
         trimestre: '2026-Q1',
       }),
-    ).rejects.toThrow(/permissao/i);
+    ).rejects.toThrow(/permissão/i);
   });
 });
 

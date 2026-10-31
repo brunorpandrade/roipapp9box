@@ -306,7 +306,7 @@ describe('cycleManagementListings — procs canonicas (ME-B9.1 §14.18)', () => 
     );
   });
 
-  it('super_admin atravessa (sem restricao de companyId)', async () => {
+  it('super_admin atravessa (sem restrição de companyId)', async () => {
     const companyId = await seedActiveCompany(client, '10000000000455');
     const email = 'sa-b9-1-listings@roip.test';
     const superAdminId = await seedSuperAdminExtra(client, email);

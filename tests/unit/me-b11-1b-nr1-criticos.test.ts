@@ -10,7 +10,7 @@
 //   vocabulario HSE autoral.
 // - NR1·6 + NR1·7: `toIsoDateUtc` serializa `Date` em UTC como
 //   `YYYY-MM-DD` deterministico (nao mais `Date.toString()` cru);
-//   `toTimestampBrt` emite `DD/MM/YYYY as HH:mm (BRT)`.
+//   `toTimestampBrt` emite `DD/MM/YYYY às HH:mm (BRT)`.
 // - NR1·5: `parseFatoresDivergentesJson` filtra entradas invalidas
 //   (fator=0, fator fora de 1..8, nao-array, null) — implicito via
 //   contrato do nr1Report.ts (teste cobre o helper indireto via
@@ -54,10 +54,10 @@ describe('ME-B11.1b · toIsoDateUtc (NR1·6)', () => {
 });
 
 describe('ME-B11.1b · toTimestampBrt (NR1·7)', () => {
-  it('emite DD/MM/YYYY as HH:mm (BRT) para Date UTC', () => {
+  it('emite DD/MM/YYYY às HH:mm (BRT) para Date UTC', () => {
     // 2026-10-07T13:30:00Z em UTC = 10:30 em BRT (UTC-3).
     const d = new Date('2026-10-07T13:30:00Z');
-    expect(toTimestampBrt(d)).toBe('07/10/2026 as 10:30 (BRT)');
+    expect(toTimestampBrt(d)).toBe('07/10/2026 às 10:30 (BRT)');
   });
 
   it('retorna null para null/undefined', () => {
@@ -68,12 +68,12 @@ describe('ME-B11.1b · toTimestampBrt (NR1·7)', () => {
   it('NAO vaza ISO UTC cru (regressao NR1·7)', () => {
     const d = new Date('2026-10-07T13:30:53.573Z');
     const out = toTimestampBrt(d) ?? '';
-    // Formato canonico esperado: DD/MM/YYYY as HH:mm (BRT).
+    // Formato canonico esperado: DD/MM/YYYY às HH:mm (BRT).
     // NAO deve conter marcadores do ISO 8601 UTC cru (Z, milissegundos).
     expect(out).not.toContain('Z');
     expect(out).not.toContain('.573');
     expect(out).not.toMatch(/\d{4}-\d{2}-\d{2}T/);
-    expect(out).toMatch(/^\d{2}\/\d{2}\/\d{4} as \d{2}:\d{2} \(BRT\)$/);
+    expect(out).toMatch(/^\d{2}\/\d{2}\/\d{4} às \d{2}:\d{2} \(BRT\)$/);
   });
 });
 

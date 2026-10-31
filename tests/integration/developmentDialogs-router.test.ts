@@ -515,7 +515,7 @@ describe('developmentDialogs — super_admin (Bruno)', () => {
     await linkLeader(liderado, liderId);
   });
 
-  it('super_admin cria, lista e arquiva sem restricao', async () => {
+  it('super_admin cria, lista e arquiva sem restrição', async () => {
     const { factory, ctx } = bindRouter();
     const token = await tokenSuperAdmin();
     const caller = factory(ctx(token));

@@ -31,7 +31,7 @@ export async function listarCadeiaIndiretaAction(
     companyIdIgnored > 0 &&
     companyIdIgnored !== companyId
   ) {
-    throw new Error('listarCadeiaIndiretaAction: companyId divergente da sessao.');
+    throw new Error('listarCadeiaIndiretaAction: companyId divergente da sessão.');
   }
   const client = createDbClient(resolveDatabaseUrl());
   try {

@@ -1,7 +1,7 @@
 // ROIP APP 9BOX — teste estrutural (L129) da ME-fila3-reteste-ui.
 //
 // Protege contra regressao silenciosa dos artefatos canonicos da Secao 6
-// §5.5 nova ("Perfil Individual inconsistente"):
+// §5.5 nova ("Perfil individual inconsistente"):
 //
 // 1. Componente canonico `PerfilInconsistenteBox` existe e expoe as
 //    constantes canonicas literais (titulo, estado vazio, rotulos de
@@ -31,7 +31,7 @@ function readSrc(rel: string): string {
   return readFileSync(resolve(REPO_ROOT, rel), 'utf-8');
 }
 
-describe('ME-fila3-reteste-ui — Secao 6 canonica "Perfil Individual inconsistente"', () => {
+describe('ME-fila3-reteste-ui — Secao 6 canonica "Perfil individual inconsistente"', () => {
   // -------------------------------------------------------------------
   // 1. Componente canonico
   // -------------------------------------------------------------------
@@ -43,13 +43,13 @@ describe('ME-fila3-reteste-ui — Secao 6 canonica "Perfil Individual inconsiste
   it('PerfilInconsistenteBox expoe titulo canonico literal DOC 03 §10.6 pt.6', () => {
     const src = readSrc('src/components/painel/PerfilInconsistenteBox.tsx');
     expect(src).toContain(
-      "export const PERFIL_INCONSISTENTE_TITULO = 'Perfil Individual inconsistente'",
+      "export const PERFIL_INCONSISTENTE_TITULO = 'Perfil individual inconsistente'",
     );
   });
 
   it('PerfilInconsistenteBox expoe estado vazio canonico literal', () => {
     const src = readSrc('src/components/painel/PerfilInconsistenteBox.tsx');
-    expect(src).toContain('Nenhum Perfil Individual inconsistente no momento.');
+    expect(src).toContain('Nenhum Perfil individual inconsistente no momento.');
   });
 
   it('PerfilInconsistenteBox expoe rotulo canonico do botao de acao', () => {
@@ -147,7 +147,7 @@ describe('ME-fila3-reteste-ui — Secao 6 canonica "Perfil Individual inconsiste
 
   it('PainelRHClient renderiza a Secao 6 com titulo canonico literal', () => {
     const src = readSrc('src/app/painel-rh/PainelRHClient.tsx');
-    expect(src).toContain('<SectionTitle>Perfil Individual inconsistente</SectionTitle>');
+    expect(src).toContain('<SectionTitle>Perfil individual inconsistente</SectionTitle>');
   });
 
   it('PainelRHClient passa companyId + linhas + actions ao componente', () => {

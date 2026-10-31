@@ -14,9 +14,9 @@
 // 2. Matching por CPF embutido no nome do arquivo:
 //    - `12345678900.png` ou `123.456.789-00.png` -> normaliza para 11
 //      digitos.
-//    - Nome sem CPF valido vira "nao matcheado".
+//    - Nome sem CPF válido vira "não matcheado".
 // 3. Preview da fase de validacao: lista "N arquivos matcheados" vs
-//    "M arquivos nao matcheados" (com os nomes dos arquivos).
+//    "M arquivos não matcheados" (com os nomes dos arquivos).
 // 4. Click em [Confirmar] -> leitura base64 + envio em lote via
 //    `uploadFotosEmMassaAction`. Toast canonico ao final.
 //
@@ -121,7 +121,7 @@ export const MAX_FOTOS_PER_UPLOAD = 100;
 
 /** Mensagem canonica — cap de arquivos excedido. */
 export const MSG_CAP_EXCEDIDO =
-  'Maximo de 100 arquivos por envio. Divida em lotes menores.' as const;
+  'Máximo de 100 arquivos por envio. Divida em lotes menores.' as const;
 
 /** Mensagem canonica — CPF nao detectado no nome do arquivo. */
 export const MSG_CPF_INVALIDO =
@@ -332,7 +332,7 @@ export function FotosEmMassaModal(props: FotosEmMassaModalProps): JSX.Element | 
       if (result.ok || result.matched > 0) {
         const parts: string[] = [`${result.matched} foto(s) atualizada(s)`];
         if (result.notFound > 0) {
-          parts.push(`${result.notFound} CPF(s) nao encontrado(s) na empresa`);
+          parts.push(`${result.notFound} CPF(s) não encontrado(s) na empresa`);
         }
         setResultBanner(parts.join('. ') + '.');
         setMatched([]);
@@ -390,8 +390,8 @@ export function FotosEmMassaModal(props: FotosEmMassaModalProps): JSX.Element | 
                 <strong>300KB</strong>.
               </li>
               <li>
-                Maximo de <strong>100 arquivos</strong> por envio. Arquivos com nome invalido ou CPF
-                inexistente na empresa sao listados como nao matcheados.
+                Máximo de <strong>100 arquivos</strong> por envio. Arquivos com nome inválido ou CPF
+                inexistente na empresa são listados como não correspondidos.
               </li>
             </ol>
           </div>

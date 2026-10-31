@@ -21,7 +21,7 @@
 export const NOME_ABA_RH_MONTHLY = 'Preenchimento mensal RH' as const;
 
 /** Nome canonico da aba Lider da planilha mensal (§3.11). */
-export const NOME_ABA_LIDER_MONTHLY = 'Preenchimento mensal Lider' as const;
+export const NOME_ABA_LIDER_MONTHLY = 'Preenchimento mensal Líder' as const;
 
 /**
  * Cabecalhos canonicos exatos da aba RH (§3.11 + mockup §7.5).

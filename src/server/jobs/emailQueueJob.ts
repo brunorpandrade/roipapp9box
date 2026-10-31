@@ -15,7 +15,7 @@
 // - Bloqueio otimista canonico via UPDATE guard: substitui a semantica
 //   `FOR UPDATE SKIP LOCKED` (§11.2) por `UPDATE ... SET
 //   status='processando' WHERE id=? AND status='pendente'`. Preserva a
-//   propriedade canonica de "batches disjuntos sem contencao": se dois
+//   propriedade canonica de "batches disjuntos sem contenção": se dois
 //   workers competirem pela mesma linha, apenas um consegue affectedRows=1
 //   (a transacao unica do UPDATE e serializada pelo MySQL). Escolha
 //   canonica RV-12 (100% Drizzle tipado) — SQL cru para FOR UPDATE SKIP
@@ -408,7 +408,7 @@ function renderTransactionalEmail(decoded: TransactionalDecoded): RenderedEmail 
 }
 
 /**
- * Worker canonico `runEmailQueueJob`. Ver `Contrato canonico` no topo do
+ * Worker canônico `runEmailQueueJob`. Ver `Contrato canônico` no topo do
  * arquivo. Retorna sumario canonico da rodada. Nao lanca — cada item e
  * isolado com try/catch.
  */

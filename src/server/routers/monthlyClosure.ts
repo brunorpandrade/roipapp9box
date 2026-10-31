@@ -106,7 +106,7 @@ export const MSG_MES_NAO_FECHADO =
  * Reescrito local ao sub-router para desacoplar dos demais (RV-13).
  */
 export const MES_INPUT_SCHEMA_CLOSURE = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, {
-  message: 'Mes canonico deve seguir o formato YYYY-MM.',
+  message: 'Mês canônico deve seguir o formato YYYY-MM.',
 });
 
 /** Enum canonico de `aba` de desbloqueio (§4.1 — bate com ABA_UNLOCK_VALUES). */

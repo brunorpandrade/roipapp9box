@@ -6,7 +6,7 @@
 // backend real (endpoint de listagem, polling 60s, marcacao lida) vem na
 // ME-058. Nesta ME, o componente recebe `notifications` e `unreadCount`
 // como props e opera com defaults vazios (`[]`, `0`), o que preserva o
-// estado canonico vazio "Nenhuma notificacao nao lida." (§4.1 rodape).
+// estado canonico vazio "Nenhuma notificação não lida." (§4.1 rodape).
 //
 // Visibilidade canonica: apenas Bruno e RH (regra Q1). A condicional
 // `showNotificationBell` que decide se este componente e montado vive no

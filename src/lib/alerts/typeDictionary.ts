@@ -213,7 +213,7 @@ export const TIPO_DICTIONARY: Readonly<Record<AlertTipo, TipoMetadata>> = {
     isentoM4: false,
     chaveM4Ampliada: false,
     trilha: 'padrao',
-    rotuloLegivel: 'Perfil Individual do colaborador com inconsistência',
+    rotuloLegivel: 'Perfil individual do colaborador com inconsistência',
   },
   perfil_retest_consistente: {
     severidadePadrao: 'observacao',
@@ -223,7 +223,7 @@ export const TIPO_DICTIONARY: Readonly<Record<AlertTipo, TipoMetadata>> = {
     isentoM4: false,
     chaveM4Ampliada: false,
     trilha: 'padrao',
-    rotuloLegivel: 'Perfil Individual — resposta consistente após reteste',
+    rotuloLegivel: 'Perfil individual — resposta consistente após reteste',
   },
   perfil_retest_reincidente: {
     severidadePadrao: 'atencao',
@@ -233,7 +233,7 @@ export const TIPO_DICTIONARY: Readonly<Record<AlertTipo, TipoMetadata>> = {
     isentoM4: true, // V4 canonizada — reincidencia sempre alerta
     chaveM4Ampliada: false,
     trilha: 'padrao',
-    rotuloLegivel: 'Perfil Individual com inconsistência após reteste',
+    rotuloLegivel: 'Perfil individual com inconsistência após reteste',
   },
 
   // ============== Fase 8 — Administrativos desbloqueio (3) — §3.6 ==============
@@ -345,7 +345,7 @@ export const SEVERIDADE_EMOJI: Readonly<Record<AlertSeveridade, string>> = {
 export class AlertTipoInvalidoError extends Error {
   constructor(public readonly tipoRecebido: string) {
     super(
-      `alert.type.invalid — tipo "${tipoRecebido}" nao esta no enum canonico ` +
+      `alert.type.invalid — tipo "${tipoRecebido}" não está no enum canônico ` +
         `de 17 valores (DOC 06 §3, DOC 01 §15.2). Valores aceitos: ` +
         NOTIFICATION_TIPO_VALUES.join(', '),
     );

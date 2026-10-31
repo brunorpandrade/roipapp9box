@@ -95,8 +95,8 @@ describe('PerfilIndividualFormShell — endpoints canonicos DOC 03 §10.13', () 
 describe('PerfilIndividualFormShell — literais canonicos DOC 05 §7.5', () => {
   const src = readSrc('src/components/instruments/PerfilIndividualFormShell.tsx');
 
-  it('titulo canonico "Perfil Individual"', () => {
-    expect(src).toContain('Perfil Individual');
+  it('titulo canonico "Perfil individual"', () => {
+    expect(src).toContain('Perfil individual');
   });
 
   it('botao canonico "Salvar e continuar depois" (some no bloco 10)', () => {

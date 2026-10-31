@@ -77,7 +77,7 @@ export interface SmtpSendResult {
 export class SmtpConfigError extends Error {
   constructor(public readonly variavelAusente: string) {
     super(
-      `SmtpConfigError: variavel de ambiente canonica ausente: ${variavelAusente}. ` +
+      `SmtpConfigError: variável de ambiente canônica ausente: ${variavelAusente}. ` +
         'Configure SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASSWORD, SMTP_FROM.',
     );
     this.name = 'SmtpConfigError';

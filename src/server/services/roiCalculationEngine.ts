@@ -48,7 +48,7 @@
 //         coluna nova no schema — operacao>roadmap canonico).
 //       * `folhaTotalMedia` preservada em `companyEconomicDiagnosis`
 //         (coluna `NOT NULL`) e usada APENAS para `folhaPorcentagem`
-//         (§3.6, S532 — "inclui alta lideranca").
+//         (§3.6, S532 — "inclui alta liderança").
 //       * `fatorModerador` com 3 ramos canonicos: P_score normal,
 //         P_neutro (fator 1.00 + log `fator_neutro_sem_score`), fallback
 //         geral (scoreMedioPonderado=0 -> todo P com fator 1.00 + log).
@@ -178,7 +178,7 @@ export interface RoiCalculationResult {
 
 /**
  * Snapshot canonico dos parametros da empresa vigentes no momento do
- * calculo (§3.8 "snapshot canonico"). Carregado uma unica vez por
+ * calculo (§3.8 "snapshot canônico"). Carregado uma unica vez por
  * chamada trimestral e passado adiante como referencia imutavel.
  */
 interface CompanyContext {
@@ -291,7 +291,7 @@ export async function computeMonthlyIndices(
       mes,
       trimestre: trimestreForLog,
       motivo: 'trimestre_incompleto',
-      detail: `mes ${mes} nao esta fechado (status=${closureStatus ?? 'inexistente'})`,
+      detail: `mês ${mes} não está fechado (status=${closureStatus ?? 'inexistente'})`,
     });
     return result;
   }
@@ -308,7 +308,7 @@ export async function computeMonthlyIndices(
       mes,
       trimestre: trimestreForLog,
       motivo: 'dias_uteis_nao_lancado',
-      detail: `companyMonthlyData.diasUteis ausente ou invalido para ${mes}`,
+      detail: `companyMonthlyData.diasUteis ausente ou inválido para ${mes}`,
     });
     return result;
   }
@@ -431,7 +431,7 @@ async function processEmployeeMonthly(
       mes,
       trimestre,
       motivo: 'sem_demanda',
-      detail: `colaborador ${employeeId} sem variavel ativa em ${mes}`,
+      detail: `colaborador ${employeeId} sem variável ativa em ${mes}`,
     });
     // ainda assim gravamos assiduidade + calculadoEm, deixando
     // indiceDesempenho NULL.
@@ -565,7 +565,7 @@ async function runQuarterlyCalculation(
   if (!meses) {
     result.errors.push({
       employeeId: null,
-      error: `trimestre canonico invalido: ${trimestre}`,
+      error: `trimestre canônico inválido: ${trimestre}`,
     });
     return result;
   }
@@ -574,7 +574,7 @@ async function runQuarterlyCalculation(
   if (!ctx) {
     result.errors.push({
       employeeId: null,
-      error: `companyId ${companyId} nao encontrado`,
+      error: `companyId ${companyId} não encontrado`,
     });
     return result;
   }
@@ -597,7 +597,7 @@ async function runQuarterlyCalculation(
       mes: null,
       trimestre,
       motivo: 'trimestre_incompleto',
-      detail: `meses nao fechados: ${mesesAbertos.join(', ')}`,
+      detail: `meses não fechados: ${mesesAbertos.join(', ')}`,
     });
     return result;
   }
@@ -981,7 +981,7 @@ async function buildEmployeeSnapshotFirstPass(
       mes: null,
       trimestre,
       motivo: 'sem_demanda',
-      detail: `colaborador ${employeeId} sem indice mensal em 1+ mes do trimestre`,
+      detail: `colaborador ${employeeId} sem índice mensal em 1+ mês do trimestre`,
     });
   } else {
     scoreDesempenho = computeScoreDesempenho(indiceTri);
@@ -1042,7 +1042,7 @@ async function buildEmployeeSnapshotFirstPass(
       mes: null,
       trimestre,
       motivo: 'custo_nao_lancado',
-      detail: `colaborador ${employeeId} sem custoTotalMes em 1+ mes; financeiro nao calculado`,
+      detail: `colaborador ${employeeId} sem custoTotalMes em 1+ mês; financeiro não calculado`,
     });
   } else {
     custoMedioTrimestral = computeMediaTrimestral(
@@ -1058,7 +1058,7 @@ async function buildEmployeeSnapshotFirstPass(
         motivo: 'meta_roi_nao_configurada',
         detail:
           `nivelHierarquico=${nivelHierarquico} sem metaROI configurada; ` +
-          `financeiro nao calculado`,
+          `financeiro não calculado`,
       });
     } else {
       retornoPotencial = computeRetornoPotencial(custoMedioTrimestral, metaROI);
@@ -1163,7 +1163,7 @@ async function persistEmployeeQuarterly(
       .limit(1);
     if (!qdRow) {
       throw new Error(
-        `persistEmployeeQuarterly: performanceQuarterlyData nao encontrado apos upsert ` +
+        `persistEmployeeQuarterly: performanceQuarterlyData não encontrado após upsert ` +
           `(employeeId=${s.employeeId}, trimestre=${trimestre})`,
       );
     }

@@ -1,6 +1,6 @@
 'use client';
 
-// ROIP APP 9BOX — Modal canonica "Motivo da inconsistencia" (ME-1.11
+// ROIP APP 9BOX — Modal canônica "Motivo da inconsistência" (ME-1.11
 // do ROADMAP_V3). Exibe os motivos humanizados pelos quais o motor
 // classificou a ultima tentativa do Perfil Individual do titular como
 // `baixa` confiabilidade (DOC 03 §10.6 pt.1).
@@ -43,20 +43,20 @@ import type { MotivoRotulado } from '../../lib/instruments/individualProfileReli
 // Textos canonicos literais DOC 03 §10.6 pt.1 + §6.7
 // -----------------------------------------------------------------------
 
-export const MOTIVO_MODAL_TITULO = 'Motivo da inconsistencia';
+export const MOTIVO_MODAL_TITULO = 'Motivo da inconsistência';
 
 export const MOTIVO_MODAL_CONTEXTO =
-  'A ultima tentativa do Perfil Individual deste colaborador apresentou um ou mais padroes ' +
-  'de resposta que comprometem a leitura canonica do perfil. Os motivos abaixo foram ' +
-  'detectados automaticamente pelo motor de validacao.';
+  'A última tentativa do Perfil Individual deste colaborador apresentou um ou mais padrões ' +
+  'de resposta que comprometem a leitura canônica do perfil. Os motivos abaixo foram ' +
+  'detectados automaticamente pelo motor de validação.';
 
 export const MOTIVO_MODAL_FECHAMENTO =
   'Converse com o colaborador antes de liberar nova tentativa — alinhar o foco e o cuidado ' +
-  'ao responder tende a produzir resultado valido na proxima rodada.';
+  'ao responder tende a produzir resultado válido na próxima rodada.';
 
 export const MOTIVO_MODAL_SEM_DADOS =
-  'Nao foi possivel identificar motivos canonicos para esta tentativa. Verifique com o time ' +
-  'tecnico se o motor processou integralmente a ultima resposta.';
+  'Não foi possível identificar motivos canônicos para esta tentativa. Verifique com o time ' +
+  'técnico se o motor processou integralmente a última resposta.';
 
 // -----------------------------------------------------------------------
 // Props canonicas
@@ -79,7 +79,7 @@ export function MotivoInconsistenciaModal(props: MotivoInconsistenciaModalProps)
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`Motivo da inconsistencia do Perfil Individual de ${userDisplayName}`}
+      aria-label={`Motivo da inconsistência do Perfil Individual de ${userDisplayName}`}
       style={{
         position: 'fixed',
         inset: 0,

@@ -48,7 +48,7 @@ describe('getWeekBounds — §11.5 passo 1', () => {
 
   it('lanca erro se chamado fora do gatilho (dia != segunda)', () => {
     const now = new Date('2026-01-06T11:00:00Z');
-    expect(() => getWeekBounds(now, TZ_SP)).toThrow(/gatilho canonico/);
+    expect(() => getWeekBounds(now, TZ_SP)).toThrow(/gatilho canônico/);
   });
 });
 

@@ -8,7 +8,7 @@
 // ME-1.17.2 — Despacho 2 da Conversa 5. Expansao para contemplar:
 // (D1) Familias canonicas inativas aparecem no mesmo grid, com toggle
 //      "Reativar". (D2) 20 slots custom nao aparecem como placeholders
-//      — apenas as ativadas + um card "+ Nova familia customizada".
+//      — apenas as ativadas + um card "+ Nova família customizada".
 // (D4) Nome editavel inline no cabecalho. (D5) Setas up/down.
 // (D6) Guard de desativacao: bloqueado quando ha colaboradores.
 // (D7) Save por familia preservado. (D8) Trava `lideranca_gestao`

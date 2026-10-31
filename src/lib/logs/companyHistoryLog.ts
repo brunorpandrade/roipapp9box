@@ -10,7 +10,7 @@
 //   ME: mockup prevalece bit-exact (labels + estados vazios + shape do
 //   painel expandido em grid 2 col).
 // - S322 canonizada nesta ME: ator canonico da transferencia de
-//   liderados = literal "Sistema (transferencia de liderados)". Schema
+//   liderados = literal "Sistema (transferência de liderados)". Schema
 //   `employeeLeaderHistory` nao registra `actorSuperAdminId` — D065
 //   aberto para reavaliar em B5.4 quando `/transferencia-liderados`
 //   nascer.

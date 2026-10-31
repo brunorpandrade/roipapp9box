@@ -24,7 +24,7 @@
 //   - S095: submit repetido COM `instrumentUnlockLog` vigente do tipo
 //     'A' -> OVERWRITE linha a linha.
 //   - §6.7 comportamento canonico: resposta tardia sem envio previo NAO
-//     e desbloqueio (INSERT normal mesmo apos dia 10 do mes seguinte).
+//     e desbloqueio (INSERT normal mesmo apos dia 10 do mês seguinte).
 //
 // L32 cleanup em afterAll. CNPJs faixa 10000000000750..759 reservada
 // para o Route Handler (ME-039, disjunta da faixa 740..746 do teste
@@ -641,7 +641,7 @@ describe('POST /api/portal/save-instrument-a — janela canonica', () => {
     });
   });
 
-  it('antes do dia 16 do ultimo mes -> 409 MSG_TRIMESTRE_NAO_ABERTO_A', async () => {
+  it('antes do dia 16 do último mês -> 409 MSG_TRIMESTRE_NAO_ABERTO_A', async () => {
     __setPortalSaveInstrumentANow(() => NOW_ANTES_ABERTURA_Q1_2024);
     const res = await callSave({
       portalToken: validToken,

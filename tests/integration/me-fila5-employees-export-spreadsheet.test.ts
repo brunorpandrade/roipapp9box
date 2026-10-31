@@ -264,7 +264,7 @@ describe('employees.exportSpreadsheet — contratos publicos exportados', () => 
     expect(COLUNAS_CANONICAS_EMPLOYEES_EXPORT[1]).toBe('CPF');
     expect(COLUNAS_CANONICAS_EMPLOYEES_EXPORT[2]).toBe('Cargo');
     expect(COLUNAS_CANONICAS_EMPLOYEES_EXPORT[10]).toBe('Status');
-    expect(COLUNAS_CANONICAS_EMPLOYEES_EXPORT[13]).toBe('Responsavel financeiro');
+    expect(COLUNAS_CANONICAS_EMPLOYEES_EXPORT[13]).toBe('Responsável financeiro');
   });
 
   it('NOME_ABA_EMPLOYEES_EXPORT eh "Colaboradores"', () => {
@@ -277,7 +277,7 @@ describe('employees.exportSpreadsheet — contratos publicos exportados', () => 
 
   it('MSG_EXPORT_TETO_EXCEDIDO tem texto canonico', () => {
     expect(MSG_EXPORT_TETO_EXCEDIDO).toBe(
-      'Empresa excede o teto canonico de 10000 colaboradores para exportacao.',
+      'Empresa excede o teto canônico de 10.000 colaboradores para exportação.',
     );
   });
 

@@ -54,7 +54,7 @@ export type ActionResult<T = null> =
 async function requireSuperAdmin(actionName: string): Promise<void> {
   const session = await getServerSession();
   if (session === null) {
-    throw new Error(`${actionName}: sessao ausente ou expirada`);
+    throw new Error(`${actionName}: sessão ausente ou expirada`);
   }
   if (session.kind !== 'super_admin') {
     throw new Error(`${actionName}: acesso restrito ao Super Admin (§10.9 CAMADA_AUTH)`);
@@ -92,7 +92,7 @@ export async function saveParametrosAction(input: unknown): Promise<ActionResult
     // (2) Existencia + snapshot canonico bit-exact.
     const current = await getCompanyForUpdate(client.db, data.companyId);
     if (current === undefined) {
-      return { ok: false, message: 'Empresa nao encontrada.' };
+      return { ok: false, message: 'Empresa não encontrada.' };
     }
 
     // (3) Imutabilidade pos-primeiro-trimestre §13.1 linha 1506.
@@ -141,13 +141,13 @@ export async function saveParametrosAction(input: unknown): Promise<ActionResult
         return {
           ok: false,
           message:
-            'CNPJ ja cadastrado na plataforma. Entre em contato com o suporte se necessario.',
+            'CNPJ já cadastrado na plataforma. Entre em contato com o suporte se necessário.',
         };
       }
       throw err;
     }
     if (affected === 0) {
-      return { ok: false, message: 'Empresa nao encontrada.' };
+      return { ok: false, message: 'Empresa não encontrada.' };
     }
 
     // (6) Hook §3.9 — recalculo retroativo se metaROI* alterou (no-op
@@ -189,17 +189,17 @@ export async function setCompanyStatusAction(input: {
   await requireSuperAdmin('setCompanyStatusAction');
 
   if (!Number.isInteger(input.companyId) || input.companyId <= 0) {
-    return { ok: false, message: 'companyId invalido.' };
+    return { ok: false, message: 'companyId inválido.' };
   }
   if (input.novoStatus !== 'ativa' && input.novoStatus !== 'inativa') {
-    return { ok: false, message: 'Novo status invalido.' };
+    return { ok: false, message: 'Novo status inválido.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
     const current = await getCompanyForUpdate(client.db, input.companyId);
     if (current === undefined) {
-      return { ok: false, message: 'Empresa nao encontrada.' };
+      return { ok: false, message: 'Empresa não encontrada.' };
     }
 
     // Precisa dos campos LGPD reais — segundo SELECT canonico bit-exact.
@@ -214,7 +214,7 @@ export async function setCompanyStatusAction(input: {
       .limit(1);
     const currentLgpd = lgpdRows[0];
     if (currentLgpd === undefined) {
-      return { ok: false, message: 'Empresa nao encontrada.' };
+      return { ok: false, message: 'Empresa não encontrada.' };
     }
 
     if (currentLgpd.status === input.novoStatus) {
@@ -238,7 +238,7 @@ export async function setCompanyStatusAction(input: {
 
     const affected = await updateCompanyStatus(client.db, input.companyId, input.novoStatus);
     if (affected === 0) {
-      return { ok: false, message: 'Empresa nao encontrada.' };
+      return { ok: false, message: 'Empresa não encontrada.' };
     }
     revalidatePath(`/super-admin/empresa/${input.companyId}/parametros`);
     revalidatePath(`/super-admin/empresa/${input.companyId}`);

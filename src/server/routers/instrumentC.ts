@@ -43,7 +43,7 @@
 //     `overwriteInstrumentCAssessmentValor` linha a linha; sem
 //     desbloqueio vigente, rejeita 409 com `MSG_TRIMESTRE_FECHADO`
 //     (mensagem canonica literal §6.8, semanticamente aplicavel a
-//     ambos "ja enviou" e "apos corte" — o front distingue lendo
+//     ambos "já enviou" e "após corte" — o front distingue lendo
 //     `getAssessment`).
 //   - `getAssessment` (S089): leitura pura para a tela do lider
 //     recarregar avaliacao ja enviada dentro da janela de desbloqueio.
@@ -946,7 +946,7 @@ export function createInstrumentCRouter(deps: InstrumentCRouterDeps = {}) {
      * classificado por `classifyStatusPendenciaC` contra a
      * `dataCorte` canonica no fuso da empresa (S121).
      * `respondidos = total - pendencias.length` — semantica:
-     * "pelo menos uma linha de avaliacao registrada no trimestre".
+     * "pelo menos uma linha de avaliação registrada no trimestre".
      */
     getPendencies: roleProcedure(['super_admin', 'rh', 'rh_lider', 'clevel', 'lider'])
       .input(

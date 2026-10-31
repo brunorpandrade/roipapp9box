@@ -154,7 +154,7 @@ function resolvePapelPlataformaEmployee(role: 'rh' | 'rh_lider' | 'lider'): stri
 async function loadH1a(db: RoipDatabase, superAdminId: number): Promise<MeusDadosH1aPayload> {
   const admin = await getSuperAdminById(db, superAdminId);
   if (admin === undefined) {
-    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessao expirada.' });
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessão expirada.' });
   }
   const contaCriadaEm = admin.createdAt === null ? '' : admin.createdAt.toISOString();
   return {
@@ -175,7 +175,7 @@ async function loadH1bEmployee(
 ): Promise<MeusDadosH1bPayload> {
   const emp = await getEmployeeById(db, employeeId);
   if (emp === undefined) {
-    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessao expirada.' });
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessão expirada.' });
   }
   const liderDireto = await findLiderDiretoName(db, employeeId);
   // ME-1.17.c — resolucao canonica da familia respeita
@@ -219,7 +219,7 @@ async function loadH1bEmployee(
 async function loadH1bClevel(db: RoipDatabase, clevelId: number): Promise<MeusDadosH1bPayload> {
   const clevel = await getCLevelMemberById(db, clevelId);
   if (clevel === undefined) {
-    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessao expirada.' });
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sessão expirada.' });
   }
   const escopoVisualizacao =
     (clevel.acessoTotal ?? true)

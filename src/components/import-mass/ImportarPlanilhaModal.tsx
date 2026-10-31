@@ -103,45 +103,45 @@ function resolveVariantLabels(variant: ImportarPlanilhaVariant): VariantLabels {
       return {
         title: 'Importar colaboradores em massa',
         bloco1Text:
-          'Baixe a planilha modelo (.xlsx) canonica com as 14 colunas ' +
+          'Baixe a planilha modelo (.xlsx) canônica com as 14 colunas ' +
           'exatas exigidas pelo sistema. Preencha uma linha por ' +
-          'colaborador; nao altere os cabecalhos.',
+          'colaborador; não altere os cabeçalhos.',
         bloco2Text:
           'Arraste sua planilha preenchida ou clique para selecionar. ' +
-          'O sistema valida os cabecalhos antes do envio; CPFs ja ' +
-          'existentes na empresa serao ignorados com registro no ' +
-          'relatorio pos-upload.',
+          'O sistema valida os cabeçalhos antes do envio; CPFs já ' +
+          'existentes na empresa serão ignorados com registro no ' +
+          'relatório pós-upload.',
         expectedHeader: COLUNAS_CANONICAS_EMPLOYEES,
       };
     case 'monthly-rh':
       return {
         title: 'Importar dados mensais RH em massa',
         bloco1Text:
-          'Baixe a planilha modelo (.xlsx) do mes selecionado, ja pre-' +
+          'Baixe a planilha modelo (.xlsx) do mês selecionado, já pré-' +
           'preenchida com os colaboradores ativos da empresa. Preencha ' +
-          'as colunas Custo mensal (R$) e Faltas por colaborador; nao ' +
-          'altere as demais colunas nem os cabecalhos.',
+          'as colunas Custo mensal (R$) e Faltas por colaborador; não ' +
+          'altere as demais colunas nem os cabeçalhos.',
         bloco2Text:
           'Arraste sua planilha preenchida ou clique para selecionar. ' +
-          'O sistema valida os cabecalhos antes do envio; colaboradores ' +
-          'ausentes do arquivo mantem os valores atuais (ou ficam em ' +
-          'branco se ainda nao houver lancamento no mes).',
+          'O sistema valida os cabeçalhos antes do envio; colaboradores ' +
+          'ausentes do arquivo mantêm os valores atuais (ou ficam em ' +
+          'branco se ainda não houver lançamento no mês).',
         expectedHeader: COLUNAS_CANONICAS_RH_MONTHLY,
       };
     case 'monthly-leader':
       return {
-        title: 'Importar dados mensais Lider em massa',
+        title: 'Importar dados mensais Líder em massa',
         bloco1Text:
-          'Baixe a planilha modelo (.xlsx) do mes selecionado, ja pre-' +
+          'Baixe a planilha modelo (.xlsx) do mês selecionado, já pré-' +
           'preenchida com os liderados sob sua responsabilidade + colunas ' +
-          'canonicas Meta / Demanda / Realizado por variavel CC3 ' +
-          'configurada. Preencha Demanda e Realizado por liderado; nao ' +
-          'altere as demais colunas nem os cabecalhos.',
+          'canônicas Meta / Demanda / Realizado por variável CC3 ' +
+          'configurada. Preencha Demanda e Realizado por liderado; não ' +
+          'altere as demais colunas nem os cabeçalhos.',
         bloco2Text:
           'Arraste sua planilha preenchida ou clique para selecionar. ' +
-          'O sistema valida os cabecalhos fixos antes do envio (colunas ' +
-          'dinamicas por variavel sao validadas pelo backend). Liderados ' +
-          'ausentes do arquivo mantem os valores atuais.',
+          'O sistema valida os cabeçalhos fixos antes do envio (colunas ' +
+          'dinâmicas por variável são validadas pelo backend). Liderados ' +
+          'ausentes do arquivo mantêm os valores atuais.',
         expectedHeader: COLUNAS_FIXAS_LIDER_MONTHLY,
       };
   }
@@ -521,7 +521,7 @@ export function ImportarPlanilhaModal(props: ImportarPlanilhaModalProps): JSX.El
                   onDrop={handleDrop}
                   role="button"
                   tabIndex={0}
-                  aria-label="Area de upload de planilha"
+                  aria-label="Área de upload de planilha"
                 >
                   {selectedFile === null
                     ? 'Arraste sua planilha preenchida ou clique para selecionar'

@@ -53,7 +53,7 @@ export interface OnboardingKanbanMiniProps {
   readonly href: string;
   /**
    * Label canonico do `aria-label` do Link. Opcional; default canonico
-   * "Abrir kanban de onboarding de lideres" (compatibilidade bit-exact
+   * "Abrir kanban de onboarding de líderes" (compatibilidade bit-exact
    * com callsite original §5.4 ME-074).
    */
   readonly ariaLabel?: string;

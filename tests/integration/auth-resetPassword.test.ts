@@ -5,7 +5,7 @@
 // mesmo escrutinio de token que validateToken (via helper compartilhado);
 // reset de super_admin muda passwordHash e (via S011) invalida sessoes.
 //
-// §4.5 "Regra canonica de reutilizacao": PERMITE nova senha igual a
+// §4.5 "Regra canônica de reutilização": PERMITE nova senha igual a
 // anterior (backend nao compara plaintext). Este teste tambem valida
 // isso.
 

@@ -9,7 +9,7 @@
 // - Cache global de templates compilados por chave canonica (`templateId`).
 // - `compileTemplateOnce(templateId, source)` retorna sempre a mesma
 //   funcao compilada por `templateId`; o `source` e ignorado apos a
-//   primeira invocacao (semantica de "compilar uma unica vez").
+//   primeira invocacao (semantica de "compilar uma única vez").
 // - `renderTemplate(templateId, source, data)` chama
 //   `compileTemplateOnce` e aplica os dados.
 // - `_resetHandlebarsCache` para uso exclusivo em testes.
@@ -36,7 +36,7 @@ const templateCache = new Map<string, CompiledTemplate>();
  * Compila `source` como template Handlebars sob a chave `templateId` e
  * cacheia. Chamadas subsequentes com o mesmo `templateId` reutilizam a
  * versao compilada — o `source` novo e ignorado silenciosamente (padrao
- * canonico "compilar uma unica vez no boot").
+ * canonico "compilar uma única vez no boot").
  */
 export function compileTemplateOnce(templateId: string, source: string): CompiledTemplate {
   const cached = templateCache.get(templateId);

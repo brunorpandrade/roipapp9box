@@ -200,7 +200,7 @@ export interface LgpdPortabilityTemplateInput {
   generatedAtDate: string;
   /**
    * ME-B11.1c PATCH2 (PDL10): timestamp completo canonico ISO 8601
-   * (UTC) para o rodape "Gerado em DD/MM/YYYY as HH:mm (BRT)". O
+   * (UTC) para o rodape "Gerado em DD/MM/YYYY às HH:mm (BRT)". O
    * template humaniza via `toTimestampBrt` para o fuso BRT fixo
    * (UTC-3, sem horario de verao). Opcional por compatibilidade com
    * eventuais chamadores que ainda nao propagam o timestamp — nesse
@@ -234,7 +234,7 @@ const STATUS_IPA_ROTULO: Record<'em_andamento' | 'enviado' | 'inconsistente', st
 
 const TITULAR_TIPO_ROTULO: Record<LgpdPortabilityTitularType, string> = {
   employee: 'Colaborador',
-  clevel: 'C-Level',
+  clevel: 'C-level',
 };
 
 /**
@@ -260,7 +260,7 @@ export function sanitizeNomeCanonicoLgpd(nome: string): string {
 export function formatDateYyyyMmDdCompact(dateYyyyMmDd: string): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateYyyyMmDd)) {
     throw new Error(
-      `formatDateYyyyMmDdCompact: formato invalido "${dateYyyyMmDd}" — esperado YYYY-MM-DD`,
+      `formatDateYyyyMmDdCompact: formato inválido "${dateYyyyMmDd}" — esperado YYYY-MM-DD`,
     );
   }
   return dateYyyyMmDd.replace(/-/g, '');
@@ -345,7 +345,7 @@ function renderInstrumentoRows(rows: LgpdPortabilityInstrumentoRow[], vazioMsg: 
   //  - trimestre humanizado via `formatTrimestreBR` (`2026-Q1` ->
   //    "1º trimestre de 2026").
   //  - `respondidoEm` humanizado via `toTimestampBrt` (ISO UTC ->
-  //    "DD/MM/YYYY as HH:mm (BRT)").
+  //    "DD/MM/YYYY às HH:mm (BRT)").
   const cells = rows
     .map(
       (r) => `<tr>
@@ -386,7 +386,7 @@ function renderInstrumentASection(rows: LgpdPortabilityInstrumentoRow[]): string
 function renderInstrumentDSection(rows: LgpdPortabilityInstrumentoRow[]): string {
   return `<section>
   <h2>Instrumento D — Avaliação do líder direto</h2>
-  <p class="muted">Respostas do próprio titular avaliando seu líder direto ou C-Level (DOC 03 §8).</p>
+  <p class="muted">Respostas do próprio titular avaliando seu líder direto ou C-level (DOC 03 §8).</p>
   ${renderInstrumentoRows(rows, 'Nenhuma resposta registrada.')}
 </section>`;
 }
@@ -410,7 +410,7 @@ function renderCopsoqSection(rows: LgpdPortabilityCopsoqRow[]): string {
   //    `cicloDbId` deixa de ser exibido para o titular (continua
   //    disponivel no payload para auditoria tecnica).
   //  - `respondidoEm` humanizado via `toTimestampBrt` (ISO UTC ->
-  //    "DD/MM/YYYY as HH:mm (BRT)").
+  //    "DD/MM/YYYY às HH:mm (BRT)").
   const cells = rows
     .map(
       (r) => `<tr>
@@ -449,8 +449,8 @@ ${cells}
 function renderIndividualProfileSection(rows: LgpdPortabilityIndividualProfileRow[]): string {
   if (rows.length === 0) {
     return `<section>
-  <h2>Perfil Individual — respostas brutas</h2>
-  <p class="muted">Respostas do próprio titular ao Perfil Individual (DOC 03 §10).</p>
+  <h2>Perfil individual — respostas brutas</h2>
+  <p class="muted">Respostas do próprio titular ao Perfil individual (DOC 03 §10).</p>
   <p class="muted">Nenhuma resposta registrada.</p>
 </section>`;
   }
@@ -473,8 +473,8 @@ function renderIndividualProfileSection(rows: LgpdPortabilityIndividualProfileRo
     })
     .join('\n');
   return `<section>
-  <h2>Perfil Individual — respostas brutas</h2>
-  <p class="muted">Respostas do próprio titular ao Perfil Individual (DOC 03 §10).</p>
+  <h2>Perfil individual — respostas brutas</h2>
+  <p class="muted">Respostas do próprio titular ao Perfil individual (DOC 03 §10).</p>
 ${tentativas}
 </section>`;
 }

@@ -45,7 +45,7 @@ function resolveExecutablePath(): string {
   if (!path || path.length === 0) {
     throw new Error(
       'PUPPETEER_EXECUTABLE_PATH ausente no ambiente — configure .env ' +
-        '(caminho do binario chromium; rode `preparar_ambiente.sh` para instalar)',
+        '(caminho do binário chromium; rode `preparar_ambiente.sh` para instalar)',
     );
   }
   return path;

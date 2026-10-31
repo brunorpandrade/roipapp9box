@@ -347,7 +347,7 @@ describe('ME-fila1-01 · requireLiderRHLiderOrClevel (unit puro)', () => {
   });
 
   it('rejeita session null com mensagem generica', () => {
-    expect(() => requireLiderRHLiderOrClevel(null, 'fn')).toThrow('sessao ausente');
+    expect(() => requireLiderRHLiderOrClevel(null, 'fn')).toThrow('sessão ausente');
   });
 
   it('rejeita super_admin com acesso restrito', () => {

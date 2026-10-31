@@ -11,7 +11,7 @@
 //              `/access-denied?rota=<pattern>` (S033) com msg canonica de
 //              §9 resolvida em `accessDeniedMessages.ts`;
 //   'redirect_super_admin' — canonico §13.7: toast âmbar
-//              "Rota indisponivel para Super Admin." + redirect para
+//              "Rota indisponível para Super Admin." + redirect para
 //              `/super-admin`. Aplicavel apenas ao Super Admin em rotas
 //              onde a matriz marca "—" para ele. Emitido pelo middleware
 //              via query param `?toast=super_admin_route_unavailable`.
@@ -469,7 +469,7 @@ export const ROUTE_MATRIX: readonly RouteRule[] = [
   // total obrigatorio); drill-down nominal decidido server-side.
   {
     pattern: '/turnover',
-    canonicalRef: 'Especificacao Turnover e desligamento §7',
+    canonicalRef: 'Especificação Turnover e desligamento §7',
     byRole: {
       super_admin: 'redirect_super_admin',
       rh: 'allow',
@@ -527,7 +527,7 @@ export const ROUTE_MATRIX: readonly RouteRule[] = [
   {
     // Formulario de desligamento na rota nativa RH (ME-fila6 D2).
     pattern: '/colaborador/:employeeId/desligamento',
-    canonicalRef: 'Especificacao Turnover e desligamento §2',
+    canonicalRef: 'Especificação Turnover e desligamento §2',
     byRole: {
       super_admin: 'redirect_painel',
       rh: 'allow',
@@ -588,7 +588,7 @@ export const ROUTE_MATRIX: readonly RouteRule[] = [
   // Rotas placeholder Fase 4 (§9.16) — stub para todos os perfis
   // administrativos exceto colaborador puro (que nao autentica na
   // plataforma admin). Sem AccessDeniedPage — pagina renderiza stub
-  // canonico "Disponivel a partir da Fase 4.".
+  // canônico "Disponível a partir da Fase 4.".
   {
     pattern: '/dashboard-9box',
     canonicalRef: '§9.16',

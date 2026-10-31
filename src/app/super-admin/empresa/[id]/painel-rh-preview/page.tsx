@@ -124,7 +124,7 @@ export default async function PainelRHPreviewPage(props: PageProps): Promise<JSX
 
     const menuItems = resolveMenuItems(profileKey, false);
     if (menuItems === null) {
-      throw new Error(`Menu canonico ausente para ${profileKey} em preview — inconsistencia §3`);
+      throw new Error(`Menu canônico ausente para ${profileKey} em preview — inconsistência §3`);
     }
 
     const turnoverCard = await loadTurnoverCardLive(client.db, companyId);

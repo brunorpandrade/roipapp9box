@@ -89,7 +89,7 @@ export async function atualizarCLevelAction(input: {
 }): Promise<ActionResult<UpdateCLevelResult>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -123,7 +123,7 @@ export async function inativarCLevelAction(input: {
 }): Promise<ActionResult<InactivateCLevelResult>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -157,7 +157,7 @@ export async function reativarCLevelAction(input: {
 }): Promise<ActionResult<ReactivateCLevelResult>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -191,7 +191,7 @@ export async function excluirCLevelAction(input: {
 }): Promise<ActionResult<DeleteCLevelResult>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -231,7 +231,7 @@ export async function regenerarMatriculaCLevelAction(input: {
 }): Promise<ActionResult<{ matricula: string }>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -267,7 +267,7 @@ export async function regenerarSenhaCLevelAction(input: {
 }): Promise<ActionResult<{ senhaInicial: string }>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -308,7 +308,7 @@ export async function definirRFCLevelEditarAction(input: {
 }): Promise<ActionResult<SetResponsavelFinanceiroResult>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());

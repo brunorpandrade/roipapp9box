@@ -404,7 +404,7 @@ export default async function SuperAdminGlobalPanel(
   if (menuItems === null) {
     // Impossivel canonicamente (super_admin_global tem menu §3.1),
     // mas TS exige nao-null para o Layout.
-    throw new Error('Menu canonico ausente para super_admin_global — inconsistencia §3.1');
+    throw new Error('Menu canônico ausente para super_admin_global — inconsistência §3.1');
   }
 
   // Resolve o filtro canonico bit-exact §5.3 do toggle 3 estados (D075).
@@ -443,7 +443,7 @@ export default async function SuperAdminGlobalPanel(
         Painel Super Admin
       </h1>
 
-      {/* Bloco "Painel de metricas" §5.3: 2 cards + 2 blocos de
+      {/* Bloco "Painel de métricas" §5.3: 2 cards + 2 blocos de
           crescimento canonicos bit-exact (G3 D075). */}
       <section style={{ marginTop: 24 }} aria-label="Painel de métricas">
         <h2

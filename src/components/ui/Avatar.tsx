@@ -6,7 +6,7 @@
 // - "Padrao sem foto: circulo cinza #E5E7EB com duas iniciais em #374151:
 //   primeira letra do primeiro nome + primeira letra do ultimo sobrenome.
 //   Fallback nome unico: primeiras duas letras."
-// - "Super Admin: circulo teal #14B8A6 com iniciais brancas."
+// - "Super Admin: círculo teal #14B8A6 com iniciais brancas."
 // - "Colaborador em cabecalhos de dashboard individual: circulo 44×44
 //   background #1F3A5F com iniciais brancas 16px semibold."
 //

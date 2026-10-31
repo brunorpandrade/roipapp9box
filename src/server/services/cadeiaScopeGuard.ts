@@ -34,7 +34,7 @@ import { loadCLevelSessionContext } from '../../lib/session/cLevelSessionContext
 import { resolveHierarchicalScope } from './hierarchicalScope';
 
 /** Mensagem canônica default de alvo fora da cadeia descendente. */
-export const MSG_FORA_DA_CADEIA_DESCENDENTE = 'Colaborador fora da cadeia descendente do usuario.';
+export const MSG_FORA_DA_CADEIA_DESCENDENTE = 'Colaborador fora da cadeia descendente do usuário.';
 
 /**
  * Identidade mínima aceita pelo guard — estruturalmente compatível com

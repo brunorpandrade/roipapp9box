@@ -58,7 +58,7 @@ describe('ME 3.5.1 — requireRhLikeOrSuperAdmin', () => {
 
   it('rejeita sessao null com mensagem canonica generica', async () => {
     await expect(requireRhLikeOrSuperAdmin(anyDb, null, 'testAction')).rejects.toThrow(
-      /sessao ausente ou expirada/,
+      /sessão ausente ou expirada/,
     );
   });
 

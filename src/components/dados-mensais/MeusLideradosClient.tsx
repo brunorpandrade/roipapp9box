@@ -856,7 +856,7 @@ export function MeusLideradosClient(props: MeusLideradosClientProps): JSX.Elemen
                     color: COLORS.primary.navy,
                     cursor: 'pointer',
                   }}
-                  title="Baixar XLSX pre-preenchido com seus liderados"
+                  title="Baixar XLSX pré-preenchido com seus liderados"
                 >
                   📄 Baixar planilha modelo
                 </button>

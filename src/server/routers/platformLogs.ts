@@ -159,7 +159,7 @@ async function fetchHistoricoEmpresa(
         fonte: 'responsavel_financeiro_transfer',
         dataEvento: row.createdAt ?? null,
         actorId: row.actorSuperAdminId,
-        descricaoResumida: `Responsavel financeiro: ${row.eventType}`,
+        descricaoResumida: `Responsável financeiro: ${row.eventType}`,
         detalhes: {
           eventType: row.eventType,
           previousHolder: { type: row.previousHolderType, id: row.previousHolderId },
@@ -224,7 +224,7 @@ async function fetchHistoricoEmpresa(
         fonte: 'employee_leader_transfer',
         dataEvento,
         actorId: null,
-        descricaoResumida: `Vinculo de lideranca: ${row.dataInicio}`,
+        descricaoResumida: `Vínculo de liderança: ${row.dataInicio}`,
         detalhes: {
           employeeId: row.employeeId,
           liderId: row.liderId,
@@ -290,7 +290,7 @@ async function fetchHistoricoEmpresa(
         fonte: 'cycle_unlock_request',
         dataEvento: row.createdAt ?? null,
         actorId: row.solicitanteId,
-        descricaoResumida: `Solicitacao de desbloqueio: ${row.aba} · ${row.mes} · ${row.status}`,
+        descricaoResumida: `Solicitação de desbloqueio: ${row.aba} · ${row.mes} · ${row.status}`,
         detalhes: {
           solicitanteTipo: row.solicitanteTipo,
           solicitanteId: row.solicitanteId,

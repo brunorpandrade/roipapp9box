@@ -65,7 +65,7 @@ export const INITIAL_PASSWORD_LENGTH = 8;
  *      (garante a politica sem depender de sorte).
  *   2. Preenche as demais posicoes com qualquer caractere do alfabeto.
  *   3. Embaralha via Fisher-Yates usando o mesmo PRNG (evita padrao
- *      previsivel "letra na posicao 0, digito na 1").
+ *      previsivel "letra na posição 0, dígito na 1").
  *
  * @param prng funcao PRNG deterministica (ver `./prng`).
  * @returns string de 8 caracteres alfanumericos.

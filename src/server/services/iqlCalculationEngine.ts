@@ -28,7 +28,7 @@
 //     retorna 500; a resposta ja foi persistida pela transacao
 //     anterior e o motor pode ser reexecutado por reprocessing
 //     manual (S154) ou pelo proximo save.
-//   - Piso de 3 respondentes (§8.5 "Piso canonico"): APLICADO NA
+//   - Piso de 3 respondentes (§8.5 "Piso canônico"): APLICADO NA
 //     LEITURA (S158), nunca na gravacao. Motor SEMPRE upserta uma
 //     linha em `iqlData` — scores e `iql` sao gravados
 //     independentemente do piso; camada de leitura consulta

@@ -154,7 +154,7 @@ export async function seedUbatuba(
   if (existing.length > 0) {
     return {
       applied: false,
-      reason: `Bebidas Ubatuba Ltda. (id=${UBATUBA_COMPANY_ID}) ja existe. Seed nao reaplicado.`,
+      reason: `Bebidas Ubatuba Ltda. (id=${UBATUBA_COMPANY_ID}) já existe. Seed não reaplicado.`,
     };
   }
 

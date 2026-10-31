@@ -13,7 +13,7 @@
 //   - URL ortogonal: `?dep=X` e `?tri=YYYY-QN` combinam livremente.
 //     Setas preservam `?dep`; filtro de escopo preserva `?tri`.
 //   - Tela de insuficiencia por piso referencia o trimestre selecionado
-//     (nao mais "ultimo trimestre") — consistencia canonica com a
+//     (não mais "último trimestre") — consistência canônica com a
 //     navegacao temporal.
 //
 // ME-B2-01d (01/10/2026) preservado:
@@ -88,7 +88,7 @@ function labelTrimestreExtenso(trimestre: string): string {
   const match = trimestre.match(/^(\d{4})-?Q([1-4])$/);
   if (!match) return trimestre;
   const [, ano, q] = match;
-  return `${q}º Trimestre de ${ano}`;
+  return `${q}º trimestre de ${ano}`;
 }
 
 /**

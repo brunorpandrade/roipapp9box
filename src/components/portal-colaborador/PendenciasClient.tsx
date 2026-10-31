@@ -17,7 +17,7 @@
 //   `pendente|aguardando_nova_resposta` e `em_andamento`).
 // A partir desta ME o Bloco B10 fecha a superficie de escrita para
 // os 4 instrumentos individuais no canal portal — todos os cards de
-// pendencia sao clicaveis. O tooltip "Formulario em breve" e a
+// pendencia sao clicaveis. O tooltip "Formulário em breve" é a
 // constante `TOOLTIP_EM_BREVE` foram removidos (RV-13 canonico —
 // codigo morto proibido).
 //
@@ -332,7 +332,7 @@ function CardPerfilIndividual(props: CardPendenciaProps): JSX.Element {
         iconeBg="#CCFBF1"
         borderLeftTeal
         andamentoBg
-        titulo="Perfil Individual — finalizar questionário"
+        titulo="Perfil individual — finalizar questionário"
         descricao="Instrumento que revela seus pontos fortes e seu jeito de trabalhar."
         progresso={`${blocos} de 10 blocos concluídos`}
         buttonLabel="Continuar"
@@ -351,7 +351,7 @@ function CardPerfilIndividual(props: CardPendenciaProps): JSX.Element {
     <CardBase
       icone="🧠"
       iconeBg="#EFF6FF"
-      titulo="Perfil Individual"
+      titulo="Perfil individual"
       descricao="Instrumento que revela seus pontos fortes e seu jeito de trabalhar."
       buttonLabel="Responder"
       buttonKind="navy"
@@ -389,7 +389,7 @@ interface CardBaseProps {
 }
 
 // ME-1.3b item 3: badge por urgencia do prazo.
-// - Atrasado (dias < 0): paleta DANGER, label "Atrasado ha N dias".
+// - Atrasado (dias < 0): paleta DANGER, label "Atrasado há N dias".
 // - Fecha hoje (dias === 0): paleta WARNING, label "Fecha hoje".
 // - 1-3 dias: paleta WARNING, label "Fecha em N dia(s)".
 // - 4+ dias: paleta SUCCESS, label "Fecha em N dias".
@@ -635,7 +635,7 @@ function CardRespondido(props: CardRespondidoProps): JSX.Element {
 
 function labelInstrumentoColaborador(inst: string): string {
   if (inst === 'meuPerfil') {
-    return 'Perfil Individual';
+    return 'Perfil individual';
   }
   if (inst === 'autoAvaliacao') {
     return 'Autoavaliação do colaborador';

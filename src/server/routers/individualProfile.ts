@@ -42,7 +42,7 @@
 // S213 — "Tentativa vigente" e resolvida na CAMADA DE LEITURA: a linha
 //   de `individualProfileScores` de maior `tentativa` do titular.
 //   Tentativas anteriores permanecem no banco por auditoria (§10.7,
-//   "Substituicao integral de dados canonica") e nunca sao expostas.
+//   "Substituição integral de dados canônica") e nunca são expostas.
 //   Como o motor so insere score quando a confiabilidade NAO e baixa
 //   (§10.6), o maior `tentativa` de `individualProfileScores` e, por
 //   construcao, a tentativa consistente mais recente.
@@ -126,13 +126,13 @@ import { MSG_AUTO_VISAO_PERFIL, assertNaoAutoVisaoEmployee } from './_shared/sel
  * DOC 02.
  */
 export const MSG_PC1E_PERFIL_INDIVIDUAL_CLEVEL =
-  'Você não tem permissão para acessar o Perfil Individual deste colaborador. ' +
+  'Você não tem permissão para acessar o Perfil individual deste colaborador. ' +
   'Este espaço é restrito ao Super Admin. Se acredita que isso é um erro, ' +
   'contate o Super Admin.';
 
 /** §3.13 — leitura de titular inativo restrita a Bruno e RH. */
 export const MSG_TITULAR_INATIVO_RESTRITO =
-  'Perfil Individual de colaborador inativo restrito a Bruno e RH.';
+  'Perfil individual de colaborador inativo restrito a Bruno e RH.';
 
 /** S066 → PC1h — lider e C-level restrito veem apenas a propria cadeia descendente. */
 export const MSG_FORA_DA_CADEIA_DIRETA = 'Colaborador fora da cadeia direta do líder.';
@@ -146,7 +146,7 @@ export const MSG_TITULAR_NAO_ENCONTRADO = 'Colaborador não encontrado na empres
  * e BAD_REQUEST canonico (S234).
  */
 export const MSG_RETESTE_PRECONDICAO =
-  'Reteste só pode ser liberado quando o Perfil Individual está inconsistente.';
+  'Reteste só pode ser liberado quando o Perfil individual está inconsistente.';
 
 /** §10.7 passo 2 — nao ha tentativa anterior de onde derivar a nova. */
 export const MSG_RETESTE_SEM_TENTATIVA =
@@ -162,7 +162,7 @@ export const MSG_GENERATE_PDF_AGUARDE = 'Aguarde a geração do relatório para 
 
 /** §10.10 — score canonico ausente para o titular informado. */
 export const MSG_GENERATE_PDF_SCORE_AUSENTE =
-  'Perfil Individual ainda não foi respondido ou não passou pelo motor.';
+  'Perfil individual ainda não foi respondido ou não passou pelo motor.';
 
 // ============================================================
 // Enums e schemas Zod canonicos
@@ -271,7 +271,7 @@ export interface IndividualProfileReportInconsistente {
 /**
  * ME-1.11 Leva 2 — Discriminated union canonica retornada por
  * `getReport`. Substitui o retorno `IndividualProfileReport | null`
- * anterior, que colapsava "nao respondido" e "respondido mas
+ * anterior, que colapsava "não respondido" e "respondido mas
  * inconsistente" no mesmo `null` e fazia a modal do dashboard
  * individual exibir texto literalmente falso para o segundo caso.
  *
@@ -683,7 +683,7 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
           // aqui e defeito de infraestrutura, nao estado de negocio.
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: 'Tentativa pai do score nao encontrada.',
+            message: 'Tentativa pai do score não encontrada.',
           });
         }
 
@@ -855,7 +855,7 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
         if (!company) {
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: 'Empresa nao encontrada.',
+            message: 'Empresa não encontrada.',
           });
         }
 
@@ -883,7 +883,7 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
           nome = row?.name ?? '';
           cargo = row?.cargo ?? '';
           nivelHierarquico = 'estrategico';
-          departamento = 'Alta lideranca';
+          departamento = 'Alta liderança';
         } else {
           const [row] = await ctx.db
             .select({
@@ -909,30 +909,30 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
         const nn = (v: string | null): number => (v === null ? 0 : Number.parseFloat(v));
         subvetores.push(
           { bloco: 'Postura', rotulo: 'Assertividade e ritmo', valor: nn(score.post_assert) },
-          { bloco: 'Postura', rotulo: 'Orientacao a tarefas', valor: nn(score.post_tarefas) },
-          { bloco: 'Postura', rotulo: 'Orientacao a pessoas', valor: nn(score.post_pessoas) },
-          { bloco: 'Postura', rotulo: 'Comportamento sob pressao', valor: nn(score.post_pressao) },
-          { bloco: 'Estrutura', rotulo: 'Abertura a experiencia', valor: nn(score.est_abert) },
-          { bloco: 'Estrutura', rotulo: 'Disciplina e autogestao', valor: nn(score.est_disc) },
-          { bloco: 'Estrutura', rotulo: 'Extroversao', valor: nn(score.est_ext) },
+          { bloco: 'Postura', rotulo: 'Orientação a tarefas', valor: nn(score.post_tarefas) },
+          { bloco: 'Postura', rotulo: 'Orientação a pessoas', valor: nn(score.post_pessoas) },
+          { bloco: 'Postura', rotulo: 'Comportamento sob pressão', valor: nn(score.post_pressao) },
+          { bloco: 'Estrutura', rotulo: 'Abertura à experiência', valor: nn(score.est_abert) },
+          { bloco: 'Estrutura', rotulo: 'Disciplina e autogestão', valor: nn(score.est_disc) },
+          { bloco: 'Estrutura', rotulo: 'Extroversão', valor: nn(score.est_ext) },
           { bloco: 'Estrutura', rotulo: 'Amabilidade', valor: nn(score.est_amab) },
           { bloco: 'Estrutura', rotulo: 'Estabilidade emocional', valor: nn(score.est_estab) },
           { bloco: 'Motor', rotulo: 'Maestria', valor: nn(score.mot_maestria) },
-          { bloco: 'Motor', rotulo: 'Lideranca', valor: nn(score.mot_lideranca) },
+          { bloco: 'Motor', rotulo: 'Liderança', valor: nn(score.mot_lideranca) },
           { bloco: 'Motor', rotulo: 'Autonomia', valor: nn(score.mot_autonomia) },
-          { bloco: 'Motor', rotulo: 'Seguranca', valor: nn(score.mot_seguranca) },
-          { bloco: 'Motor', rotulo: 'Proposito', valor: nn(score.mot_proposito) },
-          { bloco: 'Equilibrio', rotulo: 'Autoconsciencia', valor: nn(score.equ_autocons) },
-          { bloco: 'Equilibrio', rotulo: 'Autogestao', valor: nn(score.equ_autogest) },
-          { bloco: 'Equilibrio', rotulo: 'Leitura do outro', valor: nn(score.equ_leitura) },
-          { bloco: 'Equilibrio', rotulo: 'Influencia e conducao', valor: nn(score.equ_influencia) },
-          { bloco: 'Equilibrio', rotulo: 'Indice geral', valor: nn(score.equ_indice) },
+          { bloco: 'Motor', rotulo: 'Segurança', valor: nn(score.mot_seguranca) },
+          { bloco: 'Motor', rotulo: 'Propósito', valor: nn(score.mot_proposito) },
+          { bloco: 'Equilíbrio', rotulo: 'Autoconsciência', valor: nn(score.equ_autocons) },
+          { bloco: 'Equilíbrio', rotulo: 'Autogestão', valor: nn(score.equ_autogest) },
+          { bloco: 'Equilíbrio', rotulo: 'Leitura do outro', valor: nn(score.equ_leitura) },
+          { bloco: 'Equilíbrio', rotulo: 'Influência e condução', valor: nn(score.equ_influencia) },
+          { bloco: 'Equilíbrio', rotulo: 'Índice geral', valor: nn(score.equ_indice) },
           { bloco: 'Assinatura', rotulo: 'Sabedoria', valor: nn(score.ass_sabed) },
           { bloco: 'Assinatura', rotulo: 'Coragem', valor: nn(score.ass_coragem) },
           { bloco: 'Assinatura', rotulo: 'Humanidade', valor: nn(score.ass_humanid) },
-          { bloco: 'Assinatura', rotulo: 'Justica', valor: nn(score.ass_justica) },
-          { bloco: 'Assinatura', rotulo: 'Temperanca', valor: nn(score.ass_temper) },
-          { bloco: 'Assinatura', rotulo: 'Transcendencia', valor: nn(score.ass_transc) },
+          { bloco: 'Assinatura', rotulo: 'Justiça', valor: nn(score.ass_justica) },
+          { bloco: 'Assinatura', rotulo: 'Temperança', valor: nn(score.ass_temper) },
+          { bloco: 'Assinatura', rotulo: 'Transcendência', valor: nn(score.ass_transc) },
         );
 
         const generatedAt = now();
@@ -941,7 +941,7 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
         // Lider direto (nome) para a identificacao do PDF. C-level nao
         // tem lider direto no modelo; employee resolve pelo historico
         // ativo (mesmo padrao do dashboard). Vazio quando nao ha vinculo.
-        let liderDiretoNome = 'Nao se aplica';
+        let liderDiretoNome = 'Não se aplica';
         if (input.userType === 'employee') {
           const leaderLink = await getActiveLeaderHistoryByEmployee(ctx.db, input.userId);
           if (leaderLink?.liderId != null) {
@@ -980,7 +980,7 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
         } catch (err) {
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: `Falha na geracao do PDF: ${(err as Error).message}`,
+            message: `Falha na geração do PDF: ${(err as Error).message}`,
           });
         }
 

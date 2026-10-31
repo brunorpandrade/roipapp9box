@@ -19,9 +19,9 @@
  * conversa ativa.
  */
 export const AI_CHAT_CHIPS_INDIVIDUAL = [
-  'Monte um roteiro para minha próxima conversa de feedback com esse colaborador.',
-  'Se eu tivesse 15 minutos com este colaborador sobre o que deveria falar?',
-  'Qual a relação entre o perfil individual e o desempenho desse colaborador nesse trimestre?',
+  'Monte um roteiro para minha próxima conversa de feedback com este colaborador.',
+  'Se eu tivesse 15 minutos com este colaborador, sobre o que deveria falar?',
+  'Qual a relação entre o perfil individual e o desempenho deste colaborador neste trimestre?',
 ] as const;
 
 /**

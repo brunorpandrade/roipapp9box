@@ -21,12 +21,12 @@
 //     desta ME (RV-13; convencao B1 estendida).
 //
 // Datas canonicas (DOC 06 §14.5):
-//   - instrumento_a e instrumento_c: `dataAbertura = dia 16 do ultimo mes
-//     do trimestre 00:00 fuso local`; `dataCorte = dia 10 do mes seguinte
+//   - instrumento_a e instrumento_c: `dataAbertura = dia 16 do último mês
+//     do trimestre 00:00 fuso local`; `dataCorte = dia 10 do mês seguinte
 //     ao trimestre 23:59:59 fuso local`.
 //   - instrumento_d: idem, so Q1 e Q3.
 //   - fechamento_mensal: `dataAbertura = dia 1 do mes 00:00`; `dataCorte
-//     = dia 10 do mes seguinte 23:59:59`.
+//     = dia 10 do mês seguinte 23:59:59`.
 //   - radar_nr1: fora do `refreshCycleSchedule` (criado pelo motor NR-1
 //     via `closeNR1Cycle` — DOC 03 §11).
 //
@@ -169,7 +169,7 @@ export async function refreshCycleSchedule(
     .where(eq(companies.id, companyId))
     .limit(1);
   if (!company) {
-    throw new Error(`refreshCycleSchedule: company ${companyId} nao existe`);
+    throw new Error(`refreshCycleSchedule: company ${companyId} não existe`);
   }
   const timeZone = company.timezone;
 

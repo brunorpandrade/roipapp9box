@@ -38,7 +38,7 @@ interface CredentialsDisplayModalProps {
   open: boolean;
   /**
    * Nome do titular (colaborador ou C-level) para contextualizar o
-   * cabecalho. Ex.: "Credenciais de Joao Silva".
+   * cabeçalho. Ex.: "Credenciais de João Silva".
    */
   nomeTitular: string;
   /** Matricula gerada (formato AA00). Sempre presente. */
@@ -91,12 +91,12 @@ export function CredentialsDisplayModal(props: CredentialsDisplayModalProps): JS
           }}
         >
           Copie e transmita estas credenciais ao colaborador pelo canal oficial da empresa (WhatsApp
-          corporativo, e-mail departamental, impresso). Elas serao exibidas apenas nesta tela — se
-          fechar sem copiar, sera necessario regenerar.
+          corporativo, e-mail departamental, impresso). Elas serão exibidas apenas nesta tela — se
+          fechar sem copiar, será necessário regenerar.
         </p>
 
         <CredentialRow
-          label="Matricula (para o portal do colaborador)"
+          label="Matrícula (para o portal do colaborador)"
           value={matricula}
           field="matricula"
           copied={copiedField === 'matricula'}
@@ -105,7 +105,7 @@ export function CredentialsDisplayModal(props: CredentialsDisplayModalProps): JS
 
         {senhaInicial !== null ? (
           <CredentialRow
-            label="Senha inicial (para o painel — sera trocada no primeiro acesso)"
+            label="Senha inicial (para o painel — será trocada no primeiro acesso)"
             value={senhaInicial}
             field="senha"
             copied={copiedField === 'senha'}

@@ -108,7 +108,7 @@ export type PlenitudeDataResult = typeof plenitudeData.$inferSelect;
  * plenitude da empresa Y).
  */
 /** Mensagem canonica de alvo fora da cadeia (S066 → PC1h). */
-const MSG_FORA_DA_CADEIA_PLENITUDE = 'Colaborador fora da cadeia direta do lider.';
+const MSG_FORA_DA_CADEIA_PLENITUDE = 'Colaborador fora da cadeia direta do líder.';
 
 function assertCompanyScopePlenitude(user: AuthenticatedUser, companyId: number): void {
   assertUserCompanyScope(user, companyId, 'Colaborador fora do escopo da empresa.');
@@ -184,13 +184,13 @@ export function createPlenitudeRouter() {
         if (!emp) {
           throw new TRPCError({
             code: 'NOT_FOUND',
-            message: 'Colaborador nao encontrado.',
+            message: 'Colaborador não encontrado.',
           });
         }
         if (emp.companyId !== input.companyId) {
           throw new TRPCError({
             code: 'NOT_FOUND',
-            message: 'Colaborador nao encontrado na empresa informada.',
+            message: 'Colaborador não encontrado na empresa informada.',
           });
         }
 

@@ -224,7 +224,7 @@ describe('employees.downloadTemplate — contratos publicos exportados', () => {
   });
 
   it('MSG_EMPRESA_NAO_ENCONTRADA_EXPORT eh literal canonica', () => {
-    expect(MSG_EMPRESA_NAO_ENCONTRADA_EXPORT).toBe('Empresa nao encontrada.');
+    expect(MSG_EMPRESA_NAO_ENCONTRADA_EXPORT).toBe('Empresa não encontrada.');
   });
 
   it('DOWNLOAD_EMPLOYEES_TEMPLATE_INPUT_SCHEMA aceita companyId inteiro positivo', () => {

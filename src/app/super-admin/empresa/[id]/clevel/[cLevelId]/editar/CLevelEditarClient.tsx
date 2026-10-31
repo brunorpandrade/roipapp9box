@@ -41,7 +41,7 @@ import { ModalTransferenciaRF } from '../../../_shared/ModalTransferenciaRF';
 // -----------------------------------------------------------------------
 
 const TRANSFERENCIA_LIDERADOS_TOOLTIP =
-  'Transferencia de liderados disponivel a partir da ME-078b.' as const;
+  'Transferência de liderados disponível a partir da ME-078b.' as const;
 
 // -----------------------------------------------------------------------
 // Estilos
@@ -464,7 +464,7 @@ export function CLevelEditarClient(props: Props): JSX.Element {
                 letterSpacing: '0.03em',
               }}
             >
-              {currentMatricula ?? '— nao provisionada —'}
+              {currentMatricula ?? '— não provisionada —'}
             </div>
           </div>
           <button

@@ -281,7 +281,7 @@ export async function salvarMetas(
     for (const linha of validacao.data) {
       const nome = nomes.get(linha.variableIndex);
       if (nome === undefined) {
-        throw new Error('salvarMetas: variavel sem nome resolvido');
+        throw new Error('salvarMetas: variável sem nome resolvido');
       }
       const valores = {
         jobFamily: emp.jobFamily,

@@ -276,7 +276,7 @@ const GROUP_LABELS: Record<CandidateGroup, string> = {
   clevel_ativo: 'C-LEVELS ATIVOS',
   mesmo_departamento: 'MESMO DEPARTAMENTO',
   demais_lideres: 'DEMAIS LÍDERES',
-  nao_lider: 'COLABORADORES NÃO-LÍDERES · CONFIRMAÇÃO NECESSÁRIA',
+  nao_lider: 'COLABORADORES NÃO LÍDERES · CONFIRMAÇÃO NECESSÁRIA',
   condicional: 'LIDERADOS DESTA TRANSFERÊNCIA · CONDICIONAL',
 };
 
@@ -379,7 +379,7 @@ export function ModalTransferenciaLiderados(props: ModalTransferenciaLideradosPr
         <div style={INFO_BLOCK_STYLE}>
           {liderName} tem <strong>{liderados.length} liderado(s) direto(s) ativo(s)</strong>.
           Selecione um novo líder para cada um antes de prosseguir. C-levels e demais líderes da
-          empresa são elegíveis. Colaboradores não-líderes exigem confirmação de promoção.
+          empresa são elegíveis. Colaboradores não líderes exigem confirmação de promoção.
         </div>
         {/* ME-ORG-01-B D4 FIX1 — seção canônica "transferir todos para
             um único líder". Dropdown aplica o mesmo alvo a todos os
@@ -406,7 +406,7 @@ export function ModalTransferenciaLiderados(props: ModalTransferenciaLideradosPr
             style={SELECT_STYLE}
             disabled={isSubmitting}
           >
-            <option value="">Selecione um líder e aplicar a todos...</option>
+            <option value="">Selecione um líder para aplicar a todos...</option>
             {GROUP_ORDER.map((group) => {
               const items = candidatesByGroup[group];
               if (items.length === 0) return null;

@@ -15,7 +15,7 @@
 // ME-B9.14 (04/10/2026) — rename canonico pos-ME-B9.13: botao, titulo do
 // modal, aria-labels, selo e toast migrados de "metas" para "variaveis de
 // desempenho / capacidade maxima". F6 (lideranca_gestao): coluna
-// "Capacidade maxima" OCULTADA (valor fixo em 5 nao editavel; texto
+// "Capacidade máxima" OCULTADA (valor fixo em 5 não editável; texto
 // explicativo acima do modal ja comunica a escala Likert 1-5).
 //
 // Permissao e gravacao decididas no servidor (`salvarMetasAction`).

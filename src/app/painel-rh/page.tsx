@@ -14,7 +14,7 @@
 // - DOC 05 §5.5 (Painel RH — 5 secoes canonicas com variacao por cenario
 //   RH puro / RH-Lider C1 / RH-Lider C2).
 // - DOC 05 §5.1 (estrutura comum a paineis).
-// - DOC 05 §5.8 (Card resumo "Pendencias no portal" — RH puro/RHL1/RHL2).
+// - DOC 05 §5.8 (Card resumo "Pendências no portal" — RH puro/RHL1/RHL2).
 // - DOC 05 §4 (Header canonico `leftMode='in_company'`).
 // - DOC 02 §10.3 linha 808 (matriz Bruno redirect_painel; RH, RH-Lider
 //   e clevel+isRH allow; Lider deny).

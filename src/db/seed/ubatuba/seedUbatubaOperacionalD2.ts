@@ -100,7 +100,7 @@ async function ensureUbatubaCompanyExists(db: RoipDatabase): Promise<void> {
     .where(eq(companies.id, UBATUBA_COMPANY_ID));
   if (rows.length === 0) {
     throw new UbatubaOperacionalD2PreconditionError(
-      `Bebidas Ubatuba (companies.id=${UBATUBA_COMPANY_ID}) nao encontrada. ` +
+      `Bebidas Ubatuba (companies.id=${UBATUBA_COMPANY_ID}) não encontrada. ` +
         `Rode 'npm run seed:ubatuba' primeiro (seed estrutural ME-080b).`,
     );
   }
@@ -263,7 +263,7 @@ export async function seedUbatubaOperacionalD2(
     skippedTables: Object.freeze(skippedTables),
     reason: applied
       ? undefined
-      : `Todas as tabelas D2 ja semeadas em Ubatuba. Nenhum INSERT aplicado.`,
+      : `Todas as tabelas D2 já semeadas em Ubatuba. Nenhum INSERT aplicado.`,
   };
   return result;
 }

@@ -12,7 +12,7 @@ import {
 } from '../../src/lib/instruments/instrumentsDemoRegistry';
 
 describe('instrumentsDemoRegistry', () => {
-  it('ordem canonica — A, B, C, D, Perfil Individual', () => {
+  it('ordem canonica — A, B, C, D, Perfil individual', () => {
     const entries = listInstrumentDemoEntries();
     expect(entries.map((e) => e.id)).toEqual([
       'instrumento-a',

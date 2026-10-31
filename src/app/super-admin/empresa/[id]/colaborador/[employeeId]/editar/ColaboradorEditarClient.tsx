@@ -352,7 +352,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
   const [showDesmarcarM2Modal, setShowDesmarcarM2Modal] = useState(false);
   const [desmarcarM2Error, setDesmarcarM2Error] = useState<string | null>(null);
   // ME-ORG-01-B D4 FIX3 — contador canonico de reset do form. Quando o
-  // usuario desliga o toggle "Permitir acesso como Lider" e cancela o
+  // usuário desliga o toggle "Permitir acesso como Líder" e cancela o
   // modal D4, incrementamos este contador para forcar remontagem do
   // `ColaboradorForm` via `key` canonica — o estado interno `useState`
   // do form reinicializa com `initialValues` e o toggle visual volta
@@ -469,7 +469,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
                 countLiderados: item.liderados,
               });
             }
-            // ME-ORG-01-B D4 FIX2 — fluxo "Desmarcar como lider" NAO
+            // ME-ORG-01-B D4 FIX2 — fluxo "Desmarcar como líder" NÃO
             // promove colaboradores nao-lideres a lider (diferentemente
             // do fluxo original de inativacao+desligamento, que preserva
             // o Grupo 4 canonicamente). Dropdown deve exibir apenas
@@ -646,7 +646,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
     try {
       const ok = await performUpdate(null);
       if (ok) {
-        setSuccessMsg('Alteracoes salvas com sucesso.');
+        setSuccessMsg('Alterações salvas com sucesso.');
       }
     } catch {
       setErrorMsg('Falha de rede ao salvar. Tente novamente.');
@@ -663,7 +663,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
         const ok = await performUpdate(justificativa);
         if (ok) {
           setShowRFModal(false);
-          setSuccessMsg('Responsavel financeiro transferido com sucesso.');
+          setSuccessMsg('Responsável financeiro transferido com sucesso.');
         }
       } catch {
         setRfModalError('Falha de rede ao transferir. Tente novamente.');
@@ -680,7 +680,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
     // lider ativo (independente de ter liderados), bloqueia a
     // inativacao com texto literal "Desmarque como lider antes de
     // inativar colaborador". O usuario precisa desligar o toggle
-    // "Permitir acesso como Lider" para prosseguir — fluxo canonico
+    // "Permitir acesso como Líder" para prosseguir — fluxo canônico
     // dispara ModalTransferenciaLiderados (M2 v2) via caminho de
     // handleValuesChange quando ha liderados ativos (D4), ou aplica
     // isLider=false direto via Salvar quando nao ha.
@@ -848,7 +848,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
     [guardarTransferenciaENavegar, m2MotivoSelecionado],
   );
 
-  // ME-ORG-01-B D4 — handler canonico do fluxo "Desmarcar como lider":
+  // ME-ORG-01-B D4 — handler canônico do fluxo "Desmarcar como líder":
   // recebe o mapeamento confirmado no M2 v2 (modal reusado bit-a-bit),
   // chama a action nova `desmarcarComoLider` (procedure atomica
   // `employees.unmarkAsLeader`) e, ao sucesso, dispara `router.refresh`
@@ -885,7 +885,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
           return;
         }
         setShowDesmarcarM2Modal(false);
-        setSuccessMsg('Colaborador desmarcado como lider; liderados reatribuidos.');
+        setSuccessMsg('Colaborador desmarcado como líder; liderados reatribuídos.');
         router.refresh();
       } finally {
         setSaving(false);
@@ -1056,7 +1056,7 @@ export function ColaboradorEditarClient(props: Props): JSX.Element {
                 ? initialEmployee.passwordSet
                   ? 'Configurada pelo colaborador'
                   : 'Aguardando primeiro acesso (senha inicial pendente)'
-                : 'Sem acesso ao painel (marque Lider, RH ou RF)'}
+                : 'Sem acesso ao painel (marque Líder, RH ou RF)'}
             </div>
           </div>
           <button

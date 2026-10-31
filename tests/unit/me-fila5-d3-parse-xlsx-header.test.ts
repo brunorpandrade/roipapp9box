@@ -146,7 +146,7 @@ describe('buildHeaderMismatchMessage — mensagens canonicas', () => {
 
   it('fallback quando ambos vazios', () => {
     const msg = buildHeaderMismatchMessage([], []);
-    expect(msg).toBe('Cabecalho do arquivo diverge do modelo canonico.');
+    expect(msg).toBe('Cabeçalho do arquivo diverge do modelo canônico.');
   });
 });
 

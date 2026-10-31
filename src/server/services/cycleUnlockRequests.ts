@@ -18,7 +18,7 @@
 //
 // `hasPendingUnlockRequest` alimenta o gate do botao `[Solicitar
 // desbloqueio]` (D051/D053): quando `true`, o botao e substituido pelo
-// badge "Solicitacao em analise".
+// badge "Solicitação em análise".
 
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
 

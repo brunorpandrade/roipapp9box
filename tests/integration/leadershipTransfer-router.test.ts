@@ -305,23 +305,23 @@ const REASON_VALIDA =
 describe('leadershipTransfer — contratos publicos exportados', () => {
   it('mensagens literais canonicas §14.11 batem verbatim', () => {
     expect(MSG_BLOQUEIO_PREVIO_SEM_CANDIDATO).toBe(
-      'Nao e possivel inativar {nome}. Nao ha nenhum outro C-level ou colaborador com ' +
+      'Não é possível inativar {nome}. Não há nenhum outro C-level ou colaborador com ' +
         'isLider=true ativo na empresa. Cadastre outro C-level ou promova um colaborador a ' +
-        'Lider antes de prosseguir.',
+        'Líder antes de prosseguir.',
     );
     expect(MSG_LOOP_CONDICIONAL_VIOLADO).toBe(
-      'Este colaborador precisa ter novo lider atribuido antes de poder liderar outros.',
+      'Este colaborador precisa ter novo líder atribuído antes de poder liderar outros.',
     );
     expect(MSG_EMAIL_VAZIO_GRUPO_4).toBe(
-      'E-mail obrigatorio para ativar acesso como Lider. Cadastre o e-mail em C3e antes.',
+      'E-mail obrigatório para ativar acesso como Líder. Cadastre o e-mail em C3e antes.',
     );
-    expect(MSG_JUSTIFICATIVA_MIN_100).toBe('A justificativa deve ter no minimo 100 caracteres.');
-    expect(MSG_JUSTIFICATIVA_MAX_500).toBe('A justificativa deve ter no maximo 500 caracteres.');
-    expect(MSG_COMPANY_MISMATCH_LT).toBe('Colaborador nao pertence a sua empresa.');
-    expect(MSG_EMPLOYEE_NAO_ENCONTRADO_LT).toBe('Colaborador nao encontrado.');
-    expect(MSG_CANDIDATO_NAO_ENCONTRADO_LT).toBe('Candidato nao encontrado.');
+    expect(MSG_JUSTIFICATIVA_MIN_100).toBe('A justificativa deve ter no mínimo 100 caracteres.');
+    expect(MSG_JUSTIFICATIVA_MAX_500).toBe('A justificativa deve ter no máximo 500 caracteres.');
+    expect(MSG_COMPANY_MISMATCH_LT).toBe('Colaborador não pertence à sua empresa.');
+    expect(MSG_EMPLOYEE_NAO_ENCONTRADO_LT).toBe('Colaborador não encontrado.');
+    expect(MSG_CANDIDATO_NAO_ENCONTRADO_LT).toBe('Candidato não encontrado.');
     expect(MSG_NOVO_LIDER_INVALIDO_LT).toBe(
-      'Novo lider indicado nao existe, nao pertence a esta empresa ou nao esta ativo.',
+      'Novo líder indicado não existe, não pertence a esta empresa ou não está ativo.',
     );
   });
 

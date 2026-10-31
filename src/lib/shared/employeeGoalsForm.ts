@@ -6,7 +6,7 @@
 //
 // ME-B9.14 (04/10/2026) — rename canonico pos-ME-B9.13: "meta" -> "variavel
 // de desempenho / capacidade maxima" na terminologia UI. Para Familia 6
-// (lideranca e gestao), a coluna "Capacidade maxima" e OCULTADA no modal
+// (liderança e gestão), a coluna "Capacidade máxima" é OCULTADA no modal
 // porque o valor e fixo em 5 (teto da escala Likert 1-5) e nao editavel —
 // mostrar coluna com valores bloqueados em "5" era ruido visual. Texto
 // explicativo da F6 reformulado para explicar a natureza da escala em vez

@@ -3,7 +3,7 @@
 // Cobre canonicamente a emissao do card `meuPerfil` do
 // `pendenciasEngine` para C-levels, corrigindo o blocker de producao
 // em que Marcio (CEO) e Michelle (COO) da Embrastec nao conseguiam
-// acessar o Perfil Individual via `/meu-portal/perfil-individual`.
+// acessar o Perfil individual via `/meu-portal/perfil-individual`.
 //
 // Causa raiz canonica (RV-01 dirigida contra HEAD `ae6db66`):
 //   `src/lib/pendencias/pendenciasEngine.ts` bloco 1 (meuPerfil)

@@ -107,7 +107,7 @@ export default async function HistoricoPage(props: PageProps): Promise<JSX.Eleme
     // rotas literais e retornam 404.
     const menuItems = resolveMenuItems(profileKey, false, companyId);
     if (menuItems === null) {
-      throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
+      throw new Error(`Menu canônico ausente para ${profileKey} — inconsistência §3`);
     }
 
     const listResult = await loadCompanyHistoryPage(client.db, companyId, filters);

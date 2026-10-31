@@ -108,7 +108,7 @@ function FinanceiroCard(props: { readonly data: CompanyAggregatePage }): JSX.Ele
           color: ZONA_COLOR[zona],
           subtexto: faixa,
         })}
-        {item('Status diagnóstico econômico', status === null ? '—' : STATUS_LABEL[status], {
+        {item('Status do diagnóstico econômico', status === null ? '—' : STATUS_LABEL[status], {
           color: status === null ? undefined : STATUS_COLOR[status],
         })}
       </div>

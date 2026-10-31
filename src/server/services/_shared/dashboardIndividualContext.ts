@@ -109,7 +109,7 @@ function deriveTrimestreAtual(latestQuarterly: { trimestre: string } | null): st
  *
  * Regra canonica minimalista nesta ME: `role === 'lider'` bloqueia.
  * Cadeia direta de liderado nao muda o bloqueio (o preambulo canonico
- * do DOC 04 §5.6 e "quando o usuario logado E LIDER" — nao "quando
+ * do DOC 04 §5.6 e "quando o usuário logado É LÍDER" — não "quando
  * lidera a pessoa em questao"). A subordinacao direta ja e checada
  * antes deste loader, na proc do router.
  */

@@ -625,7 +625,7 @@ describe('nr1.closeCycle — proc interna exposta como super_admin (S208/S216)',
     ] as const) {
       const caller = callerFor(await tokenFor(role, userId, companyId));
       await expect(caller.closeCycle({ cicloDbId: 1 })).rejects.toThrow(
-        'Perfil sem permissao para a rota.',
+        'Perfil sem permissão para a rota.',
       );
     }
   });
@@ -714,7 +714,7 @@ describe('nr1.getCycleDetails e getCollectionStatus — leitura consolidada', ()
     ] as const) {
       const caller = callerFor(await tokenFor(role, userId, companyId));
       await expect(caller.getCycleDetails({ companyId })).rejects.toThrow(
-        'Perfil sem permissao para a rota.',
+        'Perfil sem permissão para a rota.',
       );
     }
 

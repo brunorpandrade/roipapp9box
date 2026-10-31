@@ -338,38 +338,38 @@ function baseCreatePayload(companyId: number) {
 
 describe('employees — contratos publicos exportados', () => {
   it('mensagens canonicas literais batem o texto exato', () => {
-    expect(MSG_COMPANY_MISMATCH_EMP).toBe('Colaborador nao pertence a sua empresa.');
-    expect(MSG_EMPLOYEE_NAO_ENCONTRADO).toBe('Colaborador nao encontrado.');
-    expect(MSG_CPF_DUPLICADO).toBe('Ja existe colaborador cadastrado com este CPF nesta empresa.');
+    expect(MSG_COMPANY_MISMATCH_EMP).toBe('Colaborador não pertence à sua empresa.');
+    expect(MSG_EMPLOYEE_NAO_ENCONTRADO).toBe('Colaborador não encontrado.');
+    expect(MSG_CPF_DUPLICADO).toBe('Já existe colaborador cadastrado com este CPF nesta empresa.');
     expect(MSG_DELETE_COLABORADOR_ATIVO).toBe(
-      'Colaborador ativo nao pode ser deletado. Inative antes.',
+      'Colaborador ativo não pode ser deletado. Inative antes.',
     );
     expect(MSG_DELETE_COM_HISTORICO).toBe(
-      'Colaborador possui dados historicos. Deletar nao e permitido; mantenha inativo.',
+      'Colaborador possui dados históricos. Deletar não é permitido; mantenha inativo.',
     );
     expect(MSG_DELETE_RF_BLOQUEADO).toBe(
-      'Nao e possivel excluir o Responsavel financeiro. Transfira o papel antes de excluir.',
+      'Não é possível excluir o Responsável financeiro. Transfira o papel antes de excluir.',
     );
     expect(MSG_INACTIVATE_RF_BLOQUEADO).toBe(
-      'Este colaborador e o Responsavel financeiro da empresa. Antes de inativar, ' +
-        'atribua o papel de Responsavel financeiro a outro colaborador.',
+      'Este colaborador é o Responsável financeiro da empresa. Antes de inativar, ' +
+        'atribua o papel de Responsável financeiro a outro colaborador.',
     );
     expect(MSG_LIDER_COM_LIDERADOS_USE_M2V2).toBe(
       'Este colaborador possui liderados ativos. Use leadershipTransfer.execute ' +
-        'para transferir liderados e inativar em transacao atomica canonica (§14.9).',
+        'para transferir liderados e inativar em transação atômica canônica (§14.9).',
     );
     expect(MSG_MOTIVO_SAIDA_OBRIGATORIO).toBe(
-      'Selecione o motivo de saida (voluntario ou involuntario) antes de confirmar a inativacao.',
+      'Selecione o motivo de saída (voluntário ou involuntário) antes de confirmar a inativação.',
     );
     expect(MSG_TOGGLE_RF_FORA_ESCOPO).toBe(
-      'Alteracao de Responsavel financeiro nao e permitida por esta rota; ' +
+      'Alteração de Responsável financeiro não é permitida por esta rota; ' +
         'use company.setResponsavelFinanceiro.',
     );
     expect(MSG_ISRH_APENAS_BRUNO).toBe('Apenas o Super Admin pode alterar o acesso como RH.');
-    expect(MSG_JA_INATIVO).toBe('Colaborador ja esta inativo.');
-    expect(MSG_JA_ATIVO).toBe('Colaborador ja esta ativo.');
+    expect(MSG_JA_INATIVO).toBe('Colaborador já está inativo.');
+    expect(MSG_JA_ATIVO).toBe('Colaborador já está ativo.');
     expect(MSG_LIDER_INICIAL_INVALIDO).toBe(
-      'Lider informado nao existe, nao pertence a esta empresa ou nao esta ativo.',
+      'Líder informado não existe, não pertence a esta empresa ou não está ativo.',
     );
   });
 
@@ -383,7 +383,7 @@ describe('employees — contratos publicos exportados', () => {
     // ME-B9.2 patch1 em `companies.logoUrl`.
     expect(PHOTO_URL_MAX_LENGTH).toBe(400 * 1024);
     expect(REASON_CADASTRO_INICIAL).toBe('Cadastro inicial do colaborador');
-    expect(REASON_REATIVACAO).toBe('Reativacao do colaborador');
+    expect(REASON_REATIVACAO).toBe('Reativação do colaborador');
     expect(MYSQL_ERR_DUP_ENTRY).toBe(1062);
     expect(MYSQL_ERR_ROW_IS_REFERENCED).toBe(1451);
   });

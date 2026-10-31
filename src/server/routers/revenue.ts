@@ -72,29 +72,29 @@ export const FATURAMENTO_SCALE = 2 as const;
 // ============================================================
 
 /** §2.4 — guard cruzado companyId. */
-export const MSG_COMPANY_MISMATCH_REV = 'Empresa nao pertence ao seu escopo.' as const;
+export const MSG_COMPANY_MISMATCH_REV = 'Empresa não pertence ao seu escopo.' as const;
 
 /** §5.10 — empresa alvo nao encontrada. */
-export const MSG_COMPANY_NAO_ENCONTRADA_REV = 'Empresa nao encontrada.' as const;
+export const MSG_COMPANY_NAO_ENCONTRADA_REV = 'Empresa não encontrada.' as const;
 
 /** §5.10 — mes fechado e nao pode receber faturamento sem desbloqueio. */
 export const MSG_MES_FECHADO_REV =
-  'Mes fechado. Solicite desbloqueio antes de gravar faturamento.' as const;
+  'Mês fechado. Solicite desbloqueio antes de gravar faturamento.' as const;
 
 /** §5.6 — perfil sem RF tentando gravar faturamento. */
 export const MSG_SAVE_FATURAMENTO_NAO_RF =
-  'Apenas o Responsavel financeiro pode gravar o faturamento mensal.' as const;
+  'Apenas o Responsável financeiro pode gravar o faturamento mensal.' as const;
 
 /** §9.11 — perfil sem RF tentando ler o faturamento mensal (bateria de seguranca). */
 export const MSG_GET_FATURAMENTO_NAO_RF =
-  'Apenas o Responsavel financeiro pode consultar o faturamento mensal.' as const;
+  'Apenas o Responsável financeiro pode consultar o faturamento mensal.' as const;
 
 /** §5.10 — faturamento invalido (nao numerico ou <= 0). */
 export const MSG_FATURAMENTO_INVALIDO =
-  'Faturamento invalido; informe um valor numerico maior que zero.' as const;
+  'Faturamento inválido; informe um valor numérico maior que zero.' as const;
 
 /** §5.10 — mes fora do formato canonico YYYY-MM. */
-export const MSG_MES_FORMATO_INVALIDO = 'Mes deve estar no formato YYYY-MM.' as const;
+export const MSG_MES_FORMATO_INVALIDO = 'Mês deve estar no formato YYYY-MM.' as const;
 
 // ============================================================
 // Zod schemas de entrada
@@ -105,7 +105,7 @@ const mesSchemaRev = z.string().regex(/^\d{4}-\d{2}$/, { message: MSG_MES_FORMAT
 const faturamentoSchema = z.union([
   z.number(),
   z.string().refine((v) => v.trim().length > 0 && !Number.isNaN(Number(v)), {
-    message: 'faturamentoBruto invalido.',
+    message: 'faturamentoBruto inválido.',
   }),
 ]);
 

@@ -42,13 +42,13 @@ describe('typeDictionary — enum canonico + metadata bit-exact', () => {
     );
     expect(TIPO_DICTIONARY.nr1_ciclo_fechado.rotuloLegivel).toBe('Ciclo do Radar NR-1 encerrado');
     expect(TIPO_DICTIONARY.perfil_inconsistente_primeira.rotuloLegivel).toBe(
-      'Perfil Individual do colaborador com inconsistência',
+      'Perfil individual do colaborador com inconsistência',
     );
     expect(TIPO_DICTIONARY.perfil_retest_consistente.rotuloLegivel).toBe(
-      'Perfil Individual — resposta consistente após reteste',
+      'Perfil individual — resposta consistente após reteste',
     );
     expect(TIPO_DICTIONARY.perfil_retest_reincidente.rotuloLegivel).toBe(
-      'Perfil Individual com inconsistência após reteste',
+      'Perfil individual com inconsistência após reteste',
     );
     expect(TIPO_DICTIONARY.desbloqueio_solicitado.rotuloLegivel).toBe(
       'Solicitação de desbloqueio de mês',

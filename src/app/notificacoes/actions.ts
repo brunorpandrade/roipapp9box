@@ -72,7 +72,7 @@ function resolveDestinatario(session: ServerSession): DestinatarioContext {
     return { tipo: 'rh', employeeId: session.userId };
   }
   throw new Error(
-    `resolveDestinatario: role ${session.role} nao habilitada em /notificacoes ` +
+    `resolveDestinatario: role ${session.role} não habilitada em /notificacoes ` +
       '(middleware §10.5 deveria ter bloqueado)',
   );
 }
@@ -85,7 +85,7 @@ function resolveDestinatario(session: ServerSession): DestinatarioContext {
 async function requireSession(): Promise<ServerSession> {
   const session = await getServerSession();
   if (session === null) {
-    throw new Error('requireSession: sessao ausente — usuario deve reautenticar');
+    throw new Error('requireSession: sessão ausente — usuário deve reautenticar');
   }
   return session;
 }

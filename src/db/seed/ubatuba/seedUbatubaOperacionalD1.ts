@@ -113,7 +113,7 @@ async function ensureUbatubaCompanyExists(db: RoipDatabase): Promise<void> {
     .where(eq(companies.id, UBATUBA_COMPANY_ID));
   if (rows.length === 0) {
     throw new UbatubaOperacionalD1PreconditionError(
-      `Bebidas Ubatuba (companies.id=${UBATUBA_COMPANY_ID}) nao encontrada. ` +
+      `Bebidas Ubatuba (companies.id=${UBATUBA_COMPANY_ID}) não encontrada. ` +
         `Rode 'npm run seed:ubatuba' primeiro (seed estrutural ME-080b).`,
     );
   }
@@ -176,7 +176,7 @@ export async function seedUbatubaOperacionalD1(
     const elhRows = deriveUbatubaEmployeeLeaderHistory();
     if (elhRows.length !== UBATUBA_EMPLOYEE_LEADER_HISTORY_TOTAL_ESPERADO) {
       throw new Error(
-        `seedUbatubaOperacionalD1: contagem canonica quebrada — ` +
+        `seedUbatubaOperacionalD1: contagem canônica quebrada — ` +
           `esperado ${UBATUBA_EMPLOYEE_LEADER_HISTORY_TOTAL_ESPERADO}, ` +
           `derivado ${elhRows.length}.`,
       );
@@ -208,7 +208,7 @@ export async function seedUbatubaOperacionalD1(
     const goalsRows = deriveUbatubaEmployeeGoals();
     if (goalsRows.length !== UBATUBA_EMPLOYEE_GOALS_TOTAL_ESPERADO) {
       throw new Error(
-        `seedUbatubaOperacionalD1: contagem canonica quebrada — ` +
+        `seedUbatubaOperacionalD1: contagem canônica quebrada — ` +
           `esperado ${UBATUBA_EMPLOYEE_GOALS_TOTAL_ESPERADO}, ` +
           `derivado ${goalsRows.length}.`,
       );
@@ -237,7 +237,7 @@ export async function seedUbatubaOperacionalD1(
     skippedTables: Object.freeze(skippedTables),
     reason: applied
       ? undefined
-      : `Todas as tabelas D1 ja semeadas em Ubatuba. Nenhum INSERT aplicado.`,
+      : `Todas as tabelas D1 já semeadas em Ubatuba. Nenhum INSERT aplicado.`,
   };
   return result;
 }

@@ -73,7 +73,7 @@ export type PendenciaStatus = 'Pendente' | 'Atrasado';
  * divergencia entre canais platform e portal.
  */
 export const INSTRUMENT_LABEL: Readonly<Record<InstrumentType, string>> = Object.freeze({
-  meuPerfil: 'Perfil Individual',
+  meuPerfil: 'Perfil individual',
   autoAvaliacao: 'Autoavaliação',
   avaliacaoLiderancaDireta: 'Avaliação da liderança direta',
   radarNR1: 'Radar NR-1',
@@ -215,7 +215,7 @@ export function formatCooldownTimestamp(data: Date): string {
 
 /**
  * Formata contador canonico do sub do card resumo §5.8 linha 644:
- * *"pendencias totais na empresa"* — literal invariavel. Retornado como
+ * *"pendências totais na empresa"* — literal invariavel. Retornado como
  * constante para eliminar risco de digitacao divergente no cliente.
  */
 export const CARD_58_SUB_POSITIVE = 'pendências totais na empresa';
@@ -247,6 +247,6 @@ export const COOLDOWN_LEMBRETE_MS = 72 * 60 * 60 * 1000;
 
 /**
  * Cooldown canonico em horas para exibicao textual (literal do modal
- * individual §14.23 linha 2652: "Cooldown de 72h aplicado apos o envio").
+ * individual §14.23 linha 2652: "Cooldown de 72h aplicado após o envio").
  */
 export const COOLDOWN_LEMBRETE_HORAS = 72;

@@ -221,7 +221,7 @@ describe('ME-B9-CR3 — requireClevelOrSuperAdmin narrowing canonico', () => {
   });
 
   it('rejeita null', () => {
-    expect(() => requireClevelOrSuperAdmin(null, 'test')).toThrow(/sessao ausente/);
+    expect(() => requireClevelOrSuperAdmin(null, 'test')).toThrow(/sessão ausente/);
   });
 });
 

@@ -51,7 +51,7 @@ export async function closeLeaderHistoryEntry(
 
 /**
  * Retorna o vinculo ATUAL ativo de um colaborador (o unico com
- * `dataFim IS NULL` — §4.6 "NULL indica vinculo atual ativo"). Retorna
+ * `dataFim IS NULL` — §4.6 "NULL indica vínculo atual ativo"). Retorna
  * `undefined` se nao houver vinculo ativo (colaborador sem lider registrado
  * ou historico integralmente fechado).
  */

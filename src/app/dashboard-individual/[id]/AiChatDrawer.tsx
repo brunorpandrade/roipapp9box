@@ -593,7 +593,7 @@ export function AiChatDrawer(props: AiChatDrawerProps): JSX.Element {
         <>
           <div style={MESSAGES_AREA}>
             {loadingInitial ? (
-              <p style={{ fontSize: 12, color: COLORS.text.tertiary }}>Carregando historico...</p>
+              <p style={{ fontSize: 12, color: COLORS.text.tertiary }}>Carregando histórico...</p>
             ) : messages.length === 0 && !enviando && erro === null ? (
               <div>
                 <p

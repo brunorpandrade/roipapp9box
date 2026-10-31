@@ -35,7 +35,7 @@ import {
 } from '../../src/server/services/claudeCall';
 
 const CANON_OPTS: ClaudeCallOpts = {
-  systemPrompt: 'system canonico do Perfil Individual',
+  systemPrompt: 'system canonico do Perfil individual',
   userPrompt: '{"identificacao": {"nome": "Fulano"}}',
   maxTokens: 8000,
   temperature: 0.3,

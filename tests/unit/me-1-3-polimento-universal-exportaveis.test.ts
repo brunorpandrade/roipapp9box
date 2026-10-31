@@ -12,7 +12,7 @@
 //   canonicos que emitiam `YYYY-QN` cru agora delegam bit-exact a
 //   `formatTrimestreBR` (helper L125 RV-14 compartilhado,
 //   estabelecido em ME-B11.1c PATCH2).
-// - D-DATA-APLICACAO-ISO-CRU: 1 call site (Perfil Individual PDF)
+// - D-DATA-APLICACAO-ISO-CRU: 1 call site (Perfil individual PDF)
 //   que emitia `YYYY-MM-DD` cru agora delega bit-exact a
 //   `formatDateBR`.
 // - Validacao estrutural: o helper `formatTrimestreBR` canonicamente

@@ -104,7 +104,7 @@ describe('signPortalToken — TTL default retrocompativel (S042)', () => {
 describe('signPortalToken — TTL customizado para respondente platform (S251)', () => {
   it('constante PORTAL_SESSION_TTL_SECONDS_PLATFORM_TEMP = 3600 segundos (60 min)', async () => {
     // ME-B10-04 CC079 acumulativo: ampliado de 10 min para 60 min por
-    // cobrir Perfil Individual (80 itens em 10 blocos, ~30-60 min).
+    // cobrir Perfil individual (80 itens em 10 blocos, ~30-60 min).
     const mod = await importarModulo();
     expect(mod.PORTAL_SESSION_TTL_SECONDS_PLATFORM_TEMP).toBe(60 * 60);
   });

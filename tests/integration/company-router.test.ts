@@ -268,24 +268,24 @@ const JUSTIFICATIVA_OK =
 
 describe('company — contratos publicos exportados', () => {
   it('mensagens canonicas literais batem o texto exato', () => {
-    expect(MSG_COMPANY_MISMATCH_RF).toBe('Empresa nao pertence ao seu escopo.');
-    expect(MSG_COMPANY_NAO_ENCONTRADA_RF).toBe('Empresa nao encontrada.');
-    expect(MSG_NEW_HOLDER_NAO_ENCONTRADO_RF).toBe('Novo titular nao encontrado.');
-    expect(MSG_NEW_HOLDER_INATIVO_RF).toBe('Novo titular esta inativo e nao pode receber o papel.');
-    expect(MSG_NEW_HOLDER_EMPRESA_DIVERGENTE_RF).toBe('Novo titular nao pertence a esta empresa.');
+    expect(MSG_COMPANY_MISMATCH_RF).toBe('Empresa não pertence ao seu escopo.');
+    expect(MSG_COMPANY_NAO_ENCONTRADA_RF).toBe('Empresa não encontrada.');
+    expect(MSG_NEW_HOLDER_NAO_ENCONTRADO_RF).toBe('Novo titular não encontrado.');
+    expect(MSG_NEW_HOLDER_INATIVO_RF).toBe('Novo titular está inativo e não pode receber o papel.');
+    expect(MSG_NEW_HOLDER_EMPRESA_DIVERGENTE_RF).toBe('Novo titular não pertence a esta empresa.');
     expect(MSG_NEW_HOLDER_JA_E_RF).toBe(
-      'O titular indicado ja e o Responsavel financeiro vigente.',
+      'O titular indicado já é o Responsável financeiro vigente.',
     );
     expect(MSG_TRANSFER_JUSTIFICATIVA_MIN).toBe(
-      'A justificativa deve ter no minimo 100 caracteres.',
+      'A justificativa deve ter no mínimo 100 caracteres.',
     );
     expect(MSG_TRANSFER_JUSTIFICATIVA_MAX).toBe(
-      'A justificativa deve ter no maximo 500 caracteres.',
+      'A justificativa deve ter no máximo 500 caracteres.',
     );
     expect(MSG_TRANSFER_JUSTIFICATIVA_OBRIGATORIA).toBe(
-      'Transferencia de Responsavel financeiro exige justificativa.',
+      'Transferência de Responsável financeiro exige justificativa.',
     );
-    expect(REASON_ATRIBUIDO_CANONICA).toBe('Primeira atribuicao de Responsavel financeiro');
+    expect(REASON_ATRIBUIDO_CANONICA).toBe('Primeira atribuição de Responsável financeiro');
   });
 
   it('constantes canonicas de tamanho batem o schema', () => {

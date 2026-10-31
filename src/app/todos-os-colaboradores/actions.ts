@@ -88,7 +88,7 @@ export async function listarColaboradoresRHAction(
       companyIdIgnored > 0 &&
       companyIdIgnored !== companyId
     ) {
-      throw new Error('listarColaboradoresRHAction: companyId divergente da sessao.');
+      throw new Error('listarColaboradoresRHAction: companyId divergente da sessão.');
     }
     const serviceInput = colaboradoresFiltersToServiceInput(filters);
     const result = await listEmployeesPaginated(client.db, companyId, serviceInput);
@@ -118,7 +118,7 @@ export async function listarColaboradoresCLevelAction(
     companyIdIgnored > 0 &&
     companyIdIgnored !== companyId
   ) {
-    throw new Error('listarColaboradoresCLevelAction: companyId divergente da sessao.');
+    throw new Error('listarColaboradoresCLevelAction: companyId divergente da sessão.');
   }
   const client = createDbClient(resolveDatabaseUrl());
   try {
@@ -173,7 +173,7 @@ export async function downloadTemplateColaboradoresRHAction(
     companyIdIgnored !== companyId
   ) {
     await closeDbClient(client);
-    throw new Error('downloadTemplateColaboradoresRHAction: companyId divergente da sessao.');
+    throw new Error('downloadTemplateColaboradoresRHAction: companyId divergente da sessão.');
   }
   try {
     const factory = createCallerFactory(createEmployeesRouter());
@@ -198,7 +198,7 @@ export async function exportSpreadsheetColaboradoresRHAction(
     companyIdIgnored !== companyId
   ) {
     await closeDbClient(client);
-    throw new Error('exportSpreadsheetColaboradoresRHAction: companyId divergente da sessao.');
+    throw new Error('exportSpreadsheetColaboradoresRHAction: companyId divergente da sessão.');
   }
   try {
     const serviceInput = colaboradoresFiltersToServiceInput(filters);
@@ -241,7 +241,7 @@ export async function uploadCSVColaboradoresRHAction(
     companyIdIgnored !== companyId
   ) {
     await closeDbClient(client);
-    throw new Error('uploadCSVColaboradoresRHAction: companyId divergente da sessao.');
+    throw new Error('uploadCSVColaboradoresRHAction: companyId divergente da sessão.');
   }
   try {
     const factory = createCallerFactory(createEmployeesRouter());
@@ -257,7 +257,7 @@ export async function uploadCSVColaboradoresRHAction(
 }
 
 /**
- * ME 3.5.1 Debito A — Download XLSX "Baixar matriculas" (variante RH).
+ * ME 3.5.1 Débito A — Download XLSX "Baixar matrículas" (variante RH).
  * Delega bit-exact a proc canonica `employees.downloadMatriculas` que
  * aplica `rhAllowedProcedure` (admite super_admin + rh + rh_lider +
  * clevel+isRH) e `assertCompanyScope`. Guard local `requireRhLikeOr-
@@ -276,7 +276,7 @@ export async function downloadMatriculasColaboradoresRHAction(
     companyIdIgnored !== companyId
   ) {
     await closeDbClient(client);
-    throw new Error('downloadMatriculasColaboradoresRHAction: companyId divergente da sessao.');
+    throw new Error('downloadMatriculasColaboradoresRHAction: companyId divergente da sessão.');
   }
   try {
     const factory = createCallerFactory(createEmployeesRouter());
@@ -305,7 +305,7 @@ export async function uploadFotosEmMassaRHAction(
     companyIdIgnored !== companyId
   ) {
     await closeDbClient(client);
-    throw new Error('uploadFotosEmMassaRHAction: companyId divergente da sessao.');
+    throw new Error('uploadFotosEmMassaRHAction: companyId divergente da sessão.');
   }
   try {
     const factory = createCallerFactory(createEmployeesRouter());

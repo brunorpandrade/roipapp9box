@@ -4,11 +4,11 @@
 // Cobertura canônica:
 //   1. Retorno vazio quando o titular não tem pendências nem
 //      respondidos recentes.
-//   2. Perfil Individual `em_andamento` → `perfilIndividualEstado`
+//   2. Perfil individual `em_andamento` → `perfilIndividualEstado`
 //      + `blocosConcluidos` derivado de blocosCompletos JSON.
-//   3. Perfil Individual `enviado` dentro dos últimos 7 dias →
+//   3. Perfil individual `enviado` dentro dos últimos 7 dias →
 //      aparece em `respondidosRecentes`.
-//   4. Perfil Individual `enviado` além dos últimos 7 dias → NÃO
+//   4. Perfil individual `enviado` além dos últimos 7 dias → NÃO
 //      aparece em `respondidosRecentes`.
 //   5. Filtro por titular: pendência de outro titular não contamina.
 //
@@ -140,7 +140,7 @@ describe('ME-B10-01 — loadPortalColaboradorPendencias (S250 Opção B)', () =>
     });
 
     // Este teste não semeia cycleSchedule; então não há pendência do
-    // Perfil Individual proveniente da engine. Ainda assim, o helper
+    // Perfil individual proveniente da engine. Ainda assim, o helper
     // deve carregar o assessment e reportar o estado — mesmo sem card.
     // Para verificar o cálculo isoladamente usamos o retorno vazio de
     // pendências (validado pelo teste 1) e confiamos que o campo seria

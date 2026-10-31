@@ -34,12 +34,12 @@ import {
 } from '../../src/app/pendencias-portal/mappings';
 
 describe('INSTRUMENT_LABEL — labels canonicos bit-exact §14.23 filtro Instrumento', () => {
-  it('meuPerfil = "Perfil Individual"', () => {
+  it('meuPerfil = "Perfil individual"', () => {
     // ME-B10-04 CC079 acumulativo: label realinhado de "Meu perfil"
-    // para "Perfil Individual" (nomenclatura canonica dos DOCs §10
+    // para "Perfil individual" (nomenclatura canonica dos DOCs §10
     // DOC 03 e §7.5 DOC 05, bit-a-bit igual ao card do portal do
     // colaborador).
-    expect(INSTRUMENT_LABEL.meuPerfil).toBe('Perfil Individual');
+    expect(INSTRUMENT_LABEL.meuPerfil).toBe('Perfil individual');
   });
 
   it('autoAvaliacao = "Autoavaliação" (com til)', () => {
@@ -219,7 +219,7 @@ describe('Textos canonicos literais bit-exact §5.8', () => {
     expect(CARD_58_TITLE).toBe('Pendências no portal');
   });
 
-  it('CARD_58_SUB_POSITIVE = "pendencias totais na empresa" (§5.8 linha 644)', () => {
+  it('CARD_58_SUB_POSITIVE = "pendências totais na empresa" (§5.8 linha 644)', () => {
     expect(CARD_58_SUB_POSITIVE).toBe('pendências totais na empresa');
   });
 

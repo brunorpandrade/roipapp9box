@@ -62,7 +62,7 @@ async function resolveRawToken(): Promise<string | null> {
 async function requireSuperAdmin(actionName: string): Promise<void> {
   const session = await getServerSession();
   if (session === null) {
-    throw new Error(`${actionName}: sessao ausente ou expirada`);
+    throw new Error(`${actionName}: sessão ausente ou expirada`);
   }
   if (session.kind !== 'super_admin') {
     throw new Error(`${actionName}: acesso restrito ao Super Admin`);
@@ -94,7 +94,7 @@ export async function pesquisarLiderCandidatosAction(input: {
   await requireSuperAdmin('pesquisarLiderCandidatosAction');
 
   if (!Number.isInteger(input.companyId) || input.companyId <= 0) {
-    return { ok: false, message: 'companyId invalido.' };
+    return { ok: false, message: 'companyId inválido.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -149,7 +149,7 @@ export async function criarColaboradorAction(input: {
 }): Promise<ActionResult<CreateEmployeeResult>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -191,7 +191,7 @@ export async function definirRFAction(input: {
 }): Promise<ActionResult<SetResponsavelFinanceiroResult>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());

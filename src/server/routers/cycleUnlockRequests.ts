@@ -213,14 +213,14 @@ export const MSG_HAS_PENDING_NAO_AUTORIZADO =
  * da divida D005 registrada na ME-032). HTTP 403.
  */
 export const MSG_CREATE_FATURAMENTO_NAO_RF =
-  'Apenas o Responsavel financeiro pode solicitar desbloqueio de faturamento.';
+  'Apenas o Responsável financeiro pode solicitar desbloqueio de faturamento.';
 
 // ============================================================
 // Zod schemas de entrada
 // ============================================================
 
 /** Mes canonico no formato `YYYY-MM` (schema declara `varchar(7)`). */
-const mesSchema = z.string().regex(/^\d{4}-\d{2}$/, { message: 'mes deve ter formato YYYY-MM' });
+const mesSchema = z.string().regex(/^\d{4}-\d{2}$/, { message: 'Mês deve ter formato YYYY-MM.' });
 
 /** Enum canonico `aba` — bate 1:1 com `ABA_UNLOCK_VALUES`. */
 const abaSchema = z.enum(['rh', 'lider', 'faturamento']);

@@ -7,7 +7,7 @@
 // e por `ParametrosClient.tsx` sem quebrar a segregacao Next 15.
 //
 // Origem canonica:
-// - DOC 05 §13.1 (Aba 1 "Parametros gerais" — 9 secoes bit-exact).
+// - DOC 05 §13.1 (Aba 1 "Parâmetros gerais" — 9 seções bit-exact).
 // - DOC 01 §4.2 (schema canonico `companies` — 40 colunas + isDemo).
 // - DOC 03 §5.7 (empresa sem RF — nao afeta esta tela; landing exibe).
 // - DOC 03 §3.9 (retroatividade assimetrica — trigger canonico).

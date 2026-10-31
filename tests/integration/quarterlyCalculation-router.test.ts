@@ -11,7 +11,7 @@
 //   - `getQuarterlyResults` com limit default (4) e customizado; cross-
 //     company FORBIDDEN; employeeId inexistente NOT_FOUND.
 //   - `getCompanyQuarterlyStatus` com meses fechados/abertos; contagem
-//     de calculados; presenca/ausencia de diagnostico; trimestre invalido.
+//     de calculados; presenca/ausencia de diagnostico; trimestre inválido.
 //   - Ligacao ponta-a-ponta com motor REAL do ME-033 (2-3 testes
 //     canonicos).
 //   - Contratos de tipo publicos (`TriggerRetroactiveResult`,
@@ -837,7 +837,7 @@ describe('getCompanyQuarterlyStatus', () => {
     expect(result.diagnosisPersisted).toBe(false);
   });
 
-  it('trimestre invalido (regex) -> BAD_REQUEST', async () => {
+  it('trimestre inválido (regex) -> BAD_REQUEST', async () => {
     const { factory, ctx } = bindMockedRouter();
     const bearer = await tokenSuperAdmin();
     const caller = factory(ctx(bearer));

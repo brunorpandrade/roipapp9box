@@ -239,18 +239,18 @@ function bindRouter(nowFn?: () => Date) {
 
 describe('revenue — contratos publicos exportados', () => {
   it('mensagens canonicas literais batem o texto exato', () => {
-    expect(MSG_COMPANY_MISMATCH_REV).toBe('Empresa nao pertence ao seu escopo.');
-    expect(MSG_COMPANY_NAO_ENCONTRADA_REV).toBe('Empresa nao encontrada.');
+    expect(MSG_COMPANY_MISMATCH_REV).toBe('Empresa não pertence ao seu escopo.');
+    expect(MSG_COMPANY_NAO_ENCONTRADA_REV).toBe('Empresa não encontrada.');
     expect(MSG_MES_FECHADO_REV).toBe(
-      'Mes fechado. Solicite desbloqueio antes de gravar faturamento.',
+      'Mês fechado. Solicite desbloqueio antes de gravar faturamento.',
     );
     expect(MSG_SAVE_FATURAMENTO_NAO_RF).toBe(
-      'Apenas o Responsavel financeiro pode gravar o faturamento mensal.',
+      'Apenas o Responsável financeiro pode gravar o faturamento mensal.',
     );
     expect(MSG_FATURAMENTO_INVALIDO).toBe(
-      'Faturamento invalido; informe um valor numerico maior que zero.',
+      'Faturamento inválido; informe um valor numérico maior que zero.',
     );
-    expect(MSG_MES_FORMATO_INVALIDO).toBe('Mes deve estar no formato YYYY-MM.');
+    expect(MSG_MES_FORMATO_INVALIDO).toBe('Mês deve estar no formato YYYY-MM.');
   });
 
   it('constantes canonicas de janela batem o schema', () => {

@@ -123,7 +123,7 @@ export function getWeekBounds(
   const local = getZonedParts(now, timezone);
   if (local.weekday !== MONDAY_ISO_INDEX) {
     throw new Error(
-      'getWeekBounds: chamado fora do gatilho canonico (segunda-feira). ' +
+      'getWeekBounds: chamado fora do gatilho canônico (segunda-feira). ' +
         'Use isMondayEightAmLocal como guarda antes de invocar.',
     );
   }

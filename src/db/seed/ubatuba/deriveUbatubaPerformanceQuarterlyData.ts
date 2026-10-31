@@ -95,7 +95,7 @@ export function deriveUbatubaPerformanceQuarterlyData(): readonly QuarterlyRow[]
     const [anoStr, qStr] = r.trimestre.split('-Q');
     if (anoStr === undefined || qStr === undefined) {
       throw new Error(
-        `deriveUbatubaPerformanceQuarterlyData: trimestre invalido '${r.trimestre}'.`,
+        `deriveUbatubaPerformanceQuarterlyData: trimestre inválido '${r.trimestre}'.`,
       );
     }
     const q = parseInt(qStr, 10);

@@ -880,7 +880,7 @@ describe('instrumentA — getInstrumentAStatus contratos e constantes', () => {
     expect(status).toBe('pendente');
   });
 
-  it('classifyStatusPendenciaA — trimestre invalido cai em `pendente` (conservador)', () => {
+  it('classifyStatusPendenciaA — trimestre inválido cai em `pendente` (conservador)', () => {
     const now = new Date('2024-04-20T12:00:00Z');
     const status = classifyStatusPendenciaA('LIXO', 'America/Sao_Paulo', now);
     expect(status).toBe('pendente');
@@ -1118,7 +1118,7 @@ describe('instrumentA — getInstrumentAStatus (cross-company e schema)', () => 
     ).rejects.toMatchObject({ code: 'NOT_FOUND', message: MSG_EMPRESA_NAO_ENCONTRADA_STATUS_A });
   });
 
-  it('trimestre invalido -> BAD_REQUEST', async () => {
+  it('trimestre inválido -> BAD_REQUEST', async () => {
     const { factory, ctx } = bindRouter({ now: () => NOW_ANTES_CORTE });
     const token = await tokenSuperAdmin();
     const caller = factory(ctx(token));

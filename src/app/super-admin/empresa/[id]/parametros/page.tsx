@@ -1,5 +1,5 @@
 // ROIP APP 9BOX — rota canonica Bruno `/super-admin/empresa/[id]/parametros`
-// (§13.1 Aba 1 "Parametros gerais", ME-075). SEGUNDA rota de codigo do
+// (§13.1 Aba 1 "Parâmetros gerais", ME-075). SEGUNDA rota de código do
 // bloco B8 (fecha D086 canonico bit-exact).
 //
 // Origem canonica:
@@ -91,7 +91,7 @@ export default async function SuperAdminCompanyParametrosPage(
     // holder `[id]` nos hrefs do menu §3.2.
     const menuItems = resolveMenuItems(profileKey, false, companyId);
     if (menuItems === null) {
-      throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
+      throw new Error(`Menu canônico ausente para ${profileKey} — inconsistência §3`);
     }
 
     return (

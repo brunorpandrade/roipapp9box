@@ -143,9 +143,9 @@ describe('accessDeniedMessages — literais canonicas (ME-023)', () => {
   });
 
   // §11.5 --------------------------------------------------------------
-  it('§11.5 Perfil Individual de C-level (PC1e)', () => {
+  it('§11.5 Perfil individual de C-level (PC1e)', () => {
     expect(MSG_PERFIL_INDIVIDUAL_CLEVEL.message).toBe(
-      'Você não tem permissão para acessar o Perfil Individual deste colaborador. Este espaço é restrito ao Super Admin. Se acredita que isso é um erro, contate o Super Admin.',
+      'Você não tem permissão para acessar o Perfil individual deste colaborador. Este espaço é restrito ao Super Admin. Se acredita que isso é um erro, contate o Super Admin.',
     );
   });
 

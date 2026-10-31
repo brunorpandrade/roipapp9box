@@ -34,19 +34,19 @@ describe('ME-UX-CONSOLIDACAO-P1 — D1 chips canonicos individual', () => {
 
   it('chip 1 canonico: roteiro para proxima conversa de feedback', () => {
     expect(AI_CHAT_CHIPS_INDIVIDUAL[0]).toBe(
-      'Monte um roteiro para minha próxima conversa de feedback com esse colaborador.',
+      'Monte um roteiro para minha próxima conversa de feedback com este colaborador.',
     );
   });
 
   it('chip 2 canonico: 15 minutos com este colaborador', () => {
     expect(AI_CHAT_CHIPS_INDIVIDUAL[1]).toBe(
-      'Se eu tivesse 15 minutos com este colaborador sobre o que deveria falar?',
+      'Se eu tivesse 15 minutos com este colaborador, sobre o que deveria falar?',
     );
   });
 
   it('chip 3 canonico: perfil individual e desempenho no trimestre', () => {
     expect(AI_CHAT_CHIPS_INDIVIDUAL[2]).toBe(
-      'Qual a relação entre o perfil individual e o desempenho desse colaborador nesse trimestre?',
+      'Qual a relação entre o perfil individual e o desempenho deste colaborador neste trimestre?',
     );
   });
 });

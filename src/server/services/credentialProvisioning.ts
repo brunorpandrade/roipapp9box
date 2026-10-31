@@ -91,7 +91,7 @@ export async function provisionUniqueMatricula(
   const [matricula] = generateUniqueMatriculas(1, prng, existing);
   if (matricula === undefined) {
     // generateUniqueMatriculas lanca se esgotar; guard defensivo aqui.
-    throw new Error('provisionUniqueMatricula: falha ao gerar matricula unica.');
+    throw new Error('provisionUniqueMatricula: falha ao gerar matrícula única.');
   }
   return matricula;
 }

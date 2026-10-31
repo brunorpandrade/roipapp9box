@@ -120,7 +120,7 @@ export interface MesAtualClosureStatus {
   /**
    * ME-B9-fechamento (S231-B' + S231.1) — semantica canonica final:
    * - `lideresComLiderados`: lideres com >=1 liderado direto ativo
-   *   (denominador do card §5.5 "Status dados do mes — Lideres").
+   *   (denominador do card §5.5 "Status dados do mês — Líderes").
    *   Lider ativo sem liderados nao entra na conta — nao tem o que
    *   preencher. Query: DISTINCT `employeeLeaderHistory.liderId` onde
    *   lider ativo + isLider + liderado ativo + `dataFim IS NULL`.
@@ -464,7 +464,7 @@ export async function loadMesAtualClosureStatus(
     // com o drill-down `/dados-mensais?tab=lider` via reuso do service
     // `leaderMonthlyStatus`. Lideres candidatos: employees ativos com
     // `isLider=true` da empresa + cLevelMembers ativos da empresa.
-    // Filtragem final ("tem >=1 liderado direto no mes") + calculo do
+    // Filtragem final ("tem >=1 liderado direto no mês") + cálculo do
     // status feita via helpers do service — semantica temporal
     // canonica §3.11 (cobre mes inteiro, nao apenas ativo agora).
     db

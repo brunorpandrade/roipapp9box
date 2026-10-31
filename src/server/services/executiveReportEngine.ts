@@ -97,11 +97,11 @@ const EXEC_REPORT_FAIXA_PROXIMO_META = 85 as const;
  */
 export const EXEC_REPORT_NOTA_AGREGACAO_DEPARTAMENTO =
   // eslint-disable-next-line @stylistic/max-len -- rotulo canonico literal §7.6
-  'Piso de anonimato: os dados de Clima refletem o agregado do departamento (nivel hierarquico imediatamente acima do escopo original).';
+  'Piso de anonimato: os dados de Clima refletem o agregado do departamento (nível hierárquico imediatamente acima do escopo original).';
 
 export const EXEC_REPORT_NOTA_AGREGACAO_EMPRESA =
   // eslint-disable-next-line @stylistic/max-len -- rotulo canonico literal §7.6
-  'Piso de anonimato: os dados de Clima refletem o agregado da empresa (nivel hierarquico imediatamente acima do escopo original).';
+  'Piso de anonimato: os dados de Clima refletem o agregado da empresa (nível hierárquico imediatamente acima do escopo original).';
 
 // ============================================================
 // Helpers puros
@@ -129,14 +129,14 @@ function variacaoPct(atual: number | null, anterior: number | null): number | nu
 /** Retorna trimestre canonico do ano anterior (mesmo Q, ano-1). */
 function mesmoTrimestreAnoAnterior(trimestre: string): string {
   const parsed = parseTrimestreCicloReferencia(trimestre);
-  if (!parsed) throw new Error(`Trimestre canonico invalido: ${trimestre}`);
+  if (!parsed) throw new Error(`Trimestre canônico inválido: ${trimestre}`);
   return formatTrimestreCicloReferencia(parsed.ano - 1, parsed.trimestre);
 }
 
 /** Retorna trimestre canonico imediatamente anterior. */
 function trimestreAnterior(trimestre: string): string {
   const parsed = parseTrimestreCicloReferencia(trimestre);
-  if (!parsed) throw new Error(`Trimestre canonico invalido: ${trimestre}`);
+  if (!parsed) throw new Error(`Trimestre canônico inválido: ${trimestre}`);
   const prev = getPreviousTrimestre(parsed.ano, parsed.trimestre);
   return formatTrimestreCicloReferencia(prev.ano, prev.trimestre);
 }
@@ -250,7 +250,7 @@ async function selectEmployeesByScope(
     const liderIdNum = Number.parseInt(args.escopo.referencia, 10);
     if (!Number.isFinite(liderIdNum)) {
       throw new Error(
-        `Escopo equipe exige liderId numerico em referencia; recebeu: ${args.escopo.referencia}`,
+        `Escopo equipe exige liderId numérico em referência; recebeu: ${args.escopo.referencia}`,
       );
     }
     // Equipe = liderados diretos do lider. Reusamos
@@ -909,7 +909,7 @@ async function buildBlocoTurnover(
   }
   // departamento
   if (args.escopo.referencia === null) {
-    throw new Error('Escopo departamento exige referencia canonica');
+    throw new Error('Escopo departamento exige referência canônica');
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Departamento validado no router
   const departamento = args.escopo.referencia as any;

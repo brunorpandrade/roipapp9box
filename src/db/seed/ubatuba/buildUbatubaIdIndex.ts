@@ -63,7 +63,7 @@ export function buildUbatubaIdIndex(): UbatubaIdIndex {
 export function resolveEmployeeIdUbatuba(nome: string, idx: UbatubaIdIndex): number {
   const id = idx.byName.get(nome);
   if (id === undefined) {
-    throw new Error(`resolveEmployeeIdUbatuba: nome nao encontrado='${nome}'`);
+    throw new Error(`resolveEmployeeIdUbatuba: nome não encontrado='${nome}'`);
   }
   return id;
 }
@@ -72,7 +72,7 @@ export function resolveEmployeeIdUbatuba(nome: string, idx: UbatubaIdIndex): num
 export function resolveCLevelIdUbatuba(nome: string, idx: UbatubaIdIndex): number {
   const id = idx.cLevelByName.get(nome);
   if (id === undefined) {
-    throw new Error(`resolveCLevelIdUbatuba: nome nao encontrado='${nome}'`);
+    throw new Error(`resolveCLevelIdUbatuba: nome não encontrado='${nome}'`);
   }
   return id;
 }

@@ -192,7 +192,7 @@ export function PortalLayout(props: PortalLayoutProps): JSX.Element {
             {/* ME-1.3 (item 1.3 do roadmap): quando a empresa foi
                 propagada ao layout, renderiza logo+nome da empresa
                 (identidade visual do cliente). Fallback canonico ao
-                brand ROIPeople quando a empresa esta ausente (login
+                brand ROIPeople quando a empresa está ausente (login
                 page e cenarios degenerados). */}
             {hasCompanyName ? (
               <>

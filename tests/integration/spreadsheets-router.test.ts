@@ -364,18 +364,18 @@ async function loadWorkbookFromBase64(xlsxBase64: string): Promise<ExcelJS.Workb
 describe('spreadsheets-router — contratos publicos (RV-13)', () => {
   it('exporta mensagens canonicas literais §3.11', () => {
     expect(MSG_EMPRESA_FORA_DO_ESCOPO_SPREADSHEETS).toBe('Empresa fora do escopo.');
-    expect(MSG_XLSX_INVALIDO).toBe('Arquivo XLSX invalido ou corrompido.');
+    expect(MSG_XLSX_INVALIDO).toBe('Arquivo XLSX inválido ou corrompido.');
     expect(MSG_ABA_AUSENTE_RH).toBe('Aba "Preenchimento mensal RH" ausente no arquivo.');
-    expect(MSG_ABA_AUSENTE_LIDER).toBe('Aba "Preenchimento mensal Lider" ausente no arquivo.');
+    expect(MSG_ABA_AUSENTE_LIDER).toBe('Aba "Preenchimento mensal Líder" ausente no arquivo.');
     expect(MSG_CABECALHOS_INVALIDOS_RH).toBe(
-      'Cabecalhos da planilha divergem do template canonico RH.',
+      'Cabeçalhos da planilha divergem do template canônico RH.',
     );
     expect(MSG_CABECALHOS_INVALIDOS_LIDER).toBe(
-      'Cabecalhos da planilha divergem do template canonico Lider.',
+      'Cabeçalhos da planilha divergem do template canônico Líder.',
     );
-    expect(MSG_CPF_NAO_ENCONTRADO).toBe('CPF nao encontrado entre colaboradores da empresa.');
-    expect(MSG_LIDERADO_FORA_DA_CADEIA).toBe('Liderado fora da cadeia direta do lider no mes.');
-    expect(MSG_VALOR_NAO_NUMERICO).toBe('Valor nao numerico em coluna numerica.');
+    expect(MSG_CPF_NAO_ENCONTRADO).toBe('CPF não encontrado entre colaboradores da empresa.');
+    expect(MSG_LIDERADO_FORA_DA_CADEIA).toBe('Liderado fora da cadeia direta do líder no mês.');
+    expect(MSG_VALOR_NAO_NUMERICO).toBe('Valor não numérico em coluna numérica.');
   });
 
   it('exporta colunas canonicas RH em ordem exata (§3.11)', () => {
@@ -405,7 +405,7 @@ describe('spreadsheets-router — contratos publicos (RV-13)', () => {
 
   it('NOME_ABA_RH e NOME_ABA_LIDER canonicos exatos', () => {
     expect(NOME_ABA_RH).toBe('Preenchimento mensal RH');
-    expect(NOME_ABA_LIDER).toBe('Preenchimento mensal Lider');
+    expect(NOME_ABA_LIDER).toBe('Preenchimento mensal Líder');
   });
 
   it('MES_INPUT_SCHEMA_SPREADSHEETS aceita YYYY-MM valido', () => {

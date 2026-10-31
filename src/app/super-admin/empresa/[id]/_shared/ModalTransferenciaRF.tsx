@@ -6,7 +6,7 @@
 //   - `CLevelNovoClient` / `CLevelEditarClient` (ME-078a D9 in-place)
 //
 // Fluxo canonico (§5.5):
-//   1. Bruno ativa toggle "Ativar como Responsavel financeiro".
+//   1. Bruno ativa toggle "Ativar como Responsável financeiro".
 //   2. Se empresa NAO tem RF vigente (`currentRFName === null`):
 //        ativacao direta (modal NAO abre); toggle ativa localmente.
 //   3. Se empresa TEM RF vigente (`currentRFName !== null`):

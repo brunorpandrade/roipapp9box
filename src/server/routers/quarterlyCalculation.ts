@@ -168,7 +168,7 @@ export interface CompanyQuarterlyStatus {
  * reencapsulamento aqui protege a semantica canonica).
  */
 export const TRIMESTRE_INPUT_SCHEMA = z.string().regex(/^\d{4}-Q[1-4]$/, {
-  message: 'Trimestre canonico deve seguir o formato YYYY-QN (N in 1..4).',
+  message: 'Trimestre canônico deve seguir o formato YYYY-QN (N = 1..4).',
 });
 
 // ============================================================
@@ -208,7 +208,7 @@ export function createQuarterlyCalculationRouter(deps: { roiEngine?: RoiEngineFa
         if (companyRows.length === 0) {
           throw new TRPCError({
             code: 'NOT_FOUND',
-            message: 'Empresa nao encontrada.',
+            message: 'Empresa não encontrada.',
           });
         }
 
@@ -290,7 +290,7 @@ export function createQuarterlyCalculationRouter(deps: { roiEngine?: RoiEngineFa
         if (!emp) {
           throw new TRPCError({
             code: 'NOT_FOUND',
-            message: 'Colaborador nao encontrado.',
+            message: 'Colaborador não encontrado.',
           });
         }
 
@@ -342,7 +342,7 @@ export function createQuarterlyCalculationRouter(deps: { roiEngine?: RoiEngineFa
         if (!meses) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'Trimestre canonico invalido.',
+            message: 'Trimestre canônico inválido.',
           });
         }
 

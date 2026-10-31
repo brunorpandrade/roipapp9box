@@ -159,11 +159,11 @@ const ORGANOGRAMA_CSS = `
   padding: 0 14px;
   position: relative;
 }
-/* ME-080a-fix2 --- REFATORACAO das linhas conectoras. */
+/* ME-080a-fix2 --- REFATORAÇÃO das linhas conectoras. */
 /* Estrutura anterior misturava vertical descendente (border-left) */
-/* dentro do ::after do <li>. Remocao do ::after em :last-child / */
-/* :only-child levava junto a vertical. Resultado: filhos unicos e */
-/* ultimos filhos ficavam sem linha vertical entre tronco e card. */
+/* dentro do ::after do <li>. Remoção do ::after em :last-child / */
+/* :only-child levava junto a vertical. Resultado: filhos únicos e */
+/* últimos filhos ficavam sem linha vertical entre tronco e card. */
 /* Nova estrutura: */
 /*   - li::before  = metade horizontal esquerda (border-top somente) */
 /*   - li::after   = metade horizontal direita  (border-top somente) */
@@ -219,14 +219,14 @@ const ORGANOGRAMA_CSS = `
 /* fica em top do ul filho = bottom do card do pai (adjacentes, */
 /* zero gap). Portanto vertical descendo do card do pai era */
 /* REDUNDANTE e apontava para o meio horizontal do card do pai, */
-/* que raramente coincide com o centro dos filhos quando ha 2+ */
+/* que raramente coincide com o centro dos filhos quando há 2+ */
 /* filhos --- sobrava linha entre os filhos (marcado por Bruno). */
 /* Estrutura final: */
-/*   - pai conecta ao tronco por adjacencia (sem vertical extra) */
+/*   - pai conecta ao tronco por adjacência (sem vertical extra) */
 /*   - tronco horizontal cobre a largura dos filhos */
-/*   - vertical de cada card do filho (::before) sobe 26px ate */
+/*   - vertical de cada card do filho (::before) sobe 26px até */
 /*     tronco */
-/*   - filho unico: sem tronco, so vertical do card do filho sobe */
+/*   - filho único: sem tronco, só vertical do card do filho sobe */
 /*     26px = conecta direto ao card do pai */
 `;
 
@@ -781,7 +781,7 @@ function ResumoDrawer(props: ResumoDrawerProps): JSX.Element {
               cursor: 'pointer',
             }}
           >
-            Ver Perfil Individual
+            Ver Perfil individual
           </Link>
         ) : dashboardAction.kind === 'empresa-dashboard' ? (
           // Nó da empresa (§8.06.4): abre o dashboard agregado da empresa.

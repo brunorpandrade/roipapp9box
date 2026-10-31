@@ -2,7 +2,7 @@
 // `resolveHierarchicalScope` (§11.9 PC1h).
 //
 // Cobertura:
-//   - Bruno: retorna null (sem restricao).
+//   - Bruno: retorna null (sem restrição).
 //   - RH puro: retorna null.
 //   - RH-Lider: retorna null (PC1b cobre C-levels ortogonalmente).
 //   - CU (cLevelCount=1): retorna null.

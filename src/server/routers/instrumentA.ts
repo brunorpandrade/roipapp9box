@@ -122,7 +122,7 @@ const UNLOCK_WINDOW_MS_A = UNLOCK_WINDOW_HOURS_A * 60 * 60 * 1000;
 /**
  * §6.7 combinado com S095 — Instrumento A ja foi enviado sem
  * desbloqueio vigente. Diferente do C, o A NAO fecha (§6.7 canoniza
- * explicitamente "Resposta tardia ao Instrumento A NAO e desbloqueio":
+ * explicitamente "Resposta tardia ao Instrumento A NÃO é desbloqueio":
  * o card permanece aberto ate ser respondido; uma vez respondido,
  * imutavel ate desbloqueio). Semanticamente distinto do
  * `MSG_TRIMESTRE_FECHADO` do C, portanto texto proprio (S095).
@@ -138,7 +138,7 @@ export const MSG_ITENS_INCOMPLETOS_A =
   'O Instrumento A exige 20 itens (4 dimensões x 5 itens) com valor entre 0 e 4.';
 
 /**
- * §6.2 canoniza EXPLICITAMENTE: "C-level nao responde o Instrumento A".
+ * §6.2 canoniza EXPLICITAMENTE: "C-level não responde ao Instrumento A".
  * Retornado como 403 pelo Route Handler quando `titularType === 'clevel'`
  * no portalToken. Mensagem canonica nova (S099).
  */

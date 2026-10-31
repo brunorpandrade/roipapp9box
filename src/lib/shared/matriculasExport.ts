@@ -1,4 +1,4 @@
-// ROIP APP 9BOX — modulo canonico do XLSX de "Baixar matriculas"
+// ROIP APP 9BOX — módulo canônico do XLSX de "Baixar matrículas"
 // (ME 3.5.1, Debito A).
 //
 // Origem canonica:

@@ -205,10 +205,10 @@ export function GateLgpdClient(): JSX.Element {
         </h1>
 
         {/*
-          ME-1.12.c: caixa canonica com RESUMO CURTO (duas frases
-          — finalidade + direitos). O texto literal integral e
-          acessivel via botao secundario `[Ler termo integral]`
-          abaixo, que abre modal rolavel.
+          ME-1.12.c: caixa canônica com RESUMO CURTO (duas frases
+          — finalidade + direitos). O texto literal integral é
+          acessível via botão secundário `[Ler termo integral]`
+          abaixo, que abre modal rolável.
         */}
         <div
           style={{
@@ -261,11 +261,11 @@ export function GateLgpdClient(): JSX.Element {
           }}
         >
           {/*
-            ME-1.12.c: botao secundario canonico `[Ler termo
-            integral]`. Abre modal interno rolavel com
-            `TERMO_LITERAL_V10` completo. Nao bloqueia o botao
-            primario de aceite — leitura e opcional conforme pedido
-            canonico de Bruno.
+            ME-1.12.c: botão secundário canônico `[Ler termo
+            integral]`. Abre modal interno rolável com
+            `TERMO_LITERAL_V10` completo. Não bloqueia o botão
+            primário de aceite — leitura é opcional conforme pedido
+            canônico de Bruno.
           */}
           <button
             type="button"
@@ -308,11 +308,11 @@ export function GateLgpdClient(): JSX.Element {
       </div>
 
       {/*
-        ME-1.12.c: modal rolavel canonico com o termo integral.
+        ME-1.12.c: modal rolável canônico com o termo integral.
         Renderizado apenas quando `modalAberto === true`. Overlay
         semi-transparente + caixa centralizada com scroll interno. ESC
-        e botao `[Fechar]` fecham o modal. Preserva comportamento
-        canonico pre-ME: nao interfere no fluxo de aceite.
+        e botão `[Fechar]` fecham o modal. Preserva comportamento
+        canônico pré-ME: não interfere no fluxo de aceite.
       */}
       {modalAberto ? (
         <div
@@ -382,12 +382,12 @@ export function GateLgpdClient(): JSX.Element {
               </button>
             </div>
             {/*
-              ME-1.12.d: termo juridico V1.0 definitivo e estruturado
-              em 13 secoes (DOC 02 §7.3). HTML canonico vem do mapa
+              ME-1.12.d: termo jurídico V1.0 definitivo e estruturado
+              em 13 seções (DOC 02 §7.3). HTML canônico vem do mapa
               versionado `TERMO_LITERAL_V10_HTML` em
               `src/lib/lgpd/termoLiteral.ts`. Zero risco XSS por
-              construcao — constante no codigo, nao vem de user input.
-              Estilo canonico embutido via <style> escopado por classe
+              construção — constante no código, não vem de user input.
+              Estilo canônico embutido via <style> escopado por classe
               para controlar h4, p, ul em contexto de modal.
             */}
             <div

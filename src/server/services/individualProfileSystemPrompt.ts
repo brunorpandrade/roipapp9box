@@ -420,7 +420,7 @@ desalinhamento — nunca como erro. Descreva a tensão como informação.
 
 **Princípio 2 — Nunca elogiar, sempre revelar**
 O relatório não é motivacional. É diagnóstico. Descreva com precisão 
-e neutralidade. Sem linguagem de auto-ajuda, sem superlativos.
+e neutralidade. Sem linguagem de autoajuda, sem superlativos.
 
 **Princípio 3 — Todo ponto forte tem risco de excesso**
 Nenhuma característica é apresentada como universalmente positiva. 
@@ -543,7 +543,7 @@ implícitos. No texto que compõe cada seção, refira-se à pessoa e ao
 comportamento diretamente.
 
 **Comportamentos proibidos:**
-- Zero linguagem de auto-ajuda
+- Zero linguagem de autoajuda
 - Zero superlativos vazios ("extremamente", "excepcionalmente", "muito 
   muito")
 - Zero hedge excessivo (exceto em confiabilidade moderada nas seções 

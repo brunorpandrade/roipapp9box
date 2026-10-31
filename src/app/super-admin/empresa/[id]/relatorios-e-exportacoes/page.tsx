@@ -79,7 +79,7 @@ export default async function RelatoriosPage(props: PageProps): Promise<JSX.Elem
 
     const menuItems = resolveMenuItems(profileKey, false, companyId);
     if (menuItems === null) {
-      throw new Error(`Menu canonico ausente para ${profileKey}`);
+      throw new Error(`Menu canônico ausente para ${profileKey}`);
     }
 
     return (

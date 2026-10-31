@@ -47,7 +47,7 @@ export async function listStageLogByEmployee(db: RoipDatabase, employeeId: numbe
 /**
  * Retorna a mudanca de estagio mais recente de um colaborador. Retorna
  * `undefined` se nao houver historico. Consumido pelo detalhe do card do
- * kanban para exibir "estagio atual + quando entrou nele".
+ * kanban para exibir "estágio atual + quando entrou nele".
  */
 export async function getLatestStageLogByEmployee(db: RoipDatabase, employeeId: number) {
   const rows = await db

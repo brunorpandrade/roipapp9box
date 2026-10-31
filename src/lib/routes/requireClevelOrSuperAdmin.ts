@@ -72,7 +72,7 @@ export function requireClevelOrSuperAdmin(
   actionName: string,
 ): ClevelOrSuperAdminSession {
   if (session === null) {
-    throw new Error(`${actionName}: sessao ausente ou expirada`);
+    throw new Error(`${actionName}: sessão ausente ou expirada`);
   }
   if (session.kind === 'super_admin') {
     return {

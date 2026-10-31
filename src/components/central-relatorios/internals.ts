@@ -75,7 +75,7 @@ export const CARD_DEFS = [
   {
     id: 'snapshot_9box',
     title: 'Snapshot do 9-Box',
-    subtitle: 'PDF · gerado on-the-fly',
+    subtitle: 'PDF · gerado na hora',
     section: 'relatorios',
     iconType: 'pdf' as const,
     hasCascade: true,

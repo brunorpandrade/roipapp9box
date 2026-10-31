@@ -18,7 +18,7 @@
 //
 // Semantica canonica de ambiguidade (S019 — opcao A):
 //   Se o mesmo CPF existir em MAIS de uma empresa (schema admite, canonico
-//   nao regula), o handler do login trata como "nao encontrado" — mesma
+//   nao regula), o handler do login trata como "não encontrado" — mesma
 //   mensagem anti-enumeracao "CPF ou senha incorretos.". Este service se
 //   limita a devolver TODOS os candidatos por empresa; a decisao de
 //   bloqueio e do handler. Divida D004 registrada: consolidacao futura em

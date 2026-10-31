@@ -23,7 +23,7 @@
 //   `messages: [{role: 'user', content: userPrompt}]` para a API.
 // - Modo multi-turn (`messages: ClaudeCallMessage[]`) — canonico Chat IA
 //   (DOC 04 §8.3): sequencia `[mensagem inicial com contexto do
-//   dashboard, ...historico ativo, nova mensagem do usuario]`. Wrapper
+//   dashboard, ...histórico ativo, nova mensagem do usuário]`. Wrapper
 //   envia o array literal para a API.
 // Os dois modos sao mutuamente exclusivos por tipagem — o union
 // discriminado `ClaudeCallOpts` garante em tempo de compilacao que
@@ -333,7 +333,7 @@ async function performAttempt(
   } catch (err) {
     const name = (err as Error).name;
     if (name === 'AbortError' || name === 'TimeoutError') {
-      return { kind: 'timeout', message: `Timeout apos ${timeoutMs}ms` };
+      return { kind: 'timeout', message: `Timeout após ${timeoutMs}ms` };
     }
     return { kind: 'network_error', message: (err as Error).message };
   } finally {
@@ -359,7 +359,7 @@ async function performAttempt(
   try {
     json = (await response.json()) as ClaudeApiResponse;
   } catch (err) {
-    return { kind: 'server_error', message: `Resposta 200 nao-JSON: ${(err as Error).message}` };
+    return { kind: 'server_error', message: `Resposta 200 não JSON: ${(err as Error).message}` };
   }
 
   const content = json.content
@@ -478,7 +478,7 @@ export async function claudeCall(
       jsonAttemptsUsed += 1;
       lastFailure = {
         status: 'falha_json',
-        message: `JSON invalido: ${(err as Error).message}`,
+        message: `JSON inválido: ${(err as Error).message}`,
       };
       if (jsonAttemptsUsed >= MAX_JSON_ATTEMPTS) {
         return finishFailure();

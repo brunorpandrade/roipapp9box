@@ -274,7 +274,7 @@ export function Nr1Client({
 
   const handleCancelCycle = useCallback(async () => {
     if (cycle.cicloDbId === null) return;
-    const ok = window.confirm('Tem certeza que deseja cancelar este ciclo agendado?');
+    const ok = window.confirm('Tem certeza de que deseja cancelar este ciclo agendado?');
     if (!ok) return;
     setLoading(true);
     const result = await cancelCycleAction({
@@ -1608,7 +1608,7 @@ export function Nr1Client({
                    alertas gravados em `alerts.nr1_fator_critico` pelo motor
                    no fechamento do ciclo (§11.14). Ciclos seed podem ter
                    scores < 50 sem terem passado pelo motor que grava os
-                   alertas — explica a divergencia aparente para o usuario. */}
+                   alertas — explica a divergência aparente para o usuário. */}
               Nenhum alerta registrado.
               <div style={{ fontSize: 11, marginTop: 6, color: '#9CA3AF' }}>
                 Alertas são gravados pelo motor automaticamente no fechamento do ciclo.

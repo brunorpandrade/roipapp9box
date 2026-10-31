@@ -167,7 +167,7 @@ describe('platformLogs.getHistoricoEmpresa — autorizacao', () => {
     const { factory, ctx } = mkRouter();
     const caller = factory(await ctx(await tokenRh(emp, companyId)));
     await expect(caller.getHistoricoEmpresa({ companyId, page: 1, pageSize: 50 })).rejects.toThrow(
-      /permissao/i,
+      /permissão/i,
     );
   });
 });

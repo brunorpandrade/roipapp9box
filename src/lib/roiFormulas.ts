@@ -201,7 +201,7 @@ export interface VariableMonth {
  *   1) Filtra variaveis com `weight > 0` E `demanda != null` E
  *      `demanda > 0` E `executado != null`.
  *   2) Se lista filtrada vazia -> `null` (motor propaga `sem_demanda`).
- *   3) `pesoTotal = soma dos pesos das variaveis filtradas`.
+ *   3) `pesoTotal = soma dos pesos das variáveis filtradas`.
  *   4) `pesoEfetivo_i = weight_i / pesoTotal` (soma dos efetivos = 1).
  *   5) `desempenho_i = computeDesempenhoVariavel(demanda_i, executado_i)`
  *      (com cap 150% aplicado por variavel).
@@ -389,7 +389,7 @@ export function computeMediaTrimestral(m1: number, m2: number, m3: number): numb
  * colaboradores ativos (employees) mais os C-levels ativos. Usada
  * exclusivamente como insumo de `folhaPorcentagem` (§3.6) e do card de
  * folha total da empresa (`ESPEC_ORGANOGRAMAS_E_AGREGADOS` §11.1), com
- * o subtexto canonico "inclui alta lideranca".
+ * o subtexto canonico "inclui alta liderança".
  *
  * NAO entra no motor de ROI v2 (§3.5): o motor opera sobre
  * `folhaProdutivaMedia` (so employees em P), nao sobre folha total.
@@ -629,7 +629,7 @@ export function computeRoiMuitoBom(roiSegmentoMinimo: number, roiSegmentoMaximo:
  * `folhaPorcentagem = (folhaTotalMedia / faturamentoMedioTrimestral) * 100`
  * (§3.6, S532). OPERADO SOBRE FOLHA TOTAL (inclui C-levels) — indicador
  * comparavel ao benchmark setorial de produtividade de folha, exibido
- * com o subtexto canonico "inclui alta lideranca".
+ * com o subtexto canonico "inclui alta liderança".
  *
  * Retorna `null` se `faturamentoMedioTrimestral <= 0` — motor propaga
  * skip antes de chegar aqui, mas defensivo.

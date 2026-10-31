@@ -5,7 +5,7 @@
 // dispatch, o item pai apontava para uma rota sem page.tsx (404).
 //
 // Layout: 2 cards clicaveis grandes, um por sub-log canonico:
-//   1. "Transferencias de Responsavel financeiro" — /super-admin/logs/
+//   1. "Transferências de Responsável financeiro" — /super-admin/logs/
 //      responsavel-financeiro (ME-057b).
 //   2. "Log de acesso individual" — /super-admin/logs/acesso-individual
 //      (ME-055b canonico + BACKLOG-03 pendente de instrumentacao).
@@ -57,7 +57,7 @@ export default async function LogsHubPage(): Promise<JSX.Element> {
           lineHeight: 1.55,
         }}
       >
-        Escolha qual registro de auditoria voce quer consultar.
+        Escolha qual registro de auditoria você quer consultar.
       </p>
 
       <LogsHubClient />

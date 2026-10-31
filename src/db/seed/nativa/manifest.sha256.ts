@@ -38,7 +38,7 @@
 // ME-B9.13 (04/10/2026) — reformulacao canonica do motor de ociosidade:
 // `computeCapacidadeOciosa` passa de (goal-demanda)/goal para
 // max(0, (goal-executado)/goal). `goal` reinterpretado como "capacidade
-// maxima" (nao mais "meta"). Faixas canonicas realinhadas: <10% critica,
+// maxima" (não mais "meta"). Faixas canonicas realinhadas: <10% critica,
 // 10-15% saudavel, 15-25% atencao, >25% elevada. Fixture
 // `performance_trimestral.json` regerado com nova formula (SHA anterior
 // `fc2c9ed4...`, substituido pela ME-1.4b em 12/10/2026); demais 19

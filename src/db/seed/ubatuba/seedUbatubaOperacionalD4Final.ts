@@ -125,7 +125,7 @@ async function ensureUbatubaCompanyExists(db: RoipDatabase): Promise<void> {
     .where(eq(companies.id, UBATUBA_COMPANY_ID));
   if (rows.length === 0) {
     throw new UbatubaOperacionalD4FinalPreconditionError(
-      `Bebidas Ubatuba (companies.id=${UBATUBA_COMPANY_ID}) nao encontrada. ` +
+      `Bebidas Ubatuba (companies.id=${UBATUBA_COMPANY_ID}) não encontrada. ` +
         `Rode 'npm run seed:ubatuba' primeiro (seed estrutural ME-080b).`,
     );
   }
@@ -317,7 +317,7 @@ export async function seedUbatubaOperacionalD4Final(
       .from(copsoqCycles)
       .where(eq(copsoqCycles.companyId, UBATUBA_COMPANY_ID));
     if (!inserted) {
-      throw new Error('copsoqCycles: cicloDbId nao encontrado apos INSERT.');
+      throw new Error('copsoqCycles: cicloDbId não encontrado após INSERT.');
     }
     cicloDbId = inserted.id;
   }
@@ -327,7 +327,7 @@ export async function seedUbatubaOperacionalD4Final(
     skipped.push('copsoqCycleSnapshot');
   } else {
     if (cicloDbId === null) {
-      throw new Error('copsoqCycleSnapshot: cicloDbId indisponivel.');
+      throw new Error('copsoqCycleSnapshot: cicloDbId indisponível.');
     }
     const rows = deriveUbatubaCopsoqSnapshots(cicloDbId);
     if (rows.length !== UBATUBA_COPSOQ_SNAPSHOTS_TOTAL_ESPERADO) {
@@ -342,7 +342,7 @@ export async function seedUbatubaOperacionalD4Final(
     skipped.push('copsoq_responses');
   } else {
     if (cicloDbId === null) {
-      throw new Error('copsoq_responses: cicloDbId indisponivel.');
+      throw new Error('copsoq_responses: cicloDbId indisponível.');
     }
     const rows = deriveUbatubaCopsoqResponses(cicloDbId);
     if (rows.length !== UBATUBA_COPSOQ_RESPONSES_TOTAL_ESPERADO) {
@@ -357,7 +357,7 @@ export async function seedUbatubaOperacionalD4Final(
     skipped.push('copsoqFactorScores');
   } else {
     if (cicloDbId === null) {
-      throw new Error('copsoqFactorScores: cicloDbId indisponivel.');
+      throw new Error('copsoqFactorScores: cicloDbId indisponível.');
     }
     const rows = deriveUbatubaCopsoqFactorScores(cicloDbId);
     if (rows.length !== UBATUBA_COPSOQ_FACTOR_SCORES_TOTAL_ESPERADO) {
@@ -372,7 +372,7 @@ export async function seedUbatubaOperacionalD4Final(
     skipped.push('nr1AreaDivergenceAnalysis');
   } else {
     if (cicloDbId === null) {
-      throw new Error('nr1AreaDivergenceAnalysis: cicloDbId indisponivel.');
+      throw new Error('nr1AreaDivergenceAnalysis: cicloDbId indisponível.');
     }
     const rows = deriveUbatubaNr1Divergences(cicloDbId);
     if (rows.length !== UBATUBA_NR1_DIVERGENCES_TOTAL_ESPERADO) {
@@ -403,7 +403,7 @@ export async function seedUbatubaOperacionalD4Final(
     skippedTables: Object.freeze(skipped),
     reason: applied
       ? undefined
-      : `Todas as tabelas D4-final ja semeadas em Ubatuba. Nenhum INSERT aplicado.`,
+      : `Todas as tabelas D4-final já semeadas em Ubatuba. Nenhum INSERT aplicado.`,
   };
 }
 

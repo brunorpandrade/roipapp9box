@@ -270,7 +270,7 @@ export default async function PainelLiderPage(): Promise<JSX.Element> {
 
   const menuItems = resolveMenuItems(profileKey, flags.isResponsavelFinanceiro);
   if (menuItems === null) {
-    throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
+    throw new Error(`Menu canônico ausente para ${profileKey} — inconsistência §3`);
   }
 
   const isCenario2 = profileKey === 'lider_c2';

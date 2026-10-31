@@ -11,7 +11,7 @@
 // Componentiza canonicamente:
 // - Cabecalho + linha de contexto do trimestre mais recente fechado.
 // - 2 subsecoes: "Planilhas operacionais" (2 cards) +
-//   "Relatorios executivos" (4 cards para Super Admin, 3 para RH — sem
+//   "Relatórios executivos" (4 cards para Super Admin, 3 para RH — sem
 //   Board deck one-pager, D-CR-3 aprovada).
 // - Seletor em cascata (Nivel -> Dropdown 2) para 4 artefatos.
 // - Card Clima usa dropdown unico de Ciclo (§12.7).
@@ -369,7 +369,7 @@ export function RelatoriosClient(props: Props): JSX.Element {
     // ME-080d Onda 2 — bug D5 fix:
     // O motor `generateExecutiveReport` e SINCRONO. Quando `result.ok === true`,
     // o PDF ja esta gerado, salvo em disco e cacheado. A promessa antiga
-    // "voce sera notificado no sino" era canonicamente falsa (nenhuma
+    // "você será notificado no sino" era canonicamente falsa (nenhuma
     // notificacao chegava, download nunca era disparado). Fluxo canonico
     // correto: pedir token efemero + abrir download em nova aba.
 
@@ -719,7 +719,7 @@ function ExportCard(props: ExportCardProps): JSX.Element {
                 ME-PAINEL-PLANILHAS-OPERACIONAIS, nenhum card em
                 `CARD_DEFS` esta marcado como disabled — o TS infere o
                 campo como literal `false` e a condicao `=== true`
-                vira unreachable. Se uma politica futura recolher um
+                vira unreachable. Se uma política futura recolher um
                 card de novo, restaurar este bloco condicionado a
                 `card.disabled === true`. */}
           </div>

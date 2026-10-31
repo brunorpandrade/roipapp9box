@@ -61,7 +61,7 @@ export type ActionResult<T = null> =
 async function requireSuperAdmin(actionName: string): Promise<number> {
   const session = await getServerSession();
   if (session === null) {
-    throw new Error(`${actionName}: sessao ausente ou expirada`);
+    throw new Error(`${actionName}: sessão ausente ou expirada`);
   }
   if (session.kind !== 'super_admin') {
     throw new Error(`${actionName}: acesso restrito ao Super Admin (§10.9 CAMADA_AUTH)`);
@@ -97,11 +97,11 @@ export async function saveJobFamilyAction(input: {
   const updatedBy = await requireSuperAdmin('saveJobFamilyAction');
 
   if (!Number.isInteger(input.companyId) || input.companyId <= 0) {
-    return { ok: false, message: 'companyId invalido.' };
+    return { ok: false, message: 'companyId inválido.' };
   }
   const validValues = JOB_FAMILY_VALUES as ReadonlyArray<string>;
   if (!validValues.includes(input.jobFamily)) {
-    return { ok: false, message: 'Familia de funcao invalida.' };
+    return { ok: false, message: 'Família de função inválida.' };
   }
   if (input.variables.length !== 4) {
     return { ok: false, message: MSG_JOB_FAMILY_INDICES_INVALIDOS };
@@ -119,17 +119,17 @@ export async function saveJobFamilyAction(input: {
       return { ok: false, message: 'Peso deve estar entre 0 e 100.' };
     }
     if (typeof v.variableName !== 'string' || v.variableName.trim() === '') {
-      return { ok: false, message: 'Nome da variavel obrigatorio.' };
+      return { ok: false, message: 'Nome da variável obrigatório.' };
     }
     if (typeof v.unit !== 'string' || v.unit.trim() === '') {
-      return { ok: false, message: 'Unidade da variavel obrigatoria.' };
+      return { ok: false, message: 'Unidade da variável obrigatória.' };
     }
   }
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
     if (!(await assertCompanyExists(client.db, input.companyId))) {
-      return { ok: false, message: 'Empresa nao encontrada.' };
+      return { ok: false, message: 'Empresa não encontrada.' };
     }
     const finalVars: JobFamilyVariableInput[] =
       input.jobFamily === 'lideranca_gestao'
@@ -171,20 +171,20 @@ export async function activateCustomSlotAction(input: {
 }): Promise<ActionResult<{ chosen: JobFamily }>> {
   const updatedBy = await requireSuperAdmin('activateCustomSlotAction');
   if (!Number.isInteger(input.companyId) || input.companyId <= 0) {
-    return { ok: false, message: 'companyId invalido.' };
+    return { ok: false, message: 'companyId inválido.' };
   }
   const nome = input.nomeCustomizado.trim();
   if (nome.length === 0) {
-    return { ok: false, message: 'Nome da nova familia obrigatorio.' };
+    return { ok: false, message: 'Nome da nova família obrigatório.' };
   }
   if (nome.length > 60) {
-    return { ok: false, message: 'Nome da familia deve ter no maximo 60 caracteres.' };
+    return { ok: false, message: 'Nome da família deve ter no máximo 60 caracteres.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
     if (!(await assertCompanyExists(client.db, input.companyId))) {
-      return { ok: false, message: 'Empresa nao encontrada.' };
+      return { ok: false, message: 'Empresa não encontrada.' };
     }
     try {
       const chosen = await activateCustomSlot(client.db, input.companyId, nome, updatedBy);
@@ -217,17 +217,17 @@ export async function toggleFamilyActiveAction(input: {
 }): Promise<ActionResult> {
   const updatedBy = await requireSuperAdmin('toggleFamilyActiveAction');
   if (!Number.isInteger(input.companyId) || input.companyId <= 0) {
-    return { ok: false, message: 'companyId invalido.' };
+    return { ok: false, message: 'companyId inválido.' };
   }
   const validValues = JOB_FAMILY_VALUES as ReadonlyArray<string>;
   if (!validValues.includes(input.jobFamily)) {
-    return { ok: false, message: 'Familia de funcao invalida.' };
+    return { ok: false, message: 'Família de função inválida.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
     if (!(await assertCompanyExists(client.db, input.companyId))) {
-      return { ok: false, message: 'Empresa nao encontrada.' };
+      return { ok: false, message: 'Empresa não encontrada.' };
     }
     if (!input.ativo) {
       const counts = await countEmployeesByJobFamily(client.db, input.companyId);
@@ -236,8 +236,8 @@ export async function toggleFamilyActiveAction(input: {
         return {
           ok: false,
           message:
-            `Nao e possivel desativar: ${n} colaborador(es) ativo(s) ` +
-            'ainda usam esta familia. Migre-os antes.',
+            `Não é possível desativar: ${n} colaborador(es) ativo(s) ` +
+            'ainda usam esta família. Migre-os antes.',
         };
       }
     }
@@ -276,11 +276,11 @@ export async function renameFamilyAction(input: {
 }): Promise<ActionResult> {
   const updatedBy = await requireSuperAdmin('renameFamilyAction');
   if (!Number.isInteger(input.companyId) || input.companyId <= 0) {
-    return { ok: false, message: 'companyId invalido.' };
+    return { ok: false, message: 'companyId inválido.' };
   }
   const validValues = JOB_FAMILY_VALUES as ReadonlyArray<string>;
   if (!validValues.includes(input.jobFamily)) {
-    return { ok: false, message: 'Familia de funcao invalida.' };
+    return { ok: false, message: 'Família de função inválida.' };
   }
   let normalized: string | null = null;
   if (input.nomeCustomizado !== null) {
@@ -288,7 +288,7 @@ export async function renameFamilyAction(input: {
     if (trimmed.length === 0) {
       normalized = null;
     } else if (trimmed.length > 60) {
-      return { ok: false, message: 'Nome da familia deve ter no maximo 60 caracteres.' };
+      return { ok: false, message: 'Nome da família deve ter no máximo 60 caracteres.' };
     } else {
       normalized = trimmed;
     }
@@ -297,7 +297,7 @@ export async function renameFamilyAction(input: {
   const client = createDbClient(resolveDatabaseUrl());
   try {
     if (!(await assertCompanyExists(client.db, input.companyId))) {
-      return { ok: false, message: 'Empresa nao encontrada.' };
+      return { ok: false, message: 'Empresa não encontrada.' };
     }
     try {
       await updateFamilySettings(
@@ -322,7 +322,7 @@ export async function renameFamilyAction(input: {
 
 /**
  * ME-1.17.2 — reordena familia (setas up/down). Carrega lista de
- * ATIVAS ordenada por `ordem ASC`, encontra o vizinho na `direcao`
+ * ATIVAS ordenada por `ordem ASC`, encontra o vizinho na `direção`
  * (anterior para 'up', seguinte para 'down') e faz swap de `ordem`.
  *
  * Idempotente nos extremos: se a familia ja esta no topo e `direcao
@@ -336,24 +336,24 @@ export async function reorderFamilyAction(input: {
 }): Promise<ActionResult> {
   const updatedBy = await requireSuperAdmin('reorderFamilyAction');
   if (!Number.isInteger(input.companyId) || input.companyId <= 0) {
-    return { ok: false, message: 'companyId invalido.' };
+    return { ok: false, message: 'companyId inválido.' };
   }
   const validValues = JOB_FAMILY_VALUES as ReadonlyArray<string>;
   if (!validValues.includes(input.jobFamily)) {
-    return { ok: false, message: 'Familia de funcao invalida.' };
+    return { ok: false, message: 'Família de função inválida.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
     if (!(await assertCompanyExists(client.db, input.companyId))) {
-      return { ok: false, message: 'Empresa nao encontrada.' };
+      return { ok: false, message: 'Empresa não encontrada.' };
     }
     const activeSettings = await listActiveFamilySettingsForCompany(client.db, input.companyId);
     const idx = activeSettings.findIndex((s) => s.jobFamily === input.jobFamily);
     if (idx === -1) {
       return {
         ok: false,
-        message: 'Familia nao ativa — ative antes de reordenar.',
+        message: 'Família não ativa — ative antes de reordenar.',
       };
     }
     const neighborIdx = input.direcao === 'up' ? idx - 1 : idx + 1;
@@ -408,7 +408,7 @@ export async function reorderFamilyAction(input: {
 /**
  * ME-1.17.3 — migra N colaboradores ATIVOS de `fromFamily` para
  * `toFamily` + desativa `fromFamily` em seguida. UX helper canonica
- * para o fluxo "desativar familia ocupada" (D6 ME-1.17.2 bloqueava
+ * para o fluxo "desativar família ocupada" (D6 ME-1.17.2 bloqueava
  * via guard; esta action desbloqueia via migracao previa).
  *
  * Validacoes canonicas:
@@ -431,27 +431,27 @@ export async function migrateAndDeactivateFamilyAction(input: {
 }): Promise<ActionResult<{ migrated: number }>> {
   const updatedBy = await requireSuperAdmin('migrateAndDeactivateFamilyAction');
   if (!Number.isInteger(input.companyId) || input.companyId <= 0) {
-    return { ok: false, message: 'companyId invalido.' };
+    return { ok: false, message: 'companyId inválido.' };
   }
   const validValues = JOB_FAMILY_VALUES as ReadonlyArray<string>;
   if (!validValues.includes(input.fromFamily) || !validValues.includes(input.toFamily)) {
-    return { ok: false, message: 'Familia de funcao invalida.' };
+    return { ok: false, message: 'Família de função inválida.' };
   }
   if (input.fromFamily === input.toFamily) {
-    return { ok: false, message: 'Familia destino nao pode ser igual a origem.' };
+    return { ok: false, message: 'Família destino não pode ser igual à origem.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
   try {
     if (!(await assertCompanyExists(client.db, input.companyId))) {
-      return { ok: false, message: 'Empresa nao encontrada.' };
+      return { ok: false, message: 'Empresa não encontrada.' };
     }
     const activeSettings = await listActiveFamilySettingsForCompany(client.db, input.companyId);
     const destinoAtivo = activeSettings.some((s) => s.jobFamily === input.toFamily);
     if (!destinoAtivo) {
       return {
         ok: false,
-        message: 'Familia destino precisa estar ATIVA para receber a migracao.',
+        message: 'Família destino precisa estar ATIVA para receber a migração.',
       };
     }
     try {

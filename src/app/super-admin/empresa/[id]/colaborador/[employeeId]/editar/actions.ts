@@ -74,7 +74,7 @@ async function resolveRawToken(): Promise<string | null> {
 async function requireSuperAdmin(actionName: string): Promise<void> {
   const session = await getServerSession();
   if (session === null) {
-    throw new Error(`${actionName}: sessao ausente ou expirada`);
+    throw new Error(`${actionName}: sessão ausente ou expirada`);
   }
   if (session.kind !== 'super_admin') {
     throw new Error(`${actionName}: acesso restrito ao Super Admin`);
@@ -100,7 +100,7 @@ export async function pesquisarLiderCandidatosEditarAction(input: {
   await requireSuperAdmin('pesquisarLiderCandidatosEditarAction');
 
   if (!Number.isInteger(input.companyId) || input.companyId <= 0) {
-    return { ok: false, message: 'companyId invalido.' };
+    return { ok: false, message: 'companyId inválido.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -144,7 +144,7 @@ export async function atualizarColaboradorAction(input: {
 }): Promise<ActionResult<UpdateEmployeeResult>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -181,7 +181,7 @@ export async function definirRFEditarAction(input: {
 }): Promise<ActionResult<SetResponsavelFinanceiroResult>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -215,7 +215,7 @@ export async function verificarInativacaoAction(input: {
 }): Promise<ActionResult<CanInactivateResult>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -254,7 +254,7 @@ export async function inativarColaboradorAction(input: {
 }): Promise<ActionResult<InactivateEmployeeResult>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -312,7 +312,7 @@ export async function executarTransferenciaAction(input: {
 }): Promise<ActionResult<ExecuteResult>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -358,7 +358,7 @@ export async function buscarCandidatosTransferenciaAction(input: {
 }): Promise<ActionResult<GetCandidatesResult>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -424,7 +424,7 @@ export async function listarLideradosAction(input: {
   await requireSuperAdmin('listarLideradosAction');
 
   if (!Number.isInteger(input.employeeId) || input.employeeId <= 0) {
-    return { ok: false, message: 'employeeId invalido.' };
+    return { ok: false, message: 'employeeId inválido.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -463,7 +463,7 @@ export async function reativarColaboradorAction(input: {
 }): Promise<ActionResult<ReactivateEmployeeResult>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -497,7 +497,7 @@ export async function excluirColaboradorAction(input: {
 }): Promise<ActionResult<DeleteEmployeeResult>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -537,7 +537,7 @@ export async function regenerarMatriculaColaboradorAction(input: {
 }): Promise<ActionResult<{ matricula: string }>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -573,7 +573,7 @@ export async function regenerarSenhaColaboradorAction(input: {
 }): Promise<ActionResult<{ senhaInicial: string }>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -618,7 +618,7 @@ export async function reatribuirLiderColaboradorAction(input: {
 }): Promise<ActionResult<{ changed: boolean; newHistoryId: number | null }>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -660,7 +660,7 @@ export async function reatribuirLiderColaboradorAction(input: {
  * Wrapper canonico de `employees.unmarkAsLeader` (ME-ORG-01-B). Aplica
  * reatribuicoes de liderados em transacao atomica e seta `isLider=false`
  * no colaborador, sem desligamento. Disparado quando o usuario desativa
- * o toggle "Permitir acesso como Lider" para um lider com liderados
+ * o toggle "Permitir acesso como Líder" para um líder com liderados
  * ativos; o modal `ModalTransferenciaLiderados` (M2 v2) e reusado para
  * capturar o mapeamento canonico (massa ou 1-a-1).
  */
@@ -678,7 +678,7 @@ export async function desmarcarComoLiderAction(input: {
 }): Promise<ActionResult<{ employeeId: number; transferBatchId: string }>> {
   const token = await resolveRawToken();
   if (token === null) {
-    return { ok: false, message: 'Sessao ausente ou expirada.' };
+    return { ok: false, message: 'Sessão ausente ou expirada.' };
   }
 
   const client = createDbClient(resolveDatabaseUrl());

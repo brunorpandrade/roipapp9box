@@ -227,7 +227,7 @@ function buildContext(
 ): PlatformMenuContext {
   const menuItems = resolveMenuItems(profileKey, isResponsavelFinanceiro);
   if (menuItems === null) {
-    throw new Error(`Menu ausente para ${profileKey} — inconsistencia DOC 05 §3`);
+    throw new Error(`Menu ausente para ${profileKey} — inconsistência DOC 05 §3`);
   }
   return {
     profileKey,

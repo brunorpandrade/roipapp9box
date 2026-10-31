@@ -122,7 +122,7 @@ export default async function ColaboradorEditarRHPage(props: PageProps): Promise
     }
     const menuItems = resolveMenuItems(profileKey, isRfForMenu);
     if (menuItems === null) {
-      throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
+      throw new Error(`Menu canônico ausente para ${profileKey} — inconsistência §3`);
     }
 
     const companyId = session.companyId;

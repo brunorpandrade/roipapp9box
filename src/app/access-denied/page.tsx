@@ -337,7 +337,7 @@ export default async function AccessDeniedPage({
 
   const menuItems = resolveMenuItems(profileKey, flags.isResponsavelFinanceiro);
   if (menuItems === null) {
-    throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
+    throw new Error(`Menu canônico ausente para ${profileKey} — inconsistência §3`);
   }
 
   // §8.1: CTA aponta ao painel canonico do proprio perfil autenticado.

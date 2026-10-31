@@ -5,7 +5,7 @@
 // Thin wrapper sobre `CLevelForm` no modo `create`. Gerencia estado do
 // form, handler de save via server action `criarCLevelAction`, handler
 // de toggle RF (modal de transferencia quando empresa ja tem RF), modal
-// "Descartar alteracoes" (dirty), e navegacao pos-sucesso.
+// "Descartar alterações" (dirty), e navegação pós-sucesso.
 //
 // ME 3.5 D5 patch2 — passa `isRH` do form para a action `criarCLevelAction`.
 //
@@ -26,7 +26,7 @@ import { criarCLevelAction } from './actions';
 // Tooltips canonicos bit-exact (S503)
 // -----------------------------------------------------------------------
 
-const ENVIAR_PRIMEIRO_ACESSO_TOOLTIP = 'Disponivel a partir da ME-Primeiro-Cliente.' as const;
+const ENVIAR_PRIMEIRO_ACESSO_TOOLTIP = 'Disponível a partir da ME-Primeiro-Cliente.' as const;
 
 // -----------------------------------------------------------------------
 // Estilos canonicos

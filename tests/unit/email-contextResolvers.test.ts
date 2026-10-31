@@ -44,7 +44,7 @@ describe('resolveContextoCurto — §12.6 bit-exact', () => {
       mesAnterior2: '2026-04',
     };
     expect(resolveContextoCurto('desempenho_estagnacao', meta)).toBe(
-      'Carla Dias — indice de desempenho 60 em 2026-06, 62 em 2026-05, 61 em 2026-04',
+      'Carla Dias — índice de desempenho 60 em 2026-06, 62 em 2026-05, 61 em 2026-04',
     );
   });
 
@@ -57,7 +57,7 @@ describe('resolveContextoCurto — §12.6 bit-exact', () => {
       diasUteis: 20,
     };
     expect(resolveContextoCurto('assiduidade_baixa', meta)).toBe(
-      'Diego Melo — assiduidade 75% em 2026-06 (5 faltas em 20 dias uteis)',
+      'Diego Melo — assiduidade 75% em 2026-06 (5 faltas em 20 dias úteis)',
     );
   });
 
@@ -127,14 +127,14 @@ describe('resolveContextoCurto — §12.6 bit-exact', () => {
   it('desbloqueio_aprovado', () => {
     const meta = { solicitanteNome: 'Igor', mes: '2026-06', expiraEm: '2026-06-30' };
     expect(resolveContextoCurto('desbloqueio_aprovado', meta)).toBe(
-      'Solicitacao de Igor para 2026-06 aprovada. Janela expira em 2026-06-30',
+      'Solicitação de Igor para 2026-06 aprovada. Janela expira em 2026-06-30',
     );
   });
 
   it('desbloqueio_recusado', () => {
     const meta = { solicitanteNome: 'Julia', mes: '2026-06', motivoRecusa: 'Justificativa fraca' };
     expect(resolveContextoCurto('desbloqueio_recusado', meta)).toBe(
-      'Solicitacao de Julia para 2026-06 recusada. Motivo: Justificativa fraca',
+      'Solicitação de Julia para 2026-06 recusada. Motivo: Justificativa fraca',
     );
   });
 
@@ -148,15 +148,15 @@ describe('resolveContextoCurto — §12.6 bit-exact', () => {
   it('ciclo_mensal_fechado', () => {
     const meta = { cicloReferencia: '2026-06', empresaNome: 'ACME Ltda' };
     expect(resolveContextoCurto('ciclo_mensal_fechado', meta)).toBe(
-      'Mes 2026-06 de ACME Ltda fechado para lancamentos',
+      'Mês 2026-06 de ACME Ltda fechado para lançamentos',
     );
   });
 
   it('fechamento_bloqueado_sem_resp_financeiro (D049)', () => {
     const meta = { empresaNome: 'ACME Ltda', mesReferencia: '2026-06' };
     expect(resolveContextoCurto('fechamento_bloqueado_sem_resp_financeiro', meta)).toBe(
-      'ACME Ltda — fechamento mensal de 2026-06 sem Responsavel financeiro atribuido. ' +
-        'Nomeie um titular antes do proximo ciclo.',
+      'ACME Ltda — fechamento mensal de 2026-06 sem Responsável financeiro atribuído. ' +
+        'Nomeie um titular antes do próximo ciclo.',
     );
   });
 

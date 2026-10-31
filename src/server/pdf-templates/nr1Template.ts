@@ -923,7 +923,7 @@ function renderCritico(input: Nr1TemplateInput): string {
   if (!critico) {
     return `<section class="page-break">
   <h2>Departamento em situação crítica</h2>
-  <p style="font-size:10pt;">Identificação automática do departamento com maior magnitude de divergência negativa vs média da empresa (≥ 10 pontos abaixo em pelo menos 1 fator).</p>
+  <p style="font-size:10pt;">Identificação automática do departamento com maior magnitude de divergência negativa vs. média da empresa (≥ 10 pontos abaixo em pelo menos 1 fator).</p>
   <div class="sem-dados-nota">
     <strong>Nenhum departamento em situação crítica neste ciclo.</strong>
     Nenhum departamento apresentou divergência crítica frente à média da empresa.
@@ -946,7 +946,7 @@ function renderCritico(input: Nr1TemplateInput): string {
     .join('');
   return `<section class="page-break">
   <h2>Departamento em situação crítica</h2>
-  <p style="font-size:10pt;">Identificação automática do departamento com maior magnitude de divergência negativa vs média da empresa. Critério: ≥ 10 pontos abaixo da média da empresa em pelo menos 1 fator, com desempate pelo maior número de fatores em divergência crítica.</p>
+  <p style="font-size:10pt;">Identificação automática do departamento com maior magnitude de divergência negativa vs. média da empresa. Critério: ≥ 10 pontos abaixo da média da empresa em pelo menos 1 fator, com desempate pelo maior número de fatores em divergência crítica.</p>
   <div class="critico-card">
     <div class="critico-head">
       <div class="critico-icon">!</div>
@@ -1174,7 +1174,7 @@ function derivarSugestoesCanonicas(input: Nr1TemplateInput): Array<{
     const tipoLower = classificarTipoFator(a.fatorNome).toLowerCase();
     const orientacao =
       tipoLower === 'fator de risco'
-        ? 'investigação de causas raiz nas rotinas de trabalho, cargas e prazos vinculados a este fator, com escuta estruturada da liderança operacional e amostra representativa de colaboradores'
+        ? 'investigação de causas-raiz nas rotinas de trabalho, cargas e prazos vinculados a este fator, com escuta estruturada da liderança operacional e amostra representativa de colaboradores'
         : 'investigação dos elementos culturais e de gestão que estão sustentando este recurso, para preservar ou expandir as práticas que o alimentam';
     out.push({
       titulo: `Aprofundar diagnóstico em ${a.fatorNome} (escopo empresa, score ${fmtScore(a.score)}).`,
@@ -1185,7 +1185,7 @@ function derivarSugestoesCanonicas(input: Nr1TemplateInput): Array<{
     const fatoresNomeados = input.departamentoCritico.fatoresCriticos.slice(0, 3).join(', ');
     out.push({
       titulo: `Investigação prioritária no departamento ${input.departamentoCritico.nome}.`,
-      descricao: `Este departamento concentra ${input.departamentoCritico.fatoresCriticos.length} fator${input.departamentoCritico.fatoresCriticos.length === 1 ? '' : 'es'} com divergência negativa relevante vs média da empresa${fatoresNomeados ? ` (${fatoresNomeados})` : ''}. Recomenda-se conversa estruturada com a liderança da área e amostra de colaboradores para contextualizar os desvios, identificar causas operacionais ou de gestão e priorizar intervenções focadas.`,
+      descricao: `Este departamento concentra ${input.departamentoCritico.fatoresCriticos.length} fator${input.departamentoCritico.fatoresCriticos.length === 1 ? '' : 'es'} com divergência negativa relevante vs. média da empresa${fatoresNomeados ? ` (${fatoresNomeados})` : ''}. Recomenda-se conversa estruturada com a liderança da área e amostra de colaboradores para contextualizar os desvios, identificar causas operacionais ou de gestão e priorizar intervenções focadas.`,
     });
   }
   // Replicacao de divergencia positiva (um dept pode ter fatores >=10
@@ -1209,7 +1209,7 @@ function derivarSugestoesCanonicas(input: Nr1TemplateInput): Array<{
         .join(', ');
       out.push({
         titulo: `Replicação de boas práticas do departamento ${topo.dept.departamentoNome}.`,
-        descricao: `Este departamento apresenta divergência positiva relevante em ${topo.positivos.length} fator${topo.positivos.length === 1 ? '' : 'es'} vs média da empresa (${fatoresNomeados}). Recomenda-se conversa com a liderança da área para identificar práticas de gestão e rotinas que podem ser replicadas em outras equipes.`,
+        descricao: `Este departamento apresenta divergência positiva relevante em ${topo.positivos.length} fator${topo.positivos.length === 1 ? '' : 'es'} vs. média da empresa (${fatoresNomeados}). Recomenda-se conversa com a liderança da área para identificar práticas de gestão e rotinas que podem ser replicadas em outras equipes.`,
       });
     }
   }

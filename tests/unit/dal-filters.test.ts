@@ -74,13 +74,13 @@ describe('DAL filters + mappings — CC043 (mockup prevalece)', () => {
       expect(resolveTipoAcessoLabel('dashboard_individual')).toBe('Dashboard individual');
     });
 
-    it('relatorio_perfil_individual → Relatorio do Perfil Individual', () => {
+    it('relatorio_perfil_individual → Relatorio do Perfil individual', () => {
       expect(resolveTipoAcessoLabel('relatorio_perfil_individual')).toBe(
-        'Relatório do Perfil Individual',
+        'Relatório do Perfil individual',
       );
     });
 
-    it('exportacao_planilha → Exportacao em planilha', () => {
+    it('exportacao_planilha → Exportação em planilha', () => {
       expect(resolveTipoAcessoLabel('exportacao_planilha')).toBe('Exportação em planilha');
     });
 

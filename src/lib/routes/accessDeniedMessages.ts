@@ -23,8 +23,8 @@
 
 /** Template canonico §8.1 (referencia — nao usado para interpolacao runtime). */
 export const ACCESS_DENIED_TEMPLATE_CANONICAL: string =
-  'Voce nao tem permissao para acessar [Nome da rota]. Este espaco e restrito ao ' +
-  '[Perfis autorizados]. Se acredita que isso e um erro, contate o Super Admin.';
+  'Você não tem permissão para acessar [Nome da rota]. Este espaço é restrito ao ' +
+  '[Perfis autorizados]. Se acredita que isso é um erro, contate o Super Admin.';
 
 /** Titulo canonico unico (§8.1). Sem interpolacao, sem variacao. */
 export const ACCESS_DENIED_TITLE = 'Acesso negado.' as const;
@@ -215,7 +215,7 @@ export const MSG_CENTRAL_RELATORIOS: AccessDeniedMessage = {
 export const MSG_PERFIL_INDIVIDUAL_CLEVEL: AccessDeniedMessage = {
   key: '/perfil-individual/clevel/:id',
   message:
-    'Você não tem permissão para acessar o Perfil Individual deste colaborador. Este espaço é restrito ao Super Admin. Se acredita que isso é um erro, contate o Super Admin.',
+    'Você não tem permissão para acessar o Perfil individual deste colaborador. Este espaço é restrito ao Super Admin. Se acredita que isso é um erro, contate o Super Admin.',
   canonicalRef: 'DOC 02 §11.5',
 };
 
@@ -264,7 +264,7 @@ export const MSG_EMPRESA_CADASTRO: AccessDeniedMessage = {
  * Fallback canonico usado quando o middleware nao encontra `?rota=` na
  * URL ou o valor nao corresponde a nenhuma chave conhecida — evita
  * pagina em branco. Texto e uma redacao generica do template §8.1 com
- * "esta area" no lugar do nome da rota. Nao substitui o veredito
+ * "esta área" no lugar do nome da rota. Não substitui o veredito
  * canonico literal — e um veredito de ultimo recurso.
  */
 export const MSG_FALLBACK: AccessDeniedMessage = {

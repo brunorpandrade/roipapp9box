@@ -83,7 +83,7 @@ export default async function TurnoverBrunoPage(props: PageProps): Promise<JSX.E
     });
     const menuItems = resolveMenuItems(profileKey, false, companyId);
     if (menuItems === null) {
-      throw new Error(`Menu ausente para ${profileKey} — inconsistencia DOC 05 §3`);
+      throw new Error(`Menu ausente para ${profileKey} — inconsistência DOC 05 §3`);
     }
 
     return (

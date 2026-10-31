@@ -38,8 +38,8 @@ interface RegenerateConfirmModalProps {
 // o verbo que ja aparece nos botoes de linha do
 // `ColaboradorEditarClient.tsx` e `CLevelEditarClient.tsx` — eliminada
 // a dissonancia visual entre botao e titulo do modal (uso previo:
-// botao de linha ja dizia "Regenerar matricula", mas o modal dizia
-// "Regerar matricula").
+// botão de linha já dizia "Regenerar matrícula", mas o modal dizia
+// "Regerar matrícula").
 const COPY: Record<'matricula' | 'senha', { titulo: string; corpo: string; botao: string }> = {
   matricula: {
     titulo: 'Regenerar matrícula?',

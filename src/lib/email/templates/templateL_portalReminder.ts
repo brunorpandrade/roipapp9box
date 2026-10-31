@@ -165,7 +165,7 @@ function escapeHtml(raw: string): string {
 /**
  * Renderiza uma linha canonica de instrumento em texto plano (§12.8).
  * Formato bit-exact:
- * - A/C/D/B_NR1: "• {rotulo} — {status} · Prazo original: {prazo}"
+ * - A/C/D/B_NR1: "• {rótulo} — {status} · Prazo original: {prazo}"
  * - PerfilIndividual: "• {rotulo} — {status}" (sem prazo)
  */
 function renderLinhaInstrumentoTexto(item: TemplateLInstrumentoPendente): string {

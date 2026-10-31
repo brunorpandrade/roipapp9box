@@ -91,7 +91,7 @@ export default async function RFLogsPage(props: PageProps): Promise<JSX.Element>
 
     const menuItems = resolveMenuItems(profileKey, false);
     if (menuItems === null) {
-      throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
+      throw new Error(`Menu canônico ausente para ${profileKey} — inconsistência §3`);
     }
 
     const [empresas, listResult] = await Promise.all([

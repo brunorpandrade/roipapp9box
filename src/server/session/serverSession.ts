@@ -80,7 +80,7 @@ import { resolveDatabaseUrl } from '../../lib/db/resolveDatabaseUrl';
  * Ausencia de campos `companyDisplayName` / `companyLogoUrl` no ramo
  * `super_admin` e canonica (§4 estrutura comum + §4.2): quando o
  * Super Admin esta em `/super-admin` global, o header exibe apenas
- * "Area do Super Admin" (leftMode 'super_admin_global'). Quando esta
+ * "Área do Super Admin" (leftMode 'super_admin_global'). Quando esta
  * dentro-de-empresa (`/super-admin/empresa/[id]/...`), o consumidor
  * deve fazer query adicional para obter os dados da empresa alvo
  * (fora do escopo desta ME — B5.3+).
@@ -300,7 +300,7 @@ export async function getServerSession(): Promise<ServerSession | null> {
 
 /**
  * TTL canonico bit-exact do cookie do Super Admin (§5.1 DOC 02 —
- * "sessao nunca expira por inatividade"). O JWT do Super Admin nao
+ * "sessão nunca expira por inatividade"). O JWT do Super Admin nao
  * carrega `exp`; o cookie precisa persistir entre visitas do browser.
  * 365 dias (em segundos) alinha com a intencao canonica de sessao
  * persistente. O cookie e limpo apenas via `/logout` (D075) ou

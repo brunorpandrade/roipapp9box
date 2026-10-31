@@ -292,24 +292,24 @@ function baseCreatePayload(companyId: number) {
 
 describe('cLevelMembers — contratos publicos exportados', () => {
   it('mensagens canonicas literais batem o texto exato', () => {
-    expect(MSG_COMPANY_MISMATCH_CL).toBe('C-level nao pertence a sua empresa.');
-    expect(MSG_CLEVEL_NAO_ENCONTRADO).toBe('C-level nao encontrado.');
-    expect(MSG_CPF_DUPLICADO_CL).toBe('Ja existe C-level cadastrado com este CPF nesta empresa.');
-    expect(MSG_DELETE_CLEVEL_ATIVO).toBe('C-level ativo nao pode ser deletado. Inative antes.');
+    expect(MSG_COMPANY_MISMATCH_CL).toBe('C-level não pertence à sua empresa.');
+    expect(MSG_CLEVEL_NAO_ENCONTRADO).toBe('C-level não encontrado.');
+    expect(MSG_CPF_DUPLICADO_CL).toBe('Já existe C-level cadastrado com este CPF nesta empresa.');
+    expect(MSG_DELETE_CLEVEL_ATIVO).toBe('C-level ativo não pode ser deletado. Inative antes.');
     expect(MSG_DELETE_COM_HISTORICO_CL).toBe(
-      'C-level possui dados historicos. Deletar nao e permitido; mantenha inativo.',
+      'C-level possui dados históricos. Deletar não é permitido; mantenha inativo.',
     );
     expect(MSG_DELETE_RF_BLOQUEADO_CL).toBe(
-      'Nao e possivel excluir o Responsavel financeiro. Transfira o papel antes de excluir.',
+      'Não é possível excluir o Responsável financeiro. Transfira o papel antes de excluir.',
     );
     expect(MSG_INACTIVATE_RF_BLOQUEADO_CL).toBe(
-      'Este C-level e o Responsavel financeiro da empresa. Antes de inativar, ' +
-        'atribua o papel de Responsavel financeiro a outro colaborador.',
+      'Este C-level é o Responsável financeiro da empresa. Antes de inativar, ' +
+        'atribua o papel de Responsável financeiro a outro colaborador.',
     );
-    expect(MSG_JA_INATIVO_CL).toBe('C-level ja esta inativo.');
-    expect(MSG_JA_ATIVO_CL).toBe('C-level ja esta ativo.');
+    expect(MSG_JA_INATIVO_CL).toBe('C-level já está inativo.');
+    expect(MSG_JA_ATIVO_CL).toBe('C-level já está ativo.');
     expect(MSG_TOGGLE_RF_FORA_ESCOPO_CL).toBe(
-      'Alteracao de Responsavel financeiro nao e permitida por esta rota; ' +
+      'Alteração de Responsável financeiro não é permitida por esta rota; ' +
         'use company.setResponsavelFinanceiro.',
     );
   });

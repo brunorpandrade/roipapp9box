@@ -7,7 +7,7 @@
 //   `href="/colaborador/responder/radar-nr1"`.
 //
 // Tambem protege contra regressao dos estados NAO habilitados:
-// - `MeuPortalClient.HREF_POR_INSTRUMENTO.meuPerfil` permanece `null` (Perfil Individual)
+// - `MeuPortalClient.HREF_POR_INSTRUMENTO.meuPerfil` permanece `null` (Perfil individual)
 //   ate a ME-B10-04.
 
 import { readFileSync } from 'node:fs';
@@ -55,7 +55,7 @@ describe('ME-B10-03 — habilitacao canonica de rotas Radar NR-1', () => {
     expect(src).toContain('href="/colaborador/responder/auto-avaliacao"');
   });
 
-  it('PendenciasClient CardLiderancaDireta preserva href (regressao ME-B10-02)', () => {
+  it('PendenciasClient CardLiderançaDireta preserva href (regressao ME-B10-02)', () => {
     const src = readSrc('src/components/portal-colaborador/PendenciasClient.tsx');
     expect(src).toContain('href="/colaborador/responder/lideranca-direta"');
   });

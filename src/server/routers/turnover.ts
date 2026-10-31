@@ -55,10 +55,10 @@ import { TRIMESTRE_INPUT_SCHEMA } from './quarterlyCalculation';
 // ============================================================
 
 /** §2.4 — guard cruzado de escopo empresa quebrou. */
-export const MSG_COMPANY_MISMATCH_TURN = 'Empresa nao pertence ao seu escopo.' as const;
+export const MSG_COMPANY_MISMATCH_TURN = 'Empresa não pertence ao seu escopo.' as const;
 
 /** Empresa alvo inexistente. */
-export const MSG_COMPANY_NAO_ENCONTRADA_TURN = 'Empresa nao encontrada.' as const;
+export const MSG_COMPANY_NAO_ENCONTRADA_TURN = 'Empresa não encontrada.' as const;
 
 // ============================================================
 // Schemas Zod canonicos

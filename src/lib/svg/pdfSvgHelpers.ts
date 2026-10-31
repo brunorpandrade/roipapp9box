@@ -47,7 +47,7 @@ export function projectRadarPoint(
   maxRadius: number,
 ): RadarPoint {
   if (!Number.isInteger(idx) || idx < 0 || idx >= totalEixos) {
-    throw new RangeError(`projectRadarPoint: idx fora do dominio [0, ${totalEixos})`);
+    throw new RangeError(`projectRadarPoint: idx fora do domínio [0, ${totalEixos})`);
   }
   if (!Number.isInteger(totalEixos) || totalEixos <= 0) {
     throw new RangeError('projectRadarPoint: totalEixos deve ser inteiro positivo');

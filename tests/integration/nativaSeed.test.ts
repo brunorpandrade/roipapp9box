@@ -367,7 +367,7 @@ describe('seedNativa — invariantes canonicas bit-exact §18.4 (ME-068)', () =>
       hashPassword: (plain: string) => bcrypt.hash(plain, 4),
     });
     expect(second.applied).toBe(false);
-    expect(second.reason).toMatch(/ja existe/);
+    expect(second.reason).toMatch(/já existe/);
   });
 
   it('senha canonica NATIVA_UNIVERSAL_PASSWORD e string nao-vazia', () => {

@@ -60,7 +60,7 @@ const MAX_ATTEMPTS_MULTIPLIER = 100;
  */
 export function computeCpfCheckDigits(base9: string): string {
   if (base9.length !== 9 || !/^[0-9]{9}$/.test(base9)) {
-    throw new Error(`computeCpfCheckDigits: entrada '${base9}' deve ter 9 digitos.`);
+    throw new Error(`computeCpfCheckDigits: entrada '${base9}' deve ter 9 dígitos.`);
   }
   const digits = base9.split('').map((d) => Number(d));
 
@@ -178,9 +178,9 @@ export function generateUniqueCpfs(
   }
   if (result.length < count) {
     throw new Error(
-      `generateUniqueCpfs: espaco amostral esgotado (pediu ${count}, ` +
-        `gerou ${result.length} apos ${attempts} tentativas). Improvavel na ` +
-        `faixa reservada '1xx' (100M CPFs disponiveis).`,
+      `generateUniqueCpfs: espaço amostral esgotado (pediu ${count}, ` +
+        `gerou ${result.length} após ${attempts} tentativas). Improvável na ` +
+        `faixa reservada '1xx' (100M CPFs disponíveis).`,
     );
   }
   return result;

@@ -55,7 +55,7 @@ async function resolveRawToken(): Promise<string | null> {
 async function requireSuperAdmin(actionName: string): Promise<void> {
   const session = await getServerSession();
   if (session === null) {
-    throw new Error(`${actionName}: sessao ausente ou expirada`);
+    throw new Error(`${actionName}: sessão ausente ou expirada`);
   }
   if (session.kind !== 'super_admin') {
     throw new Error(`${actionName}: acesso restrito ao Super Admin`);

@@ -176,7 +176,7 @@ export async function emitAlert(db: RoipDatabase, input: EmitAlertInput): Promis
     if (input.escopoEmployeeId === null) {
       throw new Error(
         'alert.b3.invalid — desempenho_queda_isolada requer ' +
-          'escopoEmployeeId (§9.2 chave canonica).',
+          'escopoEmployeeId (§9.2 chave canônica).',
       );
     }
     const b3 = await checkB3NaoRecorrencia(db, input.companyId, input.escopoEmployeeId, now);

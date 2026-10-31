@@ -405,7 +405,7 @@ describe('instrumentD — contratos publicos exportados', () => {
     expect(itensCobremGridCanonicoD(comLacuna)).toBe(false);
   });
 
-  it('resolveDia16InstrumentD retorna null para trimestre invalido', () => {
+  it('resolveDia16InstrumentD retorna null para trimestre inválido', () => {
     expect(resolveDia16InstrumentD('invalido', 'America/Sao_Paulo')).toBeNull();
     const d1 = resolveDia16InstrumentD('2024-Q1', 'America/Sao_Paulo');
     expect(d1?.toISOString()).toBe('2024-03-16T03:00:00.000Z');
@@ -561,7 +561,7 @@ describe('instrumentD.getInstrumentDStatus — snapshot §8.3', () => {
     ).rejects.toThrow(MSG_EMPRESA_NAO_ENCONTRADA_STATUS_D);
   });
 
-  it('trimestre invalido rejeitado pelo Zod', async () => {
+  it('trimestre inválido rejeitado pelo Zod', async () => {
     const { factory, ctx } = bindRouter({ now: () => NOW_DENTRO_Q1_2024 });
     const token = await tokenSuperAdmin();
     const caller = factory(ctx(token));

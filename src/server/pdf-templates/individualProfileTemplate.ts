@@ -94,7 +94,7 @@ export interface IndividualProfileExpandidoJson {
 
 /** Subvetor: rotulo canonico + valor 0-100 (DOC 03 §10.8). */
 export interface IndividualProfileSubvector {
-  bloco: 'Postura' | 'Estrutura' | 'Motor' | 'Equilibrio' | 'Assinatura';
+  bloco: 'Postura' | 'Estrutura' | 'Motor' | 'Equilíbrio' | 'Assinatura';
   rotulo: string;
   valor: number;
 }
@@ -256,7 +256,7 @@ function renderNaturalmenteExcelente(b: BlocoNaturalmenteExcelente): string {
   <h2>No que é naturalmente excelente</h2>
   ${subBloco('Assinatura dominante', b?.assinatura_dominante)}
   ${subLista('Onde gera valor', b?.onde_gera_valor)}
-  ${subLista('Riscos de overuse', b?.riscos_de_overuse)}
+  ${subLista('Riscos de uso excessivo', b?.riscos_de_overuse)}
 </section>`;
 }
 
@@ -287,7 +287,7 @@ function renderSubvectorPanel(subvetores: IndividualProfileSubvector[]): string 
     Postura: [],
     Estrutura: [],
     Motor: [],
-    Equilibrio: [],
+    Equilíbrio: [],
     Assinatura: [],
   };
   for (const s of subvetores) grouped[s.bloco]?.push(s);
@@ -329,7 +329,7 @@ ${rows}
 export function renderIndividualProfileHTML(input: IndividualProfileTemplateInput): string {
   const exp = input.expandido;
   const bodyHtml = [
-    `<h1>Perfil Individual</h1>`,
+    `<h1>Perfil individual</h1>`,
     renderIdentificacaoSection(input.identificacao),
     renderSintese(exp.sintese_executiva),
     renderComoAge(exp.como_age),
@@ -343,7 +343,7 @@ export function renderIndividualProfileHTML(input: IndividualProfileTemplateInpu
   ].join('\n\n');
 
   return renderLayoutBase({
-    title: `Perfil Individual — ${input.identificacao.nome}`,
+    title: `Perfil individual — ${input.identificacao.nome}`,
     company: input.company,
     bodyHtml,
     footerCenter: `Gerado em ${input.generatedAtDate}`,

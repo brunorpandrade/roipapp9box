@@ -92,7 +92,7 @@ export default async function DALLogsBrunoPage(props: PageProps): Promise<JSX.El
 
     const menuItems = resolveMenuItems(profileKey, false);
     if (menuItems === null) {
-      throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
+      throw new Error(`Menu canônico ausente para ${profileKey} — inconsistência §3`);
     }
 
     // Escopo canonico Bruno: cross-empresa (null). Dropdown Empresa

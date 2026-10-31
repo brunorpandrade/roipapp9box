@@ -122,9 +122,9 @@ export function Header(props: HeaderProps): JSX.Element {
         {leftMode === 'super_admin_global' ? (
           <>
             {/*
-              ME-080d Onda 1e — substituida a logo horizontal ROIPeople
-              (que ja aparece no topo do Sidebar canonico) pelo icone
-              quadrado do brand. Evita duplicacao visual e libera espaco
+              ME-080d Onda 1e — substituída a logo horizontal ROIPeople
+              (que já aparece no topo do Sidebar canônico) pelo ícone
+              quadrado do brand. Evita duplicação visual e libera espaço
               horizontal no header.
             */}
             <Image
@@ -151,13 +151,13 @@ export function Header(props: HeaderProps): JSX.Element {
               /*
                 ME-080d Onda 1e — trocado `<Image>` do next/image por
                 `<img>` nativo. Racional: `<Image>` bloqueia URLs de
-                hostnames nao listados em `next.config.ts > images.
-                remotePatterns` por seguranca. Como o `companies.logoUrl`
-                pode apontar para qualquer CDN publico ate a implementacao
-                do upload interno (debito D-LOGO-UPLOAD), `<img>` nativo
-                evita configurar hostname-a-hostname. Padrao ja adotado
-                em `CompanyLandingClient` (consistencia). Perda de
-                otimizacao Next Image (lazy load + resize) e marginal
+                hostnames não listados em `next.config.ts > images.
+                remotePatterns` por segurança. Como o `companies.logoUrl`
+                pode apontar para qualquer CDN público até a implementação
+                do upload interno (débito D-LOGO-UPLOAD), `<img>` nativo
+                evita configurar hostname-a-hostname. Padrão já adotado
+                em `CompanyLandingClient` (consistência). Perda de
+                otimização Next Image (lazy load + resize) é marginal
                 para thumbnail 32px.
               */
               <img
@@ -205,12 +205,12 @@ export function Header(props: HeaderProps): JSX.Element {
 
         {/*
           ME-080d Onda 1c — D8: substitui o `<span>{user.displayName}</span>` inerte
-          + o botao `[Sair]` separado por um `<UserMenuDropdown>` unificado que
-          expoe 3 itens canonicos ao clicar no avatar+nome:
+          + o botão `[Sair]` separado por um `<UserMenuDropdown>` unificado que
+          expõe 3 itens canônicos ao clicar no avatar+nome:
             1. Meus dados      → /meus-dados     (D-RH-B8, prefetch:false)
             2. Alterar senha   → /alterar-senha
             3. Sair            → /logout          (prefetch:false)
-          Padrao web app canonico (Gmail/Notion/GitHub/Linear).
+          Padrão web app canônico (Gmail/Notion/GitHub/Linear).
         */}
         <UserMenuDropdown displayName={user.displayName} avatarUrl={user.avatarUrl} />
       </div>

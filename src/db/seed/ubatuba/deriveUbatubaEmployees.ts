@@ -188,7 +188,7 @@ export async function deriveUbatubaEmployees(opts: {
     const cpfDerivado = cpfs[index];
     const matriculaDerivada = matriculas[index];
     if (cpfDerivado === undefined || matriculaDerivada === undefined) {
-      throw new Error(`deriveUbatubaEmployees: cpf/matricula ausente no index ${index}.`);
+      throw new Error(`deriveUbatubaEmployees: cpf/matrícula ausente no index ${index}.`);
     }
 
     derivedRows.push({

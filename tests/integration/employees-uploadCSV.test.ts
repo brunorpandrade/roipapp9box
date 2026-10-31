@@ -12,7 +12,7 @@
 //   - Cabecalho invalido = BAD_REQUEST global (aborto).
 //   - Payload base64 vazio = BAD_REQUEST global.
 //   - XLSX linha OK cria colaborador (via `create` canonico) + placeholder
-//     + leaderHistory quando `Nome do lider direto` preenchido.
+//     + leaderHistory quando `Nome do líder direto` preenchido.
 //   - CSV linha OK produz o mesmo efeito (S189 unificado).
 //   - CPF duplicado dentro do arquivo — 1a linha cria, 2a linha ignora.
 //   - CPF ja existente na empresa — linha ignorada com mensagem
@@ -23,7 +23,7 @@
 //   - Cada campo obrigatorio vazio, cada enum invalido, data invalida,
 //     CPF invalido, e-mail invalido, boolean invalido — linha ignorada
 //     com mensagem canonica correspondente.
-//   - E-mail vazio com `Ativar como Lider=SIM` — linha ignorada
+//   - E-mail vazio com `Ativar como Líder=SIM` — linha ignorada
 //     (obrigatoriedade condicional §16.2).
 //   - `Ativar como RH=SIM` chamado por caller RH — linha ignorada com
 //     `MSG_ISRH_APENAS_BRUNO` (guard §12 DOC 02 propagado da proc
@@ -286,16 +286,16 @@ function baseLinhaOk(cpf: string, opts: Partial<Record<string, string>> = {}): L
     opts['CPF'] ?? cpf,
     opts['E-mail'] ?? '',
     opts['Data de nascimento'] ?? '01/01/1990',
-    opts['Data de admissao'] ?? '01/01/2024',
+    opts['Data de admissão'] ?? '01/01/2024',
     opts['CBO'] ?? '252505',
-    opts['Descricao do CBO'] ?? 'Analista Comercial',
+    opts['Descrição do CBO'] ?? 'Analista Comercial',
     opts['Departamento'] ?? 'Comercial',
     opts['Senioridade'] ?? 'Pleno',
-    opts['Nivel hierarquico'] ?? 'Operacional',
-    opts['Familia de funcao'] ?? 'Vendas e comercial',
-    opts['Ativar como Lider'] ?? 'NAO',
+    opts['Nível hierárquico'] ?? 'Operacional',
+    opts['Família de função'] ?? 'Vendas e comercial',
+    opts['Ativar como Líder'] ?? 'NAO',
     opts['Ativar como RH'] ?? 'NAO',
-    opts['Nome do lider direto'] ?? '',
+    opts['Nome do líder direto'] ?? '',
   ];
 }
 
@@ -345,20 +345,20 @@ function bindRouter(facade?: EmployeesFacade) {
 
 describe('employees.uploadCSV — contratos publicos exportados', () => {
   it('mensagens canonicas literais §16.6 batem o texto exato', () => {
-    expect(MSG_UPLOAD_CABECALHOS_INVALIDOS).toBe('Cabecalhos do arquivo invalidos.');
-    expect(MSG_UPLOAD_ARQUIVO_INVALIDO).toBe('Arquivo invalido ou corrompido.');
-    expect(MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO).toBe('Campo obrigatorio vazio.');
+    expect(MSG_UPLOAD_CABECALHOS_INVALIDOS).toBe('Cabeçalhos do arquivo inválidos.');
+    expect(MSG_UPLOAD_ARQUIVO_INVALIDO).toBe('Arquivo inválido ou corrompido.');
+    expect(MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO).toBe('Campo obrigatório vazio.');
     expect(MSG_UPLOAD_CPF_DUPLICADO_ARQUIVO).toBe('CPF duplicado dentro do arquivo.');
-    expect(MSG_UPLOAD_CPF_JA_EXISTE).toBe('CPF ja cadastrado nesta empresa.');
-    expect(MSG_UPLOAD_LIDER_NAO_ENCONTRADO).toBe('Lider direto nao encontrado.');
+    expect(MSG_UPLOAD_CPF_JA_EXISTE).toBe('CPF já cadastrado nesta empresa.');
+    expect(MSG_UPLOAD_LIDER_NAO_ENCONTRADO).toBe('Líder direto não encontrado.');
     expect(MSG_UPLOAD_LIDER_AMBIGUO).toBe(
-      'Lider direto ambiguo — ha mais de um lider ativo com este nome.',
+      'Líder direto ambíguo — há mais de um líder ativo com este nome.',
     );
-    expect(MSG_UPLOAD_ENUM_INVALIDO).toBe('Valor invalido para o campo.');
-    expect(MSG_UPLOAD_DATA_INVALIDA).toBe('Data invalida.');
-    expect(MSG_UPLOAD_CPF_INVALIDO).toBe('CPF invalido.');
-    expect(MSG_UPLOAD_EMAIL_INVALIDO).toBe('E-mail invalido.');
-    expect(MSG_UPLOAD_BOOLEANO_INVALIDO).toBe('Valor invalido — use SIM ou NAO.');
+    expect(MSG_UPLOAD_ENUM_INVALIDO).toBe('Valor inválido para o campo.');
+    expect(MSG_UPLOAD_DATA_INVALIDA).toBe('Data inválida.');
+    expect(MSG_UPLOAD_CPF_INVALIDO).toBe('CPF inválido.');
+    expect(MSG_UPLOAD_EMAIL_INVALIDO).toBe('E-mail inválido.');
+    expect(MSG_UPLOAD_BOOLEANO_INVALIDO).toBe('Valor inválido — use SIM ou NAO.');
   });
 
   it('COLUNAS_CANONICAS_EMPLOYEES tem 14 rotulos em ordem literal (S190)', () => {
@@ -367,16 +367,16 @@ describe('employees.uploadCSV — contratos publicos exportados', () => {
     expect(COLUNAS_CANONICAS_EMPLOYEES[1]).toBe('CPF');
     expect(COLUNAS_CANONICAS_EMPLOYEES[2]).toBe('E-mail');
     expect(COLUNAS_CANONICAS_EMPLOYEES[3]).toBe('Data de nascimento');
-    expect(COLUNAS_CANONICAS_EMPLOYEES[4]).toBe('Data de admissao');
+    expect(COLUNAS_CANONICAS_EMPLOYEES[4]).toBe('Data de admissão');
     expect(COLUNAS_CANONICAS_EMPLOYEES[5]).toBe('CBO');
-    expect(COLUNAS_CANONICAS_EMPLOYEES[6]).toBe('Descricao do CBO');
+    expect(COLUNAS_CANONICAS_EMPLOYEES[6]).toBe('Descrição do CBO');
     expect(COLUNAS_CANONICAS_EMPLOYEES[7]).toBe('Departamento');
     expect(COLUNAS_CANONICAS_EMPLOYEES[8]).toBe('Senioridade');
-    expect(COLUNAS_CANONICAS_EMPLOYEES[9]).toBe('Nivel hierarquico');
-    expect(COLUNAS_CANONICAS_EMPLOYEES[10]).toBe('Familia de funcao');
-    expect(COLUNAS_CANONICAS_EMPLOYEES[11]).toBe('Ativar como Lider');
+    expect(COLUNAS_CANONICAS_EMPLOYEES[9]).toBe('Nível hierárquico');
+    expect(COLUNAS_CANONICAS_EMPLOYEES[10]).toBe('Família de função');
+    expect(COLUNAS_CANONICAS_EMPLOYEES[11]).toBe('Ativar como Líder');
     expect(COLUNAS_CANONICAS_EMPLOYEES[12]).toBe('Ativar como RH');
-    expect(COLUNAS_CANONICAS_EMPLOYEES[13]).toBe('Nome do lider direto');
+    expect(COLUNAS_CANONICAS_EMPLOYEES[13]).toBe('Nome do líder direto');
   });
 
   it('MAP_FAMILIA_FUNCAO cobre as 6 familias canonicas com literais §4.5', () => {
@@ -631,7 +631,7 @@ describe('employees.uploadCSV — sucesso em XLSX e CSV', () => {
     const cpfNovo = nextCpf();
     const b64 = await makeXlsxBase64([
       HEADER,
-      baseLinhaOk(cpfNovo, { 'Nome do lider direto': liderNome, 'E-mail': 'lm@roip.local' }),
+      baseLinhaOk(cpfNovo, { 'Nome do líder direto': liderNome, 'E-mail': 'lm@roip.local' }),
     ]);
     const res = await caller.uploadCSV({
       companyId,
@@ -721,7 +721,7 @@ describe('employees.uploadCSV — semantica canonica por linha', () => {
     const b64 = await makeXlsxBase64([
       HEADER,
       baseLinhaOk(cpfNovo, {
-        'Nome do lider direto': 'Fantasma Inexistente',
+        'Nome do líder direto': 'Fantasma Inexistente',
         'E-mail': 'x@roip.local',
       }),
     ]);
@@ -733,7 +733,7 @@ describe('employees.uploadCSV — semantica canonica por linha', () => {
     expect(res.linhasErro).toBe(1);
     expect(res.erros[0]).toMatchObject({
       linha: 2,
-      coluna: 'Nome do lider direto',
+      coluna: 'Nome do líder direto',
       mensagem: MSG_UPLOAD_LIDER_NAO_ENCONTRADO,
     });
   });
@@ -750,7 +750,7 @@ describe('employees.uploadCSV — semantica canonica por linha', () => {
     const cpfNovo = nextCpf();
     const b64 = await makeXlsxBase64([
       HEADER,
-      baseLinhaOk(cpfNovo, { 'Nome do lider direto': nomeAmb, 'E-mail': 'x2@roip.local' }),
+      baseLinhaOk(cpfNovo, { 'Nome do líder direto': nomeAmb, 'E-mail': 'x2@roip.local' }),
     ]);
     const res = await caller.uploadCSV({
       companyId,
@@ -760,7 +760,7 @@ describe('employees.uploadCSV — semantica canonica por linha', () => {
     expect(res.linhasErro).toBe(1);
     expect(res.erros[0]).toMatchObject({
       linha: 2,
-      coluna: 'Nome do lider direto',
+      coluna: 'Nome do líder direto',
       mensagem: MSG_UPLOAD_LIDER_AMBIGUO,
     });
   });
@@ -777,14 +777,14 @@ describe('employees.uploadCSV — semantica canonica por linha', () => {
       baseLinhaOk(nextCpf(), { 'Nome completo': '' }), // vazio
       baseLinhaOk(nextCpf(), { CPF: '123' }), // CPF invalido
       baseLinhaOk(nextCpf(), { 'Data de nascimento': '31/02/2000' }), // data invalida
-      baseLinhaOk(nextCpf(), { 'Data de admissao': 'abacaxi' }), // data invalida
+      baseLinhaOk(nextCpf(), { 'Data de admissão': 'abacaxi' }), // data invalida
       baseLinhaOk(nextCpf(), { Departamento: 'DepartamentoInexistente' }), // enum
       baseLinhaOk(nextCpf(), { Senioridade: 'X' }), // enum
-      baseLinhaOk(nextCpf(), { 'Nivel hierarquico': 'X' }), // enum
-      baseLinhaOk(nextCpf(), { 'Familia de funcao': 'X' }), // enum
-      baseLinhaOk(nextCpf(), { 'Ativar como Lider': 'talvez' }), // bool
+      baseLinhaOk(nextCpf(), { 'Nível hierárquico': 'X' }), // enum
+      baseLinhaOk(nextCpf(), { 'Família de função': 'X' }), // enum
+      baseLinhaOk(nextCpf(), { 'Ativar como Líder': 'talvez' }), // bool
       baseLinhaOk(nextCpf(), { 'E-mail': 'nao-e-email' }), // email
-      baseLinhaOk(nextCpf(), { 'Ativar como Lider': 'SIM', 'E-mail': '' }), // email obrig
+      baseLinhaOk(nextCpf(), { 'Ativar como Líder': 'SIM', 'E-mail': '' }), // email obrig
     ];
     const b64 = await makeXlsxBase64(linhas);
     const res = await caller.uploadCSV({
@@ -798,12 +798,12 @@ describe('employees.uploadCSV — semantica canonica por linha', () => {
     expect(cols).toContain('Nome completo');
     expect(cols).toContain('CPF');
     expect(cols).toContain('Data de nascimento');
-    expect(cols).toContain('Data de admissao');
+    expect(cols).toContain('Data de admissão');
     expect(cols).toContain('Departamento');
     expect(cols).toContain('Senioridade');
-    expect(cols).toContain('Nivel hierarquico');
-    expect(cols).toContain('Familia de funcao');
-    expect(cols).toContain('Ativar como Lider');
+    expect(cols).toContain('Nível hierárquico');
+    expect(cols).toContain('Família de função');
+    expect(cols).toContain('Ativar como Líder');
     expect(cols).toContain('E-mail');
     const msgs = res.erros.map((e) => e.mensagem);
     expect(msgs).toContain(MSG_UPLOAD_CAMPO_OBRIGATORIO_VAZIO);

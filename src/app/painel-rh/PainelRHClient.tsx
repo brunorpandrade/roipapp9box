@@ -469,7 +469,7 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
             ariaLabel="Abrir dados mensais RH"
           />
           <ClickableIndicatorCard
-            title="Status dados do mês — Líderes"
+            title="Status dados do mês — líderes"
             value={lideresCardValue}
             sub={lideresCardSub}
             href={`${hrefPrefix}/dados-mensais?tab=lider`}
@@ -832,8 +832,8 @@ export function PainelRHClient(props: PainelRHClientProps): JSX.Element {
         pela CORR1 do ME-B9-fechamento. Estado vazio canonico literal
         renderizado dentro do proprio componente.
       */}
-      <section aria-label="Perfil Individual inconsistente" style={{ marginTop: 32 }}>
-        <SectionTitle>Perfil Individual inconsistente</SectionTitle>
+      <section aria-label="Perfil individual inconsistente" style={{ marginTop: 32 }}>
+        <SectionTitle>Perfil individual inconsistente</SectionTitle>
         <PerfilInconsistenteBox
           companyId={company.id}
           linhas={perfisIndividuaisInconsistentes}

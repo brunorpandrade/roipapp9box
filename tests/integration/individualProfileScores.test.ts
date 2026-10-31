@@ -95,7 +95,7 @@ function buildValidScore(
       flagIsolamento: false,
       flagRigidez: false,
       flagInstabilidade: false,
-      flagPropositoDifuso: false,
+      flagPropósitoDifuso: false,
     },
     ...overrides,
   };

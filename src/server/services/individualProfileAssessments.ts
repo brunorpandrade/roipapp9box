@@ -199,7 +199,7 @@ export async function updateIndividualProfileResultado(
      * canonico, deixando o campo NULL apos motor concluir. Isso
      * quebrava `loadRespondidosRecentes` (que filtra por
      * `enviadoEm >= NOW() - 7 dias`), fazendo o card canonico
-     * "Enviado nos ultimos 7 dias" nunca aparecer no portal.
+     * "Enviado nos últimos 7 dias" nunca aparecer no portal.
      *
      * Semantica canonica:
      * - Caminho consistente (`status='enviado'`) → passar `now`.

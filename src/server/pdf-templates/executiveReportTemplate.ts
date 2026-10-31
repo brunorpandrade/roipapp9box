@@ -180,14 +180,14 @@ function renderBlocoFinanceiro(input: ExecutiveReportFinalPayload): string {
     </div>`);
   if (variacaoTri !== null) {
     kpiCards.push(`<div class="kpi-card ${classesTri.highlight}">
-      <div class="kpi-label">Variação vs trimestre anterior</div>
+      <div class="kpi-label">Variação vs. trimestre anterior</div>
       <div class="kpi-value ${classesTri.valueClass}">${fmtPct(variacaoTri)}</div>
       <div class="kpi-sub">ROI anterior: ${fmtNum(b.comparativoTrimestreAnterior?.roiAgregado ?? null, 2)}</div>
     </div>`);
   }
   if (variacaoAno !== null) {
     kpiCards.push(`<div class="kpi-card ${classesAno.highlight}">
-      <div class="kpi-label">Variação vs mesmo trim. ano anterior</div>
+      <div class="kpi-label">Variação vs. mesmo trim. ano anterior</div>
       <div class="kpi-value ${classesAno.valueClass}">${fmtPct(variacaoAno)}</div>
       <div class="kpi-sub">ROI mesmo trim. ano anterior: ${fmtNum(b.comparativoMesmoTrimestreAnoAnterior?.roiAgregado ?? null, 2)}</div>
     </div>`);
@@ -241,7 +241,7 @@ function renderBlocoDesempenho(input: ExecutiveReportFinalPayload): string {
     </div>`);
   if (variacao !== null) {
     kpiCards.push(`<div class="kpi-card ${classes.highlight}">
-      <div class="kpi-label">Variação vs trim. anterior</div>
+      <div class="kpi-label">Variação vs. trim. anterior</div>
       <div class="kpi-value ${classes.valueClass}">${fmtPct(variacao)}</div>
       <div class="kpi-sub">Desempenho médio comparado</div>
     </div>`);
@@ -252,7 +252,7 @@ function renderBlocoDesempenho(input: ExecutiveReportFinalPayload): string {
   <table class="kv" style="margin-top:4mm;">
     <tr><th>Assiduidade média</th><td>${fmtPct(b.trimestreAtual.assiduidadeMedia)}</td></tr>
     <tr><th>Colaboradores ativos</th><td>${fmtInt(b.trimestreAtual.colaboradoresAtivos)}</td></tr>
-    <tr><th>Distribuição por faixa</th><td>Acima meta: ${fmtInt(dist.acimaMeta)} · Na meta: ${fmtInt(dist.naMeta)} · Próx. meta: ${fmtInt(dist.proximoMeta)} · Abaixo: ${fmtInt(dist.abaixoMeta)}</td></tr>
+    <tr><th>Distribuição por faixa</th><td>Acima da meta: ${fmtInt(dist.acimaMeta)} · Na meta: ${fmtInt(dist.naMeta)} · Próx. meta: ${fmtInt(dist.proximoMeta)} · Abaixo: ${fmtInt(dist.abaixoMeta)}</td></tr>
   </table>
   <div class="info-card" style="margin-top:3mm;">
     <p style="margin:0;">${escapeHtml(input.paragrafoDesempenho)}</p>
@@ -280,7 +280,7 @@ function renderBlocoPlenitude(input: ExecutiveReportFinalPayload): string {
     </div>`);
   if (variacao !== null) {
     kpiCards.push(`<div class="kpi-card ${classes.highlight}">
-      <div class="kpi-label">Variação vs trim. anterior</div>
+      <div class="kpi-label">Variação vs. trim. anterior</div>
       <div class="kpi-value ${classes.valueClass}">${fmtPct(variacao)}</div>
       <div class="kpi-sub">Plenitude média comparada</div>
     </div>`);
@@ -336,7 +336,7 @@ function renderBlocoClima(input: ExecutiveReportFinalPayload): string {
     </div>`);
   if (variacao !== null) {
     kpiCards.push(`<div class="kpi-card ${classes.highlight}">
-      <div class="kpi-label">Variação vs trim. anterior</div>
+      <div class="kpi-label">Variação vs. trim. anterior</div>
       <div class="kpi-value ${classes.valueClass}">${fmtPct(variacao)}</div>
       <div class="kpi-sub">Nota de clima comparada</div>
     </div>`);
@@ -381,7 +381,7 @@ function renderBlocoTurnover(input: ExecutiveReportFinalPayload): string {
     </div>`);
   if (variacao !== null) {
     kpiCards.push(`<div class="kpi-card ${classes.highlight}">
-      <div class="kpi-label">Variação vs trim. anterior</div>
+      <div class="kpi-label">Variação vs. trim. anterior</div>
       <div class="kpi-value ${classes.valueClass}">${fmtPct(variacao)}</div>
       <div class="kpi-sub">Turnover trimestral comparado</div>
     </div>`);

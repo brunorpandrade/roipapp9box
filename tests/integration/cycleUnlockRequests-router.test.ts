@@ -521,7 +521,7 @@ describe('cycleUnlockRequests.create — DOC 03 §4.3 + DOC 06 §13.2', () => {
     ).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
 
-  it('Faturamento: Responsavel financeiro cria (D005 fechada em ME-044)', async () => {
+  it('Faturamento: Responsável financeiro cria (D005 fechada em ME-044)', async () => {
     const employeeId = await seedEmployee(client, companyId, { cpf: '30000010012' });
     // Marca como RF apos INSERT (helper nao expoe o flag).
     await client.db
@@ -556,7 +556,7 @@ describe('cycleUnlockRequests.create — DOC 03 §4.3 + DOC 06 §13.2', () => {
       }),
     ).rejects.toMatchObject({
       code: 'FORBIDDEN',
-      message: 'Apenas o Responsavel financeiro pode solicitar desbloqueio de faturamento.',
+      message: 'Apenas o Responsável financeiro pode solicitar desbloqueio de faturamento.',
     });
   });
 

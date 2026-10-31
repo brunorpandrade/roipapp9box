@@ -948,7 +948,7 @@ describe('getCompanyEconomicDashboard — diagnostico ausente', () => {
     expect(result.masked.folhaPorcentagem).toBe(true);
   });
 
-  it('trimestre invalido -> BAD_REQUEST no zod', async () => {
+  it('trimestre inválido -> BAD_REQUEST no zod', async () => {
     const { factory, ctx } = bindRouter();
     const bearer = await tokenSuperAdmin();
     const caller = factory(ctx(bearer));

@@ -59,7 +59,7 @@ Versão 1.0 — vigente a partir de 18 de outubro de 2026</p>
 
 <h4>1. Quem é controlador e quem é operador</h4>
 <p>A Empresa é a controladora dos seus dados pessoais no âmbito desta plataforma, ou seja, decide sobre as finalidades e os meios do tratamento. A ROIPeople é a operadora, atuando exclusivamente conforme as instruções da Empresa e dos termos contratuais firmados entre as partes.</p>
-<p>Dúvidas, solicitações e exercício de direitos devem ser dirigidos ao canal da Empresa indicado no item 13. A ROIPeople atua como canal secundário.</p>
+<p>Dúvidas, solicitações e exercício de direitos devem ser dirigidos ao canal da Empresa indicado no item 12. A ROIPeople atua como canal secundário.</p>
 
 <h4>2. Dados tratados</h4>
 <p>A plataforma trata as seguintes categorias de dados pessoais:</p>
@@ -97,10 +97,10 @@ Versão 1.0 — vigente a partir de 18 de outubro de 2026</p>
 <h4>5. Decisões apoiadas por tratamento automatizado</h4>
 <p>A plataforma utiliza processamento automatizado, inclusive por sistemas de inteligência artificial, para gerar classificações, indicadores e sugestões analíticas sobre o seu desempenho e potencial, com base nos dados descritos no item 2.</p>
 <p>As decisões sobre carreira, remuneração, movimentação e desligamento são de responsabilidade da Empresa e tomadas por pessoas naturais, com base no conjunto de informações disponíveis. A plataforma funciona como ferramenta de apoio, não como instância decisória autônoma.</p>
-<p>Você tem o direito de solicitar à Empresa a revisão de decisões que afetem seus interesses e tenham sido tomadas unicamente com base em tratamento automatizado, nos termos do art. 20 da LGPD, mediante requerimento ao canal indicado no item 13.</p>
+<p>Você tem o direito de solicitar à Empresa a revisão de decisões que afetem seus interesses e tenham sido tomadas unicamente com base em tratamento automatizado, nos termos do art. 20 da LGPD, mediante requerimento ao canal indicado no item 12.</p>
 
 <h4>6. Visibilidade das informações</h4>
-<p>A plataforma controla o acesso às informações por nível hierárquico e por papel. Em regra, cada colaborador acessa seus próprios dados e indicadores; gestores acessam dados de sua equipe direta; áreas de Recursos Humanos e lideranças executivas acessam visões agregadas e individuais conforme suas atribuições. A matriz de visibilidade é definida pela Empresa e pode ser consultada junto ao canal indicado no item 13.</p>
+<p>A plataforma controla o acesso às informações por nível hierárquico e por papel. Em regra, cada colaborador acessa seus próprios dados e indicadores; gestores acessam dados de sua equipe direta; áreas de Recursos Humanos e lideranças executivas acessam visões agregadas e individuais conforme suas atribuições. A matriz de visibilidade é definida pela Empresa e pode ser consultada junto ao canal indicado no item 12.</p>
 
 <h4>7. Compartilhamento de dados</h4>
 <p>Seus dados pessoais podem ser compartilhados com:</p>
@@ -169,7 +169,7 @@ export const TERMO_LITERAL_V10: string =
   'Ao marcar a caixa de aceite e prosseguir para a plataforma, você declara ter lido, compreendido e tomado ciência das informações a seguir.\n\n' +
   '1. Quem é controlador e quem é operador\n' +
   'A Empresa é a controladora dos seus dados pessoais no âmbito desta plataforma, ou seja, decide sobre as finalidades e os meios do tratamento. A ROIPeople é a operadora, atuando exclusivamente conforme as instruções da Empresa e dos termos contratuais firmados entre as partes.\n' +
-  'Dúvidas, solicitações e exercício de direitos devem ser dirigidos ao canal da Empresa indicado no item 13. A ROIPeople atua como canal secundário.\n\n' +
+  'Dúvidas, solicitações e exercício de direitos devem ser dirigidos ao canal da Empresa indicado no item 12. A ROIPeople atua como canal secundário.\n\n' +
   '2. Dados tratados\n' +
   'A plataforma trata dados cadastrais e funcionais, dados avaliativos, indicadores derivados, dados de uso e dados comportamentais, conforme detalhado na versão integral deste termo. A plataforma não trata dados pessoais sensíveis, salvo mediante consentimento específico e destacado.\n\n' +
   '3. Finalidades do tratamento\n' +
@@ -212,7 +212,7 @@ export const TERMO_RESUMO_V10: string =
   'no art. 18 da LGPD, exercidos pelos canais da sua empresa.';
 
 /**
- * Mapa canonico `versao -> HTML estruturado`. Chaves sao os valores
+ * Mapa canônico `versão -> HTML estruturado`. Chaves sao os valores
  * canonicos de `lgpdConsents.versaoTermoAceita` (varchar 10). Novas
  * versoes adicionam entrada aqui sem remover as antigas.
  */
@@ -221,7 +221,7 @@ export const TERMO_LITERAL_HTML_POR_VERSAO: Readonly<Record<string, string>> = {
 };
 
 /**
- * Mapa canonico `versao -> texto literal` (plain-text fallback).
+ * Mapa canônico `versão -> texto literal` (plain-text fallback).
  * Chaves sao os valores canonicos de `lgpdConsents.versaoTermoAceita`
  * (varchar 10). Novas versoes adicionam entrada aqui sem remover as
  * antigas.
@@ -231,7 +231,7 @@ export const TERMO_LITERAL_POR_VERSAO: Readonly<Record<string, string>> = {
 };
 
 /**
- * Mapa canonico `versao -> resumo curto`. Mesma logica dos mapas de
+ * Mapa canônico `versão -> resumo curto`. Mesma logica dos mapas de
  * texto literal. Resumos novos vinculados a versoes novas sao
  * adicionados aqui.
  */

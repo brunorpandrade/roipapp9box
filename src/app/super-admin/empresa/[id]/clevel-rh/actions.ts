@@ -31,7 +31,7 @@ import { resolveDatabaseUrl } from '../../../../../lib/db/resolveDatabaseUrl';
 async function requireSuperAdmin(actionName: string): Promise<void> {
   const session = await getServerSession();
   if (session === null) {
-    throw new Error(`${actionName}: sessao ausente ou expirada`);
+    throw new Error(`${actionName}: sessão ausente ou expirada`);
   }
   if (session.kind !== 'super_admin') {
     throw new Error(`${actionName}: acesso restrito ao Super Admin (§10.3 CAMADA_AUTH)`);
@@ -53,7 +53,7 @@ export async function listarCLevelsAction(companyId: number): Promise<ListCLevel
   await requireSuperAdmin('listarCLevelsAction');
 
   if (!Number.isInteger(companyId) || companyId <= 0) {
-    throw new Error('listarCLevelsAction: companyId invalido.');
+    throw new Error('listarCLevelsAction: companyId inválido.');
   }
 
   const client = createDbClient(resolveDatabaseUrl());
@@ -78,7 +78,7 @@ export async function listarRHAction(companyId: number): Promise<ListRHResult> {
   await requireSuperAdmin('listarRHAction');
 
   if (!Number.isInteger(companyId) || companyId <= 0) {
-    throw new Error('listarRHAction: companyId invalido.');
+    throw new Error('listarRHAction: companyId inválido.');
   }
 
   const client = createDbClient(resolveDatabaseUrl());

@@ -44,7 +44,7 @@ import type { DialogoRow } from './dialogosTypes';
 
 /** Mensagem literal canonica §14.26 de arquivamento. */
 export const MSG_CONFIRM_ARQUIVAR_DIALOGO =
-  'Este dialogo sera arquivado e nao aparecera mais na lista. Deseja continuar?';
+  'Este diálogo será arquivado e não aparecerá mais na lista. Deseja continuar?';
 
 /** Debounce canonico da pesquisa (§14.26). */
 const DEBOUNCE_MS = 300;
@@ -316,7 +316,7 @@ function DialogoExpandido(props: {
     });
     setSalvando(false);
     if (!res.ok || res.dialog === null) {
-      setErro(res.error ?? 'Nao foi possivel salvar.');
+      setErro(res.error ?? 'Não foi possível salvar.');
       return;
     }
     setLocal((prev) => ({ ...prev, dirty: false }));
@@ -329,7 +329,7 @@ function DialogoExpandido(props: {
     const res = await dialogosDiscardAction({ id: dialog.id });
     setSalvando(false);
     if (!res.ok) {
-      setErro(res.error ?? 'Nao foi possivel descartar.');
+      setErro(res.error ?? 'Não foi possível descartar.');
       return;
     }
     props.onDiscarded(dialog.id);
@@ -346,7 +346,7 @@ function DialogoExpandido(props: {
     const res = await dialogosArchiveAction({ id: dialog.id });
     setSalvando(false);
     if (!res.ok) {
-      setErro(res.error ?? 'Nao foi possivel arquivar.');
+      setErro(res.error ?? 'Não foi possível arquivar.');
       return;
     }
     props.onArchived(dialog.id);
@@ -363,7 +363,7 @@ function DialogoExpandido(props: {
           type="text"
           value={local.titulo}
           onChange={(e) => setField('titulo', e.target.value)}
-          placeholder="Titulo do dialogo"
+          placeholder="Título do diálogo"
           maxLength={255}
           autoFocus={!foiSalvo}
           style={TITULO_INPUT}
@@ -405,7 +405,7 @@ function DialogoExpandido(props: {
       <textarea
         value={local.corpo}
         onChange={(e) => setField('corpo', e.target.value)}
-        placeholder="Corpo do dialogo (texto livre)"
+        placeholder="Corpo do diálogo (texto livre)"
         maxLength={10_000}
         style={CORPO_TEXTAREA}
       />
@@ -447,7 +447,7 @@ function DialogoExpandido(props: {
               opacity: salvando ? 0.5 : 1,
             }}
           >
-            Descartar dialogo
+            Descartar diálogo
           </button>
         )}
       </div>
@@ -486,7 +486,7 @@ function DialogoRecolhido(props: { dialog: DialogoRow; onExpand: () => void }): 
         {(dialog.titulo ?? '').length > 0 ? (
           dialog.titulo
         ) : (
-          <em style={{ color: COLORS.text.tertiary }}>Sem titulo</em>
+          <em style={{ color: COLORS.text.tertiary }}>Sem título</em>
         )}
       </span>
       <StatusBolinha status={dialog.status} />
@@ -526,7 +526,7 @@ function ResumoIABox(props: {
         <button
           type="button"
           onClick={props.onClose}
-          aria-label="Fechar area de resumo"
+          aria-label="Fechar área de resumo"
           style={{
             background: 'transparent',
             border: 'none',
@@ -577,7 +577,7 @@ function ResumoIABox(props: {
       <button
         type="button"
         disabled
-        title="Disponivel em ME futura"
+        title="Disponível em ME futura"
         style={{
           ...ACTION_BTN,
           alignSelf: 'flex-start',
@@ -629,7 +629,7 @@ export function DialogosDrawer(props: DialogosDrawerProps): JSX.Element {
     const res = await dialogosListAction({ employeeId: props.employeeId });
     setLoading(false);
     if (!res.ok) {
-      setErroGlobal(res.error ?? 'Erro ao carregar dialogos.');
+      setErroGlobal(res.error ?? 'Erro ao carregar diálogos.');
       return;
     }
     setErroGlobal(null);
@@ -700,7 +700,7 @@ export function DialogosDrawer(props: DialogosDrawerProps): JSX.Element {
   const criar = useCallback(async (): Promise<void> => {
     const res = await dialogosCreateAction({ employeeId: props.employeeId });
     if (!res.ok || res.dialog === null) {
-      setErroGlobal(res.error ?? 'Nao foi possivel criar o dialogo.');
+      setErroGlobal(res.error ?? 'Não foi possível criar o diálogo.');
       return;
     }
     setDialogs((prev) => [res.dialog!, ...prev]);
@@ -711,7 +711,7 @@ export function DialogosDrawer(props: DialogosDrawerProps): JSX.Element {
   const tentarFechar = useCallback((): void => {
     if (dirtyExpanded) {
       // Aviso canonico §14.26 sobre alteracoes nao salvas — modal nativo.
-      const aviso = 'Ha alteracoes nao salvas. Fechar mesmo assim?';
+      const aviso = 'Há alterações não salvas. Fechar mesmo assim?';
       const ok = typeof window !== 'undefined' && window.confirm(aviso);
       if (!ok) {
         return;
@@ -735,26 +735,26 @@ export function DialogosDrawer(props: DialogosDrawerProps): JSX.Element {
   }, []);
 
   return (
-    <div style={OVERLAY} role="dialog" aria-label="Dialogos de desenvolvimento">
+    <div style={OVERLAY} role="dialog" aria-label="Diálogos de desenvolvimento">
       <div style={HEADER}>
         <div style={HEADER_ROW}>
           <input
             type="search"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Buscar por titulo ou conteudo..."
+            placeholder="Buscar por título ou conteúdo..."
             style={SEARCH_INPUT}
           />
           <button
             type="button"
             onClick={() => setResumoIA((s) => ({ ...s, open: !s.open }))}
             style={HEADER_BTN}
-            title="Interface visual — geracao disponivel em ME futura"
+            title="Interface visual — geração disponível em ME futura"
           >
             Resumo com IA
           </button>
           <button type="button" onClick={() => void criar()} style={HEADER_BTN_PRIMARY}>
-            + Novo dialogo
+            + Novo diálogo
           </button>
           <button type="button" onClick={tentarFechar} aria-label="Fechar" style={CLOSE_BTN}>
             ×
@@ -775,13 +775,13 @@ export function DialogosDrawer(props: DialogosDrawerProps): JSX.Element {
 
       <div style={LIST_AREA}>
         {loading ? (
-          <p style={{ fontSize: 12, color: COLORS.text.tertiary }}>Carregando dialogos...</p>
+          <p style={{ fontSize: 12, color: COLORS.text.tertiary }}>Carregando diálogos...</p>
         ) : erroGlobal !== null ? (
           <p style={{ fontSize: 12, color: COLORS.badge.dangerText }}>{erroGlobal}</p>
         ) : filtered.length === 0 ? (
           <p style={{ fontSize: 12, color: COLORS.text.tertiary }}>
             {dialogs.length === 0
-              ? 'Sem dialogos. Clique em [+ Novo dialogo] para comecar.'
+              ? 'Sem diálogos. Clique em [+ Novo diálogo] para começar.'
               : 'Nenhum resultado para a pesquisa.'}
           </p>
         ) : (

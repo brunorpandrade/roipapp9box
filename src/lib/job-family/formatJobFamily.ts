@@ -108,7 +108,7 @@ const _ALL_FAMILIES: readonly JobFamily[] = [
 ];
 for (const key of _ALL_FAMILIES) {
   if (!(key in JOB_FAMILY_LABELS)) {
-    throw new Error(`JOB_FAMILY_LABELS incompleto: falta chave canonica \`${key}\`.`);
+    throw new Error(`JOB_FAMILY_LABELS incompleto: falta chave canônica \`${key}\`.`);
   }
 }
 

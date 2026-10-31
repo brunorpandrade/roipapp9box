@@ -301,7 +301,7 @@ export async function generateExecutiveReport(
     reportFailure(deps, args, 'execReport_sintese');
     return {
       kind: 'failed_render',
-      message: err instanceof Error ? err.message : 'Falha na renderizacao do PDF',
+      message: err instanceof Error ? err.message : 'Falha na renderização do PDF',
     };
   }
 

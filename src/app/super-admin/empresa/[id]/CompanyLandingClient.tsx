@@ -286,8 +286,8 @@ function AcoesBlock(props: {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         {/*
           ME-B9-fechamento (S233-B + D-ME083-D-RH-IMPERSONATION-PAINEL-RH
-          ENCERRADO): botao "Painel RH (preview)" materializado como
-          entry point contextual canonico da rota
+          ENCERRADO): botão "Painel RH (preview)" materializado como
+          entry point contextual canônico da rota
           `/super-admin/empresa/[id]/painel-rh-preview` (S234-B). Rota
           herda cobertura do prefixo `/super-admin/empresa/` no matrix
           (Super Admin=allow, todos os outros=deny). Substitui bit-a-bit
@@ -311,13 +311,13 @@ function AcoesBlock(props: {
         </Link>
         {/*
           ME-1.12.b Despacho A (item [1.12.b] do roadmap V4): entry
-          point canonico da nova superficie LGPD exclusiva do SA.
-          Interface de busca por colaborador + botao "Exportar PDF"
+          point canônico da nova superfície LGPD exclusiva do SA.
+          Interface de busca por colaborador + botão "Exportar PDF"
           que gera o PDF integral §19.6 do titular (cadastrais +
           respostas brutas aos 4 instrumentos + termo de aceite) via
           `GET /api/super-admin/lgpd/exportar`. Protege a plataforma
-          dos colaboradores exportarem suas proprias respostas brutas
-          — a exportacao do portal foi reduzida a cadastrais + termo
+          dos colaboradores exportarem suas próprias respostas brutas
+          — a exportação do portal foi reduzida a cadastrais + termo
           (ME-1.12.a).
         */}
         <Link href={`/super-admin/empresa/${companyId}/lgpd`} style={buttonStyle}>
@@ -466,11 +466,11 @@ export function CompanyLandingClient(props: CompanyLandingClientProps): JSX.Elem
           )}
         />
         {/*
-          ME-B2-01b Fase 2 hotfix2 — card canonico "Clima e engajamento"
-          no painel. Nota geral do ultimo trimestre fechado + rotulo do
+          ME-B2-01b Fase 2 hotfix2 — card canônico "Clima e engajamento"
+          no painel. Nota geral do último trimestre fechado + rótulo do
           trimestre. Clicavel → tela de detalhamento canonica em
           `/super-admin/empresa/[id]/bloco-clima` (gauge + timeline +
-          4 dimensoes com sanfona de questoes).
+          4 dimensões com sanfona de questões).
         */}
         <ClickableIndicatorCard
           title="Clima e engajamento"

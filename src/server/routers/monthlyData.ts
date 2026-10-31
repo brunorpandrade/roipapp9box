@@ -45,7 +45,7 @@
 //     `db.transaction` (L54).
 //   - S071 — Reuso do helper S066 no dashboard; MonthlyData usa S080
 //     (semantica de vinculo-no-mes, nao vigencia).
-//   - S072 — Criterio canonico de "vinculo direto no mes":
+//   - S072 — Critério canônico de "vínculo direto no mês":
 //     `dataInicio <= ultimo_dia_do_mes` E (`dataFim IS NULL` OU
 //     `dataFim >= primeiro_dia_do_mes`).
 //   - S073 — 7 mensagens canonicas literais do §3.12, testadas
@@ -136,7 +136,7 @@ export const MSG_MES_FECHADO = 'Este mês está fechado. Solicite a Bruno o desb
  * (RV-13). Aceita 01..12 no segmento de mes.
  */
 export const MES_INPUT_SCHEMA_MONTHLY = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, {
-  message: 'Mes canonico deve seguir o formato YYYY-MM.',
+  message: 'Mês canônico deve seguir o formato YYYY-MM.',
 });
 
 /** Enum canonico de aba do formulario. */
@@ -562,7 +562,7 @@ export function createMonthlyDataRouter() {
         if (input.liderId === undefined || input.liderTipo === undefined) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'Aba Lider requer liderId e liderTipo.',
+            message: 'Aba Líder requer liderId e liderTipo.',
           });
         }
 
@@ -574,7 +574,7 @@ export function createMonthlyDataRouter() {
           if (input.liderTipo !== 'employee' || input.liderId !== ctx.user.userId) {
             throw new TRPCError({
               code: 'FORBIDDEN',
-              message: 'Lider so acessa a propria aba.',
+              message: 'Líder só acessa a própria aba.',
             });
           }
         }
@@ -582,7 +582,7 @@ export function createMonthlyDataRouter() {
           if (input.liderTipo !== 'clevel' || input.liderId !== ctx.user.userId) {
             throw new TRPCError({
               code: 'FORBIDDEN',
-              message: 'C-level so acessa a propria aba.',
+              message: 'C-level só acessa a própria aba.',
             });
           }
         }
@@ -946,7 +946,7 @@ export function createMonthlyDataRouter() {
           if (input.liderTipo !== 'employee' || input.liderId !== ctx.user.userId) {
             throw new TRPCError({
               code: 'FORBIDDEN',
-              message: 'Lider so salva a propria aba.',
+              message: 'Líder só salva a própria aba.',
             });
           }
         }
@@ -954,7 +954,7 @@ export function createMonthlyDataRouter() {
           if (input.liderTipo !== 'clevel' || input.liderId !== ctx.user.userId) {
             throw new TRPCError({
               code: 'FORBIDDEN',
-              message: 'C-level so salva a propria aba.',
+              message: 'C-level só salva a própria aba.',
             });
           }
         }
@@ -980,7 +980,7 @@ export function createMonthlyDataRouter() {
           if (link === undefined) {
             throw new TRPCError({
               code: 'FORBIDDEN',
-              message: 'Liderado sem vinculo no mes.',
+              message: 'Liderado sem vínculo no mês.',
             });
           }
           const okVinculo =
@@ -990,7 +990,7 @@ export function createMonthlyDataRouter() {
           if (!okVinculo) {
             throw new TRPCError({
               code: 'FORBIDDEN',
-              message: 'Liderado fora da cadeia direta do lider no mes.',
+              message: 'Liderado fora da cadeia direta do líder no mês.',
             });
           }
 
@@ -1007,7 +1007,7 @@ export function createMonthlyDataRouter() {
           if (!emp) {
             throw new TRPCError({
               code: 'NOT_FOUND',
-              message: 'Liderado nao encontrado.',
+              message: 'Liderado não encontrado.',
             });
           }
           if (emp.companyId !== input.companyId) {
@@ -1053,7 +1053,7 @@ export function createMonthlyDataRouter() {
             if (!varMeta) {
               throw new TRPCError({
                 code: 'BAD_REQUEST',
-                message: 'Variavel canonica desconhecida para a familia do liderado.',
+                message: 'Variável canônica desconhecida para a família do liderado.',
               });
             }
             if (Number(varMeta.weight) === 0) {
@@ -1082,7 +1082,7 @@ export function createMonthlyDataRouter() {
               if (Number(v.executado) < 0) {
                 throw new TRPCError({
                   code: 'BAD_REQUEST',
-                  message: 'O executado nao pode ser negativo.',
+                  message: 'O executado não pode ser negativo.',
                 });
               }
             }
@@ -1343,14 +1343,14 @@ export function createMonthlyDataRouter() {
             if (input.liderTipo !== 'employee' || input.liderId !== ctx.user.userId) {
               throw new TRPCError({
                 code: 'FORBIDDEN',
-                message: 'Lider so consulta a propria cadeia.',
+                message: 'Líder só consulta a própria cadeia.',
               });
             }
           } else if (ctx.user.role === 'clevel') {
             if (input.liderTipo !== 'clevel' || input.liderId !== ctx.user.userId) {
               throw new TRPCError({
                 code: 'FORBIDDEN',
-                message: 'C-level so consulta a propria cadeia.',
+                message: 'C-level só consulta a própria cadeia.',
               });
             }
           }
@@ -1362,7 +1362,7 @@ export function createMonthlyDataRouter() {
         if (!isPastDay5OfNextMonth(input.mes, new Date())) {
           throw new TRPCError({
             code: 'PRECONDITION_FAILED',
-            message: 'Lista de pendencias so fica disponivel a partir do dia 5 do mes subsequente.',
+            message: 'Lista de pendências só fica disponível a partir do dia 5 do mês subsequente.',
           });
         }
 

@@ -314,7 +314,7 @@ describe('ME-ORG-01-B — employees.unmarkAsLeader (MySQL real)', () => {
         candidatosGrupo4: [],
         reason: REASON_CANONICO,
       }),
-    ).rejects.toThrow(/lider/i);
+    ).rejects.toThrow(/líder/i);
   });
 
   it('promove candidato Grupo 4 a lider na mesma transacao', async () => {

@@ -134,7 +134,7 @@ export function deriveUbatubaPerformanceVariables(
     const perfId = perfDataIdIndex.get(key);
     if (perfId === undefined) {
       throw new Error(
-        `deriveUbatubaPerformanceVariables: performanceDataId nao encontrado para ${key}.`,
+        `deriveUbatubaPerformanceVariables: performanceDataId não encontrado para ${key}.`,
       );
     }
     for (const [variableIndex, demanda, executado, desempenho, peso] of raw.variables) {

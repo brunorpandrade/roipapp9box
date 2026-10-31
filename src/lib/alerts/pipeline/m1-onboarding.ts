@@ -102,7 +102,7 @@ export async function stepM1Onboarding(
   // Comparacao canonica: NOW() < kickoffDate + 90 DIAS (§8.3 literal).
   // `kickoffDate` no schema e `date` — Drizzle desserializa como Date
   // com hora 00:00:00 local. Comparacao direta em ms preserva a
-  // semantica "90 dias corridos pos-kickoff".
+  // semantica "90 dias corridos pós-kickoff".
   const kickoffValue: Date =
     first.kickoffDate instanceof Date ? first.kickoffDate : new Date(first.kickoffDate);
   const kickoffMs = kickoffValue.getTime();

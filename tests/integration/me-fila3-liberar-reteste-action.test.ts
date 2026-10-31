@@ -1,7 +1,7 @@
 // ROIP APP 9BOX — teste de integracao ME-fila3-reteste-ui (MySQL real).
 //
 // Cobertura canonica cross-role do fluxo canonico DOC 03 §10.6 pt.6 +
-// §10.7 (liberacao de reteste de Perfil Individual):
+// §10.7 (liberacao de reteste de Perfil individual):
 //
 // 1. Service `listInconsistentesEnriquecidoByCompany` retorna somente
 //    placeholders em `inconsistente` ou `aguardando_nova_resposta`,

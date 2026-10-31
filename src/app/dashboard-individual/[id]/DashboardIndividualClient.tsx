@@ -1062,7 +1062,7 @@ export function DashboardIndividualClient(props: DashboardIndividualClientProps)
                     cursor: 'pointer',
                   }}
                 >
-                  Dialogos de desenvolvimento
+                  Diálogos de desenvolvimento
                 </button>
               ) : null}
               <button

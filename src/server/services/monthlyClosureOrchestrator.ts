@@ -24,7 +24,7 @@
 //     sinal canonico; edicao da mesma variable via UPSERT nao e detectada,
 //     lacuna canonicamente tolerada — DOC 06 §13.7).
 //   - `runDailyClosureJob` opera por empresa (S048) — canonico DOC 06
-//     §15.1 "instancia unica por empresa" com "fuso local da empresa".
+//     §15.1 "instância única por empresa" com "fuso local da empresa".
 //   - Zero SQL cru: 100% Drizzle tipado (RV-12).
 //   - Zero code dead: cada export tem chamador nos testes de integracao
 //     desta ME (RV-13).
@@ -450,7 +450,7 @@ export async function checkAndTriggerQuarterlyCalculation(
     return { triggered: false, trimestre: null, motivo: 'mes_invalido' };
   }
 
-  // A checagem canonica de "terceiro mes" e feita re-derivando os meses
+  // A checagem canonica de "terceiro mês" e feita re-derivando os meses
   // do trimestre e verificando se `mes` e o ultimo. Evita duplicacao de
   // parse ao reusar `getQuarterMonths` implicitamente via ordenacao.
   const trimestreParsed = trimestre.match(/^(\d{4})-Q([1-4])$/);
@@ -594,7 +594,7 @@ export async function runDailyClosureJob(
     .where(eq(companies.id, companyId))
     .limit(1);
   if (!company) {
-    throw new Error(`runDailyClosureJob: company ${companyId} nao existe`);
+    throw new Error(`runDailyClosureJob: company ${companyId} não existe`);
   }
   const timeZone = company.timezone;
 

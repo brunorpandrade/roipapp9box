@@ -314,7 +314,7 @@ describe('company.create — rejeicoes canonicas bit-exact', () => {
 describe('company.create — autorizacao canonica bit-exact §10.3 DOC 02', () => {
   // Nao-Super Admin com token cuja `credentialVersion` nao existe no
   // banco (fixture ausente) rejeita canonicamente bit-exact em UNAUTHORIZED
-  // ("Sessao expirada.") ANTES do roleProcedure — o que ja prova que o
+  // ("Sessão expirada.") ANTES do roleProcedure — o que ja prova que o
   // path do Super Admin e o unico valido (defense-in-depth §DOC 02 §5.7).
   // Rejeicao e rejeicao — o codigo especifico varia conforme onde a
   // pilha bloqueia, mas nunca chega a `create`.
@@ -394,10 +394,10 @@ describe('company.create — sentinela RV-13 (exports consumidos)', () => {
     expect(MSG_META_ROI_FORA_INTERVALO).toBe('Meta de ROI deve estar entre 0 e 100.');
     expect(MSG_THRESHOLD_FORA_INTERVALO).toBe('Threshold deve estar entre 0 e 100.');
     expect(MSG_MODO_PADRAO_MES_INICIO_INVALIDO).toBe(
-      'No modo padrão, o mês de início do ano fiscal deve ser 1 (Janeiro).',
+      'No modo padrão, o mês de início do ano fiscal deve ser 1 (janeiro).',
     );
     expect(MSG_MODO_PADRAO_KICKOFF_INVALIDO).toBe(
-      'No modo padrão, o mês de kick-off deve ser Janeiro, Abril, Julho ou Outubro.',
+      'No modo padrão, o mês de kick-off deve ser janeiro, abril, julho ou outubro.',
     );
   });
 });

@@ -95,7 +95,7 @@ describe('lib/auth/matriculaGenerator — generateUniqueMatriculas (ME-080b)', (
     expect(a).toEqual(b);
   });
 
-  it('lanca erro quando espaco amostral esgotado', () => {
+  it('lanca erro quando espaço amostral esgotado', () => {
     // Preenche quase todo o espaco (67.599 de 67.600) e tenta gerar 5:
     // com apenas 1 slot livre, MAX_ATTEMPTS_MULTIPLIER * 5 = 500
     // tentativas nao bastam para encontrar os 5 restantes (probabilidade
@@ -114,7 +114,7 @@ describe('lib/auth/matriculaGenerator — generateUniqueMatriculas (ME-080b)', (
     // Remove 1 para deixar 1 slot livre.
     almostFull.delete('AA00');
     const prng = createSeededPrng(2026);
-    expect(() => generateUniqueMatriculas(5, prng, almostFull)).toThrow(/espaco amostral esgotado/);
+    expect(() => generateUniqueMatriculas(5, prng, almostFull)).toThrow(/espaço amostral esgotado/);
   });
 });
 

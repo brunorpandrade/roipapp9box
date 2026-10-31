@@ -48,13 +48,13 @@ export async function listarHistoricoAction(
     throw new Error('listarHistoricoAction: acesso restrito ao Super Admin (§9.1 / §10.3)');
   }
   if (!Number.isInteger(companyId) || companyId <= 0) {
-    throw new Error('listarHistoricoAction: companyId invalido');
+    throw new Error('listarHistoricoAction: companyId inválido');
   }
   const client = createDbClient(resolveDatabaseUrl());
   try {
     const company = await findCompanyDisplayInfo(client.db, companyId);
     if (company === null) {
-      throw new Error(`listarHistoricoAction: empresa ${companyId} nao encontrada`);
+      throw new Error(`listarHistoricoAction: empresa ${companyId} não encontrada`);
     }
     return await loadCompanyHistoryPage(client.db, companyId, filters);
   } finally {

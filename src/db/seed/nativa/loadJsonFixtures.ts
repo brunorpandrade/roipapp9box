@@ -46,7 +46,7 @@ export function loadFixture<T>(filename: string): LoadedFixture<T> {
   if (entry === undefined) {
     throw new Error(
       `loadFixture: '${filename}' ausente do NATIVA_FIXTURE_MANIFEST. ` +
-        `Arquivos canonicos: ${NATIVA_FIXTURE_MANIFEST.length}.`,
+        `Arquivos canônicos: ${NATIVA_FIXTURE_MANIFEST.length}.`,
     );
   }
 
@@ -63,7 +63,7 @@ export function loadFixture<T>(filename: string): LoadedFixture<T> {
     throw new Error(
       `loadFixture: SHA-256 mismatch para '${filename}'. ` +
         `Esperado='${entry.sha256}', obtido='${measured}'. ` +
-        `Arquivo corrompido ou editado — fixture NAO pode ser aplicada.`,
+        `Arquivo corrompido ou editado — fixture NÃO pode ser aplicada.`,
     );
   }
 
@@ -75,7 +75,7 @@ export function loadFixture<T>(filename: string): LoadedFixture<T> {
     throw new Error(
       `loadFixture: contagem mismatch para '${filename}'. ` +
         `Esperado=${entry.recordCount}, obtido=${recordCount}. ` +
-        `Divergencia canonica inaceitavel.`,
+        `Divergência canônica inaceitável.`,
     );
   }
 

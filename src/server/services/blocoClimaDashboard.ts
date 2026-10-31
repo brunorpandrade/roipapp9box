@@ -19,7 +19,7 @@
 // canonica completa de trimestres canonicos para a UI resolver as
 // setas prev/next. A timeline canonica passa a ser uma janela
 // deslizante de 4 trimestres com o selecionado como ponto mais
-// recente (visao "evolucao ate esse ponto"). As contagens dos pills
+// recente (visao "evolução até esse ponto"). As contagens dos pills
 // do filtro refletem o trimestre selecionado — nao mais sempre o
 // mais recente.
 

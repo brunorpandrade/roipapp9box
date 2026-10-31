@@ -176,7 +176,7 @@ export async function hasValidLGPDConsent(
 /**
  * Grava o consentimento vigente do titular. Idempotencia — se ja existe
  * registro para (titular, versao) (UNIQUE canonica), reaproveita o id
- * existente sem lancar (§7.3: "consentimento unico por versao").
+ * existente sem lancar (§7.3: "consentimento único por versão").
  * Retorna o id do consentimento (novo ou pre-existente).
  */
 export async function recordLGPDConsent(

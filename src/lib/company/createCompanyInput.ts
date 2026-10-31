@@ -2,7 +2,7 @@
 //
 // Origem canonica:
 // - DOC 01 §4.2 (tabela `companies` — 35 colunas canonicas bit-exact).
-// - DOC 05 §13.1 (Cadastro e edicao da empresa — Aba 1 "Parametros gerais",
+// - DOC 05 §13.1 (Cadastro e edicao da empresa — Aba 1 "Parâmetros gerais",
 //   9 secoes canonicas com save unico).
 // - DOC 05 §18.7 (mensagens canonicas literais bit-exact para validacao).
 // - CC054 / ME-062a / D066 — `kickoffDate` DATE obrigatorio.
@@ -90,11 +90,11 @@ export const MSG_CNPJ_DUPLICADO =
  * o kick-off e select com apenas 4 opcoes (Jan/Abr/Jul/Out).
  */
 export const MSG_MODO_PADRAO_MES_INICIO_INVALIDO =
-  'No modo padrão, o mês de início do ano fiscal deve ser 1 (Janeiro).' as const;
+  'No modo padrão, o mês de início do ano fiscal deve ser 1 (janeiro).' as const;
 
 /** Mensagem canonica bit-exact para `mesKickoff∉{1,4,7,10}` em modo padrao. */
 export const MSG_MODO_PADRAO_KICKOFF_INVALIDO =
-  'No modo padrão, o mês de kick-off deve ser Janeiro, Abril, Julho ou Outubro.' as const;
+  'No modo padrão, o mês de kick-off deve ser janeiro, abril, julho ou outubro.' as const;
 
 // ============================================================
 // Enums canonicos bit-exact §DOC 01 §4.2 + §DOC 05 §13.1
@@ -234,7 +234,7 @@ export const CreateCompanyInputSchema = z.object({
   // --- Secao 3 — Encarregado de dados LGPD (§13.1 / FASE_PRONTIDAO §8.4) ---
   // Opcionais na criacao (§4.2 nota canonica linha 184); obrigatorios so
   // antes de `status='ativa'`. A empresa nasce `inativa` (§9 §13.1) —
-  // portanto a validacao "obrigatorio antes de ativar" nao dispara na
+  // portanto a validação "obrigatório antes de ativar" nao dispara na
   // procedure `create`, apenas em `activate` (fora do escopo desta ME).
   encarregadoLgpdNome: z.string().trim().max(255).optional(),
   encarregadoLgpdEmail: z.string().trim().max(255).optional(),

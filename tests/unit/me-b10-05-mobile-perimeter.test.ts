@@ -16,7 +16,7 @@
 //      corretas nos containers-chave.
 //   3. Os 3 shells de instrumento consomem `roip-container`,
 //      `roip-header-padding`, `roip-body-padding`, `roip-likert-*`
-//      (A/D/NR-1) e `roip-modal-pi-*` (Perfil Individual).
+//      (A/D/NR-1) e `roip-modal-pi-*` (Perfil individual).
 //   4. O Layout platform exporta a nova prop `mobileHideSidebar` e
 //      aplica a classe `roip-platform-shell-mobile-hide-sidebar`
 //      quando true.

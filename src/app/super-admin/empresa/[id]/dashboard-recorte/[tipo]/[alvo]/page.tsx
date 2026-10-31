@@ -89,7 +89,7 @@ export default async function DashboardRecortePage(props: PageProps): Promise<JS
     });
     const menuItems = resolveMenuItems(profileKey, false, companyId);
     if (menuItems === null) {
-      throw new Error(`Menu canonico ausente para ${profileKey} — inconsistencia §3`);
+      throw new Error(`Menu canônico ausente para ${profileKey} — inconsistência §3`);
     }
 
     const basePath = `/super-admin/empresa/${companyId}/dashboard-recorte/${tipo}/${alvoRaw}`;

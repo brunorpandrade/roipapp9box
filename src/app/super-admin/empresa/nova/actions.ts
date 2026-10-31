@@ -2,7 +2,7 @@
 // (ME-Rota-C-D074 — fechamento canonico bit-exact de D074).
 //
 // Origem canonica:
-// - DOC 05 §13.1 (Aba 1 "Parametros gerais" — save unico bit-exact).
+// - DOC 05 §13.1 (Aba 1 "Parâmetros gerais" — save único bit-exact).
 // - DOC 05 §5.4 (redirect canonico pos-save para /super-admin/empresa/[id]).
 // - DOC 05 §18.7 (mensagens canonicas literais bit-exact).
 // - DOC 02 §10.3 + §9.1 — exclusivo Bruno; guard defense-in-depth (S317).
@@ -45,10 +45,10 @@ import { resolveDatabaseUrl } from '../../../../lib/db/resolveDatabaseUrl';
 async function requireSuperAdminSession(actionName: string): Promise<void> {
   const session = await getServerSession();
   if (session === null) {
-    throw new Error(`${actionName}: sessao ausente ou expirada`);
+    throw new Error(`${actionName}: sessão ausente ou expirada`);
   }
   if (session.kind !== 'super_admin') {
-    throw new Error(`${actionName}: acesso restrito a Super Admin (§10.3 DOC 02)`);
+    throw new Error(`${actionName}: acesso restrito ao Super Admin (§10.3 DOC 02)`);
   }
 }
 
@@ -64,7 +64,7 @@ export type CriarEmpresaResult =
   | { readonly success: false; readonly canonicalMessage: string };
 
 /**
- * Server action canonica bit-exact para o botao `[Salvar alteracoes]`
+ * Server action canônica bit-exact para o botão `[Salvar alterações]`
  * do formulario §13.1 (`NovaEmpresaClient.tsx`). Executa bit-exact:
  * 1. Guard Bruno EXCLUSIVO (§10.3 DOC 02).
  * 2. Parse Zod canonico bit-exact `CreateCompanyInputSchema`.

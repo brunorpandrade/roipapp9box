@@ -4,7 +4,7 @@
 // Nativa (17 via JSON com SHA-256 pinado + 12 derivadas canonicamente).
 //
 // Idempotencia: SELECT companies WHERE id=1 antes de qualquer INSERT; se existe,
-// retorna { applied: false, reason: 'Nativa ja seed em base' }. Padrao S299
+// retorna { applied: false, reason: 'Nativa já seed em base' }. Padrao S299
 // preservado (mesmo padrao de seed-super-admin.mjs).
 //
 // Ordem canonica de INSERT (respeita FKs):
@@ -152,7 +152,7 @@ export interface EmployeeIdIndex {
 function findCLevelAdmissao(id: number): string {
   const found = NATIVA_CLEVELS.find((c) => c.id === id);
   if (found === undefined) {
-    throw new Error(`findCLevelAdmissao: C-level id=${id} ausente das constants canonicas.`);
+    throw new Error(`findCLevelAdmissao: C-level id=${id} ausente das constants canônicas.`);
   }
   return found.dataAdmissao;
 }
@@ -164,7 +164,7 @@ function findCLevelAdmissao(id: number): string {
 function findEmployeeAdmissao(id: number): string {
   const found = NATIVA_EMPLOYEES.find((e) => e.id === id);
   if (found === undefined) {
-    throw new Error(`findEmployeeAdmissao: employee id=${id} ausente das constants canonicas.`);
+    throw new Error(`findEmployeeAdmissao: employee id=${id} ausente das constants canônicas.`);
   }
   return found.dataAdmissao;
 }
@@ -194,7 +194,7 @@ export function buildIdIndex(): EmployeeIdIndex {
 function resolveEmployeeId(nome: string, idx: EmployeeIdIndex): number {
   const id = idx.byName.get(nome);
   if (id === undefined) {
-    throw new Error(`resolveEmployeeId: nome nao encontrado='${nome}'`);
+    throw new Error(`resolveEmployeeId: nome não encontrado='${nome}'`);
   }
   return id;
 }
@@ -202,7 +202,7 @@ function resolveEmployeeId(nome: string, idx: EmployeeIdIndex): number {
 function resolveCLevelId(nome: string, idx: EmployeeIdIndex): number {
   const id = idx.cLevelByName.get(nome);
   if (id === undefined) {
-    throw new Error(`resolveCLevelId: nome nao encontrado='${nome}'`);
+    throw new Error(`resolveCLevelId: nome não encontrado='${nome}'`);
   }
   return id;
 }
@@ -239,7 +239,7 @@ export async function seedNativa(
   if (existing.length > 0) {
     return {
       applied: false,
-      reason: `Nativa Alimentos Ltda. (id=${NATIVA_COMPANY_ID}) ja existe. Seed nao reaplicado.`,
+      reason: `Nativa Alimentos Ltda. (id=${NATIVA_COMPANY_ID}) já existe. Seed não reaplicado.`,
     };
   }
 
@@ -491,7 +491,7 @@ export async function seedNativa(
     const perfId = perfDataIdIndex.get(`${empId}:${mes}`);
     if (perfId === undefined) {
       throw new Error(
-        `performanceVariableData: performanceDataId nao encontrado empId=${empId} mes=${mes}`,
+        `performanceVariableData: performanceDataId não encontrado empId=${empId} mes=${mes}`,
       );
     }
     const variables = raw.variables as Array<[number, number, number, number, number]>;
@@ -565,7 +565,7 @@ export async function seedNativa(
     .from(copsoqCycles)
     .where(eq(copsoqCycles.companyId, NATIVA_COMPANY_ID));
   if (!cicloRow) {
-    throw new Error('copsoqCycles: cicloDbId nao encontrado apos INSERT.');
+    throw new Error('copsoqCycles: cicloDbId não encontrado após INSERT.');
   }
   const cicloDbId = cicloRow.id;
 
@@ -628,7 +628,7 @@ export async function seedNativa(
     );
   if (openCycleId === undefined) {
     throw new Error(
-      'loadFixtures.ts: cicloDbId do ciclo NR-1 CORRENTE nao encontrado apos INSERT.',
+      'loadFixtures.ts: cicloDbId do ciclo NR-1 CORRENTE não encontrado após INSERT.',
     );
   }
   counts.copsoqCyclesOpen = 1;
@@ -778,7 +778,7 @@ export function mapScoreToRow(
   const userId = userType === 'clevel' ? resolveCLevelId(nome, idx) : resolveEmployeeId(nome, idx);
   const assessmentId = assessmentIdIndex.get(`${userType}:${userId}:1`);
   if (assessmentId === undefined) {
-    throw new Error(`mapScoreToRow: assessment nao encontrado ${userType}:${userId}:1`);
+    throw new Error(`mapScoreToRow: assessment não encontrado ${userType}:${userId}:1`);
   }
   // Metodo C (ME escores-demo): override determinístico dos 7 perfis
   // variados da demo, fonte unica em perfilIndividualOverrides. Quando

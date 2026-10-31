@@ -9,7 +9,7 @@
 //   4. LEFT JOIN canonico em `employeeLeaderHistory` para nome do lider
 //      direto (dataFim IS NULL).
 //   5. LEFT JOIN canonico em `individualProfileAssessments` para status
-//      canonico do Perfil Individual mais recente.
+//      canonico do Perfil individual mais recente.
 //   6. Guards canonicos (`assertCompanyScope` — Bruno atravessa, RH
 //      restrito a propria empresa).
 //
@@ -702,7 +702,7 @@ describe('employees.list — filtros canonicos bit-exact (§14.10 + §20)', () =
 });
 
 // =======================================================================
-// 3. LEFT JOINs canonicos bit-exact — lider + Perfil Individual
+// 3. LEFT JOINs canonicos bit-exact — lider + Perfil individual
 // =======================================================================
 
 describe('employees.list — LEFT JOINs canonicos bit-exact', () => {
@@ -885,7 +885,7 @@ describe('employees.list — LEFT JOINs canonicos bit-exact', () => {
     expect(res.find((r) => r.name === 'Anderson Chefia')?.tipo).toBe('employee');
   });
 
-  it('resolve status canonico do Perfil Individual mais recente', async () => {
+  it('resolve status canonico do Perfil individual mais recente', async () => {
     const companyId = await createTestCompany();
     const emp1 = await seedEmployee({
       companyId,

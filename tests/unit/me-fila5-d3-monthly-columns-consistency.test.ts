@@ -50,7 +50,7 @@ describe('ME-fila5 D3 — consistencia monthly-columns.ts vs spreadsheets.ts', (
   });
 
   it('NOME_ABA_LIDER_MONTHLY tem valor literal esperado', () => {
-    expect(NOME_ABA_LIDER_MONTHLY).toBe('Preenchimento mensal Lider');
+    expect(NOME_ABA_LIDER_MONTHLY).toBe('Preenchimento mensal Líder');
   });
 
   it('COLUNAS_CANONICAS_RH_MONTHLY tem 6 rotulos em ordem canonica', () => {

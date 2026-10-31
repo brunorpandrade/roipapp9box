@@ -21,7 +21,7 @@ const CARDS: readonly CardDef[] = [
   {
     title: 'Transferências de Responsável financeiro',
     description:
-      'Historico de atribuicoes e transferencias de RF por empresa, com justificativa canonica.',
+      'Histórico de atribuições e transferências de RF por empresa, com justificativa canônica.',
     href: '/super-admin/logs/responsavel-financeiro',
   },
   {

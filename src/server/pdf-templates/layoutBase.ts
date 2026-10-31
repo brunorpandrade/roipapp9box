@@ -177,7 +177,7 @@ export const LAYOUT_BASE_CSS = `
     margin: 4mm 0;
   }
 
-  /* Capa editorial — pagina 1. */
+  /* Capa editorial — página 1. */
   .cover-page {
     page: cover;
     padding-top: 12mm;
@@ -239,7 +239,7 @@ export const LAYOUT_BASE_CSS = `
   .cover-note strong { color: #78350F; font-weight: 700; }
 
   /* ME-1.3c CC079-v4: classes de sumario (.toc-*) retiradas junto com
-  o indice do documento. */
+  o índice do documento. */
 
   /* Cards KPI — resumo executivo. */
   .kpi-grid {
@@ -306,7 +306,7 @@ export const LAYOUT_BASE_CSS = `
   .radar-svg-wrap { width: 52%; max-width: 80mm; }
   .radar-legend { flex: 1; }
 
-  /* Bloco de descricao executiva por fator — borda lateral teal. */
+  /* Bloco de descrição executiva por fator — borda lateral teal. */
   .factor-desc {
     background: #F9FAFB;
     border-left: 3px solid #14B8A6;
@@ -333,7 +333,7 @@ export const LAYOUT_BASE_CSS = `
   .factor-desc-score { font-size: 11pt; font-weight: 700; }
   .factor-desc-text { font-size: 9pt; color: #4B5563; line-height: 1.5; }
 
-  /* Cards de analise de departamento com classes de severidade. */
+  /* Cards de análise de departamento com classes de severidade. */
   .dept-card {
     background: #FFFFFF;
     border: 1px solid #E5E7EB;
@@ -377,7 +377,7 @@ export const LAYOUT_BASE_CSS = `
   .dept-badge.crit { background: #FEF2F2; border-color: #FCA5A5; color: #991B1B; font-weight: 600; }
   .dept-badge.pos { background: #F0FDF4; border-color: #86EFAC; color: #065F46; font-weight: 600; }
 
-  /* Departamento critico em card vermelho. */
+  /* Departamento crítico em card vermelho. */
   .critico-card {
     background: #FEF2F2;
     border: 1px solid #FCA5A5;
@@ -470,7 +470,7 @@ export const LAYOUT_BASE_CSS = `
   .row-up { background: #F0FDF4; }
   .row-down { background: #FEF2F2; }
 
-  /* Rodape de rastreabilidade. */
+  /* Rodapé de rastreabilidade. */
   .trace-card {
     background: #F9FAFB;
     border: 1px solid #E5E7EB;
@@ -503,7 +503,7 @@ export const LAYOUT_BASE_CSS = `
   }
   .edit-note strong { color: #78350F; font-weight: 700; }
 
-  /* Classes utilitarias canonicas de cor. */
+  /* Classes utilitárias canonicas de cor. */
   .cs-green { color: #16A34A; }
   .cs-yellow { color: #D97706; }
   .cs-red { color: #DC2626; }
@@ -573,7 +573,7 @@ export const LAYOUT_BASE_CSS = `
     font-weight: 700;
   }
 
-  /* ME-1.3c CC079-v4: grade de mini 9-Boxes na pagina final. */
+  /* ME-1.3c CC079-v4: grade de mini 9-Boxes na página final. */
   .mini-grid-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -600,7 +600,7 @@ export const LAYOUT_BASE_CSS = `
     border-color: #99F6E4;
   }
 
-  /* ME-1.3c CC079-v4: barras empilhadas de distribuicao. */
+  /* ME-1.3c CC079-v4: barras empilhadas de distribuição. */
   .stacked-bar-row {
     display: flex;
     align-items: center;
@@ -662,9 +662,9 @@ export const LAYOUT_BASE_CSS = `
   /* ============================================================
      ME-1.3c CC079-v5 — layout canonico do PDF Radar NR-1.
      Classes novas para radar centralizado com legenda abaixo
-     (nao mais lado a lado), pagina por departamento com cabecalho
-     identico, tabela 3 colunas comparativa dept x empresa, e
-     nota padronizada para paginas sem dados ainda disponiveis.
+     (não mais lado a lado), página por departamento com cabeçalho
+     idêntico, tabela 3 colunas comparativa dept x empresa, e
+     nota padronizada para páginas sem dados ainda disponíveis.
      ============================================================ */
 
   .radar-stacked {
@@ -771,7 +771,7 @@ export const LAYOUT_BASE_CSS = `
     font-weight: 700;
   }
 
-  /* Nota padronizada para paginas sem dados ainda disponiveis. */
+  /* Nota padronizada para páginas sem dados ainda disponíveis. */
   .sem-dados-nota {
     background: #F9FAFB;
     border: 1px dashed #D1D5DB;
@@ -791,7 +791,7 @@ export const LAYOUT_BASE_CSS = `
     font-weight: 700;
   }
 
-  /* Cabecalho canonico de pagina de departamento. */
+  /* Cabeçalho canonico de página de departamento. */
   .dept-page-head {
     display: flex;
     justify-content: space-between;
@@ -811,7 +811,7 @@ export const LAYOUT_BASE_CSS = `
   }
 
   /* ============================================================
-     ME-1.3c CC079-v6 — camada canonica para o layout de 14 paginas
+     ME-1.3c CC079-v6 — camada canonica para o layout de 14 páginas
      do modelo. Hero da capa em duas linhas separadas, radar maior
      com nomes completos, lista enxuta de deptos insuficientes.
      ============================================================ */
@@ -820,7 +820,7 @@ export const LAYOUT_BASE_CSS = `
   .cover-hero {
     margin-top: 0;
     margin-bottom: 7mm;
-    padding-right: 50mm; /* reserva espaco para o logo no canto */
+    padding-right: 50mm; /* reserva espaço para o logo no canto */
   }
   .cover-title-line1 {
     font-size: 32pt;
@@ -855,7 +855,7 @@ export const LAYOUT_BASE_CSS = `
     margin-bottom: 3mm;
     line-height: 1.45;
   }
-  /* Capa v7: reduzir meta-grid para caber tudo numa pagina. */
+  /* Capa v7: reduzir meta-grid para caber tudo numa página. */
   .cover-page .cover-meta {
     padding: 4mm 6mm;
     margin-bottom: 5mm;
@@ -881,8 +881,8 @@ export const LAYOUT_BASE_CSS = `
     margin-top: 3mm;
   }
 
-  /* Radar v7.1 — aumentado para ocupar o espaco disponivel na
-     pagina da empresa. O override da dept-page (abaixo) mantem
+  /* Radar v7.1 — aumentado para ocupar o espaço disponível na
+     página da empresa. O override da dept-page (abaixo) mantém
      tamanho reduzido para caber radar + tabela juntos. */
   .radar-stacked .radar-svg-centered {
     width: 100%;
@@ -900,10 +900,10 @@ export const LAYOUT_BASE_CSS = `
     font-size: 10.5pt;
   }
 
-  /* Pagina de departamento v7.2 — radar GRANDE igual ao da pagina
+  /* Página de departamento v7.2 — radar GRANDE igual ao da página
      da empresa (max-width 165mm, mesma legenda 10.5pt), com tabela
-     3 colunas compactada para caber radar + tabela na mesma pagina
-     sem corte. Nao ha mais override reduzindo o SVG do radar nem a
+     3 colunas compactada para caber radar + tabela na mesma página
+     sem corte. Não há mais override reduzindo o SVG do radar nem a
      legenda da biparticao — a dept-page herda os valores da v7.1. */
   .dept-page {
     page-break-inside: avoid;
@@ -936,7 +936,7 @@ export const LAYOUT_BASE_CSS = `
   }
 
   /* ============================================================
-     ME-1.3c CC079-v7 — pagina "Instrumento aplicado — os 32 itens".
+     ME-1.3c CC079-v7 — página "Instrumento aplicado — os 32 itens".
      Grid de 8 blocos (um por fator) em 2 colunas; 4 itens numerados
      por bloco. Sem a escala — ela aparece apenas na rastreabilidade.
      ============================================================ */
@@ -1023,7 +1023,7 @@ export const LAYOUT_BASE_CSS = `
   }
 
   /* ============================================================
-     ME-1.3c-Snapshot v1 — padrao do Snapshot 9-Box (espelho do Radar)
+     ME-1.3c-Snapshot v1 — padrão do Snapshot 9-Box (espelho do Radar)
      ============================================================ */
 
   /* v2: hero em UMA linha "Snapshot do 9-Box" (preto + teal). */
@@ -1038,7 +1038,7 @@ export const LAYOUT_BASE_CSS = `
   }
   .cover-title-oneline .cover-title-accent { color: #14B8A6; }
 
-  /* Pagina de departamento no 9-Box: garante que matriz + comparativo
+  /* Página de departamento no 9-Box: garante que matriz + comparativo
      caibam na mesma A4 sem corte (bug recorrente no v4). */
   .ninebox-dept-page {
     page-break-inside: avoid;
@@ -1157,7 +1157,7 @@ export const LAYOUT_BASE_CSS = `
     font-size: 8.5pt;
     font-weight: 700;
     min-width: 3mm;
-    /* v2: cor do numero vem inline (paleta.text da celula) para legibilidade
+    /* v2: cor do número vem inline (paleta.text da célula) para legibilidade
        sobre o fundo pastel (paleta.bg). */
   }
   .ninebox-stacked-bar-total {
@@ -1176,7 +1176,7 @@ export const LAYOUT_BASE_CSS = `
     font-size: 9pt;
     color: #374151;
   }
-  /* v4: nowrap em cada item + fonte 9pt para que nenhum rotulo quebre em
+  /* v4: nowrap em cada item + fonte 9pt para que nenhum rótulo quebre em
      duas linhas; 3 colunas x 3 linhas canonicas. */
   .ninebox-legend-full .leg-item {
     display: flex;
@@ -1303,7 +1303,7 @@ export const LAYOUT_BASE_CSS = `
     font-size: 9pt;
   }
 
-  /* Dimensao horizontal canonica para blocos clima/plenitude (dim-bar). */
+  /* Dimensão horizontal canonica para blocos clima/plenitude (dim-bar). */
   .dim-bars { margin-top: 2mm; }
   .dim-bar-row {
     display: grid;
@@ -1366,7 +1366,7 @@ export const LAYOUT_BASE_CSS = `
     font-weight: 700;
   }
 
-  /* Agregacao em cascata do clima_engajamento. */
+  /* Agregação em cascata do clima_engajamento. */
   .clima-nivel-empresa { }
   .clima-nivel-dept {
     margin-top: 6mm;

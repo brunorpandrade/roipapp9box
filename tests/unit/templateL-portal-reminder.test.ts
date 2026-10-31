@@ -119,7 +119,7 @@ describe('Template L — Lista de instrumentos canonica (§12.8) — texto', () 
     expect(linha).toBe('• Radar NR-1 — Atrasado · Prazo original: 25/03/2026');
   });
 
-  it('Perfil Individual canonico: Meu perfil — {status} (sem prazo, one-shot §12.8)', () => {
+  it('Perfil individual canonico: Meu perfil — {status} (sem prazo, one-shot §12.8)', () => {
     const linha = renderListaInstrumentosTexto([{ tipo: 'PerfilIndividual', status: 'Pendente' }]);
     expect(linha).toBe('• Meu perfil — Pendente');
     expect(linha).not.toContain('Prazo');
@@ -153,7 +153,7 @@ describe('Template L — Lista de instrumentos canonica (§12.8) — HTML', () =
     expect(html).toContain('<li>Autoavaliação — Pendente · Prazo original: 10/04/2026</li>');
   });
 
-  it('Perfil Individual canonico: <li>Meu perfil — {status}</li> sem prazo', () => {
+  it('Perfil individual canonico: <li>Meu perfil — {status}</li> sem prazo', () => {
     const html = renderListaInstrumentosHtml([{ tipo: 'PerfilIndividual', status: 'Atrasado' }]);
     expect(html).toContain('<li>Meu perfil — Atrasado</li>');
     expect(html).not.toContain('Prazo');

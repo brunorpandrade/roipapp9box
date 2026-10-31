@@ -98,9 +98,9 @@ export function generateUniqueMatriculas(
   }
   if (result.length < count) {
     throw new Error(
-      `generateUniqueMatriculas: espaco amostral esgotado (pediu ${count}, ` +
-        `gerou ${result.length} apos ${attempts} tentativas). Empresa pode ` +
-        `estar proxima do limite de 67.600 matriculas por companyId.`,
+      `generateUniqueMatriculas: espaço amostral esgotado (pediu ${count}, ` +
+        `gerou ${result.length} após ${attempts} tentativas). Empresa pode ` +
+        `estar próxima do limite de 67.600 matrículas por companyId.`,
     );
   }
   return result;

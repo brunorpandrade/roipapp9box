@@ -36,7 +36,7 @@
 // - Contadores refletem SOMENTE os alertas efetivamente presentes.
 // - Datas em `DD/MM/YYYY` (U7).
 //
-// Nota canonica sobre "atencao override": a decisao canonica de override
+// Nota canonica sobre "atenção override": a decisao canonica de override
 // para imediato acontece no motor ME-059 (`m6-channel.ts` +
 // `severity.ts`). O que chega ao template B via `emailQueue` com
 // `tipoEnvio='digest_semanal'` ja e o conjunto canonico correto — nao ha

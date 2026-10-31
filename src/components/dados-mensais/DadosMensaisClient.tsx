@@ -8,10 +8,10 @@
 //
 // Origem canonica:
 // - CAMADA_UI §14.13 (dados mensais RH — abas + navegacao por mes +
-//   comportamento por status + botao `[Solicitar desbloqueio]` D051/
+//   comportamento por status + botão `[Solicitar desbloqueio]` D051/
 //   D052/D053).
 // - CAMADA_UI §14.16 (modal integral).
-// - CAMADA_UI §14.17 (botao `[Desbloquear mes]` exclusivo Bruno).
+// - CAMADA_UI §14.17 (botão `[Desbloquear mês]` exclusivo Bruno).
 // - CAMADA_AUTH §10.4 (matriz).
 // - CAMADA_NEGOCIO §11.
 //
@@ -453,7 +453,7 @@ export function DadosMensaisClient(props: DadosMensaisClientProps): JSX.Element 
   const statusLabel = STATUS_LABELS[status] ?? 'Aberto';
 
   // -------------------------------------------------------------------
-  // Format do timestamp canonico da badge "Solicitacao em analise"
+  // Format do timestamp canônico da badge "Solicitação em análise"
   // -------------------------------------------------------------------
 
   const pendingRequestedAtLabel = useMemo((): string | null => {
@@ -808,7 +808,7 @@ export function DadosMensaisClient(props: DadosMensaisClientProps): JSX.Element 
                     color: COLORS.primary.navy,
                     cursor: 'pointer',
                   }}
-                  title="Baixar XLSX pre-preenchido com colaboradores ativos"
+                  title="Baixar XLSX pré-preenchido com colaboradores ativos"
                 >
                   📄 Baixar planilha modelo
                 </button>

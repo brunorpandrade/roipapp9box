@@ -163,7 +163,7 @@ export function computeTurnoverBoundaries(trimestre: string): TurnoverBoundaries
 
 /**
  * Arredonda a taxa canonica para 2 casas (retorna number puro; a
- * formatacao "7,1% (3 saidas de 42)" do §12.5 e responsabilidade da UI).
+ * formatacao "7,1% (3 saídas de 42)" do §12.5 e responsabilidade da UI).
  * Divisao por zero → 0 (nao NaN, nao Infinity).
  */
 export function computeTurnoverRate(saidas: number, headcount: number): number {
@@ -277,7 +277,7 @@ async function terminationsWindow(
  * Ajuste de instante em milissegundos — usado para converter o intervalo
  * SQL `[from, to)` em `(from - 1ms, to - 1ms]`, casando com os
  * comparadores `gt`/`lte` sem depender de `between` (que e inclusivo em
- * ambos os lados). Preserva a semantica canonica de "saida no trimestre".
+ * ambos os lados). Preserva a semantica canonica de "saída no trimestre".
  */
 function addMs(d: Date, delta: number): Date {
   return new Date(d.getTime() + delta);

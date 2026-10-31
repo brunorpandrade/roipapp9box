@@ -340,7 +340,7 @@ export function NotificacoesClient(props: NotificacoesClientProps): JSX.Element 
       const total = await marcarLidasLoteAction(selectedIdsArray);
       toast.push({
         severity: 'success',
-        message: `${total} notificação(ões) marcada(s) como lida.`,
+        message: `${total} notificação(ões) marcada(s) como lida(s).`,
       });
       const next = await listarNotificacoesAction(filters);
       setResult(next);

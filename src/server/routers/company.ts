@@ -27,7 +27,7 @@
 // Transacao atomica canonica (§5.5) — 4 passos:
 //   1. Resolve titular vigente varrendo `employees` E `cLevelMembers`
 //      dentro da transacao com `.for('update')` — fonte da verdade da
-//      invariante "no maximo um RF por empresa" (sem UNIQUE parcial no
+//      invariante "no máximo um RF por empresa" (sem UNIQUE parcial no
 //      schema; enforcement de codigo).
 //   2. Valida elegibilidade do novo titular (§5.3): mesma empresa, ativo,
 //      diferente do vigente.
@@ -156,44 +156,44 @@ export const JUSTIFICATIVA_TRANSFER_MAX = 500 as const;
  * atribuicao). Preenche a coluna `reason` NOT NULL do schema quando nao
  * ha justificativa (nao ha transferencia a justificar).
  */
-export const REASON_ATRIBUIDO_CANONICA = 'Primeira atribuicao de Responsavel financeiro' as const;
+export const REASON_ATRIBUIDO_CANONICA = 'Primeira atribuição de Responsável financeiro' as const;
 
 // ============================================================
 // Mensagens canonicas literais (testadas verbatim)
 // ============================================================
 
 /** §2.4 — guard cruzado companyId (salvaguarda; Bruno atravessa). */
-export const MSG_COMPANY_MISMATCH_RF = 'Empresa nao pertence ao seu escopo.' as const;
+export const MSG_COMPANY_MISMATCH_RF = 'Empresa não pertence ao seu escopo.' as const;
 
 /** §5.5 — empresa alvo nao encontrada pelo id. */
-export const MSG_COMPANY_NAO_ENCONTRADA_RF = 'Empresa nao encontrada.' as const;
+export const MSG_COMPANY_NAO_ENCONTRADA_RF = 'Empresa não encontrada.' as const;
 
 /** §5.5 — novo titular nao encontrado (varredura em employees/cLevelMembers). */
-export const MSG_NEW_HOLDER_NAO_ENCONTRADO_RF = 'Novo titular nao encontrado.' as const;
+export const MSG_NEW_HOLDER_NAO_ENCONTRADO_RF = 'Novo titular não encontrado.' as const;
 
 /** §5.3 — novo titular inativo. */
 export const MSG_NEW_HOLDER_INATIVO_RF =
-  'Novo titular esta inativo e nao pode receber o papel.' as const;
+  'Novo titular está inativo e não pode receber o papel.' as const;
 
 /** §5.3 — novo titular pertence a outra empresa. */
 export const MSG_NEW_HOLDER_EMPRESA_DIVERGENTE_RF =
-  'Novo titular nao pertence a esta empresa.' as const;
+  'Novo titular não pertence a esta empresa.' as const;
 
 /** §5.5 — novo titular ja e o vigente. */
 export const MSG_NEW_HOLDER_JA_E_RF =
-  'O titular indicado ja e o Responsavel financeiro vigente.' as const;
+  'O titular indicado já é o Responsável financeiro vigente.' as const;
 
 /** §2.2 — justificativa de transferencia < 100 chars. */
 export const MSG_TRANSFER_JUSTIFICATIVA_MIN =
-  'A justificativa deve ter no minimo 100 caracteres.' as const;
+  'A justificativa deve ter no mínimo 100 caracteres.' as const;
 
 /** §2.2 — justificativa de transferencia > 500 chars. */
 export const MSG_TRANSFER_JUSTIFICATIVA_MAX =
-  'A justificativa deve ter no maximo 500 caracteres.' as const;
+  'A justificativa deve ter no máximo 500 caracteres.' as const;
 
 /** §5.5 — justificativa obrigatoria quando existe RF vigente (transferencia). */
 export const MSG_TRANSFER_JUSTIFICATIVA_OBRIGATORIA =
-  'Transferencia de Responsavel financeiro exige justificativa.' as const;
+  'Transferência de Responsável financeiro exige justificativa.' as const;
 
 // ============================================================
 // Schema Zod canonico de entrada
@@ -351,7 +351,7 @@ export interface CurrentHolder {
 /**
  * §5.5 — resolve o titular vigente varrendo `employees` E `cLevelMembers`
  * dentro da transacao com `.for('update')`. Fonte da verdade da invariante
- * "no maximo um RF por empresa": nao existe UNIQUE parcial no schema, o
+ * "no máximo um RF por empresa": não existe UNIQUE parcial no schema, o
  * enforcement e por codigo. Caso patologico de dois RFs simultaneos (falha
  * de invariante anterior) resolvido pelo `.limit(1)` — o UPDATE seguinte
  * corrige apenas UM, deixando o outro para deteccao operacional.

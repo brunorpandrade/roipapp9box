@@ -17,7 +17,7 @@
 // Semantica canonica: employee eh elegivel no mes M se
 //   (1) `employees.companyId = companyId`
 //   E (2) `employees.dataAdmissao <= bounds.lastDay`
-//   E (3) `employees.id NAO IN` desligadosPreviosIds.
+//   E (3) `employees.id NÃO IN` desligadosPreviosIds.
 //
 // Substitui o filtro por `status='ativo'` que previamente era usado em
 // `getMonthlyInputForm(aba='rh')` (monthlyData.ts:494-496) e em
@@ -129,7 +129,7 @@ export function activeInMonthWhere(
   }
   const predicate = and(...clauses);
   if (predicate === undefined) {
-    throw new Error('activeInMonthWhere: predicado canonico nao pode ser undefined.');
+    throw new Error('activeInMonthWhere: predicado canônico não pode ser undefined.');
   }
   return predicate;
 }

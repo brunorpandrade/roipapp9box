@@ -34,7 +34,7 @@
 //     aparecem na planilha). Cell protection nativa exceljs (§3.11
 //     CC3): Familia 6 tem Demanda '—' com `locked=true`; peso zero
 //     tem Demanda e Realizado com `locked=true`. Aba unica com nome
-//     canonico `Preenchimento mensal Lider`. Nome de arquivo:
+//     canônico `Preenchimento mensal Líder`. Nome de arquivo:
 //     `template_lider_[razaoSocialSanitizada]_[YYYY-MM]_[nomeLider].xlsx`
 //     (S188). Autorizacao: super_admin, rh, rh_lider, clevel, lider
 //     (mesmo perfil de saveMonthlyLeaderData).
@@ -113,36 +113,36 @@ import { createMonthlyDataRouter, FAMILIA_6_JOB_FAMILY } from './monthlyData';
 export const MSG_EMPRESA_FORA_DO_ESCOPO_SPREADSHEETS = 'Empresa fora do escopo.';
 
 /** §3.11 — arquivo XLSX corrompido ou nao e um XLSX valido. */
-export const MSG_XLSX_INVALIDO = 'Arquivo XLSX invalido ou corrompido.';
+export const MSG_XLSX_INVALIDO = 'Arquivo XLSX inválido ou corrompido.';
 
 /** §3.11 — aba canonica ausente no upload. */
 export const MSG_ABA_AUSENTE_RH = 'Aba "Preenchimento mensal RH" ausente no arquivo.';
-export const MSG_ABA_AUSENTE_LIDER = 'Aba "Preenchimento mensal Lider" ausente no arquivo.';
+export const MSG_ABA_AUSENTE_LIDER = 'Aba "Preenchimento mensal Líder" ausente no arquivo.';
 
 /** §3.11 — cabecalhos canonicos divergentes ou ausentes. */
 export const MSG_CABECALHOS_INVALIDOS_RH =
-  'Cabecalhos da planilha divergem do template canonico RH.';
+  'Cabeçalhos da planilha divergem do template canônico RH.';
 export const MSG_CABECALHOS_INVALIDOS_LIDER =
-  'Cabecalhos da planilha divergem do template canonico Lider.';
+  'Cabeçalhos da planilha divergem do template canônico Líder.';
 
 /** §3.12 — CPF nao encontrado entre os colaboradores ativos da empresa. */
-export const MSG_CPF_NAO_ENCONTRADO = 'CPF nao encontrado entre colaboradores da empresa.';
+export const MSG_CPF_NAO_ENCONTRADO = 'CPF não encontrado entre colaboradores da empresa.';
 
 /** §3.12 — Lider informado no upload nao bate com o lider do titular. */
-export const MSG_LIDERADO_FORA_DA_CADEIA = 'Liderado fora da cadeia direta do lider no mes.';
+export const MSG_LIDERADO_FORA_DA_CADEIA = 'Liderado fora da cadeia direta do líder no mês.';
 
 /** §3.11 — valor nao numerico em coluna numerica. */
-export const MSG_VALOR_NAO_NUMERICO = 'Valor nao numerico em coluna numerica.';
+export const MSG_VALOR_NAO_NUMERICO = 'Valor não numérico em coluna numérica.';
 
 /** §3.11 — linha completamente vazia (informativa; ignorada, nao falha). */
 export const MSG_LINHA_VAZIA_IGNORADA = 'Linha vazia ignorada.';
 
 /** §3.11 — nenhuma variavel ativa (peso>0) para a familia do liderado. */
-export const MSG_SEM_VARIAVEIS_ATIVAS = 'Familia do liderado sem variaveis ativas para o mes.';
+export const MSG_SEM_VARIAVEIS_ATIVAS = 'Família do liderado sem variáveis ativas para o mês.';
 
 /** Nome canonico da aba unica em cada template (§3.11). */
 export const NOME_ABA_RH = 'Preenchimento mensal RH';
-export const NOME_ABA_LIDER = 'Preenchimento mensal Lider';
+export const NOME_ABA_LIDER = 'Preenchimento mensal Líder';
 
 /** Cabecalhos canonicos exatos da aba RH (§3.11 + mockup §7.5). */
 // ME-1.3b: headers canonicos acentuados (`Lider` -> `Líder`,
@@ -185,7 +185,7 @@ export const VALOR_DEMANDA_FAMILIA_6 = '—';
 
 /** §3.12 — mes canonico YYYY-MM (janeiro..dezembro). */
 export const MES_INPUT_SCHEMA_SPREADSHEETS = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, {
-  message: 'Mes deve seguir o formato YYYY-MM.',
+  message: 'Mês deve seguir o formato YYYY-MM.',
 });
 
 /** §3.11 — lider tipo (employee ou clevel). */
@@ -361,7 +361,7 @@ async function loadRHTemplateData(
   if (!company) {
     throw new TRPCError({
       code: 'NOT_FOUND',
-      message: 'Empresa nao encontrada.',
+      message: 'Empresa não encontrada.',
     });
   }
 
@@ -457,7 +457,7 @@ async function loadLeaderTemplateData(
   if (!company) {
     throw new TRPCError({
       code: 'NOT_FOUND',
-      message: 'Empresa nao encontrada.',
+      message: 'Empresa não encontrada.',
     });
   }
 
@@ -1160,7 +1160,7 @@ export function createSpreadsheetsRouter(deps: CreateSpreadsheetsRouterDeps = {}
           if (input.liderTipo !== 'employee' || input.liderId !== ctx.user.userId) {
             throw new TRPCError({
               code: 'FORBIDDEN',
-              message: 'Lider so baixa o proprio template.',
+              message: 'Líder só baixa o próprio template.',
             });
           }
         }
@@ -1168,7 +1168,7 @@ export function createSpreadsheetsRouter(deps: CreateSpreadsheetsRouterDeps = {}
           if (input.liderTipo !== 'clevel' || input.liderId !== ctx.user.userId) {
             throw new TRPCError({
               code: 'FORBIDDEN',
-              message: 'C-level so baixa o proprio template.',
+              message: 'C-level só baixa o próprio template.',
             });
           }
         }
@@ -1203,7 +1203,7 @@ export function createSpreadsheetsRouter(deps: CreateSpreadsheetsRouterDeps = {}
           if (input.liderTipo !== 'employee' || input.liderId !== ctx.user.userId) {
             throw new TRPCError({
               code: 'FORBIDDEN',
-              message: 'Lider so envia o proprio arquivo.',
+              message: 'Líder só envia o próprio arquivo.',
             });
           }
         }
@@ -1211,7 +1211,7 @@ export function createSpreadsheetsRouter(deps: CreateSpreadsheetsRouterDeps = {}
           if (input.liderTipo !== 'clevel' || input.liderId !== ctx.user.userId) {
             throw new TRPCError({
               code: 'FORBIDDEN',
-              message: 'C-level so envia o proprio arquivo.',
+              message: 'C-level só envia o próprio arquivo.',
             });
           }
         }

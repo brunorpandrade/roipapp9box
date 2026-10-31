@@ -22,7 +22,7 @@
 // Regua §2.4 (isolamento por empresa): NAO reimplementada aqui — os
 // consumidores continuam chamando `assertUserCompanyScope`/`assertCompany
 // Scope` normalmente sobre o `input.companyId` recebido. O guard so
-// decide "esta sessao pode operar RH?"; nao decide "sobre qual empresa".
+// decide "esta sessão pode operar RH?"; não decide "sobre qual empresa".
 //
 // Escopo do C-level restrito (acessoTotal=false): herdado do
 // `assertUserCompanyScope` + guards de cadeia descendente ja aplicados em
@@ -47,7 +47,7 @@ import { protectedProcedure, type AuthenticatedUser } from '../trpc';
  * satisfaz a matriz `super_admin | rh | rh_lider | clevel-with-isRH`.
  * Preserva o vocabulario do guard historico `roleProcedure` (§8.3 DOC 02).
  */
-export const MSG_RH_ALLOWED_FORBIDDEN = 'Perfil sem permissao para a rota.' as const;
+export const MSG_RH_ALLOWED_FORBIDDEN = 'Perfil sem permissão para a rota.' as const;
 
 /** Veredito canonico da decisao de acesso RH (RV-13 — testado). */
 export type RhAllowedDecision = 'allow' | 'forbid';
