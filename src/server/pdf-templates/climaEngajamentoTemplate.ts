@@ -1,41 +1,37 @@
-/* eslint-disable @stylistic/max-len -- template HTML canonico com strings de layout longas */
-// ROIP APP 9BOX — template PDF Clima e engajamento (ME-053, S275).
+/* eslint-disable @stylistic/max-len -- template HTML com strings de layout longas */
+// ROIP APP 9BOX — template PDF Clima e engajamento (ME-053, S275;
+// ME-1.3d-REV DIS-B reescrita integral).
 //
 // Renderizacao HTML deterministica do relatorio Clima e engajamento
 // (DOC 03 §13.6). 100% template — SEM participacao de IA. Consumido
 // por `exports.getClimaEngajamento` (Route Handler).
 //
-// Estrutura canonica em cascata organograma §13.6:
-//   1. Visao geral da empresa.
-//   2. Visao geral de cada departamento.
-//   3. Detalhamento equipe a equipe dentro de cada departamento (com
-//      nome do lider direto).
+// ME-1.3d-REV DIS-B (31/10/2026):
+// - Pluralizacao sempre no plural (sem `(s)/(es)`).
+// - Logo canto superior direito via layoutBase (DIS-A).
+// - Agregado empresa carrega 5 aspectos por dimensao (barras
+//   horizontais) consumindo `notasPorAspecto` + `TEXTOS_QUESTOES_CLIMA`.
+// - Dept e equipe exibem apenas as 4 notas de dimensao + nota geral
+//   consolidada.
+// - Cascata Opcao B canonica: tabela unica por departamento com
+//   equipes como linhas-filha, sem repetir o nome do departamento no
+//   cabecalho interno.
+// - Zero mencao a `canonico/canonica` em texto user-facing.
 //
-// Piso de anonimato canonico: aplicado em cada nivel da cascata.
-// Grupos abaixo do piso sao agregados ao nivel imediatamente acima
-// (mesma mecanica do Bloco Clima do relatorio executivo).
-//
-// ME-1.3d (26/10/2026): lapidacao visual estrutural canonica. Adota
-// o padrao canonizado em Radar NR-1 (v7.2) + Snapshot 9-Box (v4):
-// - Capa com `cover-hero` (titulo preto bold + accent teal) + meta
-//   grid + nota contextual ambar + H2 "Resumo executivo" + 3 KPI
-//   cards (respondentes, nota de clima, adesao) sobre o agregado
-//   empresa.
-// - Blocos empresa / dept / equipe com KPI cards compactos + barras
-//   horizontais por dimensao (Engajamento/Desenvolvimento/
-//   Pertencimento/Realizacao) em `.dim-bars`.
-// - Nota de anonimato em `.clima-anonimato-nota` quando aplicavel.
-// - Hierarquia visual canonica: dept em `.clima-nivel-dept`,
-//   equipe em `.clima-nivel-equipe` (indent com border-left teal
-//   claro).
-// - Rastreabilidade final canonica em card cinza.
+// Determinismo: mesmo input = mesmo HTML byte a byte, exceto
+// `geradoEmIso` no rodape.
 
 import { formatTrimestreBR } from '../../lib/cycle/formatTrimestreBR';
+import { TEXTOS_QUESTOES_CLIMA, rotuloDimensaoClima } from '../../lib/climate/textosQuestoesClima';
 import { dataCivilBrtFromIso, formatDataEditorial } from '../../lib/date/formatDataEditorial';
 import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
 import { escapeHtml, renderLayoutBase } from './layoutBase';
 
-/** Bloco canonico de agregacao de Clima (empresa/depto/equipe). */
+/**
+ * Bloco de agregacao de Clima (empresa/depto/equipe). Agregado empresa
+ * pode popular `notasPorAspecto` com 20 posicoes para o detalhamento
+ * horizontal por aspecto; dept e equipe deixam `null`.
+ */
 export interface ClimaBlocoEscopo {
   titulo: string;
   respondentes: number;
@@ -48,9 +44,15 @@ export interface ClimaBlocoEscopo {
     realizacao: number | null;
   };
   /**
-   * Nota canonica de agregacao por anonimato — presente quando o
-   * escopo original ficou abaixo do piso e foi agregado ao nivel
-   * hierarquico imediatamente acima.
+   * Notas por aspecto (20 posicoes `(dim-1)*5+(item-1)`) — populado
+   * APENAS no bloco empresa (DIS-B). `null` ou ausente nos demais
+   * blocos.
+   */
+  notasPorAspecto?: readonly (number | null)[] | null;
+  /**
+   * Nota de agregacao por anonimato — presente quando o escopo original
+   * ficou abaixo do piso e foi agregado ao nivel hierarquico
+   * imediatamente acima.
    */
   notaAgregacao: string | null;
 }
@@ -64,9 +66,7 @@ export interface ClimaEngajamentoTemplateInput {
   nomeFantasia: string;
   razaoSocialSanitizada: string;
   trimestre: string;
-  /** Bloco da empresa (topo da cascata). */
   blocoEmpresa: ClimaBlocoEscopo;
-  /** Blocos por departamento com equipes dentro (cascata). */
   blocosDepartamentos: ClimaBlocoDepartamento[];
   geradoEmIso: string;
 }
@@ -108,8 +108,26 @@ function renderDimBar(rotulo: string, valor: number | null, maxEscala: number): 
   </div>`;
 }
 
+// Barra horizontal fina para aspectos (visual mais compacto que a
+// dim-bar porque as 20 linhas precisam caber em uma pagina A4).
+function renderAspectoBar(texto: string, valor: number | null, maxEscala: number): string {
+  if (valor === null || !Number.isFinite(valor)) {
+    return `<div class="aspecto-bar-row">
+      <div class="aspecto-bar-label">${escapeHtml(texto)}</div>
+      <div class="aspecto-bar-track"></div>
+      <div class="aspecto-bar-value">—</div>
+    </div>`;
+  }
+  const pct = Math.max(0, Math.min(100, (valor / maxEscala) * 100));
+  return `<div class="aspecto-bar-row">
+    <div class="aspecto-bar-label">${escapeHtml(texto)}</div>
+    <div class="aspecto-bar-track"><div class="aspecto-bar-fill" style="width:${pct.toFixed(2)}%;"></div></div>
+    <div class="aspecto-bar-value">${fmtNum(valor)}</div>
+  </div>`;
+}
+
 // ============================================================
-// Filename canonico §13.6
+// Filename §13.6
 // ============================================================
 
 export function composeClimaEngajamentoFilename(
@@ -123,7 +141,7 @@ export function composeClimaEngajamentoFilename(
 }
 
 // ============================================================
-// Secoes canonicas (padrao canonizado NR-1 v7.2 / Snapshot v4)
+// Secoes
 // ============================================================
 
 function renderCapaMaisResumo(input: ClimaEngajamentoTemplateInput): string {
@@ -140,6 +158,7 @@ function renderCapaMaisResumo(input: ClimaEngajamentoTemplateInput): string {
           : 'highlight-red';
   const valueClass =
     notaClima === null ? '' : notaClima >= 7.5 ? 'green' : notaClima >= 5 ? 'yellow' : 'red';
+  const totalDepts = input.blocosDepartamentos.length;
   return `<section class="cover-page">
   <div class="cover-hero">
     <div class="cover-title-line1">Clima e engajamento</div>
@@ -151,15 +170,15 @@ function renderCapaMaisResumo(input: ClimaEngajamentoTemplateInput): string {
     <div class="cover-meta-row"><span class="cover-meta-label">Data de geração do relatório</span><span class="cover-meta-value">${escapeHtml(dataGeracao)}</span></div>
   </div>
   <div class="cover-note">
-    <strong>⚠ Sobre este relatório:</strong> este relatório apresenta os agregados de clima e engajamento do último trimestre disponível. Estritamente determinístico — sem participação de IA. Grupos abaixo do piso de anonimato são agregados ao nível hierárquico imediatamente acima.
+    <strong>⚠ Sobre este relatório:</strong> os agregados de clima e engajamento do último trimestre disponível. Grupos abaixo do piso de anonimato são agregados ao nível hierárquico imediatamente acima.
   </div>
   <h2 class="h2-compact">Resumo executivo</h2>
-  <p class="resumo-exec-paragrafo">${fmtInt(bloco.respondentes)} respondente(s) no agregado da empresa, com nota de clima ${fmtNum(notaClima)}.</p>
+  <p class="resumo-exec-paragrafo">${fmtInt(bloco.respondentes)} respondentes no agregado da empresa, com nota de clima ${fmtNum(notaClima)}.</p>
   <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
     <div class="kpi-card">
       <div class="kpi-label">Respondentes</div>
       <div class="kpi-value">${fmtInt(bloco.respondentes)}</div>
-      <div class="kpi-sub">${input.blocosDepartamentos.length} departamento(s) na cascata</div>
+      <div class="kpi-sub">${fmtInt(totalDepts)} departamentos na cascata</div>
     </div>
     <div class="kpi-card ${highlight}">
       <div class="kpi-label">Nota de clima</div>
@@ -175,13 +194,12 @@ function renderCapaMaisResumo(input: ClimaEngajamentoTemplateInput): string {
 </section>`;
 }
 
-interface RenderBlocoOptions {
-  readonly nivel: 'empresa' | 'dept' | 'equipe';
-  readonly headingLevel: 2 | 3 | 4;
-}
-
-function renderBloco(bloco: ClimaBlocoEscopo, options: RenderBlocoOptions): string {
-  const h = `h${options.headingLevel}`;
+/**
+ * Agregado da empresa: 2 KPI cards + 4 dim-bars + 5 aspectos por
+ * dimensao (barras horizontais consumindo `notasPorAspecto`).
+ */
+function renderBlocoEmpresa(input: ClimaEngajamentoTemplateInput): string {
+  const bloco = input.blocoEmpresa;
   const notaClima = bloco.notaClima;
   const highlight =
     notaClima === null
@@ -193,58 +211,151 @@ function renderBloco(bloco: ClimaBlocoEscopo, options: RenderBlocoOptions): stri
           : 'highlight-red';
   const valueClass =
     notaClima === null ? '' : notaClima >= 7.5 ? 'green' : notaClima >= 5 ? 'yellow' : 'red';
-  const kpiCards: string[] = [];
-  kpiCards.push(`<div class="kpi-card ${highlight}">
-      <div class="kpi-label">Nota de clima</div>
-      <div class="kpi-value ${valueClass}">${fmtNum(notaClima)}</div>
-      <div class="kpi-sub">${fmtInt(bloco.respondentes)} respondente(s)</div>
-    </div>`);
-  kpiCards.push(`<div class="kpi-card">
-      <div class="kpi-label">Adesão</div>
-      <div class="kpi-value">${fmtPctInt(bloco.adesao)}</div>
-      <div class="kpi-sub">Participação no ciclo</div>
-    </div>`);
+  const notas = bloco.notasPorAspecto ?? null;
+  const aspectosHtml = (() => {
+    if (notas === null) return '';
+    const dimBlocos: string[] = [];
+    for (let dim = 1; dim <= 4; dim += 1) {
+      const rotuloDim = rotuloDimensaoClima(dim);
+      const linhas: string[] = [];
+      for (let item = 1; item <= 5; item += 1) {
+        const idx = (dim - 1) * 5 + (item - 1);
+        const valor = notas[idx] ?? null;
+        const texto = TEXTOS_QUESTOES_CLIMA[idx] ?? '';
+        linhas.push(renderAspectoBar(texto, valor, 10));
+      }
+      dimBlocos.push(`<div class="aspecto-dim-group">
+        <h4 class="aspecto-dim-title">${escapeHtml(rotuloDim)}</h4>
+        <div class="aspecto-bars">${linhas.join('\n')}</div>
+      </div>`);
+    }
+    return `<h3 class="h3-compact" style="margin-top:6mm;">Aspectos individuais por dimensão</h3>
+    <div class="aspecto-dim-grid">${dimBlocos.join('\n')}</div>`;
+  })();
   const notaAgreg = bloco.notaAgregacao
     ? `<div class="clima-anonimato-nota">${escapeHtml(bloco.notaAgregacao)}</div>`
     : '';
-  const cssNivel =
-    options.nivel === 'dept'
-      ? 'clima-nivel-dept'
-      : options.nivel === 'equipe'
-        ? 'clima-nivel-equipe'
-        : 'clima-nivel-empresa';
-  return `<div class="${cssNivel}">
-    <${h}>${escapeHtml(bloco.titulo)}</${h}>
-    <div class="kpi-grid" style="grid-template-columns: repeat(2, 1fr); margin-top:2mm;">${kpiCards.join('\n')}</div>
-    <h${options.headingLevel + 1} class="h3-compact">Perfil por dimensão</h${options.headingLevel + 1}>
-    <div class="dim-bars">
-      ${renderDimBar('Engajamento', bloco.porDimensao.engajamento, 10)}
-      ${renderDimBar('Desenvolvimento', bloco.porDimensao.desenvolvimento, 10)}
-      ${renderDimBar('Pertencimento', bloco.porDimensao.pertencimento, 10)}
-      ${renderDimBar('Realização', bloco.porDimensao.realizacao, 10)}
-    </div>
-    ${notaAgreg}
-  </div>`;
-}
-
-function renderBlocoEmpresa(input: ClimaEngajamentoTemplateInput): string {
   return `<section class="page-break">
   <h2>Visão geral — Empresa</h2>
-  <p>Agregado consolidado do trimestre no topo da cascata hierárquica. As dimensões abaixo compõem canonicamente a leitura de clima e engajamento.</p>
-  ${renderBloco(input.blocoEmpresa, { nivel: 'empresa', headingLevel: 3 })}
+  <p>Agregado consolidado do trimestre no topo da cascata hierárquica.</p>
+  <div class="kpi-grid" style="grid-template-columns: repeat(2, 1fr); margin-top:2mm;">
+    <div class="kpi-card ${highlight}">
+      <div class="kpi-label">Nota de clima</div>
+      <div class="kpi-value ${valueClass}">${fmtNum(notaClima)}</div>
+      <div class="kpi-sub">${fmtInt(bloco.respondentes)} respondentes</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Adesão</div>
+      <div class="kpi-value">${fmtPctInt(bloco.adesao)}</div>
+      <div class="kpi-sub">Participação no ciclo</div>
+    </div>
+  </div>
+  <h3 class="h3-compact">Perfil por dimensão</h3>
+  <div class="dim-bars">
+    ${renderDimBar('Engajamento', bloco.porDimensao.engajamento, 10)}
+    ${renderDimBar('Desenvolvimento', bloco.porDimensao.desenvolvimento, 10)}
+    ${renderDimBar('Pertencimento', bloco.porDimensao.pertencimento, 10)}
+    ${renderDimBar('Realização', bloco.porDimensao.realizacao, 10)}
+  </div>
+  ${notaAgreg}
+  ${aspectosHtml}
 </section>`;
 }
 
+/**
+ * Cascata Opcao B: tabela unica por departamento com equipes como
+ * linhas-filha. Cabecalho de dept carrega KPIs resumidos; linhas de
+ * equipe aparecem como linhas internas identadas, sem repetir o nome
+ * do departamento.
+ */
 function renderBlocoDepartamento(dept: ClimaBlocoDepartamento): string {
-  const equipesHtml =
-    dept.equipes.length === 0
+  const notaClima = dept.notaClima;
+  const highlight =
+    notaClima === null
       ? ''
-      : dept.equipes.map((e) => renderBloco(e, { nivel: 'equipe', headingLevel: 4 })).join('\n');
+      : notaClima >= 7.5
+        ? 'highlight-green'
+        : notaClima >= 5
+          ? 'highlight-yellow'
+          : 'highlight-red';
+  const valueClass =
+    notaClima === null ? '' : notaClima >= 7.5 ? 'green' : notaClima >= 5 ? 'yellow' : 'red';
+  const notaAgreg = dept.notaAgregacao
+    ? `<div class="clima-anonimato-nota">${escapeHtml(dept.notaAgregacao)}</div>`
+    : '';
+  // Tabela cascata canonica: linha de dept + linhas-filha de equipe,
+  // mesma estrutura visual Opcao B do relatorio executivo.
+  const linhasCascata: string[] = [];
+  linhasCascata.push(`<tr class="clima-row-dept">
+      <td>Agregado do departamento</td>
+      <td class="right">${fmtInt(dept.respondentes)}</td>
+      <td class="right fw-700">${fmtNum(notaClima)}</td>
+      <td class="right">${fmtPctInt(dept.adesao)}</td>
+      <td class="right">${fmtNum(dept.porDimensao.engajamento)}</td>
+      <td class="right">${fmtNum(dept.porDimensao.desenvolvimento)}</td>
+      <td class="right">${fmtNum(dept.porDimensao.pertencimento)}</td>
+      <td class="right">${fmtNum(dept.porDimensao.realizacao)}</td>
+    </tr>`);
+  for (const eq of dept.equipes) {
+    linhasCascata.push(`<tr class="clima-row-equipe">
+      <td><span class="clima-row-equipe-prefix">↳</span> ${escapeHtml(eq.titulo)}</td>
+      <td class="right">${fmtInt(eq.respondentes)}</td>
+      <td class="right fw-700">${fmtNum(eq.notaClima)}</td>
+      <td class="right">${fmtPctInt(eq.adesao)}</td>
+      <td class="right">${fmtNum(eq.porDimensao.engajamento)}</td>
+      <td class="right">${fmtNum(eq.porDimensao.desenvolvimento)}</td>
+      <td class="right">${fmtNum(eq.porDimensao.pertencimento)}</td>
+      <td class="right">${fmtNum(eq.porDimensao.realizacao)}</td>
+    </tr>`);
+  }
+  const notasAgregacaoEquipes = dept.equipes
+    .filter((e) => e.notaAgregacao !== null)
+    .map((e) => `${escapeHtml(e.titulo)}: ${escapeHtml(e.notaAgregacao ?? '')}`)
+    .join(' · ');
+  const notasEquipesHtml = notasAgregacaoEquipes
+    ? `<div class="clima-anonimato-nota" style="margin-top:2mm;">${notasAgregacaoEquipes}</div>`
+    : '';
   return `<section class="page-break">
-  <h2>Departamento — ${escapeHtml(dept.titulo)}</h2>
-  <p>Agregado do departamento e, abaixo, cada equipe com seus respectivos agregados. Grupos abaixo do piso são agregados ao nível imediatamente acima.</p>
-  ${renderBloco(dept, { nivel: 'dept', headingLevel: 3 })}
-  ${equipesHtml}
+  <h2>${escapeHtml(dept.titulo)}</h2>
+  <div class="kpi-grid" style="grid-template-columns: repeat(2, 1fr); margin-top:2mm;">
+    <div class="kpi-card ${highlight}">
+      <div class="kpi-label">Nota de clima do departamento</div>
+      <div class="kpi-value ${valueClass}">${fmtNum(notaClima)}</div>
+      <div class="kpi-sub">${fmtInt(dept.respondentes)} respondentes</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Adesão</div>
+      <div class="kpi-value">${fmtPctInt(dept.adesao)}</div>
+      <div class="kpi-sub">Participação no ciclo</div>
+    </div>
+  </div>
+  <h3 class="h3-compact">Perfil por dimensão</h3>
+  <div class="dim-bars">
+    ${renderDimBar('Engajamento', dept.porDimensao.engajamento, 10)}
+    ${renderDimBar('Desenvolvimento', dept.porDimensao.desenvolvimento, 10)}
+    ${renderDimBar('Pertencimento', dept.porDimensao.pertencimento, 10)}
+    ${renderDimBar('Realização', dept.porDimensao.realizacao, 10)}
+  </div>
+  ${notaAgreg}
+  <h3 class="h3-compact">Cascata por equipe</h3>
+  <div class="exec-dept-table-wrap">
+    <table class="data-table clima-cascata-tabela">
+      <thead>
+        <tr>
+          <th>Agregado</th>
+          <th class="right">Respondentes</th>
+          <th class="right">Clima</th>
+          <th class="right">Adesão</th>
+          <th class="right">Engaj.</th>
+          <th class="right">Desenv.</th>
+          <th class="right">Pertenc.</th>
+          <th class="right">Realiz.</th>
+        </tr>
+      </thead>
+      <tbody>${linhasCascata.join('\n')}</tbody>
+    </table>
+  </div>
+  ${notasEquipesHtml}
 </section>`;
 }
 
@@ -266,7 +377,7 @@ function renderRastreabilidade(input: ClimaEngajamentoTemplateInput): string {
 }
 
 // ============================================================
-// Funcao publica canonica
+// Funcao publica
 // ============================================================
 
 export function renderClimaEngajamentoHTML(input: ClimaEngajamentoTemplateInput): string {

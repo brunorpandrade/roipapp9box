@@ -36,6 +36,7 @@ import Link from 'next/link';
 import type { JSX } from 'react';
 import { useState } from 'react';
 
+import { TEXTOS_QUESTOES_CLIMA } from '../../../../../lib/climate/textosQuestoesClima';
 import { COLORS } from '../../../../../lib/design-tokens/colors';
 import type {
   BlocoClimaDashboardData,
@@ -447,37 +448,11 @@ const DIMENSOES_CANONICAS = [
   { chave: 'realizacao', label: 'Realização', dim: 4 },
 ] as const;
 
-/**
- * Textos canonicos literais das 20 questoes do Instrumento A — fonte
- * primaria CAMADA_NEGOCIO §6.2 (redacao fixa, autoavaliacao). Ordem
- * canonica (dim-1)*5+item identica a `plenitudeData.notasQuestao`.
- */
-const TEXTOS_QUESTOES: readonly string[] = [
-  // Dimensao 1 — Engajamento (questoes 1..5)
-  'Sinto energia e disposição para o trabalho.',
-  'Tenho entusiasmo com o que faço.',
-  'Sinto-me comprometido com os resultados da área.',
-  'Consigo manter o foco e a concentração nas minhas atividades.',
-  'Mesmo diante de dificuldades, mantenho minha dedicação ao trabalho.',
-  // Dimensao 2 — Desenvolvimento (questoes 6..10)
-  'Tenho aprendido e evoluído na função.',
-  'Vejo oportunidades de crescimento aqui.',
-  'Recebo desafios que me desenvolvem.',
-  'Tenho clareza sobre o que preciso desenvolver para crescer na empresa.',
-  'Sinto que minhas habilidades estão sendo bem aproveitadas no trabalho.',
-  // Dimensao 3 — Pertencimento (questoes 11..15)
-  'Sinto que faço parte do time e da empresa.',
-  'Sinto-me valorizado pelo que entrego.',
-  'Tenho boas relações com quem trabalho.',
-  'Sinto que posso ser eu mesmo no ambiente de trabalho.',
-  'Sinto que minha opinião é ouvida e considerada pela equipe.',
-  // Dimensao 4 — Realizacao (questoes 16..20)
-  'Meu trabalho tem sentido para mim.',
-  'Sinto satisfação com o que realizo.',
-  'Termino a maior parte das semanas com sensação de realização.',
-  'Sinto que meu trabalho contribui de forma relevante para a empresa.',
-  'Tenho orgulho do que produzo e entrego.',
-] as const;
+// Textos canonicos das 20 questoes do instrumento de Clima: ME-1.3d-REV
+// DIS-B (L125) extraiu a constante local `TEXTOS_QUESTOES` para o modulo
+// `lib/climate/textosQuestoesClima` para consumo compartilhado com os
+// templates PDF (`climaEngajamentoTemplate.ts`, `executiveReportTemplate.ts`).
+const TEXTOS_QUESTOES = TEXTOS_QUESTOES_CLIMA;
 
 /**
  * Sanfona canonica de uma dimensao. Cabecalho sempre visivel (nome +

@@ -516,12 +516,12 @@ function renderCapaMaisResumo(input: Snapshot9BoxTemplateInput): string {
     <strong>⚠ Sobre este relatório:</strong> o 9-Box cruza desempenho e plenitude para posicionar cada colaborador em um dos nove quadrantes. A leitura começa pela distribuição agregada da empresa e desce em cascata para cada departamento. O centro de massa — quadrante com maior concentração — é o ponto de partida para conversas de gestão. Material deterministicamente derivado dos dados do ciclo; mesmos dados geram sempre a mesma saída.
   </div>
   <h2 class="h2-compact">Resumo executivo</h2>
-  <p class="resumo-exec-paragrafo">${fmtInt(input.blocoPrincipal.totalClassificados)} colaborador(es) classificado(s) no ciclo${perfil.centroPrincipal ? `, com centro de massa em <strong>${escapeHtml(perfil.centroPrincipal)}</strong>` : ''}.</p>
+  <p class="resumo-exec-paragrafo">${fmtInt(input.blocoPrincipal.totalClassificados)} colaboradores classificados no ciclo${perfil.centroPrincipal ? `, com centro de massa em <strong>${escapeHtml(perfil.centroPrincipal)}</strong>` : ''}.</p>
   <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
     <div class="kpi-card">
       <div class="kpi-label">Classificados</div>
       <div class="kpi-value">${fmtInt(input.blocoPrincipal.totalClassificados)}</div>
-      <div class="kpi-sub">${input.blocosCapilares.length} departamento(s) com visão própria</div>
+      <div class="kpi-sub">${input.blocosCapilares.length} departamentos com visão própria</div>
     </div>
     <div class="kpi-card ${highlightClass}">
       <div class="kpi-label">Em quadrantes positivos</div>
@@ -551,7 +551,7 @@ function renderCapaMaisResumo(input: Snapshot9BoxTemplateInput): string {
 function renderPaginaEmpresaResumo(bloco: NineBoxBlocoEscopo): string {
   const perfil = derivarPerfilEmpresa(bloco);
   const centroTxt = perfil.centroPrincipal
-    ? `O centro de massa está em <strong>${escapeHtml(perfil.centroPrincipal)}</strong>, com ${fmtInt(perfil.centroCount)} colaborador(es) concentrado(s) nesse quadrante.`
+    ? `O centro de massa está em <strong>${escapeHtml(perfil.centroPrincipal)}</strong>, com ${fmtInt(perfil.centroCount)} colaboradores concentrados nesse quadrante.`
     : 'Nenhum quadrante concentra colaboradores suficientes para caracterizar um centro de massa claro neste trimestre.';
 
   // v3: cabeçalho canônico "Visão geral — Empresa" (nome fixo, não
@@ -562,7 +562,7 @@ function renderPaginaEmpresaResumo(bloco: NineBoxBlocoEscopo): string {
   <div class="radar-block">
     <div class="radar-block-head">
       <span class="radar-block-title">Empresa</span>
-      <span class="radar-block-subtitle">${fmtInt(bloco.totalClassificados)} colaborador(es) classificado(s)</span>
+      <span class="radar-block-subtitle">${fmtInt(bloco.totalClassificados)} colaboradores classificados</span>
     </div>
     <div style="max-width:140mm; margin:0 auto;">
       ${renderGrid9BoxSvg(bloco.distribuicao, { size: 'large', destacarCentroMassa: true })}
@@ -621,11 +621,11 @@ function renderPaginaDeptResumo(dept: NineBoxBlocoEscopo, empresa: NineBoxBlocoE
   return `<section class="page-break">
   <div class="ninebox-dept-page">
     <h2>Departamento — ${escapeHtml(dept.titulo)}</h2>
-    <p>Distribuição dos ${fmtInt(dept.totalClassificados)} colaborador(es) do departamento comparada com a média da empresa. O quadrante com maior concentração é destacado com borda escura.</p>
+    <p>Distribuição dos ${fmtInt(dept.totalClassificados)} colaboradores do departamento comparada com a média da empresa. O quadrante com maior concentração é destacado com borda escura.</p>
     <div class="radar-block">
       <div class="radar-block-head">
         <span class="radar-block-title">${escapeHtml(dept.titulo)}</span>
-        <span class="radar-block-subtitle">${fmtInt(dept.totalClassificados)} colaborador(es) classificado(s)</span>
+        <span class="radar-block-subtitle">${fmtInt(dept.totalClassificados)} colaboradores classificados</span>
       </div>
       <div style="max-width:120mm; margin:0 auto;">
         ${renderGrid9BoxSvg(dept.distribuicao, { size: 'medium', destacarCentroMassa: true })}
@@ -758,7 +758,7 @@ function renderRastreabilidade(input: Snapshot9BoxTemplateInput): string {
     <div class="rastreabilidade-row"><strong>Empresa:</strong> ${escapeHtml(input.nomeFantasia)}</div>
     <div class="rastreabilidade-row"><strong>Trimestre:</strong> ${escapeHtml(formatTrimestreBR(input.trimestre))}</div>
     <div class="rastreabilidade-row"><strong>Escopo:</strong> ${escapeHtml(input.escopoRotulo)}</div>
-    <div class="rastreabilidade-row"><strong>Agregados renderizados:</strong> ${fmtInt(totalBlocos)} (empresa + ${fmtInt(input.blocosCapilares.length)} departamento(s))</div>
+    <div class="rastreabilidade-row"><strong>Agregados renderizados:</strong> ${fmtInt(totalBlocos)} (empresa + ${fmtInt(input.blocosCapilares.length)} departamentos)</div>
     <div class="rastreabilidade-row"><strong>Colaboradores classificados:</strong> ${fmtInt(totalColaboradores)}</div>
     <div class="rastreabilidade-row"><strong>Gerado em:</strong> ${escapeHtml(timestampBrt)}</div>
   </div>

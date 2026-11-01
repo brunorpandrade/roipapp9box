@@ -191,7 +191,10 @@ describe('executiveReportTemplate — renderExecutiveReportHTML', () => {
     expect(html).toContain('Bloco Clima');
     expect(html).toContain('Bloco Turnover');
     expect(html).toContain('Comparativo por departamento');
-    expect(html).toContain('Detalhamento capilar');
+    // ME-1.3d-REV DIS-B: detalhamento capilar em fluxo continuo sem H2
+    // wrapper — a presenca da secao fica provada pelo H3 do dept.
+    expect(html).toContain('<h3>Comercial</h3>');
+    expect(html).toContain('exec-dept-section');
   });
 
   it('renderiza clima com paragrafo canonico curto quando disponivel=false', () => {
@@ -209,8 +212,10 @@ describe('executiveReportTemplate — renderExecutiveReportHTML', () => {
     };
     const html = renderExecutiveReportHTML(payload);
     expect(html).toContain('Bloco de Clima indisponível');
-    // Nao renderiza tabela de agregados de clima quando indisponivel.
-    expect(html).not.toContain('Nota de clima');
+    // ME-1.3d-REV DIS-B: a assercao agora olha o KPI label especifico do
+    // bloco de clima (nao o rotulo "Nota de clima" avulso, que agora
+    // pode aparecer dentro dos top destaques do resumo executivo).
+    expect(html).not.toContain('<div class="kpi-label">Nota de clima</div>');
   });
 
   it('omite bloco Turnover quando blocoTurnover=null (escopo=equipe)', () => {
@@ -224,7 +229,9 @@ describe('executiveReportTemplate — renderExecutiveReportHTML', () => {
     const html = renderExecutiveReportHTML(payload);
     expect(html).not.toContain('Bloco Turnover');
     expect(html).not.toContain('Comparativo por departamento');
-    expect(html).not.toContain('Detalhamento capilar');
+    // ME-1.3d-REV DIS-B: detalhamento capilar em fluxo continuo —
+    // ausencia provada pela nao-renderizacao de qualquer dept-section.
+    expect(html).not.toContain('exec-dept-section');
   });
 });
 

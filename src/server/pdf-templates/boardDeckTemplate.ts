@@ -1,25 +1,28 @@
-/* eslint-disable @stylistic/max-len -- template HTML canonico com strings de layout longas */
-// ROIP APP 9BOX — template PDF Board deck one-pager (ME-053, S275).
+/* eslint-disable @stylistic/max-len -- template HTML com strings de layout longas */
+// ROIP APP 9BOX — template PDF Board deck one-pager (ME-053, S275;
+// ME-1.3d-REV DIS-B reescrita integral).
 //
-// Renderizacao HTML deterministica do Board deck (DOC 03 §13.8). 4
-// elementos fixos, todos sempre presentes: (1) distribuicao 9-Box,
-// (2) ROI agregado, (3) radar de riscos psicossociais, (4) turnover.
-// Escopo canonico: empresa ou departamento (sem equipe).
+// Renderizacao HTML deterministica do Board deck (DOC 03 §13.8).
+// 4 elementos canonicos: Distribuicao 9-Box, ROI agregado, Radar de
+// riscos psicossociais (NR-1), Turnover. Escopo: empresa ou
+// departamento (sem equipe).
 //
-// ME-1.3d (26/10/2026): lapidacao visual estrutural canonica. Adota
-// o padrao canonizado em Radar NR-1 (v7.2) + Snapshot 9-Box (v4):
-// - Capa com `cover-hero` (titulo preto bold + accent teal) + meta
-//   grid + nota contextual ambar + H2 "Resumo executivo" + KPI cards +
-//   gauge semicircular do perfil global.
-// - Elemento 1 (9-Box): matriz grande SVG dentro de `.radar-block`.
-// - Elemento 2 (ROI): KPI cards com destaque de variacao.
-// - Elemento 3 (Radar NR-1): SVG inline canonico (helper reaproveitado
-//   de pdfSvgHelpers) + legenda bipartição canonica.
-// - Elemento 4 (Turnover): KPI cards + barras horizontais por nivel.
-// - Rastreabilidade final canonica em card cinza.
+// ME-1.3d-REV DIS-B (31/10/2026):
+// - Capa enxuta sem frases redundantes de rastreabilidade (vao para
+//   a secao final).
+// - Pluralizacao sempre no plural (sem `(s)/(es)` no texto corrido).
+// - Titulos de secao sem prefixo "Elemento N ·".
+// - Distribuicao 9-Box em pagina compacta (matriz + 9 linhas na mesma
+//   folha).
+// - ROI + Turnover unificados em uma unica pagina (ROI em cima,
+//   Turnover em baixo).
+// - Turnover ganha 4 KPI cards canonicos (trimestral, variacao vs trim
+//   anterior com SEMANTICA INVERTIDA, ultimos 12 meses, anualizado) +
+//   abertura voluntario/involuntario + nivel hierarquico.
+// - Zero mencao a `canonico/canonica` em texto user-facing.
 //
-// Determinismo canonico: mesmos dados -> mesmo HTML byte-exact
-// (exceto `geradoEmIso`).
+// Determinismo: mesmos dados -> mesmo HTML byte a byte, exceto
+// `geradoEmIso` no rodape.
 
 import { formatTrimestreBR } from '../../lib/cycle/formatTrimestreBR';
 import { dataCivilBrtFromIso, formatDataEditorial } from '../../lib/date/formatDataEditorial';
@@ -38,7 +41,7 @@ import {
   renderGrid9BoxSvg,
 } from './snapshot9BoxTemplate';
 
-/** Fator canonico do radar NR-1 (DOC 03 §11 fatores 1..8). */
+/** Fator do radar NR-1 (DOC 03 §11 fatores 1..8). */
 export interface BoardDeckRadarFator {
   fatorId: number;
   nome: string;
@@ -58,21 +61,36 @@ export interface BoardDeckTemplateInput {
   trimestre: string;
   escopoTipo: 'empresa' | 'departamento';
   escopoRotulo: string;
-  /** Elemento 1: distribuicao 9-Box canonica. */
   nineBoxDistribuicao: NineBoxDistribuicao;
   totalClassificados: number;
-  /** Elemento 2: ROI agregado + comparativos. */
   roi: {
     roiAgregado: number | null;
     variacaoTrimestreAnterior: number | null;
     variacaoAnoAnterior: number | null;
   };
-  /** Elemento 3: 8 fatores canonicos com score 0-100. */
   radarPsicossocial: BoardDeckRadarFator[];
-  /** Elemento 4: turnover. */
+  /**
+   * Turnover canonico extendido (DIS-B). Alem dos agregados ja
+   * existentes, carrega variacao com semantica INVERTIDA e janela
+   * movel de 12 meses, plus abertura voluntario/involuntario.
+   */
   turnover: {
     trimestralPercentual: number;
     anualizadoPercentual: number;
+    /**
+     * Variacao vs trimestre anterior (pontos percentuais sobre a taxa
+     * trimestral). Positivo = turnover subiu (ruim); negativo = caiu
+     * (bom). `null` quando nao ha trimestre anterior disponivel.
+     */
+    variacaoTrimestreAnteriorPercentual: number | null;
+    /** Taxa de rotatividade dos ultimos 12 meses. */
+    ultimos12MesesPercentual: number;
+    /** Taxa aberta por motivo. */
+    voluntarioPercentual: number;
+    involuntarioPercentual: number;
+    saidasTotaisTrimestre: number;
+    saidasVoluntariasTrimestre: number;
+    saidasInvoluntariasTrimestre: number;
     /** Presente apenas quando escopo=empresa. */
     aberturaPorNivel: BoardDeckTurnoverPorNivel | null;
   };
@@ -96,9 +114,20 @@ function fmtPct(v: number | null): string {
   return `${fmtNum(v)}%`;
 }
 
+function fmtPctSigned(v: number | null): string {
+  if (v === null || !Number.isFinite(v)) return '—';
+  const sinal = v > 0 ? '+' : '';
+  return `${sinal}${fmtNum(v)} p.p.`;
+}
+
 function fmtPctInt(v: number): string {
   if (!Number.isFinite(v)) return '0%';
   return `${Math.round(v)}%`;
+}
+
+function fmtIntNoPct(v: number): string {
+  if (!Number.isFinite(v)) return '0';
+  return `${Math.round(v)}`;
 }
 
 function fmtInt(v: number): string {
@@ -110,8 +139,25 @@ function fmtScoreInt(score: number): string {
   return Math.round(clamp).toString();
 }
 
+/**
+ * Classes do KPI de variação do turnover com semântica INVERTIDA:
+ * subida (positivo) = ruim = vermelho; descida (negativo) = bom =
+ * verde. Zero: neutro.
+ */
+function classesTurnoverInvertido(variacao: number | null): {
+  cardClass: string;
+  valueClass: string;
+} {
+  if (variacao === null || !Number.isFinite(variacao) || variacao === 0) {
+    return { cardClass: '', valueClass: '' };
+  }
+  return variacao > 0
+    ? { cardClass: 'turnover-up', valueClass: 'turnover-up' }
+    : { cardClass: 'turnover-down', valueClass: 'turnover-down' };
+}
+
 // ============================================================
-// Perfil global canonico — deriva faixa semantica do gauge
+// Perfil global — deriva faixa semantica do gauge
 // ============================================================
 
 interface PerfilGlobal {
@@ -141,7 +187,7 @@ function derivarPerfilGlobal(distribuicao: NineBoxDistribuicao, total: number): 
 }
 
 // ============================================================
-// Radar NR-1 inline canonico (reutiliza helpers pdfSvgHelpers)
+// Radar NR-1 inline (reutiliza helpers pdfSvgHelpers)
 // ============================================================
 
 const RADAR_SVG_CX = 450;
@@ -234,7 +280,7 @@ function renderRadarLegendaBiparticao(): string {
 }
 
 // ============================================================
-// Filename canonico §13.8
+// Filename §13.8
 // ============================================================
 
 export function composeBoardDeckFilename(
@@ -248,7 +294,7 @@ export function composeBoardDeckFilename(
 }
 
 // ============================================================
-// Secoes canonicas (padrao canonizado NR-1 v7.2 / Snapshot v4)
+// Secoes
 // ============================================================
 
 function renderCapaMaisResumo(input: BoardDeckTemplateInput): string {
@@ -291,10 +337,10 @@ function renderCapaMaisResumo(input: BoardDeckTemplateInput): string {
     <div class="cover-meta-row"><span class="cover-meta-label">Data de geração do relatório</span><span class="cover-meta-value">${escapeHtml(dataGeracao)}</span></div>
   </div>
   <div class="cover-note">
-    <strong>⚠ Sobre este relatório:</strong> o board deck consolida quatro elementos canônicos — distribuição 9-Box, ROI agregado, radar de riscos psicossociais (NR-1) e turnover — para leitura rápida em comitê. Material deterministicamente derivado dos dados do ciclo; mesmos dados geram sempre a mesma saída.
+    <strong>⚠ Sobre este relatório:</strong> consolida quatro elementos — distribuição 9-Box, ROI agregado, radar de riscos psicossociais (NR-1) e turnover — para leitura rápida em comitê.
   </div>
   <h2 class="h2-compact">Resumo executivo</h2>
-  <p class="resumo-exec-paragrafo">${fmtInt(input.totalClassificados)} colaborador(es) classificado(s) no ciclo.</p>
+  <p class="resumo-exec-paragrafo">${fmtInt(input.totalClassificados)} colaboradores classificados no ciclo.</p>
   <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
     <div class="kpi-card">
       <div class="kpi-label">Classificados</div>
@@ -322,32 +368,42 @@ function renderCapaMaisResumo(input: BoardDeckTemplateInput): string {
 </section>`;
 }
 
+/**
+ * Distribuicao 9-Box em pagina compacta: matriz + tabela de 9 linhas,
+ * ambas na mesma A4. Colunas "Colaboradores" e "%" com alinhamento à
+ * direita; "%" sem sufixo (cabecalho ja indica a unidade).
+ */
 function renderElemento9Box(input: BoardDeckTemplateInput): string {
   const linhasTabela = NINE_BOX_QUADRANTES.map((q) => {
     const n = input.nineBoxDistribuicao[q];
     const pct = input.totalClassificados > 0 ? (n / input.totalClassificados) * 100 : 0;
-    return `<tr><td>${escapeHtml(q)}</td><td class="right">${fmtInt(n)}</td><td class="right">${fmtPctInt(pct)}</td></tr>`;
+    return `<tr><td>${escapeHtml(q)}</td><td class="right">${fmtInt(n)}</td><td class="right">${fmtIntNoPct(pct)}</td></tr>`;
   }).join('\n');
   return `<section class="page-break">
-  <h2>Elemento 1 · Distribuição 9-Box</h2>
-  <p>Posicionamento dos ${fmtInt(input.totalClassificados)} colaborador(es) classificado(s) no cruzamento desempenho × plenitude. O quadrante com maior concentração é destacado com borda escura.</p>
+  <h2>Distribuição 9-Box</h2>
+  <p>Posicionamento dos ${fmtInt(input.totalClassificados)} colaboradores classificados no cruzamento desempenho × plenitude. O quadrante com maior concentração é destacado com borda escura.</p>
   <div class="radar-block">
     <div class="radar-block-head">
       <span class="radar-block-title">Matriz 9-Box</span>
-      <span class="radar-block-subtitle">${fmtInt(input.totalClassificados)} colaborador(es) classificado(s)</span>
+      <span class="radar-block-subtitle">${fmtInt(input.totalClassificados)} colaboradores classificados</span>
     </div>
-    <div style="max-width:135mm; margin:0 auto;">
+    <div style="max-width:120mm; margin:0 auto;">
       ${renderGrid9BoxSvg(input.nineBoxDistribuicao, { size: 'medium', destacarCentroMassa: true })}
     </div>
   </div>
-  <table class="data-table" style="margin-top:4mm;">
+  <table class="data-table" style="margin-top:3mm;">
     <thead><tr><th>Quadrante</th><th class="right">Colaboradores</th><th class="right">%</th></tr></thead>
     <tbody>${linhasTabela}</tbody>
   </table>
 </section>`;
 }
 
-function renderElementoROI(input: BoardDeckTemplateInput): string {
+/**
+ * ROI + Turnover unificados em UMA pagina: ROI no topo (3 KPI cards),
+ * Turnover em baixo (4 KPI cards + abertura voluntario/involuntario +
+ * nivel hierarquico quando empresa).
+ */
+function renderElementoRoiMaisTurnover(input: BoardDeckTemplateInput): string {
   const r = input.roi;
   const classeTri =
     r.variacaoTrimestreAnterior === null
@@ -365,9 +421,27 @@ function renderElementoROI(input: BoardDeckTemplateInput): string {
         : 'highlight-red';
   const valueClassAno =
     r.variacaoAnoAnterior === null ? '' : r.variacaoAnoAnterior >= 0 ? 'green' : 'red';
+  const t = input.turnover;
+  const classesVar = classesTurnoverInvertido(t.variacaoTrimestreAnteriorPercentual);
+  const alertanteTri = t.trimestralPercentual >= 10;
+  const alertanteAnu = t.anualizadoPercentual >= 25;
+  const classeTriTurn = alertanteTri ? 'highlight-red' : '';
+  const valueClassTriTurn = alertanteTri ? 'red' : '';
+  const classeAnu = alertanteAnu ? 'highlight-red' : '';
+  const valueClassAnu = alertanteAnu ? 'red' : '';
+  const nivel = t.aberturaPorNivel;
+  const barrasNivelHtml =
+    nivel === null
+      ? ''
+      : `<div class="turnover-bars" style="margin-top:4mm;">
+    <h3 class="h3-compact">Abertura por nível hierárquico</h3>
+    ${renderBarraNivel('Estratégico', nivel.estrategico.turnoverPercentual, nivel.estrategico.saidas, '#DBEAFE', '#1E40AF')}
+    ${renderBarraNivel('Tático', nivel.tatico.turnoverPercentual, nivel.tatico.saidas, '#FEF3C7', '#92400E')}
+    ${renderBarraNivel('Operacional', nivel.operacional.turnoverPercentual, nivel.operacional.saidas, '#E0E7FF', '#3730A3')}
+  </div>`;
   return `<section class="page-break">
-  <h2>Elemento 2 · ROI agregado</h2>
-  <p>Retorno sobre pessoas no trimestre e as duas variações canônicas de comparação: trimestre anterior e mesmo trimestre do ano anterior.</p>
+  <h2>ROI agregado</h2>
+  <p>Retorno sobre pessoas no trimestre e as duas variações de comparação: trimestre anterior e mesmo trimestre do ano anterior.</p>
   <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
     <div class="kpi-card">
       <div class="kpi-label">ROI do trimestre</div>
@@ -385,13 +459,43 @@ function renderElementoROI(input: BoardDeckTemplateInput): string {
       <div class="kpi-sub">Sazonalidade controlada ano a ano</div>
     </div>
   </div>
+
+  <h2 style="margin-top:8mm;">Turnover</h2>
+  <p>Rotatividade no trimestre, variação (subida = pior), janela móvel de 12 meses e projeção anualizada. Abertura voluntário × involuntário no detalhe.</p>
+  <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="kpi-card ${classeTriTurn}">
+      <div class="kpi-label">Turnover trimestral</div>
+      <div class="kpi-value ${valueClassTriTurn}">${fmtPct(t.trimestralPercentual)}</div>
+      <div class="kpi-sub">${fmtInt(t.saidasTotaisTrimestre)} saídas no período</div>
+    </div>
+    <div class="kpi-card ${classesVar.cardClass}">
+      <div class="kpi-label">Variação vs. trim. anterior</div>
+      <div class="kpi-value ${classesVar.valueClass}">${fmtPctSigned(t.variacaoTrimestreAnteriorPercentual)}</div>
+      <div class="kpi-sub">Subida = pior, descida = melhor</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Últimos 12 meses</div>
+      <div class="kpi-value">${fmtPct(t.ultimos12MesesPercentual)}</div>
+      <div class="kpi-sub">Janela móvel encerrando no trimestre</div>
+    </div>
+    <div class="kpi-card ${classeAnu}">
+      <div class="kpi-label">Projeção anualizada</div>
+      <div class="kpi-value ${valueClassAnu}">${fmtPct(t.anualizadoPercentual)}</div>
+      <div class="kpi-sub">Base trimestral × 4</div>
+    </div>
+  </div>
+  <table class="kv" style="margin-top:4mm;">
+    <tr><th>Saídas voluntárias</th><td>${fmtInt(t.saidasVoluntariasTrimestre)} · ${fmtPct(t.voluntarioPercentual)}</td></tr>
+    <tr><th>Saídas involuntárias</th><td>${fmtInt(t.saidasInvoluntariasTrimestre)} · ${fmtPct(t.involuntarioPercentual)}</td></tr>
+  </table>
+  ${barrasNivelHtml}
 </section>`;
 }
 
 function renderElementoRadar(input: BoardDeckTemplateInput): string {
   if (input.radarPsicossocial.length === 0) {
     return `<section class="page-break">
-  <h2>Elemento 3 · Radar de riscos psicossociais</h2>
+  <h2>Radar de riscos psicossociais</h2>
   <div class="info-card">
     <p class="muted">Sem dados de Radar NR-1 disponíveis para este trimestre.</p>
   </div>
@@ -403,12 +507,12 @@ function renderElementoRadar(input: BoardDeckTemplateInput): string {
     })
     .join('\n');
   return `<section class="page-break">
-  <h2>Elemento 3 · Radar de riscos psicossociais</h2>
-  <p>Os 8 fatores canônicos do instrumento NR-1 / COPSOQ. Scores em escala 0-100 — o polígono mostra o perfil atual da empresa.</p>
+  <h2>Radar de riscos psicossociais</h2>
+  <p>Os 8 fatores do instrumento NR-1 / COPSOQ. Scores em escala 0-100 — o polígono mostra o perfil atual da empresa.</p>
   <div class="radar-block">
     <div class="radar-block-head">
       <span class="radar-block-title">Radar NR-1</span>
-      <span class="radar-block-subtitle">8 fatores canônicos</span>
+      <span class="radar-block-subtitle">8 fatores</span>
     </div>
     <div style="max-width:155mm; margin:0 auto;">
       ${renderRadarSvg(input.radarPsicossocial)}
@@ -435,45 +539,8 @@ function renderBarraNivel(
     <div class="turnover-bar-track">
       <div class="turnover-bar-fill" style="width:${larguraPct.toFixed(2)}%; background:${corBg}; color:${corText};">${fmtPctInt(valorPct)}</div>
     </div>
-    <div class="turnover-bar-value">${fmtInt(saidas)} saída(s)</div>
+    <div class="turnover-bar-value">${fmtInt(saidas)} saídas</div>
   </div>`;
-}
-
-function renderElementoTurnover(input: BoardDeckTemplateInput): string {
-  const t = input.turnover;
-  const nivel = t.aberturaPorNivel;
-  const alertanteTri = t.trimestralPercentual >= 10;
-  const alertanteAnu = t.anualizadoPercentual >= 25;
-  const classeTri = alertanteTri ? 'highlight-red' : '';
-  const valueClassTri = alertanteTri ? 'red' : '';
-  const classeAnu = alertanteAnu ? 'highlight-red' : '';
-  const valueClassAnu = alertanteAnu ? 'red' : '';
-  const barrasHtml =
-    nivel === null
-      ? ''
-      : `<div class="turnover-bars" style="margin-top:4mm;">
-    <h3 class="h3-compact">Abertura por nível hierárquico</h3>
-    ${renderBarraNivel('Estratégico', nivel.estrategico.turnoverPercentual, nivel.estrategico.saidas, '#DBEAFE', '#1E40AF')}
-    ${renderBarraNivel('Tático', nivel.tatico.turnoverPercentual, nivel.tatico.saidas, '#FEF3C7', '#92400E')}
-    ${renderBarraNivel('Operacional', nivel.operacional.turnoverPercentual, nivel.operacional.saidas, '#E0E7FF', '#3730A3')}
-  </div>`;
-  return `<section class="page-break">
-  <h2>Elemento 4 · Turnover</h2>
-  <p>Rotatividade no trimestre e projeção anualizada canônica. Quando o escopo é empresa, mostra também a abertura por nível hierárquico.</p>
-  <div class="kpi-grid" style="grid-template-columns: repeat(2, 1fr);">
-    <div class="kpi-card ${classeTri}">
-      <div class="kpi-label">Turnover trimestral</div>
-      <div class="kpi-value ${valueClassTri}">${fmtPct(t.trimestralPercentual)}</div>
-      <div class="kpi-sub">Período efetivo do fechamento</div>
-    </div>
-    <div class="kpi-card ${classeAnu}">
-      <div class="kpi-label">Turnover anualizado</div>
-      <div class="kpi-value ${valueClassAnu}">${fmtPct(t.anualizadoPercentual)}</div>
-      <div class="kpi-sub">Projeção canônica (base trimestral × 4)</div>
-    </div>
-  </div>
-  ${barrasHtml}
-</section>`;
 }
 
 function renderRastreabilidade(input: BoardDeckTemplateInput): string {
@@ -495,16 +562,15 @@ function renderRastreabilidade(input: BoardDeckTemplateInput): string {
 }
 
 // ============================================================
-// Funcao publica canonica
+// Funcao publica
 // ============================================================
 
 export function renderBoardDeckHTML(input: BoardDeckTemplateInput): string {
   const bodyHtml = [
     renderCapaMaisResumo(input),
     renderElemento9Box(input),
-    renderElementoROI(input),
+    renderElementoRoiMaisTurnover(input),
     renderElementoRadar(input),
-    renderElementoTurnover(input),
     renderRastreabilidade(input),
   ].join('\n');
   return renderLayoutBase({

@@ -1387,6 +1387,117 @@ export const LAYOUT_BASE_CSS = `
     color: #78350F;
     border-radius: 2pt;
   }
+
+  /* ME-1.3d-REV DIS-B: aspectos individuais por dimensão (clima e
+     executivo). Grid 2 colunas para caber as 4 dimensões em A4. */
+  .aspecto-dim-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4mm 6mm;
+    margin-top: 2mm;
+  }
+  .aspecto-dim-group {
+    page-break-inside: avoid;
+  }
+  .aspecto-dim-title {
+    margin: 0 0 2mm 0;
+    font-size: 10pt;
+    font-weight: 700;
+    color: #0F766E;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .aspecto-bars { display: block; }
+  .aspecto-bar-row {
+    display: grid;
+    grid-template-columns: 1fr 20mm 11mm;
+    align-items: center;
+    gap: 2mm;
+    margin-bottom: 1.4mm;
+    font-size: 8.5pt;
+  }
+  .aspecto-bar-label {
+    color: #374151;
+    line-height: 1.25;
+  }
+  .aspecto-bar-track {
+    background: #F3F4F6;
+    border: 1px solid #E5E7EB;
+    border-radius: 2pt;
+    height: 3.4mm;
+    overflow: hidden;
+    position: relative;
+  }
+  .aspecto-bar-fill {
+    height: 100%;
+    background: #14B8A6;
+    border-radius: 2pt 0 0 2pt;
+  }
+  .aspecto-bar-value {
+    text-align: right;
+    font-weight: 700;
+    color: #111827;
+    font-size: 9pt;
+  }
+
+  /* ME-1.3d-REV DIS-B: cascata Opção B tabela única por departamento. */
+  table.clima-cascata-tabela tbody tr.clima-row-dept td {
+    background: #F3F4F6;
+    font-weight: 700;
+    color: #111827;
+  }
+  table.clima-cascata-tabela tbody tr.clima-row-equipe td {
+    background: #FFFFFF;
+    color: #374151;
+    font-size: 9pt;
+  }
+  .clima-row-equipe-prefix {
+    color: #14B8A6;
+    font-weight: 700;
+    margin-right: 1mm;
+  }
+
+  /* ME-1.3d-REV DIS-B: top destaques no resumo executivo (3 bullets
+     canonicos derivados deterministicamente dos blocos). */
+  .exec-topdestaques-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 3mm 0;
+  }
+  .exec-topdestaques-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 2mm;
+    padding: 2mm 3mm;
+    margin-bottom: 1.5mm;
+    background: #F0FDFA;
+    border-left: 3pt solid #14B8A6;
+    border-radius: 2pt;
+    font-size: 10pt;
+    color: #0F766E;
+    line-height: 1.4;
+  }
+  .exec-topdestaques-item::before {
+    content: "✦";
+    color: #14B8A6;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* ME-1.3d-REV DIS-B: KPI do turnover com variação SEMÂNTICA INVERTIDA
+     (subida = pior = vermelho; descida = melhor = verde). */
+  .kpi-card.turnover-up { background: #FEF2F2; border-color: #FCA5A5; }
+  .kpi-card.turnover-down { background: #F0FDF4; border-color: #86EFAC; }
+  .kpi-value.turnover-up { color: #DC2626; }
+  .kpi-value.turnover-down { color: #16A34A; }
+
+  /* ME-1.3d-REV DIS-B: faixa ideal da folha em % do faturamento no
+     bloco financeiro. */
+  .kpi-card.folha-dentro { background: #F0FDF4; border-color: #86EFAC; }
+  .kpi-card.folha-acima { background: #FEF2F2; border-color: #FCA5A5; }
+  .kpi-card.folha-abaixo { background: #F0FDF4; border-color: #86EFAC; }
+  .kpi-value.folha-ok { color: #16A34A; }
+  .kpi-value.folha-alerta { color: #DC2626; }
 `;
 
 /**

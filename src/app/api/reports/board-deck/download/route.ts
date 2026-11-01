@@ -47,6 +47,8 @@ import {
 import {
   computeTurnoverByCompany,
   computeTurnoverByDepartamento,
+  computeTurnoverRate,
+  computeTurnoverUltimos12Meses,
 } from '../../../../../server/services/turnoverEngine';
 import { sanitizeRazaoSocial } from '../../../../../server/routers/spreadsheets';
 import {
@@ -381,6 +383,12 @@ async function computeRoiElement(
   };
 }
 
+/**
+ * ME-1.3d-REV DIS-B: payload turnover extendido para o board_deck,
+ * carrega taxa trimestral, variacao vs trim anterior (SEMANTICA
+ * INVERTIDA), janela movel de 12 meses, voluntario/involuntario e
+ * abertura por nivel hierarquico quando empresa.
+ */
 async function computeTurnoverElement(
   db: RoipDbClient['db'],
   companyId: number,
@@ -390,8 +398,24 @@ async function computeTurnoverElement(
 ): Promise<{
   trimestralPercentual: number;
   anualizadoPercentual: number;
+  variacaoTrimestreAnteriorPercentual: number | null;
+  ultimos12MesesPercentual: number;
+  voluntarioPercentual: number;
+  involuntarioPercentual: number;
+  saidasTotaisTrimestre: number;
+  saidasVoluntariasTrimestre: number;
+  saidasInvoluntariasTrimestre: number;
   aberturaPorNivel: BoardDeckTurnoverPorNivel | null;
 }> {
+  const parsed = parseTrimestreCicloReferencia(trimestre);
+  const trimestreAnteriorStr =
+    parsed === null
+      ? null
+      : (() => {
+          const prev = getPreviousTrimestre(parsed.ano, parsed.trimestre);
+          return formatTrimestreCicloReferencia(prev.ano, prev.trimestre);
+        })();
+
   if (escopoTipo === 'empresa') {
     const t = await computeTurnoverByCompany(db, companyId, trimestre);
     const aberturaPorNivel: BoardDeckTurnoverPorNivel = {
@@ -417,9 +441,30 @@ async function computeTurnoverElement(
         };
       }
     }
+    const ultimos12 = await computeTurnoverUltimos12Meses(db, companyId, trimestre);
+    let variacao: number | null = null;
+    if (trimestreAnteriorStr !== null) {
+      const tAnt = await computeTurnoverByCompany(db, companyId, trimestreAnteriorStr);
+      variacao = Math.round((t.taxaTrimestral - tAnt.taxaTrimestral) * 100) / 100;
+    }
+    const volPct = computeTurnoverRate(
+      t.aberturaPorMotivo.voluntario,
+      t.totalHeadcountInicioTrimestre,
+    );
+    const invPct = computeTurnoverRate(
+      t.aberturaPorMotivo.involuntario,
+      t.totalHeadcountInicioTrimestre,
+    );
     return {
       trimestralPercentual: t.taxaTrimestral,
       anualizadoPercentual: t.taxaAnualizada,
+      variacaoTrimestreAnteriorPercentual: variacao,
+      ultimos12MesesPercentual: ultimos12.taxaUltimos12Meses,
+      voluntarioPercentual: volPct,
+      involuntarioPercentual: invPct,
+      saidasTotaisTrimestre: t.totalSaidasTrimestre,
+      saidasVoluntariasTrimestre: t.aberturaPorMotivo.voluntario,
+      saidasInvoluntariasTrimestre: t.aberturaPorMotivo.involuntario,
       aberturaPorNivel,
     };
   }
@@ -427,14 +472,48 @@ async function computeTurnoverElement(
     return {
       trimestralPercentual: 0,
       anualizadoPercentual: 0,
+      variacaoTrimestreAnteriorPercentual: null,
+      ultimos12MesesPercentual: 0,
+      voluntarioPercentual: 0,
+      involuntarioPercentual: 0,
+      saidasTotaisTrimestre: 0,
+      saidasVoluntariasTrimestre: 0,
+      saidasInvoluntariasTrimestre: 0,
       aberturaPorNivel: null,
     };
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- validado no router
   const t = await computeTurnoverByDepartamento(db, companyId, escopoReferencia as any, trimestre);
+  const ultimos12 = await computeTurnoverUltimos12Meses(db, companyId, trimestre);
+  let variacao: number | null = null;
+  if (trimestreAnteriorStr !== null) {
+    const tAnt = await computeTurnoverByDepartamento(
+      db,
+      companyId,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- validado no router
+      escopoReferencia as any,
+      trimestreAnteriorStr,
+    );
+    variacao = Math.round((t.taxaTrimestral - tAnt.taxaTrimestral) * 100) / 100;
+  }
+  const volPct = computeTurnoverRate(
+    t.aberturaPorMotivo.voluntario,
+    t.totalHeadcountInicioTrimestre,
+  );
+  const invPct = computeTurnoverRate(
+    t.aberturaPorMotivo.involuntario,
+    t.totalHeadcountInicioTrimestre,
+  );
   return {
     trimestralPercentual: t.taxaTrimestral,
     anualizadoPercentual: t.taxaAnualizada,
+    variacaoTrimestreAnteriorPercentual: variacao,
+    ultimos12MesesPercentual: ultimos12.taxaUltimos12Meses,
+    voluntarioPercentual: volPct,
+    involuntarioPercentual: invPct,
+    saidasTotaisTrimestre: t.totalSaidasTrimestre,
+    saidasVoluntariasTrimestre: t.aberturaPorMotivo.voluntario,
+    saidasInvoluntariasTrimestre: t.aberturaPorMotivo.involuntario,
     aberturaPorNivel: null,
   };
 }

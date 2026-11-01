@@ -177,7 +177,10 @@ export async function GET(req: Request): Promise<NextResponse> {
   const blocoEmpresa: ClimaBlocoEscopo =
     payloadEmpresa === null
       ? emptyBloco('Empresa', 0, null)
-      : payloadToBloco('Empresa', payloadEmpresa, null);
+      : {
+          ...payloadToBloco('Empresa', payloadEmpresa, null),
+          notasPorAspecto: payloadEmpresa.notasQuestao,
+        };
 
   // Blocos por departamento com equipes internas.
   const deptRows = await db
