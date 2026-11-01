@@ -399,6 +399,7 @@ async function computeTurnoverElement(
   trimestralPercentual: number;
   anualizadoPercentual: number;
   variacaoTrimestreAnteriorPercentual: number | null;
+  variacaoTrimestreAnteriorPercentualRelativa: number | null;
   ultimos12MesesPercentual: number;
   voluntarioPercentual: number;
   involuntarioPercentual: number;
@@ -443,9 +444,15 @@ async function computeTurnoverElement(
     }
     const ultimos12 = await computeTurnoverUltimos12Meses(db, companyId, trimestre);
     let variacao: number | null = null;
+    let variacaoRelativa: number | null = null;
     if (trimestreAnteriorStr !== null) {
       const tAnt = await computeTurnoverByCompany(db, companyId, trimestreAnteriorStr);
       variacao = Math.round((t.taxaTrimestral - tAnt.taxaTrimestral) * 100) / 100;
+      if (tAnt.taxaTrimestral !== 0 && Number.isFinite(tAnt.taxaTrimestral)) {
+        variacaoRelativa =
+          Math.round(((t.taxaTrimestral - tAnt.taxaTrimestral) / tAnt.taxaTrimestral) * 100 * 100) /
+          100;
+      }
     }
     const volPct = computeTurnoverRate(
       t.aberturaPorMotivo.voluntario,
@@ -459,6 +466,7 @@ async function computeTurnoverElement(
       trimestralPercentual: t.taxaTrimestral,
       anualizadoPercentual: t.taxaAnualizada,
       variacaoTrimestreAnteriorPercentual: variacao,
+      variacaoTrimestreAnteriorPercentualRelativa: variacaoRelativa,
       ultimos12MesesPercentual: ultimos12.taxaUltimos12Meses,
       voluntarioPercentual: volPct,
       involuntarioPercentual: invPct,
@@ -473,6 +481,7 @@ async function computeTurnoverElement(
       trimestralPercentual: 0,
       anualizadoPercentual: 0,
       variacaoTrimestreAnteriorPercentual: null,
+      variacaoTrimestreAnteriorPercentualRelativa: null,
       ultimos12MesesPercentual: 0,
       voluntarioPercentual: 0,
       involuntarioPercentual: 0,
@@ -486,6 +495,7 @@ async function computeTurnoverElement(
   const t = await computeTurnoverByDepartamento(db, companyId, escopoReferencia as any, trimestre);
   const ultimos12 = await computeTurnoverUltimos12Meses(db, companyId, trimestre);
   let variacao: number | null = null;
+  let variacaoRelativa: number | null = null;
   if (trimestreAnteriorStr !== null) {
     const tAnt = await computeTurnoverByDepartamento(
       db,
@@ -495,6 +505,11 @@ async function computeTurnoverElement(
       trimestreAnteriorStr,
     );
     variacao = Math.round((t.taxaTrimestral - tAnt.taxaTrimestral) * 100) / 100;
+    if (tAnt.taxaTrimestral !== 0 && Number.isFinite(tAnt.taxaTrimestral)) {
+      variacaoRelativa =
+        Math.round(((t.taxaTrimestral - tAnt.taxaTrimestral) / tAnt.taxaTrimestral) * 100 * 100) /
+        100;
+    }
   }
   const volPct = computeTurnoverRate(
     t.aberturaPorMotivo.voluntario,
@@ -508,6 +523,7 @@ async function computeTurnoverElement(
     trimestralPercentual: t.taxaTrimestral,
     anualizadoPercentual: t.taxaAnualizada,
     variacaoTrimestreAnteriorPercentual: variacao,
+    variacaoTrimestreAnteriorPercentualRelativa: variacaoRelativa,
     ultimos12MesesPercentual: ultimos12.taxaUltimos12Meses,
     voluntarioPercentual: volPct,
     involuntarioPercentual: invPct,

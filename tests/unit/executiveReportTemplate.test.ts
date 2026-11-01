@@ -190,7 +190,9 @@ describe('executiveReportTemplate — renderExecutiveReportHTML', () => {
     expect(html).toContain('Bloco Plenitude');
     expect(html).toContain('Bloco Clima');
     expect(html).toContain('Bloco Turnover');
-    expect(html).toContain('Comparativo por departamento');
+    // ME-1.3d-REV DIS-C: comparativo renomeado para "entre departamentos"
+    // + antecipado para a pg 4 do relatorio.
+    expect(html).toContain('Comparativo entre departamentos');
     // ME-1.3d-REV DIS-B: detalhamento capilar em fluxo continuo sem H2
     // wrapper — a presenca da secao fica provada pelo H3 do dept.
     expect(html).toContain('<h3>Comercial</h3>');
@@ -228,7 +230,7 @@ describe('executiveReportTemplate — renderExecutiveReportHTML', () => {
     };
     const html = renderExecutiveReportHTML(payload);
     expect(html).not.toContain('Bloco Turnover');
-    expect(html).not.toContain('Comparativo por departamento');
+    expect(html).not.toContain('Comparativo entre departamentos');
     // ME-1.3d-REV DIS-B: detalhamento capilar em fluxo continuo —
     // ausencia provada pela nao-renderizacao de qualquer dept-section.
     expect(html).not.toContain('exec-dept-section');

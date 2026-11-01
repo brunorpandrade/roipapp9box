@@ -1498,6 +1498,394 @@ export const LAYOUT_BASE_CSS = `
   .kpi-card.folha-abaixo { background: #F0FDF4; border-color: #86EFAC; }
   .kpi-value.folha-ok { color: #16A34A; }
   .kpi-value.folha-alerta { color: #DC2626; }
+
+  /* ============================================================
+     ME-1.3d-REV DIS-C — redesign McKinsey/BCG. Componentes canonicos:
+     - tese canonica + 3 achados principais na capa
+     - painel executivo semaforizado (5 blocos em UMA A4)
+     - takeaway card por secao
+     - rankings e outliers destacados
+     - proximos passos antes da rastreabilidade
+     - barras de aspecto / dim-bar semaforizadas por valor
+     ============================================================ */
+
+  /* Tese canonica + 3 achados principais na capa. */
+  .tese-card {
+    margin-top: 4mm;
+    padding: 5mm 6mm;
+    background: #ECFEFF;
+    border-left: 4pt solid #0F766E;
+    border-radius: 3pt;
+    font-size: 11pt;
+    color: #0F766E;
+    font-weight: 600;
+    line-height: 1.45;
+  }
+  .achados-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .achado-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 3mm;
+    padding: 3mm 4mm;
+    margin-bottom: 2mm;
+    border-left: 3pt solid #D1D5DB;
+    border-radius: 2pt;
+    font-size: 10.5pt;
+    line-height: 1.45;
+  }
+  .achado-item::before {
+    content: "✦";
+    font-weight: 700;
+    flex-shrink: 0;
+    font-size: 11pt;
+    line-height: 1.3;
+  }
+  .achado-item.achado-verde { background: #F0FDF4; border-left-color: #16A34A; color: #166534; }
+  .achado-item.achado-amarelo { background: #FEFCE8; border-left-color: #D97706; color: #78350F; }
+  .achado-item.achado-vermelho { background: #FEF2F2; border-left-color: #DC2626; color: #7F1D1D; }
+  .achado-item.achado-verde::before { color: #16A34A; }
+  .achado-item.achado-amarelo::before { color: #D97706; }
+  .achado-item.achado-vermelho::before { color: #DC2626; }
+
+  /* Painel executivo semaforizado — 5 cards na pg 2 do executive. */
+  .painel-exec-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 3mm;
+    margin-top: 3mm;
+  }
+  .painel-exec-card {
+    border: 1px solid #E5E7EB;
+    border-left: 4pt solid #D1D5DB;
+    border-radius: 3pt;
+    padding: 3mm 3mm 3mm 4mm;
+    background: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5mm;
+    page-break-inside: avoid;
+  }
+  .painel-exec-card.painel-verde { border-left-color: #16A34A; background: #F0FDF4; }
+  .painel-exec-card.painel-amarelo { border-left-color: #D97706; background: #FEFCE8; }
+  .painel-exec-card.painel-vermelho { border-left-color: #DC2626; background: #FEF2F2; }
+  .painel-exec-label {
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6B7280;
+    margin: 0;
+  }
+  .painel-exec-kpi {
+    font-size: 18pt;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.05;
+  }
+  .painel-exec-card.painel-verde .painel-exec-kpi { color: #166534; }
+  .painel-exec-card.painel-amarelo .painel-exec-kpi { color: #92400E; }
+  .painel-exec-card.painel-vermelho .painel-exec-kpi { color: #7F1D1D; }
+  .painel-exec-delta {
+    font-size: 8.5pt;
+    font-weight: 600;
+    color: #6B7280;
+  }
+  .painel-exec-delta.delta-pos { color: #166534; }
+  .painel-exec-delta.delta-neg { color: #7F1D1D; }
+  .painel-exec-takeaway {
+    font-size: 8pt;
+    color: #374151;
+    line-height: 1.35;
+  }
+
+  /* Takeaway card canonico — 1-3 linhas interpretativas no fim de
+     cada secao. Variante enxuta do info-card. */
+  .takeaway-card {
+    margin-top: 3mm;
+    padding: 3mm 4mm;
+    background: #F0FDFA;
+    border-left: 3pt solid #14B8A6;
+    border-radius: 3pt;
+    font-size: 10pt;
+    color: #0F766E;
+    line-height: 1.5;
+    font-weight: 500;
+  }
+  .takeaway-card::before {
+    content: "✧  ";
+    font-weight: 700;
+    color: #14B8A6;
+  }
+
+  /* Ranking cards (top/bottom). */
+  .ranking-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4mm;
+    margin-top: 3mm;
+  }
+  .ranking-col {
+    border: 1px solid #E5E7EB;
+    border-radius: 3pt;
+    padding: 3mm 4mm;
+    background: #FFFFFF;
+  }
+  .ranking-col.ranking-top { border-top: 3pt solid #16A34A; }
+  .ranking-col.ranking-bottom { border-top: 3pt solid #DC2626; }
+  .ranking-col-title {
+    font-size: 9pt;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #6B7280;
+    margin: 0 0 2mm 0;
+  }
+  .ranking-col.ranking-top .ranking-col-title { color: #166534; }
+  .ranking-col.ranking-bottom .ranking-col-title { color: #7F1D1D; }
+  .ranking-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 2mm;
+    padding: 1.5mm 0;
+    border-bottom: 1px solid #F3F4F6;
+    font-size: 9.5pt;
+  }
+  .ranking-item:last-child { border-bottom: none; }
+  .ranking-item-name { color: #111827; font-weight: 500; }
+  .ranking-item-score { font-weight: 700; color: #111827; }
+
+  /* Proximos passos canonicos antes da rastreabilidade. */
+  .proximos-passos-list {
+    list-style: none;
+    padding: 0;
+    margin: 3mm 0 0 0;
+  }
+  .proximos-passos-item {
+    display: grid;
+    grid-template-columns: 8mm 1fr;
+    gap: 3mm;
+    padding: 3mm 4mm;
+    margin-bottom: 2mm;
+    background: #F8FAFC;
+    border-left: 3pt solid #0F766E;
+    border-radius: 3pt;
+    font-size: 10pt;
+    color: #0F172A;
+    line-height: 1.45;
+    page-break-inside: avoid;
+  }
+  .proximos-passos-numero {
+    font-weight: 700;
+    color: #0F766E;
+    font-size: 11pt;
+    line-height: 1;
+    text-align: center;
+    padding-top: 0.5mm;
+  }
+
+  /* Assiduidade — barra horizontal full-width semaforizada. */
+  .assiduidade-wrap {
+    margin-top: 4mm;
+    padding: 2mm 3mm;
+    background: #F8FAFC;
+    border-radius: 3pt;
+    border: 1px solid #E5E7EB;
+  }
+  .assiduidade-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 2mm;
+  }
+  .assiduidade-label {
+    font-size: 10pt;
+    font-weight: 600;
+    color: #111827;
+  }
+  .assiduidade-value {
+    font-size: 12pt;
+    font-weight: 700;
+    color: #111827;
+  }
+  .assiduidade-value.semf-verde { color: #16A34A; }
+  .assiduidade-value.semf-amarelo { color: #D97706; }
+  .assiduidade-value.semf-vermelho { color: #DC2626; }
+  .assiduidade-track {
+    background: #F3F4F6;
+    border: 1px solid #E5E7EB;
+    border-radius: 3pt;
+    height: 6mm;
+    overflow: hidden;
+    position: relative;
+  }
+  .assiduidade-fill {
+    height: 100%;
+    border-radius: 3pt 0 0 3pt;
+  }
+  .assiduidade-fill.semf-verde { background: #16A34A; }
+  .assiduidade-fill.semf-amarelo { background: #D97706; }
+  .assiduidade-fill.semf-vermelho { background: #DC2626; }
+
+  /* dim-bar semaforizada (variante com cor por faixa). */
+  .dim-bar-fill.semf-verde { background: #16A34A; }
+  .dim-bar-fill.semf-amarelo { background: #D97706; }
+  .dim-bar-fill.semf-vermelho { background: #DC2626; }
+  .dim-bar-value.semf-verde { color: #16A34A; }
+  .dim-bar-value.semf-amarelo { color: #D97706; }
+  .dim-bar-value.semf-vermelho { color: #DC2626; }
+
+  /* aspecto-bar semaforizada. */
+  .aspecto-bar-fill.semf-verde { background: #16A34A; }
+  .aspecto-bar-fill.semf-amarelo { background: #D97706; }
+  .aspecto-bar-fill.semf-vermelho { background: #DC2626; }
+  .aspecto-bar-value.semf-verde { color: #16A34A; }
+  .aspecto-bar-value.semf-amarelo { color: #D97706; }
+  .aspecto-bar-value.semf-vermelho { color: #DC2626; }
+
+  /* Dimensao aberta formato vertical (clima + executive). */
+  .dim-aberta-group {
+    margin-top: 4mm;
+    padding-top: 3mm;
+    border-top: 1px solid #E5E7EB;
+    page-break-inside: avoid;
+  }
+  .dim-aberta-group:first-of-type {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+  .dim-aberta-head {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 3mm;
+    margin-bottom: 2mm;
+  }
+  .dim-aberta-title {
+    margin: 0;
+    font-size: 11pt;
+    font-weight: 700;
+    color: #0F766E;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .dim-aberta-barra {
+    width: 55mm;
+    background: #F3F4F6;
+    border: 1px solid #E5E7EB;
+    border-radius: 2pt;
+    height: 4mm;
+    overflow: hidden;
+    position: relative;
+  }
+  .dim-aberta-fill { height: 100%; border-radius: 2pt 0 0 2pt; }
+  .dim-aberta-fill.semf-verde { background: #16A34A; }
+  .dim-aberta-fill.semf-amarelo { background: #D97706; }
+  .dim-aberta-fill.semf-vermelho { background: #DC2626; }
+  .dim-aberta-nota {
+    font-size: 11pt;
+    font-weight: 700;
+    text-align: right;
+    min-width: 12mm;
+  }
+  .dim-aberta-nota.semf-verde { color: #16A34A; }
+  .dim-aberta-nota.semf-amarelo { color: #D97706; }
+  .dim-aberta-nota.semf-vermelho { color: #DC2626; }
+
+  /* Tabela comparativa de deptos no clima — table-layout fixed para
+     corrigir D-CLIMA-COLUNA-CORTADA. Cabe em A4 sem transbordar. */
+  table.clima-cascata-tabela {
+    table-layout: fixed;
+    width: 100%;
+    font-size: 8.5pt;
+  }
+  table.clima-cascata-tabela colgroup col:nth-child(1) { width: 29%; }
+  table.clima-cascata-tabela colgroup col:nth-child(2) { width: 10%; }
+  table.clima-cascata-tabela colgroup col:nth-child(3) { width: 8%; }
+  table.clima-cascata-tabela colgroup col:nth-child(4) { width: 9%; }
+  table.clima-cascata-tabela colgroup col:nth-child(5) { width: 11%; }
+  table.clima-cascata-tabela colgroup col:nth-child(6) { width: 11%; }
+  table.clima-cascata-tabela colgroup col:nth-child(7) { width: 11%; }
+  table.clima-cascata-tabela colgroup col:nth-child(8) { width: 11%; }
+  table.clima-cascata-tabela thead th {
+    font-size: 8pt;
+    padding: 2mm 1.5mm;
+  }
+  table.clima-cascata-tabela tbody td {
+    padding: 2mm 1.5mm;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Wrapper SEM overflow:hidden quando a tabela tem table-layout:fixed
+     (evita cortar visualmente a borda arredondada enquanto a tabela
+     se ajusta sozinha). */
+  .exec-dept-table-wrap.wrap-no-clip {
+    overflow: visible;
+  }
+
+  /* Painel comparativo canonico (dept lado a lado) — layout de linhas
+     densas com destaque do melhor e pior pela cor da borda. */
+  table.ranking-table {
+    table-layout: fixed;
+    width: 100%;
+    font-size: 9pt;
+  }
+  table.ranking-table tbody tr.ranking-row-media td {
+    background: #F3F4F6;
+    font-weight: 700;
+    color: #111827;
+    border-top: 2px solid #CBD5E1;
+    border-bottom: 2px solid #CBD5E1;
+  }
+  table.ranking-table tbody tr td.cell-semf-verde { color: #16A34A; font-weight: 600; }
+  table.ranking-table tbody tr td.cell-semf-amarelo { color: #D97706; font-weight: 600; }
+  table.ranking-table tbody tr td.cell-semf-vermelho { color: #DC2626; font-weight: 600; }
+
+  /* Mini-cascata do clima drill-down compacto 2x1. */
+  .clima-drilldown-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5mm;
+    margin-top: 3mm;
+  }
+  .clima-drilldown-card {
+    border: 1px solid #E5E7EB;
+    border-radius: 3pt;
+    padding: 3mm 4mm;
+    page-break-inside: avoid;
+    background: #FFFFFF;
+  }
+  .clima-drilldown-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 2mm;
+    padding-bottom: 2mm;
+    border-bottom: 1px solid #E5E7EB;
+  }
+  .clima-drilldown-nome {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #111827;
+  }
+  .clima-drilldown-nota {
+    font-size: 14pt;
+    font-weight: 700;
+  }
+  .clima-drilldown-nota.semf-verde { color: #16A34A; }
+  .clima-drilldown-nota.semf-amarelo { color: #D97706; }
+  .clima-drilldown-nota.semf-vermelho { color: #DC2626; }
+  .clima-drilldown-meta {
+    font-size: 8.5pt;
+    color: #6B7280;
+    margin-bottom: 2mm;
+  }
 `;
 
 /**
