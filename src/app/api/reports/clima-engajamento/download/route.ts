@@ -148,7 +148,11 @@ export async function GET(req: Request): Promise<NextResponse> {
   }
 
   const companyRows = await db
-    .select({ nomeFantasia: companies.nomeFantasia, razaoSocial: companies.razaoSocial })
+    .select({
+      nomeFantasia: companies.nomeFantasia,
+      razaoSocial: companies.razaoSocial,
+      logoUrl: companies.logoUrl,
+    })
     .from(companies)
     .where(eq(companies.id, companyId))
     .limit(1);
@@ -253,6 +257,7 @@ export async function GET(req: Request): Promise<NextResponse> {
   const html = renderClimaEngajamentoHTML({
     nomeFantasia: company.nomeFantasia,
     razaoSocialSanitizada: razaoSocialSan,
+    logoUrl: company.logoUrl ?? null,
     trimestre,
     blocoEmpresa,
     blocosDepartamentos,

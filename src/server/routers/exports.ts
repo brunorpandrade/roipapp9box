@@ -190,12 +190,14 @@ async function getCompanyInfo(
   razaoSocial: string;
   razaoSocialSan: string;
   timezone: string;
+  logoUrl: string | null;
 }> {
   const rows = await db
     .select({
       nomeFantasia: companies.nomeFantasia,
       razaoSocial: companies.razaoSocial,
       timezone: companies.timezone,
+      logoUrl: companies.logoUrl,
     })
     .from(companies)
     .where(eq(companies.id, companyId))
@@ -209,6 +211,7 @@ async function getCompanyInfo(
     razaoSocial: c.razaoSocial,
     razaoSocialSan: sanitizeRazaoSocial(c.razaoSocial),
     timezone: c.timezone,
+    logoUrl: c.logoUrl ?? null,
   };
 }
 
@@ -451,6 +454,7 @@ export function createExportsRouter(deps: ExportsRouterDeps = {}) {
             companyId: input.companyId,
             nomeFantasia: info.nomeFantasia,
             razaoSocialSanitizada: info.razaoSocialSan,
+            logoUrl: info.logoUrl,
             escopo: {
               tipo: input.escopoTipo,
               referencia: input.escopoReferencia ?? null,

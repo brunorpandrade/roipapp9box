@@ -68,6 +68,11 @@ export interface ClimaBlocoDepartamento extends ClimaBlocoEscopo {
 export interface ClimaEngajamentoTemplateInput {
   nomeFantasia: string;
   razaoSocialSanitizada: string;
+  /**
+   * ME-1.3d-REV DIS-C CC079-1: URL da logo canonica da empresa.
+   * `null` ou ausente → sem marca no canto superior direito.
+   */
+  logoUrl?: string | null;
   trimestre: string;
   blocoEmpresa: ClimaBlocoEscopo;
   blocosDepartamentos: ClimaBlocoDepartamento[];
@@ -380,7 +385,6 @@ function renderAspectosPorDimensao(input: ClimaEngajamentoTemplateInput): string
     .join('\n');
   return `<section class="page-break">
   <h2>Aspectos individuais por dimensão</h2>
-  <p>Dimensão a dimensão, com as 5 perguntas por extenso e nota individual por aspecto. Cores por valor.</p>
   <div class="ranking-grid">
     <div class="ranking-col ranking-top">
       <h4 class="ranking-col-title">Top 3 aspectos mais fortes</h4>
@@ -496,10 +500,15 @@ interface EquipeComContexto {
 
 function renderRankingEquipes(input: ClimaEngajamentoTemplateInput): string {
   const equipes: EquipeComContexto[] = [];
+  // ME-1.3d-REV DIS-C CC079-1: contar canonicamente equipes que
+  // ficaram fora do ranking por nao atingirem o piso de anonimato.
+  let equipesForaRanking = 0;
   for (const d of input.blocosDepartamentos) {
     for (const e of d.equipes) {
       if (e.notaClima !== null && Number.isFinite(e.notaClima)) {
         equipes.push({ departamento: d.titulo, equipe: e });
+      } else {
+        equipesForaRanking += 1;
       }
     }
   }
@@ -540,12 +549,12 @@ function renderRankingEquipes(input: ClimaEngajamentoTemplateInput): string {
       ${bottomItems}
     </div>
   </div>
-  <div class="takeaway-card">${fmtInt(equipes.length)} ${equipes.length === 1 ? 'equipe canônica' : 'equipes canônicas'} entraram no ranking (piso de anonimato atendido).</div>
+  <div class="takeaway-card">${fmtInt(equipes.length)} ${equipes.length === 1 ? 'equipe entrou' : 'equipes entraram'} no ranking.${equipesForaRanking > 0 ? ` Ficaram fora do ranking ${fmtInt(equipesForaRanking)} ${equipesForaRanking === 1 ? 'equipe que não atingiu' : 'equipes que não atingiram'} o piso de anonimato.` : ''}</div>
 </section>`;
 }
 
 // ============================================================
-// Drill-down compacto por departamento (2 por A4)
+// Drill-down compacto por departamento (4 por A4 em grid 2x2)
 // ============================================================
 
 function renderDrillDownDepto(dept: ClimaBlocoDepartamento): string {
@@ -553,19 +562,19 @@ function renderDrillDownDepto(dept: ClimaBlocoDepartamento): string {
   const css = faixaCss(faixa);
   const equipesHtml =
     dept.equipes.length === 0
-      ? '<div class="muted" style="font-size:8.5pt;">Sem equipes com piso atendido.</div>'
-      : `<table class="data-table clima-cascata-tabela" style="margin-top:2mm; font-size:7.5pt;">
+      ? '<div class="muted" style="font-size:8pt;">Sem equipes com piso atendido.</div>'
+      : `<table class="data-table clima-equipes-mini" style="margin-top:1.5mm;">
     <colgroup>
-      <col style="width:50%" />
-      <col style="width:15%" />
+      <col style="width:52%" />
+      <col style="width:14%" />
       <col style="width:17%" />
-      <col style="width:18%" />
+      <col style="width:17%" />
     </colgroup>
-    <thead><tr><th>Equipe</th><th class="right">Resp.</th><th class="right">Clima</th><th class="right">Adesão</th></tr></thead>
+    <thead><tr><th>Equipe</th><th>Resp.</th><th>Clima</th><th>Adesão</th></tr></thead>
     <tbody>${dept.equipes
       .map((e) => {
         const cssE = faixaCss(faixaClima(e.notaClima));
-        return `<tr><td>${escapeHtml(e.titulo)}</td><td class="right">${fmtInt(e.respondentes)}</td><td class="right cell-${cssE}">${fmtNum(e.notaClima)}</td><td class="right">${fmtPctInt(e.adesao)}</td></tr>`;
+        return `<tr><td>${escapeHtml(e.titulo)}</td><td>${fmtInt(e.respondentes)}</td><td class="cell-${cssE}">${fmtNum(e.notaClima)}</td><td>${fmtPctInt(e.adesao)}</td></tr>`;
       })
       .join('\n')}</tbody>
   </table>`;
@@ -575,11 +584,11 @@ function renderDrillDownDepto(dept: ClimaBlocoDepartamento): string {
       <div class="clima-drilldown-nota ${css}">${fmtNum(dept.notaClima)}</div>
     </div>
     <div class="clima-drilldown-meta">${fmtInt(dept.respondentes)} respondentes · Adesão ${fmtPctInt(dept.adesao)}</div>
-    <div class="dim-bars">
-      ${renderDimBarSemaforizada('Engaj.', dept.porDimensao.engajamento, 10)}
-      ${renderDimBarSemaforizada('Desenv.', dept.porDimensao.desenvolvimento, 10)}
-      ${renderDimBarSemaforizada('Pertenc.', dept.porDimensao.pertencimento, 10)}
-      ${renderDimBarSemaforizada('Realiz.', dept.porDimensao.realizacao, 10)}
+    <div class="dim-bars clima-drilldown-bars">
+      ${renderDimBarSemaforizada('Engajamento', dept.porDimensao.engajamento, 10)}
+      ${renderDimBarSemaforizada('Desenvolvimento', dept.porDimensao.desenvolvimento, 10)}
+      ${renderDimBarSemaforizada('Pertencimento', dept.porDimensao.pertencimento, 10)}
+      ${renderDimBarSemaforizada('Realização', dept.porDimensao.realizacao, 10)}
     </div>
     ${equipesHtml}
   </div>`;
@@ -588,14 +597,17 @@ function renderDrillDownDepto(dept: ClimaBlocoDepartamento): string {
 function renderDrillDownDeptos(input: ClimaEngajamentoTemplateInput): string {
   const deptos = input.blocosDepartamentos;
   if (deptos.length === 0) return '';
-  // Grupos de 2 por pagina.
+  // ME-1.3d-REV DIS-C CC079-1: grupos de 4 por pagina (grid 2x2),
+  // cards mais compactos e barras baixas e longas. Nomes das 4
+  // dimensoes por extenso (Engajamento/Desenvolvimento/Pertencimento/
+  // Realizacao).
   const paginas: string[] = [];
-  for (let i = 0; i < deptos.length; i += 2) {
-    const grupo = deptos.slice(i, i + 2);
+  for (let i = 0; i < deptos.length; i += 4) {
+    const grupo = deptos.slice(i, i + 4);
     const cards = grupo.map((d) => renderDrillDownDepto(d)).join('\n');
     paginas.push(`<section class="page-break">
-  ${i === 0 ? '<h2>Drill-down por departamento</h2><p>Dois departamentos por página para leitura comparativa.</p>' : ''}
-  <div class="clima-drilldown-grid">${cards}</div>
+  ${i === 0 ? '<h2>Drill-down por departamento</h2>' : ''}
+  <div class="clima-drilldown-grid-4">${cards}</div>
 </section>`);
   }
   return paginas.join('\n');
@@ -674,7 +686,10 @@ export function renderClimaEngajamentoHTML(input: ClimaEngajamentoTemplateInput)
     .join('\n');
   return renderLayoutBase({
     title: `Clima e engajamento · ${input.nomeFantasia} · ${formatTrimestreBR(input.trimestre)}`,
-    company: { nomeFantasia: input.nomeFantasia },
+    company: {
+      nomeFantasia: input.nomeFantasia,
+      ...(input.logoUrl ? { logoUrl: input.logoUrl } : {}),
+    },
     bodyHtml,
     footerLeft: `Clima e engajamento · ${input.nomeFantasia} · ${formatTrimestreBR(input.trimestre)}`,
     footerCenter: `Gerado em ${toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso}`,

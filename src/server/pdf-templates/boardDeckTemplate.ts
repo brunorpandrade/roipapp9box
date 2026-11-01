@@ -68,6 +68,11 @@ export interface BoardDeckTurnoverPorNivel {
 export interface BoardDeckTemplateInput {
   nomeFantasia: string;
   razaoSocialSanitizada: string;
+  /**
+   * ME-1.3d-REV DIS-C CC079-1: URL da logo canonica da empresa.
+   * `null` ou ausente → sem marca no canto superior direito.
+   */
+  logoUrl?: string | null;
   trimestre: string;
   escopoTipo: 'empresa' | 'departamento';
   escopoRotulo: string;
@@ -125,7 +130,9 @@ function fmtPct(v: number | null): string {
 function fmtPctSigned(v: number | null): string {
   if (v === null || !Number.isFinite(v)) return '—';
   const sinal = v > 0 ? '+' : '';
-  return `${sinal}${fmtNum(v)} p.p.`;
+  // "p.p." em span com fonte reduzida para caber na mesma linha do
+  // numero no KPI card de variacao do turnover.
+  return `${sinal}${fmtNum(v)}<span class="pp-unidade"> p.p.</span>`;
 }
 
 function fmtPctRelativoSigned(v: number | null): string {
@@ -398,7 +405,7 @@ function renderElemento9Box(input: BoardDeckTemplateInput, perfil: PerfilGlobal)
   const linhasTabela = NINE_BOX_QUADRANTES.map((q) => {
     const n = input.nineBoxDistribuicao[q];
     const pct = input.totalClassificados > 0 ? (n / input.totalClassificados) * 100 : 0;
-    return `<tr><td>${escapeHtml(q)}</td><td class="right">${fmtInt(n)}</td><td class="right">${fmtIntNoPct(pct)}</td></tr>`;
+    return `<tr><td>${escapeHtml(q)}</td><td style="text-align:center;">${fmtInt(n)}</td><td style="text-align:center;">${fmtIntNoPct(pct)}</td></tr>`;
   }).join('\n');
   const takeaway =
     perfil.pctCriticos >= 10
@@ -421,7 +428,7 @@ function renderElemento9Box(input: BoardDeckTemplateInput, perfil: PerfilGlobal)
       <col style="width:22%" />
       <col style="width:18%" />
     </colgroup>
-    <thead><tr><th>Quadrante</th><th class="right">Colaboradores</th><th class="right">%</th></tr></thead>
+    <thead><tr><th>Quadrante</th><th style="text-align:center;">Colaboradores</th><th style="text-align:center;">%</th></tr></thead>
     <tbody>${linhasTabela}</tbody>
   </table>
   <div class="takeaway-card">${escapeHtml(takeaway)}</div>
@@ -497,7 +504,7 @@ function renderElementoRoiMaisTurnover(input: BoardDeckTemplateInput): string {
   const subtextoVariacao =
     t.variacaoTrimestreAnteriorPercentualRelativa === null
       ? 'variação relativa indisponível'
-      : `${fmtPctRelativoSigned(t.variacaoTrimestreAnteriorPercentualRelativa)} vs trim. anterior`;
+      : fmtPctRelativoSigned(t.variacaoTrimestreAnteriorPercentualRelativa);
   return `<section class="page-break">
   <h2>ROI agregado</h2>
   <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
@@ -544,12 +551,12 @@ function renderElementoRoiMaisTurnover(input: BoardDeckTemplateInput): string {
     <div class="kpi-card">
       <div class="kpi-label">Saídas voluntárias</div>
       <div class="kpi-value">${fmtInt(t.saidasVoluntariasTrimestre)}</div>
-      <div class="kpi-sub">Taxa canônica: ${fmtPct(t.voluntarioPercentual)}</div>
+      <div class="kpi-sub">${fmtPct(t.voluntarioPercentual)}</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Saídas involuntárias</div>
       <div class="kpi-value">${fmtInt(t.saidasInvoluntariasTrimestre)}</div>
-      <div class="kpi-sub">Taxa canônica: ${fmtPct(t.involuntarioPercentual)}</div>
+      <div class="kpi-sub">${fmtPct(t.involuntarioPercentual)}</div>
     </div>
   </div>
   ${barrasNivelHtml}
@@ -578,13 +585,27 @@ function renderElementoRadar(input: BoardDeckTemplateInput): string {
       return `<tr><td class="right">${fmtInt(f.fatorId)}</td><td>${escapeHtml(f.nome)}</td><td class="right" style="color:#6B7280;">${tipo === 'risco' ? 'Risco' : 'Recurso'}</td><td class="right"><span class="${corClass}" style="font-weight:700;">${fmtScoreInt(f.scoreZeroCem)}</span></td></tr>`;
     })
     .join('\n');
-  // Fatores em alerta (risco com score >= 60 OU recurso com score < 50).
+  // ME-1.3d-REV DIS-C CC079-1 (D-DIS-C-RADAR-TOP3): fatores em alerta
+  // ORDENADOS por severidade decrescente (vermelho antes de amarelo;
+  // dentro do mesmo nivel, pior score canonico primeiro). Isso evita
+  // omitir fatores vermelhos quando os primeiros 3 por `fatorId` sao
+  // apenas amarelos. Pior score para RISCO = score alto; para RECURSO
+  // = score baixo (inverter via 100 - score).
   const fatoresAlerta = input.radarPsicossocial
-    .filter((f) => {
-      const faixa = faixaFatorRadar(f.nome, f.scoreZeroCem);
-      return faixa === 'vermelho' || faixa === 'amarelo';
+    .map((f) => ({ f, faixa: faixaFatorRadar(f.nome, f.scoreZeroCem) }))
+    .filter((x) => x.faixa === 'vermelho' || x.faixa === 'amarelo')
+    .sort((a, b) => {
+      const sevA = a.faixa === 'vermelho' ? 2 : 1;
+      const sevB = b.faixa === 'vermelho' ? 2 : 1;
+      if (sevA !== sevB) return sevB - sevA;
+      const tipoA = classificarTipoFatorRadar(a.f.nome);
+      const tipoB = classificarTipoFatorRadar(b.f.nome);
+      const scoreA = tipoA === 'risco' ? a.f.scoreZeroCem : 100 - a.f.scoreZeroCem;
+      const scoreB = tipoB === 'risco' ? b.f.scoreZeroCem : 100 - b.f.scoreZeroCem;
+      return scoreB - scoreA;
     })
-    .slice(0, 3);
+    .slice(0, 3)
+    .map((x) => x.f);
   const takeawayRadar =
     fatoresAlerta.length === 0
       ? 'Nenhum fator psicossocial em zona de alerta — perfil psicossocial estável no trimestre.'
@@ -689,7 +710,10 @@ export function renderBoardDeckHTML(input: BoardDeckTemplateInput): string {
   void renderGaugeSvg;
   return renderLayoutBase({
     title: `Board deck · ${input.nomeFantasia} · ${formatTrimestreBR(input.trimestre)}`,
-    company: { nomeFantasia: input.nomeFantasia },
+    company: {
+      nomeFantasia: input.nomeFantasia,
+      ...(input.logoUrl ? { logoUrl: input.logoUrl } : {}),
+    },
     bodyHtml,
     footerLeft: `Board deck · ${input.nomeFantasia} · ${formatTrimestreBR(input.trimestre)}`,
     footerCenter: `Gerado em ${toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso}`,

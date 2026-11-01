@@ -382,11 +382,12 @@ function renderPainelExecutivo(input: ExecutiveReportFinalPayload): string {
     </div>`;
     })
     .join('\n');
-  return `<section class="page-break">
-  <h2>Painel executivo do trimestre</h2>
-  <p>Leitura instantânea dos cinco blocos com semaforização por faixa de valor e variação relativa vs trimestre anterior.</p>
+  // ME-1.3d-REV DIS-C CC079-1: SEM `page-break` — painel permanece
+  // junto da capa e do resumo executivo na pagina 1 para densidade
+  // McKinsey/BCG.
+  return `<section>
+  <h2 style="margin-top:5mm;">Painel executivo do trimestre</h2>
   <div class="painel-exec-grid">${cards}</div>
-  <div class="takeaway-card">Painel calibrado com faixas canônicas de referência; cores por valor e por sinal de variação. Blocos em vermelho indicam prioridade de investigação.</div>
 </section>`;
 }
 
@@ -394,25 +395,31 @@ function renderPainelExecutivo(input: ExecutiveReportFinalPayload): string {
 // Resumo executivo geral (pg 3)
 // ============================================================
 
-function derivarSentidosDestaques(payload: ExecutiveReportFinalPayload): readonly FaixaSemaforo[] {
-  // Heuristica canonica: cada destaque corresponde a uma das 3
-  // variacoes principais (ROI, desempenho, plenitude). Aplica a
-  // faixa canonica de variacao (McKinsey/BCG).
-  const roiVar =
-    payload.blocoFinanceiro.comparativoTrimestreAnterior?.variacaoPercentualRoi ?? null;
-  const desVar = payload.blocoDesempenho.comparativoTrimestreAnterior?.variacaoPercentual ?? null;
-  const plenVar = payload.blocoPlenitude.comparativoTrimestreAnterior?.variacaoPercentual ?? null;
-  const faixaOuVerde = (v: number | null): FaixaSemaforo => faixaVariacaoCanonica(v) ?? 'verde';
-  return [faixaOuVerde(roiVar), faixaOuVerde(desVar), faixaOuVerde(plenVar)];
+// ME-1.3d-REV DIS-C CC079-1 (D-DIS-C-CORES-TOP-DESTAQUES): parse o
+// sinal da variacao direto da string de cada destaque (robusto a
+// mudancas na ordem canonica do engine). Captura o primeiro numero
+// decimal pt-BR precedido opcionalmente por "+" / "-" e detecta
+// semanticamente verbos como "recuou" / "caiu" como variacao negativa.
+function faixaDoDestaque(destaque: string): FaixaSemaforo {
+  const match = destaque.match(/([+-]?)\s*(\d+(?:[.,]\d+)?)\s*%/);
+  if (!match) return 'verde';
+  const sinalStr = match[1] ?? '';
+  const valorStr = (match[2] ?? '').replace(',', '.');
+  const valor = parseFloat(valorStr);
+  if (!Number.isFinite(valor)) return 'verde';
+  const semanticoNegativo = /recu[ao]u|caiu|caindo|caiu para|frágil|crítico/i.test(destaque);
+  const sinalEfetivo = sinalStr === '-' || semanticoNegativo ? -Math.abs(valor) : Math.abs(valor);
+  return faixaVariacaoCanonica(sinalEfetivo) ?? 'verde';
 }
 
 function renderResumoExecutivo(input: ExecutiveReportFinalPayload): string {
-  const sentidos = derivarSentidosDestaques(input);
   const bullets = input.topDestaques
-    .map((d, i) => `<li class="achado-item achado-${sentidos[i] ?? 'verde'}">${escapeHtml(d)}</li>`)
+    .map((d) => `<li class="achado-item achado-${faixaDoDestaque(d)}">${escapeHtml(d)}</li>`)
     .join('\n');
-  return `<section class="page-break">
-  <h2>Resumo executivo geral</h2>
+  // ME-1.3d-REV DIS-C CC079-1: SEM `page-break` — resumo permanece
+  // na pagina 1 junto da capa e do painel executivo.
+  return `<section>
+  <h2 style="margin-top:5mm;">Resumo executivo geral</h2>
   <ul class="achados-list">${bullets}</ul>
   <div class="info-card">
     ${paragrafosArejados(input.resumoExecutivoGeral)}
@@ -578,30 +585,47 @@ function renderBlocoFinanceiro(input: ExecutiveReportFinalPayload): string {
     </div>`);
     }
   }
-  // KV substituida por 4 KPI cards canonicos.
-  const kpiRodape: string[] = [];
-  kpiRodape.push(`<div class="kpi-card">
+  // ME-1.3d-REV DIS-C CC079-1: linha de contexto (Faturamento, Folha,
+  // Colaboradores ativos — 3 cards).
+  const kpiContexto: string[] = [];
+  kpiContexto.push(`<div class="kpi-card">
       <div class="kpi-label">Faturamento médio</div>
       <div class="kpi-value">${fmtMoeda(b.trimestreAtual.faturamentoMedioTrimestral)}</div>
       <div class="kpi-sub">Média do trimestre</div>
     </div>`);
-  kpiRodape.push(`<div class="kpi-card">
+  kpiContexto.push(`<div class="kpi-card">
       <div class="kpi-label">Folha total</div>
       <div class="kpi-value">${fmtMoeda(b.trimestreAtual.folhaTotalMedia)}</div>
       <div class="kpi-sub">Média do trimestre</div>
     </div>`);
-  const classesMeta = coresCanonicasPorFaixa(
-    faixaMetaAtingida(b.trimestreAtual.percMetaAtingidaAgregada),
-  );
-  kpiRodape.push(`<div class="kpi-card ${classesMeta.cardClass}">
-      <div class="kpi-label">% da meta atingida</div>
-      <div class="kpi-value ${classesMeta.valueClass}">${fmtPct(b.trimestreAtual.percMetaAtingidaAgregada)}</div>
-      <div class="kpi-sub">Média ponderada</div>
-    </div>`);
-  kpiRodape.push(`<div class="kpi-card">
+  kpiContexto.push(`<div class="kpi-card">
       <div class="kpi-label">Colaboradores ativos</div>
       <div class="kpi-value">${fmtInt(b.trimestreAtual.colaboradoresAtivos)}</div>
       <div class="kpi-sub">Base no período</div>
+    </div>`);
+  // ME-1.3d-REV DIS-C CC079-1: linha nova canonica de atingimento —
+  // Meta (faturamento ideal), Realizado (faturamento medio) e % da meta
+  // atingida (atingimento canonico das metas individuais).
+  const faturamentoIdeal = b.trimestreAtual.faturamentoIdeal;
+  const faturamentoRealizado = b.trimestreAtual.faturamentoMedioTrimestral;
+  const classesMeta = coresCanonicasPorFaixa(
+    faixaMetaAtingida(b.trimestreAtual.percMetaAtingidaAgregada),
+  );
+  const kpiAtingimento: string[] = [];
+  kpiAtingimento.push(`<div class="kpi-card">
+      <div class="kpi-label">Meta</div>
+      <div class="kpi-value">${fmtMoeda(faturamentoIdeal)}</div>
+      <div class="kpi-sub">Faturamento ideal do trimestre</div>
+    </div>`);
+  kpiAtingimento.push(`<div class="kpi-card">
+      <div class="kpi-label">Realizado</div>
+      <div class="kpi-value">${fmtMoeda(faturamentoRealizado)}</div>
+      <div class="kpi-sub">Faturamento médio do trimestre</div>
+    </div>`);
+  kpiAtingimento.push(`<div class="kpi-card ${classesMeta.cardClass}">
+      <div class="kpi-label">% da meta atingida</div>
+      <div class="kpi-value ${classesMeta.valueClass}">${fmtPct(b.trimestreAtual.percMetaAtingidaAgregada)}</div>
+      <div class="kpi-sub">Média ponderada dos liderados</div>
     </div>`);
   const takeaway = takeawayFinanceiro({
     roi: b.trimestreAtual.roiAgregado,
@@ -614,7 +638,8 @@ function renderBlocoFinanceiro(input: ExecutiveReportFinalPayload): string {
   <h2>Bloco Financeiro</h2>
   <div class="kpi-grid" style="grid-template-columns: repeat(${kpiCards.length}, 1fr);">${kpiCards.join('\n')}</div>
   ${folhaCards.length > 0 ? `<div class="kpi-grid" style="grid-template-columns: repeat(${folhaCards.length}, 1fr); margin-top:3mm;">${folhaCards.join('\n')}</div>` : ''}
-  <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-top:3mm;">${kpiRodape.join('\n')}</div>
+  <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-top:3mm;">${kpiContexto.join('\n')}</div>
+  <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-top:3mm;">${kpiAtingimento.join('\n')}</div>
   <div class="info-card" style="margin-top:3mm;">
     ${paragrafosArejados(input.paragrafoFinanceiro)}
   </div>
@@ -749,15 +774,11 @@ function renderBlocoPlenitude(input: ExecutiveReportFinalPayload): string {
       <div class="kpi-sub">Plenitude média comparada</div>
     </div>
   </div>`;
-  // Semaforizar dim-bars por valor (escala 0-10 na visualizacao, mas
-  // o payload traz 0-100 neste bloco — normalizar faixa).
-  const faixaDim = (v: number | null): FaixaSemaforo | null => {
-    if (v === null) return null;
-    // Escala 0-10 (plataforma mostra como 0-10 no gauge).
-    if (v >= 7.5) return 'verde';
-    if (v >= 5) return 'amarelo';
-    return 'vermelho';
-  };
+  // ME-1.3d-REV DIS-C CC079-1 (D-DIS-C-DIMBAR-ESCALA): escala 0-100 no
+  // bloco Plenitude (valores agregados vem em 0-100, nao 0-10 como no
+  // Clima). Faixa canonica da plenitude (verde >= 75; amarelo 60-74;
+  // vermelho < 60).
+  const faixaDim = (v: number | null): FaixaSemaforo | null => faixaPlenitude(v);
   const takeaway = takeawayPlenitude({
     scoreMedio: b.trimestreAtual.plenitudeScoreMedioAgregado,
     variacao,
@@ -769,10 +790,10 @@ function renderBlocoPlenitude(input: ExecutiveReportFinalPayload): string {
   ${variacaoHtml}
   <h3 class="h3-compact" style="margin-top:4mm;">Perfil por dimensão</h3>
   <div class="dim-bars">
-    ${renderDimBarSemaforizada('Engajamento', dim.engajamento, 10, faixaDim(dim.engajamento))}
-    ${renderDimBarSemaforizada('Desenvolvimento', dim.desenvolvimento, 10, faixaDim(dim.desenvolvimento))}
-    ${renderDimBarSemaforizada('Pertencimento', dim.pertencimento, 10, faixaDim(dim.pertencimento))}
-    ${renderDimBarSemaforizada('Realização', dim.realizacao, 10, faixaDim(dim.realizacao))}
+    ${renderDimBarSemaforizada('Engajamento', dim.engajamento, 100, faixaDim(dim.engajamento))}
+    ${renderDimBarSemaforizada('Desenvolvimento', dim.desenvolvimento, 100, faixaDim(dim.desenvolvimento))}
+    ${renderDimBarSemaforizada('Pertencimento', dim.pertencimento, 100, faixaDim(dim.pertencimento))}
+    ${renderDimBarSemaforizada('Realização', dim.realizacao, 100, faixaDim(dim.realizacao))}
   </div>
   <div class="info-card" style="margin-top:3mm;">
     ${paragrafosArejados(input.paragrafoPlenitude)}
@@ -878,7 +899,6 @@ function renderBlocoClima(input: ExecutiveReportFinalPayload): string {
   })();
   const pg2 = `<section class="page-break">
   <h2>Clima — dimensões abertas por aspecto</h2>
-  <p>Dimensão a dimensão, com as 5 perguntas canônicas por extenso e nota individual por aspecto.</p>
   ${dimAbertaHtml}
 </section>`;
   return pg1 + '\n' + pg2;
@@ -1041,7 +1061,7 @@ function renderDetalhamentoCapilar(input: ExecutiveReportFinalPayload): string {
     })
     .join('\n');
   return `<section class="page-break">
-  <h2>Detalhamento capilar</h2>
+  <h2>Dados por departamento</h2>
   <p>Equipes ordenadas por desempenho dentro de cada departamento. Cores por valor identificam outliers.</p>
 </section>
 ${secoes}`;
@@ -1116,7 +1136,10 @@ export function renderExecutiveReportHTML(input: ExecutiveReportFinalPayload): s
 
   return renderLayoutBase({
     title: `Relatório executivo trimestral · ${input.nomeFantasia} · ${formatTrimestreBR(input.trimestre)}`,
-    company: { nomeFantasia: input.nomeFantasia },
+    company: {
+      nomeFantasia: input.nomeFantasia,
+      ...(input.logoUrl ? { logoUrl: input.logoUrl } : {}),
+    },
     bodyHtml,
     footerLeft: `Relatório executivo · ${input.nomeFantasia} · ${formatTrimestreBR(input.trimestre)}`,
     footerCenter: `Gerado em ${toTimestampBrt(input.geradoEmIso) ?? input.geradoEmIso}`,

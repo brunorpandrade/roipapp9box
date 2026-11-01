@@ -75,6 +75,14 @@ export interface ExecReportBlocoFinanceiro {
      */
     folhaPercMinimaIdeal: number | null;
     folhaPercMaximaIdeal: number | null;
+    /**
+     * ME-1.3d-REV DIS-C CC079-1: faturamento ideal (R$) derivado do
+     * benchmark setorial da empresa — consumido como "Meta" financeira
+     * na linha nova de 3 cards (Meta / Realizado / % atingido do ideal)
+     * do bloco Financeiro do PDF executivo. `null` quando o diagnostico
+     * economico da empresa nao contem valor calculado.
+     */
+    faturamentoIdeal: number | null;
   };
   comparativoTrimestreAnterior: {
     roiAgregado: number | null;
@@ -295,6 +303,13 @@ export interface ExecutiveReportDeterministicoPayload {
   nomeFantasia: string;
   /** Razao social sanitizada para nome do arquivo (§13.5). */
   razaoSocialSanitizada: string;
+  /**
+   * ME-1.3d-REV DIS-C CC079-1: URL da logo da empresa, carregada de
+   * `companies.logoUrl`. Quando `null` ou ausente, o template nao
+   * renderiza a marca independente no canto superior direito das
+   * paginas. Opcional para compatibilidade com fixtures legados.
+   */
+  logoUrl?: string | null;
   escopo: ExecutiveReportEscopo;
   trimestre: string;
   /** Trimestre imediatamente anterior canonico. */

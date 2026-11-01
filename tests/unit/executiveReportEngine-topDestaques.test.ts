@@ -44,6 +44,7 @@ const basePayload: ExecutiveReportDeterministicoPayload = {
       percFolhaFaturamento: 19.24,
       folhaPercMinimaIdeal: 18,
       folhaPercMaximaIdeal: 25,
+      faturamentoIdeal: 2_500_000,
     },
     comparativoTrimestreAnterior: {
       roiAgregado: 5.0,

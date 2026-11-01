@@ -166,6 +166,13 @@ export interface BuildExecutiveReportArgs {
   nomeFantasia: string;
   /** Razao social sanitizada para nome do arquivo (§13.5). */
   razaoSocialSanitizada: string;
+  /**
+   * ME-1.3d-REV DIS-C CC079-1: URL canonica da logo da empresa
+   * (`companies.logoUrl`). `null` quando a empresa nao tem logo.
+   * Opcional para compatibilidade com callers legados; o engine
+   * repassa `null` quando ausente.
+   */
+  logoUrl?: string | null;
   escopo: ExecutiveReportEscopo;
   trimestre: string;
 }
@@ -331,6 +338,7 @@ export async function buildExecutiveReportPayload(
     companyId: args.companyId,
     nomeFantasia: args.nomeFantasia,
     razaoSocialSanitizada: args.razaoSocialSanitizada,
+    logoUrl: args.logoUrl ?? null,
     escopo: args.escopo,
     trimestre: args.trimestre,
     trimestreAnterior: trimestreAnt,
@@ -517,6 +525,9 @@ async function buildBlocoFinanceiro(
     faturamentoAtual !== null && folhaAtual !== null && faturamentoAtual > 0
       ? Math.round((folhaAtual / faturamentoAtual) * 10000) / 100
       : null;
+  // ME-1.3d-REV DIS-C CC079-1: faturamento ideal (R$) do diagnostico
+  // economico — consumido como "Meta" financeira no PDF executivo.
+  const faturamentoIdeal = isEmpresa ? toNumberOrNull(econAtual?.faturamentoIdeal ?? null) : null;
 
   return {
     escopo: {
@@ -533,6 +544,7 @@ async function buildBlocoFinanceiro(
       percFolhaFaturamento,
       folhaPercMinimaIdeal,
       folhaPercMaximaIdeal,
+      faturamentoIdeal,
     },
     comparativoTrimestreAnterior:
       roiAntEscopo === null && percMetaAntEscopo === null

@@ -109,7 +109,11 @@ export async function GET(req: Request): Promise<NextResponse> {
   const db = client.db;
 
   const companyRows = await db
-    .select({ nomeFantasia: companies.nomeFantasia, razaoSocial: companies.razaoSocial })
+    .select({
+      nomeFantasia: companies.nomeFantasia,
+      razaoSocial: companies.razaoSocial,
+      logoUrl: companies.logoUrl,
+    })
     .from(companies)
     .where(eq(companies.id, claims.companyId))
     .limit(1);
@@ -150,6 +154,7 @@ export async function GET(req: Request): Promise<NextResponse> {
   const html = renderBoardDeckHTML({
     nomeFantasia: company.nomeFantasia,
     razaoSocialSanitizada: razaoSocialSan,
+    logoUrl: company.logoUrl ?? null,
     trimestre,
     escopoTipo,
     escopoRotulo: escopoRef ?? 'Empresa',

@@ -1410,15 +1410,46 @@ export const LAYOUT_BASE_CSS = `
   .aspecto-bars { display: block; }
   .aspecto-bar-row {
     display: grid;
-    grid-template-columns: 1fr 20mm 11mm;
+    grid-template-columns: 1fr 22mm 12mm;
     align-items: center;
-    gap: 2mm;
-    margin-bottom: 1.4mm;
-    font-size: 8.5pt;
+    gap: 2.5mm;
+    margin-bottom: 2.2mm;
+    font-size: 10pt;
   }
   .aspecto-bar-label {
     color: #374151;
-    line-height: 1.25;
+    line-height: 1.4;
+  }
+  /* ME-1.3d-REV DIS-C CC079-1: variante compacta para o grid 2x2 do
+     clima agregado empresa (mantem a densidade original). */
+  .aspecto-dim-grid .aspecto-bar-row {
+    font-size: 8.5pt;
+    margin-bottom: 1.4mm;
+    gap: 2mm;
+    grid-template-columns: 1fr 20mm 11mm;
+  }
+  .aspecto-dim-grid .aspecto-bar-label { line-height: 1.25; }
+  /* "p.p." em span canonico com fonte reduzida para caber na mesma
+     linha do numero no KPI value de variacao do turnover. */
+  .kpi-value .pp-unidade {
+    font-size: 0.55em;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    vertical-align: baseline;
+  }
+  /* Reforcar borda dos KPI cards semaforizados para evitar artefato
+     de renderizacao do Puppeteer que faz uma lateral parecer mais
+     fina. */
+  .kpi-card.highlight-green,
+  .kpi-card.highlight-yellow,
+  .kpi-card.highlight-red,
+  .kpi-card.folha-dentro,
+  .kpi-card.folha-acima,
+  .kpi-card.folha-abaixo,
+  .kpi-card.turnover-up,
+  .kpi-card.turnover-down {
+    border-width: 1.5px;
+    border-style: solid;
   }
   .aspecto-bar-track {
     background: #F3F4F6;
@@ -1798,7 +1829,11 @@ export const LAYOUT_BASE_CSS = `
   .dim-aberta-nota.semf-vermelho { color: #DC2626; }
 
   /* Tabela comparativa de deptos no clima — table-layout fixed para
-     corrigir D-CLIMA-COLUNA-CORTADA. Cabe em A4 sem transbordar. */
+     corrigir D-CLIMA-COLUNA-CORTADA. Cabe em A4 sem transbordar.
+     ME-1.3d-REV DIS-C CC079-1 (D-DIS-C-COLUNA-SOBREPOSTA): cabecalho
+     com quebra de linha, text-align center e fonte reduzida para
+     evitar sobreposicao dos nomes longos (Engajamento, Desenvolvimento,
+     Pertencimento, Realizacao). */
   table.clima-cascata-tabela {
     table-layout: fixed;
     width: 100%;
@@ -1813,13 +1848,27 @@ export const LAYOUT_BASE_CSS = `
   table.clima-cascata-tabela colgroup col:nth-child(7) { width: 11%; }
   table.clima-cascata-tabela colgroup col:nth-child(8) { width: 11%; }
   table.clima-cascata-tabela thead th {
-    font-size: 8pt;
-    padding: 2mm 1.5mm;
+    font-size: 7pt;
+    padding: 2mm 1mm;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.1;
+    letter-spacing: 0;
+  }
+  table.clima-cascata-tabela thead th:first-child {
+    text-align: left;
   }
   table.clima-cascata-tabela tbody td {
-    padding: 2mm 1.5mm;
+    padding: 2mm 1mm;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: center;
+  }
+  table.clima-cascata-tabela tbody td:first-child {
+    text-align: left;
+  }
+  table.clima-cascata-tabela tbody td.right {
+    text-align: center;
   }
 
   /* Wrapper SEM overflow:hidden quando a tabela tem table-layout:fixed
@@ -1836,6 +1885,18 @@ export const LAYOUT_BASE_CSS = `
     width: 100%;
     font-size: 9pt;
   }
+  /* ME-1.3d-REV DIS-C CC079-1: alinhamento canonico cabecalho × dados.
+     Primeira coluna (nome) a esquerda; demais colunas centralizadas. */
+  table.ranking-table thead th {
+    text-align: center;
+    padding: 2mm 1.5mm;
+    white-space: normal;
+    line-height: 1.15;
+  }
+  table.ranking-table thead th:first-child { text-align: left; }
+  table.ranking-table tbody td { text-align: center; padding: 2mm 1.5mm; }
+  table.ranking-table tbody td:first-child { text-align: left; }
+  table.ranking-table tbody td.right { text-align: center; }
   table.ranking-table tbody tr.ranking-row-media td {
     background: #F3F4F6;
     font-weight: 700;
@@ -1886,6 +1947,49 @@ export const LAYOUT_BASE_CSS = `
     color: #6B7280;
     margin-bottom: 2mm;
   }
+
+  /* ME-1.3d-REV DIS-C CC079-1: variante 2x2 do drill-down (4 deptos
+     por A4) + barras mais baixas e longas + mini-tabela de equipes
+     canonica. */
+  .clima-drilldown-grid-4 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4mm;
+    margin-top: 3mm;
+  }
+  .clima-drilldown-grid-4 .clima-drilldown-card { padding: 2.5mm 3mm; }
+  .clima-drilldown-grid-4 .clima-drilldown-nome { font-size: 10pt; }
+  .clima-drilldown-grid-4 .clima-drilldown-nota { font-size: 12pt; }
+  .clima-drilldown-grid-4 .clima-drilldown-meta { font-size: 7.5pt; }
+  .clima-drilldown-bars .dim-bar-row {
+    grid-template-columns: 32mm 1fr 11mm;
+    gap: 2mm;
+    margin-bottom: 1.6mm;
+    font-size: 8pt;
+  }
+  .clima-drilldown-bars .dim-bar-track { height: 3mm; }
+  table.clima-equipes-mini {
+    table-layout: fixed;
+    width: 100%;
+    font-size: 7.5pt;
+    margin-top: 1.5mm;
+  }
+  table.clima-equipes-mini thead th {
+    font-size: 7pt;
+    padding: 1.2mm 1mm;
+    text-align: center;
+    color: #6B7280;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: normal;
+    line-height: 1.1;
+  }
+  table.clima-equipes-mini thead th:first-child { text-align: left; }
+  table.clima-equipes-mini tbody td {
+    padding: 1.2mm 1mm;
+    text-align: center;
+  }
+  table.clima-equipes-mini tbody td:first-child { text-align: left; }
 `;
 
 /**

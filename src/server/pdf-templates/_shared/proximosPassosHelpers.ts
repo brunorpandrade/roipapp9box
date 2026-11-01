@@ -18,6 +18,16 @@ import type {
 
 type ProximosPassos = readonly [string, string, string];
 
+// ME-1.3d-REV DIS-C CC079-1 (D-DIS-C-FORMATO-DECIMAL): numeros em pt-BR
+// (virgula decimal) em TODOS os textos user-facing dos proximos passos.
+function fmtPt(v: number, decimals = 2): string {
+  if (!Number.isFinite(v)) return '—';
+  return v.toLocaleString('pt-BR', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
 // ============================================================
 // Helpers de ranking interno (usados nas regras canonicas abaixo)
 // ============================================================
@@ -202,7 +212,7 @@ export function derivarProximosPassosClima(input: ClimaProximosPassosInput): Pro
   if (deptosComNota.length > 0) {
     const pior = deptosComNota.reduce((acc, cur) => (cur.notaClima < acc.notaClima ? cur : acc));
     passos.push(
-      `Priorizar escuta ativa no departamento ${pior.titulo} (menor nota de clima: ${pior.notaClima.toFixed(2)}).`,
+      `Priorizar escuta ativa no departamento ${pior.titulo} (menor nota de clima: ${fmtPt(pior.notaClima, 2)}).`,
     );
   }
 
@@ -217,7 +227,7 @@ export function derivarProximosPassosClima(input: ClimaProximosPassosInput): Pro
   if (dimsValidos.length > 0 && passos.length < 3) {
     const piorDim = dimsValidos.reduce((acc, cur) => (cur.valor < acc.valor ? cur : acc));
     passos.push(
-      `Fortalecer iniciativas de ${piorDim.nome} (dimensão mais frágil da empresa: ${piorDim.valor.toFixed(2)}).`,
+      `Fortalecer iniciativas de ${piorDim.nome} (dimensão mais frágil da empresa: ${fmtPt(piorDim.valor, 2)}).`,
     );
   }
 
@@ -229,7 +239,7 @@ export function derivarProximosPassosClima(input: ClimaProximosPassosInput): Pro
   // Fallback.
   const fallback = [
     'Comunicar o resultado agregado à liderança da empresa em até 15 dias.',
-    'Repetir o ciclo de clima no próximo trimestre com mesma cadência canônica.',
+    'Repetir o ciclo de clima no próximo trimestre com cadência consistente.',
     'Alinhar leitura cruzada do clima com os resultados do bloco Plenitude.',
   ];
   let i = 0;
@@ -261,7 +271,7 @@ export function derivarProximosPassosBoardDeck(
 
   if (input.pctCriticos9Box >= 10) {
     passos.push(
-      `Mapear planos individuais para os colaboradores em quadrantes críticos (${input.pctCriticos9Box.toFixed(0)}% da base).`,
+      `Mapear planos individuais para os colaboradores em quadrantes críticos (${fmtPt(input.pctCriticos9Box, 0)}% da base).`,
     );
   }
 
@@ -271,19 +281,19 @@ export function derivarProximosPassosBoardDeck(
     passos.length < 3
   ) {
     passos.push(
-      `Investigar causa estrutural do fator "${input.piorFatorRadarNome}" (score ${input.piorFatorRadarScore.toFixed(0)}) no Radar NR-1.`,
+      `Investigar causa estrutural do fator "${input.piorFatorRadarNome}" (score ${fmtPt(input.piorFatorRadarScore, 0)}) no Radar NR-1.`,
     );
   }
 
   if (input.turnoverAnualizadoPct >= 20 && passos.length < 3) {
     passos.push(
-      `Revisar política de retenção da empresa; turnover anualizado em ${input.turnoverAnualizadoPct.toFixed(1)}%.`,
+      `Revisar política de retenção da empresa; turnover anualizado em ${fmtPt(input.turnoverAnualizadoPct, 1)}%.`,
     );
   }
 
   if (input.turnoverTrimestralPct >= 5 && passos.length < 3) {
     passos.push(
-      `Monitorar a cadência de saídas no próximo trimestre; taxa atual em ${input.turnoverTrimestralPct.toFixed(2)}%.`,
+      `Monitorar a cadência de saídas no próximo trimestre; taxa atual em ${fmtPt(input.turnoverTrimestralPct, 2)}%.`,
     );
   }
 
