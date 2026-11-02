@@ -876,42 +876,12 @@ function ExportCard(props: ExportCardProps): JSX.Element {
           </div>
         )}
 
-        {/* Dropdown único de Ciclo para Clima (§12.7) */}
-        {isClima && (
-          <div>
-            <label
-              style={{
-                display: 'block',
-                fontSize: 10,
-                fontWeight: 600,
-                color: COLORS.text.secondary,
-                marginBottom: 4,
-                textTransform: 'uppercase',
-                letterSpacing: 0.04,
-              }}
-            >
-              Ciclo
-            </label>
-            <select
-              value={state.trimestre}
-              onChange={(e) => onStateChange({ trimestre: e.target.value })}
-              disabled={disabled}
-              style={SELECT_STYLE}
-            >
-              {quarters.length === 0 && <option value="">Nenhum ciclo</option>}
-              {quarters
-                .filter((q) => {
-                  const m = /Q([13])/.exec(q.trimestre);
-                  return m !== null;
-                })
-                .map((q) => (
-                  <option key={q.trimestre} value={q.trimestre}>
-                    {q.label}
-                  </option>
-                ))}
-            </select>
-          </div>
-        )}
+        {/* CC079-DIS-C-2: seletor de Ciclo do card Clima REMOVIDO.
+            O PDF agora sempre baixa o ultimo trimestre fechado da
+            empresa (via `listClosedQuarters` no backend). O rotulo
+            canonico "PDF · ultimo trimestre fechado" permanece no
+            subtitulo do card e sinaliza o comportamento ao usuario.
+            Nao ha mais necessidade de interagir com o seletor. */}
       </div>
 
       {/* Botão de ação (§12.8) */}

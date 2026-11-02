@@ -1,34 +1,35 @@
 /* eslint-disable @stylistic/max-len -- template HTML com strings de layout longas */
 // ROIP APP 9BOX — template PDF Clima e engajamento (ME-053, S275;
-// ME-1.3d-REV DIS-C redesign McKinsey/BCG).
+// ME-1.3d-REV DIS-C redesign McKinsey/BCG; CC079-DIS-C-2 reestrut.).
 //
 // Renderizacao HTML deterministica do relatorio Clima e engajamento
 // (DOC 03 §13.6). 100% template — SEM participacao de IA. Consumido
 // por `exports.getClimaEngajamento` (Route Handler).
 //
-// ME-1.3d-REV DIS-C (01/11/2026) — redesign estrutural padrao
-// consultoria estrategica:
+// CC079-DIS-C-2 (01/11/2026) — reestruturacao canonica:
 //
-// Estrutura canonica (10 paginas):
+// Estrutura canonica final:
 //   1. Capa + 3 achados principais ✦ (nota geral, dimensao mais
 //      fragil, depto com pior clima).
 //   2. Visao panoramica da empresa — 3 KPI cards + 4 dim-bars
-//      semaforizadas + delta vs trim anterior + takeaway.
-//   3. Aspectos individuais por dimensao (dimensoes abertas em
-//      formato vertical com cor por valor) + top/bottom aspectos
-//      em cards de ranking.
+//      semaforizadas + Top 3 aspectos individuais por dimensao.
+//   3. Detalhamento dos aspectos individuais por dimensao — as 4
+//      dimensoes abertas em uma pagina isolada.
 //   4. Comparativo entre departamentos — tabela ordenada por nota
 //      de clima + linha de media + cor por valor + takeaway.
 //   5. Ranking de equipes — top 5 e bottom 5 equipes com piso
 //      atendido em cards verticais.
-//   6-7. Drill-down compacto — 2 deptos por A4, cada um com nota,
-//      dimensoes compactas e tabela de equipes.
-//   8. Proximos passos canonicos — 3 recomendacoes derivadas
+//   6+. Drill-down por departamento — 4 cards por A4 em grid 2x2,
+//      cada um com nota, dim-bars; sem tabela de sub-equipes.
+//   N+. Drill-down por lideranca — 4 cards por A4 em grid 2x2,
+//      cada um com nome do lider, depto, nota e dim-bars; rodape
+//      com equipes abaixo do piso de anonimato.
+//   M. Proximos passos canonicos — 3 recomendacoes derivadas
 //      deterministicamente dos dados.
-//   9. Rastreabilidade e integridade.
+//   M+1. Rastreabilidade e integridade.
 //
-// Fix D-CLIMA-COLUNA-CORTADA: tabela cascata com `table-layout:
-// fixed`, larguras percentuais explicitas e fonte reduzida.
+// Fix D-CLIMA-CABECALHO-COLADO: tabela cascata com `table-layout:
+// fixed`, larguras percentuais explicitas, fonte 6pt + word-break.
 //
 // Determinismo: mesmo input = mesmo HTML byte a byte, exceto
 // `geradoEmIso` no rodape.
@@ -204,7 +205,6 @@ interface AchadoCanonico {
 function derivarAchadosCanonicos(input: ClimaEngajamentoTemplateInput): readonly AchadoCanonico[] {
   const empresa = input.blocoEmpresa;
   const achados: AchadoCanonico[] = [];
-  // 1. Nota geral da empresa.
   const faixaNota = faixaClima(empresa.notaClima);
   if (empresa.notaClima !== null && faixaNota !== null) {
     achados.push({
@@ -212,7 +212,6 @@ function derivarAchadosCanonicos(input: ClimaEngajamentoTemplateInput): readonly
       faixa: faixaNota,
     });
   }
-  // 2. Dimensao mais fragil.
   const piorDim = piorDimensao(empresa);
   if (piorDim !== null) {
     const faixa = faixaClima(piorDim.valor) ?? 'amarelo';
@@ -221,7 +220,6 @@ function derivarAchadosCanonicos(input: ClimaEngajamentoTemplateInput): readonly
       faixa,
     });
   }
-  // 3. Depto com pior clima.
   const piorDept = piorDepartamentoClima(input.blocosDepartamentos);
   if (piorDept !== null) {
     const faixa = faixaClima(piorDept.notaClima) ?? 'amarelo';
@@ -230,7 +228,6 @@ function derivarAchadosCanonicos(input: ClimaEngajamentoTemplateInput): readonly
       faixa,
     });
   }
-  // Fallback.
   while (achados.length < 3) {
     achados.push({
       texto: 'Dados complementares disponíveis nas próximas páginas.',
@@ -273,8 +270,49 @@ function renderCapaMaisAchados(input: ClimaEngajamentoTemplateInput): string {
 }
 
 // ============================================================
-// Visao panoramica da empresa (pg 2)
+// Visao panoramica da empresa + Top 3 aspectos individuais (pg 2)
 // ============================================================
+
+function renderTop3Cards(input: ClimaEngajamentoTemplateInput): string {
+  const notas = input.blocoEmpresa.notasPorAspecto ?? [];
+  if (notas.length !== 20) {
+    return '';
+  }
+  const aspectos = notas
+    .map((v, i) => ({ v, i, texto: TEXTOS_QUESTOES_CLIMA[i] ?? '' }))
+    .filter(
+      (x): x is { v: number; i: number; texto: string } => x.v !== null && Number.isFinite(x.v),
+    );
+  const ranking = ordenarRanking(
+    aspectos,
+    (a) => a.v,
+    (a) => a.texto,
+  );
+  const topBottom = derivarTopBottom(ranking, 3);
+  const topItems = topBottom.top
+    .map(
+      (r) =>
+        `<div class="ranking-item"><div class="ranking-item-name">${escapeHtml(r.item.texto)}</div><div class="ranking-item-score">${fmtNum(r.score)}</div></div>`,
+    )
+    .join('\n');
+  const bottomItems = topBottom.bottom
+    .map(
+      (r) =>
+        `<div class="ranking-item"><div class="ranking-item-name">${escapeHtml(r.item.texto)}</div><div class="ranking-item-score">${fmtNum(r.score)}</div></div>`,
+    )
+    .join('\n');
+  return `<h3 class="h3-compact" style="margin-top:5mm;">Top 3 aspectos individuais por dimensão</h3>
+  <div class="ranking-grid">
+    <div class="ranking-col ranking-top">
+      <h4 class="ranking-col-title">Top 3 aspectos mais fortes</h4>
+      ${topItems}
+    </div>
+    <div class="ranking-col ranking-bottom">
+      <h4 class="ranking-col-title">Top 3 aspectos mais frágeis</h4>
+      ${bottomItems}
+    </div>
+  </div>`;
+}
 
 function renderVisaoPanoramica(input: ClimaEngajamentoTemplateInput): string {
   const bloco = input.blocoEmpresa;
@@ -316,15 +354,16 @@ function renderVisaoPanoramica(input: ClimaEngajamentoTemplateInput): string {
     ${renderDimBarSemaforizada('Realização', bloco.porDimensao.realizacao, 10)}
   </div>
   <div class="takeaway-card">${escapeHtml(takeawayTexto)}</div>
+  ${renderTop3Cards(input)}
 </section>`;
 }
 
 // ============================================================
-// Aspectos individuais (pg 3) — dimensoes abertas em formato
-// vertical + top 3 melhores e piores aspectos em cards
+// Detalhamento dos aspectos individuais por dimensao (pg 3)
+// — as 4 dimensoes abertas em uma pagina isolada.
 // ============================================================
 
-function renderAspectosPorDimensao(input: ClimaEngajamentoTemplateInput): string {
+function renderDetalhamentoAspectos(input: ClimaEngajamentoTemplateInput): string {
   const notas = input.blocoEmpresa.notasPorAspecto ?? [];
   if (notas.length !== 20) {
     return '';
@@ -336,18 +375,6 @@ function renderAspectosPorDimensao(input: ClimaEngajamentoTemplateInput): string
     dimEmpresa.pertencimento,
     dimEmpresa.realizacao,
   ];
-  // Top/bottom 3 aspectos globais.
-  const aspectos = notas
-    .map((v, i) => ({ v, i, texto: TEXTOS_QUESTOES_CLIMA[i] ?? '' }))
-    .filter(
-      (x): x is { v: number; i: number; texto: string } => x.v !== null && Number.isFinite(x.v),
-    );
-  const ranking = ordenarRanking(
-    aspectos,
-    (a) => a.v,
-    (a) => a.texto,
-  );
-  const topBottom = derivarTopBottom(ranking, 3);
   const grupos: string[] = [];
   for (let d = 1; d <= 4; d += 1) {
     const dimNome = rotuloDimensaoClima(d);
@@ -362,7 +389,7 @@ function renderAspectosPorDimensao(input: ClimaEngajamentoTemplateInput): string
       const texto = TEXTOS_QUESTOES_CLIMA[idx] ?? '';
       aspectoLinhas.push(renderAspectoBar(texto, valor, 10));
     }
-    grupos.push(`<div class="dim-aberta-group">
+    grupos.push(`<div class="dim-aberta-group aspecto-dim-grid">
       <div class="dim-aberta-head">
         <h4 class="dim-aberta-title">${escapeHtml(dimNome)}</h4>
         <div class="dim-aberta-barra"><div class="dim-aberta-fill ${cssDim}" style="width:${pctDim.toFixed(2)}%;"></div></div>
@@ -371,31 +398,9 @@ function renderAspectosPorDimensao(input: ClimaEngajamentoTemplateInput): string
       <div class="aspecto-bars">${aspectoLinhas.join('\n')}</div>
     </div>`);
   }
-  const topItems = topBottom.top
-    .map(
-      (r) =>
-        `<div class="ranking-item"><div class="ranking-item-name">${escapeHtml(r.item.texto)}</div><div class="ranking-item-score">${fmtNum(r.score)}</div></div>`,
-    )
-    .join('\n');
-  const bottomItems = topBottom.bottom
-    .map(
-      (r) =>
-        `<div class="ranking-item"><div class="ranking-item-name">${escapeHtml(r.item.texto)}</div><div class="ranking-item-score">${fmtNum(r.score)}</div></div>`,
-    )
-    .join('\n');
   return `<section class="page-break">
-  <h2>Aspectos individuais por dimensão</h2>
-  <div class="ranking-grid">
-    <div class="ranking-col ranking-top">
-      <h4 class="ranking-col-title">Top 3 aspectos mais fortes</h4>
-      ${topItems}
-    </div>
-    <div class="ranking-col ranking-bottom">
-      <h4 class="ranking-col-title">Top 3 aspectos mais frágeis</h4>
-      ${bottomItems}
-    </div>
-  </div>
-  <div style="margin-top:4mm;">${grupos.join('\n')}</div>
+  <h2>Detalhamento dos aspectos individuais por dimensão</h2>
+  <div>${grupos.join('\n')}</div>
 </section>`;
 }
 
@@ -407,7 +412,6 @@ function renderAspectosPorDimensao(input: ClimaEngajamentoTemplateInput): string
 function renderComparativoDeptos(input: ClimaEngajamentoTemplateInput): string {
   const deptos = input.blocosDepartamentos;
   if (deptos.length === 0) return '';
-  // Ordenar por nota de clima (desc), empate por nome.
   const comNota = deptos.filter(
     (d): d is ClimaBlocoDepartamento & { notaClima: number } =>
       d.notaClima !== null && Number.isFinite(d.notaClima),
@@ -458,27 +462,27 @@ function renderComparativoDeptos(input: ClimaEngajamentoTemplateInput): string {
   <h2>Comparativo entre departamentos</h2>
   <p>Departamentos ordenados pela nota de clima; linha de média da empresa como referência. Cores por valor em cada célula.</p>
   <div class="exec-dept-table-wrap wrap-no-clip">
-    <table class="ranking-table data-table">
+    <table class="ranking-table data-table clima-cascata-tabela">
       <colgroup>
-        <col style="width:20%" />
-        <col style="width:10%" />
-        <col style="width:10%" />
-        <col style="width:10%" />
-        <col style="width:12.5%" />
-        <col style="width:12.5%" />
-        <col style="width:12.5%" />
-        <col style="width:12.5%" />
+        <col style="width:22%" />
+        <col style="width:9%" />
+        <col style="width:9%" />
+        <col style="width:9%" />
+        <col style="width:12.75%" />
+        <col style="width:12.75%" />
+        <col style="width:12.75%" />
+        <col style="width:12.75%" />
       </colgroup>
       <thead>
         <tr>
           <th>Departamento</th>
-          <th class="right">Respondentes</th>
+          <th class="right">Resp.</th>
           <th class="right">Clima</th>
           <th class="right">Adesão</th>
-          <th class="right">Engajamento</th>
-          <th class="right">Desenvolvimento</th>
-          <th class="right">Pertencimento</th>
-          <th class="right">Realização</th>
+          <th class="right">Engaj.</th>
+          <th class="right">Desenv.</th>
+          <th class="right">Pertenc.</th>
+          <th class="right">Realiz.</th>
         </tr>
       </thead>
       <tbody>${linhaMedia}
@@ -500,8 +504,6 @@ interface EquipeComContexto {
 
 function renderRankingEquipes(input: ClimaEngajamentoTemplateInput): string {
   const equipes: EquipeComContexto[] = [];
-  // ME-1.3d-REV DIS-C CC079-1: contar canonicamente equipes que
-  // ficaram fora do ranking por nao atingirem o piso de anonimato.
   let equipesForaRanking = 0;
   for (const d of input.blocosDepartamentos) {
     for (const e of d.equipes) {
@@ -554,30 +556,14 @@ function renderRankingEquipes(input: ClimaEngajamentoTemplateInput): string {
 }
 
 // ============================================================
-// Drill-down compacto por departamento (4 por A4 em grid 2x2)
+// Drill-down por departamento (4 por A4 em grid 2x2)
+// CC079-DIS-C-2: SEM tabela de sub-equipes (migrou para a secao
+// de Drill-down por lideranca).
 // ============================================================
 
 function renderDrillDownDepto(dept: ClimaBlocoDepartamento): string {
   const faixa = faixaClima(dept.notaClima);
   const css = faixaCss(faixa);
-  const equipesHtml =
-    dept.equipes.length === 0
-      ? '<div class="muted" style="font-size:8pt;">Sem equipes com piso atendido.</div>'
-      : `<table class="data-table clima-equipes-mini" style="margin-top:1.5mm;">
-    <colgroup>
-      <col style="width:52%" />
-      <col style="width:14%" />
-      <col style="width:17%" />
-      <col style="width:17%" />
-    </colgroup>
-    <thead><tr><th>Equipe</th><th>Resp.</th><th>Clima</th><th>Adesão</th></tr></thead>
-    <tbody>${dept.equipes
-      .map((e) => {
-        const cssE = faixaCss(faixaClima(e.notaClima));
-        return `<tr><td>${escapeHtml(e.titulo)}</td><td>${fmtInt(e.respondentes)}</td><td class="cell-${cssE}">${fmtNum(e.notaClima)}</td><td>${fmtPctInt(e.adesao)}</td></tr>`;
-      })
-      .join('\n')}</tbody>
-  </table>`;
   return `<div class="clima-drilldown-card">
     <div class="clima-drilldown-head">
       <div class="clima-drilldown-nome">${escapeHtml(dept.titulo)}</div>
@@ -590,17 +576,12 @@ function renderDrillDownDepto(dept: ClimaBlocoDepartamento): string {
       ${renderDimBarSemaforizada('Pertencimento', dept.porDimensao.pertencimento, 10)}
       ${renderDimBarSemaforizada('Realização', dept.porDimensao.realizacao, 10)}
     </div>
-    ${equipesHtml}
   </div>`;
 }
 
 function renderDrillDownDeptos(input: ClimaEngajamentoTemplateInput): string {
   const deptos = input.blocosDepartamentos;
   if (deptos.length === 0) return '';
-  // ME-1.3d-REV DIS-C CC079-1: grupos de 4 por pagina (grid 2x2),
-  // cards mais compactos e barras baixas e longas. Nomes das 4
-  // dimensoes por extenso (Engajamento/Desenvolvimento/Pertencimento/
-  // Realizacao).
   const paginas: string[] = [];
   for (let i = 0; i < deptos.length; i += 4) {
     const grupo = deptos.slice(i, i + 4);
@@ -608,6 +589,110 @@ function renderDrillDownDeptos(input: ClimaEngajamentoTemplateInput): string {
     paginas.push(`<section class="page-break">
   ${i === 0 ? '<h2>Drill-down por departamento</h2>' : ''}
   <div class="clima-drilldown-grid-4">${cards}</div>
+</section>`);
+  }
+  return paginas.join('\n');
+}
+
+// ============================================================
+// Drill-down por lideranca (4 por A4 em grid 2x2)
+// CC079-DIS-C-2 (NOVO): visao canonica por lideranca com depto
+// de referencia. Equipes abaixo do piso de anonimato entram no
+// rodape da ultima pagina da secao, com nome do lider e N
+// liderados.
+// ============================================================
+
+interface LiderancaCard {
+  nomeLider: string;
+  departamento: string;
+  bloco: ClimaBlocoEscopo;
+}
+
+function renderDrillDownLiderancaCard(card: LiderancaCard): string {
+  const faixa = faixaClima(card.bloco.notaClima);
+  const css = faixaCss(faixa);
+  return `<div class="clima-drilldown-card">
+    <div class="clima-drilldown-head">
+      <div class="clima-drilldown-nome">${escapeHtml(card.nomeLider)}</div>
+      <div class="clima-drilldown-nota ${css}">${fmtNum(card.bloco.notaClima)}</div>
+    </div>
+    <div class="clima-drilldown-meta">Departamento: ${escapeHtml(card.departamento)} · ${fmtInt(card.bloco.respondentes)} respondentes · Adesão ${fmtPctInt(card.bloco.adesao)}</div>
+    <div class="dim-bars clima-drilldown-bars">
+      ${renderDimBarSemaforizada('Engajamento', card.bloco.porDimensao.engajamento, 10)}
+      ${renderDimBarSemaforizada('Desenvolvimento', card.bloco.porDimensao.desenvolvimento, 10)}
+      ${renderDimBarSemaforizada('Pertencimento', card.bloco.porDimensao.pertencimento, 10)}
+      ${renderDimBarSemaforizada('Realização', card.bloco.porDimensao.realizacao, 10)}
+    </div>
+  </div>`;
+}
+
+function renderDrillDownLiderancas(input: ClimaEngajamentoTemplateInput): string {
+  const comPiso: LiderancaCard[] = [];
+  const semPiso: LiderancaCard[] = [];
+  for (const d of input.blocosDepartamentos) {
+    for (const e of d.equipes) {
+      const card: LiderancaCard = {
+        nomeLider: e.titulo,
+        departamento: d.titulo,
+        bloco: e,
+      };
+      if (e.notaClima !== null && Number.isFinite(e.notaClima)) {
+        comPiso.push(card);
+      } else {
+        semPiso.push(card);
+      }
+    }
+  }
+  if (comPiso.length === 0 && semPiso.length === 0) return '';
+  // Ordem canonica: por nota desc (comPiso) e por nome asc (semPiso).
+  comPiso.sort((a, b) => {
+    const na = a.bloco.notaClima ?? -Infinity;
+    const nb = b.bloco.notaClima ?? -Infinity;
+    if (na !== nb) return nb - na;
+    return a.nomeLider.localeCompare(b.nomeLider, 'pt-BR');
+  });
+  semPiso.sort((a, b) => a.nomeLider.localeCompare(b.nomeLider, 'pt-BR'));
+  const paginas: string[] = [];
+  // Paginas de cards para lideres com piso (grid 2x2).
+  if (comPiso.length > 0) {
+    for (let i = 0; i < comPiso.length; i += 4) {
+      const grupo = comPiso.slice(i, i + 4);
+      const cards = grupo.map((c) => renderDrillDownLiderancaCard(c)).join('\n');
+      const isUltimaPagina = i + 4 >= comPiso.length;
+      const rodapeSemPiso =
+        isUltimaPagina && semPiso.length > 0
+          ? `<div class="clima-liderancas-fora-piso">
+            <h4 class="clima-liderancas-fora-piso-title">Equipes abaixo do piso de anonimato</h4>
+            <p class="clima-liderancas-fora-piso-hint">${fmtInt(semPiso.length)} ${semPiso.length === 1 ? 'equipe' : 'equipes'} não ${semPiso.length === 1 ? 'atingiu' : 'atingiram'} o piso para aparecer no drill-down.</p>
+            <ul class="clima-liderancas-fora-piso-list">${semPiso
+              .map(
+                (s) =>
+                  `<li>${escapeHtml(s.nomeLider)} <span class="muted">(${escapeHtml(s.departamento)})</span> — ${fmtInt(s.bloco.respondentes)} ${s.bloco.respondentes === 1 ? 'liderado' : 'liderados'}</li>`,
+              )
+              .join('\n')}</ul>
+          </div>`
+          : '';
+      paginas.push(`<section class="page-break">
+  ${i === 0 ? '<h2>Drill-down por liderança</h2>' : ''}
+  <div class="clima-drilldown-grid-4">${cards}</div>
+  ${rodapeSemPiso}
+</section>`);
+    }
+  } else if (semPiso.length > 0) {
+    // Nenhum lider atingiu o piso — pagina so com o rodape.
+    paginas.push(`<section class="page-break">
+  <h2>Drill-down por liderança</h2>
+  <div class="info-card"><p class="muted" style="margin:0;">Nenhuma liderança atingiu o piso de anonimato para o drill-down.</p></div>
+  <div class="clima-liderancas-fora-piso">
+    <h4 class="clima-liderancas-fora-piso-title">Equipes abaixo do piso de anonimato</h4>
+    <p class="clima-liderancas-fora-piso-hint">${fmtInt(semPiso.length)} ${semPiso.length === 1 ? 'equipe' : 'equipes'} não ${semPiso.length === 1 ? 'atingiu' : 'atingiram'} o piso para aparecer no drill-down.</p>
+    <ul class="clima-liderancas-fora-piso-list">${semPiso
+      .map(
+        (s) =>
+          `<li>${escapeHtml(s.nomeLider)} <span class="muted">(${escapeHtml(s.departamento)})</span> — ${fmtInt(s.bloco.respondentes)} ${s.bloco.respondentes === 1 ? 'liderado' : 'liderados'}</li>`,
+      )
+      .join('\n')}</ul>
+  </div>
 </section>`);
   }
   return paginas.join('\n');
@@ -675,10 +760,11 @@ export function renderClimaEngajamentoHTML(input: ClimaEngajamentoTemplateInput)
   const bodyHtml = [
     renderCapaMaisAchados(input),
     renderVisaoPanoramica(input),
-    renderAspectosPorDimensao(input),
+    renderDetalhamentoAspectos(input),
     renderComparativoDeptos(input),
     renderRankingEquipes(input),
     renderDrillDownDeptos(input),
+    renderDrillDownLiderancas(input),
     renderProximosPassos(input),
     renderRastreabilidade(input),
   ]

@@ -41,9 +41,9 @@ import {
 import {
   type ClimateBlockPayload,
   computeClimateBlock,
-  listClimateTrimestres,
   PISO_RESPONDENTES_CLIMATE,
 } from '../../../../../server/services/climateCalculationEngine';
+import { listClosedQuarters } from '../../../../../server/services/closedQuarters';
 import {
   EXEC_REPORT_NOTA_AGREGACAO_DEPARTAMENTO,
   EXEC_REPORT_NOTA_AGREGACAO_EMPRESA,
@@ -161,10 +161,16 @@ export async function GET(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'empresa_nao_encontrada' }, { status: 404 });
   }
 
-  // ME-B2-01b Q1=D — trimestre canonico via motor puro (sob demanda,
-  // sem cache). Substitui a leitura da tabela derivada aposentada.
-  const trimestres = await listClimateTrimestres(db, companyId, 'desc');
-  const trimestre = trimestres[0];
+  // CC079-DIS-C-2: trimestre canonico = ultimo trimestre fechado da
+  // empresa (status monthly = 'fechado' nos 3 meses). Substitui o
+  // criterio anterior ("ultimo trimestre com dados de clima"), que em
+  // demos seedadas com dados futuros retornava trimestre adiante do
+  // ciclo corrente. Em producao real nao ha mudanca de comportamento
+  // porque nunca ha dados em trimestre nao-fechado. O codigo de erro
+  // 404 permanece canonicamente `sem_agregados_clima` para preservar
+  // o contrato com o frontend e os testes de integracao existentes.
+  const closedQuarters = await listClosedQuarters(db, companyId);
+  const trimestre = closedQuarters[0]?.trimestre;
   if (!trimestre) {
     return NextResponse.json({ error: 'sem_agregados_clima' }, { status: 404 });
   }

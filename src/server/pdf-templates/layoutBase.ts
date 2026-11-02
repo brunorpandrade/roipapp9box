@@ -1834,32 +1834,31 @@ export const LAYOUT_BASE_CSS = `
      com quebra de linha, text-align center e fonte reduzida para
      evitar sobreposicao dos nomes longos (Engajamento, Desenvolvimento,
      Pertencimento, Realizacao). */
+  /* CC079-DIS-C-2 D-CLIMA-CABECALHO-COLADO: tabela comparativa com
+     rotulos abreviados no template + larguras do colgroup inline do
+     consumidor (sem override por nth-child aqui), fonte 6pt no
+     cabecalho + word-break: break-word + text-align center. */
   table.clima-cascata-tabela {
     table-layout: fixed;
     width: 100%;
     font-size: 8.5pt;
   }
-  table.clima-cascata-tabela colgroup col:nth-child(1) { width: 29%; }
-  table.clima-cascata-tabela colgroup col:nth-child(2) { width: 10%; }
-  table.clima-cascata-tabela colgroup col:nth-child(3) { width: 8%; }
-  table.clima-cascata-tabela colgroup col:nth-child(4) { width: 9%; }
-  table.clima-cascata-tabela colgroup col:nth-child(5) { width: 11%; }
-  table.clima-cascata-tabela colgroup col:nth-child(6) { width: 11%; }
-  table.clima-cascata-tabela colgroup col:nth-child(7) { width: 11%; }
-  table.clima-cascata-tabela colgroup col:nth-child(8) { width: 11%; }
   table.clima-cascata-tabela thead th {
-    font-size: 7pt;
-    padding: 2mm 1mm;
+    font-size: 6pt;
+    padding: 2mm 0.6mm;
     text-align: center;
     white-space: normal;
-    line-height: 1.1;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.15;
     letter-spacing: 0;
   }
   table.clima-cascata-tabela thead th:first-child {
     text-align: left;
+    font-size: 7.5pt;
   }
   table.clima-cascata-tabela tbody td {
-    padding: 2mm 1mm;
+    padding: 2mm 0.8mm;
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: center;
@@ -1990,6 +1989,45 @@ export const LAYOUT_BASE_CSS = `
     text-align: center;
   }
   table.clima-equipes-mini tbody td:first-child { text-align: left; }
+
+  /* CC079-DIS-C-2: rodape canonico da secao de Drill-down por lideranca
+     listando as equipes abaixo do piso de anonimato. Formato:
+     "[Nome do lider] (Departamento) — N liderados". */
+  .clima-liderancas-fora-piso {
+    margin-top: 4mm;
+    padding: 3mm 4mm;
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-left: 3px solid #9CA3AF;
+    border-radius: 0 6pt 6pt 0;
+    page-break-inside: avoid;
+  }
+  .clima-liderancas-fora-piso-title {
+    font-size: 10pt;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 1.5mm 0;
+  }
+  .clima-liderancas-fora-piso-hint {
+    font-size: 8.5pt;
+    color: #6B7280;
+    margin: 0 0 2mm 0;
+    line-height: 1.4;
+  }
+  .clima-liderancas-fora-piso-list {
+    margin: 0;
+    padding-left: 4mm;
+    font-size: 8.5pt;
+    color: #374151;
+    line-height: 1.5;
+    list-style: disc;
+  }
+  .clima-liderancas-fora-piso-list li {
+    margin-bottom: 0.5mm;
+  }
+  .clima-liderancas-fora-piso-list li .muted {
+    color: #6B7280;
+  }
 `;
 
 /**
