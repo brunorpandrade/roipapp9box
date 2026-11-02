@@ -153,4 +153,10 @@ describe('climaEngajamentoTemplate CC079-DIS-C-2a', () => {
     const h2 = renderClimaEngajamentoHTML(baseFixture);
     expect(h1).toBe(h2);
   });
+
+  it('CC079-DIS-C-2a-1: Detalhamento usa classe compacta canonica', () => {
+    const html = renderClimaEngajamentoHTML(baseFixture);
+    expect(html).toContain('dim-aberta-compacta');
+    expect(html).not.toContain('aspecto-dim-grid');
+  });
 });

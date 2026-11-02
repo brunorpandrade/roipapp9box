@@ -72,7 +72,7 @@ export function escapeHtml(raw: string): string {
  * `relatorio_radar_nr1_v1.html`:
  * - Cor primaria: teal `#14B8A6` (identidade ROIP APP).
  * - Cor secundaria: navy `#1F3A5F` (branding sobrio).
- * - Faixas semanticas: verde `#16A34A`, ambar `#D97706`, vermelho
+ * - Faixas semanticas: verde `#16A34A`, amarelo `#F2A900`, vermelho
  *   `#DC2626`.
  * - Neutros: `#111827` (titulo forte), `#1F2937` (body dark), `#374151`
  *   (body medio), `#6B7280` (muted), `#9CA3AF` (muted light), `#E5E7EB`
@@ -267,7 +267,7 @@ export const LAYOUT_BASE_CSS = `
   }
   .kpi-value { font-size: 22pt; font-weight: 700; color: #111827; line-height: 1; }
   .kpi-value.green { color: #16A34A; }
-  .kpi-value.yellow { color: #D97706; }
+  .kpi-value.yellow { color: #F2A900; }
   .kpi-value.red { color: #DC2626; }
   .kpi-sub { font-size: 8pt; color: #9CA3AF; margin-top: 1.5mm; font-weight: 500; }
 
@@ -413,7 +413,7 @@ export const LAYOUT_BASE_CSS = `
   .alert-card {
     background: #FFFFFF;
     border: 1px solid #E5E7EB;
-    border-left: 4px solid #D97706;
+    border-left: 4px solid #F2A900;
     border-radius: 8pt;
     padding: 3mm 5mm;
     margin-bottom: 2mm;
@@ -436,7 +436,7 @@ export const LAYOUT_BASE_CSS = `
   .alert-title { font-size: 10pt; font-weight: 600; color: #111827; }
   .alert-sub { font-size: 8.5pt; color: #6B7280; margin-top: 0.3mm; }
   .alert-score { font-size: 12pt; font-weight: 700; color: #DC2626; min-width: 12mm; text-align: right; }
-  .alert-score.yellow { color: #D97706; }
+  .alert-score.yellow { color: #F2A900; }
 
   /* Tabelas canonicas estilizadas. */
   table.data-table {
@@ -505,7 +505,7 @@ export const LAYOUT_BASE_CSS = `
 
   /* Classes utilitárias canonicas de cor. */
   .cs-green { color: #16A34A; }
-  .cs-yellow { color: #D97706; }
+  .cs-yellow { color: #F2A900; }
   .cs-red { color: #DC2626; }
   .fw-700 { font-weight: 700; }
 
@@ -1382,20 +1382,16 @@ export const LAYOUT_BASE_CSS = `
     margin-top: 2mm;
     padding: 2mm 3mm;
     background: #FEFCE8;
-    border-left: 3pt solid #D97706;
+    border-left: 3pt solid #F2A900;
     font-size: 9pt;
     color: #78350F;
     border-radius: 2pt;
   }
 
-  /* ME-1.3d-REV DIS-B: aspectos individuais por dimensão (clima e
-     executivo). Grid 2 colunas para caber as 4 dimensões em A4. */
-  .aspecto-dim-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4mm 6mm;
-    margin-top: 2mm;
-  }
+  /* CC079-DIS-C-2a-1: classes base dos aspecto-bars. O grid 2x2
+     antigo foi aposentado — o template consome agora exclusivamente
+     a classe canonica compacta .dim-aberta-compacta (secao mais
+     abaixo). */
   .aspecto-dim-group {
     page-break-inside: avoid;
   }
@@ -1420,15 +1416,6 @@ export const LAYOUT_BASE_CSS = `
     color: #374151;
     line-height: 1.4;
   }
-  /* ME-1.3d-REV DIS-C CC079-1: variante compacta para o grid 2x2 do
-     clima agregado empresa (mantem a densidade original). */
-  .aspecto-dim-grid .aspecto-bar-row {
-    font-size: 8.5pt;
-    margin-bottom: 1.4mm;
-    gap: 2mm;
-    grid-template-columns: 1fr 20mm 11mm;
-  }
-  .aspecto-dim-grid .aspecto-bar-label { line-height: 1.25; }
   /* "p.p." em span canonico com fonte reduzida para caber na mesma
      linha do numero no KPI value de variacao do turnover. */
   .kpi-value .pp-unidade {
@@ -1437,9 +1424,12 @@ export const LAYOUT_BASE_CSS = `
     letter-spacing: 0.02em;
     vertical-align: baseline;
   }
-  /* Reforcar borda dos KPI cards semaforizados para evitar artefato
-     de renderizacao do Puppeteer que faz uma lateral parecer mais
-     fina. */
+  /* CC079-DIS-C-2a-1: fix canonico de bordas assimetricas no ultimo
+     card de cada linha de grid. O artefato ocorria porque o Puppeteer
+     anti-aliasing truncava sub-pixel da borda direita de cards
+     posicionados na extrema direita. Combinacao canonica: border 2px
+     explicitamente simetrica em todos os 4 lados + box-shadow inset
+     de reforco visual que nao e truncado por sub-pixel rendering. */
   .kpi-card.highlight-green,
   .kpi-card.highlight-yellow,
   .kpi-card.highlight-red,
@@ -1448,9 +1438,15 @@ export const LAYOUT_BASE_CSS = `
   .kpi-card.folha-abaixo,
   .kpi-card.turnover-up,
   .kpi-card.turnover-down {
-    border-width: 1.5px;
+    border-top-width: 2px;
+    border-right-width: 2px;
+    border-bottom-width: 2px;
+    border-left-width: 2px;
     border-style: solid;
   }
+  .kpi-card.highlight-green { box-shadow: inset 0 0 0 0.5px #86EFAC; }
+  .kpi-card.highlight-yellow { box-shadow: inset 0 0 0 0.5px #FDE047; }
+  .kpi-card.highlight-red { box-shadow: inset 0 0 0 0.5px #FCA5A5; }
   .aspecto-bar-track {
     background: #F3F4F6;
     border: 1px solid #E5E7EB;
@@ -1576,10 +1572,10 @@ export const LAYOUT_BASE_CSS = `
     line-height: 1.3;
   }
   .achado-item.achado-verde { background: #F0FDF4; border-left-color: #16A34A; color: #166534; }
-  .achado-item.achado-amarelo { background: #FEFCE8; border-left-color: #D97706; color: #78350F; }
+  .achado-item.achado-amarelo { background: #FEFCE8; border-left-color: #F2A900; color: #78350F; }
   .achado-item.achado-vermelho { background: #FEF2F2; border-left-color: #DC2626; color: #7F1D1D; }
   .achado-item.achado-verde::before { color: #16A34A; }
-  .achado-item.achado-amarelo::before { color: #D97706; }
+  .achado-item.achado-amarelo::before { color: #F2A900; }
   .achado-item.achado-vermelho::before { color: #DC2626; }
 
   /* Painel executivo semaforizado — 5 cards na pg 2 do executive. */
@@ -1601,7 +1597,7 @@ export const LAYOUT_BASE_CSS = `
     page-break-inside: avoid;
   }
   .painel-exec-card.painel-verde { border-left-color: #16A34A; background: #F0FDF4; }
-  .painel-exec-card.painel-amarelo { border-left-color: #D97706; background: #FEFCE8; }
+  .painel-exec-card.painel-amarelo { border-left-color: #F2A900; background: #FEFCE8; }
   .painel-exec-card.painel-vermelho { border-left-color: #DC2626; background: #FEF2F2; }
   .painel-exec-label {
     font-size: 8pt;
@@ -1744,7 +1740,7 @@ export const LAYOUT_BASE_CSS = `
     color: #111827;
   }
   .assiduidade-value.semf-verde { color: #16A34A; }
-  .assiduidade-value.semf-amarelo { color: #D97706; }
+  .assiduidade-value.semf-amarelo { color: #F2A900; }
   .assiduidade-value.semf-vermelho { color: #DC2626; }
   .assiduidade-track {
     background: #F3F4F6;
@@ -1759,23 +1755,23 @@ export const LAYOUT_BASE_CSS = `
     border-radius: 3pt 0 0 3pt;
   }
   .assiduidade-fill.semf-verde { background: #16A34A; }
-  .assiduidade-fill.semf-amarelo { background: #D97706; }
+  .assiduidade-fill.semf-amarelo { background: #F2A900; }
   .assiduidade-fill.semf-vermelho { background: #DC2626; }
 
   /* dim-bar semaforizada (variante com cor por faixa). */
   .dim-bar-fill.semf-verde { background: #16A34A; }
-  .dim-bar-fill.semf-amarelo { background: #D97706; }
+  .dim-bar-fill.semf-amarelo { background: #F2A900; }
   .dim-bar-fill.semf-vermelho { background: #DC2626; }
   .dim-bar-value.semf-verde { color: #16A34A; }
-  .dim-bar-value.semf-amarelo { color: #D97706; }
+  .dim-bar-value.semf-amarelo { color: #F2A900; }
   .dim-bar-value.semf-vermelho { color: #DC2626; }
 
   /* aspecto-bar semaforizada. */
   .aspecto-bar-fill.semf-verde { background: #16A34A; }
-  .aspecto-bar-fill.semf-amarelo { background: #D97706; }
+  .aspecto-bar-fill.semf-amarelo { background: #F2A900; }
   .aspecto-bar-fill.semf-vermelho { background: #DC2626; }
   .aspecto-bar-value.semf-verde { color: #16A34A; }
-  .aspecto-bar-value.semf-amarelo { color: #D97706; }
+  .aspecto-bar-value.semf-amarelo { color: #F2A900; }
   .aspecto-bar-value.semf-vermelho { color: #DC2626; }
 
   /* Dimensao aberta formato vertical (clima + executive). */
@@ -1816,7 +1812,7 @@ export const LAYOUT_BASE_CSS = `
   }
   .dim-aberta-fill { height: 100%; border-radius: 2pt 0 0 2pt; }
   .dim-aberta-fill.semf-verde { background: #16A34A; }
-  .dim-aberta-fill.semf-amarelo { background: #D97706; }
+  .dim-aberta-fill.semf-amarelo { background: #F2A900; }
   .dim-aberta-fill.semf-vermelho { background: #DC2626; }
   .dim-aberta-nota {
     font-size: 11pt;
@@ -1825,8 +1821,53 @@ export const LAYOUT_BASE_CSS = `
     min-width: 12mm;
   }
   .dim-aberta-nota.semf-verde { color: #16A34A; }
-  .dim-aberta-nota.semf-amarelo { color: #D97706; }
+  .dim-aberta-nota.semf-amarelo { color: #F2A900; }
   .dim-aberta-nota.semf-vermelho { color: #DC2626; }
+
+  /* CC079-DIS-C-2a-1: layout canonico compacto 1 coluna para
+     caber 4 blocos de dim-bar + 20 linhas de aspecto em UMA
+     unica pagina A4. */
+  .dim-aberta-compacta {
+    margin-top: 2mm;
+    padding-top: 1.5mm;
+  }
+  .dim-aberta-compacta:first-of-type {
+    margin-top: 0;
+    padding-top: 0;
+  }
+  .dim-aberta-compacta .dim-aberta-head {
+    margin-bottom: 1.2mm;
+    gap: 2mm;
+  }
+  .dim-aberta-compacta .dim-aberta-title {
+    font-size: 10pt;
+  }
+  .dim-aberta-compacta .dim-aberta-barra {
+    width: 70mm;
+    height: 3.4mm;
+  }
+  .dim-aberta-compacta .dim-aberta-nota {
+    font-size: 10pt;
+  }
+  .dim-aberta-compacta .aspecto-bars { display: block; }
+  .dim-aberta-compacta .aspecto-bar-row {
+    display: grid;
+    grid-template-columns: 1fr 28mm 11mm;
+    align-items: center;
+    gap: 2mm;
+    margin-bottom: 1mm;
+    font-size: 8.5pt;
+    line-height: 1.3;
+  }
+  .dim-aberta-compacta .aspecto-bar-label {
+    color: #374151;
+  }
+  .dim-aberta-compacta .aspecto-bar-track {
+    height: 2.8mm;
+  }
+  .dim-aberta-compacta .aspecto-bar-value {
+    font-size: 8.5pt;
+  }
 
   /* Tabela comparativa de deptos no clima — table-layout fixed para
      corrigir D-CLIMA-COLUNA-CORTADA. Cabe em A4 sem transbordar.
@@ -1904,7 +1945,7 @@ export const LAYOUT_BASE_CSS = `
     border-bottom: 2px solid #CBD5E1;
   }
   table.ranking-table tbody tr td.cell-semf-verde { color: #16A34A; font-weight: 600; }
-  table.ranking-table tbody tr td.cell-semf-amarelo { color: #D97706; font-weight: 600; }
+  table.ranking-table tbody tr td.cell-semf-amarelo { color: #F2A900; font-weight: 600; }
   table.ranking-table tbody tr td.cell-semf-vermelho { color: #DC2626; font-weight: 600; }
 
   /* Mini-cascata do clima drill-down compacto 2x1. */
@@ -1939,7 +1980,7 @@ export const LAYOUT_BASE_CSS = `
     font-weight: 700;
   }
   .clima-drilldown-nota.semf-verde { color: #16A34A; }
-  .clima-drilldown-nota.semf-amarelo { color: #D97706; }
+  .clima-drilldown-nota.semf-amarelo { color: #F2A900; }
   .clima-drilldown-nota.semf-vermelho { color: #DC2626; }
   .clima-drilldown-meta {
     font-size: 8.5pt;

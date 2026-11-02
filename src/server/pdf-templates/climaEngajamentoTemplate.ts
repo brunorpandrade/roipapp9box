@@ -389,7 +389,12 @@ function renderDetalhamentoAspectos(input: ClimaEngajamentoTemplateInput): strin
       const texto = TEXTOS_QUESTOES_CLIMA[idx] ?? '';
       aspectoLinhas.push(renderAspectoBar(texto, valor, 10));
     }
-    grupos.push(`<div class="dim-aberta-group aspecto-dim-grid">
+    // CC079-DIS-C-2a-1: layout 1 coluna canonico (modelo do print):
+    // cabecalho da dimensao (nome + dim-bar longa + nota) e abaixo
+    // os 5 aspectos empilhados com barras curtas a direita do label.
+    // 4 blocos cabem em uma unica A4 via fonte compacta e espacamento
+    // reduzido na classe `.dim-aberta-compacta` do layoutBase.
+    grupos.push(`<div class="dim-aberta-group dim-aberta-compacta">
       <div class="dim-aberta-head">
         <h4 class="dim-aberta-title">${escapeHtml(dimNome)}</h4>
         <div class="dim-aberta-barra"><div class="dim-aberta-fill ${cssDim}" style="width:${pctDim.toFixed(2)}%;"></div></div>
