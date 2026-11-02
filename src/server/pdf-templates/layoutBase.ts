@@ -135,6 +135,15 @@ export const LAYOUT_BASE_CSS = `
     color: #1F2937;
     line-height: 1.5;
   }
+  /* CC079-DIS-C-2a-2: fix canonico global das bordas assimetricas
+     no ULTIMO card de cada linha de grid (semaforizado OU cinza).
+     Causa: o conteudo util bate exatamente em 170mm (210mm folha
+     - 2 x 20mm @page margin). Qualquer sub-pixel positivo a direita
+     e truncado. Fix: 'main' ganha 1mm de padding-right, que da ao
+     grid um colchao interno sem reduzir visualmente o layout. */
+  main {
+    padding-right: 1mm;
+  }
   .doc-header-left { string-set: docHeaderLeft content(); }
   .doc-header-right { string-set: docHeaderRight content(); }
   .doc-footer-left { string-set: docFooterLeft content(); }
@@ -1424,12 +1433,12 @@ export const LAYOUT_BASE_CSS = `
     letter-spacing: 0.02em;
     vertical-align: baseline;
   }
-  /* CC079-DIS-C-2a-1: fix canonico de bordas assimetricas no ultimo
-     card de cada linha de grid. O artefato ocorria porque o Puppeteer
-     anti-aliasing truncava sub-pixel da borda direita de cards
-     posicionados na extrema direita. Combinacao canonica: border 2px
-     explicitamente simetrica em todos os 4 lados + box-shadow inset
-     de reforco visual que nao e truncado por sub-pixel rendering. */
+  /* CC079-DIS-C-2a-2: borda semaforizada original restaurada (1.5px).
+     A causa real das bordas assimetricas NAO era o card de semaforo —
+     era QUALQUER card que termina perto da margem direita da folha,
+     onde o conteudo bate em 170mm util e a borda direita e truncada
+     por sub-pixel. Fix canonico global agora e aplicado em 'main'
+     via padding-right abaixo. */
   .kpi-card.highlight-green,
   .kpi-card.highlight-yellow,
   .kpi-card.highlight-red,
@@ -1438,15 +1447,9 @@ export const LAYOUT_BASE_CSS = `
   .kpi-card.folha-abaixo,
   .kpi-card.turnover-up,
   .kpi-card.turnover-down {
-    border-top-width: 2px;
-    border-right-width: 2px;
-    border-bottom-width: 2px;
-    border-left-width: 2px;
+    border-width: 1.5px;
     border-style: solid;
   }
-  .kpi-card.highlight-green { box-shadow: inset 0 0 0 0.5px #86EFAC; }
-  .kpi-card.highlight-yellow { box-shadow: inset 0 0 0 0.5px #FDE047; }
-  .kpi-card.highlight-red { box-shadow: inset 0 0 0 0.5px #FCA5A5; }
   .aspecto-bar-track {
     background: #F3F4F6;
     border: 1px solid #E5E7EB;
@@ -1824,49 +1827,50 @@ export const LAYOUT_BASE_CSS = `
   .dim-aberta-nota.semf-amarelo { color: #F2A900; }
   .dim-aberta-nota.semf-vermelho { color: #DC2626; }
 
-  /* CC079-DIS-C-2a-1: layout canonico compacto 1 coluna para
-     caber 4 blocos de dim-bar + 20 linhas de aspecto em UMA
-     unica pagina A4. */
+  /* CC079-DIS-C-2a-2: layout 1 coluna com espacamento canonico
+     aumentado para ocupar bem a pagina. A dim-bar principal da
+     dimensao e so um pouco mais larga que as barras dos aspectos
+     (40mm vs 28mm) — nao desproporcional como estava (70mm). */
   .dim-aberta-compacta {
-    margin-top: 2mm;
-    padding-top: 1.5mm;
+    margin-top: 4mm;
+    padding-top: 3mm;
   }
   .dim-aberta-compacta:first-of-type {
     margin-top: 0;
     padding-top: 0;
   }
   .dim-aberta-compacta .dim-aberta-head {
-    margin-bottom: 1.2mm;
-    gap: 2mm;
+    margin-bottom: 2.5mm;
+    gap: 2.5mm;
   }
   .dim-aberta-compacta .dim-aberta-title {
-    font-size: 10pt;
+    font-size: 10.5pt;
   }
   .dim-aberta-compacta .dim-aberta-barra {
-    width: 70mm;
-    height: 3.4mm;
+    width: 40mm;
+    height: 3.6mm;
   }
   .dim-aberta-compacta .dim-aberta-nota {
-    font-size: 10pt;
+    font-size: 10.5pt;
   }
   .dim-aberta-compacta .aspecto-bars { display: block; }
   .dim-aberta-compacta .aspecto-bar-row {
     display: grid;
     grid-template-columns: 1fr 28mm 11mm;
     align-items: center;
-    gap: 2mm;
-    margin-bottom: 1mm;
-    font-size: 8.5pt;
-    line-height: 1.3;
+    gap: 2.5mm;
+    margin-bottom: 2.4mm;
+    font-size: 9pt;
+    line-height: 1.4;
   }
   .dim-aberta-compacta .aspecto-bar-label {
     color: #374151;
   }
   .dim-aberta-compacta .aspecto-bar-track {
-    height: 2.8mm;
+    height: 3mm;
   }
   .dim-aberta-compacta .aspecto-bar-value {
-    font-size: 8.5pt;
+    font-size: 9pt;
   }
 
   /* Tabela comparativa de deptos no clima — table-layout fixed para
@@ -1884,19 +1888,23 @@ export const LAYOUT_BASE_CSS = `
     width: 100%;
     font-size: 8.5pt;
   }
+  /* CC079-DIS-C-2a-2: palavras completas no cabecalho (sem
+     abreviacoes). Fonte 5pt + word-break para que "Desenvolvimento"
+     e "Pertencimento" quebrem em duas linhas se necessario. */
   table.clima-cascata-tabela thead th {
-    font-size: 6pt;
-    padding: 2mm 0.6mm;
+    font-size: 5pt;
+    padding: 2mm 0.4mm;
     text-align: center;
     white-space: normal;
     word-break: break-word;
     overflow-wrap: break-word;
-    line-height: 1.15;
+    line-height: 1.2;
     letter-spacing: 0;
+    font-weight: 700;
   }
   table.clima-cascata-tabela thead th:first-child {
     text-align: left;
-    font-size: 7.5pt;
+    font-size: 7pt;
   }
   table.clima-cascata-tabela tbody td {
     padding: 2mm 0.8mm;
@@ -1988,19 +1996,22 @@ export const LAYOUT_BASE_CSS = `
     margin-bottom: 2mm;
   }
 
-  /* ME-1.3d-REV DIS-C CC079-1: variante 2x2 do drill-down (4 deptos
-     por A4) + barras mais baixas e longas + mini-tabela de equipes
-     canonica. */
-  .clima-drilldown-grid-4 {
+  /* CC079-DIS-C-2a-2: variante 2x4 do drill-down (8 cards por A4)
+     + cards mais compactos para caber 8 por pagina. */
+  .clima-drilldown-grid-8 {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 4mm;
+    gap: 3mm;
     margin-top: 3mm;
   }
-  .clima-drilldown-grid-4 .clima-drilldown-card { padding: 2.5mm 3mm; }
-  .clima-drilldown-grid-4 .clima-drilldown-nome { font-size: 10pt; }
-  .clima-drilldown-grid-4 .clima-drilldown-nota { font-size: 12pt; }
-  .clima-drilldown-grid-4 .clima-drilldown-meta { font-size: 7.5pt; }
+  .clima-drilldown-grid-8 .clima-drilldown-card { padding: 2mm 3mm; }
+  .clima-drilldown-grid-8 .clima-drilldown-nome { font-size: 9.5pt; }
+  .clima-drilldown-grid-8 .clima-drilldown-nota { font-size: 11pt; }
+  .clima-drilldown-grid-8 .clima-drilldown-meta { font-size: 7pt; margin-bottom: 1.2mm; }
+  .clima-drilldown-grid-8 .clima-drilldown-head {
+    margin-bottom: 1.2mm;
+    padding-bottom: 1.2mm;
+  }
   .clima-drilldown-bars .dim-bar-row {
     grid-template-columns: 32mm 1fr 11mm;
     gap: 2mm;
@@ -2008,6 +2019,17 @@ export const LAYOUT_BASE_CSS = `
     font-size: 8pt;
   }
   .clima-drilldown-bars .dim-bar-track { height: 3mm; }
+  /* CC079-DIS-C-2a-2: dim-bars ainda mais compactas quando dentro
+     do grid-8 (8 cards por A4). */
+  .clima-drilldown-grid-8 .clima-drilldown-bars .dim-bar-row {
+    grid-template-columns: 28mm 1fr 10mm;
+    gap: 1.5mm;
+    margin-bottom: 1mm;
+    font-size: 7.5pt;
+  }
+  .clima-drilldown-grid-8 .clima-drilldown-bars .dim-bar-track {
+    height: 2.4mm;
+  }
   table.clima-equipes-mini {
     table-layout: fixed;
     width: 100%;

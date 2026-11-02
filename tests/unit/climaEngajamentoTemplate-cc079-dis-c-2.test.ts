@@ -111,10 +111,29 @@ describe('climaEngajamentoTemplate CC079-DIS-C-2a', () => {
     expect(html).toContain('2 liderados');
   });
 
-  it('Rotulos abreviados na tabela comparativa', () => {
+  it('CC079-DIS-C-2a-2: Rotulos INTEIROS na tabela comparativa', () => {
     const html = renderClimaEngajamentoHTML(baseFixture);
-    for (const r of ['Resp.', 'Engaj.', 'Desenv.', 'Pertenc.', 'Realiz.']) {
+    const rotulosInteiros = [
+      '<th class="right">Respondentes</th>',
+      '<th class="right">Clima</th>',
+      '<th class="right">Adesão</th>',
+      '<th class="right">Engajamento</th>',
+      '<th class="right">Desenvolvimento</th>',
+      '<th class="right">Pertencimento</th>',
+      '<th class="right">Realização</th>',
+    ];
+    for (const r of rotulosInteiros) {
       expect(html).toContain(r);
+    }
+    const rotulosAbreviadosBanidos = [
+      '<th class="right">Resp.</th>',
+      '<th class="right">Engaj.</th>',
+      '<th class="right">Desenv.</th>',
+      '<th class="right">Pertenc.</th>',
+      '<th class="right">Realiz.</th>',
+    ];
+    for (const r of rotulosAbreviadosBanidos) {
+      expect(html).not.toContain(r);
     }
   });
 
@@ -158,5 +177,17 @@ describe('climaEngajamentoTemplate CC079-DIS-C-2a', () => {
     const html = renderClimaEngajamentoHTML(baseFixture);
     expect(html).toContain('dim-aberta-compacta');
     expect(html).not.toContain('aspecto-dim-grid');
+  });
+
+  it('CC079-DIS-C-2a-2: Drill-down usa grid-8 (8 cards por A4)', () => {
+    const html = renderClimaEngajamentoHTML(baseFixture);
+    expect(html).toContain('clima-drilldown-grid-8');
+    // nenhum consumo da classe antiga -4 por template
+    expect(html).not.toContain('clima-drilldown-grid-4');
+  });
+
+  it('CC079-DIS-C-2a-2: padding-right global no main (fix bordas)', () => {
+    const html = renderClimaEngajamentoHTML(baseFixture);
+    expect(html).toContain('main {\n    padding-right: 1mm;\n  }');
   });
 });

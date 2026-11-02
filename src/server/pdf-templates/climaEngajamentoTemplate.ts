@@ -469,25 +469,25 @@ function renderComparativoDeptos(input: ClimaEngajamentoTemplateInput): string {
   <div class="exec-dept-table-wrap wrap-no-clip">
     <table class="ranking-table data-table clima-cascata-tabela">
       <colgroup>
-        <col style="width:22%" />
-        <col style="width:9%" />
-        <col style="width:9%" />
-        <col style="width:9%" />
-        <col style="width:12.75%" />
-        <col style="width:12.75%" />
-        <col style="width:12.75%" />
-        <col style="width:12.75%" />
+        <col style="width:18%" />
+        <col style="width:11%" />
+        <col style="width:8%" />
+        <col style="width:8%" />
+        <col style="width:13.75%" />
+        <col style="width:13.75%" />
+        <col style="width:13.75%" />
+        <col style="width:13.75%" />
       </colgroup>
       <thead>
         <tr>
           <th>Departamento</th>
-          <th class="right">Resp.</th>
+          <th class="right">Respondentes</th>
           <th class="right">Clima</th>
           <th class="right">Adesão</th>
-          <th class="right">Engaj.</th>
-          <th class="right">Desenv.</th>
-          <th class="right">Pertenc.</th>
-          <th class="right">Realiz.</th>
+          <th class="right">Engajamento</th>
+          <th class="right">Desenvolvimento</th>
+          <th class="right">Pertencimento</th>
+          <th class="right">Realização</th>
         </tr>
       </thead>
       <tbody>${linhaMedia}
@@ -588,12 +588,13 @@ function renderDrillDownDeptos(input: ClimaEngajamentoTemplateInput): string {
   const deptos = input.blocosDepartamentos;
   if (deptos.length === 0) return '';
   const paginas: string[] = [];
-  for (let i = 0; i < deptos.length; i += 4) {
-    const grupo = deptos.slice(i, i + 4);
+  // CC079-DIS-C-2a-2: 8 cards por pagina (grid 2 colunas x 4 linhas).
+  for (let i = 0; i < deptos.length; i += 8) {
+    const grupo = deptos.slice(i, i + 8);
     const cards = grupo.map((d) => renderDrillDownDepto(d)).join('\n');
     paginas.push(`<section class="page-break">
   ${i === 0 ? '<h2>Drill-down por departamento</h2>' : ''}
-  <div class="clima-drilldown-grid-4">${cards}</div>
+  <div class="clima-drilldown-grid-8">${cards}</div>
 </section>`);
   }
   return paginas.join('\n');
@@ -658,12 +659,12 @@ function renderDrillDownLiderancas(input: ClimaEngajamentoTemplateInput): string
   });
   semPiso.sort((a, b) => a.nomeLider.localeCompare(b.nomeLider, 'pt-BR'));
   const paginas: string[] = [];
-  // Paginas de cards para lideres com piso (grid 2x2).
+  // CC079-DIS-C-2a-2: 8 cards por pagina (grid 2 colunas x 4 linhas).
   if (comPiso.length > 0) {
-    for (let i = 0; i < comPiso.length; i += 4) {
-      const grupo = comPiso.slice(i, i + 4);
+    for (let i = 0; i < comPiso.length; i += 8) {
+      const grupo = comPiso.slice(i, i + 8);
       const cards = grupo.map((c) => renderDrillDownLiderancaCard(c)).join('\n');
-      const isUltimaPagina = i + 4 >= comPiso.length;
+      const isUltimaPagina = i + 8 >= comPiso.length;
       const rodapeSemPiso =
         isUltimaPagina && semPiso.length > 0
           ? `<div class="clima-liderancas-fora-piso">
@@ -679,7 +680,7 @@ function renderDrillDownLiderancas(input: ClimaEngajamentoTemplateInput): string
           : '';
       paginas.push(`<section class="page-break">
   ${i === 0 ? '<h2>Drill-down por liderança</h2>' : ''}
-  <div class="clima-drilldown-grid-4">${cards}</div>
+  <div class="clima-drilldown-grid-8">${cards}</div>
   ${rodapeSemPiso}
 </section>`);
     }
