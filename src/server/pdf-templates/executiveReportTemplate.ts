@@ -47,7 +47,6 @@ import {
   faixaAssiduidade,
   faixaClima,
   faixaDesempenho,
-  faixaMetaAtingida,
   faixaPlenitude,
   faixaRoi,
   faixaTurnover,
@@ -654,14 +653,9 @@ function renderBlocoDesempenho(input: ExecutiveReportFinalPayload): string {
       <div class="kpi-value ${classes.valueClass}">${fmtNum(b.trimestreAtual.scoreDesempenhoMedioAgregado)}</div>
       <div class="kpi-sub">${fmtInt(colaboradoresAtivos)} colaboradores ativos</div>
     </div>`);
-  const classesMeta = coresCanonicasPorFaixa(
-    faixaMetaAtingida(b.trimestreAtual.percMetaAtingidaAgregada),
-  );
-  kpiCards.push(`<div class="kpi-card ${classesMeta.cardClass}">
-      <div class="kpi-label">% da meta atingida</div>
-      <div class="kpi-value ${classesMeta.valueClass}">${fmtPctInt(b.trimestreAtual.percMetaAtingidaAgregada)}</div>
-      <div class="kpi-sub">Média ponderada</div>
-    </div>`);
+  // CC079-DIS-C-3-EXEC-2: card "% da meta atingida" removido do bloco
+  // Desempenho para reduzir ruido visual. O percentual continua apresentado
+  // no paragrafo interpretativo e no takeaway canonicos.
   if (variacao !== null) {
     // CC079-DIS-C-3-EXEC-1: titulo canonizado por extenso.
     kpiCards.push(`<div class="kpi-card ${classesVar.cardClass}">
@@ -745,32 +739,40 @@ function renderBlocoPlenitude(input: ExecutiveReportFinalPayload): string {
   //   - Card variação: titulo "Variação vs. trimestre anterior" por
   //     extenso + sinal explicito "+"/"-" + remocao do subtexto
   //     canonico antigo.
-  const kpiCards: string[] = [];
-  kpiCards.push(`<div class="kpi-card ${classesPlen.cardClass}">
+  // CC079-DIS-C-3-EXEC-2:
+  //   Reorganizacao em 2 linhas full-width:
+  //   - Linha 1 (1fr 1fr): Plenitude média + Variacao vs. trimestre
+  //     anterior. Quando nao ha trimestre anterior, Plenitude média
+  //     ocupa a linha inteira (1fr).
+  //   - Linha 2 (1fr 1fr 1fr): Autoavaliação + Lideranca + Divergência.
+  const cardPlenitudeMedia = `<div class="kpi-card ${classesPlen.cardClass}">
       <div class="kpi-label">Plenitude média</div>
       <div class="kpi-value ${classesPlen.valueClass}">${fmtNum(b.trimestreAtual.plenitudeScoreMedioAgregado)}</div>
-    </div>`);
-  kpiCards.push(`<div class="kpi-card">
-      <div class="kpi-label">Autoavaliação</div>
-      <div class="kpi-value">${fmtNum(b.trimestreAtual.scoreAMedio)}</div>
-    </div>`);
-  kpiCards.push(`<div class="kpi-card">
-      <div class="kpi-label">Liderança</div>
-      <div class="kpi-value">${fmtNum(b.trimestreAtual.scoreCMedio)}</div>
-    </div>`);
-  kpiCards.push(`<div class="kpi-card ${classesAlerta.cardClass}">
-      <div class="kpi-label">Divergência</div>
-      <div class="kpi-value ${classesAlerta.valueClass}">${fmtPctInt(alertaPct)}</div>
-    </div>`);
-  const variacaoHtml =
+    </div>`;
+  const cardVariacao =
     variacao === null
       ? ''
-      : `<div class="kpi-grid" style="grid-template-columns: 1fr; margin-top:3mm;">
-    <div class="kpi-card ${classesVar.cardClass}">
+      : `<div class="kpi-card ${classesVar.cardClass}">
       <div class="kpi-label">Variação vs. trimestre anterior</div>
       <div class="kpi-value ${classesVar.valueClass}">${fmtPctRelativoSigned(variacao)}</div>
-    </div>
-  </div>`;
+    </div>`;
+  const linha1Plenitude =
+    variacao === null
+      ? `<div class="kpi-grid" style="grid-template-columns: 1fr;">${cardPlenitudeMedia}</div>`
+      : `<div class="kpi-grid" style="grid-template-columns: 1fr 1fr;">${cardPlenitudeMedia}\n${cardVariacao}</div>`;
+  const cardAutoavaliacao = `<div class="kpi-card">
+      <div class="kpi-label">Autoavaliação</div>
+      <div class="kpi-value">${fmtNum(b.trimestreAtual.scoreAMedio)}</div>
+    </div>`;
+  const cardLideranca = `<div class="kpi-card">
+      <div class="kpi-label">Liderança</div>
+      <div class="kpi-value">${fmtNum(b.trimestreAtual.scoreCMedio)}</div>
+    </div>`;
+  const cardDivergencia = `<div class="kpi-card ${classesAlerta.cardClass}">
+      <div class="kpi-label">Divergência</div>
+      <div class="kpi-value ${classesAlerta.valueClass}">${fmtPctInt(alertaPct)}</div>
+    </div>`;
+  const linha2Plenitude = `<div class="kpi-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top:3mm;">${cardAutoavaliacao}\n${cardLideranca}\n${cardDivergencia}</div>`;
   // ME-1.3d-REV DIS-C CC079-1 (D-DIS-C-DIMBAR-ESCALA): escala 0-100 no
   // bloco Plenitude (valores agregados vem em 0-100, nao 0-10 como no
   // Clima). Faixa canonica da plenitude (verde >= 75; amarelo 60-74;
@@ -783,8 +785,8 @@ function renderBlocoPlenitude(input: ExecutiveReportFinalPayload): string {
   });
   return `<section class="page-break">
   <h2>Bloco Plenitude</h2>
-  <div class="kpi-grid" style="grid-template-columns: repeat(${kpiCards.length}, 1fr);">${kpiCards.join('\n')}</div>
-  ${variacaoHtml}
+  ${linha1Plenitude}
+  ${linha2Plenitude}
   <h3 class="h3-compact" style="margin-top:4mm;">Perfil por dimensão</h3>
   <div class="dim-bars">
     ${renderDimBarSemaforizada('Engajamento', dim.engajamento, 100, faixaDim(dim.engajamento))}

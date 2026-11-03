@@ -1625,7 +1625,9 @@ export const LAYOUT_BASE_CSS = `
     line-height: 1.05;
   }
   .painel-exec-card.painel-verde .painel-exec-kpi { color: #166534; }
-  .painel-exec-card.painel-amarelo .painel-exec-kpi { color: #92400E; }
+  /* CC079-DIS-C-3-EXEC-2: paleta amarela canonizada em #F2A900
+     (herdada do PDF Clima). Antes: #92400E (marrom/laranja antigo). */
+  .painel-exec-card.painel-amarelo .painel-exec-kpi { color: #F2A900; }
   .painel-exec-card.painel-vermelho .painel-exec-kpi { color: #7F1D1D; }
   /* CC079-DIS-C-3-EXEC-1: fonte reduzida + nowrap para caber
      "+X,YZ% vs trimestre anterior" em UMA UNICA linha no card. */
@@ -1637,6 +1639,14 @@ export const LAYOUT_BASE_CSS = `
   }
   .painel-exec-delta.delta-pos { color: #166534; }
   .painel-exec-delta.delta-neg { color: #7F1D1D; }
+  /* CC079-DIS-C-3-EXEC-2: dentro do card amarelo, o delta sempre
+     usa a paleta canonica #F2A900 (sobrepondo delta-pos/delta-neg)
+     para manter consistencia com o kpi-value amarelo. */
+  .painel-exec-card.painel-amarelo .painel-exec-delta,
+  .painel-exec-card.painel-amarelo .painel-exec-delta.delta-pos,
+  .painel-exec-card.painel-amarelo .painel-exec-delta.delta-neg {
+    color: #F2A900;
+  }
   .painel-exec-takeaway {
     font-size: 8pt;
     color: #374151;

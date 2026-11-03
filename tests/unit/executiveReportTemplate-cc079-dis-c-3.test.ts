@@ -1,6 +1,8 @@
 // ROIP APP 9BOX — teste unit executiveReportTemplate (CC079-DIS-C-3-EXEC).
 //
-// Cobertura canonica das 4 correcoes da ME-1.10-CC079-DIS-C-3-EXEC:
+// Cobertura canonica consolidada das 3 MEs da serie CC079-DIS-C-3-EXEC:
+//
+// CC079-DIS-C-3-EXEC (origem):
 //   1. Painel executivo em DUAS linhas (3+2 full-width cada).
 //   2. Bloco Financeiro em 7 KPIs exatos distribuidos em 3 linhas
 //      (2+2+3). Removidos: Variação ano, META/REALIZADO/% META.
@@ -9,6 +11,24 @@
 //      extenso + sinal.
 //   4. Bloco Turnover: subtexto do card variação apenas com %
 //      relativo sinalizado (sem "vs trim. anterior" redundante).
+//
+// CC079-DIS-C-3-EXEC-1 (5 ajustes finos pos-auditoria):
+//   5. Painel executivo com delta "+X% vs trimestre anterior" por
+//      extenso.
+//   6. Bloco Financeiro — Distância do teto ideal com subtexto
+//      canonico sem repetir numero.
+//   7. Bloco Clima — card variação por extenso + grid redimensionado.
+//   8. Clima dimensões abertas usam .dim-aberta-compacta.
+//   9. Bloco Turnover em 3 linhas (2+2+2).
+//
+// CC079-DIS-C-3-EXEC-2 (3 ajustes pos-auditoria do EXEC-1):
+//  10. Painel executivo amarelo em #F2A900 canonico (antes #92400E
+//      laranja/marrom antigo).
+//  11. Bloco Desempenho sem card "% da meta atingida" (2 cards
+//      restantes full-width).
+//  12. Bloco Plenitude em 2 linhas full-width (2 + 3): PlenitudeMédia
+//      + Variação na linha 1; Autoavaliação + Lideranca + Divergência
+//      na linha 2.
 
 import { describe, expect, it } from 'vitest';
 
@@ -159,9 +179,9 @@ describe('executiveReportTemplate CC079-DIS-C-3-EXEC', () => {
 
   it('Bloco Financeiro: 7 KPIs exatos (sem META/REALIZADO/% META)', () => {
     const html = renderExecutiveReportHTML(basePayload);
-    // Isolar o trecho do Bloco Financeiro para asserções precisas
-    // (o label "% da meta atingida" existe canonicamente no Bloco
-    // Desempenho, que nao e tocado por esta ME).
+    // Isolar o trecho do Bloco Financeiro para asserções precisas.
+    // CC079-DIS-C-3-EXEC-2: "% da meta atingida" foi tambem removido
+    // do Bloco Desempenho. Aqui o foco da assercao e o Financeiro.
     const idxFin = html.indexOf('<h2>Bloco Financeiro</h2>');
     const idxDes = html.indexOf('<h2>Bloco Desempenho</h2>');
     expect(idxFin).toBeGreaterThan(0);
@@ -281,5 +301,52 @@ describe('executiveReportTemplate CC079-DIS-C-3-EXEC', () => {
     const matches = trecho.match(/grid-template-columns: repeat\(2, 1fr\);/g);
     expect(matches).not.toBeNull();
     expect((matches ?? []).length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('CC079-DIS-C-3-EXEC-2: Painel executivo amarelo em #F2A900 canonico', () => {
+    const html = renderExecutiveReportHTML(basePayload);
+    // kpi do card amarelo do painel exec canonizado em #F2A900
+    // (antes era #92400E, laranja/marrom antigo).
+    expect(html).toContain('.painel-exec-card.painel-amarelo .painel-exec-kpi { color: #F2A900; }');
+    expect(html).not.toContain(
+      '.painel-exec-card.painel-amarelo .painel-exec-kpi { color: #92400E; }',
+    );
+    // delta dentro do card amarelo tambem canonizado em #F2A900.
+    expect(html).toContain('.painel-exec-card.painel-amarelo .painel-exec-delta,');
+  });
+
+  it('CC079-DIS-C-3-EXEC-2: Bloco Desempenho sem card "% da meta atingida"', () => {
+    const html = renderExecutiveReportHTML(basePayload);
+    const idxDes = html.indexOf('<h2>Bloco Desempenho</h2>');
+    const idxFimDes = html.indexOf('</section>', idxDes);
+    const trechoDes = html.slice(idxDes, idxFimDes);
+    // O card "% da meta atingida" foi removido do Bloco Desempenho.
+    expect(trechoDes).not.toContain('<div class="kpi-label">% da meta atingida</div>');
+    // "Média ponderada" (subtexto do card removido) nao deve aparecer no bloco.
+    expect(trechoDes).not.toContain('<div class="kpi-sub">Média ponderada</div>');
+  });
+
+  it('CC079-DIS-C-3-EXEC-2: Bloco Plenitude em 2 linhas full-width (2 + 3)', () => {
+    const html = renderExecutiveReportHTML(basePayload);
+    const idxPlen = html.indexOf('<h2>Bloco Plenitude</h2>');
+    const idxPerfil = html.indexOf('Perfil por dimensão', idxPlen);
+    const trechoCabecalho = html.slice(idxPlen, idxPerfil);
+    // Linha 1 full-width 1fr 1fr (Plenitude média + Variação).
+    expect(trechoCabecalho).toContain('grid-template-columns: 1fr 1fr;');
+    // Linha 2 full-width 1fr 1fr 1fr (Autoavaliação + Lideranca + Divergência).
+    expect(trechoCabecalho).toContain('grid-template-columns: 1fr 1fr 1fr;');
+    // Grid antigo de 4 colunas (repeat(4, 1fr)) nao deve existir no cabecalho.
+    expect(trechoCabecalho).not.toContain('grid-template-columns: repeat(4, 1fr);');
+    // Ordem canonica: Plenitude média ANTES de Variação na linha 1.
+    const idxPlenMedia = trechoCabecalho.indexOf('Plenitude média');
+    const idxVariacao = trechoCabecalho.indexOf('Variação vs. trimestre anterior');
+    const idxAutoav = trechoCabecalho.indexOf('Autoavaliação');
+    const idxLideranca = trechoCabecalho.indexOf('>Liderança<');
+    const idxDiverg = trechoCabecalho.indexOf('>Divergência<');
+    expect(idxPlenMedia).toBeGreaterThan(0);
+    expect(idxVariacao).toBeGreaterThan(idxPlenMedia);
+    expect(idxAutoav).toBeGreaterThan(idxVariacao);
+    expect(idxLideranca).toBeGreaterThan(idxAutoav);
+    expect(idxDiverg).toBeGreaterThan(idxLideranca);
   });
 });
