@@ -577,12 +577,17 @@ function renderElementoRadar(input: BoardDeckTemplateInput): string {
   </div>
 </section>`;
   }
+  // CC079-DIS-C-3-BOARD: cabecalho "#" removido (coluna de numero
+  // dos fatores mantida, so sem rotulo "#" no header). Colunas
+  // "Tipo" e "Score" centralizadas para alinhar com cabecalho.
+  // Numero do fator centralizado (nao mais a direita). Fator fica
+  // a esquerda em header e dados.
   const linhasTabela = input.radarPsicossocial
     .map((f) => {
       const faixa = faixaFatorRadar(f.nome, f.scoreZeroCem);
       const corClass = faixa === 'verde' ? 'green' : faixa === 'amarelo' ? 'yellow' : 'red';
       const tipo = classificarTipoFatorRadar(f.nome);
-      return `<tr><td class="right">${fmtInt(f.fatorId)}</td><td>${escapeHtml(f.nome)}</td><td class="right" style="color:#6B7280;">${tipo === 'risco' ? 'Risco' : 'Recurso'}</td><td class="right"><span class="${corClass}" style="font-weight:700;">${fmtScoreInt(f.scoreZeroCem)}</span></td></tr>`;
+      return `<tr><td style="text-align:center;">${fmtInt(f.fatorId)}</td><td>${escapeHtml(f.nome)}</td><td style="text-align:center; color:#6B7280;">${tipo === 'risco' ? 'Risco' : 'Recurso'}</td><td style="text-align:center;"><span class="${corClass}" style="font-weight:700;">${fmtScoreInt(f.scoreZeroCem)}</span></td></tr>`;
     })
     .join('\n');
   // ME-1.3d-REV DIS-C CC079-1 (D-DIS-C-RADAR-TOP3): fatores em alerta
@@ -629,7 +634,7 @@ function renderElementoRadar(input: BoardDeckTemplateInput): string {
       <col style="width:17%" />
       <col style="width:20%" />
     </colgroup>
-    <thead><tr><th class="right">#</th><th>Fator</th><th class="right">Tipo</th><th class="right">Score (0-100)</th></tr></thead>
+    <thead><tr><th style="text-align:center;"></th><th>Fator</th><th style="text-align:center;">Tipo</th><th style="text-align:center;">Score (0-100)</th></tr></thead>
     <tbody>${linhasTabela}</tbody>
   </table>
   <div class="takeaway-card">${escapeHtml(takeawayRadar)}</div>
