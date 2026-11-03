@@ -276,7 +276,8 @@ function montarPainelExecutivo(input: ExecutiveReportFinalPayload): readonly Blo
     invertido = false,
   ): { texto: string | null; css: BlocoPainel['deltaCss'] } => {
     if (v === null) return { texto: null, css: '' };
-    const texto = `${v > 0 ? '+' : ''}${fmtNum(v)}% vs trim. ant.`;
+    // CC079-DIS-C-3-EXEC-1: "trimestre anterior" por extenso canonico.
+    const texto = `${v > 0 ? '+' : ''}${fmtNum(v)}% vs trimestre anterior`;
     if (v === 0) return { texto, css: '' };
     const positivo = invertido ? v < 0 : v > 0;
     return { texto, css: positivo ? 'delta-pos' : 'delta-neg' };
@@ -580,11 +581,14 @@ function renderBlocoFinanceiro(input: ExecutiveReportFinalPayload): string {
     </div>`);
     if (faixaMax !== null) {
       const distancia = percFolha - faixaMax;
+      // CC079-DIS-C-3-EXEC-1: subtexto canonizado sem repetir o
+      // numero (ja aparece no kpi-value). Apenas "Pontos percentuais
+      // acima/abaixo do teto" ou "exatamente no teto".
       const distTexto =
         distancia > 0
-          ? `+${fmtNum(distancia, 1)} p.p. acima do teto`
+          ? 'Pontos percentuais acima do teto'
           : distancia < 0
-            ? `${fmtNum(Math.abs(distancia), 1)} p.p. abaixo do teto`
+            ? 'Pontos percentuais abaixo do teto'
             : 'exatamente no teto';
       linha2Cards.push(`<div class="kpi-card ${faixaClass}">
       <div class="kpi-label">Distância do teto ideal</div>
@@ -659,9 +663,10 @@ function renderBlocoDesempenho(input: ExecutiveReportFinalPayload): string {
       <div class="kpi-sub">Média ponderada</div>
     </div>`);
   if (variacao !== null) {
+    // CC079-DIS-C-3-EXEC-1: titulo canonizado por extenso.
     kpiCards.push(`<div class="kpi-card ${classesVar.cardClass}">
-      <div class="kpi-label">Variação vs. trim. anterior</div>
-      <div class="kpi-value ${classesVar.valueClass}">${fmtPct(variacao)}</div>
+      <div class="kpi-label">Variação vs. trimestre anterior</div>
+      <div class="kpi-value ${classesVar.valueClass}">${fmtPctRelativoSigned(variacao)}</div>
       <div class="kpi-sub">Desempenho médio comparado</div>
     </div>`);
   }
@@ -826,9 +831,11 @@ function renderBlocoClima(input: ExecutiveReportFinalPayload): string {
       <div class="kpi-sub">Participação no ciclo</div>
     </div>`);
   if (variacao !== null) {
+    // CC079-DIS-C-3-EXEC-1: titulo por extenso "Variação vs.
+    // trimestre anterior" + valor com sinal explicito.
     kpiCards.push(`<div class="kpi-card ${classesVar.cardClass}">
-      <div class="kpi-label">Variação vs. trim. anterior</div>
-      <div class="kpi-value ${classesVar.valueClass}">${fmtPct(variacao)}</div>
+      <div class="kpi-label">Variação vs. trimestre anterior</div>
+      <div class="kpi-value ${classesVar.valueClass}">${fmtPctRelativoSigned(variacao)}</div>
       <div class="kpi-sub">Nota de clima comparada</div>
     </div>`);
   }
@@ -842,9 +849,17 @@ function renderBlocoClima(input: ExecutiveReportFinalPayload): string {
     respondentes: atual.respondentes,
   });
   // Pagina 1 do bloco clima.
+  // CC079-DIS-C-3-EXEC-1: grid-template redimensionado — NOTA DE
+  // CLIMA e ADESÃO ficam menores (0.75fr cada) para abrir espaco
+  // horizontal para o card de VARIAÇÃO VS. TRIMESTRE ANTERIOR
+  // (1.5fr), permitindo que o titulo canonico caiba em uma linha.
+  const gridClimaKpi =
+    kpiCards.length === 3
+      ? 'grid-template-columns: 0.75fr 0.75fr 1.5fr;'
+      : `grid-template-columns: repeat(${kpiCards.length}, 1fr);`;
   const pg1 = `<section class="page-break">
   <h2>Bloco Clima</h2>
-  <div class="kpi-grid" style="grid-template-columns: repeat(${kpiCards.length}, 1fr);">${kpiCards.join('\n')}</div>
+  <div class="kpi-grid" style="${gridClimaKpi}">${kpiCards.join('\n')}</div>
   <h3 class="h3-compact">Perfil por dimensão</h3>
   <div class="dim-bars">
     ${renderDimBarSemaforizada('Engajamento', dim.engajamento, 10, faixaClima(dim.engajamento))}
@@ -878,7 +893,12 @@ function renderBlocoClima(input: ExecutiveReportFinalPayload): string {
         const texto = TEXTOS_QUESTOES_CLIMA[idx] ?? '';
         aspectoLinhas.push(renderAspectoBar(texto, valor, 10, faixaClima(valor)));
       }
-      grupos.push(`<div class="dim-aberta-group">
+      // CC079-DIS-C-3-EXEC-1: consome a classe canonica .dim-aberta-compacta
+      // (padronizada no PDF do Clima na ME-CC079-DIS-C-2a-3). Barra da
+      // dimensao e das 5 barras dos aspectos tem o MESMO comprimento
+      // horizontal (28mm); a da dimensao fica apenas um pouco mais alta
+      // para marcar a hierarquia visual sem distorcer proporcao.
+      grupos.push(`<div class="dim-aberta-group dim-aberta-compacta">
       <div class="dim-aberta-head">
         <h4 class="dim-aberta-title">${escapeHtml(dimNome)}</h4>
         <div class="dim-aberta-barra"><div class="dim-aberta-fill ${cssDim}" style="width:${pctDim.toFixed(2)}%;"></div></div>
@@ -987,10 +1007,17 @@ function renderBlocoTurnover(input: ExecutiveReportFinalPayload): string {
     voluntarioPct: atual.turnoverVoluntarioPercentual,
     involuntarioPct: atual.turnoverInvoluntarioPercentual,
   });
+  // CC079-DIS-C-3-EXEC-1: 4 cards principais em DUAS linhas (2+2)
+  //   Linha 1: Turnover trimestral + Variação vs. trimestre anterior.
+  //   Linha 2: Últimos 12 meses + Projeção anualizada.
+  // Com isso os titulos sao preservados em uma unica linha cada.
+  const linha1Turnover = kpiCards.slice(0, 2).join('\n');
+  const linha2Turnover = kpiCards.slice(2, 4).join('\n');
   return `<section class="page-break">
   <h2>Bloco Turnover</h2>
   <p>Rotatividade no trimestre, variação, janela móvel de 12 meses e projeção anualizada.</p>
-  <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr);">${kpiCards.join('\n')}</div>
+  <div class="kpi-grid" style="grid-template-columns: repeat(2, 1fr);">${linha1Turnover}</div>
+  <div class="kpi-grid" style="grid-template-columns: repeat(2, 1fr); margin-top:3mm;">${linha2Turnover}</div>
   ${voluntariasHtml}
   ${nivelHtml}
   <div class="info-card" style="margin-top:3mm;">

@@ -229,4 +229,57 @@ describe('executiveReportTemplate CC079-DIS-C-3-EXEC', () => {
     expect(html).not.toContain('#D97706');
     expect(html).toContain('main {\n    padding-right: 1mm;\n  }');
   });
+
+  it('CC079-DIS-C-3-EXEC-1: Painel executivo com delta por extenso', () => {
+    const html = renderExecutiveReportHTML(basePayload);
+    const idxPainel = html.indexOf('Painel executivo do trimestre');
+    const idxResumo = html.indexOf('Resumo executivo geral');
+    const trechoPainel = html.slice(idxPainel, idxResumo);
+    expect(trechoPainel).toContain('vs trimestre anterior');
+    expect(trechoPainel).not.toContain('vs trim. ant.');
+    // Fonte do delta reduzida + nowrap para caber em uma linha.
+    expect(html).toContain('white-space: nowrap;');
+  });
+
+  it('CC079-DIS-C-3-EXEC-1: Distância do teto ideal sem repetir numero', () => {
+    const html = renderExecutiveReportHTML(basePayload);
+    const idxDist = html.indexOf('Distância do teto ideal');
+    const trecho = html.slice(idxDist, idxDist + 500);
+    expect(trecho).toContain('Pontos percentuais abaixo do teto');
+    expect(trecho).not.toContain('5,8 p.p. abaixo do teto');
+    expect(trecho).not.toContain('7,4 p.p. abaixo do teto');
+  });
+
+  it('CC079-DIS-C-3-EXEC-1: Clima com variacao por extenso + grid redimensionado', () => {
+    const html = renderExecutiveReportHTML(basePayload);
+    const idxClima = html.indexOf('<h2>Bloco Clima</h2>');
+    const idxTurn = html.indexOf('<h2>Bloco Turnover</h2>');
+    const trecho = html.slice(idxClima, idxTurn);
+    // Titulo canonico por extenso na variacao do Clima.
+    expect(trecho).toContain('<div class="kpi-label">Variação vs. trimestre anterior</div>');
+    expect(trecho).not.toContain('<div class="kpi-label">Variação vs. trim. anterior</div>');
+    // Grid redimensionado 0.75 + 0.75 + 1.5 para abrir espaco a variacao.
+    expect(trecho).toContain('grid-template-columns: 0.75fr 0.75fr 1.5fr;');
+  });
+
+  it('CC079-DIS-C-3-EXEC-1: Clima dimensoes abertas usam .dim-aberta-compacta', () => {
+    const html = renderExecutiveReportHTML(basePayload);
+    const idxDim = html.indexOf('Clima — dimensões abertas por aspecto');
+    expect(idxDim).toBeGreaterThan(0);
+    const trecho = html.slice(idxDim, idxDim + 2000);
+    expect(trecho).toContain('dim-aberta-compacta');
+  });
+
+  it('CC079-DIS-C-3-EXEC-1: Bloco Turnover em 3 linhas (2+2+2)', () => {
+    const html = renderExecutiveReportHTML(basePayload);
+    const idxTurn = html.indexOf('<h2>Bloco Turnover</h2>');
+    const idxFim = html.indexOf('</section>', idxTurn);
+    const trecho = html.slice(idxTurn, idxFim);
+    // Nenhum grid de 4 colunas no Turnover (antes tinha repeat(4, 1fr)).
+    expect(trecho).not.toContain('grid-template-columns: repeat(4, 1fr);');
+    // Dois grids 2x1 canonicos.
+    const matches = trecho.match(/grid-template-columns: repeat\(2, 1fr\);/g);
+    expect(matches).not.toBeNull();
+    expect((matches ?? []).length).toBeGreaterThanOrEqual(3);
+  });
 });

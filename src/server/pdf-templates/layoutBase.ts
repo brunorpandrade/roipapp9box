@@ -1627,10 +1627,13 @@ export const LAYOUT_BASE_CSS = `
   .painel-exec-card.painel-verde .painel-exec-kpi { color: #166534; }
   .painel-exec-card.painel-amarelo .painel-exec-kpi { color: #92400E; }
   .painel-exec-card.painel-vermelho .painel-exec-kpi { color: #7F1D1D; }
+  /* CC079-DIS-C-3-EXEC-1: fonte reduzida + nowrap para caber
+     "+X,YZ% vs trimestre anterior" em UMA UNICA linha no card. */
   .painel-exec-delta {
-    font-size: 8.5pt;
+    font-size: 7.5pt;
     font-weight: 600;
     color: #6B7280;
+    white-space: nowrap;
   }
   .painel-exec-delta.delta-pos { color: #166534; }
   .painel-exec-delta.delta-neg { color: #7F1D1D; }
