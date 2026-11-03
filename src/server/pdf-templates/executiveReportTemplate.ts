@@ -90,7 +90,9 @@ function fmtPct(v: number | null): string {
 function fmtPctSigned(v: number | null): string {
   if (v === null || !Number.isFinite(v)) return '—';
   const sinal = v > 0 ? '+' : '';
-  return `${sinal}${fmtNum(v)} p.p.`;
+  // CC079-DIS-C-3-EXEC: "p.p." em span canonico com fonte reduzida
+  // (mesmo padrao do board deck — pp-unidade do layoutBase).
+  return `${sinal}${fmtNum(v)}<span class="pp-unidade"> p.p.</span>`;
 }
 
 function fmtPctRelativoSigned(v: number | null): string {
@@ -367,27 +369,29 @@ function montarPainelExecutivo(input: ExecutiveReportFinalPayload): readonly Blo
 
 function renderPainelExecutivo(input: ExecutiveReportFinalPayload): string {
   const blocos = montarPainelExecutivo(input);
-  const cards = blocos
-    .map((b) => {
-      const corFaixa = b.faixa === null ? '' : `painel-${b.faixa}`;
-      const deltaHtml =
-        b.delta === null
-          ? ''
-          : `<div class="painel-exec-delta ${b.deltaCss}">${escapeHtml(b.delta)}</div>`;
-      return `<div class="painel-exec-card ${corFaixa}">
+  const renderCard = (b: (typeof blocos)[number]): string => {
+    const corFaixa = b.faixa === null ? '' : `painel-${b.faixa}`;
+    const deltaHtml =
+      b.delta === null
+        ? ''
+        : `<div class="painel-exec-delta ${b.deltaCss}">${escapeHtml(b.delta)}</div>`;
+    return `<div class="painel-exec-card ${corFaixa}">
       <div class="painel-exec-label">${escapeHtml(b.label)}</div>
       <div class="painel-exec-kpi">${escapeHtml(b.kpi)}</div>
       ${deltaHtml}
       <div class="painel-exec-takeaway">${escapeHtml(b.takeaway)}</div>
     </div>`;
-    })
-    .join('\n');
-  // ME-1.3d-REV DIS-C CC079-1: SEM `page-break` — painel permanece
-  // junto da capa e do resumo executivo na pagina 1 para densidade
-  // McKinsey/BCG.
+  };
+  // CC079-DIS-C-3-EXEC: painel distribuido em DUAS linhas canonicas,
+  // cada uma ocupando a largura inteira da folha.
+  //   Linha 1 (3 cards): Financeiro-ROI, Desempenho, Plenitude.
+  //   Linha 2 (2 cards): Clima, Turnover.
+  const linha1 = blocos.slice(0, 3).map(renderCard).join('\n');
+  const linha2 = blocos.slice(3, 5).map(renderCard).join('\n');
   return `<section>
   <h2 style="margin-top:5mm;">Painel executivo do trimestre</h2>
-  <div class="painel-exec-grid">${cards}</div>
+  <div class="painel-exec-grid painel-exec-grid-3">${linha1}</div>
+  <div class="painel-exec-grid painel-exec-grid-2">${linha2}</div>
 </section>`;
 }
 
@@ -523,40 +527,44 @@ ${rows}</tbody>
 // ============================================================
 
 function renderBlocoFinanceiro(input: ExecutiveReportFinalPayload): string {
+  // CC079-DIS-C-3-EXEC: bloco Financeiro canonizado em EXATAMENTE 7
+  // KPIs organizados em 3 linhas:
+  //   Linha 1 (2 cards full-width): ROI agregado + Variação vs
+  //     trimestre anterior.
+  //   Linha 2 (2 cards full-width): Folha/Faturamento + Distância
+  //     do teto ideal.
+  //   Linha 3 (3 cards full-width): Faturamento médio + Folha total
+  //     + Colaboradores.
+  // Removidos: card de variacao ano, META, REALIZADO e % da meta
+  // atingida (D-EXEC-META-VAZIA fechado por natureza — o card nao
+  // existe mais).
   const b = input.blocoFinanceiro;
   const faixa = faixaRoi(b.trimestreAtual.roiAgregado);
   const classesRoi = coresCanonicasPorFaixa(faixa);
   const variacaoTri = b.comparativoTrimestreAnterior?.variacaoPercentualRoi ?? null;
-  const variacaoAno = b.comparativoMesmoTrimestreAnoAnterior?.variacaoPercentualRoi ?? null;
   const classesTri = coresCanonicasPorFaixa(faixaVariacaoCanonica(variacaoTri));
-  const classesAno = coresCanonicasPorFaixa(faixaVariacaoCanonica(variacaoAno));
   const roiAnterior = b.comparativoTrimestreAnterior?.roiAgregado ?? null;
-  const roiAnoAnterior = b.comparativoMesmoTrimestreAnoAnterior?.roiAgregado ?? null;
-  const kpiCards: string[] = [];
-  kpiCards.push(`<div class="kpi-card ${classesRoi.cardClass}">
+
+  // Linha 1 — ROI + Variação (2 cards).
+  const linha1Cards: string[] = [];
+  linha1Cards.push(`<div class="kpi-card ${classesRoi.cardClass}">
       <div class="kpi-label">ROI agregado</div>
       <div class="kpi-value ${classesRoi.valueClass}">${fmtNum(b.trimestreAtual.roiAgregado, 2)}</div>
       <div class="kpi-sub">Produtividade da folha</div>
     </div>`);
   if (variacaoTri !== null) {
-    kpiCards.push(`<div class="kpi-card ${classesTri.cardClass}">
+    linha1Cards.push(`<div class="kpi-card ${classesTri.cardClass}">
       <div class="kpi-label">Variação vs. trimestre anterior</div>
-      <div class="kpi-value ${classesTri.valueClass}">${fmtPct(variacaoTri)}</div>
-      <div class="kpi-sub">ROI trim. anterior: ${fmtNum(roiAnterior, 2)}</div>
+      <div class="kpi-value ${classesTri.valueClass}">${fmtPctRelativoSigned(variacaoTri)}</div>
+      <div class="kpi-sub">ROI trimestre anterior: ${fmtNum(roiAnterior, 2)}</div>
     </div>`);
   }
-  if (variacaoAno !== null) {
-    kpiCards.push(`<div class="kpi-card ${classesAno.cardClass}">
-      <div class="kpi-label">Variação vs. mesmo trim. ano anterior</div>
-      <div class="kpi-value ${classesAno.valueClass}">${fmtPct(variacaoAno)}</div>
-      <div class="kpi-sub">ROI mesmo trim. ano anterior: ${fmtNum(roiAnoAnterior, 2)}</div>
-    </div>`);
-  }
-  // Folha/faturamento + distancia do teto.
+
+  // Linha 2 — Folha/Faturamento + Distância do teto (2 cards).
   const percFolha = b.trimestreAtual.percFolhaFaturamento;
   const faixaMin = b.trimestreAtual.folhaPercMinimaIdeal;
   const faixaMax = b.trimestreAtual.folhaPercMaximaIdeal;
-  const folhaCards: string[] = [];
+  const linha2Cards: string[] = [];
   if (percFolha !== null) {
     const dentroFaixa = faixaMax === null || percFolha <= faixaMax;
     const faixaClass = dentroFaixa ? 'folha-dentro' : 'folha-acima';
@@ -565,7 +573,7 @@ function renderBlocoFinanceiro(input: ExecutiveReportFinalPayload): string {
       faixaMin !== null && faixaMax !== null
         ? `Faixa ideal: ${fmtNum(faixaMin, 1)}% a ${fmtNum(faixaMax, 1)}%`
         : 'Faixa ideal não definida para a empresa';
-    folhaCards.push(`<div class="kpi-card ${faixaClass}">
+    linha2Cards.push(`<div class="kpi-card ${faixaClass}">
       <div class="kpi-label">Folha / faturamento</div>
       <div class="kpi-value ${valClass}">${fmtPct(percFolha)}</div>
       <div class="kpi-sub">${subText}</div>
@@ -578,55 +586,33 @@ function renderBlocoFinanceiro(input: ExecutiveReportFinalPayload): string {
           : distancia < 0
             ? `${fmtNum(Math.abs(distancia), 1)} p.p. abaixo do teto`
             : 'exatamente no teto';
-      folhaCards.push(`<div class="kpi-card ${faixaClass}">
+      linha2Cards.push(`<div class="kpi-card ${faixaClass}">
       <div class="kpi-label">Distância do teto ideal</div>
       <div class="kpi-value ${valClass}">${fmtNum(distancia, 2)} p.p.</div>
       <div class="kpi-sub">${distTexto}</div>
     </div>`);
     }
   }
-  // ME-1.3d-REV DIS-C CC079-1: linha de contexto (Faturamento, Folha,
-  // Colaboradores ativos — 3 cards).
-  const kpiContexto: string[] = [];
-  kpiContexto.push(`<div class="kpi-card">
+
+  // Linha 3 — Faturamento médio + Folha total + Colaboradores
+  // (3 cards full-width).
+  const linha3Cards: string[] = [];
+  linha3Cards.push(`<div class="kpi-card">
       <div class="kpi-label">Faturamento médio</div>
       <div class="kpi-value">${fmtMoeda(b.trimestreAtual.faturamentoMedioTrimestral)}</div>
       <div class="kpi-sub">Média do trimestre</div>
     </div>`);
-  kpiContexto.push(`<div class="kpi-card">
+  linha3Cards.push(`<div class="kpi-card">
       <div class="kpi-label">Folha total</div>
       <div class="kpi-value">${fmtMoeda(b.trimestreAtual.folhaTotalMedia)}</div>
       <div class="kpi-sub">Média do trimestre</div>
     </div>`);
-  kpiContexto.push(`<div class="kpi-card">
-      <div class="kpi-label">Colaboradores ativos</div>
+  linha3Cards.push(`<div class="kpi-card">
+      <div class="kpi-label">Colaboradores</div>
       <div class="kpi-value">${fmtInt(b.trimestreAtual.colaboradoresAtivos)}</div>
       <div class="kpi-sub">Base no período</div>
     </div>`);
-  // ME-1.3d-REV DIS-C CC079-1: linha nova canonica de atingimento —
-  // Meta (faturamento ideal), Realizado (faturamento medio) e % da meta
-  // atingida (atingimento canonico das metas individuais).
-  const faturamentoIdeal = b.trimestreAtual.faturamentoIdeal;
-  const faturamentoRealizado = b.trimestreAtual.faturamentoMedioTrimestral;
-  const classesMeta = coresCanonicasPorFaixa(
-    faixaMetaAtingida(b.trimestreAtual.percMetaAtingidaAgregada),
-  );
-  const kpiAtingimento: string[] = [];
-  kpiAtingimento.push(`<div class="kpi-card">
-      <div class="kpi-label">Meta</div>
-      <div class="kpi-value">${fmtMoeda(faturamentoIdeal)}</div>
-      <div class="kpi-sub">Faturamento ideal do trimestre</div>
-    </div>`);
-  kpiAtingimento.push(`<div class="kpi-card">
-      <div class="kpi-label">Realizado</div>
-      <div class="kpi-value">${fmtMoeda(faturamentoRealizado)}</div>
-      <div class="kpi-sub">Faturamento médio do trimestre</div>
-    </div>`);
-  kpiAtingimento.push(`<div class="kpi-card ${classesMeta.cardClass}">
-      <div class="kpi-label">% da meta atingida</div>
-      <div class="kpi-value ${classesMeta.valueClass}">${fmtPct(b.trimestreAtual.percMetaAtingidaAgregada)}</div>
-      <div class="kpi-sub">Média ponderada dos liderados</div>
-    </div>`);
+
   const takeaway = takeawayFinanceiro({
     roi: b.trimestreAtual.roiAgregado,
     variacaoRoi: variacaoTri,
@@ -636,10 +622,9 @@ function renderBlocoFinanceiro(input: ExecutiveReportFinalPayload): string {
   });
   return `<section class="page-break">
   <h2>Bloco Financeiro</h2>
-  <div class="kpi-grid" style="grid-template-columns: repeat(${kpiCards.length}, 1fr);">${kpiCards.join('\n')}</div>
-  ${folhaCards.length > 0 ? `<div class="kpi-grid" style="grid-template-columns: repeat(${folhaCards.length}, 1fr); margin-top:3mm;">${folhaCards.join('\n')}</div>` : ''}
-  <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-top:3mm;">${kpiContexto.join('\n')}</div>
-  <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-top:3mm;">${kpiAtingimento.join('\n')}</div>
+  <div class="kpi-grid" style="grid-template-columns: repeat(${linha1Cards.length}, 1fr);">${linha1Cards.join('\n')}</div>
+  ${linha2Cards.length > 0 ? `<div class="kpi-grid" style="grid-template-columns: repeat(${linha2Cards.length}, 1fr); margin-top:3mm;">${linha2Cards.join('\n')}</div>` : ''}
+  <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-top:3mm;">${linha3Cards.join('\n')}</div>
   <div class="info-card" style="margin-top:3mm;">
     ${paragrafosArejados(input.paragrafoFinanceiro)}
   </div>
@@ -745,23 +730,31 @@ function renderBlocoPlenitude(input: ExecutiveReportFinalPayload): string {
   const classesAlerta = alertante
     ? { cardClass: 'highlight-red', valueClass: 'red' }
     : { cardClass: '', valueClass: '' };
+  // CC079-DIS-C-3-EXEC:
+  //   - Card 1 (Plenitude média): subtexto "N colaboradores ativos"
+  //     removido.
+  //   - Card 3: titulo canonizado como "Liderança" (era "Avaliação
+  //     da liderança").
+  //   - Card 4: titulo canonizado como "Divergência" (era "Alerta
+  //     de divergência").
+  //   - Card variação: titulo "Variação vs. trimestre anterior" por
+  //     extenso + sinal explicito "+"/"-" + remocao do subtexto
+  //     canonico antigo.
   const kpiCards: string[] = [];
-  const colaboradoresAtivos = b.trimestreAtual.colaboradoresAtivos;
   kpiCards.push(`<div class="kpi-card ${classesPlen.cardClass}">
       <div class="kpi-label">Plenitude média</div>
       <div class="kpi-value ${classesPlen.valueClass}">${fmtNum(b.trimestreAtual.plenitudeScoreMedioAgregado)}</div>
-      <div class="kpi-sub">${fmtInt(colaboradoresAtivos)} colaboradores ativos</div>
     </div>`);
   kpiCards.push(`<div class="kpi-card">
       <div class="kpi-label">Autoavaliação</div>
       <div class="kpi-value">${fmtNum(b.trimestreAtual.scoreAMedio)}</div>
     </div>`);
   kpiCards.push(`<div class="kpi-card">
-      <div class="kpi-label">Avaliação da liderança</div>
+      <div class="kpi-label">Liderança</div>
       <div class="kpi-value">${fmtNum(b.trimestreAtual.scoreCMedio)}</div>
     </div>`);
   kpiCards.push(`<div class="kpi-card ${classesAlerta.cardClass}">
-      <div class="kpi-label">Alerta de divergência</div>
+      <div class="kpi-label">Divergência</div>
       <div class="kpi-value ${classesAlerta.valueClass}">${fmtPctInt(alertaPct)}</div>
     </div>`);
   const variacaoHtml =
@@ -769,9 +762,8 @@ function renderBlocoPlenitude(input: ExecutiveReportFinalPayload): string {
       ? ''
       : `<div class="kpi-grid" style="grid-template-columns: 1fr; margin-top:3mm;">
     <div class="kpi-card ${classesVar.cardClass}">
-      <div class="kpi-label">Variação vs. trim. anterior</div>
-      <div class="kpi-value ${classesVar.valueClass}">${fmtPct(variacao)}</div>
-      <div class="kpi-sub">Plenitude média comparada</div>
+      <div class="kpi-label">Variação vs. trimestre anterior</div>
+      <div class="kpi-value ${classesVar.valueClass}">${fmtPctRelativoSigned(variacao)}</div>
     </div>
   </div>`;
   // ME-1.3d-REV DIS-C CC079-1 (D-DIS-C-DIMBAR-ESCALA): escala 0-100 no
@@ -929,12 +921,15 @@ function renderBlocoTurnover(input: ExecutiveReportFinalPayload): string {
       <div class="kpi-value ${classesTurn.valueClass}">${fmtPct(atual.turnoverTrimestralPercentual)}</div>
       <div class="kpi-sub">${fmtInt(atual.saidasTotais)} ${pluralSaida(atual.saidasTotais)} no período</div>
     </div>`);
+  // CC079-DIS-C-3-EXEC: titulo "Variação vs. trimestre anterior" por
+  // extenso + subtexto apenas com o percentual relativo sinalizado
+  // (mesmo padrao do board deck — sem redundancia no subtexto).
   const subtextoVariacao =
     variacaoRelativa === null
       ? 'variação relativa indisponível'
-      : `${fmtPctRelativoSigned(variacaoRelativa)} vs trim. anterior`;
+      : fmtPctRelativoSigned(variacaoRelativa);
   kpiCards.push(`<div class="kpi-card ${classesVariacao.cardClass}">
-      <div class="kpi-label">Variação vs. trim. anterior</div>
+      <div class="kpi-label">Variação vs. trimestre anterior</div>
       <div class="kpi-value ${classesVariacao.valueClass}">${fmtPctSigned(variacaoPp)}</div>
       <div class="kpi-sub">${escapeHtml(subtextoVariacao)}</div>
     </div>`);

@@ -1581,12 +1581,20 @@ export const LAYOUT_BASE_CSS = `
   .achado-item.achado-amarelo::before { color: #F2A900; }
   .achado-item.achado-vermelho::before { color: #DC2626; }
 
-  /* Painel executivo semaforizado — 5 cards na pg 2 do executive. */
+  /* CC079-DIS-C-3-EXEC: Painel executivo em DUAS linhas canonicas:
+     linha 1 com 3 cards (Financeiro, Desempenho, Plenitude), linha 2
+     com 2 cards (Clima, Turnover). Cada linha ocupa largura inteira
+     da folha. Classes painel-exec-grid-3 e painel-exec-grid-2. */
   .painel-exec-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
     gap: 3mm;
     margin-top: 3mm;
+  }
+  .painel-exec-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .painel-exec-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
   }
   .painel-exec-card {
     border: 1px solid #E5E7EB;
