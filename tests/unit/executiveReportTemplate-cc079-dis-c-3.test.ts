@@ -29,6 +29,11 @@
 //  12. Bloco Plenitude em 2 linhas full-width (2 + 3): PlenitudeMédia
 //      + Variação na linha 1; Autoavaliação + Lideranca + Divergência
 //      na linha 2.
+//
+// CC079-DIS-C-3-EXEC-3 (1 ajuste pos-auditoria do EXEC-2):
+//  13. .achado-item.achado-amarelo com color #F2A900 canonico (antes
+//      #78350F marrom antigo). Afeta os bullets amarelos do Resumo
+//      executivo geral.
 
 import { describe, expect, it } from 'vitest';
 
@@ -348,5 +353,19 @@ describe('executiveReportTemplate CC079-DIS-C-3-EXEC', () => {
     expect(idxAutoav).toBeGreaterThan(idxVariacao);
     expect(idxLideranca).toBeGreaterThan(idxAutoav);
     expect(idxDiverg).toBeGreaterThan(idxLideranca);
+  });
+
+  it('CC079-DIS-C-3-EXEC-3: achado-amarelo com texto em #F2A900', () => {
+    const html = renderExecutiveReportHTML(basePayload);
+    // Regra CSS canonica do achado amarelo (bullets do Resumo executivo geral).
+    expect(html).toContain(
+      '.achado-item.achado-amarelo { background: #FEFCE8; ' +
+        'border-left-color: #F2A900; color: #F2A900; }',
+    );
+    // Cor marrom antiga NAO deve mais estar presente nessa regra.
+    expect(html).not.toContain(
+      '.achado-item.achado-amarelo { background: #FEFCE8; ' +
+        'border-left-color: #F2A900; color: #78350F; }',
+    );
   });
 });

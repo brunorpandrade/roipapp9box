@@ -1575,7 +1575,9 @@ export const LAYOUT_BASE_CSS = `
     line-height: 1.3;
   }
   .achado-item.achado-verde { background: #F0FDF4; border-left-color: #16A34A; color: #166534; }
-  .achado-item.achado-amarelo { background: #FEFCE8; border-left-color: #F2A900; color: #78350F; }
+  /* CC079-DIS-C-3-EXEC-3: cor do texto canonizada em #F2A900 (paleta
+     canonica herdada do PDF Clima). Antes: #78350F (marrom antigo). */
+  .achado-item.achado-amarelo { background: #FEFCE8; border-left-color: #F2A900; color: #F2A900; }
   .achado-item.achado-vermelho { background: #FEF2F2; border-left-color: #DC2626; color: #7F1D1D; }
   .achado-item.achado-verde::before { color: #16A34A; }
   .achado-item.achado-amarelo::before { color: #F2A900; }
