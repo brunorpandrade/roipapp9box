@@ -1839,19 +1839,28 @@ export const LAYOUT_BASE_CSS = `
     margin-top: 0;
     padding-top: 0;
   }
+  /* CC079-DIS-C-2a-3: alinhamento canonico do cabecalho da dimensao
+     com as linhas de aspecto abaixo (mesma grid: label | 28mm | 11mm)
+     para que a barra da dimensao fique exatamente na mesma coluna
+     visual das barras dos 5 aspectos individuais. */
   .dim-aberta-compacta .dim-aberta-head {
+    grid-template-columns: 1fr 28mm 11mm;
     margin-bottom: 2.5mm;
     gap: 2.5mm;
   }
   .dim-aberta-compacta .dim-aberta-title {
     font-size: 10.5pt;
   }
+  /* CC079-DIS-C-2a-3: dim-bar da dimensao com MESMO comprimento das
+     barras dos aspectos (28mm) — apenas um pouco mais alta (3.6mm vs
+     3mm) para marcar a hierarquia visual sem distorcer proporcao. */
   .dim-aberta-compacta .dim-aberta-barra {
-    width: 40mm;
+    width: 28mm;
     height: 3.6mm;
   }
   .dim-aberta-compacta .dim-aberta-nota {
     font-size: 10.5pt;
+    min-width: 11mm;
   }
   .dim-aberta-compacta .aspecto-bars { display: block; }
   .dim-aberta-compacta .aspecto-bar-row {

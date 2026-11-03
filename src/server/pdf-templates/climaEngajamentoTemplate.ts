@@ -622,7 +622,7 @@ function renderDrillDownLiderancaCard(card: LiderancaCard): string {
       <div class="clima-drilldown-nome">${escapeHtml(card.nomeLider)}</div>
       <div class="clima-drilldown-nota ${css}">${fmtNum(card.bloco.notaClima)}</div>
     </div>
-    <div class="clima-drilldown-meta">Departamento: ${escapeHtml(card.departamento)} · ${fmtInt(card.bloco.respondentes)} respondentes · Adesão ${fmtPctInt(card.bloco.adesao)}</div>
+    <div class="clima-drilldown-meta">${fmtInt(card.bloco.respondentes)} respondentes · Adesão ${fmtPctInt(card.bloco.adesao)}</div>
     <div class="dim-bars clima-drilldown-bars">
       ${renderDimBarSemaforizada('Engajamento', card.bloco.porDimensao.engajamento, 10)}
       ${renderDimBarSemaforizada('Desenvolvimento', card.bloco.porDimensao.desenvolvimento, 10)}
@@ -767,9 +767,12 @@ export function renderClimaEngajamentoHTML(input: ClimaEngajamentoTemplateInput)
     renderCapaMaisAchados(input),
     renderVisaoPanoramica(input),
     renderDetalhamentoAspectos(input),
+    // CC079-DIS-C-2a-3: sequencia canonica macro->zoom em cada camada.
+    // Depto: macro (comparativo) -> zoom (drill-down). Equipe: macro
+    // (ranking) -> zoom (drill-down).
     renderComparativoDeptos(input),
-    renderRankingEquipes(input),
     renderDrillDownDeptos(input),
+    renderRankingEquipes(input),
     renderDrillDownLiderancas(input),
     renderProximosPassos(input),
     renderRastreabilidade(input),

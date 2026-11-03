@@ -137,33 +137,37 @@ describe('climaEngajamentoTemplate CC079-DIS-C-2a', () => {
     }
   });
 
-  it('Ordem canonica das secoes no body', () => {
+  it('CC079-DIS-C-2a-3: Ordem canonica das secoes macro->zoom', () => {
     const html = renderClimaEngajamentoHTML(baseFixture);
     const idxPanoramica = html.indexOf('Visão panorâmica');
     const idxTop3 = html.indexOf('Top 3 aspectos individuais');
     const idxDetalhamento = html.indexOf('Detalhamento dos aspectos individuais');
     const idxComparativo = html.indexOf('Comparativo entre departamentos');
-    const idxRanking = html.indexOf('Ranking de equipes');
     const idxDrillDepto = html.indexOf('Drill-down por departamento');
+    const idxRanking = html.indexOf('Ranking de equipes');
     const idxDrillLider = html.indexOf('Drill-down por liderança');
     const idxProximos = html.indexOf('Próximos passos');
     const idxRastre = html.indexOf('Rastreabilidade e integridade');
     expect(idxPanoramica).toBeGreaterThan(0);
     expect(idxTop3).toBeGreaterThan(idxPanoramica);
     expect(idxDetalhamento).toBeGreaterThan(idxTop3);
+    // Depto macro -> zoom
     expect(idxComparativo).toBeGreaterThan(idxDetalhamento);
-    expect(idxRanking).toBeGreaterThan(idxComparativo);
-    expect(idxDrillDepto).toBeGreaterThan(idxRanking);
-    expect(idxDrillLider).toBeGreaterThan(idxDrillDepto);
+    expect(idxDrillDepto).toBeGreaterThan(idxComparativo);
+    // Equipe macro -> zoom
+    expect(idxRanking).toBeGreaterThan(idxDrillDepto);
+    expect(idxDrillLider).toBeGreaterThan(idxRanking);
     expect(idxProximos).toBeGreaterThan(idxDrillLider);
     expect(idxRastre).toBeGreaterThan(idxProximos);
   });
 
   it('Drill-down por departamento sem tabela de sub-equipes', () => {
     const html = renderClimaEngajamentoHTML(baseFixture);
+    // CC079-DIS-C-2a-3: entre Drill depto e Ranking agora (nova
+    // sequencia macro->zoom), nao mais entre Drill depto e Drill lider.
     const idxDepto = html.indexOf('Drill-down por departamento');
-    const idxLider = html.indexOf('Drill-down por liderança');
-    const trechoDepto = html.slice(idxDepto, idxLider);
+    const idxRanking = html.indexOf('Ranking de equipes');
+    const trechoDepto = html.slice(idxDepto, idxRanking);
     expect(trechoDepto).not.toContain('clima-equipes-mini');
   });
 
@@ -189,5 +193,27 @@ describe('climaEngajamentoTemplate CC079-DIS-C-2a', () => {
   it('CC079-DIS-C-2a-2: padding-right global no main (fix bordas)', () => {
     const html = renderClimaEngajamentoHTML(baseFixture);
     expect(html).toContain('main {\n    padding-right: 1mm;\n  }');
+  });
+
+  it('CC079-DIS-C-2a-3: dim-bar da dimensao com 28mm (igual aos aspectos)', () => {
+    const html = renderClimaEngajamentoHTML(baseFixture);
+    expect(html).toContain('.dim-aberta-compacta .dim-aberta-barra {\n    width: 28mm;');
+    expect(html).not.toContain('.dim-aberta-compacta .dim-aberta-barra {\n    width: 40mm;');
+    // Alinhamento canonico do cabecalho com as linhas de aspecto.
+    expect(html).toContain(
+      '.dim-aberta-compacta .dim-aberta-head {\n    grid-template-columns: 1fr 28mm 11mm;',
+    );
+  });
+
+  it('CC079-DIS-C-2a-3: card de lideranca SEM "Departamento:" no subtitulo', () => {
+    const html = renderClimaEngajamentoHTML(baseFixture);
+    // Procura trecho entre o h2 do drill-down liderança e o fim da secao
+    const idxDrillLider = html.indexOf('Drill-down por liderança');
+    const idxProximos = html.indexOf('Próximos passos');
+    const trechoLider = html.slice(idxDrillLider, idxProximos);
+    // Em cards de lider, nao deve mais aparecer "Departamento: ..."
+    expect(trechoLider).not.toContain('Departamento:');
+    // Metadata do card ainda tem respondentes + adesao
+    expect(trechoLider).toContain('respondentes · Adesão');
   });
 });
