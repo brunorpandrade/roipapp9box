@@ -191,8 +191,10 @@ describe('classificarNr1Faixa', () => {
   });
 
   it('cores canonicas por faixa', () => {
+    // CC079-DIS-C-3-NR1-AMARELO: amarelo canonizado em #F2A900
+    // (paleta herdada do PDF Clima). Antes: #D97706 laranja antigo.
     expect(RADAR_NR1_CORES.verde).toBe('#16A34A');
-    expect(RADAR_NR1_CORES.amarelo).toBe('#D97706');
+    expect(RADAR_NR1_CORES.amarelo).toBe('#F2A900');
     expect(RADAR_NR1_CORES.vermelho).toBe('#DC2626');
   });
 });

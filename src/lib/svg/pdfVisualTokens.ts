@@ -77,12 +77,15 @@ export function classificarNr1Faixa(score: number): Nr1Faixa {
 }
 
 /**
- * Cor canonica por faixa do Radar NR-1 (coerente com UI e mockup).
- * Replica bit-exact o mockup `relatorio_radar_nr1_v1.html`.
+ * Cor canonica por faixa do Radar NR-1.
+ * CC079-DIS-C-3-GLOBAL-AMARELO: paleta amarela canonizada em #F2A900
+ * (herdada do PDF Clima). Antes: #D97706 (laranja escuro). Afeta
+ * bolinhas do radar, scores amarelos na lista de fatores, descricao
+ * de cada fator e tabelas de departamento vs empresa.
  */
 export const RADAR_NR1_CORES: Readonly<Record<Nr1Faixa, string>> = {
   verde: '#16A34A',
-  amarelo: '#D97706',
+  amarelo: '#F2A900',
   vermelho: '#DC2626',
 };
 
