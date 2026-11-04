@@ -236,16 +236,22 @@ export const LAYOUT_BASE_CSS = `
   .cover-meta-row:last-child { border-bottom: none; }
   .cover-meta-label { color: #6B7280; font-weight: 500; }
   .cover-meta-value { color: #111827; font-weight: 700; }
+  /* ME-1.10-CC079-DIS-E: cor canonizada na paleta amarela global
+     #F2A900 (fecha D-CLASSES-AMARELAS-LEGADO para esta classe). Antes:
+     fundo #FEF3C7, borda #FBBF24, texto #78350F (marrom pre-canonizacao).
+     Padrao canonico: fundo amarelo claro + borda/strong em #F2A900
+     (accent), corpo em neutro escuro legivel (#374151) — mesmo criterio
+     dos cards KPI (amarelo para accent, neutro para corpo longo). */
   .cover-note {
-    background: #FEF3C7;
-    border: 1px solid #FBBF24;
+    background: #FEFCE8;
+    border: 1px solid #F2A900;
     border-radius: 8pt;
     padding: 4mm 6mm;
     font-size: 9pt;
-    color: #78350F;
+    color: #374151;
     line-height: 1.55;
   }
-  .cover-note strong { color: #78350F; font-weight: 700; }
+  .cover-note strong { color: #F2A900; font-weight: 700; }
 
   /* ME-1.3c CC079-v4: classes de sumario (.toc-*) retiradas junto com
   o índice do documento. */
@@ -2122,6 +2128,83 @@ export const LAYOUT_BASE_CSS = `
   }
   .clima-liderancas-fora-piso-list li .muted {
     color: #6B7280;
+  }
+
+  /* ============================================================
+     ME-1.10-CC079-DIS-E — lapidacao visual estrutural dos 4 PDFs
+     restantes do item [1.10]. Classes canonicas reutilizaveis
+     para Perfil individual, Portabilidade LGPD e documentos de
+     desligamento. Mesma identidade editorial dos 5 PDFs ja
+     fechados (badge, cover-hero, cover-meta, data-table).
+     ============================================================ */
+
+  /* Cabecalho editorial compacto — topo da pagina 1 de documentos
+     operacionais (formularios de desligamento) que NAO justificam
+     uma pagina-capa inteira. Badge + titulo + subtitulo + divisoria
+     teal, com reserva de espaco para o logo no canto. */
+  .doc-head-compact {
+    margin: 0 0 7mm;
+    padding: 0 50mm 4mm 0;
+    border-bottom: 2px solid #14B8A6;
+  }
+  .doc-head-compact .doc-head-badge {
+    display: inline-block;
+    padding: 3.5pt 11pt;
+    background: #EEF2FF;
+    color: #1F3A5F;
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-radius: 20pt;
+    margin-bottom: 4mm;
+  }
+  .doc-head-compact .doc-head-title {
+    font-size: 20pt;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin: 0 0 2mm;
+  }
+  .doc-head-compact .doc-head-subtitle {
+    font-size: 10pt;
+    color: #4B5563;
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  /* Grid de dados cadastrais (rotulo esquerda + valor direita) em
+     card editorial. Substitui parrafos soltos com espacamento
+     irregular por linhas alinhadas e consistentes. */
+  .cadastro-grid {
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 10pt;
+    padding: 2mm 6mm;
+    margin: 4mm 0;
+  }
+  .cadastro-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 6mm;
+    padding: 2.3mm 0;
+    border-bottom: 1px solid #EEF0F3;
+    font-size: 10pt;
+  }
+  .cadastro-row:last-child {
+    border-bottom: none;
+  }
+  .cadastro-label {
+    color: #6B7280;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .cadastro-value {
+    color: #111827;
+    font-weight: 700;
+    text-align: right;
   }
 `;
 

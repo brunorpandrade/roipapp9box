@@ -29,6 +29,10 @@ import {
   type Nr1TemplateInput,
   renderNr1ReportHTML,
 } from '../../src/server/pdf-templates/nr1Template';
+import {
+  renderDocumentoPadraoBody,
+  renderDocumentoPadraoPdfHtml,
+} from '../../src/server/pdf-templates/terminationFormDocumentTemplate';
 
 // ============================================================
 // Fixtures canonicas deterministicas
@@ -503,5 +507,59 @@ describe('nr1Template (ME-050/51)', () => {
     expect(
       composeNr1ReportFilename('Nexus Soluções & Cia. Ltda.', '2026-10-20', '2027-01-20'),
     ).toBe('Radar_NR-1_Nexus_Solucoes__Cia_Ltda_2026-10-20_2027-01-20.pdf');
+  });
+});
+
+// ============================================================
+// ME-1.10-CC079-DIS-E — lapidacao visual estrutural (item [1.10]).
+// Regua de presenca das classes canonicas introduzidas nos 4 PDFs
+// restantes. Provada nos dois sentidos (RV-03): o caso bom passa; a
+// remocao de qualquer classe canonica reprova.
+// ============================================================
+describe('ME-1.10-CC079-DIS-E — Perfil individual lapidado', () => {
+  it('capa editorial canonica presente', () => {
+    const html = renderIndividualProfileHTML(CANON_INDIVIDUAL);
+    expect(html).toContain('class="cover-page"');
+    expect(html).toContain('class="cover-badge"');
+    expect(html).toContain('class="cover-hero"');
+    expect(html).toContain('class="cover-meta"');
+    expect(html).toContain('class="cover-note"');
+  });
+
+  it('painel de subvetores usa barras canonicas, nao a barra preta antiga', () => {
+    const html = renderIndividualProfileHTML(CANON_INDIVIDUAL);
+    expect(html).toContain('class="dim-bar-row"');
+    expect(html).toContain('class="dim-bar-fill"');
+    expect(html).toContain('class="dim-bar-value"');
+    // A barra preta inline antiga (#111827 como fill) foi removida.
+    expect(html).not.toContain('background:#111827; width:');
+  });
+});
+
+describe('ME-1.10-CC079-DIS-E — documentos de desligamento lapidados', () => {
+  it('corpo compartilhado usa cards de pergunta e descricao, sem <h2>', () => {
+    const roteiro = renderDocumentoPadraoBody('roteiro-voluntario');
+    const formulario = renderDocumentoPadraoBody('formulario-involuntario');
+    expect(roteiro).toContain('class="pergunta-card"');
+    expect(roteiro).toContain('class="doc-desc"');
+    expect(formulario).toContain('class="pergunta-card"');
+    expect(formulario).toContain('class="doc-desc"');
+    // O titulo sai do corpo (fica no modal/web e no header do PDF).
+    expect(roteiro).not.toContain('<h2>');
+    expect(formulario).not.toContain('<h2>');
+  });
+
+  it('wrapper do PDF injeta o cabecalho editorial compacto', () => {
+    const company = { nomeFantasia: 'Nexus & Cia' };
+    const pdf = renderDocumentoPadraoPdfHtml('roteiro-voluntario', company, 'Gerado em 2026-11-04');
+    expect(pdf).toContain('class="doc-head-compact"');
+    expect(pdf).toContain('class="doc-head-badge"');
+    expect(pdf).toContain('class="doc-head-title"');
+  });
+
+  it('determinismo — mesma entrada gera mesma saida', () => {
+    expect(renderDocumentoPadraoBody('roteiro-voluntario')).toBe(
+      renderDocumentoPadraoBody('roteiro-voluntario'),
+    );
   });
 });

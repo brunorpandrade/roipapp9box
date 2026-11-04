@@ -165,8 +165,34 @@ export function composeIndividualProfileFilename(nome: string, generatedAtDate: 
   return `Perfil_Individual_${nomeNorm}_${generatedAtDate}.pdf`;
 }
 
+/**
+ * ME-1.10-CC079-DIS-E: capa editorial canonica (pagina 1) no padrao dos
+ * 5 PDFs ja fechados do item [1.10]. Badge + cover-hero + cover-meta de
+ * identificacao resumida + cover-note sobre o carater descritivo do
+ * instrumento. A ficha de identificacao completa (§10.10) permanece como
+ * primeira secao do corpo (pagina 2), preservada bit-a-bit.
+ */
+function renderCoverPage(id: IndividualProfileIdentificacao): string {
+  const nivel = NIVEL_HIERARQUICO_ROTULO[id.nivelHierarquico];
+  return `<section class="cover-page">
+  <div class="cover-badge">Perfil individual</div>
+  <div class="cover-hero">
+    <div class="cover-title-line1">Perfil individual</div>
+    <div class="cover-title-line2">Retrato comportamental</div>
+  </div>
+  <div class="cover-meta">
+    <div class="cover-meta-row"><span class="cover-meta-label">Colaborador</span><span class="cover-meta-value">${escapeHtml(asStr(id.nome))}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">Cargo</span><span class="cover-meta-value">${escapeHtml(asStr(id.cargo))}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">Nível hierárquico</span><span class="cover-meta-value">${escapeHtml(nivel)}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">Departamento</span><span class="cover-meta-value">${escapeHtml(asStr(id.departamento))}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">Data de aplicação</span><span class="cover-meta-value">${escapeHtml(formatDateBR(asStr(id.dataAplicacao)))}</span></div>
+  </div>
+  <div class="cover-note"><strong>Documento confidencial.</strong> Este relatório descreve padrões comportamentais e de potencial — é uma leitura de estilo, não um juízo de valor sobre a pessoa. Destina-se exclusivamente à gestão de pessoas e ao desenvolvimento do colaborador.</div>
+</section>`;
+}
+
 function renderIdentificacaoSection(id: IndividualProfileIdentificacao): string {
-  return `<section>
+  return `<section class="page-break">
   <h2>Identificação</h2>
   <p><strong>Nome:</strong> ${escapeHtml(asStr(id.nome))}</p>
   <p><strong>Cargo:</strong> ${escapeHtml(asStr(id.cargo))}</p>
@@ -292,27 +318,32 @@ function renderSubvectorPanel(subvetores: IndividualProfileSubvector[]): string 
   };
   for (const s of subvetores) grouped[s.bloco]?.push(s);
 
+  // ME-1.10-CC079-DIS-E: barras canonicas `.dim-bar-row` na cor de
+  // marca (teal #14B8A6), NAO semaforicas. O Perfil individual e
+  // descritivo, nao avaliativo — um subvetor baixo (ex. amabilidade) e
+  // posicao no traco, nao "ruim". Semaforo verde/amarelo/vermelho
+  // introduziria juizo de valor ausente do instrumento (DOC 03 §10.8).
+  // Cada bloco e envolvido em `page-break-inside: avoid` para eliminar
+  // titulos de bloco orfaos no fim de pagina.
   const blocks = Object.entries(grouped)
     .filter(([, arr]) => arr.length > 0)
     .map(([bloco, arr]) => {
       const rows = arr
         .map((s) => {
           const pct = Math.max(0, Math.min(100, s.valor));
-          return `<tr>
-      <td style="width:35%; padding:2mm 3mm 2mm 0;">${escapeHtml(asStr(s.rotulo))}</td>
-      <td style="width:55%;">
-        <div style="background:#e5e7eb; height:4mm; border-radius:1mm;">
-          <div style="background:#111827; width:${pct.toFixed(1)}%; height:4mm; border-radius:1mm;"></div>
-        </div>
-      </td>
-      <td style="width:10%; text-align:right; padding:2mm 0 2mm 3mm;">${pct.toFixed(1)}</td>
-    </tr>`;
+          return `<div class="dim-bar-row">
+      <div class="dim-bar-label">${escapeHtml(asStr(s.rotulo))}</div>
+      <div class="dim-bar-track"><div class="dim-bar-fill" style="width:${pct.toFixed(1)}%;"></div></div>
+      <div class="dim-bar-value">${pct.toFixed(1)}</div>
+    </div>`;
         })
         .join('\n');
-      return `<h3>${escapeHtml(bloco)}</h3>
-<table style="width:100%; border-collapse:collapse; margin-bottom:4mm;">
+      return `<div style="page-break-inside: avoid; margin-bottom:4mm;">
+  <h3>${escapeHtml(bloco)}</h3>
+  <div class="dim-bars">
 ${rows}
-</table>`;
+  </div>
+</div>`;
     })
     .join('\n');
 
@@ -329,7 +360,7 @@ ${rows}
 export function renderIndividualProfileHTML(input: IndividualProfileTemplateInput): string {
   const exp = input.expandido;
   const bodyHtml = [
-    `<h1>Perfil individual</h1>`,
+    renderCoverPage(input.identificacao),
     renderIdentificacaoSection(input.identificacao),
     renderSintese(exp.sintese_executiva),
     renderComoAge(exp.como_age),

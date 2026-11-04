@@ -280,44 +280,43 @@ export function composeLgpdPortabilityFilename(nome: string, generatedAtDate: st
 // Renderizacao interna das secoes canonicas
 // ============================================================
 
+/**
+ * ME-1.10-CC079-DIS-E: uma linha do grid de cadastrais (rotulo esquerda
+ * + valor direita), substituindo os parrafos soltos com espacamento
+ * irregular por linhas alinhadas no card `.cadastro-grid`.
+ */
+function cadastroRow(rotulo: string, valor: string): string {
+  return `<div class="cadastro-row"><span class="cadastro-label">${escapeHtml(rotulo)}</span><span class="cadastro-value">${escapeHtml(valor)}</span></div>`;
+}
+
 function renderCadastraisSection(c: LgpdPortabilityCadastrais): string {
   const linhas: string[] = [];
-  linhas.push(
-    `<p><strong>Tipo de titular:</strong> ${escapeHtml(TITULAR_TIPO_ROTULO[c.titularType])}</p>`,
-  );
-  linhas.push(`<p><strong>Nome:</strong> ${escapeHtml(c.nome)}</p>`);
+  linhas.push(cadastroRow('Tipo de titular', TITULAR_TIPO_ROTULO[c.titularType]));
+  linhas.push(cadastroRow('Nome', c.nome));
   // ME-B11.1c (PDL2): CPF formatado com mascara canonica
   // "XXX.XXX.XXX-XX" via helper compartilhado `formatCpf` (fonte unica
   // em `src/lib/cpf/formatCpf.ts`). CPF chega do banco sem pontuacao
   // (11 digitos — DOC 01 §4.5).
-  linhas.push(`<p><strong>CPF:</strong> ${escapeHtml(formatCpf(c.cpf))}</p>`);
-  linhas.push(`<p><strong>E-mail:</strong> ${escapeHtml(c.email ?? '(não cadastrado)')}</p>`);
+  linhas.push(cadastroRow('CPF', formatCpf(c.cpf)));
+  linhas.push(cadastroRow('E-mail', c.email ?? '(não cadastrado)'));
   // ME-B11.1c PATCH2 (PDL3): datas canonicas em formato BR `DD/MM/YYYY`
   // via helper compartilhado `formatDateBR`. Dados chegam do service em
   // formato ISO `YYYY-MM-DD` (coluna `date()` MySQL).
-  linhas.push(
-    `<p><strong>Data de nascimento:</strong> ${escapeHtml(formatDateBR(c.dataNascimento))}</p>`,
-  );
-  linhas.push(
-    `<p><strong>Data de admissão:</strong> ${escapeHtml(formatDateBR(c.dataAdmissao))}</p>`,
-  );
-  linhas.push(`<p><strong>Cargo:</strong> ${escapeHtml(c.cargo)}</p>`);
-  linhas.push(`<p><strong>Departamento:</strong> ${escapeHtml(c.departamento)}</p>`);
-  linhas.push(`<p><strong>Status:</strong> ${escapeHtml(STATUS_TITULAR_ROTULO[c.status])}</p>`);
+  linhas.push(cadastroRow('Data de nascimento', formatDateBR(c.dataNascimento)));
+  linhas.push(cadastroRow('Data de admissão', formatDateBR(c.dataAdmissao)));
+  linhas.push(cadastroRow('Cargo', c.cargo));
+  linhas.push(cadastroRow('Departamento', c.departamento));
+  linhas.push(cadastroRow('Status', STATUS_TITULAR_ROTULO[c.status]));
   if (c.cbo !== null && c.descricaoCBO !== null) {
-    linhas.push(
-      `<p><strong>CBO:</strong> ${escapeHtml(c.cbo)} — ${escapeHtml(c.descricaoCBO)}</p>`,
-    );
+    linhas.push(cadastroRow('CBO', `${c.cbo} — ${c.descricaoCBO}`));
   }
   if (c.nivelHierarquico !== null) {
     linhas.push(
-      `<p><strong>Nível hierárquico:</strong> ${escapeHtml(NIVEL_HIERARQUICO_ROTULO_LGPD[c.nivelHierarquico])}</p>`,
+      cadastroRow('Nível hierárquico', NIVEL_HIERARQUICO_ROTULO_LGPD[c.nivelHierarquico]),
     );
   }
   if (c.senioridade !== null) {
-    linhas.push(
-      `<p><strong>Senioridade:</strong> ${escapeHtml(SENIORIDADE_ROTULO_LGPD[c.senioridade])}</p>`,
-    );
+    linhas.push(cadastroRow('Senioridade', SENIORIDADE_ROTULO_LGPD[c.senioridade]));
   }
   if (c.jobFamily !== null) {
     // ME-1.17.c — prioriza `familyLabel` pre-resolvido pelo caller
@@ -329,11 +328,13 @@ function renderCadastraisSection(c: LgpdPortabilityCadastrais): string {
       c.familyLabel !== undefined && c.familyLabel !== null
         ? c.familyLabel
         : formatJobFamily(c.jobFamily);
-    linhas.push(`<p><strong>Família de cargo:</strong> ${escapeHtml(labelResolvido)}</p>`);
+    linhas.push(cadastroRow('Família de cargo', labelResolvido));
   }
-  return `<section>
+  return `<section class="page-break">
   <h2>Dados cadastrais</h2>
+  <div class="cadastro-grid">
   ${linhas.join('\n  ')}
+  </div>
 </section>`;
 }
 
@@ -346,27 +347,27 @@ function renderInstrumentoRows(rows: LgpdPortabilityInstrumentoRow[], vazioMsg: 
   //    "1º trimestre de 2026").
   //  - `respondidoEm` humanizado via `toTimestampBrt` (ISO UTC ->
   //    "DD/MM/YYYY às HH:mm (BRT)").
+  // ME-1.10-CC079-DIS-E: tabela canonica `.data-table` (cabecalho cinza
+  // uppercase, linhas com divisoria sutil) substituindo a tabela inline.
   const cells = rows
     .map(
       (r) => `<tr>
-      <td style="padding:1.5mm 3mm 1.5mm 0;">${escapeHtml(formatTrimestreBR(r.trimestre))}</td>
-      <td style="padding:1.5mm 3mm; text-align:center;">${r.dimensao}</td>
-      <td style="padding:1.5mm 3mm; text-align:center;">${r.itemIndex}</td>
-      <td style="padding:1.5mm 3mm; text-align:right;">${r.valor}</td>
-      <td style="padding:1.5mm 0 1.5mm 3mm;" class="muted">${escapeHtml(
-        toTimestampBrt(r.respondidoEm) ?? '',
-      )}</td>
+      <td>${escapeHtml(formatTrimestreBR(r.trimestre))}</td>
+      <td style="text-align:center;">${r.dimensao}</td>
+      <td style="text-align:center;">${r.itemIndex}</td>
+      <td class="right">${r.valor}</td>
+      <td class="muted">${escapeHtml(toTimestampBrt(r.respondidoEm) ?? '')}</td>
     </tr>`,
     )
     .join('\n');
-  return `<table style="width:100%; border-collapse:collapse; margin-top:2mm; font-size:9.5pt;">
+  return `<table class="data-table">
     <thead>
       <tr>
-        <th style="text-align:left; padding:1.5mm 3mm 1.5mm 0; border-bottom:0.5pt solid #d1d5db;">Trimestre</th>
-        <th style="text-align:center; padding:1.5mm 3mm; border-bottom:0.5pt solid #d1d5db;">Dimensão</th>
-        <th style="text-align:center; padding:1.5mm 3mm; border-bottom:0.5pt solid #d1d5db;">Item</th>
-        <th style="text-align:right; padding:1.5mm 3mm; border-bottom:0.5pt solid #d1d5db;">Valor</th>
-        <th style="text-align:left; padding:1.5mm 0 1.5mm 3mm; border-bottom:0.5pt solid #d1d5db;">Respondido em</th>
+        <th>Trimestre</th>
+        <th style="text-align:center;">Dimensão</th>
+        <th style="text-align:center;">Item</th>
+        <th class="right">Valor</th>
+        <th>Respondido em</th>
       </tr>
     </thead>
     <tbody>
@@ -414,29 +415,25 @@ function renderCopsoqSection(rows: LgpdPortabilityCopsoqRow[]): string {
   const cells = rows
     .map(
       (r) => `<tr>
-      <td style="padding:1.5mm 3mm 1.5mm 0;">${escapeHtml(
-        formatTrimestreBR(r.cicloReferencia),
-      )}</td>
-      <td style="padding:1.5mm 3mm; text-align:center;">${r.fator}</td>
-      <td style="padding:1.5mm 3mm; text-align:center;">${r.itemIndex}</td>
-      <td style="padding:1.5mm 3mm; text-align:right;">${r.valor}</td>
-      <td style="padding:1.5mm 0 1.5mm 3mm;" class="muted">${escapeHtml(
-        toTimestampBrt(r.respondidoEm) ?? '',
-      )}</td>
+      <td>${escapeHtml(formatTrimestreBR(r.cicloReferencia))}</td>
+      <td style="text-align:center;">${r.fator}</td>
+      <td style="text-align:center;">${r.itemIndex}</td>
+      <td class="right">${r.valor}</td>
+      <td class="muted">${escapeHtml(toTimestampBrt(r.respondidoEm) ?? '')}</td>
     </tr>`,
     )
     .join('\n');
   return `<section>
   <h2>Radar NR-1 (COPSOQ)</h2>
   <p class="muted">Respostas do próprio titular ao Radar NR-1 (DOC 03 §11).</p>
-  <table style="width:100%; border-collapse:collapse; margin-top:2mm; font-size:9.5pt;">
+  <table class="data-table">
     <thead>
       <tr>
-        <th style="text-align:left; padding:1.5mm 3mm 1.5mm 0; border-bottom:0.5pt solid #d1d5db;">Ciclo</th>
-        <th style="text-align:center; padding:1.5mm 3mm; border-bottom:0.5pt solid #d1d5db;">Fator</th>
-        <th style="text-align:center; padding:1.5mm 3mm; border-bottom:0.5pt solid #d1d5db;">Item</th>
-        <th style="text-align:right; padding:1.5mm 3mm; border-bottom:0.5pt solid #d1d5db;">Valor</th>
-        <th style="text-align:left; padding:1.5mm 0 1.5mm 3mm; border-bottom:0.5pt solid #d1d5db;">Respondido em</th>
+        <th>Ciclo</th>
+        <th style="text-align:center;">Fator</th>
+        <th style="text-align:center;">Item</th>
+        <th class="right">Valor</th>
+        <th>Respondido em</th>
       </tr>
     </thead>
     <tbody>
@@ -557,9 +554,33 @@ export function renderLgpdPortabilityHTML(input: LgpdPortabilityTemplateInput): 
     modo === 'colaborador'
       ? 'Documento canônico emitido em atendimento ao direito de acesso previsto na Lei Geral de Proteção de Dados Pessoais (LGPD, Lei nº 13.709/2018). Contém os dados cadastrais do titular e o registro canônico do termo de aceite vigente. Respostas aos instrumentos de avaliação são preservadas na base canônica da plataforma e disponibilizadas ao titular pelos canais de atendimento da empresa, conforme previsto em lei.'
       : 'Documento canônico emitido em atendimento ao direito de portabilidade previsto na Lei Geral de Proteção de Dados Pessoais (LGPD, Lei nº 13.709/2018). Contém os dados cadastrais do titular e as respostas fornecidas pelo próprio titular aos instrumentos de avaliação da plataforma. Avaliações realizadas por terceiros sobre o titular não integram o escopo deste documento.';
-  const preambulo = `<section>
-  <h1>${modo === 'colaborador' ? 'Meus dados pessoais' : 'Portabilidade de dados pessoais'}</h1>
-  <p class="muted">${escapeHtml(preambuloTexto)}</p>
+  // ME-1.10-CC079-DIS-E: capa editorial canonica. Titulo do modo via
+  // `.cover-title` (quebra em multiplas linhas — suporta o titulo longo
+  // "Portabilidade de dados pessoais" sem truncar). Preambulo legal
+  // canonico migra para a `.cover-note`. Preserva os titulos canonicos
+  // verificados nos testes ("Meus dados pessoais" / "Portabilidade de
+  // dados pessoais").
+  const tituloModo =
+    modo === 'colaborador' ? 'Meus dados pessoais' : 'Portabilidade de dados pessoais';
+  const subtituloModo =
+    modo === 'colaborador' ? 'Direito de acesso do titular' : 'Direito de portabilidade do titular';
+  const dataGeracaoCapa =
+    input.generatedAtTimestamp !== undefined
+      ? (toTimestampBrt(input.generatedAtTimestamp) ?? formatDateBR(input.generatedAtDate))
+      : formatDateBR(input.generatedAtDate);
+  const preambulo = `<section class="cover-page">
+  <div class="cover-badge">LGPD · Lei nº 13.709/2018</div>
+  <div class="cover-hero">
+    <div class="cover-title">${escapeHtml(tituloModo)}</div>
+    <div class="cover-subtitle">${escapeHtml(subtituloModo)}</div>
+  </div>
+  <div class="cover-meta">
+    <div class="cover-meta-row"><span class="cover-meta-label">Titular</span><span class="cover-meta-value">${escapeHtml(input.cadastrais.nome)}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">Tipo de titular</span><span class="cover-meta-value">${escapeHtml(TITULAR_TIPO_ROTULO[input.cadastrais.titularType])}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">CPF</span><span class="cover-meta-value">${escapeHtml(formatCpf(input.cadastrais.cpf))}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">Data de geração</span><span class="cover-meta-value">${escapeHtml(dataGeracaoCapa)}</span></div>
+  </div>
+  <div class="cover-note">${escapeHtml(preambuloTexto)}</div>
 </section>`;
 
   const secoes: string[] = [preambulo, renderCadastraisSection(input.cadastrais)];

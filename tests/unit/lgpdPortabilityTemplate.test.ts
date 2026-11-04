@@ -173,3 +173,35 @@ describe('lgpdPortabilityTemplate — termo aceite com versao historica (textoLi
     expect(html).toContain('Versão histórica');
   });
 });
+
+// ============================================================
+// ME-1.10-CC079-DIS-E — lapidacao visual estrutural (item [1.10]).
+// Regua de presenca das classes canonicas. Provada nos dois sentidos
+// (RV-03): o caso bom passa; a remocao de qualquer classe reprova.
+// ============================================================
+describe('ME-1.10-CC079-DIS-E — Portabilidade LGPD lapidada', () => {
+  it('capa editorial canonica presente em ambos os modos', () => {
+    const colaborador = renderLgpdPortabilityHTML({ ...BASE_INPUT, modo: 'colaborador' });
+    const superAdmin = renderLgpdPortabilityHTML({ ...BASE_INPUT, modo: 'super_admin' });
+    for (const html of [colaborador, superAdmin]) {
+      expect(html).toContain('class="cover-page"');
+      expect(html).toContain('class="cover-badge"');
+      expect(html).toContain('class="cover-hero"');
+      expect(html).toContain('class="cover-meta"');
+      expect(html).toContain('class="cover-note"');
+    }
+  });
+
+  it('dados cadastrais em grid canonico, nao em paragrafos soltos', () => {
+    const html = renderLgpdPortabilityHTML({ ...BASE_INPUT, modo: 'super_admin' });
+    expect(html).toContain('class="cadastro-grid"');
+    expect(html).toContain('class="cadastro-row"');
+    expect(html).toContain('class="cadastro-label"');
+    expect(html).toContain('class="cadastro-value"');
+  });
+
+  it('tabelas de respostas usam a data-table canonica', () => {
+    const html = renderLgpdPortabilityHTML({ ...BASE_INPUT, modo: 'super_admin' });
+    expect(html).toContain('class="data-table"');
+  });
+});
