@@ -966,7 +966,11 @@ export function itemKey(item: number): string {
 }
 
 /** Normaliza o payload cru de `respostas` (JSON) para o tipo tipado. */
-function normalizeRespostas(raw: unknown): RespostasPerfil {
+// ME-REPROC-IASOC: exportada para o modulo de reprocessamento
+// (`reprocessIaSocInconsistentes.ts`) prever o nivel de uma tentativa
+// pelo MESMO pipeline do motor (compute* sobre respostas normalizadas),
+// garantindo fidelidade entre o plano (dry-run) e a aplicacao real.
+export function normalizeRespostas(raw: unknown): RespostasPerfil {
   if (typeof raw !== 'object' || raw === null) return {};
   const rec = raw as Record<string, unknown>;
   const out: RespostasPerfil = {};
