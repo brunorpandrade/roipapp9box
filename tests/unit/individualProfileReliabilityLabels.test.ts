@@ -73,21 +73,28 @@ describe('ME-1.11 — classificarMotivosInconsistencia severidade por subescala'
     expect(motivo?.severidade).toBe('critico');
   });
 
-  // ----- ia_soc (§5.1.2): 0-6. ok<=1, medio<=3, critico>3 -----
+  // ----- ia_soc (§5.1.2): 0-6. ME-RECAL-IASOC
+  // (D-PERFIL-RECALIBRAGEM-THRESHOLDS): ok<=3, medio 4-5, critico=6 -----
 
-  it('ia_soc score 1 retorna vazio (ok)', () => {
-    const resp = classificarMotivosInconsistencia(withOverride(SCORES_OK, { ia_soc: '1' }));
+  it('ia_soc score 3 retorna vazio (ok) pos-recalibragem', () => {
+    const resp = classificarMotivosInconsistencia(withOverride(SCORES_OK, { ia_soc: '3' }));
     expect(resp.find((m) => m.chave === 'ia_soc')).toBeUndefined();
   });
 
-  it('ia_soc score 3 retorna medio', () => {
-    const resp = classificarMotivosInconsistencia(withOverride(SCORES_OK, { ia_soc: '3' }));
+  it('ia_soc score 4 retorna medio (antes: critico)', () => {
+    const resp = classificarMotivosInconsistencia(withOverride(SCORES_OK, { ia_soc: '4' }));
     const motivo = resp.find((m) => m.chave === 'ia_soc');
     expect(motivo?.severidade).toBe('medio');
   });
 
-  it('ia_soc score 4 retorna critico', () => {
-    const resp = classificarMotivosInconsistencia(withOverride(SCORES_OK, { ia_soc: '4' }));
+  it('ia_soc score 5 retorna medio', () => {
+    const resp = classificarMotivosInconsistencia(withOverride(SCORES_OK, { ia_soc: '5' }));
+    const motivo = resp.find((m) => m.chave === 'ia_soc');
+    expect(motivo?.severidade).toBe('medio');
+  });
+
+  it('ia_soc score 6 retorna critico (extremo absoluto)', () => {
+    const resp = classificarMotivosInconsistencia(withOverride(SCORES_OK, { ia_soc: '6' }));
     const motivo = resp.find((m) => m.chave === 'ia_soc');
     expect(motivo?.severidade).toBe('critico');
   });
@@ -154,7 +161,7 @@ describe('ME-1.11 — classificarMotivosInconsistencia ordem e filtro', () => {
   it('ordena criticos antes de medios', () => {
     const resp = classificarMotivosInconsistencia({
       ia_att: '1', // medio
-      ia_soc: '4', // critico
+      ia_soc: '6', // critico (ME-RECAL-IASOC: critico=6, nao mais 4)
       ia_acq: '0', // ok (filtrado)
       ia_cons: '3', // critico
       ia_ext: '0.70', // medio
@@ -170,7 +177,7 @@ describe('ME-1.11 — classificarMotivosInconsistencia ordem e filtro', () => {
   it('preserva ordem canonica do DOC 03 §5.1 dentro da mesma severidade', () => {
     const resp = classificarMotivosInconsistencia({
       ia_att: '0', // critico
-      ia_soc: '4', // critico
+      ia_soc: '6', // critico (ME-RECAL-IASOC: critico=6, nao mais 4)
       ia_acq: '0', // ok
       ia_cons: '3', // critico
       ia_ext: '0.60', // ok

@@ -351,10 +351,30 @@ describe('individualProfileEngine — Camada 1 (confiabilidade)', () => {
     expect(computeIaSoc({ ITEM_009: 5, ITEM_039: 4, ITEM_075: 5 }).score).toBe(6);
   });
 
-  it('IA_SOC: fronteiras canonicas alta/media/critica', () => {
-    expect(computeIaSoc({ ITEM_009: 1, ITEM_039: 3, ITEM_075: 1 }).alerta).toBe('ok');
-    expect(computeIaSoc({ ITEM_009: 3, ITEM_039: 3, ITEM_075: 1 }).alerta).toBe('medio');
+  it('IA_SOC: fronteiras canonicas recalibradas ok<=3 / medio 4-5 / critico=6', () => {
+    // ME-RECAL-IASOC (D-PERFIL-RECALIBRAGEM-THRESHOLDS).
+    // soma 3 ({3,3,3} = 1+1+1) -> ok (antes: medio).
+    expect(computeIaSoc({ ITEM_009: 3, ITEM_039: 3, ITEM_075: 3 }).alerta).toBe('ok');
+    // soma 4 ({4,3,3} = 2+1+1) -> medio (antes: critico).
+    expect(computeIaSoc({ ITEM_009: 4, ITEM_039: 3, ITEM_075: 3 }).alerta).toBe('medio');
+    // soma 5 ({4,4,3} = 2+2+1) -> medio.
+    expect(computeIaSoc({ ITEM_009: 4, ITEM_039: 4, ITEM_075: 3 }).alerta).toBe('medio');
+    // soma 6 ({5,5,5} = 2+2+2) -> critico (extremo absoluto).
     expect(computeIaSoc({ ITEM_009: 5, ITEM_039: 5, ITEM_075: 5 }).alerta).toBe('critico');
+  });
+
+  it('ME-RECAL-IASOC: padrao real de lider brasileiro passa (nao reprova)', () => {
+    // Padrao canonico dos 5 de 6 respondentes reais (SQL Railway
+    // 05/11/2026): att=ok, soc alto (soma 4-5 -> medio pos-recal),
+    // acq=medio, cons=ok, ext=ok. Agregador §5.1.6 intocado.
+    const socMedio = computeIaSoc({ ITEM_009: 5, ITEM_039: 4, ITEM_075: 1 }).alerta;
+    expect(socMedio).toBe('medio'); // soma 5
+    const nivel = classifyReliability(['ok', socMedio, 'medio', 'ok', 'ok']);
+    expect(nivel).toBe('moderada'); // passa com flag de cautela
+    // Contraprova: quem erra as duas perguntas de atencao (IA_ATT=0,
+    // §5.1.1) continua invalidado mesmo com a recalibragem.
+    const nivelAttZero = classifyReliability(['critico', socMedio, 'medio', 'ok', 'ok']);
+    expect(nivelAttZero).toBe('baixa'); // reprova — att=0 invalida
   });
 
   it('IA_ACQ: ambos altos ou ambos baixos -> alerta; opostos -> ok', () => {

@@ -590,11 +590,12 @@ describe('individualProfile.getReport — ME-1.11 discriminator kind', () => {
     empNunca = await createEmployee(companyId);
 
     // kind='inconsistente': 1 tentativa inconsistente, sem score.
-    // ia_soc=4 -> critico; ia_acq=1 -> medio; demais ok.
+    // ME-RECAL-IASOC: ia_soc=6 -> critico (pos-recalibragem critico=6,
+    // nao mais 4); ia_acq=1 -> medio; demais ok.
     empSoInconsistente = await createEmployee(companyId);
     await createAssessment(companyId, empSoInconsistente, 'employee', 1, 'inconsistente', {
       ia_att: '2.00',
-      ia_soc: '4.00',
+      ia_soc: '6.00',
       ia_acq: '1.00',
       ia_cons: '0.00',
       ia_ext: '0.50',

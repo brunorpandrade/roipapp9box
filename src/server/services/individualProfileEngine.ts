@@ -450,7 +450,21 @@ export function computeIaAtt(respostas: RespostasPerfil): {
   return { score, alerta };
 }
 
-/** IA_SOC (§5.1.2). 0-6. */
+/**
+ * IA_SOC (§5.1.2). Score 0-6 (3 itens de ancoragem social x 2).
+ *
+ * ME-RECAL-IASOC (D-PERFIL-RECALIBRAGEM-THRESHOLDS): corte recalibrado
+ * para a realidade de PMEs brasileiras. ok<=3, medio 4-5, critico=6
+ * (antes: ok<=1, medio<=3, critico>3 — referencia academica americana
+ * que punia autopercepcao social honesta de lider brasileiro).
+ * Diagnostico: 100% dos respondentes reais reprovavam por IA_SOC virar
+ * critico com soma>3. Com o novo corte, marcar 4-5 nos itens de
+ * ancoragem vira sinalizacao de cautela (nivel moderada, entrega com
+ * flag), nao reprova; critico so no extremo absoluto 6/6 e combinado
+ * com outros alertas. A regra agregadora `classifyReliability` (§5.1.6)
+ * e os demais indices permanecem intocados: quem erra as duas perguntas
+ * de atencao (IA_ATT=0, §5.1.1) continua invalidado.
+ */
 export function computeIaSoc(respostas: RespostasPerfil): {
   score: number;
   alerta: AlertaConfiabilidade;
@@ -463,8 +477,8 @@ export function computeIaSoc(respostas: RespostasPerfil): {
     else if (v === 4 || v === 5) soma += 2;
   }
   let alerta: AlertaConfiabilidade;
-  if (soma <= 1) alerta = 'ok';
-  else if (soma <= 3) alerta = 'medio';
+  if (soma <= 3) alerta = 'ok';
+  else if (soma <= 5) alerta = 'medio';
   else alerta = 'critico';
   return { score: soma, alerta };
 }

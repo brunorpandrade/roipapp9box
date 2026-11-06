@@ -158,9 +158,12 @@ function severidadeDeIaAtt(score: number): MotivoSeveridade | null {
 }
 
 function severidadeDeIaSoc(score: number): MotivoSeveridade | null {
-  // §5.1.2 — score 0-6. ok<=1, medio<=3, critico>3.
-  if (score <= 1) return null;
-  if (score <= 3) return 'medio';
+  // §5.1.2 — score 0-6. ME-RECAL-IASOC
+  // (D-PERFIL-RECALIBRAGEM-THRESHOLDS): corte recalibrado. ok<=3,
+  // medio 4-5, critico=6 (antes: ok<=1, medio<=3, critico>3). Espelho
+  // bit-a-bit de `computeIaSoc` do motor. Sincronizado na mesma ME.
+  if (score <= 3) return null;
+  if (score <= 5) return 'medio';
   return 'critico';
 }
 
