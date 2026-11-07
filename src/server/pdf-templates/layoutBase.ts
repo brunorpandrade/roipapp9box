@@ -1547,7 +1547,7 @@ export const LAYOUT_BASE_CSS = `
     color: #991B1B;
   }
   .conf-chart {
-    margin-top: 1mm;
+    margin-top: 10mm;
   }
   .conf-row {
     display: grid;
