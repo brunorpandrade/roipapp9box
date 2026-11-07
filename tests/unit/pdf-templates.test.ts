@@ -252,46 +252,79 @@ describe('individualProfileTemplate (ME-050/51)', () => {
     expect(html).not.toContain('<div class="cover-badge">');
   });
 
-  it('renderIndividualProfileHTML — painel DIS-F: semaforo, selos, faixa e indice', () => {
+  it('DIS-G: radar, painel pf-*, confiabilidade e remocao do Balanceamento', () => {
     const html = renderIndividualProfileHTML({
       ...CANON_INDIVIDUAL,
+      confiabilidadeMetricas: [
+        { rotulo: 'Atenção', alerta: 'ok' },
+        { rotulo: 'Desejabilidade social', alerta: 'medio' },
+        { rotulo: 'Padrão de concordância', alerta: 'ok' },
+        { rotulo: 'Consistência interna', alerta: 'ok' },
+        { rotulo: 'Uso de extremos', alerta: 'ok' },
+      ],
       subvetores: [
         { bloco: 'Postura', rotulo: 'Assertividade e decisão', valor: 50 },
+        { bloco: 'Estrutura', rotulo: 'Abertura à experiência', valor: 67 },
         { bloco: 'Motor', rotulo: 'Maestria', valor: 56 },
         { bloco: 'Motor', rotulo: 'Liderança', valor: 10 },
         { bloco: 'Motor', rotulo: 'Autonomia', valor: 67 },
         { bloco: 'Motor', rotulo: 'Segurança', valor: 67 },
-        { bloco: 'Motor', rotulo: 'Propósito', valor: 79 },
+        { bloco: 'Motor', rotulo: 'Propósito', valor: 90 },
         { bloco: 'Equilíbrio', rotulo: 'Autoconsciência', valor: 29 },
+        { bloco: 'Equilíbrio', rotulo: 'Autogestão emocional', valor: 71 },
+        { bloco: 'Equilíbrio', rotulo: 'Leitura do outro', valor: 71 },
+        { bloco: 'Equilíbrio', rotulo: 'Influência e condução', valor: 80 },
         { bloco: 'Equilíbrio', rotulo: 'Índice geral de equilíbrio', valor: 63 },
         { bloco: 'Assinatura', rotulo: 'Sabedoria', valor: 79 },
         { bloco: 'Assinatura', rotulo: 'Coragem', valor: 50 },
+        { bloco: 'Assinatura', rotulo: 'Humanidade', valor: 50 },
         { bloco: 'Assinatura', rotulo: 'Justiça', valor: 75 },
+        { bloco: 'Assinatura', rotulo: 'Temperança', valor: 50 },
         { bloco: 'Assinatura', rotulo: 'Transcendência', valor: 67 },
       ],
     });
-    // Escala de intensidade neutra por faixa: 10 muito baixo (fx1),
-    // 50/56 medio (fx3), 75/79 muito alto (fx5). Sem semaforo.
-    expect(html).toContain('subv-fx1');
-    expect(html).toContain('subv-fx3');
-    expect(html).toContain('subv-fx5');
-    // Faixa textual ao lado da barra.
-    expect(html).toContain('Médio');
-    expect(html).toContain('Alto');
-    expect(html).toContain('Baixo');
+    // Painel no layout de leitura (pf-*): nome em linha, barra curta,
+    // nota embaixo; cabecalho de area como barra.
+    expect(html).toContain('class="pf-row"');
+    expect(html).toContain('pf-item pf-area');
+    expect(html).toContain('class="pf-nome"');
+    expect(html).toContain('class="pf-nota"');
+    expect(html).toContain('class="pf-val"');
+    expect(html).toContain('class="pf-bar"');
+    // Escala de intensidade por faixa (5 tons): 10 muito baixo (fx1),
+    // 90 muito alto (fx5).
+    expect(html).toContain('dim-bar-fill subv-fx1');
+    expect(html).toContain('dim-bar-fill subv-fx5');
+    // Rotulos de faixa em cinco niveis, inclusive os extremos.
+    expect(html).toContain('Muito baixo');
+    expect(html).toContain('Muito alto');
     // Selos de papel: Motor (dominante/sustentacao/negligenciado) e
     // Assinatura (Top 3).
     expect(html).toContain('Dominante');
     expect(html).toContain('Sustentação');
     expect(html).toContain('Negligenciado');
     expect(html).toContain('Top 3');
-    // Notas fixas de area e de leitura.
-    expect(html).toContain('O que move a pessoa, sustenta seu engajamento');
-    expect(html).toContain('Velocidade para decidir e firmeza ao se posicionar.');
-    // Indice geral de equilibrio em destaque, fora do semaforo.
-    expect(html).toContain('subv-indice-fill');
-    // Escore agregado por area no cabecalho (paridade com o resumido).
-    expect(html).toContain('subv-area-score');
+    // Grafico de teia: pagina dedicada, fronteiras em ardosia escura,
+    // legenda de faixa.
+    expect(html).toContain('class="radar-wrap"');
+    expect(html).toContain('stroke="#334155"');
+    expect(html).toContain('class="leg-swatch"');
+    // Confiabilidade: barras tonais, descricao por aspecto e semaforo
+    // translucido no nivel geral.
+    expect(html).toContain('class="conf-bar"');
+    expect(html).toContain('class="conf-desc"');
+    expect(html).toContain('conf-nivel-badge conf-nivel-alta');
+    expect(html).toContain('Consistência nas respostas a itens de verificação');
+    expect(html).toContain('Aprovado');
+    expect(html).toContain('Alerta médio');
+    // DIS-G: o indice geral de equilibrio (rotulo emitido pelo router) e
+    // filtrado em todos os lugares; Equilibrio e tratado como as demais
+    // areas, sem item composto, sem bloco final e sem eixo extra no radar.
+    expect(html).not.toContain('Índice geral de equilíbrio');
+    expect(html).not.toContain('Balanceamento');
+    expect(html).not.toContain('subv-indice-fill');
+    expect(html).not.toContain('bal-final');
+    expect(html).not.toContain('class="subv-row"');
   });
 
   it('renderIndividualProfileHTML — blocos condicionais omitidos quando null', () => {
@@ -575,12 +608,12 @@ describe('ME-1.10-CC079-DIS-E — Perfil individual lapidado', () => {
     expect(html).toContain('Líder direto');
   });
 
-  it('painel de resultados por area usa barras de intensidade, nao a barra preta antiga', () => {
+  it('painel de resultados por area usa barras de intensidade no layout pf-* (DIS-G)', () => {
     const html = renderIndividualProfileHTML(CANON_INDIVIDUAL);
-    expect(html).toContain('class="subv-row"');
+    expect(html).toContain('class="pf-row"');
     expect(html).toContain('class="dim-bar-track"');
     expect(html).toContain('dim-bar-fill subv-fx');
-    expect(html).toContain('class="subv-area-note"');
+    expect(html).toContain('class="pf-nota"');
     // A barra preta inline antiga (#111827 como fill) foi removida.
     expect(html).not.toContain('background:#111827; width:');
   });

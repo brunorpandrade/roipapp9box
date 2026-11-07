@@ -1352,65 +1352,70 @@ export const LAYOUT_BASE_CSS = `
     font-size: 10pt;
   }
 
-  /* ME-1.10-DIS-F: Painel de resultados por area do Perfil Individual.
-     Cada area abre com nota fixa; cada leitura traz nota fixa, barra
-     semaforizada por faixa (classes semf-* compartilhadas com o clima),
-     valor, faixa textual e selo de papel. Indice geral de equilibrio em
-     destaque navy, fora do semaforo. */
+  /* ME-1.10-DIS-F/G: Painel de resultados por area do Perfil Individual.
+     Cada area abre com nota fixa; cada leitura traz nota fixa, barra por
+     faixa de intensidade, valor, faixa textual e selo de papel. Duas
+     areas por pagina, com respiro entre blocos para evitar encavalamento
+     do cabecalho da area de baixo com a ultima leitura da de cima. */
   .subv-area {
     page-break-inside: avoid;
-    margin-bottom: 3.5mm;
+    margin-bottom: 14mm;
   }
-  .subv-area-head {
+  /* Primeira area logo apos o titulo: mesmo respiro que entre areas, para
+     nao colar a Postura na linha do cabecalho. */
+  h2 + .subv-area {
+    margin-top: 10mm;
+  }
+  /* Item do painel (area ou leitura): nome em linha cheia, barra curta a
+     direita com valor e faixa, nota embaixo. Layout do print. */
+  .pf-item {
+    margin-bottom: 3mm;
+  }
+  .pf-area {
+    border-bottom: 1.5px solid #E2E8F0;
+    padding-bottom: 3mm;
+    margin-bottom: 5.5mm;
+  }
+  /* Barra da area 20% mais alta que a do fator (6mm), mesma largura. */
+  .pf-area .dim-bar-track {
+    height: 7.2mm;
+  }
+  .pf-row {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: 0.5mm;
-  }
-  .subv-area-title {
-    font-size: 12pt;
-    font-weight: 700;
-    color: #111827;
-  }
-  .subv-area-score {
-    font-size: 10pt;
-    font-weight: 700;
-    color: #1E293B;
-    background: #EEF2F6;
-    border: 1px solid #DCE3EB;
-    border-radius: 999px;
-    padding: 0.4mm 2.4mm;
-    white-space: nowrap;
-  }
-  .subv-area-note {
-    font-size: 9pt;
-    color: #6B7280;
-    margin: 0 0 1.8mm;
-  }
-  .subv-bars {
-    margin-top: 1mm;
-  }
-  .subv-row {
-    display: grid;
-    grid-template-columns: 58mm 1fr 22mm;
     align-items: center;
-    gap: 3mm;
-    margin-bottom: 1.8mm;
+    gap: 5mm;
   }
-  .subv-label-col {
+  .pf-nome {
+    flex: 1 1 auto;
     min-width: 0;
-  }
-  .subv-label {
     font-weight: 600;
+    font-size: 10.5pt;
     color: #111827;
-    font-size: 10pt;
-    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .subv-note {
+  .pf-nome-area {
+    font-size: 13.5pt;
+    font-weight: 800;
+    color: #0F172A;
+    letter-spacing: 0.2pt;
+  }
+  .pf-bar {
+    flex: 0 0 52mm;
+  }
+  .pf-val {
+    flex: 0 0 16mm;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+  }
+  .pf-nota {
     font-size: 8pt;
     color: #6B7280;
-    line-height: 1.25;
-    margin-top: 0.5mm;
+    line-height: 1.15;
+    margin-top: 0.3mm;
   }
   .subv-selo {
     display: inline-block;
@@ -1422,12 +1427,6 @@ export const LAYOUT_BASE_CSS = `
     background: #E8EEF7;
     color: #1E3A5F;
     vertical-align: middle;
-  }
-  .subv-value {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    text-align: right;
   }
   .subv-num {
     font-weight: 700;
@@ -1459,20 +1458,120 @@ export const LAYOUT_BASE_CSS = `
     color: #6B7280;
     margin-top: 0.3mm;
   }
-  .subv-indice-row {
-    border-top: 1px solid #E5E7EB;
-    padding-top: 2.5mm;
+
+  /* ME-1.10-DIS-G: pagina do radar de teia + indice por area + legenda. */
+  .radar-wrap {
+    width: 94%;
+    margin: 1mm auto 3mm;
+  }
+  .idxarea {
     margin-top: 1mm;
   }
-  .subv-indice-label {
-    color: #1E293B;
+  .idxarea-title {
+    font-size: 11pt;
     font-weight: 700;
+    color: #0F172A;
+    border-bottom: 1.5px solid #E2E8F0;
+    padding-bottom: 1.2mm;
+    margin-bottom: 2.5mm;
   }
-  .subv-indice-fill {
-    background: #334155;
+  .idxarea-row {
+    display: grid;
+    grid-template-columns: 32mm 1fr 22mm;
+    align-items: center;
+    gap: 5mm;
+    margin-bottom: 2mm;
   }
-  .subv-indice-num {
+  .idxarea-nome {
+    font-size: 10.5pt;
+    font-weight: 700;
     color: #1E293B;
+  }
+  .idxarea-val {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+  }
+  .leg-escala {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4mm;
+    margin-top: 3.5mm;
+    padding-top: 2.5mm;
+    border-top: 1px solid #E5E7EB;
+  }
+  .leg-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 1.5mm;
+    font-size: 8.5pt;
+    color: #6B7280;
+  }
+  .leg-swatch {
+    display: inline-block;
+    width: 3.2mm;
+    height: 3.2mm;
+    border-radius: 1pt;
+  }
+
+  /* ME-1.10-DIS-G: grafico de confiabilidade. Barras no mesmo padrao
+     tonal dos fatores; descricao de uma linha por aspecto; nivel geral
+     em destaque. */
+  .conf-nivel {
+    font-size: 12pt;
+    font-weight: 700;
+    color: #0F172A;
+    margin: 0 0 6mm;
+  }
+  .conf-nivel-badge {
+    display: inline-block;
+    margin-left: 2.5mm;
+    padding: 1mm 3.5mm;
+    border-radius: 3pt;
+    font-size: 11.5pt;
+    font-weight: 800;
+    text-transform: capitalize;
+  }
+  /* Semaforo do nivel geral: paleta oficial com fundo translucido. */
+  .conf-nivel-alta {
+    background: rgba(22, 163, 74, 0.12);
+    color: #15803D;
+  }
+  .conf-nivel-moderada {
+    background: rgba(242, 169, 0, 0.18);
+    color: #B45309;
+  }
+  .conf-nivel-baixa {
+    background: rgba(220, 38, 38, 0.12);
+    color: #991B1B;
+  }
+  .conf-chart {
+    margin-top: 1mm;
+  }
+  .conf-row {
+    display: grid;
+    grid-template-columns: 52mm 1fr 28mm;
+    align-items: center;
+    gap: 5mm;
+    margin-bottom: 3.5mm;
+  }
+  .conf-nome {
+    font-size: 10.5pt;
+    font-weight: 600;
+    color: #1E293B;
+  }
+  .conf-estado {
+    font-size: 9pt;
+    font-weight: 700;
+    color: #475569;
+    text-align: right;
+  }
+  .conf-desc {
+    font-size: 8.5pt;
+    color: #6B7280;
+    line-height: 1.3;
+    margin: 0 0 9mm;
   }
 
   /* Comparativo deptos — tabela colorizada canonica para o executivo. */

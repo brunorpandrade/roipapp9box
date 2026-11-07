@@ -109,6 +109,15 @@ export interface IndividualProfileIdentificacao {
   dataAplicacao: string; // YYYY-MM-DD
 }
 
+/** Alerta de uma metrica de confiabilidade (espelha o motor, §5.1). */
+export type AlertaMetrica = 'ok' | 'medio' | 'critico';
+
+/** Uma das cinco metricas de confiabilidade, com seu alerta. */
+export interface ConfiabilidadeMetrica {
+  readonly rotulo: string;
+  readonly alerta: AlertaMetrica;
+}
+
 /** Input canonico do template. */
 export interface IndividualProfileTemplateInput {
   company: LayoutBaseCompany;
@@ -117,6 +126,8 @@ export interface IndividualProfileTemplateInput {
   subvetores: IndividualProfileSubvector[];
   /** Data de geracao para o rodape. `YYYY-MM-DD`. */
   generatedAtDate: string;
+  /** Cinco metricas de confiabilidade para o grafico (DIS-G). */
+  confiabilidadeMetricas?: readonly ConfiabilidadeMetrica[];
 }
 
 const NIVEL_HIERARQUICO_ROTULO: Record<IndividualProfileIdentificacao['nivelHierarquico'], string> =
@@ -285,14 +296,70 @@ function renderRecomendacoes(r: RecomendacoesExecutivas): string {
 </section>`;
 }
 
-function renderConfiabilidade(c: Confiabilidade): string {
+/** Integridade (0-100), tom de faixa e rotulo de estado a partir do alerta. */
+function integridadeMetrica(alerta: AlertaMetrica): { pct: number; fx: number; estado: string } {
+  if (alerta === 'ok') return { pct: 100, fx: 4, estado: 'Aprovado' };
+  if (alerta === 'medio') return { pct: 55, fx: 3, estado: 'Alerta médio' };
+  return { pct: 22, fx: 1, estado: 'Crítico' };
+}
+
+/** Descricao de uma linha de cada metrica de confiabilidade do motor. */
+const DESC_CONFIAB: Readonly<Record<string, string>> = {
+  Atenção: 'Consistência nas respostas a itens de verificação de atenção ao longo do instrumento.',
+  'Desejabilidade social':
+    'Tendência a responder conforme o socialmente esperado, em vez do próprio padrão.',
+  'Padrão de concordância':
+    'Viés de concordar ou discordar de forma indiscriminada, independentemente do conteúdo.',
+  'Consistência interna': 'Coerência entre os itens que medem o mesmo traço.',
+  'Uso de extremos': 'Uso das pontas da escala versus concentração no meio.',
+};
+
+/**
+ * Confiabilidade (ME-1.10-DIS-G): nivel geral em destaque + barras de
+ * integridade das cinco metricas do motor, no mesmo padrao tonal dos
+ * fatores (track + preenchimento por faixa), com descricao de uma linha
+ * e estado textual. Barra cheia quando a metrica esta limpa, menor
+ * quando ha alerta; escala padronizada, sem numero bruto.
+ */
+function renderConfiabilidade(
+  c: Confiabilidade,
+  metricas?: readonly ConfiabilidadeMetrica[],
+): string {
   const nivel = asStr(c?.nivel);
+  const nivelNorm = nivel.trim().toLowerCase();
+  const badgeTom =
+    nivelNorm === 'alta'
+      ? 'conf-nivel-alta'
+      : nivelNorm === 'moderada'
+        ? 'conf-nivel-moderada'
+        : nivelNorm === 'baixa'
+          ? 'conf-nivel-baixa'
+          : 'conf-nivel-alta';
   const nota = asStr(c?.nota_contexto);
   const hedge = asList(c?.dimensoes_com_hedge);
   const hedgeHtml = hedge.length > 0 ? `\n  ${subLista('Dimensões com ressalva', hedge)}` : '';
-  const notaHtml = nota.length > 0 ? ` — ${escapeHtml(nota)}` : '';
-  return `<section>
-  <p class="muted"><strong>Confiabilidade:</strong> ${escapeHtml(nivel)}${notaHtml}</p>${hedgeHtml}
+  const notaHtml = nota.length > 0 ? `\n  <p class="muted">${escapeHtml(nota)}</p>` : '';
+  const grafico =
+    metricas && metricas.length > 0
+      ? `\n  <div class="conf-chart">
+${metricas
+  .map((m) => {
+    const { pct, fx, estado } = integridadeMetrica(m.alerta);
+    const desc = DESC_CONFIAB[m.rotulo] ?? '';
+    const descHtml =
+      desc.length > 0 ? `\n      <div class="conf-desc">${escapeHtml(desc)}</div>` : '';
+    return `    <div class="conf-row">
+      <div class="conf-nome">${escapeHtml(m.rotulo)}</div>
+      <div class="conf-bar"><div class="dim-bar-track"><div class="dim-bar-fill subv-fx${fx}" style="width:${pct}%;"></div></div></div>
+      <div class="conf-estado">${escapeHtml(estado)}</div>
+    </div>${descHtml}`;
+  })
+  .join('\n')}
+  </div>`
+      : '';
+  return `<section class="page-break">
+  <h2>Confiabilidade</h2>
+  <p class="conf-nivel">Nível geral <span class="conf-nivel-badge ${badgeTom}">${escapeHtml(nivel)}</span></p>${notaHtml}${grafico}${hedgeHtml}
 </section>`;
 }
 
@@ -350,7 +417,6 @@ const NOTA_SUBVETOR: Record<string, string> = {
   'Autogestão emocional': 'Regulação da própria reação sob pressão.',
   'Leitura do outro': 'Precisão em perceber o estado e o contexto das pessoas.',
   'Influência e condução': 'Capacidade de conduzir conversas e mobilizar com eficácia.',
-  'Índice geral de equilíbrio': 'Resumo da competência emocional, média das quatro leituras acima.',
   Sabedoria: 'Excelência em análise, diagnóstico e clareza de raciocínio.',
   Coragem: 'Excelência em decisões difíceis e iniciativa em contexto ambíguo.',
   Humanidade: 'Excelência em vínculo, cuidado e leitura relacional.',
@@ -360,6 +426,14 @@ const NOTA_SUBVETOR: Record<string, string> = {
 };
 
 const ROTULO_INDICE_EQUILIBRIO = 'Índice geral de equilíbrio';
+
+/** Cinco tons de azul por faixa (§5.4.2), espelham as classes subv-fx*. */
+const FX_HEX = ['#C3D0E0', '#97ACC8', '#6A89AE', '#3E6191', '#1E3A5F'] as const;
+
+/** Cor de intensidade (hex) a partir do valor 0-100, para o SVG do radar. */
+function fxHex(valor: number): string {
+  return FX_HEX[faixaIntensidade(valor) - 1] ?? FX_HEX[2];
+}
 
 /**
  * Selos de papel por leitura, espelhando a plataforma. Motor: dominante
@@ -389,93 +463,275 @@ function selosDoBloco(
   return selos;
 }
 
-/** Uma barra semaforizada com rotulo, nota fixa, faixa e selo opcional. */
-function renderSubvRow(s: IndividualProfileSubvector, selo: string | null): string {
-  const pct = Math.max(0, Math.min(100, s.valor));
-  const fx = faixaIntensidade(s.valor);
-  const nota = NOTA_SUBVETOR[s.rotulo] ?? '';
-  const notaHtml =
-    nota.length > 0 ? `\n        <div class="subv-note">${escapeHtml(nota)}</div>` : '';
-  const seloHtml = selo !== null ? ` <span class="subv-selo">${escapeHtml(selo)}</span>` : '';
-  return `<div class="subv-row">
-      <div class="subv-label-col">
-        <div class="subv-label">${escapeHtml(asStr(s.rotulo))}${seloHtml}</div>${notaHtml}
-      </div>
-      <div class="dim-bar-track"><div class="dim-bar-fill subv-fx${fx}" style="width:${pct.toFixed(1)}%;"></div></div>
-      <div class="subv-value"><span class="subv-num">${pct.toFixed(0)}</span><span class="subv-faixa">${escapeHtml(faixaRotulo(s.valor))}</span></div>
-    </div>`;
-}
-
-/** Linha de destaque do Indice geral de equilibrio (fora do semaforo). */
-function renderIndiceRow(s: IndividualProfileSubvector): string {
-  const pct = Math.max(0, Math.min(100, s.valor));
-  const nota = NOTA_SUBVETOR[s.rotulo] ?? '';
-  const notaHtml =
-    nota.length > 0 ? `\n        <div class="subv-note">${escapeHtml(nota)}</div>` : '';
-  return `<div class="subv-row subv-indice-row">
-      <div class="subv-label-col">
-        <div class="subv-label subv-indice-label">${escapeHtml(asStr(s.rotulo))}</div>${notaHtml}
-      </div>
-      <div class="dim-bar-track"><div class="dim-bar-fill subv-indice-fill" style="width:${pct.toFixed(1)}%;"></div></div>
-      <div class="subv-value"><span class="subv-num subv-indice-num">${pct.toFixed(0)}</span><span class="subv-faixa">${escapeHtml(faixaRotulo(s.valor))}</span></div>
-    </div>`;
+/**
+ * Um item do painel (area ou leitura) no layout do print: nome em linha
+ * cheia, sem quebrar; barra curta de largura fixa a direita, com valor e
+ * faixa; e a nota fixa na linha de baixo. O escore da area tambem e uma
+ * barra.
+ */
+function renderPainelItem(opts: {
+  nome: string;
+  nota: string;
+  valor: number;
+  area?: boolean;
+  selo?: string | null;
+}): string {
+  const pct = Math.max(0, Math.min(100, opts.valor));
+  const fill = `subv-fx${faixaIntensidade(opts.valor)}`;
+  const selo = opts.selo ? ` <span class="subv-selo">${escapeHtml(opts.selo)}</span>` : '';
+  const nota =
+    opts.nota.length > 0 ? `\n    <div class="pf-nota">${escapeHtml(opts.nota)}</div>` : '';
+  const item = opts.area ? 'pf-item pf-area' : 'pf-item';
+  const nomeCls = opts.area ? 'pf-nome pf-nome-area' : 'pf-nome';
+  return `<div class="${item}">
+    <div class="pf-row">
+      <div class="${nomeCls}">${escapeHtml(opts.nome)}${selo}</div>
+      <div class="pf-bar"><div class="dim-bar-track"><div class="dim-bar-fill ${fill}" style="width:${pct.toFixed(1)}%;"></div></div></div>
+      <div class="pf-val"><span class="subv-num">${pct.toFixed(0)}</span><span class="subv-faixa">${escapeHtml(faixaRotulo(opts.valor))}</span></div>
+    </div>${nota}
+  </div>`;
 }
 
 /**
- * Escore agregado da area (0-100), identico ao painel resumido da
- * plataforma: Equilibrio usa o Indice geral; as demais usam a media
- * dos subvetores. Deriva dos mesmos valores, entao bate por construcao.
+ * Escore agregado da area (0-100): media simples dos subvetores da area,
+ * igual para as cinco. Em Equilibrio, a media dos quatro subvetores e o
+ * proprio EQU_INDICE da especificacao, entao bate por construcao (o item
+ * composto nao e exibido a parte).
  */
-function escoreArea(
-  bloco: IndividualProfileSubvector['bloco'],
-  itens: readonly IndividualProfileSubvector[],
-): number | null {
-  if (bloco === 'Equilíbrio') {
-    const indice = itens.find((s) => s.rotulo === ROTULO_INDICE_EQUILIBRIO);
-    if (indice) return indice.valor;
-  }
+function escoreArea(itens: readonly IndividualProfileSubvector[]): number | null {
   const base = itens.filter((s) => s.rotulo !== ROTULO_INDICE_EQUILIBRIO);
   if (base.length === 0) return null;
   const soma = base.reduce((acc, s) => acc + s.valor, 0);
   return soma / base.length;
 }
 
-/** Um bloco de area: cabecalho + nota da area + barras. */
+/** Um bloco de area: cabecalho (como barra) seguido das leituras. */
 function renderAreaBloco(
   bloco: IndividualProfileSubvector['bloco'],
   itens: readonly IndividualProfileSubvector[],
 ): string {
   const selos = selosDoBloco(bloco, itens);
-  const escore = escoreArea(bloco, itens);
-  const escoreHtml =
+  const escore = escoreArea(itens);
+  const cabecalho =
     escore !== null
-      ? `<span class="subv-area-score">${escapeHtml(faixaRotulo(escore))} · ${Math.round(escore)}</span>`
+      ? renderPainelItem({ nome: bloco, nota: NOTA_AREA[bloco], valor: escore, area: true })
       : '';
   const rows = itens
-    .map((s) => {
-      if (bloco === 'Equilíbrio' && s.rotulo === ROTULO_INDICE_EQUILIBRIO) {
-        return renderIndiceRow(s);
-      }
-      return renderSubvRow(s, selos.get(s.rotulo) ?? null);
-    })
+    .filter((s) => s.rotulo !== ROTULO_INDICE_EQUILIBRIO)
+    .map((s) =>
+      renderPainelItem({
+        nome: s.rotulo,
+        nota: NOTA_SUBVETOR[s.rotulo] ?? '',
+        valor: s.valor,
+        selo: selos.get(s.rotulo) ?? null,
+      }),
+    )
     .join('\n');
   return `<div class="subv-area">
-    <div class="subv-area-head"><span class="subv-area-title">${escapeHtml(bloco)}</span>${escoreHtml}</div>
-    <div class="subv-area-note">${escapeHtml(NOTA_AREA[bloco])}</div>
-    <div class="subv-bars">
+    ${cabecalho}
 ${rows}
-    </div>
   </div>`;
 }
 
+const RADAR_CX = 585;
+const RADAR_CY = 610;
+const RADAR_R = 336;
+const RADAR_AZUL = '#3E6191';
+const AREAS_ORDEM: readonly IndividualProfileSubvector['bloco'][] = [
+  'Postura',
+  'Estrutura',
+  'Motor',
+  'Equilíbrio',
+  'Assinatura',
+];
+/** Os 24 subvetores (exclui o indice geral de equilibrio), na ordem fixa. */
+function subvetores24(
+  subvetores: readonly IndividualProfileSubvector[],
+): IndividualProfileSubvector[] {
+  const fora = subvetores.filter((s) => s.rotulo !== ROTULO_INDICE_EQUILIBRIO);
+  const out: IndividualProfileSubvector[] = [];
+  for (const area of AREAS_ORDEM) {
+    for (const s of fora) {
+      if (s.bloco === area) out.push(s);
+    }
+  }
+  return out;
+}
+
+function radarAngulo(i: number, n: number): number {
+  return (-90 + (i * 360) / n) * (Math.PI / 180);
+}
+
+function radarPonto(i: number, n: number, raioFrac: number): [number, number] {
+  const a = radarAngulo(i, n);
+  return [RADAR_CX + RADAR_R * raioFrac * Math.cos(a), RADAR_CY + RADAR_R * raioFrac * Math.sin(a)];
+}
+
 /**
- * Painel de resultados por area (ME-1.10-DIS-F). Cinco areas em duas
- * paginas: tres na primeira (Postura, Estrutura, Motor) e duas na
- * segunda (Equilibrio, Assinatura), nenhuma cortada ao meio
- * (`page-break-inside: avoid` por area). Cada area abre com sua nota
- * fixa; cada leitura traz nota fixa, barra semaforizada por faixa,
- * valor, faixa textual e selo de papel quando aplicavel. O Indice geral
- * de equilibrio aparece em destaque, fora do semaforo.
+ * Radar de teia com os 24 subvetores (ME-1.10-DIS-G). Cada area e uma
+ * fatia (do centro as suas pontas) tonalizada no tom da sua media; tres
+ * aneis internos em 40/60/80; linha radial sutil nas fronteiras entre
+ * areas; contorno fino azul com os pontos nas pontas; nome e escore de
+ * cada area do lado de fora. Nomes completos dos 24 subvetores nas
+ * pontas.
+ */
+function renderRadarPerfil(subvetores: readonly IndividualProfileSubvector[]): string {
+  const subs = subvetores24(subvetores);
+  const n = subs.length;
+  if (n === 0) return '';
+  const passo = ((360 / n) * Math.PI) / 180;
+  const valPt = (i: number): [number, number] =>
+    radarPonto(i, n, Math.max(0, Math.min(100, subs[i]?.valor ?? 0)) / 100);
+  const meio = (i: number, j: number): [number, number] => {
+    const [xi, yi] = valPt(i);
+    const [xj, yj] = valPt(j);
+    return [(xi + xj) / 2, (yi + yj) / 2];
+  };
+  let grade = '';
+  for (const k of [0.4, 0.6, 0.8]) {
+    const pts: string[] = [];
+    for (let i = 0; i < n; i += 1) {
+      const [x, y] = radarPonto(i, n, k);
+      pts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+    }
+    grade += `<polygon points="${pts.join(' ')}" fill="none" stroke="#E5E7EB" stroke-width="1" />`;
+  }
+  for (let i = 0; i < n; i += 1) {
+    const [x, y] = radarPonto(i, n, 1 + 12 / RADAR_R);
+    grade += `<line x1="${RADAR_CX}" y1="${RADAR_CY}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#EBF0F5" stroke-width="0.8" />`;
+  }
+  const grupos = AREAS_ORDEM.map((area) => {
+    const idxs: number[] = [];
+    subs.forEach((s, i) => {
+      if (s.bloco === area) idxs.push(i);
+    });
+    const media =
+      idxs.length > 0 ? idxs.reduce((acc, i) => acc + (subs[i]?.valor ?? 0), 0) / idxs.length : 0;
+    return { area, idxs, media };
+  }).filter((g) => g.idxs.length > 0);
+  let fatias = '';
+  for (const g of grupos) {
+    const iF = g.idxs[0] ?? 0;
+    const iL = g.idxs[g.idxs.length - 1] ?? 0;
+    const pIni = meio((iF - 1 + n) % n, iF);
+    const pFim = meio(iL, (iL + 1) % n);
+    let d = `M ${RADAR_CX} ${RADAR_CY} L ${pIni[0].toFixed(1)} ${pIni[1].toFixed(1)}`;
+    for (const i of g.idxs) {
+      const [x, y] = valPt(i);
+      d += ` L ${x.toFixed(1)} ${y.toFixed(1)}`;
+    }
+    d += ` L ${pFim[0].toFixed(1)} ${pFim[1].toFixed(1)} Z`;
+    fatias += `<path d="${d}" fill="${fxHex(g.media)}" fill-opacity="0.55" stroke="none" />`;
+  }
+  let fronteiras = '';
+  for (const g of grupos) {
+    const a = radarAngulo(g.idxs[0] ?? 0, n) - passo / 2;
+    const x = RADAR_CX + RADAR_R * Math.cos(a);
+    const y = RADAR_CY + RADAR_R * Math.sin(a);
+    fronteiras += `<line x1="${RADAR_CX}" y1="${RADAR_CY}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#334155" stroke-width="1.8" />`;
+  }
+  const polyPts = subs.map((_, i) => {
+    const [x, y] = valPt(i);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const dots = subs
+    .map((_, i) => {
+      const [x, y] = valPt(i);
+      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="${RADAR_AZUL}" />`;
+    })
+    .join('');
+  const contorno = `<polygon points="${polyPts.join(' ')}" fill="none" stroke="${RADAR_AZUL}" stroke-width="1.5" />${dots}`;
+  const rotulos = subs
+    .map((s, i) => {
+      const a = radarAngulo(i, n);
+      const x = RADAR_CX + (RADAR_R + 16) * Math.cos(a);
+      const y = RADAR_CY + (RADAR_R + 16) * Math.sin(a);
+      const cos = Math.cos(a);
+      const anchor = cos > 0.15 ? 'start' : cos < -0.15 ? 'end' : 'middle';
+      const sin = Math.sin(a);
+      const dy = sin > 0.15 ? '0.8em' : sin < -0.15 ? '-0.2em' : '0.3em';
+      return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="${anchor}" dy="${dy}" font-size="13" fill="#374151">${escapeHtml(asStr(s.rotulo))}</text>`;
+    })
+    .join('');
+  let nomes = '';
+  for (const g of grupos) {
+    const iF = g.idxs[0] ?? 0;
+    const iL = g.idxs[g.idxs.length - 1] ?? 0;
+    const am = (radarAngulo(iF, n) + radarAngulo(iL, n)) / 2;
+    const offset = g.area === 'Equilíbrio' ? 178 : 140;
+    const lx = RADAR_CX + (RADAR_R + offset) * Math.cos(am);
+    const ly = RADAR_CY + (RADAR_R + offset) * Math.sin(am);
+    const anchor = Math.cos(am) > 0.15 ? 'start' : Math.cos(am) < -0.15 ? 'end' : 'middle';
+    nomes += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}" dy="0.3em" font-size="17" font-weight="700" fill="#1E293B">${escapeHtml(g.area)}</text>`;
+  }
+  return `<svg viewBox="30 135 1110 960" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto; display:block;">
+${grade}
+${fatias}
+${fronteiras}
+${contorno}
+${nomes}
+${rotulos}
+</svg>`;
+}
+
+/** Faixa inferior da pagina do radar: indice por area e legenda de faixa. */
+function renderIndicesArea(subvetores: readonly IndividualProfileSubvector[]): string {
+  const grouped: Record<IndividualProfileSubvector['bloco'], IndividualProfileSubvector[]> = {
+    Postura: [],
+    Estrutura: [],
+    Motor: [],
+    Equilíbrio: [],
+    Assinatura: [],
+  };
+  for (const s of subvetores) grouped[s.bloco]?.push(s);
+  const linhas = AREAS_ORDEM.map((area) => {
+    const esc = escoreArea(grouped[area]);
+    if (esc === null) return '';
+    const pct = Math.max(0, Math.min(100, esc));
+    const fx = faixaIntensidade(esc);
+    return `<div class="idxarea-row">
+      <div class="idxarea-nome">${escapeHtml(area)}</div>
+      <div class="dim-bar-track"><div class="dim-bar-fill subv-fx${fx}" style="width:${pct.toFixed(1)}%;"></div></div>
+      <div class="idxarea-val"><span class="subv-num">${Math.round(esc)}</span><span class="subv-faixa">${escapeHtml(faixaRotulo(esc))}</span></div>
+    </div>`;
+  }).join('\n');
+  const legItens: ReadonlyArray<readonly [string, string]> = [
+    ['Muito baixo', FX_HEX[0]],
+    ['Baixo', FX_HEX[1]],
+    ['Médio', FX_HEX[2]],
+    ['Alto', FX_HEX[3]],
+    ['Muito alto', FX_HEX[4]],
+  ];
+  const legenda = legItens
+    .map(
+      ([rot, hex]) =>
+        `<span class="leg-item"><span class="leg-swatch" style="background:${hex};"></span>${rot}</span>`,
+    )
+    .join('');
+  return `<div class="idxarea">
+    <div class="idxarea-title">Índice por área</div>
+    ${linhas}
+    <div class="leg-escala">${legenda}</div>
+  </div>`;
+}
+
+/** Pagina dedicada ao radar de teia (vem antes do painel). */
+function renderGraficoPage(subvetores: readonly IndividualProfileSubvector[]): string {
+  return `<section class="page-break">
+  <h2>Mapa de leituras</h2>
+  <div class="radar-wrap">${renderRadarPerfil(subvetores)}</div>
+  ${renderIndicesArea(subvetores)}
+</section>`;
+}
+
+/**
+ * Painel de resultados por area (ME-1.10-DIS-F/G). Cinco areas em tres
+ * paginas (duas por pagina; a ultima so com Assinatura), nenhuma cortada
+ * ao meio (`page-break-inside: avoid` por area). Cada area abre com sua
+ * nota fixa e escore; cada leitura traz nota fixa, barra por faixa de
+ * intensidade, valor, faixa textual e selo de papel quando aplicavel. O
+ * Equilibrio e tratado como as demais (media dos subvetores), sem item
+ * composto a parte.
  */
 function renderSubvectorPanel(subvetores: IndividualProfileSubvector[]): string {
   const grouped: Record<IndividualProfileSubvector['bloco'], IndividualProfileSubvector[]> = {
@@ -487,21 +743,20 @@ function renderSubvectorPanel(subvetores: IndividualProfileSubvector[]): string 
   };
   for (const s of subvetores) grouped[s.bloco]?.push(s);
 
-  const pagina1 = (['Postura', 'Estrutura', 'Motor'] as const)
-    .filter((b) => grouped[b].length > 0)
-    .map((b) => renderAreaBloco(b, grouped[b]))
-    .join('\n');
-  const pagina2 = (['Equilíbrio', 'Assinatura'] as const)
-    .filter((b) => grouped[b].length > 0)
-    .map((b) => renderAreaBloco(b, grouped[b]))
-    .join('\n');
+  const bloco = (b: IndividualProfileSubvector['bloco']): string =>
+    grouped[b].length > 0 ? renderAreaBloco(b, grouped[b]) : '';
 
   return `<section class="page-break">
   <h2>Painel de resultados por área</h2>
-  ${pagina1}
+  ${bloco('Postura')}
+${bloco('Estrutura')}
 </section>
 <section class="page-break">
-  ${pagina2}
+  ${bloco('Motor')}
+${bloco('Equilíbrio')}
+</section>
+<section class="page-break">
+  ${bloco('Assinatura')}
 </section>`;
 }
 
@@ -513,15 +768,16 @@ export function renderIndividualProfileHTML(input: IndividualProfileTemplateInpu
   const exp = input.expandido;
   const bodyHtml = [
     renderCoverPage(input.identificacao),
+    renderGraficoPage(input.subvetores),
+    renderSubvectorPanel(input.subvetores),
     renderSintese(exp.sintese_executiva),
     renderComoAge(exp.como_age),
     renderQuemE(exp.quem_e),
     renderOQueMove(exp.o_que_move),
     renderComoReage(exp.como_reage_sob_pressao),
     renderNaturalmenteExcelente(exp.naturalmente_excelente),
-    renderSubvectorPanel(input.subvetores),
     renderRecomendacoes(exp.recomendacoes_executivas),
-    renderConfiabilidade(exp.confiabilidade),
+    renderConfiabilidade(exp.confiabilidade, input.confiabilidadeMetricas),
   ].join('\n\n');
 
   return renderLayoutBase({
