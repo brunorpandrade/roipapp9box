@@ -175,7 +175,6 @@ export function composeIndividualProfileFilename(nome: string, generatedAtDate: 
 function renderCoverPage(id: IndividualProfileIdentificacao): string {
   const nivel = NIVEL_HIERARQUICO_ROTULO[id.nivelHierarquico];
   return `<section class="cover-page">
-  <div class="cover-badge">Perfil individual</div>
   <div class="cover-hero">
     <div class="cover-title-line1">Perfil individual</div>
     <div class="cover-title-line2">Retrato comportamental</div>
@@ -185,21 +184,10 @@ function renderCoverPage(id: IndividualProfileIdentificacao): string {
     <div class="cover-meta-row"><span class="cover-meta-label">Cargo</span><span class="cover-meta-value">${escapeHtml(asStr(id.cargo))}</span></div>
     <div class="cover-meta-row"><span class="cover-meta-label">Nível hierárquico</span><span class="cover-meta-value">${escapeHtml(nivel)}</span></div>
     <div class="cover-meta-row"><span class="cover-meta-label">Departamento</span><span class="cover-meta-value">${escapeHtml(asStr(id.departamento))}</span></div>
+    <div class="cover-meta-row"><span class="cover-meta-label">Líder direto</span><span class="cover-meta-value">${escapeHtml(asStr(id.liderDireto))}</span></div>
     <div class="cover-meta-row"><span class="cover-meta-label">Data de aplicação</span><span class="cover-meta-value">${escapeHtml(formatDateBR(asStr(id.dataAplicacao)))}</span></div>
   </div>
   <div class="cover-note"><strong>Documento confidencial.</strong> Este relatório descreve padrões comportamentais e de potencial — é uma leitura de estilo, não um juízo de valor sobre a pessoa. Destina-se exclusivamente à gestão de pessoas e ao desenvolvimento do colaborador.</div>
-</section>`;
-}
-
-function renderIdentificacaoSection(id: IndividualProfileIdentificacao): string {
-  return `<section class="page-break">
-  <h2>Identificação</h2>
-  <p><strong>Nome:</strong> ${escapeHtml(asStr(id.nome))}</p>
-  <p><strong>Cargo:</strong> ${escapeHtml(asStr(id.cargo))}</p>
-  <p><strong>Nível hierárquico:</strong> ${escapeHtml(NIVEL_HIERARQUICO_ROTULO[id.nivelHierarquico])}</p>
-  <p><strong>Departamento:</strong> ${escapeHtml(asStr(id.departamento))}</p>
-  <p><strong>Líder direto:</strong> ${escapeHtml(asStr(id.liderDireto))}</p>
-  <p><strong>Data de aplicação:</strong> ${escapeHtml(formatDateBR(asStr(id.dataAplicacao)))}</p>
 </section>`;
 }
 
@@ -308,8 +296,189 @@ function renderConfiabilidade(c: Confiabilidade): string {
 </section>`;
 }
 
+/** Faixa textual canonica (DOC 03 §5.4.2) a partir do valor 0-100. */
+function faixaRotulo(valor: number): string {
+  if (valor <= 20) return 'Muito baixo';
+  if (valor <= 40) return 'Baixo';
+  if (valor <= 60) return 'Médio';
+  if (valor <= 80) return 'Alto';
+  return 'Muito alto';
+}
+
+/**
+ * Intensidade neutra por faixa (ME-1.10-DIS-F, Opcao C). Cinco tons da
+ * MESMA matiz azul da marca, do mais claro (faixa muito baixa) ao mais
+ * cheio (faixa muito alta), §5.4.2. A cor comunica magnitude, nunca
+ * qualidade: nao ha semaforo verde/amarelo/vermelho. Um valor baixo e
+ * posicao no perfil, e as notas de cada leitura permanecem neutras.
+ */
+function faixaIntensidade(valor: number): 1 | 2 | 3 | 4 | 5 {
+  if (valor <= 20) return 1;
+  if (valor <= 40) return 2;
+  if (valor <= 60) return 3;
+  if (valor <= 80) return 4;
+  return 5;
+}
+
+/** Nota fixa de cada area (cabecalho do bloco). */
+const NOTA_AREA: Record<IndividualProfileSubvector['bloco'], string> = {
+  Postura: 'Como a pessoa age, decide e se comunica no trabalho.',
+  Estrutura:
+    'Quem a pessoa é na sua configuração estável, o que orienta seu jeito de operar em qualquer contexto.',
+  Motor: 'O que move a pessoa, sustenta seu engajamento e ela não abre mão.',
+  Equilíbrio: 'Como a pessoa percebe, regula e usa as emoções sob pressão.',
+  Assinatura: 'No que a pessoa é naturalmente excelente e gera valor com baixo esforço.',
+};
+
+/** Nota fixa de cada leitura (abaixo de cada barra). Chave = rotulo. */
+const NOTA_SUBVETOR: Record<string, string> = {
+  'Assertividade e decisão': 'Velocidade para decidir e firmeza ao se posicionar.',
+  'Orientação a tarefas': 'Foco em resultado, método e padrão de entrega.',
+  'Orientação a pessoas': 'Investimento em relação, escuta e clima.',
+  'Comportamento sob pressão': 'Como o estilo se altera quando a tensão sobe.',
+  'Abertura à experiência': 'Curiosidade, apetite por novidade e tolerância à ambiguidade.',
+  'Disciplina e autogestão': 'Organização, constância e cumprimento de compromisso.',
+  Extroversão: 'Energia em interação e conforto com exposição social.',
+  Amabilidade: 'Cooperação, empatia e disposição para o outro.',
+  'Estabilidade emocional': 'Regularidade de humor e baixa reatividade sob adversidade.',
+  Maestria: 'Busca por profundidade técnica e domínio do ofício.',
+  Liderança: 'Energia em coordenar pessoas e assumir responsabilidade ampla.',
+  Autonomia: 'Necessidade de liberdade para decidir o próprio caminho.',
+  Segurança: 'Valor dado à estabilidade e à previsibilidade.',
+  Propósito: 'Necessidade de sentido e alinhamento de valores no trabalho.',
+  Autoconsciência: 'Percepção clara dos próprios estados e do que dispara as reações.',
+  'Autogestão emocional': 'Regulação da própria reação sob pressão.',
+  'Leitura do outro': 'Precisão em perceber o estado e o contexto das pessoas.',
+  'Influência e condução': 'Capacidade de conduzir conversas e mobilizar com eficácia.',
+  'Índice geral de equilíbrio': 'Resumo da competência emocional, média das quatro leituras acima.',
+  Sabedoria: 'Excelência em análise, diagnóstico e clareza de raciocínio.',
+  Coragem: 'Excelência em decisões difíceis e iniciativa em contexto ambíguo.',
+  Humanidade: 'Excelência em vínculo, cuidado e leitura relacional.',
+  Justiça: 'Excelência em cooperação, equidade e legitimidade.',
+  Temperança: 'Excelência em disciplina, método e prudência.',
+  Transcendência: 'Excelência em sentido, propósito e mobilização.',
+};
+
+const ROTULO_INDICE_EQUILIBRIO = 'Índice geral de equilíbrio';
+
+/**
+ * Selos de papel por leitura, espelhando a plataforma. Motor: dominante
+ * (maior), sustentacao (segundo) e negligenciado (menor), §5.4.3.
+ * Assinatura: as 3 maiores sao Top 3, §6.2.5. A fonte canonica do papel
+ * e o motor; a derivacao aqui por ordenacao estavel reproduz a
+ * classificacao para a apresentacao do PDF. Demais areas nao recebem
+ * selo.
+ */
+function selosDoBloco(
+  bloco: IndividualProfileSubvector['bloco'],
+  itens: readonly IndividualProfileSubvector[],
+): Map<string, string> {
+  const selos = new Map<string, string>();
+  if (bloco === 'Motor') {
+    const ord = [...itens].sort((a, b) => b.valor - a.valor);
+    const dominante = ord[0];
+    const sustentacao = ord[1];
+    const negligenciado = ord[ord.length - 1];
+    if (dominante) selos.set(dominante.rotulo, 'Dominante');
+    if (sustentacao) selos.set(sustentacao.rotulo, 'Sustentação');
+    if (negligenciado) selos.set(negligenciado.rotulo, 'Negligenciado');
+  } else if (bloco === 'Assinatura') {
+    const ord = [...itens].sort((a, b) => b.valor - a.valor);
+    for (const s of ord.slice(0, 3)) selos.set(s.rotulo, 'Top 3');
+  }
+  return selos;
+}
+
+/** Uma barra semaforizada com rotulo, nota fixa, faixa e selo opcional. */
+function renderSubvRow(s: IndividualProfileSubvector, selo: string | null): string {
+  const pct = Math.max(0, Math.min(100, s.valor));
+  const fx = faixaIntensidade(s.valor);
+  const nota = NOTA_SUBVETOR[s.rotulo] ?? '';
+  const notaHtml =
+    nota.length > 0 ? `\n        <div class="subv-note">${escapeHtml(nota)}</div>` : '';
+  const seloHtml = selo !== null ? ` <span class="subv-selo">${escapeHtml(selo)}</span>` : '';
+  return `<div class="subv-row">
+      <div class="subv-label-col">
+        <div class="subv-label">${escapeHtml(asStr(s.rotulo))}${seloHtml}</div>${notaHtml}
+      </div>
+      <div class="dim-bar-track"><div class="dim-bar-fill subv-fx${fx}" style="width:${pct.toFixed(1)}%;"></div></div>
+      <div class="subv-value"><span class="subv-num">${pct.toFixed(0)}</span><span class="subv-faixa">${escapeHtml(faixaRotulo(s.valor))}</span></div>
+    </div>`;
+}
+
+/** Linha de destaque do Indice geral de equilibrio (fora do semaforo). */
+function renderIndiceRow(s: IndividualProfileSubvector): string {
+  const pct = Math.max(0, Math.min(100, s.valor));
+  const nota = NOTA_SUBVETOR[s.rotulo] ?? '';
+  const notaHtml =
+    nota.length > 0 ? `\n        <div class="subv-note">${escapeHtml(nota)}</div>` : '';
+  return `<div class="subv-row subv-indice-row">
+      <div class="subv-label-col">
+        <div class="subv-label subv-indice-label">${escapeHtml(asStr(s.rotulo))}</div>${notaHtml}
+      </div>
+      <div class="dim-bar-track"><div class="dim-bar-fill subv-indice-fill" style="width:${pct.toFixed(1)}%;"></div></div>
+      <div class="subv-value"><span class="subv-num subv-indice-num">${pct.toFixed(0)}</span><span class="subv-faixa">${escapeHtml(faixaRotulo(s.valor))}</span></div>
+    </div>`;
+}
+
+/**
+ * Escore agregado da area (0-100), identico ao painel resumido da
+ * plataforma: Equilibrio usa o Indice geral; as demais usam a media
+ * dos subvetores. Deriva dos mesmos valores, entao bate por construcao.
+ */
+function escoreArea(
+  bloco: IndividualProfileSubvector['bloco'],
+  itens: readonly IndividualProfileSubvector[],
+): number | null {
+  if (bloco === 'Equilíbrio') {
+    const indice = itens.find((s) => s.rotulo === ROTULO_INDICE_EQUILIBRIO);
+    if (indice) return indice.valor;
+  }
+  const base = itens.filter((s) => s.rotulo !== ROTULO_INDICE_EQUILIBRIO);
+  if (base.length === 0) return null;
+  const soma = base.reduce((acc, s) => acc + s.valor, 0);
+  return soma / base.length;
+}
+
+/** Um bloco de area: cabecalho + nota da area + barras. */
+function renderAreaBloco(
+  bloco: IndividualProfileSubvector['bloco'],
+  itens: readonly IndividualProfileSubvector[],
+): string {
+  const selos = selosDoBloco(bloco, itens);
+  const escore = escoreArea(bloco, itens);
+  const escoreHtml =
+    escore !== null
+      ? `<span class="subv-area-score">${escapeHtml(faixaRotulo(escore))} · ${Math.round(escore)}</span>`
+      : '';
+  const rows = itens
+    .map((s) => {
+      if (bloco === 'Equilíbrio' && s.rotulo === ROTULO_INDICE_EQUILIBRIO) {
+        return renderIndiceRow(s);
+      }
+      return renderSubvRow(s, selos.get(s.rotulo) ?? null);
+    })
+    .join('\n');
+  return `<div class="subv-area">
+    <div class="subv-area-head"><span class="subv-area-title">${escapeHtml(bloco)}</span>${escoreHtml}</div>
+    <div class="subv-area-note">${escapeHtml(NOTA_AREA[bloco])}</div>
+    <div class="subv-bars">
+${rows}
+    </div>
+  </div>`;
+}
+
+/**
+ * Painel de resultados por area (ME-1.10-DIS-F). Cinco areas em duas
+ * paginas: tres na primeira (Postura, Estrutura, Motor) e duas na
+ * segunda (Equilibrio, Assinatura), nenhuma cortada ao meio
+ * (`page-break-inside: avoid` por area). Cada area abre com sua nota
+ * fixa; cada leitura traz nota fixa, barra semaforizada por faixa,
+ * valor, faixa textual e selo de papel quando aplicavel. O Indice geral
+ * de equilibrio aparece em destaque, fora do semaforo.
+ */
 function renderSubvectorPanel(subvetores: IndividualProfileSubvector[]): string {
-  const grouped: Record<string, IndividualProfileSubvector[]> = {
+  const grouped: Record<IndividualProfileSubvector['bloco'], IndividualProfileSubvector[]> = {
     Postura: [],
     Estrutura: [],
     Motor: [],
@@ -318,38 +487,21 @@ function renderSubvectorPanel(subvetores: IndividualProfileSubvector[]): string 
   };
   for (const s of subvetores) grouped[s.bloco]?.push(s);
 
-  // ME-1.10-CC079-DIS-E: barras canonicas `.dim-bar-row` na cor de
-  // marca (teal #14B8A6), NAO semaforicas. O Perfil individual e
-  // descritivo, nao avaliativo — um subvetor baixo (ex. amabilidade) e
-  // posicao no traco, nao "ruim". Semaforo verde/amarelo/vermelho
-  // introduziria juizo de valor ausente do instrumento (DOC 03 §10.8).
-  // Cada bloco e envolvido em `page-break-inside: avoid` para eliminar
-  // titulos de bloco orfaos no fim de pagina.
-  const blocks = Object.entries(grouped)
-    .filter(([, arr]) => arr.length > 0)
-    .map(([bloco, arr]) => {
-      const rows = arr
-        .map((s) => {
-          const pct = Math.max(0, Math.min(100, s.valor));
-          return `<div class="dim-bar-row">
-      <div class="dim-bar-label">${escapeHtml(asStr(s.rotulo))}</div>
-      <div class="dim-bar-track"><div class="dim-bar-fill" style="width:${pct.toFixed(1)}%;"></div></div>
-      <div class="dim-bar-value">${pct.toFixed(1)}</div>
-    </div>`;
-        })
-        .join('\n');
-      return `<div style="page-break-inside: avoid; margin-bottom:4mm;">
-  <h3>${escapeHtml(bloco)}</h3>
-  <div class="dim-bars">
-${rows}
-  </div>
-</div>`;
-    })
+  const pagina1 = (['Postura', 'Estrutura', 'Motor'] as const)
+    .filter((b) => grouped[b].length > 0)
+    .map((b) => renderAreaBloco(b, grouped[b]))
+    .join('\n');
+  const pagina2 = (['Equilíbrio', 'Assinatura'] as const)
+    .filter((b) => grouped[b].length > 0)
+    .map((b) => renderAreaBloco(b, grouped[b]))
     .join('\n');
 
   return `<section class="page-break">
-  <h2>Painel dos subvetores</h2>
-  ${blocks}
+  <h2>Painel de resultados por área</h2>
+  ${pagina1}
+</section>
+<section class="page-break">
+  ${pagina2}
 </section>`;
 }
 
@@ -361,7 +513,6 @@ export function renderIndividualProfileHTML(input: IndividualProfileTemplateInpu
   const exp = input.expandido;
   const bodyHtml = [
     renderCoverPage(input.identificacao),
-    renderIdentificacaoSection(input.identificacao),
     renderSintese(exp.sintese_executiva),
     renderComoAge(exp.como_age),
     renderQuemE(exp.quem_e),

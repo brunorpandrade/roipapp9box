@@ -308,7 +308,7 @@ function renderCadastraisSection(c: LgpdPortabilityCadastrais): string {
   linhas.push(cadastroRow('Departamento', c.departamento));
   linhas.push(cadastroRow('Status', STATUS_TITULAR_ROTULO[c.status]));
   if (c.cbo !== null && c.descricaoCBO !== null) {
-    linhas.push(cadastroRow('CBO', `${c.cbo} — ${c.descricaoCBO}`));
+    linhas.push(cadastroRow('CBO', `${c.cbo} · ${c.descricaoCBO}`));
   }
   if (c.nivelHierarquico !== null) {
     linhas.push(
@@ -379,7 +379,7 @@ ${cells}
 function renderInstrumentASection(rows: LgpdPortabilityInstrumentoRow[]): string {
   return `<section>
   <h2>Instrumento A — Autoavaliação</h2>
-  <p class="muted">Respostas do próprio titular à autoavaliação canônica (DOC 03 §7).</p>
+  <p class="muted">Respostas do próprio titular à autoavaliação.</p>
   ${renderInstrumentoRows(rows, 'Nenhuma resposta registrada.')}
 </section>`;
 }
@@ -387,7 +387,7 @@ function renderInstrumentASection(rows: LgpdPortabilityInstrumentoRow[]): string
 function renderInstrumentDSection(rows: LgpdPortabilityInstrumentoRow[]): string {
   return `<section>
   <h2>Instrumento D — Avaliação do líder direto</h2>
-  <p class="muted">Respostas do próprio titular avaliando seu líder direto ou C-level (DOC 03 §8).</p>
+  <p class="muted">Respostas do próprio titular avaliando seu líder direto ou C-level.</p>
   ${renderInstrumentoRows(rows, 'Nenhuma resposta registrada.')}
 </section>`;
 }
@@ -396,7 +396,7 @@ function renderCopsoqSection(rows: LgpdPortabilityCopsoqRow[]): string {
   if (rows.length === 0) {
     return `<section>
   <h2>Radar NR-1 (COPSOQ)</h2>
-  <p class="muted">Respostas do próprio titular ao Radar NR-1 (DOC 03 §11).</p>
+  <p class="muted">Respostas do próprio titular ao Radar NR-1.</p>
   <p class="muted">Nenhuma resposta registrada.</p>
 </section>`;
   }
@@ -425,7 +425,7 @@ function renderCopsoqSection(rows: LgpdPortabilityCopsoqRow[]): string {
     .join('\n');
   return `<section>
   <h2>Radar NR-1 (COPSOQ)</h2>
-  <p class="muted">Respostas do próprio titular ao Radar NR-1 (DOC 03 §11).</p>
+  <p class="muted">Respostas do próprio titular ao Radar NR-1.</p>
   <table class="data-table">
     <thead>
       <tr>
@@ -447,7 +447,7 @@ function renderIndividualProfileSection(rows: LgpdPortabilityIndividualProfileRo
   if (rows.length === 0) {
     return `<section>
   <h2>Perfil individual — respostas brutas</h2>
-  <p class="muted">Respostas do próprio titular ao Perfil individual (DOC 03 §10).</p>
+  <p class="muted">Respostas do próprio titular ao Perfil individual.</p>
   <p class="muted">Nenhuma resposta registrada.</p>
 </section>`;
   }
@@ -471,7 +471,7 @@ function renderIndividualProfileSection(rows: LgpdPortabilityIndividualProfileRo
     .join('\n');
   return `<section>
   <h2>Perfil individual — respostas brutas</h2>
-  <p class="muted">Respostas do próprio titular ao Perfil individual (DOC 03 §10).</p>
+  <p class="muted">Respostas do próprio titular ao Perfil individual.</p>
 ${tentativas}
 </section>`;
 }
@@ -498,7 +498,7 @@ function renderTermoAceiteSection(
   if (termoAceite === null || termoAceite === undefined) {
     return `<section>
   <h2>Termo de aceite</h2>
-  <p class="muted">Não há registro de aceite do termo LGPD para este titular na base canônica da plataforma.</p>
+  <p class="muted">Não há registro de aceite do termo LGPD para este titular na base da plataforma.</p>
 </section>`;
   }
   const dataAceiteBr = formatDateBR(termoAceite.aceitoEmDate);
@@ -510,7 +510,7 @@ function renderTermoAceiteSection(
     if (termoAceite.textoLiteral !== null) {
       return `<p>${escapeHtml(termoAceite.textoLiteral)}</p>`;
     }
-    return `<p class="muted">(Versão histórica — texto literal não disponível no registro canônico atual.)</p>`;
+    return `<p class="muted">(Versão histórica: texto literal não disponível no registro atual.)</p>`;
   })();
   const styleTermo =
     `background:#f9fafb; border:0.5pt solid #d1d5db; border-radius:1mm; ` +
@@ -521,7 +521,7 @@ function renderTermoAceiteSection(
   const styleLi = `margin-bottom:1mm;`;
   return `<section>
   <h2>Termo de aceite</h2>
-  <p class="muted">Texto literal da versão do termo LGPD vigente no momento do aceite pelo titular, preservado para rastreabilidade canônica (DOC 02 §7.3).</p>
+  <p class="muted">Texto literal da versão do termo LGPD vigente no momento do aceite pelo titular, preservado para rastreabilidade.</p>
   <p><strong>Versão aceita:</strong> ${escapeHtml(termoAceite.versao)}</p>
   <p><strong>Data do aceite:</strong> ${escapeHtml(dataAceiteBr)}</p>
   <div style="${styleTermo}">
@@ -552,8 +552,8 @@ export function renderLgpdPortabilityHTML(input: LgpdPortabilityTemplateInput): 
   const modo: LgpdPortabilityModo = input.modo ?? 'super_admin';
   const preambuloTexto =
     modo === 'colaborador'
-      ? 'Documento canônico emitido em atendimento ao direito de acesso previsto na Lei Geral de Proteção de Dados Pessoais (LGPD, Lei nº 13.709/2018). Contém os dados cadastrais do titular e o registro canônico do termo de aceite vigente. Respostas aos instrumentos de avaliação são preservadas na base canônica da plataforma e disponibilizadas ao titular pelos canais de atendimento da empresa, conforme previsto em lei.'
-      : 'Documento canônico emitido em atendimento ao direito de portabilidade previsto na Lei Geral de Proteção de Dados Pessoais (LGPD, Lei nº 13.709/2018). Contém os dados cadastrais do titular e as respostas fornecidas pelo próprio titular aos instrumentos de avaliação da plataforma. Avaliações realizadas por terceiros sobre o titular não integram o escopo deste documento.';
+      ? 'Documento emitido em atendimento ao direito de acesso previsto na Lei Geral de Proteção de Dados Pessoais (LGPD, Lei nº 13.709/2018). Contém os dados cadastrais do titular e o registro do termo de aceite vigente. Respostas aos instrumentos de avaliação são preservadas na base da plataforma e disponibilizadas ao titular pelos canais de atendimento da empresa, conforme previsto em lei.'
+      : 'Documento emitido em atendimento ao direito de portabilidade previsto na Lei Geral de Proteção de Dados Pessoais (LGPD, Lei nº 13.709/2018). Contém os dados cadastrais do titular e as respostas fornecidas pelo próprio titular aos instrumentos de avaliação da plataforma. Avaliações realizadas por terceiros sobre o titular não integram o escopo deste documento.';
   // ME-1.10-CC079-DIS-E: capa editorial canonica. Titulo do modo via
   // `.cover-title` (quebra em multiplas linhas — suporta o titulo longo
   // "Portabilidade de dados pessoais" sem truncar). Preambulo legal

@@ -1352,6 +1352,129 @@ export const LAYOUT_BASE_CSS = `
     font-size: 10pt;
   }
 
+  /* ME-1.10-DIS-F: Painel de resultados por area do Perfil Individual.
+     Cada area abre com nota fixa; cada leitura traz nota fixa, barra
+     semaforizada por faixa (classes semf-* compartilhadas com o clima),
+     valor, faixa textual e selo de papel. Indice geral de equilibrio em
+     destaque navy, fora do semaforo. */
+  .subv-area {
+    page-break-inside: avoid;
+    margin-bottom: 3.5mm;
+  }
+  .subv-area-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 0.5mm;
+  }
+  .subv-area-title {
+    font-size: 12pt;
+    font-weight: 700;
+    color: #111827;
+  }
+  .subv-area-score {
+    font-size: 10pt;
+    font-weight: 700;
+    color: #1E293B;
+    background: #EEF2F6;
+    border: 1px solid #DCE3EB;
+    border-radius: 999px;
+    padding: 0.4mm 2.4mm;
+    white-space: nowrap;
+  }
+  .subv-area-note {
+    font-size: 9pt;
+    color: #6B7280;
+    margin: 0 0 1.8mm;
+  }
+  .subv-bars {
+    margin-top: 1mm;
+  }
+  .subv-row {
+    display: grid;
+    grid-template-columns: 58mm 1fr 22mm;
+    align-items: center;
+    gap: 3mm;
+    margin-bottom: 1.8mm;
+  }
+  .subv-label-col {
+    min-width: 0;
+  }
+  .subv-label {
+    font-weight: 600;
+    color: #111827;
+    font-size: 10pt;
+    line-height: 1.2;
+  }
+  .subv-note {
+    font-size: 8pt;
+    color: #6B7280;
+    line-height: 1.25;
+    margin-top: 0.5mm;
+  }
+  .subv-selo {
+    display: inline-block;
+    font-size: 7pt;
+    font-weight: 700;
+    letter-spacing: 0.2pt;
+    padding: 0.3mm 1.6mm;
+    border-radius: 2pt;
+    background: #E8EEF7;
+    color: #1E3A5F;
+    vertical-align: middle;
+  }
+  .subv-value {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+  }
+  .subv-num {
+    font-weight: 700;
+    font-size: 11pt;
+    line-height: 1.1;
+    color: #1E293B;
+  }
+  /* Escala de intensidade neutra: 5 tons da mesma matiz azul por faixa,
+     do mais claro (faixa muito baixa) ao mais cheio (faixa muito alta).
+     Comunica magnitude, nao qualidade — sem semaforo. */
+  .dim-bar-fill.subv-fx1 {
+    background: #C3D0E0;
+  }
+  .dim-bar-fill.subv-fx2 {
+    background: #97ACC8;
+  }
+  .dim-bar-fill.subv-fx3 {
+    background: #6A89AE;
+  }
+  .dim-bar-fill.subv-fx4 {
+    background: #3E6191;
+  }
+  .dim-bar-fill.subv-fx5 {
+    background: #1E3A5F;
+  }
+  .subv-faixa {
+    font-size: 7.5pt;
+    font-weight: 600;
+    color: #6B7280;
+    margin-top: 0.3mm;
+  }
+  .subv-indice-row {
+    border-top: 1px solid #E5E7EB;
+    padding-top: 2.5mm;
+    margin-top: 1mm;
+  }
+  .subv-indice-label {
+    color: #1E293B;
+    font-weight: 700;
+  }
+  .subv-indice-fill {
+    background: #334155;
+  }
+  .subv-indice-num {
+    color: #1E293B;
+  }
+
   /* Comparativo deptos — tabela colorizada canonica para o executivo. */
   .exec-dept-table-wrap {
     margin-top: 3mm;

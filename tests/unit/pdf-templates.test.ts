@@ -100,7 +100,7 @@ const CANON_INDIVIDUAL: IndividualProfileTemplateInput = {
     },
   },
   subvetores: [
-    { bloco: 'Postura', rotulo: 'Assertividade e ritmo', valor: 62.5 },
+    { bloco: 'Postura', rotulo: 'Assertividade e decisão', valor: 62.5 },
     { bloco: 'Estrutura', rotulo: 'Abertura à experiência', valor: 78 },
     { bloco: 'Motor', rotulo: 'Maestria', valor: 71.3 },
     { bloco: 'Equilíbrio', rotulo: 'Autoconsciência', valor: 84 },
@@ -236,16 +236,62 @@ describe('individualProfileTemplate (ME-050/51)', () => {
   it('renderIndividualProfileHTML — contem todas as secoes canonicas §10.10', () => {
     const html = renderIndividualProfileHTML(CANON_INDIVIDUAL);
     expect(html).toContain('Perfil individual');
-    expect(html).toContain('Identificação');
     expect(html).toContain('Síntese executiva');
     expect(html).toContain('Como essa pessoa age');
     expect(html).toContain('Quem essa pessoa é');
     expect(html).toContain('O que move essa pessoa');
     expect(html).toContain('Como reage sob pressão');
     expect(html).toContain('naturalmente excelente');
-    expect(html).toContain('Painel dos subvetores');
+    expect(html).toContain('Painel de resultados por área');
     expect(html).toContain('Recomendações executivas');
     expect(html).toContain('Confiabilidade');
+    // ME-1.10-DIS-F: pagina de identificacao redundante removida,
+    // etiqueta da capa removida, titulo antigo do painel renomeado.
+    expect(html).not.toContain('<h2>Identificação</h2>');
+    expect(html).not.toContain('Painel dos subvetores');
+    expect(html).not.toContain('<div class="cover-badge">');
+  });
+
+  it('renderIndividualProfileHTML — painel DIS-F: semaforo, selos, faixa e indice', () => {
+    const html = renderIndividualProfileHTML({
+      ...CANON_INDIVIDUAL,
+      subvetores: [
+        { bloco: 'Postura', rotulo: 'Assertividade e decisão', valor: 50 },
+        { bloco: 'Motor', rotulo: 'Maestria', valor: 56 },
+        { bloco: 'Motor', rotulo: 'Liderança', valor: 10 },
+        { bloco: 'Motor', rotulo: 'Autonomia', valor: 67 },
+        { bloco: 'Motor', rotulo: 'Segurança', valor: 67 },
+        { bloco: 'Motor', rotulo: 'Propósito', valor: 79 },
+        { bloco: 'Equilíbrio', rotulo: 'Autoconsciência', valor: 29 },
+        { bloco: 'Equilíbrio', rotulo: 'Índice geral de equilíbrio', valor: 63 },
+        { bloco: 'Assinatura', rotulo: 'Sabedoria', valor: 79 },
+        { bloco: 'Assinatura', rotulo: 'Coragem', valor: 50 },
+        { bloco: 'Assinatura', rotulo: 'Justiça', valor: 75 },
+        { bloco: 'Assinatura', rotulo: 'Transcendência', valor: 67 },
+      ],
+    });
+    // Escala de intensidade neutra por faixa: 10 muito baixo (fx1),
+    // 50/56 medio (fx3), 75/79 muito alto (fx5). Sem semaforo.
+    expect(html).toContain('subv-fx1');
+    expect(html).toContain('subv-fx3');
+    expect(html).toContain('subv-fx5');
+    // Faixa textual ao lado da barra.
+    expect(html).toContain('Médio');
+    expect(html).toContain('Alto');
+    expect(html).toContain('Baixo');
+    // Selos de papel: Motor (dominante/sustentacao/negligenciado) e
+    // Assinatura (Top 3).
+    expect(html).toContain('Dominante');
+    expect(html).toContain('Sustentação');
+    expect(html).toContain('Negligenciado');
+    expect(html).toContain('Top 3');
+    // Notas fixas de area e de leitura.
+    expect(html).toContain('O que move a pessoa, sustenta seu engajamento');
+    expect(html).toContain('Velocidade para decidir e firmeza ao se posicionar.');
+    // Indice geral de equilibrio em destaque, fora do semaforo.
+    expect(html).toContain('subv-indice-fill');
+    // Escore agregado por area no cabecalho (paridade com o resumido).
+    expect(html).toContain('subv-area-score');
   });
 
   it('renderIndividualProfileHTML — blocos condicionais omitidos quando null', () => {
@@ -517,20 +563,24 @@ describe('nr1Template (ME-050/51)', () => {
 // remocao de qualquer classe canonica reprova.
 // ============================================================
 describe('ME-1.10-CC079-DIS-E — Perfil individual lapidado', () => {
-  it('capa editorial canonica presente', () => {
+  it('capa editorial canonica presente, sem etiqueta (DIS-F)', () => {
     const html = renderIndividualProfileHTML(CANON_INDIVIDUAL);
     expect(html).toContain('class="cover-page"');
-    expect(html).toContain('class="cover-badge"');
     expect(html).toContain('class="cover-hero"');
     expect(html).toContain('class="cover-meta"');
     expect(html).toContain('class="cover-note"');
+    // DIS-F: a etiqueta da capa foi removida.
+    expect(html).not.toContain('<div class="cover-badge">');
+    // Lider direto migrou da pagina de identificacao para a capa.
+    expect(html).toContain('Líder direto');
   });
 
-  it('painel de subvetores usa barras canonicas, nao a barra preta antiga', () => {
+  it('painel de resultados por area usa barras de intensidade, nao a barra preta antiga', () => {
     const html = renderIndividualProfileHTML(CANON_INDIVIDUAL);
-    expect(html).toContain('class="dim-bar-row"');
-    expect(html).toContain('class="dim-bar-fill"');
-    expect(html).toContain('class="dim-bar-value"');
+    expect(html).toContain('class="subv-row"');
+    expect(html).toContain('class="dim-bar-track"');
+    expect(html).toContain('dim-bar-fill subv-fx');
+    expect(html).toContain('class="subv-area-note"');
     // A barra preta inline antiga (#111827 como fill) foi removida.
     expect(html).not.toContain('background:#111827; width:');
   });

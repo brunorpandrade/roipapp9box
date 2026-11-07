@@ -908,7 +908,7 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
         const subvetores: IndividualProfileSubvector[] = [];
         const nn = (v: string | null): number => (v === null ? 0 : Number.parseFloat(v));
         subvetores.push(
-          { bloco: 'Postura', rotulo: 'Assertividade e ritmo', valor: nn(score.post_assert) },
+          { bloco: 'Postura', rotulo: 'Assertividade e decisão', valor: nn(score.post_assert) },
           { bloco: 'Postura', rotulo: 'Orientação a tarefas', valor: nn(score.post_tarefas) },
           { bloco: 'Postura', rotulo: 'Orientação a pessoas', valor: nn(score.post_pessoas) },
           { bloco: 'Postura', rotulo: 'Comportamento sob pressão', valor: nn(score.post_pressao) },
@@ -923,10 +923,14 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
           { bloco: 'Motor', rotulo: 'Segurança', valor: nn(score.mot_seguranca) },
           { bloco: 'Motor', rotulo: 'Propósito', valor: nn(score.mot_proposito) },
           { bloco: 'Equilíbrio', rotulo: 'Autoconsciência', valor: nn(score.equ_autocons) },
-          { bloco: 'Equilíbrio', rotulo: 'Autogestão', valor: nn(score.equ_autogest) },
+          { bloco: 'Equilíbrio', rotulo: 'Autogestão emocional', valor: nn(score.equ_autogest) },
           { bloco: 'Equilíbrio', rotulo: 'Leitura do outro', valor: nn(score.equ_leitura) },
           { bloco: 'Equilíbrio', rotulo: 'Influência e condução', valor: nn(score.equ_influencia) },
-          { bloco: 'Equilíbrio', rotulo: 'Índice geral', valor: nn(score.equ_indice) },
+          {
+            bloco: 'Equilíbrio',
+            rotulo: 'Índice geral de equilíbrio',
+            valor: nn(score.equ_indice),
+          },
           { bloco: 'Assinatura', rotulo: 'Sabedoria', valor: nn(score.ass_sabed) },
           { bloco: 'Assinatura', rotulo: 'Coragem', valor: nn(score.ass_coragem) },
           { bloco: 'Assinatura', rotulo: 'Humanidade', valor: nn(score.ass_humanid) },
