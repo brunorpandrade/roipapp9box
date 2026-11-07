@@ -1540,7 +1540,7 @@ export const LAYOUT_BASE_CSS = `
   }
   .conf-nivel-moderada {
     background: rgba(242, 169, 0, 0.18);
-    color: #B45309;
+    color: #F2A900;
   }
   .conf-nivel-baixa {
     background: rgba(220, 38, 38, 0.12);

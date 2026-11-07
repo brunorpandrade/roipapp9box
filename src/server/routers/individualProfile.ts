@@ -92,6 +92,7 @@ import { z } from 'zod';
 import type { RoipDatabase } from '../../db/client';
 import {
   classificarMotivosInconsistencia,
+  metricasConfiabilidade,
   type MotivoRotulado,
 } from '../../lib/instruments/individualProfileReliabilityLabels';
 import {
@@ -859,15 +860,35 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
           });
         }
 
-        // Assessment: enviadoEm -> data_aplicacao.
+        // Assessment: enviadoEm -> data_aplicacao; os 5 indices de
+        // confiabilidade (ia_*) alimentam o grafico de barras do PDF.
         const [assessment] = await ctx.db
-          .select({ enviadoEm: individualProfileAssessments.enviadoEm })
+          .select({
+            enviadoEm: individualProfileAssessments.enviadoEm,
+            ia_att: individualProfileAssessments.ia_att,
+            ia_soc: individualProfileAssessments.ia_soc,
+            ia_acq: individualProfileAssessments.ia_acq,
+            ia_cons: individualProfileAssessments.ia_cons,
+            ia_ext: individualProfileAssessments.ia_ext,
+          })
           .from(individualProfileAssessments)
           .where(eq(individualProfileAssessments.id, score.assessmentId))
           .limit(1);
         const dataAplicacao = assessment?.enviadoEm
           ? new Date(assessment.enviadoEm).toISOString().slice(0, 10)
           : '';
+        // Metricas de confiabilidade (rotulo + alerta) reclassificadas dos
+        // scores persistidos, reusando os thresholds canonicos. Os dados
+        // brutos (respostas) nunca entram aqui; so os 5 scores ja salvos.
+        const confiabilidadeMetricas = assessment
+          ? metricasConfiabilidade({
+              ia_att: assessment.ia_att,
+              ia_soc: assessment.ia_soc,
+              ia_acq: assessment.ia_acq,
+              ia_cons: assessment.ia_cons,
+              ia_ext: assessment.ia_ext,
+            })
+          : undefined;
 
         // Identificacao canonica do titular.
         let nome = '';
@@ -987,6 +1008,7 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
           expandido: score.expandidoJson as IndividualProfileExpandidoJson,
           subvetores,
           generatedAtDate,
+          ...(confiabilidadeMetricas ? { confiabilidadeMetricas } : {}),
         });
 
         let pdfBytes: Uint8Array;

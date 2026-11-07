@@ -194,6 +194,24 @@ function parseScore(valor: string | null): number | null {
   return num;
 }
 
+/** Ordem canonica das 5 subescalas (DOC 03 §5.1), estavel entre execucoes. */
+const ORDEM_CANONICA_SUBESCALAS: readonly MotivoKey[] = [
+  'ia_att',
+  'ia_soc',
+  'ia_acq',
+  'ia_cons',
+  'ia_ext',
+];
+
+/** Funcao de severidade por subescala — fonte unica dos thresholds. */
+const SEVERIDADE_FNS: Readonly<Record<MotivoKey, (n: number) => MotivoSeveridade | null>> = {
+  ia_att: severidadeDeIaAtt,
+  ia_soc: severidadeDeIaSoc,
+  ia_acq: severidadeDeIaAcq,
+  ia_cons: severidadeDeIaCons,
+  ia_ext: severidadeDeIaExt,
+};
+
 /**
  * Classifica os 5 subindices em motivos rotulados ordenados por
  * severidade canonica (`critico` antes de `medio`). Dentro da mesma
@@ -207,19 +225,11 @@ function parseScore(valor: string | null): number | null {
 export function classificarMotivosInconsistencia(
   scores: SubescalaScores,
 ): readonly MotivoRotulado[] {
-  const ordemCanonica: readonly MotivoKey[] = ['ia_att', 'ia_soc', 'ia_acq', 'ia_cons', 'ia_ext'];
-  const severidadeFns: Readonly<Record<MotivoKey, (n: number) => MotivoSeveridade | null>> = {
-    ia_att: severidadeDeIaAtt,
-    ia_soc: severidadeDeIaSoc,
-    ia_acq: severidadeDeIaAcq,
-    ia_cons: severidadeDeIaCons,
-    ia_ext: severidadeDeIaExt,
-  };
   const resultados: MotivoRotulado[] = [];
-  for (const chave of ordemCanonica) {
+  for (const chave of ORDEM_CANONICA_SUBESCALAS) {
     const num = parseScore(scores[chave]);
     if (num === null) continue;
-    const severidade = severidadeFns[chave](num);
+    const severidade = SEVERIDADE_FNS[chave](num);
     if (severidade === null) continue;
     const label = MOTIVO_LABELS[chave];
     resultados.push({
@@ -236,4 +246,46 @@ export function classificarMotivosInconsistencia(
     return a.severidade === 'critico' ? -1 : 1;
   });
   return resultados;
+}
+
+/**
+ * Alerta completo de uma subescala, incluindo `ok` (ao contrario de
+ * `MotivoSeveridade`, que omite o `ok`). Espelha o `AlertaConfiabilidade`
+ * do motor e o `AlertaMetrica` do template do Perfil Individual.
+ */
+export type AlertaSubescala = 'ok' | 'medio' | 'critico';
+
+/**
+ * Metrica de confiabilidade para o grafico de barras do PDF: rotulo
+ * executivo curto + alerta (inclui `ok`). Estrutura compativel com o
+ * `ConfiabilidadeMetrica` do template do Perfil Individual.
+ */
+export interface MetricaConfiabilidade {
+  readonly rotulo: string;
+  readonly alerta: AlertaSubescala;
+}
+
+/** Rotulo curto de cada subescala para o grafico de confiabilidade. */
+const ROTULO_SUBESCALA: Readonly<Record<MotivoKey, string>> = {
+  ia_att: 'Atenção',
+  ia_soc: 'Desejabilidade social',
+  ia_acq: 'Padrão de concordância',
+  ia_cons: 'Consistência interna',
+  ia_ext: 'Uso de extremos',
+};
+
+/**
+ * Monta as 5 metricas de confiabilidade (rotulo + alerta, com `ok`) a
+ * partir dos scores persistidos, reaproveitando as mesmas funcoes de
+ * severidade da `classificarMotivosInconsistencia` (fonte unica dos
+ * thresholds). Consumida pelo gerador de PDF do Perfil Individual para o
+ * grafico de barras de confiabilidade. Score ausente ou nao-finito cai em
+ * `ok` (defensiva; o motor nunca persiste os 5 scores parcialmente).
+ */
+export function metricasConfiabilidade(scores: SubescalaScores): readonly MetricaConfiabilidade[] {
+  return ORDEM_CANONICA_SUBESCALAS.map((chave) => {
+    const num = parseScore(scores[chave]);
+    const alerta: AlertaSubescala = num === null ? 'ok' : (SEVERIDADE_FNS[chave](num) ?? 'ok');
+    return { rotulo: ROTULO_SUBESCALA[chave], alerta };
+  });
 }

@@ -15,6 +15,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   classificarMotivosInconsistencia,
+  metricasConfiabilidade,
   MOTIVO_LABELS,
   type MotivoKey,
   type SubescalaScores,
@@ -221,5 +222,51 @@ describe('ME-1.11 — classificarMotivosInconsistencia ordem e filtro', () => {
     const motivo = resp[0];
     expect(motivo?.titulo).toBe(MOTIVO_LABELS.ia_att.titulo);
     expect(motivo?.descricao).toBe(MOTIVO_LABELS.ia_att.descricao);
+  });
+});
+
+// ME-1.10-DIS-G (patch): metricasConfiabilidade — as 5 metricas completas
+// (rotulo + alerta, incluindo `ok`) que alimentam o grafico de barras da
+// confiabilidade no PDF. Reusa os mesmos thresholds de severidade da
+// classificarMotivosInconsistencia. Regua RV-03.
+describe('metricasConfiabilidade', () => {
+  const ROTULOS_ORDEM = [
+    'Atenção',
+    'Desejabilidade social',
+    'Padrão de concordância',
+    'Consistência interna',
+    'Uso de extremos',
+  ];
+
+  it('retorna sempre as 5 metricas, na ordem canonica, incluindo ok', () => {
+    const m = metricasConfiabilidade(SCORES_OK);
+    expect(m).toHaveLength(5);
+    expect(m.map((x) => x.rotulo)).toEqual(ROTULOS_ORDEM);
+    expect(m.every((x) => x.alerta === 'ok')).toBe(true);
+  });
+
+  it('reclassifica cada subescala pelo mesmo threshold do motor', () => {
+    const scores: SubescalaScores = {
+      ia_att: '1',
+      ia_soc: '5',
+      ia_acq: '1',
+      ia_cons: '3',
+      ia_ext: '0.80',
+    };
+    const alertas = metricasConfiabilidade(scores).map((x) => x.alerta);
+    expect(alertas).toEqual(['medio', 'medio', 'medio', 'critico', 'critico']);
+  });
+
+  it('score ausente cai em ok (defensiva) e mantem as 5 barras', () => {
+    const scores: SubescalaScores = {
+      ia_att: null,
+      ia_soc: null,
+      ia_acq: null,
+      ia_cons: null,
+      ia_ext: null,
+    };
+    const m = metricasConfiabilidade(scores);
+    expect(m).toHaveLength(5);
+    expect(m.every((x) => x.alerta === 'ok')).toBe(true);
   });
 });
