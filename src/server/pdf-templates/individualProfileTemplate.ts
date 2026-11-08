@@ -888,12 +888,44 @@ export function renderIndividualProfileHTML(input: IndividualProfileTemplateInpu
  * rolando na tela", reusando o mesmo motor de render — nao ha reescrita
  * de blocos em React, logo nao ha divergencia entre as duas superficies.
  */
-export function renderIndividualProfileOnlineHTML(input: IndividualProfileTemplateInput): string {
-  const bodyHtml = renderConteudoSecoes(input).join('\n\n');
+/** Modo da visão on-line: documento completo ou resumo executivo. */
+export type PerfilOnlineModo = 'completo' | 'resumo';
+
+/**
+ * Seções do resumo executivo (ME-1.21 patch): o mesmo motor do PDF, com
+ * um recorte — Mapa de leituras (fotografia quantitativa), Síntese
+ * executiva (leitura integrada) e Recomendações executivas (ação do
+ * gestor). Ficam de fora o painel detalhado por área, os cinco blocos de
+ * aprofundamento dimensional e a confiabilidade (anexo técnico).
+ */
+function renderSecoesResumo(input: IndividualProfileTemplateInput): string[] {
+  const exp = input.expandido;
+  return [
+    renderGraficoPage(input.subvetores),
+    renderSintese(exp.sintese_executiva),
+    renderRecomendacoes(exp.recomendacoes_executivas),
+  ];
+}
+
+/**
+ * HTML da visão on-line do Perfil Individual (ME-1.21). Sempre a partir
+ * do mesmo motor do PDF, sem capa, sem rastreabilidade e SEM a logo da
+ * empresa (que só faz sentido no documento impresso). `modo` escolhe
+ * entre o documento completo e o resumo executivo recortado — uma fonte
+ * única para as duas visões da plataforma.
+ */
+export function renderIndividualProfileOnlineHTML(
+  input: IndividualProfileTemplateInput,
+  modo: PerfilOnlineModo = 'completo',
+): string {
+  const secoes = modo === 'resumo' ? renderSecoesResumo(input) : renderConteudoSecoes(input);
+  const bodyHtml = secoes.join('\n\n');
+  // Online nunca mostra a logo — só o PDF impresso a usa.
+  const companySemLogo: LayoutBaseCompany = { nomeFantasia: input.company.nomeFantasia };
 
   return renderLayoutBase({
     title: `Perfil individual — ${input.identificacao.nome}`,
-    company: input.company,
+    company: companySemLogo,
     bodyHtml,
   });
 }

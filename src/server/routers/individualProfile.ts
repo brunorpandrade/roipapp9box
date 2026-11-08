@@ -195,6 +195,12 @@ export const RELEASE_RETEST_INPUT_SCHEMA = z.object(TARGET_INPUT_SHAPE);
 /** Input canonico de `generatePDF` (§10.10). Mesmo shape do titular. */
 export const GENERATE_PDF_INPUT_SCHEMA = z.object(TARGET_INPUT_SHAPE);
 
+/** ME-1.21 — input da visão on-line: identificação + modo da visão. */
+export const GET_PERFIL_ONLINE_INPUT_SCHEMA = z.object({
+  ...TARGET_INPUT_SHAPE,
+  modo: z.enum(['completo', 'resumo']).default('completo'),
+});
+
 /**
  * Retorno canonico de `generatePDF` (§10.10). `pdfBase64` viaja pelo
  * transporte tRPC (JSON); o frontend converte em Blob para download
@@ -1041,7 +1047,7 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
         };
       }),
     getPerfilOnlineHtml: roleProcedure(['super_admin', 'rh', 'rh_lider', 'clevel', 'lider'])
-      .input(GENERATE_PDF_INPUT_SCHEMA)
+      .input(GET_PERFIL_ONLINE_INPUT_SCHEMA)
       .query(async ({ ctx, input }): Promise<{ html: string }> => {
         assertCompanyScope(ctx.user, input.companyId);
         assertPC1e(ctx.user, input.userType);
@@ -1051,7 +1057,7 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
         await resolveTitular(ctx.db, ctx.user, input.companyId, input.userType, input.userId);
         await assertLiderDireto(ctx.db, ctx.user, input.userType, input.userId);
         const templateInput = await buildIndividualProfileTemplateInput(ctx.db, input, now);
-        return { html: renderIndividualProfileOnlineHTML(templateInput) };
+        return { html: renderIndividualProfileOnlineHTML(templateInput, input.modo) };
       }),
   });
 }

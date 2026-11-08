@@ -22,7 +22,7 @@
 // RV-14: um statement por linha, largura maxima 100.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { CSSProperties, JSX, ReactNode } from 'react';
+import type { CSSProperties, JSX } from 'react';
 
 import { COLORS } from '../../../lib/design-tokens/colors';
 import { Spinner } from '../../../components/ui/Spinner';
@@ -34,15 +34,6 @@ import {
   type PerfilRelatorioSnapshot,
 } from './perfilRelatorioActions';
 import { initialsOf } from './internals';
-import {
-  DIMENSAO_LABEL,
-  DIMENSOES_ORDEM,
-  FAIXA_LABEL,
-  SUBVETORES_POR_DIMENSAO,
-  classificarFaixa,
-  type DimensaoPerfil,
-  type FaixaPerfil,
-} from '../../../lib/instruments/individualProfileReportLabels';
 
 const MSG_DESKTOP_ONLY =
   'Esta tela está disponível apenas em dispositivos desktop (viewport ≥ 1024px).';
@@ -95,68 +86,6 @@ interface Props {
 }
 
 type Modo = 'resumo' | 'expandida';
-
-function corDaFaixa(faixa: FaixaPerfil): string {
-  if (faixa === 'muito_alto') {
-    return COLORS.accent.teal;
-  }
-  if (faixa === 'alto') {
-    return COLORS.semantic.success;
-  }
-  if (faixa === 'medio') {
-    return COLORS.semantic.warning;
-  }
-  return COLORS.semantic.danger;
-}
-
-function badgeFaixaStyle(faixa: FaixaPerfil): CSSProperties {
-  const mapa: Record<FaixaPerfil, { bg: string; fg: string }> = {
-    muito_alto: { bg: COLORS.badge.tealClaroBg, fg: COLORS.badge.tealClaroText },
-    alto: { bg: COLORS.badge.successBg, fg: COLORS.badge.successText },
-    medio: { bg: COLORS.badge.warningBg, fg: COLORS.badge.warningText },
-    baixo: { bg: COLORS.badge.dangerBg, fg: COLORS.badge.dangerText },
-    muito_baixo: { bg: COLORS.badge.dangerBg, fg: COLORS.badge.dangerText },
-  };
-  const c = mapa[faixa];
-  return {
-    fontSize: 10,
-    fontWeight: 600,
-    padding: '2px 8px',
-    borderRadius: 10,
-    background: c.bg,
-    color: c.fg,
-    whiteSpace: 'nowrap',
-  };
-}
-
-/** Media aritmetica dos subvetores de uma dimensao (0-100). Equilibrio
- *  usa o Indice Geral canonico (`equ_indice`, §5.4.5) quando presente;
- *  as demais derivam da media dos subvetores (DOC 05 omisso na formula
- *  do agregado — derivacao deterministica coerente com EQU_INDICE). */
-function escoreDimensao(
-  dim: DimensaoPerfil,
-  escores: Readonly<Record<string, string | null>>,
-): number | null {
-  if (dim === 'equilibrio') {
-    const indice = escores['equ_indice'];
-    if (indice !== null && indice !== undefined && Number.isFinite(Number(indice))) {
-      return Number(indice);
-    }
-  }
-  const chaves = SUBVETORES_POR_DIMENSAO[dim];
-  const valores: number[] = [];
-  for (const k of chaves) {
-    const v = escores[k];
-    if (v !== null && v !== undefined && Number.isFinite(Number(v))) {
-      valores.push(Number(v));
-    }
-  }
-  if (valores.length === 0) {
-    return null;
-  }
-  const soma = valores.reduce((acc, n) => acc + n, 0);
-  return soma / valores.length;
-}
 
 // ── estilos ancora (espelham os tokens do dashboard individual) ──
 const OVERLAY: CSSProperties = {
@@ -241,228 +170,6 @@ const BODY: CSSProperties = {
   overflowY: 'auto',
   padding: '24px 28px',
 };
-const SECAO_TITULO: CSSProperties = {
-  fontSize: 10,
-  fontWeight: 700,
-  color: COLORS.text.quaternary,
-  textTransform: 'uppercase',
-  letterSpacing: '0.07em',
-  marginBottom: 12,
-  paddingBottom: 8,
-  borderBottom: `1px solid ${COLORS.border.divider}`,
-};
-
-function DimensaoRow(props: { dim: DimensaoPerfil; valor: number | null }): JSX.Element {
-  const { dim, valor } = props;
-  const pct = valor !== null ? Math.max(0, Math.min(100, valor)) : 0;
-  const faixa = valor !== null ? classificarFaixa(valor) : null;
-  return (
-    <div style={{ marginBottom: 14 }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 5,
-        }}
-      >
-        <span style={{ fontSize: 11, fontWeight: 600, color: COLORS.text.secondary }}>
-          {DIMENSAO_LABEL[dim]}
-        </span>
-        {faixa !== null && valor !== null ? (
-          <span style={badgeFaixaStyle(faixa)}>
-            {FAIXA_LABEL[faixa]} · {Math.round(valor)}
-          </span>
-        ) : (
-          <span style={{ fontSize: 10, color: COLORS.text.quaternary }}>—</span>
-        )}
-      </div>
-      <div style={{ height: 5, background: COLORS.border.default, borderRadius: 3 }}>
-        <div
-          style={{
-            width: `${pct}%`,
-            height: 5,
-            borderRadius: 3,
-            background: faixa !== null ? corDaFaixa(faixa) : COLORS.border.default,
-          }}
-        />
-      </div>
-    </div>
-  );
-}
-
-// ── Render dos textos ricos de IA (system prompt Secao 11) ────────
-// resumoJson/expandidoJson chegam como objetos aninhados. Estes
-// helpers renderizam paragrafos e listas com coercao defensiva (a
-// origem e um LLM).
-
-function riAsStr(v: unknown): string {
-  if (v === null || v === undefined) return '';
-  if (typeof v === 'string') return v;
-  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
-  return '';
-}
-
-function riAsList(v: unknown): string[] {
-  if (!Array.isArray(v)) return [];
-  return v.map(riAsStr).filter((s) => s.trim().length > 0);
-}
-
-function riGet(obj: unknown, key: string): unknown {
-  if (obj !== null && typeof obj === 'object' && key in obj) {
-    return (obj as Record<string, unknown>)[key];
-  }
-  return undefined;
-}
-
-function RiParas(props: { texto: unknown }): JSX.Element | null {
-  const s = riAsStr(props.texto).trim();
-  if (s.length === 0) return null;
-  const paras = s.split(/\n{2,}/).map((p) => p.trim());
-  return (
-    <>
-      {paras.map((p, i) => (
-        <p
-          key={i}
-          style={{ fontSize: 13, color: COLORS.text.secondary, lineHeight: 1.7, margin: '0 0 8px' }}
-        >
-          {p}
-        </p>
-      ))}
-    </>
-  );
-}
-
-function RiSubBloco(props: { rotulo: string; texto: unknown }): JSX.Element | null {
-  const s = riAsStr(props.texto).trim();
-  if (s.length === 0) return null;
-  return (
-    <div style={{ marginBottom: 12 }}>
-      <div
-        style={{
-          fontSize: 10,
-          fontWeight: 700,
-          color: COLORS.text.quaternary,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          marginBottom: 4,
-        }}
-      >
-        {props.rotulo}
-      </div>
-      <RiParas texto={s} />
-    </div>
-  );
-}
-
-function RiSubLista(props: { rotulo: string; itens: unknown }): JSX.Element | null {
-  const arr = riAsList(props.itens);
-  if (arr.length === 0) return null;
-  return (
-    <div style={{ marginBottom: 12 }}>
-      <div
-        style={{
-          fontSize: 10,
-          fontWeight: 700,
-          color: COLORS.text.quaternary,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          marginBottom: 4,
-        }}
-      >
-        {props.rotulo}
-      </div>
-      <ul style={{ margin: 0, paddingLeft: 18, listStyleType: 'disc' }}>
-        {arr.map((r, i) => (
-          <li
-            key={i}
-            style={{ fontSize: 13, color: COLORS.text.secondary, lineHeight: 1.6, marginBottom: 3 }}
-          >
-            {r}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function RiSecao(props: { titulo: string; children: ReactNode }): JSX.Element {
-  return (
-    <div style={{ marginBottom: 24 }}>
-      <div style={SECAO_TITULO}>{props.titulo}</div>
-      {props.children}
-    </div>
-  );
-}
-
-function TextosSintese(props: { sintese: unknown }): JSX.Element {
-  const s = props.sintese;
-  return (
-    <RiSecao titulo="Síntese executiva">
-      <RiSubBloco rotulo="Retrato integrado" texto={riGet(s, 'retrato_integrado')} />
-      <RiSubBloco rotulo="Entrega natural" texto={riGet(s, 'entrega_natural')} />
-      <RiSubBloco rotulo="Pontos de atenção" texto={riGet(s, 'pontos_atencao')} />
-      <RiSubBloco rotulo="Recomendação" texto={riGet(s, 'recomendacao_sintese')} />
-    </RiSecao>
-  );
-}
-
-function TextosRecomendacoes(props: { rec: unknown }): JSX.Element {
-  const r = props.rec;
-  return (
-    <RiSecao titulo="Recomendações executivas">
-      <RiSubBloco rotulo="Onde performa melhor" texto={riGet(r, 'onde_performa_melhor')} />
-      <RiSubLista rotulo="O que precisa do gestor" itens={riGet(r, 'o_que_precisa_do_gestor')} />
-      <RiSubBloco rotulo="Zona de desenvolvimento" texto={riGet(r, 'zona_de_desenvolvimento')} />
-      <RiSubLista rotulo="Sinais de alerta" itens={riGet(r, 'sinais_de_alerta')} />
-      <RiSubBloco rotulo="Contextos a evitar" texto={riGet(r, 'contextos_a_evitar')} />
-    </RiSecao>
-  );
-}
-
-function TextosResumo(props: { resumo: unknown }): JSX.Element {
-  const r = props.resumo;
-  return (
-    <>
-      <TextosSintese sintese={riGet(r, 'sintese_executiva')} />
-      <TextosRecomendacoes rec={riGet(r, 'recomendacoes_executivas')} />
-    </>
-  );
-}
-
-function PainelEscores(props: { snap: PerfilRelatorioSnapshot }): JSX.Element {
-  const { snap } = props;
-  return (
-    <div style={{ marginBottom: 28 }}>
-      <div style={SECAO_TITULO}>Painel de escores por dimensão</div>
-      <div
-        style={{
-          background: COLORS.background.elevated,
-          border: `1px solid ${COLORS.border.default}`,
-          borderRadius: 10,
-          padding: '16px 18px',
-        }}
-      >
-        <div
-          style={{
-            fontSize: 10,
-            fontWeight: 700,
-            color: COLORS.text.quaternary,
-            textTransform: 'uppercase',
-            letterSpacing: '0.06em',
-            marginBottom: 12,
-          }}
-        >
-          Visão geral · escala 0–100
-        </div>
-        {DIMENSOES_ORDEM.map((dim) => (
-          <DimensaoRow key={dim} dim={dim} valor={escoreDimensao(dim, snap.escores)} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function EstadoTextoIA(props: { falhou: boolean; onRetry: () => void }): JSX.Element {
   if (props.falhou) {
     return (
@@ -567,6 +274,7 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
   const [onlineHtml, setOnlineHtml] = useState<string | null>(null);
   const [carregandoOnline, setCarregandoOnline] = useState<boolean>(false);
   const [erroOnline, setErroOnline] = useState<string | null>(null);
+  const [onlineReloadKey, setOnlineReloadKey] = useState<number>(0);
   const tentativasRef = useRef<number>(0);
   const bodyRef = useRef<HTMLDivElement | null>(null);
 
@@ -631,34 +339,37 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
 
   // ME-1.21 — carrega o HTML do perfil completo sob demanda, quando o
   // modo "completo" abre e o expandido ja esta pronto.
-  const carregarOnline = useCallback(async (): Promise<void> => {
-    setErroOnline(null);
-    setCarregandoOnline(true);
-    const res = await carregarPerfilOnlineHtmlAction({ companyId, userType, userId });
-    setCarregandoOnline(false);
-    if (!res.ok || res.html === null) {
-      setErroOnline(res.error ?? 'Erro ao carregar o perfil completo.');
-      return;
-    }
-    setOnlineHtml(res.html);
-  }, [companyId, userType, userId]);
-
+  // ME-1.21 patch — resumo e completo vêm do mesmo motor (iframe). O HTML
+  // é buscado conforme o modo ativo e refeito ao alternar ou no retry.
   useEffect(() => {
-    if (modo !== 'expandida') {
-      return;
-    }
     if (snap === null || snap.gerandoExpandido) {
       return;
     }
-    if (onlineHtml !== null || carregandoOnline || erroOnline !== null) {
-      return;
-    }
-    void carregarOnline();
-  }, [modo, snap, onlineHtml, carregandoOnline, erroOnline, carregarOnline]);
-
-  const retryOnline = useCallback((): void => {
+    let cancelado = false;
     setErroOnline(null);
     setOnlineHtml(null);
+    setCarregandoOnline(true);
+    const modoOnline: 'completo' | 'resumo' = modo === 'resumo' ? 'resumo' : 'completo';
+    void carregarPerfilOnlineHtmlAction({ companyId, userType, userId, modo: modoOnline }).then(
+      (res) => {
+        if (cancelado) {
+          return;
+        }
+        setCarregandoOnline(false);
+        if (!res.ok || res.html === null) {
+          setErroOnline(res.error ?? 'Erro ao carregar o perfil.');
+          return;
+        }
+        setOnlineHtml(res.html);
+      },
+    );
+    return () => {
+      cancelado = true;
+    };
+  }, [modo, snap, companyId, userType, userId, onlineReloadKey]);
+
+  const retryOnline = useCallback((): void => {
+    setOnlineReloadKey((k) => k + 1);
   }, []);
 
   const baixarPdf = useCallback(async (): Promise<void> => {
@@ -686,8 +397,9 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
     URL.revokeObjectURL(url);
   }, [companyId, userType, userId]);
 
-  const textoAusente =
-    snap !== null && (snap.gerandoResumo || snap.gerandoExpandido || textoFalhou);
+  // As duas visões (resumo e completo) vêm do expandido; o resumoJson não
+  // é mais consumido pela tela.
+  const textoAusente = snap !== null && (snap.gerandoExpandido || textoFalhou);
   // ME-1.11 Leva 2: no estado `inconsistente` a data de aplicacao vem
   // do payload da tentativa inconsistente (nao ha `snap`). No estado
   // `consistente` vem do assessment do score vigente. Em `none` fica
@@ -883,16 +595,11 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
               </p>
             ) : snap !== null ? (
               <>
-                {/* Blocos de texto (IA). Ausentes -> estado canonico de
-                    carregamento/falha (§9.6/§9.7); presentes -> textos ricos. */}
+                {/* Texto da IA ainda gerando/falho -> estado canônico
+                    (§9.6/§9.7); pronto -> iframe do motor do PDF (resumo
+                    ou completo, conforme o modo). */}
                 {textoAusente ? (
                   <EstadoTextoIA falhou={textoFalhou} onRetry={retryTexto} />
-                ) : modo === 'resumo' ? (
-                  <>
-                    <TextosResumo resumo={snap.resumoJson} />
-                    {/* Painel de escores deterministico (§9.4). */}
-                    <PainelEscores snap={snap} />
-                  </>
                 ) : (
                   <PerfilOnlineFrame
                     carregando={carregandoOnline}

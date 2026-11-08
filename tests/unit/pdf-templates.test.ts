@@ -281,6 +281,26 @@ describe('individualProfileTemplate (ME-050/51)', () => {
     expect(html).not.toContain('Rastreabilidade e integridade do relatório');
   });
 
+  it('ME-1.21 patch: modo resumo — recorte Mapa + Síntese + Recomendações', () => {
+    const html = renderIndividualProfileOnlineHTML(CANON_INDIVIDUAL, 'resumo');
+    expect(html).toContain('Mapa de leituras');
+    expect(html).toContain('Síntese executiva');
+    expect(html).toContain('Recomendações executivas');
+    expect(html).not.toContain('Painel de resultados por área');
+    expect(html).not.toContain('Como essa pessoa age');
+    expect(html).not.toContain('Confiabilidade');
+  });
+
+  it('ME-1.21 patch: visão on-line nunca mostra a logo da empresa', () => {
+    const comLogo: IndividualProfileTemplateInput = {
+      ...CANON_INDIVIDUAL,
+      company: { nomeFantasia: 'Nexus & Cia', logoUrl: 'https://exemplo/logo.png' },
+    };
+    const html = renderIndividualProfileOnlineHTML(comLogo, 'completo');
+    expect(html).not.toContain('logo-brand');
+    expect(html).not.toContain('https://exemplo/logo.png');
+  });
+
   it('DIS-G: radar, painel pf-*, confiabilidade e remocao do Balanceamento', () => {
     const html = renderIndividualProfileHTML({
       ...CANON_INDIVIDUAL,

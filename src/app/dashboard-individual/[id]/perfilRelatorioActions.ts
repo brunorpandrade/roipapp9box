@@ -317,6 +317,7 @@ export async function carregarPerfilOnlineHtmlAction(input: {
   companyId: number;
   userType: 'employee' | 'clevel';
   userId: number;
+  modo: 'completo' | 'resumo';
 }): Promise<CarregarPerfilOnlineHtmlResult> {
   const token = await requireToken();
   const client = createDbClient(resolveDatabaseUrl());
@@ -332,6 +333,7 @@ export async function carregarPerfilOnlineHtmlAction(input: {
       companyId: input.companyId,
       userType: input.userType,
       userId: input.userId,
+      modo: input.modo,
     });
     return { ok: true, html: result.html };
   } catch (err) {
