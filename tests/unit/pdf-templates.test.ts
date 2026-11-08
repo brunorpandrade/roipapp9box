@@ -86,6 +86,12 @@ const CANON_INDIVIDUAL: IndividualProfileTemplateInput = {
     },
     recomendacoes_executivas: {
       onde_performa_melhor: 'Times que exigem coesão e escuta.',
+      aderencia_posicoes: {
+        sintese:
+          'Rende em posições relacionais; exige esforço em posições de alta pressão decisória.',
+        rende_mais: ['Atendimento e relação com o público — escuta e cuidado com o clima.'],
+        exige_esforco: ['Comercial e negociação — confronto direto não é natural.'],
+      },
       o_que_precisa_do_gestor: [
         'Consolidar rituais de escuta ativa com liderados.',
         'Testar delegação em contextos de baixa criticidade.',
@@ -248,6 +254,10 @@ describe('individualProfileTemplate (ME-050/51)', () => {
     expect(html).toContain('naturalmente excelente');
     expect(html).toContain('Painel de resultados por área');
     expect(html).toContain('Recomendações executivas');
+    // ME-1.20: bloco de aderência a tipos de posição na Seção 8.
+    expect(html).toContain('Aderência a tipos de posição');
+    expect(html).toContain('Rende mais naturalmente em');
+    expect(html).toContain('Exige mais esforço em');
     expect(html).toContain('Confiabilidade');
     // ME-1.19 (adicao): página final de rastreabilidade.
     expect(html).toContain('Rastreabilidade e integridade do relatório');

@@ -29,9 +29,18 @@ export interface SinteseExecutiva {
   recomendacao_sintese: string;
 }
 
+/** Aderencia do perfil a tipos de posicao (ME-1.20, Secao 8). */
+export interface AderenciaPosicoes {
+  sintese: string;
+  rende_mais: string[];
+  exige_esforco: string[];
+}
+
 /** Recomendacoes executivas — paragrafos + listas de bullets. */
 export interface RecomendacoesExecutivas {
   onde_performa_melhor: string;
+  /** Opcional: ausente em perfis gerados antes da ME-1.20 (cache do JSON). */
+  aderencia_posicoes?: AderenciaPosicoes;
   o_que_precisa_do_gestor: string[];
   zona_de_desenvolvimento: string;
   sinais_de_alerta: string[];
@@ -287,10 +296,24 @@ function renderNaturalmenteExcelente(b: BlocoNaturalmenteExcelente): string {
 </section>`;
 }
 
+/**
+ * Bloco de aderencia a tipos de posicao (ME-1.20): sintese + duas listas
+ * (rende mais / exige esforco), em linguagem de tendencia. Gerado pela IA
+ * a partir da lista fixa de oito tipos do system prompt. Omitido inteiro
+ * quando o JSON nao traz o bloco (perfis gerados antes da ME).
+ */
+function renderAderenciaPosicoes(a: AderenciaPosicoes | undefined): string {
+  const sintese = subBloco('Aderência a tipos de posição', a?.sintese);
+  const rende = subLista('Rende mais naturalmente em', a?.rende_mais);
+  const esforco = subLista('Exige mais esforço em', a?.exige_esforco);
+  return [sintese, rende, esforco].filter((s) => s.length > 0).join('\n  ');
+}
+
 function renderRecomendacoes(r: RecomendacoesExecutivas): string {
   return `<section>
   <h2>Recomendações executivas</h2>
   ${subBloco('Onde performa melhor', r?.onde_performa_melhor)}
+  ${renderAderenciaPosicoes(r?.aderencia_posicoes)}
   ${subLista('O que precisa do gestor', r?.o_que_precisa_do_gestor)}
   ${subBloco('Zona de desenvolvimento', r?.zona_de_desenvolvimento)}
   ${subLista('Sinais de alerta', r?.sinais_de_alerta)}

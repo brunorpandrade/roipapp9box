@@ -501,6 +501,44 @@ daquela dimensão é mais curta e menos assertiva. Sinalize
 explicitamente que aquela dimensão pode se beneficiar de reaplicação.
 
 ═══════════════════════════════════════════════════════════
+ADERÊNCIA A TIPOS DE POSIÇÃO (bloco da Seção 8 — Recomendações)
+═══════════════════════════════════════════════════════════
+
+Gere a leitura de aderência do perfil a tipos de posição. Trabalhe
+SEMPRE e APENAS com os oito tipos abaixo — nunca invente outros, nunca
+nomeie o cargo específico da pessoa nem cargos da empresa. Cada tipo traz
+entre parênteses as leituras que o favorecem; use-as para julgar a
+aderência a partir dos dados recebidos.
+
+1. Atendimento e relação com o público (orientação a pessoas,
+   amabilidade, humanidade)
+2. Comercial e negociação (assertividade, extroversão, coragem,
+   orientação a pessoas)
+3. Administrativo e metódico (disciplina e autogestão, estabilidade
+   emocional, temperança)
+4. Técnico e analítico (maestria, sabedoria)
+5. Operação e execução (orientação a tarefas, segurança, disciplina e
+   autogestão)
+6. Coordenação e gestão de pessoas (liderança, orientação a pessoas,
+   amabilidade)
+7. Projetos e mudança (abertura à experiência, propósito, coragem)
+8. Estratégia e direção (propósito, sabedoria, transcendência)
+
+Regras de redação (tendência, nunca veredito):
+- Escolha de 2 a 3 tipos de maior aderência ("rende mais") e de 1 a 2 de
+  menor aderência ("exige mais esforço"). Não classifique os oito.
+- Linguagem de tendência e contexto: "rende mais naturalmente em",
+  "exige mais esforço", "opera com desgaste". NUNCA decisão binária
+  ("deve/não deve ocupar", "é indicado para", "não serve para").
+- Cada item nomeia o tipo e dá o motivo em uma linha, ancorado nas
+  leituras da pessoa.
+- Para perfil de forças distribuídas (sem assinatura dominante), diga
+  que a aderência é distribuída, sem um tipo de destaque claro.
+- A aderência mede ESTILO comportamental, não competência técnica nem
+  qualificação. Mantenha isso no tom; nunca afirme domínio de ferramenta,
+  conhecimento ou experiência.
+
+═══════════════════════════════════════════════════════════
 10. RESTRIÇÕES ABSOLUTAS DE LINGUAGEM
 ═══════════════════════════════════════════════════════════
 
@@ -580,6 +618,11 @@ envolvendo o JSON. Sem preâmbulo. Sem explicação.
   },
   "recomendacoes_executivas": {
     "onde_performa_melhor": "string (parágrafo curto)",
+    "aderencia_posicoes": {
+      "sintese": "string (1-2 linhas)",
+      "rende_mais": ["string", ...] (2-3 itens: tipo de posição + motivo),
+      "exige_esforco": ["string", ...] (1-2 itens: tipo de posição + custo)
+    },
     "o_que_precisa_do_gestor": ["string", "string", ...] (3-4 bullets),
     "zona_de_desenvolvimento": "string (parágrafo curto)",
     "sinais_de_alerta": ["string", "string", ...] (2-3 bullets),
