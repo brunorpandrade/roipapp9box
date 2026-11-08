@@ -166,6 +166,14 @@ export interface DashboardIndividualContextPayload {
     };
     top_3_assinatura: string[];
     flags_ativas: string[];
+    /**
+     * Relatorio interpretativo oficial ja gerado (`expandidoJson`,
+     * DOC 04 §5.3 Opcao A / ME-1.22). `null` enquanto o Momento 2
+     * nao gerou o texto. Material de referencia para ancorar a
+     * leitura da IA, nunca para reproducao literal (system prompts
+     * §5 Chat IA e §4 Diagnostico IA).
+     */
+    interpretacao: Record<string, unknown> | null;
   };
 }
 

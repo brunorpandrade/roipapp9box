@@ -257,6 +257,7 @@ async function composePerfilIndividualBlock(
     },
     top_3_assinatura: top3,
     flags_ativas: flagsAtivas,
+    interpretacao: (scoreRow.expandidoJson as Record<string, unknown> | null) ?? null,
   };
 }
 

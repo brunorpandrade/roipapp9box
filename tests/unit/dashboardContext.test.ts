@@ -123,6 +123,58 @@ const IQL_ROW_2_RESPONDENTES: StubRow = {
   countRespondentes: 2,
 };
 
+// ME-1.22 — assessment enviado + scores completos para exercitar o
+// campo `interpretacao` do bloco perfil_individual (DOC 04 §5.3
+// Opcao A). O setter de scores devolve a row inteira via `select()`.
+const ASSESSMENT_ENVIADO_ALTA: StubRow = {
+  id: 4321,
+  confiabilidadeNivel: 'alta',
+  status: 'enviado',
+};
+
+const EXPANDIDO_OBJ = {
+  sintese_executiva: { retrato_integrado: 'Retrato de referencia.' },
+  confiabilidade: { nivel: 'alta', nota_contexto: null },
+};
+
+function buildScoreRow(expandidoJson: unknown): StubRow {
+  return {
+    assessmentId: 4321,
+    post_assert: '59.00',
+    post_tarefas: '58.00',
+    post_pessoas: '48.00',
+    post_pressao: '41.00',
+    est_abert: '26.00',
+    est_disc: '42.00',
+    est_ext: '38.00',
+    est_amab: '60.00',
+    est_estab: '66.00',
+    mot_maestria: '26.00',
+    mot_lideranca: '49.00',
+    mot_autonomia: '58.00',
+    mot_seguranca: '32.00',
+    mot_proposito: '53.00',
+    equ_autocons: '53.00',
+    equ_autogest: '60.00',
+    equ_leitura: '38.00',
+    equ_influencia: '34.00',
+    equ_indice: '46.00',
+    ass_sabed: '68.00',
+    ass_coragem: '43.00',
+    ass_humanid: '28.00',
+    ass_justica: '61.00',
+    ass_temper: '51.00',
+    ass_transc: '39.00',
+    perfilComportamental: 'versatil',
+    vetorDominante: 'mot_autonomia',
+    vetorSustentacao: 'mot_proposito',
+    vetorNegligenciado: 'mot_maestria',
+    top3Assinatura: ['ass_sabed', 'ass_justica', 'ass_temper'],
+    flags: { FLAG_ADAPT_POST: false },
+    expandidoJson,
+  };
+}
+
 // ============================================================
 // Testes canonicos — contexto individual
 // ============================================================
@@ -281,6 +333,56 @@ describe('loadDashboardIndividualContext — bloqueios §5.6', () => {
     const ctx = await loadDashboardIndividualContext(db, args);
     expect(ctx).not.toBeNull();
     expect(ctx!.perfil_individual).toBeUndefined();
+  });
+});
+
+describe('loadDashboardIndividualContext — interpretacao §5.3 (ME-1.22)', () => {
+  it('inclui `interpretacao` com o expandidoJson quando ja gerado', async () => {
+    const queue: StubRow[][] = [
+      [EMPLOYEE_ROW_ID_10],
+      [QUARTERLY_ROW_2026_Q2],
+      [],
+      [],
+      [{ isLider: true }],
+      [IQL_ROW_5_RESPONDENTES],
+      [ASSESSMENT_ENVIADO_ALTA],
+      [buildScoreRow(EXPANDIDO_OBJ)],
+    ];
+    const db = buildFakeDb(queue);
+    const args: DashboardIndividualContextArgs = {
+      companyId: 100,
+      employeeId: 10,
+      viewerRole: 'rh',
+      viewerUserId: 999,
+      viewerUserType: 'employee',
+    };
+    const ctx = await loadDashboardIndividualContext(db, args);
+    expect(ctx!.perfil_individual).toBeDefined();
+    expect(ctx!.perfil_individual!.interpretacao).toEqual(EXPANDIDO_OBJ);
+  });
+
+  it('mantem `interpretacao` null quando expandidoJson ainda e NULL', async () => {
+    const queue: StubRow[][] = [
+      [EMPLOYEE_ROW_ID_10],
+      [QUARTERLY_ROW_2026_Q2],
+      [],
+      [],
+      [{ isLider: true }],
+      [IQL_ROW_5_RESPONDENTES],
+      [ASSESSMENT_ENVIADO_ALTA],
+      [buildScoreRow(null)],
+    ];
+    const db = buildFakeDb(queue);
+    const args: DashboardIndividualContextArgs = {
+      companyId: 100,
+      employeeId: 10,
+      viewerRole: 'rh',
+      viewerUserId: 999,
+      viewerUserType: 'employee',
+    };
+    const ctx = await loadDashboardIndividualContext(db, args);
+    expect(ctx!.perfil_individual).toBeDefined();
+    expect(ctx!.perfil_individual!.interpretacao).toBeNull();
   });
 });
 
