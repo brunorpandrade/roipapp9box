@@ -21,6 +21,7 @@ import {
   type IndividualProfileTemplateInput,
   normalizeColaboradorNameForFilename,
   renderIndividualProfileHTML,
+  renderIndividualProfileOnlineHTML,
 } from '../../src/server/pdf-templates/individualProfileTemplate';
 import { escapeHtml, renderLayoutBase } from '../../src/server/pdf-templates/layoutBase';
 import {
@@ -266,6 +267,18 @@ describe('individualProfileTemplate (ME-050/51)', () => {
     expect(html).not.toContain('<h2>Identificação</h2>');
     expect(html).not.toContain('Painel dos subvetores');
     expect(html).not.toContain('<div class="cover-badge">');
+  });
+
+  it('ME-1.21: perfil on-line — sem capa/rastreabilidade, com confiabilidade', () => {
+    const html = renderIndividualProfileOnlineHTML(CANON_INDIVIDUAL);
+    // Presentes: mapa, painel, síntese e confiabilidade (idêntico ao PDF).
+    expect(html).toContain('Mapa de leituras');
+    expect(html).toContain('Painel de resultados por área');
+    expect(html).toContain('Síntese executiva');
+    expect(html).toContain('Confiabilidade');
+    // Ausentes: a capa e a página de rastreabilidade.
+    expect(html).not.toContain('class="cover-page"');
+    expect(html).not.toContain('Rastreabilidade e integridade do relatório');
   });
 
   it('DIS-G: radar, painel pf-*, confiabilidade e remocao do Balanceamento', () => {

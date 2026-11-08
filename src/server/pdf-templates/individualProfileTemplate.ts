@@ -844,10 +844,15 @@ function renderRastreabilidade(input: IndividualProfileTemplateInput): string {
 </section>`;
 }
 
-export function renderIndividualProfileHTML(input: IndividualProfileTemplateInput): string {
+/**
+ * Secoes de conteudo compartilhadas entre o PDF e a visao on-line da
+ * plataforma (ME-1.21): do mapa de leituras ate a confiabilidade, na
+ * ordem canonica. A capa e a rastreabilidade ficam de fora daqui porque
+ * sao exclusivas do PDF.
+ */
+function renderConteudoSecoes(input: IndividualProfileTemplateInput): string[] {
   const exp = input.expandido;
-  const bodyHtml = [
-    renderCoverPage(input.identificacao),
+  return [
     renderGraficoPage(input.subvetores),
     renderSubvectorPanel(input.subvetores),
     renderSintese(exp.sintese_executiva),
@@ -858,6 +863,13 @@ export function renderIndividualProfileHTML(input: IndividualProfileTemplateInpu
     renderNaturalmenteExcelente(exp.naturalmente_excelente),
     renderRecomendacoes(exp.recomendacoes_executivas),
     renderConfiabilidade(exp.confiabilidade, input.confiabilidadeMetricas),
+  ];
+}
+
+export function renderIndividualProfileHTML(input: IndividualProfileTemplateInput): string {
+  const bodyHtml = [
+    renderCoverPage(input.identificacao),
+    ...renderConteudoSecoes(input),
     renderRastreabilidade(input),
   ].join('\n\n');
 
@@ -866,5 +878,22 @@ export function renderIndividualProfileHTML(input: IndividualProfileTemplateInpu
     company: input.company,
     bodyHtml,
     footerCenter: `Gerado em ${input.generatedAtDate}`,
+  });
+}
+
+/**
+ * HTML da visao on-line do Perfil Individual (ME-1.21): o mesmo corpo do
+ * PDF, porem SEM a capa e SEM a pagina de rastreabilidade, com a
+ * Confiabilidade como ultima secao. Serve a plataforma como "o PDF
+ * rolando na tela", reusando o mesmo motor de render — nao ha reescrita
+ * de blocos em React, logo nao ha divergencia entre as duas superficies.
+ */
+export function renderIndividualProfileOnlineHTML(input: IndividualProfileTemplateInput): string {
+  const bodyHtml = renderConteudoSecoes(input).join('\n\n');
+
+  return renderLayoutBase({
+    title: `Perfil individual — ${input.identificacao.nome}`,
+    company: input.company,
+    bodyHtml,
   });
 }

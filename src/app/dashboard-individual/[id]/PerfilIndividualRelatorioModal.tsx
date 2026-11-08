@@ -29,6 +29,7 @@ import { Spinner } from '../../../components/ui/Spinner';
 import {
   carregarPerfilRelatorioAction,
   baixarPerfilPdfAction,
+  carregarPerfilOnlineHtmlAction,
   type PerfilInconsistenteSnapshot,
   type PerfilRelatorioSnapshot,
 } from './perfilRelatorioActions';
@@ -37,13 +38,10 @@ import {
   DIMENSAO_LABEL,
   DIMENSOES_ORDEM,
   FAIXA_LABEL,
-  SECAO_EXPANDIDA_TITULO,
   SUBVETORES_POR_DIMENSAO,
-  SUBVETOR_LABEL,
   classificarFaixa,
   type DimensaoPerfil,
   type FaixaPerfil,
-  type SubvetorKey,
 } from '../../../lib/instruments/individualProfileReportLabels';
 
 const MSG_DESKTOP_ONLY =
@@ -97,17 +95,6 @@ interface Props {
 }
 
 type Modo = 'resumo' | 'expandida';
-
-function formatEscoreInt(valor: string | null): string {
-  if (valor === null) {
-    return '—';
-  }
-  const num = Number(valor);
-  if (!Number.isFinite(num)) {
-    return '—';
-  }
-  return String(Math.round(num));
-}
 
 function corDaFaixa(faixa: FaixaPerfil): string {
   if (faixa === 'muito_alto') {
@@ -304,79 +291,6 @@ function DimensaoRow(props: { dim: DimensaoPerfil; valor: number | null }): JSX.
   );
 }
 
-function SubvetorRow(props: {
-  chave: SubvetorKey;
-  valor: string | null;
-  tag: string | null;
-}): JSX.Element {
-  const { chave, valor, tag } = props;
-  const num = Number(valor);
-  const temNum = valor !== null && Number.isFinite(num);
-  const pct = temNum ? Math.max(0, Math.min(100, num)) : 0;
-  const faixa = temNum ? classificarFaixa(num) : null;
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <div style={{ width: 180, flexShrink: 0, fontSize: 11, color: COLORS.text.tertiary }}>
-        {SUBVETOR_LABEL[chave]}
-        {tag !== null ? (
-          <span
-            style={{
-              marginLeft: 6,
-              fontSize: 10,
-              fontWeight: 600,
-              padding: '2px 8px',
-              borderRadius: 10,
-              background: COLORS.badge.infoBg,
-              color: COLORS.badge.infoText,
-            }}
-          >
-            {tag}
-          </span>
-        ) : null}
-      </div>
-      <div style={{ flex: 1, height: 5, background: COLORS.border.default, borderRadius: 3 }}>
-        <div
-          style={{
-            width: `${pct}%`,
-            height: 5,
-            borderRadius: 3,
-            background: faixa !== null ? corDaFaixa(faixa) : COLORS.border.default,
-          }}
-        />
-      </div>
-      <div
-        style={{
-          width: 36,
-          textAlign: 'right',
-          flexShrink: 0,
-          fontSize: 11,
-          fontWeight: 600,
-          color: COLORS.text.secondary,
-        }}
-      >
-        {formatEscoreInt(valor)}
-      </div>
-    </div>
-  );
-}
-
-function tagDoSubvetor(chave: SubvetorKey, snap: PerfilRelatorioSnapshot): string | null {
-  if (chave === snap.vetorDominante) {
-    return 'Dominante';
-  }
-  if (chave === snap.vetorSustentacao) {
-    return 'Sustentação';
-  }
-  if (chave === snap.vetorNegligenciado) {
-    return 'Negligenciado';
-  }
-  const top3 = Array.isArray(snap.top3Assinatura) ? snap.top3Assinatura : [];
-  if (top3.includes(chave)) {
-    return 'Top 3';
-  }
-  return null;
-}
-
 // ── Render dos textos ricos de IA (system prompt Secao 11) ────────
 // resumoJson/expandidoJson chegam como objetos aninhados. Estes
 // helpers renderizam paragrafos e listas com coercao defensiva (a
@@ -516,95 +430,6 @@ function TextosResumo(props: { resumo: unknown }): JSX.Element {
   );
 }
 
-function TextosExpandido(props: { exp: unknown }): JSX.Element {
-  const e = props.exp;
-  return (
-    <>
-      <TextosSintese sintese={riGet(e, 'sintese_executiva')} />
-      <RiSecao titulo="Como essa pessoa age">
-        <RiSubBloco
-          rotulo="Estilo predominante"
-          texto={riGet(riGet(e, 'como_age'), 'estilo_predominante')}
-        />
-        <RiSubLista
-          rotulo="Contribuições típicas"
-          itens={riGet(riGet(e, 'como_age'), 'contribuicoes_tipicas')}
-        />
-        <RiSubLista
-          rotulo="Riscos de excesso"
-          itens={riGet(riGet(e, 'como_age'), 'riscos_de_excesso')}
-        />
-        <RiSubBloco
-          rotulo="Natural vs. adaptado"
-          texto={riGet(riGet(e, 'como_age'), 'natural_vs_adaptado')}
-        />
-      </RiSecao>
-      <RiSecao titulo="Quem essa pessoa é">
-        <RiSubBloco
-          rotulo="Configuração estrutural"
-          texto={riGet(riGet(e, 'quem_e'), 'configuracao_estrutural')}
-        />
-        <RiSubLista
-          rotulo="Implicações práticas"
-          itens={riGet(riGet(e, 'quem_e'), 'implicacoes_praticas')}
-        />
-        <RiSubBloco
-          rotulo="Amplifica ou compensa"
-          texto={riGet(riGet(e, 'quem_e'), 'amplifica_ou_compensa')}
-        />
-      </RiSecao>
-      <RiSecao titulo="O que move essa pessoa">
-        <RiSubBloco
-          rotulo="Sustenta o engajamento"
-          texto={riGet(riGet(e, 'o_que_move'), 'sustenta_engajamento')}
-        />
-        <RiSubBloco
-          rotulo="Sustenta a energia"
-          texto={riGet(riGet(e, 'o_que_move'), 'sustenta_energia')}
-        />
-        <RiSubLista rotulo="O que esgota" itens={riGet(riGet(e, 'o_que_move'), 'o_que_esgota')} />
-        <RiSubBloco
-          rotulo="O que sacrifica"
-          texto={riGet(riGet(e, 'o_que_move'), 'o_que_sacrifica')}
-        />
-      </RiSecao>
-      <RiSecao titulo="Como reage sob pressão">
-        <RiSubBloco
-          rotulo="Leitura geral"
-          texto={riGet(riGet(e, 'como_reage_sob_pressao'), 'leitura_geral')}
-        />
-        <RiSubLista
-          rotulo="O que faz bem"
-          itens={riGet(riGet(e, 'como_reage_sob_pressao'), 'o_que_faz_bem')}
-        />
-        <RiSubLista
-          rotulo="O que deteriora"
-          itens={riGet(riGet(e, 'como_reage_sob_pressao'), 'o_que_deteriora')}
-        />
-        <RiSubBloco
-          rotulo="Padrão paradoxal"
-          texto={riGet(riGet(e, 'como_reage_sob_pressao'), 'padrao_paradoxal')}
-        />
-      </RiSecao>
-      <RiSecao titulo="No que é naturalmente excelente">
-        <RiSubBloco
-          rotulo="Assinatura dominante"
-          texto={riGet(riGet(e, 'naturalmente_excelente'), 'assinatura_dominante')}
-        />
-        <RiSubLista
-          rotulo="Onde gera valor"
-          itens={riGet(riGet(e, 'naturalmente_excelente'), 'onde_gera_valor')}
-        />
-        <RiSubLista
-          rotulo="Riscos de uso excessivo"
-          itens={riGet(riGet(e, 'naturalmente_excelente'), 'riscos_de_overuse')}
-        />
-      </RiSecao>
-      <TextosRecomendacoes rec={riGet(e, 'recomendacoes_executivas')} />
-    </>
-  );
-}
-
 function PainelEscores(props: { snap: PerfilRelatorioSnapshot }): JSX.Element {
   const { snap } = props;
   return (
@@ -638,75 +463,6 @@ function PainelEscores(props: { snap: PerfilRelatorioSnapshot }): JSX.Element {
   );
 }
 
-function SecaoSubvetores(props: {
-  dim: DimensaoPerfil;
-  snap: PerfilRelatorioSnapshot;
-}): JSX.Element {
-  const { dim, snap } = props;
-  const chaves = SUBVETORES_POR_DIMENSAO[dim];
-  return (
-    <div style={{ marginBottom: 28 }}>
-      <div style={SECAO_TITULO}>{SECAO_EXPANDIDA_TITULO[dim]}</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {chaves.map((k) => (
-          <SubvetorRow
-            key={k}
-            chave={k}
-            valor={snap.escores[k] ?? null}
-            tag={tagDoSubvetor(k, snap)}
-          />
-        ))}
-        {dim === 'equilibrio' ? (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              borderTop: `1px solid ${COLORS.border.default}`,
-              paddingTop: 8,
-              marginTop: 4,
-            }}
-          >
-            <div
-              style={{
-                width: 180,
-                flexShrink: 0,
-                fontSize: 11,
-                fontWeight: 600,
-                color: COLORS.primary.navy,
-              }}
-            >
-              Índice geral de equilíbrio
-            </div>
-            <div style={{ flex: 1, height: 5, background: COLORS.border.default, borderRadius: 3 }}>
-              <div
-                style={{
-                  width: `${Math.max(0, Math.min(100, Number(snap.escores['equ_indice'] ?? 0)))}%`,
-                  height: 5,
-                  borderRadius: 3,
-                  background: COLORS.primary.navy,
-                }}
-              />
-            </div>
-            <div
-              style={{
-                width: 36,
-                textAlign: 'right',
-                flexShrink: 0,
-                fontSize: 11,
-                fontWeight: 700,
-                color: COLORS.primary.navy,
-              }}
-            >
-              {formatEscoreInt(snap.escores['equ_indice'] ?? null)}
-            </div>
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
 function EstadoTextoIA(props: { falhou: boolean; onRetry: () => void }): JSX.Element {
   if (props.falhou) {
     return (
@@ -730,6 +486,69 @@ function EstadoTextoIA(props: { falhou: boolean; onRetry: () => void }): JSX.Ele
   );
 }
 
+/**
+ * ME-1.21 — Perfil completo on-line: embute, em iframe isolado, o HTML
+ * gerado pelo mesmo motor do PDF (sem capa, sem rastreabilidade). O
+ * isolamento do iframe evita colisao de CSS com a plataforma; a altura
+ * acompanha o conteudo, de modo que o scroll do modal role o documento
+ * inteiro — "o PDF rolando na tela".
+ */
+function PerfilOnlineFrame(props: {
+  carregando: boolean;
+  erro: string | null;
+  html: string | null;
+  onRetry: () => void;
+}): JSX.Element {
+  const frameRef = useRef<HTMLIFrameElement | null>(null);
+  const [altura, setAltura] = useState<number>(600);
+
+  const ajustarAltura = useCallback((): void => {
+    const doc = frameRef.current?.contentWindow?.document ?? null;
+    if (doc !== null) {
+      setAltura(doc.body.scrollHeight + 24);
+    }
+  }, []);
+
+  if (props.erro !== null) {
+    return (
+      <div style={{ padding: 24, textAlign: 'center' }}>
+        <p style={{ fontSize: 13, color: COLORS.text.secondary, marginBottom: 12 }}>{props.erro}</p>
+        <button
+          type="button"
+          onClick={props.onRetry}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 8,
+            border: `1px solid ${COLORS.border.default}`,
+            background: '#fff',
+            fontSize: 13,
+            color: COLORS.text.secondary,
+            cursor: 'pointer',
+          }}
+        >
+          Tentar novamente
+        </button>
+      </div>
+    );
+  }
+  if (props.carregando || props.html === null) {
+    return (
+      <div style={{ padding: 40, display: 'flex', justifyContent: 'center' }}>
+        <Spinner />
+      </div>
+    );
+  }
+  return (
+    <iframe
+      ref={frameRef}
+      title="Perfil individual completo"
+      srcDoc={props.html}
+      onLoad={ajustarAltura}
+      style={{ width: '100%', height: altura, border: 'none', display: 'block' }}
+    />
+  );
+}
+
 export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
   const { companyId, userType, userId, onClose } = props;
   const [snap, setSnap] = useState<PerfilRelatorioSnapshot | null>(null);
@@ -744,6 +563,10 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
   const [textoFalhou, setTextoFalhou] = useState<boolean>(false);
   const [baixandoPdf, setBaixandoPdf] = useState<boolean>(false);
   const [erroPdf, setErroPdf] = useState<string | null>(null);
+  // ME-1.21 — HTML do perfil completo (motor do PDF, sem capa/rastreab.).
+  const [onlineHtml, setOnlineHtml] = useState<string | null>(null);
+  const [carregandoOnline, setCarregandoOnline] = useState<boolean>(false);
+  const [erroOnline, setErroOnline] = useState<string | null>(null);
   const tentativasRef = useRef<number>(0);
   const bodyRef = useRef<HTMLDivElement | null>(null);
 
@@ -805,6 +628,38 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
     setTextoFalhou(false);
     void carregar();
   }, [carregar]);
+
+  // ME-1.21 — carrega o HTML do perfil completo sob demanda, quando o
+  // modo "completo" abre e o expandido ja esta pronto.
+  const carregarOnline = useCallback(async (): Promise<void> => {
+    setErroOnline(null);
+    setCarregandoOnline(true);
+    const res = await carregarPerfilOnlineHtmlAction({ companyId, userType, userId });
+    setCarregandoOnline(false);
+    if (!res.ok || res.html === null) {
+      setErroOnline(res.error ?? 'Erro ao carregar o perfil completo.');
+      return;
+    }
+    setOnlineHtml(res.html);
+  }, [companyId, userType, userId]);
+
+  useEffect(() => {
+    if (modo !== 'expandida') {
+      return;
+    }
+    if (snap === null || snap.gerandoExpandido) {
+      return;
+    }
+    if (onlineHtml !== null || carregandoOnline || erroOnline !== null) {
+      return;
+    }
+    void carregarOnline();
+  }, [modo, snap, onlineHtml, carregandoOnline, erroOnline, carregarOnline]);
+
+  const retryOnline = useCallback((): void => {
+    setErroOnline(null);
+    setOnlineHtml(null);
+  }, []);
 
   const baixarPdf = useCallback(async (): Promise<void> => {
     setErroPdf(null);
@@ -1033,20 +888,19 @@ export function PerfilIndividualRelatorioModal(props: Props): JSX.Element {
                 {textoAusente ? (
                   <EstadoTextoIA falhou={textoFalhou} onRetry={retryTexto} />
                 ) : modo === 'resumo' ? (
-                  <TextosResumo resumo={snap.resumoJson} />
+                  <>
+                    <TextosResumo resumo={snap.resumoJson} />
+                    {/* Painel de escores deterministico (§9.4). */}
+                    <PainelEscores snap={snap} />
+                  </>
                 ) : (
-                  <TextosExpandido exp={snap.expandidoJson} />
+                  <PerfilOnlineFrame
+                    carregando={carregandoOnline}
+                    erro={erroOnline}
+                    html={onlineHtml}
+                    onRetry={retryOnline}
+                  />
                 )}
-
-                {/* Painel de escores deterministico — sempre visivel. */}
-                {modo === 'resumo' ? <PainelEscores snap={snap} /> : null}
-
-                {/* Versao expandida — subvetores por dimensao (§9.5). */}
-                {modo === 'expandida'
-                  ? DIMENSOES_ORDEM.map((dim) => (
-                      <SecaoSubvetores key={dim} dim={dim} snap={snap} />
-                    ))
-                  : null}
               </>
             ) : null}
           </div>

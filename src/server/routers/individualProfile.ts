@@ -110,7 +110,9 @@ import {
   composeIndividualProfileFilename,
   type IndividualProfileExpandidoJson,
   type IndividualProfileSubvector,
+  type IndividualProfileTemplateInput,
   renderIndividualProfileHTML,
+  renderIndividualProfileOnlineHTML,
 } from '../pdf-templates/individualProfileTemplate';
 import { roleProcedure, router, type AuthenticatedUser } from '../trpc';
 import { assertCompanyScope } from './employees';
@@ -522,6 +524,195 @@ function resolveLiberador(user: AuthenticatedUser): {
  * `reportGeneration` sao injetaveis para determinismo de teste; os
  * defaults sao o relogio real e o hook no-op de geracao (S210).
  */
+async function buildIndividualProfileTemplateInput(
+  db: RoipDatabase,
+  input: z.infer<typeof GENERATE_PDF_INPUT_SCHEMA>,
+  now: () => Date,
+): Promise<IndividualProfileTemplateInput> {
+  const score = await getScoreVigente(db, input.companyId, input.userType, input.userId);
+  if (!score) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: MSG_GENERATE_PDF_SCORE_AUSENTE,
+    });
+  }
+  // §10.10 — pre-condicao: expandidoJson cacheado. Enquanto NULL,
+  // a IA ainda nao gerou (Momento 2 §3.3) ou falhou (§11.1).
+  if (score.expandidoJson === null || score.expandidoJson === undefined) {
+    throw new TRPCError({
+      code: 'PRECONDITION_FAILED',
+      message: MSG_GENERATE_PDF_AGUARDE,
+    });
+  }
+
+  // Company: nome fantasia + logo (§10.10 cabecalho canonico).
+  const [company] = await db
+    .select({
+      nomeFantasia: companies.nomeFantasia,
+      logoUrl: companies.logoUrl,
+    })
+    .from(companies)
+    .where(eq(companies.id, input.companyId))
+    .limit(1);
+  if (!company) {
+    throw new TRPCError({
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Empresa não encontrada.',
+    });
+  }
+
+  // Assessment: enviadoEm -> data_aplicacao; os 5 indices de
+  // confiabilidade (ia_*) alimentam o grafico de barras do PDF.
+  const [assessment] = await db
+    .select({
+      enviadoEm: individualProfileAssessments.enviadoEm,
+      ia_att: individualProfileAssessments.ia_att,
+      ia_soc: individualProfileAssessments.ia_soc,
+      ia_acq: individualProfileAssessments.ia_acq,
+      ia_cons: individualProfileAssessments.ia_cons,
+      ia_ext: individualProfileAssessments.ia_ext,
+    })
+    .from(individualProfileAssessments)
+    .where(eq(individualProfileAssessments.id, score.assessmentId))
+    .limit(1);
+  const dataAplicacao = assessment?.enviadoEm
+    ? new Date(assessment.enviadoEm).toISOString().slice(0, 10)
+    : '';
+  // Metricas de confiabilidade (rotulo + alerta) reclassificadas dos
+  // scores persistidos, reusando os thresholds canonicos. Os dados
+  // brutos (respostas) nunca entram aqui; so os 5 scores ja salvos.
+  const confiabilidadeMetricas = assessment
+    ? metricasConfiabilidade({
+        ia_att: assessment.ia_att,
+        ia_soc: assessment.ia_soc,
+        ia_acq: assessment.ia_acq,
+        ia_cons: assessment.ia_cons,
+        ia_ext: assessment.ia_ext,
+      })
+    : undefined;
+
+  // Identificacao canonica do titular.
+  let nome = '';
+  let cargo = '';
+  let nivelHierarquico: 'operacional' | 'tatico' | 'estrategico' = 'operacional';
+  let departamento = '';
+  if (input.userType === 'clevel') {
+    const [row] = await db
+      .select({ name: cLevelMembers.name, cargo: cLevelMembers.cargo })
+      .from(cLevelMembers)
+      .where(eq(cLevelMembers.id, input.userId))
+      .limit(1);
+    nome = row?.name ?? '';
+    cargo = row?.cargo ?? '';
+    nivelHierarquico = 'estrategico';
+    departamento = 'Alta liderança';
+  } else {
+    const [row] = await db
+      .select({
+        name: employees.name,
+        descricaoCBO: employees.descricaoCBO,
+        nivelHierarquico: employees.nivelHierarquico,
+        departamento: employees.departamento,
+      })
+      .from(employees)
+      .where(eq(employees.id, input.userId))
+      .limit(1);
+    nome = row?.name ?? '';
+    cargo = row?.descricaoCBO ?? '';
+    nivelHierarquico =
+      (row?.nivelHierarquico as 'operacional' | 'tatico' | 'estrategico') ?? 'operacional';
+    departamento = row?.departamento ?? '';
+  }
+
+  // Subvetores: 25 valores canonicos (Postura 4 + Estrutura 5 +
+  // Motor 5 + Equilibrio 5 + Assinatura 6). Valores nulos
+  // renderizam como 0 na barra — comportamento defensivo canonico.
+  const subvetores: IndividualProfileSubvector[] = [];
+  const nn = (v: string | null): number => (v === null ? 0 : Number.parseFloat(v));
+  subvetores.push(
+    { bloco: 'Postura', rotulo: 'Assertividade e decisão', valor: nn(score.post_assert) },
+    { bloco: 'Postura', rotulo: 'Orientação a tarefas', valor: nn(score.post_tarefas) },
+    { bloco: 'Postura', rotulo: 'Orientação a pessoas', valor: nn(score.post_pessoas) },
+    { bloco: 'Postura', rotulo: 'Comportamento sob pressão', valor: nn(score.post_pressao) },
+    { bloco: 'Estrutura', rotulo: 'Abertura à experiência', valor: nn(score.est_abert) },
+    { bloco: 'Estrutura', rotulo: 'Disciplina e autogestão', valor: nn(score.est_disc) },
+    { bloco: 'Estrutura', rotulo: 'Extroversão', valor: nn(score.est_ext) },
+    { bloco: 'Estrutura', rotulo: 'Amabilidade', valor: nn(score.est_amab) },
+    { bloco: 'Estrutura', rotulo: 'Estabilidade emocional', valor: nn(score.est_estab) },
+    { bloco: 'Motor', rotulo: 'Maestria', valor: nn(score.mot_maestria) },
+    { bloco: 'Motor', rotulo: 'Liderança', valor: nn(score.mot_lideranca) },
+    { bloco: 'Motor', rotulo: 'Autonomia', valor: nn(score.mot_autonomia) },
+    { bloco: 'Motor', rotulo: 'Segurança', valor: nn(score.mot_seguranca) },
+    { bloco: 'Motor', rotulo: 'Propósito', valor: nn(score.mot_proposito) },
+    { bloco: 'Equilíbrio', rotulo: 'Autoconsciência', valor: nn(score.equ_autocons) },
+    { bloco: 'Equilíbrio', rotulo: 'Autogestão emocional', valor: nn(score.equ_autogest) },
+    { bloco: 'Equilíbrio', rotulo: 'Leitura do outro', valor: nn(score.equ_leitura) },
+    { bloco: 'Equilíbrio', rotulo: 'Influência e condução', valor: nn(score.equ_influencia) },
+    {
+      bloco: 'Equilíbrio',
+      rotulo: 'Índice geral de equilíbrio',
+      valor: nn(score.equ_indice),
+    },
+    { bloco: 'Assinatura', rotulo: 'Sabedoria', valor: nn(score.ass_sabed) },
+    { bloco: 'Assinatura', rotulo: 'Coragem', valor: nn(score.ass_coragem) },
+    { bloco: 'Assinatura', rotulo: 'Humanidade', valor: nn(score.ass_humanid) },
+    { bloco: 'Assinatura', rotulo: 'Justiça', valor: nn(score.ass_justica) },
+    { bloco: 'Assinatura', rotulo: 'Temperança', valor: nn(score.ass_temper) },
+    { bloco: 'Assinatura', rotulo: 'Transcendência', valor: nn(score.ass_transc) },
+  );
+
+  const generatedAt = now();
+  const generatedAtDate = generatedAt.toISOString().slice(0, 10);
+
+  // Lider direto (nome) para a identificacao do PDF. C-level nao
+  // tem lider direto no modelo; employee resolve pelo historico
+  // ativo (mesmo padrao do dashboard).
+  // ME-1.3d-REV DIS-A: D-PERFIL-LIDER-DIRETO-VAZIO fechado — agora
+  // considera tambem `clevelId` do historico (quando o colaborador
+  // reporta diretamente a um C-level) e aplica fallback canonico
+  // "— (sem líder direto)" quando nao ha vinculo ativo.
+  let liderDiretoNome = 'Não se aplica';
+  if (input.userType === 'employee') {
+    const leaderLink = await getActiveLeaderHistoryByEmployee(db, input.userId);
+    if (leaderLink?.liderId != null) {
+      const liderRows = await db
+        .select({ name: employees.name })
+        .from(employees)
+        .where(eq(employees.id, leaderLink.liderId))
+        .limit(1);
+      liderDiretoNome = liderRows[0]?.name ?? '— (sem líder direto)';
+    } else if (leaderLink?.clevelId != null) {
+      const clevelRows = await db
+        .select({ name: cLevelMembers.name })
+        .from(cLevelMembers)
+        .where(eq(cLevelMembers.id, leaderLink.clevelId))
+        .limit(1);
+      liderDiretoNome = clevelRows[0]?.name ?? '— (sem líder direto)';
+    } else {
+      liderDiretoNome = '— (sem líder direto)';
+    }
+  }
+
+  return {
+    company: {
+      nomeFantasia: company.nomeFantasia ?? '',
+      ...(company.logoUrl ? { logoUrl: company.logoUrl } : {}),
+    },
+    identificacao: {
+      nome,
+      cargo,
+      nivelHierarquico,
+      departamento,
+      liderDireto: liderDiretoNome,
+      dataAplicacao,
+    },
+    expandido: score.expandidoJson as IndividualProfileExpandidoJson,
+    subvetores,
+    generatedAtDate,
+    ...(confiabilidadeMetricas ? { confiabilidadeMetricas } : {}),
+  };
+}
+
 export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps = {}) {
   const now = deps.now ?? ((): Date => new Date());
   const staticFacade = deps.reportGeneration ?? DEFAULT_INDIVIDUAL_PROFILE_REPORT_GENERATION;
@@ -828,188 +1019,8 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
         await assertLiderDireto(ctx.db, ctx.user, input.userType, input.userId);
 
         // S213 — tentativa vigente.
-        const score = await getScoreVigente(ctx.db, input.companyId, input.userType, input.userId);
-        if (!score) {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: MSG_GENERATE_PDF_SCORE_AUSENTE,
-          });
-        }
-        // §10.10 — pre-condicao: expandidoJson cacheado. Enquanto NULL,
-        // a IA ainda nao gerou (Momento 2 §3.3) ou falhou (§11.1).
-        if (score.expandidoJson === null || score.expandidoJson === undefined) {
-          throw new TRPCError({
-            code: 'PRECONDITION_FAILED',
-            message: MSG_GENERATE_PDF_AGUARDE,
-          });
-        }
-
-        // Company: nome fantasia + logo (§10.10 cabecalho canonico).
-        const [company] = await ctx.db
-          .select({
-            nomeFantasia: companies.nomeFantasia,
-            logoUrl: companies.logoUrl,
-          })
-          .from(companies)
-          .where(eq(companies.id, input.companyId))
-          .limit(1);
-        if (!company) {
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: 'Empresa não encontrada.',
-          });
-        }
-
-        // Assessment: enviadoEm -> data_aplicacao; os 5 indices de
-        // confiabilidade (ia_*) alimentam o grafico de barras do PDF.
-        const [assessment] = await ctx.db
-          .select({
-            enviadoEm: individualProfileAssessments.enviadoEm,
-            ia_att: individualProfileAssessments.ia_att,
-            ia_soc: individualProfileAssessments.ia_soc,
-            ia_acq: individualProfileAssessments.ia_acq,
-            ia_cons: individualProfileAssessments.ia_cons,
-            ia_ext: individualProfileAssessments.ia_ext,
-          })
-          .from(individualProfileAssessments)
-          .where(eq(individualProfileAssessments.id, score.assessmentId))
-          .limit(1);
-        const dataAplicacao = assessment?.enviadoEm
-          ? new Date(assessment.enviadoEm).toISOString().slice(0, 10)
-          : '';
-        // Metricas de confiabilidade (rotulo + alerta) reclassificadas dos
-        // scores persistidos, reusando os thresholds canonicos. Os dados
-        // brutos (respostas) nunca entram aqui; so os 5 scores ja salvos.
-        const confiabilidadeMetricas = assessment
-          ? metricasConfiabilidade({
-              ia_att: assessment.ia_att,
-              ia_soc: assessment.ia_soc,
-              ia_acq: assessment.ia_acq,
-              ia_cons: assessment.ia_cons,
-              ia_ext: assessment.ia_ext,
-            })
-          : undefined;
-
-        // Identificacao canonica do titular.
-        let nome = '';
-        let cargo = '';
-        let nivelHierarquico: 'operacional' | 'tatico' | 'estrategico' = 'operacional';
-        let departamento = '';
-        if (input.userType === 'clevel') {
-          const [row] = await ctx.db
-            .select({ name: cLevelMembers.name, cargo: cLevelMembers.cargo })
-            .from(cLevelMembers)
-            .where(eq(cLevelMembers.id, input.userId))
-            .limit(1);
-          nome = row?.name ?? '';
-          cargo = row?.cargo ?? '';
-          nivelHierarquico = 'estrategico';
-          departamento = 'Alta liderança';
-        } else {
-          const [row] = await ctx.db
-            .select({
-              name: employees.name,
-              descricaoCBO: employees.descricaoCBO,
-              nivelHierarquico: employees.nivelHierarquico,
-              departamento: employees.departamento,
-            })
-            .from(employees)
-            .where(eq(employees.id, input.userId))
-            .limit(1);
-          nome = row?.name ?? '';
-          cargo = row?.descricaoCBO ?? '';
-          nivelHierarquico =
-            (row?.nivelHierarquico as 'operacional' | 'tatico' | 'estrategico') ?? 'operacional';
-          departamento = row?.departamento ?? '';
-        }
-
-        // Subvetores: 25 valores canonicos (Postura 4 + Estrutura 5 +
-        // Motor 5 + Equilibrio 5 + Assinatura 6). Valores nulos
-        // renderizam como 0 na barra — comportamento defensivo canonico.
-        const subvetores: IndividualProfileSubvector[] = [];
-        const nn = (v: string | null): number => (v === null ? 0 : Number.parseFloat(v));
-        subvetores.push(
-          { bloco: 'Postura', rotulo: 'Assertividade e decisão', valor: nn(score.post_assert) },
-          { bloco: 'Postura', rotulo: 'Orientação a tarefas', valor: nn(score.post_tarefas) },
-          { bloco: 'Postura', rotulo: 'Orientação a pessoas', valor: nn(score.post_pessoas) },
-          { bloco: 'Postura', rotulo: 'Comportamento sob pressão', valor: nn(score.post_pressao) },
-          { bloco: 'Estrutura', rotulo: 'Abertura à experiência', valor: nn(score.est_abert) },
-          { bloco: 'Estrutura', rotulo: 'Disciplina e autogestão', valor: nn(score.est_disc) },
-          { bloco: 'Estrutura', rotulo: 'Extroversão', valor: nn(score.est_ext) },
-          { bloco: 'Estrutura', rotulo: 'Amabilidade', valor: nn(score.est_amab) },
-          { bloco: 'Estrutura', rotulo: 'Estabilidade emocional', valor: nn(score.est_estab) },
-          { bloco: 'Motor', rotulo: 'Maestria', valor: nn(score.mot_maestria) },
-          { bloco: 'Motor', rotulo: 'Liderança', valor: nn(score.mot_lideranca) },
-          { bloco: 'Motor', rotulo: 'Autonomia', valor: nn(score.mot_autonomia) },
-          { bloco: 'Motor', rotulo: 'Segurança', valor: nn(score.mot_seguranca) },
-          { bloco: 'Motor', rotulo: 'Propósito', valor: nn(score.mot_proposito) },
-          { bloco: 'Equilíbrio', rotulo: 'Autoconsciência', valor: nn(score.equ_autocons) },
-          { bloco: 'Equilíbrio', rotulo: 'Autogestão emocional', valor: nn(score.equ_autogest) },
-          { bloco: 'Equilíbrio', rotulo: 'Leitura do outro', valor: nn(score.equ_leitura) },
-          { bloco: 'Equilíbrio', rotulo: 'Influência e condução', valor: nn(score.equ_influencia) },
-          {
-            bloco: 'Equilíbrio',
-            rotulo: 'Índice geral de equilíbrio',
-            valor: nn(score.equ_indice),
-          },
-          { bloco: 'Assinatura', rotulo: 'Sabedoria', valor: nn(score.ass_sabed) },
-          { bloco: 'Assinatura', rotulo: 'Coragem', valor: nn(score.ass_coragem) },
-          { bloco: 'Assinatura', rotulo: 'Humanidade', valor: nn(score.ass_humanid) },
-          { bloco: 'Assinatura', rotulo: 'Justiça', valor: nn(score.ass_justica) },
-          { bloco: 'Assinatura', rotulo: 'Temperança', valor: nn(score.ass_temper) },
-          { bloco: 'Assinatura', rotulo: 'Transcendência', valor: nn(score.ass_transc) },
-        );
-
-        const generatedAt = now();
-        const generatedAtDate = generatedAt.toISOString().slice(0, 10);
-
-        // Lider direto (nome) para a identificacao do PDF. C-level nao
-        // tem lider direto no modelo; employee resolve pelo historico
-        // ativo (mesmo padrao do dashboard).
-        // ME-1.3d-REV DIS-A: D-PERFIL-LIDER-DIRETO-VAZIO fechado — agora
-        // considera tambem `clevelId` do historico (quando o colaborador
-        // reporta diretamente a um C-level) e aplica fallback canonico
-        // "— (sem líder direto)" quando nao ha vinculo ativo.
-        let liderDiretoNome = 'Não se aplica';
-        if (input.userType === 'employee') {
-          const leaderLink = await getActiveLeaderHistoryByEmployee(ctx.db, input.userId);
-          if (leaderLink?.liderId != null) {
-            const liderRows = await ctx.db
-              .select({ name: employees.name })
-              .from(employees)
-              .where(eq(employees.id, leaderLink.liderId))
-              .limit(1);
-            liderDiretoNome = liderRows[0]?.name ?? '— (sem líder direto)';
-          } else if (leaderLink?.clevelId != null) {
-            const clevelRows = await ctx.db
-              .select({ name: cLevelMembers.name })
-              .from(cLevelMembers)
-              .where(eq(cLevelMembers.id, leaderLink.clevelId))
-              .limit(1);
-            liderDiretoNome = clevelRows[0]?.name ?? '— (sem líder direto)';
-          } else {
-            liderDiretoNome = '— (sem líder direto)';
-          }
-        }
-
-        const html = renderIndividualProfileHTML({
-          company: {
-            nomeFantasia: company.nomeFantasia ?? '',
-            ...(company.logoUrl ? { logoUrl: company.logoUrl } : {}),
-          },
-          identificacao: {
-            nome,
-            cargo,
-            nivelHierarquico,
-            departamento,
-            liderDireto: liderDiretoNome,
-            dataAplicacao,
-          },
-          expandido: score.expandidoJson as IndividualProfileExpandidoJson,
-          subvetores,
-          generatedAtDate,
-          ...(confiabilidadeMetricas ? { confiabilidadeMetricas } : {}),
-        });
+        const templateInput = await buildIndividualProfileTemplateInput(ctx.db, input, now);
+        const html = renderIndividualProfileHTML(templateInput);
 
         let pdfBytes: Uint8Array;
         try {
@@ -1023,8 +1034,24 @@ export function createIndividualProfileRouter(deps: IndividualProfileRouterDeps 
 
         return {
           pdfBase64: Buffer.from(pdfBytes).toString('base64'),
-          filename: composeIndividualProfileFilename(nome, generatedAtDate),
+          filename: composeIndividualProfileFilename(
+            templateInput.identificacao.nome,
+            templateInput.generatedAtDate,
+          ),
         };
+      }),
+    getPerfilOnlineHtml: roleProcedure(['super_admin', 'rh', 'rh_lider', 'clevel', 'lider'])
+      .input(GENERATE_PDF_INPUT_SCHEMA)
+      .query(async ({ ctx, input }): Promise<{ html: string }> => {
+        assertCompanyScope(ctx.user, input.companyId);
+        assertPC1e(ctx.user, input.userType);
+        if (input.userType === 'employee') {
+          assertNaoAutoVisaoEmployee(ctx.user, input.userId, MSG_AUTO_VISAO_PERFIL);
+        }
+        await resolveTitular(ctx.db, ctx.user, input.companyId, input.userType, input.userId);
+        await assertLiderDireto(ctx.db, ctx.user, input.userType, input.userId);
+        const templateInput = await buildIndividualProfileTemplateInput(ctx.db, input, now);
+        return { html: renderIndividualProfileOnlineHTML(templateInput) };
       }),
   });
 }

@@ -298,3 +298,46 @@ export async function baixarPerfilPdfAction(input: {
     await closeDbClient(client);
   }
 }
+
+/** Retorno de `carregarPerfilOnlineHtmlAction` (ME-1.21). */
+export interface CarregarPerfilOnlineHtmlResult {
+  readonly ok: boolean;
+  readonly html: string | null;
+  readonly error?: string;
+}
+
+/**
+ * Carrega o HTML da visao on-line do Perfil Individual (ME-1.21 —
+ * `individualProfile.getPerfilOnlineHtml`): o mesmo corpo do PDF, sem a
+ * capa e sem a rastreabilidade, com a Confiabilidade como ultima secao.
+ * Reusa o motor de render do PDF, logo nao ha divergencia entre as duas
+ * superficies. Autorizacao reaplicada no backend (mesma do `getReport`).
+ */
+export async function carregarPerfilOnlineHtmlAction(input: {
+  companyId: number;
+  userType: 'employee' | 'clevel';
+  userId: number;
+}): Promise<CarregarPerfilOnlineHtmlResult> {
+  const token = await requireToken();
+  const client = createDbClient(resolveDatabaseUrl());
+  try {
+    const caller = createCallerFactory(appRouter)(
+      createContextInner({
+        db: client.db,
+        rateLimiter: createRateLimiter(),
+        bearerToken: token,
+      }),
+    );
+    const result = await caller.individualProfile.getPerfilOnlineHtml({
+      companyId: input.companyId,
+      userType: input.userType,
+      userId: input.userId,
+    });
+    return { ok: true, html: result.html };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Erro ao carregar o perfil completo.';
+    return { ok: false, html: null, error: message };
+  } finally {
+    await closeDbClient(client);
+  }
+}
