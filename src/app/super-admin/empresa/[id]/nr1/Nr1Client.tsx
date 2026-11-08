@@ -1621,6 +1621,12 @@ export function Nr1Client({
                   {/* cheia cinza (escopo principal); Empresa = linha */}
                   {/* tracejada azul-escuro. Idêntica ao PDF. */}
                   {renderLegendaLinhas()}
+                  {/* ME-1.18 (patch) — tela do departamento idêntica à da */}
+                  {/* empresa: legenda de faixas + lista dos fatores do */}
+                  {/* departamento (bolinha por faixa + nome + score) logo */}
+                  {/* abaixo do gráfico. */}
+                  {renderLegendaFaixas()}
+                  {renderRadarLegend(selectedDept)}
                   <button
                     style={{
                       ...STYLES.btnOutline,
