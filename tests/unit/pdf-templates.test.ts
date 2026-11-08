@@ -249,6 +249,8 @@ describe('individualProfileTemplate (ME-050/51)', () => {
     expect(html).toContain('Painel de resultados por área');
     expect(html).toContain('Recomendações executivas');
     expect(html).toContain('Confiabilidade');
+    // ME-1.19 (adicao): página final de rastreabilidade.
+    expect(html).toContain('Rastreabilidade e integridade do relatório');
     // ME-1.10-DIS-F: pagina de identificacao redundante removida,
     // etiqueta da capa removida, titulo antigo do painel renomeado.
     expect(html).not.toContain('<h2>Identificação</h2>');

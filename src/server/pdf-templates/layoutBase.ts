@@ -1535,9 +1535,10 @@ export const LAYOUT_BASE_CSS = `
      definicao ao selo que aparece nas barras. */
   .selo-legenda {
     display: flex;
-    flex-wrap: wrap;
-    gap: 1.5mm 4mm;
-    margin: 0 0 5.5mm;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2mm;
+    margin: 3mm 0 7mm;
     font-size: 8pt;
     color: #6B7280;
     line-height: 1.4;

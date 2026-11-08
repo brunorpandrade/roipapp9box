@@ -796,6 +796,31 @@ ${bloco('Equilíbrio')}
  * Renderiza o HTML canonico do Perfil Individual expandido em PDF.
  * Deterministico: mesmos inputs -> mesma saida byte a byte.
  */
+/**
+ * Pagina final de rastreabilidade (ME-1.19, adicao): card tecnico enxuto
+ * com identificacao, datas e nota de integridade, no mesmo padrao dos
+ * demais PDFs do projeto. Usa apenas dados ja presentes no input — nao
+ * exige nada novo do chamador.
+ */
+function renderRastreabilidade(input: IndividualProfileTemplateInput): string {
+  const id = input.identificacao;
+  const nivel = NIVEL_HIERARQUICO_ROTULO[id.nivelHierarquico];
+  return `<section class="page-break">
+  <h2>Rastreabilidade e integridade do relatório</h2>
+  <div class="trace-card trace-card-linhas">
+    <div><strong>Empresa:</strong> ${escapeHtml(asStr(input.company.nomeFantasia))}</div>
+    <div><strong>Colaborador:</strong> ${escapeHtml(asStr(id.nome))}</div>
+    <div><strong>Cargo:</strong> ${escapeHtml(asStr(id.cargo))}</div>
+    <div><strong>Nível hierárquico:</strong> ${escapeHtml(nivel)}</div>
+    <div><strong>Departamento:</strong> ${escapeHtml(asStr(id.departamento))}</div>
+    <div><strong>Líder direto:</strong> ${escapeHtml(asStr(id.liderDireto))}</div>
+    <div><strong>Data de aplicação:</strong> ${escapeHtml(formatDateBR(asStr(id.dataAplicacao)))}</div>
+    <div><strong>Gerado em:</strong> ${escapeHtml(formatDateBR(asStr(input.generatedAtDate)))}</div>
+  </div>
+  <p class="muted" style="font-size:9pt; line-height:1.55; margin-top:4mm;"><strong>Nota final.</strong> Este relatório descreve o padrão atual do colaborador e pode ser regerado a partir das respostas originais do instrumento, apresentando idêntico conteúdo estrutural.</p>
+</section>`;
+}
+
 export function renderIndividualProfileHTML(input: IndividualProfileTemplateInput): string {
   const exp = input.expandido;
   const bodyHtml = [
@@ -810,6 +835,7 @@ export function renderIndividualProfileHTML(input: IndividualProfileTemplateInpu
     renderNaturalmenteExcelente(exp.naturalmente_excelente),
     renderRecomendacoes(exp.recomendacoes_executivas),
     renderConfiabilidade(exp.confiabilidade, input.confiabilidadeMetricas),
+    renderRastreabilidade(input),
   ].join('\n\n');
 
   return renderLayoutBase({
