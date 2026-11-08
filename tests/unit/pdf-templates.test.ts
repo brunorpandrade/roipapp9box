@@ -52,6 +52,7 @@ const CANON_INDIVIDUAL: IndividualProfileTemplateInput = {
     sintese_executiva: {
       retrato_integrado: 'Perfil equilibrado com alta orientação a pessoas.',
       entrega_natural: 'Entrega consistente em contextos colaborativos.',
+      equilibrio_sob_pressao: 'Regula bem a reação na maior parte do tempo.',
       pontos_atencao: 'Pode centralizar decisões sob pressão.',
       recomendacao_sintese: 'Ampliar delegação gradual.',
     },
@@ -237,6 +238,9 @@ describe('individualProfileTemplate (ME-050/51)', () => {
     const html = renderIndividualProfileHTML(CANON_INDIVIDUAL);
     expect(html).toContain('Perfil individual');
     expect(html).toContain('Síntese executiva');
+    // ME-1.19: parágrafo do equilíbrio integrado na síntese executiva.
+    expect(html).toContain('Equilíbrio sob pressão');
+    expect(html).toContain('Regula bem a reação na maior parte do tempo.');
     expect(html).toContain('Como essa pessoa age');
     expect(html).toContain('Quem essa pessoa é');
     expect(html).toContain('O que move essa pessoa');
@@ -304,6 +308,10 @@ describe('individualProfileTemplate (ME-050/51)', () => {
     expect(html).toContain('Sustentação');
     expect(html).toContain('Negligenciado');
     expect(html).toContain('Top 3');
+    // ME-1.19: legenda das etiquetas sob o cabeçalho de Motor e Assinatura.
+    expect(html).toContain('<div class="selo-legenda">');
+    expect(html).toContain('o que mais move');
+    expect(html).toContain('as três forças naturais de maior expressão');
     // Grafico de teia: pagina dedicada, fronteiras em ardosia escura,
     // legenda de faixa.
     expect(html).toContain('class="radar-wrap"');

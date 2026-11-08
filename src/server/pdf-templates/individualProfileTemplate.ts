@@ -24,6 +24,7 @@ import { escapeHtml, type LayoutBaseCompany, renderLayoutBase } from './layoutBa
 export interface SinteseExecutiva {
   retrato_integrado: string;
   entrega_natural: string;
+  equilibrio_sob_pressao: string;
   pontos_atencao: string;
   recomendacao_sintese: string;
 }
@@ -232,6 +233,7 @@ function renderSintese(s: SinteseExecutiva): string {
   <h2>Síntese executiva</h2>
   ${subBloco('Retrato integrado', s?.retrato_integrado)}
   ${subBloco('Entrega natural', s?.entrega_natural)}
+  ${subBloco('Equilíbrio sob pressão', s?.equilibrio_sob_pressao)}
   ${subBloco('Pontos de atenção', s?.pontos_atencao)}
   ${subBloco('Recomendação', s?.recomendacao_sintese)}
 </section>`;
@@ -463,6 +465,34 @@ function selosDoBloco(
   return selos;
 }
 
+/** Um par selo + definicao, reaproveitando o chip `.subv-selo`. */
+function seloDef(selo: string, definicao: string): string {
+  return `<span class="selo-def"><span class="subv-selo">${escapeHtml(selo)}</span> ${escapeHtml(definicao)}</span>`;
+}
+
+/**
+ * Legenda das etiquetas (ME-1.19, item [1.19]): explica, logo abaixo do
+ * cabecalho da area, o significado dos selos que aparecem nas barras,
+ * para nao depender de quem conhece a metodologia. So Motor (dominante /
+ * sustentacao / negligenciado) e Assinatura (Top 3) exibem selo; as
+ * demais areas nao recebem legenda.
+ */
+function legendaSelos(bloco: IndividualProfileSubvector['bloco']): string {
+  if (bloco === 'Motor') {
+    const defs = [
+      seloDef('Dominante', 'o que mais move'),
+      seloDef('Sustentação', 'o que mantém a energia no dia a dia'),
+      seloDef('Negligenciado', 'o que fica em segundo plano'),
+    ].join('\n    ');
+    return `<div class="selo-legenda">\n    ${defs}\n  </div>`;
+  }
+  if (bloco === 'Assinatura') {
+    const def = seloDef('Top 3', 'as três forças naturais de maior expressão');
+    return `<div class="selo-legenda">\n    ${def}\n  </div>`;
+  }
+  return '';
+}
+
 /**
  * Um item do painel (area ou leitura) no layout do print: nome em linha
  * cheia, sem quebrar; barra curta de largura fixa a direita, com valor e
@@ -516,6 +546,7 @@ function renderAreaBloco(
     escore !== null
       ? renderPainelItem({ nome: bloco, nota: NOTA_AREA[bloco], valor: escore, area: true })
       : '';
+  const legenda = legendaSelos(bloco);
   const rows = itens
     .filter((s) => s.rotulo !== ROTULO_INDICE_EQUILIBRIO)
     .map((s) =>
@@ -529,6 +560,7 @@ function renderAreaBloco(
     .join('\n');
   return `<div class="subv-area">
     ${cabecalho}
+    ${legenda}
 ${rows}
   </div>`;
 }

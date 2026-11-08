@@ -1530,6 +1530,24 @@ export const LAYOUT_BASE_CSS = `
     margin-top: 0.3mm;
   }
 
+  /* ME-1.19: legenda das etiquetas, logo abaixo do cabecalho da area
+     (Motor e Assinatura). Reaproveita o chip .subv-selo para ligar a
+     definicao ao selo que aparece nas barras. */
+  .selo-legenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5mm 4mm;
+    margin: 0 0 5.5mm;
+    font-size: 8pt;
+    color: #6B7280;
+    line-height: 1.4;
+  }
+  .selo-legenda .selo-def {
+    display: inline-flex;
+    align-items: center;
+    gap: 1.5mm;
+  }
+
   /* ME-1.10-DIS-G: pagina do radar de teia + indice por area + legenda. */
   .radar-wrap {
     width: 94%;

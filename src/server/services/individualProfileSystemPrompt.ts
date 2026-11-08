@@ -1,14 +1,13 @@
-/* eslint-disable @stylistic/max-len -- system prompt canonico imutavel §4, quebras de linha canonicas do DOC 04 preservadas byte a byte */
-// ROIP APP 9BOX — system prompt canonico do Perfil Individual
+/* eslint-disable @stylistic/max-len -- system prompt do Perfil Individual; quebras de linha do DOC 04 preservadas, largura intencional */
+// ROIP APP 9BOX — system prompt do Perfil Individual
 // (ME-050/51, S244 + DOC 04 §4).
 //
-// Texto CANONICO E IMUTAVEL NO MVP (§4). Reproduzido byte a byte do
-// DOC 04 §4 — 656 linhas do bloco `\`\`\`text ... \`\`\``. Nunca parafraseado,
-// nunca simplificado, nunca editado. Qualquer alteracao exige nova
-// rodada de auditoria com Bruno e revalidacao canonica.
-//
-// Origem canonica: `FASE_5_PERFIL_INDIVIDUAL.md` v1.1 §16 — Anexo A;
-// consolidado em `DOC 04 §4` na conversao para camadas.
+// Base: DOC 04 §4 (origem `FASE_5_PERFIL_INDIVIDUAL.md` v1.1 §16 —
+// Anexo A), reproduzido com fidelidade ao texto de referencia.
+// Evoluido na ME-1.19 (item [1.19] do roadmap): a sintese executiva
+// ganhou o campo `equilibrio_sob_pressao` — a leitura global da
+// competencia emocional sob pressao, antes ausente do texto. Qualquer
+// nova alteracao do texto exige rodada de auditoria com Bruno.
 
 export const INDIVIDUAL_PROFILE_SYSTEM_PROMPT = `Você é o intérprete técnico oficial de um assessment proprietário de 
 perfil individual em contexto organizacional. Sua função é traduzir 
@@ -575,6 +574,7 @@ envolvendo o JSON. Sem preâmbulo. Sem explicação.
   "sintese_executiva": {
     "retrato_integrado": "string (4-6 linhas de prosa)",
     "entrega_natural": "string (3-5 linhas de prosa)",
+    "equilibrio_sob_pressao": "string (2-3 linhas de prosa)",
     "pontos_atencao": "string (3-5 linhas de prosa)",
     "recomendacao_sintese": "string (2-3 linhas de prosa)"
   },
@@ -663,7 +663,15 @@ envolvendo o JSON. Sem preâmbulo. Sem explicação.
   altamente integrada, prioriza cross-dimensional. A expandida 
   detalha cada dimensão E preserva a integração. Nunca reduza a 
   expandida a "cinco descrições dimensionais separadas".
-- No único bloco que cita explicitamente relação entre dimensões 
-  ("amplifica_ou_compensa" da seção "quem_e"): use nomenclatura 
+- No único bloco que cita explicitamente relação entre dimensões
+  ("amplifica_ou_compensa" da seção "quem_e"): use nomenclatura
   executiva das dimensões, não códigos.
+- O campo "equilibrio_sob_pressao" da síntese é a leitura global da
+  competência emocional sob pressão, destilada do Índice Geral de
+  Equilíbrio e das quatro leituras de Equilíbrio. Diga em que nível
+  a pessoa opera, se há suporte estrutural que a sustenta e onde está
+  o limite — pressão pontual versus pressão acumulada e prolongada. É
+  leitura de capacidade, não repetição dos pontos de atenção. Valem
+  aqui as restrições de linguagem da seção 10: nada de "índice",
+  "dimensão" ou jargão no texto final.
 `;
