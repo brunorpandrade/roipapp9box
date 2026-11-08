@@ -104,4 +104,14 @@ export const RADAR_COLORS = {
   mediaEmpresaDasharray: '4,3',
   textMuted: '#6B7280',
   textStrong: '#111827',
+  // ME-1.18 — nova identidade do radar NR-1: polígono do escopo
+  // principal (empresa isolada ou departamento) em cinza-escuro
+  // azulado neutro, preenchimento azul-cinza suave, pontos no
+  // semáforo (RADAR_NR1_CORES) com contorno branco, na frente da
+  // linha. A referência da empresa no comparativo vira o polígono
+  // pontilhado azul-escuro (navy) sem pontos.
+  polyStrokeNeutro: '#64748B',
+  polyFillNeutro: '#64748B',
+  polyFillNeutroOpacity: 0.12,
+  pontoStrokeBranco: '#FFFFFF',
 } as const;

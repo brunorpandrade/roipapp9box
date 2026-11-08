@@ -406,10 +406,14 @@ describe('nr1Template (ME-050/51)', () => {
     expect(html).toContain('Radar da empresa');
     // Descricao dos 8 fatores.
     expect(html).toContain('Descrição de cada fator');
-    // Instrumento aplicado — nova pagina da v7.
-    expect(html).toContain('Instrumento aplicado — os 32 itens');
-    expect(html).toContain('instrumento-grid');
+    // Instrumento aplicado (ME-1.18: titulo sem "— os 32 itens",
+    // seçoes horizontais em lista, com nome + explicaçao + afirmaçoes).
+    expect(html).toContain('Instrumento aplicado');
+    expect(html).not.toContain('Instrumento aplicado — os 32 itens');
+    expect(html).toContain('instrumento-lista');
     expect(html).toContain('instrumento-fator-header');
+    expect(html).toContain('instrumento-fator-desc');
+    expect(html).toContain('Escala das respostas: (Nunca) · (Quase nunca) · (Às vezes)');
     // Rastreabilidade UNICA (basica removida na v7).
     const rastreabilidadeCount = (html.match(/Rastreabilidade e integridade do relatório/g) ?? [])
       .length;
@@ -420,11 +424,13 @@ describe('nr1Template (ME-050/51)', () => {
     expect(html).not.toContain('verificação forense');
     // Radar por departamento (v6+ — uma pagina por dept com nome no titulo)
     expect(html).toContain('Radar por departamento — Manufatura');
-    // Tabela 3 colunas canonica.
-    expect(html).toContain('data-table-3col');
+    // ME-1.18: tabela 4 colunas (Fator / Departamento / Diferença /
+    // Empresa), colunas numericas centralizadas.
+    expect(html).toContain('data-table-4col');
     expect(html).toContain('<th>Fator</th>');
-    expect(html).toContain('<th class="right">Departamento</th>');
-    expect(html).toContain('<th class="right">Empresa</th>');
+    expect(html).toContain('<th class="center">Departamento</th>');
+    expect(html).toContain('<th class="center">Diferença</th>');
+    expect(html).toContain('<th class="center">Empresa</th>');
     // Departamento critico (presente em CANON_NR1).
     expect(html).toContain('situação crítica');
     // Alertas (v6+: duas secoes — resumo empresa + completo).
@@ -547,7 +553,8 @@ describe('nr1Template (ME-050/51)', () => {
   it('renderNr1ReportHTML — v5: radar por dept usa legenda biparticao Empresa/Dept', () => {
     const html = renderNr1ReportHTML(CANON_NR1);
     expect(html).toContain('radar-legend-biparticao');
-    // Dois chips: Empresa (tracejado teal) + Departamento (navy solido)
+    // ME-1.18: dois chips — Departamento (linha cheia cinza) + Empresa
+    // (linha tracejada azul-escuro).
     expect(html).toMatch(/<span>Empresa<\/span>/);
     expect(html).toMatch(/<span>Departamento<\/span>/);
   });

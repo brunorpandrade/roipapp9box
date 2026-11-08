@@ -55,11 +55,7 @@
 import { formatDateBR } from '../../lib/date/formatDateBR';
 import { dataCivilBrtFromIso, formatDataEditorial } from '../../lib/date/formatDataEditorial';
 import { toTimestampBrt } from '../../lib/date/toIsoDateUtc';
-import {
-  projectRadarPoint,
-  projectRadarPolygon,
-  renderRadarGridSvg,
-} from '../../lib/svg/pdfSvgHelpers';
+import { projectRadarPoint, projectRadarPolygon } from '../../lib/svg/pdfSvgHelpers';
 import {
   classificarNr1Faixa,
   type Nr1Faixa,
@@ -210,7 +206,51 @@ const RADAR_SVG_CX = 450;
 const RADAR_SVG_CY = 280;
 const RADAR_SVG_MAX_RADIUS = 170;
 const RADAR_SVG_VIEWBOX = '0 0 900 560';
-const RADAR_SVG_NUM_RINGS = 4;
+
+// ME-1.18 — grid em 3 linhas, uma em cada fronteira de faixa do
+// semáforo (score 50 vermelho→amarelo, score 66 amarelo→verde) mais
+// o anel externo (100). Malha neutra, sem cor de faixa. Substitui o
+// grid anterior de 4 anéis igualmente espaçados.
+const RADAR_GRID_FAIXAS_SCORES = [50, 66, 100] as const;
+
+/**
+ * ME-1.18 — grid canônico do Radar NR-1: 3 polígonos concêntricos nas
+ * fronteiras de faixa (50, 66, 100) + linhas radiais até o anel
+ * externo. Malha neutra cinza, sem preenchimento colorido por faixa.
+ */
+function renderRadarGridFaixas(nEixos: number): string {
+  const ringPolygons = RADAR_GRID_FAIXAS_SCORES.map((ringScore) => {
+    const pts = projectRadarPolygon(
+      new Array<number>(nEixos).fill(ringScore),
+      RADAR_SVG_CX,
+      RADAR_SVG_CY,
+      RADAR_SVG_MAX_RADIUS,
+    );
+    return `<polygon points="${pts}" />`;
+  }).join('\n');
+  const radialLines: string[] = [];
+  for (let i = 0; i < nEixos; i++) {
+    const outer = projectRadarPoint(
+      i,
+      nEixos,
+      100,
+      RADAR_SVG_CX,
+      RADAR_SVG_CY,
+      RADAR_SVG_MAX_RADIUS,
+    );
+    radialLines.push(
+      `<line x1="${RADAR_SVG_CX}" y1="${RADAR_SVG_CY}" x2="${outer.x.toFixed(2)}" y2="${outer.y.toFixed(2)}" />`,
+    );
+  }
+  return [
+    `<g fill="none" stroke="${RADAR_COLORS.gridStroke}" stroke-width="1">`,
+    ringPolygons,
+    '</g>',
+    `<g stroke="${RADAR_COLORS.gridStroke}" stroke-width="1">`,
+    ...radialLines,
+    '</g>',
+  ].join('\n');
+}
 
 function renderRadarAxisLabels(fatores: readonly Nr1FatorScore[]): string {
   const labelRadius = RADAR_SVG_MAX_RADIUS + 32;
@@ -242,12 +282,13 @@ function renderRadarSvg(
 ): string {
   if (fatores.length < 3) return '';
   const scores = fatores.map((f) => f.score);
-  // CC079-v5+: no modo comparativo (referencia presente), o poligono
-  // do dept vai em azul escuro navy e a empresa vem como tracejado
-  // teal. No modo simples (empresa sozinha), mantem o teal canonico.
-  const polyFill = referencia ? RADAR_COLORS.navy : RADAR_COLORS.teal;
-  const polyStroke = referencia ? RADAR_COLORS.navy : RADAR_COLORS.teal;
-  const refStroke = referencia ? RADAR_COLORS.teal : RADAR_COLORS.mediaEmpresaStroke;
+  // ME-1.18 — identidade unificada: o polígono do escopo principal
+  // (empresa isolada OU departamento) é sempre a mesma coisa — linha
+  // cinza-escura neutra ao fundo, preenchimento azul-cinza suave, e os
+  // pontos pintados pelo semáforo (faixa de cada score) por cima, com
+  // contorno branco para não sumirem sobre a linha. No modo
+  // comparativo, a empresa entra apenas como polígono pontilhado
+  // azul-escuro (navy), sem preenchimento e sem pontos.
   const polygonPoints = projectRadarPolygon(
     scores,
     RADAR_SVG_CX,
@@ -264,7 +305,9 @@ function renderRadarSvg(
         RADAR_SVG_CY,
         RADAR_SVG_MAX_RADIUS,
       );
-      return `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="5" />`;
+      const faixa: Nr1Faixa = classificarNr1Faixa(score);
+      const cor = RADAR_NR1_CORES[faixa];
+      return `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="5.5" fill="${cor}" stroke="${RADAR_COLORS.pontoStrokeBranco}" stroke-width="1.4" />`;
     })
     .join('\n');
   const referenciaPoly = referencia
@@ -273,13 +316,13 @@ function renderRadarSvg(
         RADAR_SVG_CX,
         RADAR_SVG_CY,
         RADAR_SVG_MAX_RADIUS,
-      )}" fill="none" stroke="${refStroke}" stroke-width="1.6" stroke-dasharray="${RADAR_COLORS.mediaEmpresaDasharray}" />`
+      )}" fill="none" stroke="${RADAR_COLORS.navy}" stroke-width="1.8" stroke-dasharray="${RADAR_COLORS.mediaEmpresaDasharray}" />`
     : '';
   return `<svg viewBox="${RADAR_SVG_VIEWBOX}" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto; display:block;">
-${renderRadarGridSvg(scores.length, RADAR_SVG_CX, RADAR_SVG_CY, RADAR_SVG_MAX_RADIUS, RADAR_SVG_NUM_RINGS, RADAR_COLORS.gridStroke)}
+${renderRadarGridFaixas(scores.length)}
 ${referenciaPoly}
-<polygon points="${polygonPoints}" fill="${polyFill}" fill-opacity="${RADAR_COLORS.tealFillOpacity}" stroke="${polyStroke}" stroke-width="2" />
-<g fill="${polyStroke}">
+<polygon points="${polygonPoints}" fill="${RADAR_COLORS.polyFillNeutro}" fill-opacity="${RADAR_COLORS.polyFillNeutroOpacity}" stroke="${RADAR_COLORS.polyStrokeNeutro}" stroke-width="2" />
+<g>
 ${dataPoints}
 </g>
 ${renderRadarAxisLabels(fatores)}
@@ -292,12 +335,13 @@ ${renderRadarAxisLabels(fatores)}
  * referencia visual).
  */
 function renderRadarLegendHorizontal(fatores: readonly Nr1FatorScore[]): string {
+  // ME-1.18 — sem bolinha: o próprio score já vem colorido pela faixa
+  // do semáforo, então o marcador é redundante.
   const items = fatores
     .map((f) => {
       const faixa: Nr1Faixa = classificarNr1Faixa(f.score);
       const dotColor = RADAR_NR1_CORES[faixa];
       return `<div class="leg-item">
-  <span class="legend-dot" style="background:${dotColor};"></span>
   <span class="leg-nome">${escapeHtml(f.nome)}</span>
   <span class="leg-score" style="color:${dotColor};">${fmtScore(f.score)}</span>
 </div>`;
@@ -316,13 +360,29 @@ ${items}
 function renderRadarLegendBiparticao(): string {
   return `<div class="radar-legend-biparticao">
   <span class="leg-chip">
-    <span class="leg-swatch-line dashed"></span>
-    <span>Empresa</span>
-  </span>
-  <span class="leg-chip">
-    <span class="leg-swatch-line" style="background:${RADAR_COLORS.navy};"></span>
+    <span class="leg-swatch-line solid" style="color:${RADAR_COLORS.polyStrokeNeutro};"></span>
     <span>Departamento</span>
   </span>
+  <span class="leg-chip">
+    <span class="leg-swatch-line dashed" style="color:${RADAR_COLORS.navy};"></span>
+    <span>Empresa</span>
+  </span>
+</div>`;
+}
+
+/**
+ * ME-1.18 — legenda das 3 faixas do semáforo, sob o gráfico (empresa e
+ * departamentos). Cada trecho é colorido na própria palavra/número,
+ * sem a palavra "Legenda" e sem escrever o nome da cor. Dá a chave de
+ * leitura dos pontos coloridos do radar.
+ */
+function renderRadarLegendFaixas(): string {
+  return `<div class="radar-legend-faixas">
+  <span class="faixa-item" style="color:${RADAR_NR1_CORES.verde};">(66-100) Satisfatório</span>
+  <span class="faixa-sep">·</span>
+  <span class="faixa-item" style="color:${RADAR_NR1_CORES.amarelo};">(50-65) atenção</span>
+  <span class="faixa-sep">·</span>
+  <span class="faixa-item" style="color:${RADAR_NR1_CORES.vermelho};">(0-49) crítico</span>
 </div>`;
 }
 
@@ -447,7 +507,7 @@ function renderCapaMaisResumo(input: Nr1TemplateInput): string {
     <div class="kpi-card ${alertasEmpresaCount > 0 ? 'highlight-red' : ''}">
       <div class="kpi-label">Fatores em alerta</div>
       <div class="kpi-value ${alertasEmpresaCount > 0 ? 'red' : ''}">${alertasEmpresaCount}</div>
-      <div class="kpi-sub">Score inferior a 50 (escopo empresa)</div>
+      <div class="kpi-sub">Score inferior a 50 (empresa)</div>
     </div>
   </div>
   <div class="gauge-wrap">
@@ -565,8 +625,9 @@ function renderRadarEmpresa(input: Nr1TemplateInput): string {
   const subtit = `${input.ciclo.totalRespondentes} respondentes efetivos`;
   return `<section class="page-break">
   <h2>Radar da empresa — 8 fatores</h2>
-  <p style="font-size:10pt;">Consolidação dos 8 fatores psicossociais no escopo empresa, agregando as respostas válidas de <strong>${input.ciclo.totalRespondentes} respondentes efetivos</strong>. Legenda: <span class="cs-green fw-700">verde (66-100)</span> satisfatório · <span class="cs-yellow fw-700">amarelo (50-65)</span> atenção · <span class="cs-red fw-700">vermelho (0-49)</span> crítico.</p>
+  <p style="font-size:10pt;">Consolidação dos 8 fatores psicossociais no escopo empresa, agregando as respostas válidas de <strong>${input.ciclo.totalRespondentes} respondentes efetivos</strong>.</p>
   ${renderRadarCardBlock('Empresa', subtit, input.radarEmpresa)}
+  ${renderRadarLegendFaixas()}
 </section>`;
 }
 
@@ -588,7 +649,6 @@ function renderDescricoesFatoresPagina(input: Nr1TemplateInput): string {
     .join('\n');
   return `<section class="page-break">
   <h2>Descrição de cada fator</h2>
-  <p style="font-size:10pt;">Síntese do que cada fator mede e orientação de leitura dos escores agregados do ciclo.</p>
   ${blocos}
 </section>`;
 }
@@ -627,41 +687,66 @@ function renderAlertasEmpresa(input: Nr1TemplateInput): string {
   <h2>Alertas informativos por fator</h2>
   <p style="font-size:10pt;">Fatores que ficaram com score inferior a 50 no escopo empresa neste ciclo. Esta visão foca no agregado — a análise completa por departamento aparece em seção posterior.</p>
   ${cards}
-  <p class="muted" style="font-size:9pt; line-height:1.55; margin-top:4mm;"><strong>Legenda de intensidade.</strong> <span class="cs-red fw-700">Vermelho intenso</span> indica escopo com score inferior a 40. <span class="cs-yellow fw-700">Amarelo escuro</span> indica escopo com score entre 40 e 49.</p>
 </section>`;
 }
 
 /**
- * CC079-v7: Pagina "Instrumento aplicado — os 32 itens". Logo apos a
- * descricao de cada fator, apresenta as 32 afirmacoes do instrumento
- * agrupadas pelos 8 fatores (4 itens por fator). Sem escala — a
- * escala eh referenciada apenas na rastreabilidade final.
+ * ME-1.18 — "Instrumento aplicado" em seções horizontais: cada fator
+ * ocupa a largura da página com nome + explicação + as 4 afirmações.
+ * Quebra em 2 páginas de 4 fatores cada; a 1ª traz título e subtítulo,
+ * a 2ª continua a lista e fecha com a escala das respostas. Posição:
+ * penúltima seção, logo antes da Rastreabilidade.
  */
-function renderInstrumentoAplicado(): string {
-  const blocos = ITENS_INSTRUMENTO_32.map((bloco) => {
-    const itens = bloco.itens
-      .map((texto) => `<li class="instrumento-item">${escapeHtml(texto)}</li>`)
-      .join('\n');
-    return `<div class="instrumento-fator">
+function renderInstrumentoFatorBloco(bloco: { fator: string; itens: readonly string[] }): string {
+  const explicacao = DESCRICOES_FATORES[bloco.fator] ?? '';
+  const itens = bloco.itens
+    .map((texto) => `<li class="instrumento-item">${escapeHtml(texto)}</li>`)
+    .join('\n');
+  return `<div class="instrumento-fator">
   <div class="instrumento-fator-header">${escapeHtml(bloco.fator)}</div>
+  <div class="instrumento-fator-desc">${escapeHtml(explicacao)}</div>
   <ol class="instrumento-item-list">
 ${itens}
   </ol>
 </div>`;
-  }).join('\n');
+}
+
+function renderInstrumentoAplicado(): string {
+  const primeiros = ITENS_INSTRUMENTO_32.slice(0, 4).map(renderInstrumentoFatorBloco).join('\n');
+  const ultimos = ITENS_INSTRUMENTO_32.slice(4).map(renderInstrumentoFatorBloco).join('\n');
   return `<section class="page-break instrumento-page">
-  <h2>Instrumento aplicado — os 32 itens</h2>
-  <p style="font-size:9.5pt;">As 32 afirmações apresentadas aos respondentes, agrupadas pelos 8 fatores psicossociais avaliados.</p>
-  <div class="instrumento-grid">
-${blocos}
+  <h2>Instrumento aplicado</h2>
+  <p style="font-size:9.5pt;">32 afirmações apresentadas aos respondentes, agrupadas pelos 8 fatores psicossociais avaliados.</p>
+  <div class="instrumento-lista">
+${primeiros}
   </div>
+</section>
+<section class="page-break instrumento-page">
+  <div class="instrumento-lista">
+${ultimos}
+  </div>
+  <p class="instrumento-escala">Escala das respostas: (Nunca) · (Quase nunca) · (Às vezes) · (Quase sempre) · (Sempre)</p>
 </section>`;
 }
 
 /**
- * Tabela 3 colunas FATOR / DEPARTAMENTO / EMPRESA, sem delta e sem
- * setinhas. Leitura visual pela cor do semaforo em cada valor.
+ * ME-1.18 — tabela 4 colunas FATOR / DEPARTAMENTO / DIFERENÇA /
+ * EMPRESA. A coluna Diferença mostra pontos do departamento acima
+ * (▲ verde) ou abaixo (▼ vermelho) da empresa; zero em cinza neutro
+ * sem triângulo. Valores das colunas numéricas alinhados sob os
+ * respectivos títulos. Leitura visual pela cor do semáforo em cada
+ * score (departamento e empresa).
  */
+function renderCelulaDiferenca(delta: number): string {
+  if (delta === 0) {
+    return `<td class="center" style="color:${RADAR_COLORS.textMuted};">0</td>`;
+  }
+  const acima = delta > 0;
+  const cor = acima ? RADAR_NR1_CORES.verde : RADAR_NR1_CORES.vermelho;
+  const triangulo = acima ? '▲' : '▼';
+  return `<td class="center" style="color:${cor};">${triangulo} ${Math.abs(delta)}</td>`;
+}
+
 function renderTabelaDeptVsEmpresa(
   fatoresDept: readonly Nr1FatorScore[],
   fatoresEmpresa: readonly Nr1FatorScore[],
@@ -674,19 +759,22 @@ function renderTabelaDeptVsEmpresa(
       const scoreEmp = empresaPorNome.get(f.nome) ?? 0;
       const faixaE: Nr1Faixa = classificarNr1Faixa(scoreEmp);
       const corE = RADAR_NR1_CORES[faixaE];
+      const delta = Math.round(f.score) - Math.round(scoreEmp);
       return `<tr>
   <td>${escapeHtml(f.nome)}</td>
-  <td class="right" style="color:${corD};">${fmtScoreInt(f.score)}</td>
-  <td class="right" style="color:${corE};">${fmtScoreInt(scoreEmp)}</td>
+  <td class="center" style="color:${corD};">${fmtScoreInt(f.score)}</td>
+  ${renderCelulaDiferenca(delta)}
+  <td class="center" style="color:${corE};">${fmtScoreInt(scoreEmp)}</td>
 </tr>`;
     })
     .join('\n');
-  return `<table class="data-table-3col">
+  return `<table class="data-table-4col">
   <thead>
     <tr>
       <th>Fator</th>
-      <th class="right">Departamento</th>
-      <th class="right">Empresa</th>
+      <th class="center">Departamento</th>
+      <th class="center">Diferença</th>
+      <th class="center">Empresa</th>
     </tr>
   </thead>
   <tbody>${rows}</tbody>
@@ -711,7 +799,6 @@ function renderPaginaDepartamento(
   const tabela = renderTabelaDeptVsEmpresa(dept.fatores, radarEmpresa);
   return `<section class="page-break dept-page">
   <h2>Radar por departamento — ${escapeHtml(dept.departamentoNome)}</h2>
-  <p style="font-size:10pt;">Detalhamento dos 8 fatores no escopo do departamento, comparado com a média da empresa no mesmo ciclo. Polígono em azul escuro representa o departamento; tracejado teal representa a referência da empresa.</p>
   ${radar}
   ${tabela}
 </section>`;
@@ -1004,7 +1091,6 @@ function renderAlertasCompleto(input: Nr1TemplateInput): string {
   <h2>Alertas informativos por fator — visão completa</h2>
   <p style="font-size:10pt;">Inventário completo de todos os fatores com score inferior a 50 em qualquer escopo (empresa ou departamento) neste ciclo. Alertas são informativos e não substituem análise por profissional habilitado. Esta visão complementa a seção inicial, que recorta apenas o escopo empresa.</p>
   ${cards}
-  <p class="muted" style="font-size:9pt; line-height:1.55; margin-top:4mm;"><strong>Legenda de intensidade.</strong> <span class="cs-red fw-700">Vermelho intenso</span> indica escopo com score inferior a 40. <span class="cs-yellow fw-700">Amarelo escuro</span> indica escopo com score entre 40 e 49.</p>
 </section>`;
 }
 
@@ -1231,7 +1317,7 @@ function renderSugestoesProximosPassos(input: Nr1TemplateInput): string {
     return `<section class="page-break">
   <h2>Sugestões de próximos passos</h2>
   <div class="suggestion-intro">
-    Este radar identifica sinais preliminares nos oito fatores psicossociais avaliados. Os pontos a seguir são sugestões de investigação e aprofundamento, com base nos resultados do ciclo, para orientar as próximas ações da empresa.
+    Este radar identifica sinais preliminares nos 8 fatores psicossociais avaliados. Os pontos a seguir são sugestões de investigação e aprofundamento, com base nos resultados do ciclo, para orientar as próximas ações da empresa.
   </div>
   <div class="sem-dados-nota">
     <strong>Nenhuma sugestão específica para este ciclo.</strong>
@@ -1253,7 +1339,7 @@ function renderSugestoesProximosPassos(input: Nr1TemplateInput): string {
   return `<section class="page-break">
   <h2>Sugestões de próximos passos</h2>
   <div class="suggestion-intro">
-    Este radar identifica sinais preliminares nos oito fatores psicossociais avaliados. Os pontos a seguir são sugestões de investigação e aprofundamento, derivadas automaticamente dos resultados do ciclo, para orientar as próximas ações da empresa.
+    Este radar identifica sinais preliminares nos 8 fatores psicossociais avaliados. Os pontos a seguir são sugestões de investigação e aprofundamento, derivadas automaticamente dos resultados do ciclo, para orientar as próximas ações da empresa.
   </div>
   ${items}
 </section>`;
@@ -1278,13 +1364,16 @@ function renderRastreabilidadeCompleta(input: Nr1TemplateInput): string {
   );
   return `<section class="page-break">
   <h2>Rastreabilidade e integridade do relatório</h2>
-  <div class="trace-card">
+  <div class="trace-card trace-card-linhas">
     <div><strong>Empresa:</strong> ${escapeHtml(input.company.nomeFantasia)}</div>
     <div><strong>Identificador do ciclo:</strong> <code>${escapeHtml(input.ciclo.cicloRotulo)}</code></div>
-    <div><strong>Data de abertura:</strong> ${escapeHtml(formatDateBR(input.ciclo.dataAbertura))} · <strong>Data de fechamento:</strong> ${escapeHtml(formatDateBR(input.ciclo.dataFechamento))}</div>
-    <div><strong>Respondentes elegíveis:</strong> ${input.ciclo.totalElegiveis} · <strong>Efetivos válidos:</strong> ${input.ciclo.totalRespondentes} · <strong>Diferença (invalidados + não respondidos):</strong> ${invalidados}</div>
+    <div><strong>Data de abertura:</strong> ${escapeHtml(formatDateBR(input.ciclo.dataAbertura))}</div>
+    <div><strong>Data de fechamento:</strong> ${escapeHtml(formatDateBR(input.ciclo.dataFechamento))}</div>
+    <div><strong>Respondentes elegíveis:</strong> ${input.ciclo.totalElegiveis}</div>
+    <div><strong>Efetivos válidos:</strong> ${input.ciclo.totalRespondentes}</div>
+    <div><strong>Diferença (invalidados + não respondidos):</strong> ${invalidados}</div>
     <div><strong>Gerado em:</strong> ${escapeHtml(geradoEmBrt)}</div>
-    <div><strong>Escala do instrumento:</strong> 0 (Nunca) · 1 (Quase nunca) · 2 (Às vezes) · 3 (Quase sempre) · 4 (Sempre)</div>
+    <div><strong>Escala do instrumento:</strong> (Nunca) · (Quase nunca) · (Às vezes) · (Quase sempre) · (Sempre)</div>
   </div>
   ${notaAuditoria}
   <p class="muted" style="font-size:9pt; line-height:1.55; margin-top:4mm;"><strong>Nota final.</strong> O ciclo, uma vez fechado, é imutável. Este relatório pode ser regerado a qualquer momento a partir da base de dados original, apresentando idêntico conteúdo.</p>
@@ -1300,7 +1389,6 @@ export function renderNr1ReportHTML(input: Nr1TemplateInput): string {
   partes.push(renderCapaMaisResumo(input));
   partes.push(renderRadarEmpresa(input));
   partes.push(renderDescricoesFatoresPagina(input));
-  partes.push(renderInstrumentoAplicado());
   partes.push(renderAlertasEmpresa(input));
   partes.push(renderRadarDepartamentos(input));
   partes.push(renderInsuficientes(input));
@@ -1310,6 +1398,9 @@ export function renderNr1ReportHTML(input: Nr1TemplateInput): string {
   partes.push(renderComparacaoAnterior(input));
   partes.push(renderComparacaoHistorica(input));
   partes.push(renderSugestoesProximosPassos(input));
+  // ME-1.18 — Instrumento aplicado como penúltima seção, logo antes
+  // da Rastreabilidade.
+  partes.push(renderInstrumentoAplicado());
   partes.push(renderRastreabilidadeCompleta(input));
   const bodyHtml = partes.filter((p) => p.length > 0).join('\n');
 

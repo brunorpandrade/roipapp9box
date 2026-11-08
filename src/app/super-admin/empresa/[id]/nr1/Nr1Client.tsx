@@ -162,6 +162,16 @@ const STYLES = {
   }),
 } as const;
 
+// ME-1.18 — nomes dos 8 fatores por extenso para os eixos do radar
+// (elimina as abreviações do default do RadarPolar).
+const LABELS_FATORES: readonly string[] = FATORES_NR1.map((f) => f.nome);
+
+// ME-1.18 — azul-escuro do polígono pontilhado da empresa no
+// comparativo + cinza-escuro da linha do escopo principal (espelho do
+// PDF). Usados só nos swatches da legenda das linhas.
+const RADAR_LINHA_NEUTRO = '#64748B';
+const RADAR_LINHA_NAVY = '#1F3A5F';
+
 // -----------------------------------------------------------------------
 // Props
 // -----------------------------------------------------------------------
@@ -198,6 +208,8 @@ export function Nr1Client({
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailDeptId, setDetailDeptId] = useState<string>('');
+  // ME-1.18 — modal "Ver detalhes fator a fator" do gráfico da empresa.
+  const [showEmpresaDetailModal, setShowEmpresaDetailModal] = useState(false);
 
   // Form: configuração de ciclo
   const [configAbertura, setConfigAbertura] = useState('');
@@ -425,6 +437,72 @@ export function Nr1Client({
             efetivos de <strong style={{ color: '#111827' }}>{cycle.elegiveis}</strong> elegíveis
           </div>
         </div>
+      </div>
+    );
+  };
+
+  // ME-1.18 — legenda das 3 faixas do semáforo, sob o gráfico da
+  // empresa. Cada trecho colorido na própria palavra (idêntica ao PDF).
+  const renderLegendaFaixas = (): ReactElement => {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 10,
+          marginTop: 12,
+          fontSize: 12,
+          fontWeight: 700,
+        }}
+      >
+        <span style={{ color: SCORE_COLORS.verde }}>(66-100) Satisfatório</span>
+        <span style={{ color: '#9CA3AF', fontWeight: 400 }}>·</span>
+        <span style={{ color: SCORE_COLORS.amarelo }}>(50-65) atenção</span>
+        <span style={{ color: '#9CA3AF', fontWeight: 400 }}>·</span>
+        <span style={{ color: SCORE_COLORS.vermelho }}>(0-49) crítico</span>
+      </div>
+    );
+  };
+
+  // ME-1.18 — legenda das linhas do comparativo: Departamento = linha
+  // cheia cinza; Empresa = linha tracejada azul-escuro.
+  const renderLegendaLinhas = (): ReactElement => {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 20,
+          marginTop: 10,
+          fontSize: 12,
+          color: '#374151',
+          fontWeight: 600,
+        }}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span
+            style={{
+              display: 'inline-block',
+              width: 28,
+              height: 0,
+              borderTop: `3px solid ${RADAR_LINHA_NEUTRO}`,
+            }}
+          />
+          Departamento
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span
+            style={{
+              display: 'inline-block',
+              width: 28,
+              height: 0,
+              borderTop: `3px dashed ${RADAR_LINHA_NAVY}`,
+            }}
+          />
+          Empresa
+        </span>
       </div>
     );
   };
@@ -935,7 +1013,7 @@ export function Nr1Client({
                           color: '#111827',
                         }}
                       >
-                        {f.nome}
+                        {f.id}. {f.nome}
                       </div>
                       <div
                         style={{
@@ -984,6 +1062,137 @@ export function Nr1Client({
                     <div>
                       Empresa: <strong>{Math.round(empScore)}</strong>
                     </div>
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: '#6B7280',
+                      marginTop: 4,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {FATOR_DESCRICOES[f.id] ?? ''}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ---------------------------------------------------------------
+  // ME-1.18 — Modal: Detalhamento por fator da empresa
+  // ---------------------------------------------------------------
+
+  const renderEmpresaDetailModal = (): ReactElement | null => {
+    if (!showEmpresaDetailModal || !empresaEscopo) return null;
+    return (
+      <div style={STYLES.modal.overlay}>
+        <div style={STYLES.modal.content}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: 14,
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: '#111827',
+                }}
+              >
+                Empresa — Detalhamento por fator
+              </div>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: '#6B7280',
+                  marginTop: 2,
+                }}
+              >
+                Ciclo {cycle.ciclo} · {cycle.respondentesEfetivos} respondentes efetivos · Score
+                agregado dos 8 fatores
+              </div>
+            </div>
+            <button
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: 22,
+                cursor: 'pointer',
+                color: '#9CA3AF',
+              }}
+              onClick={() => setShowEmpresaDetailModal(false)}
+            >
+              ✕
+            </button>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+              marginTop: 12,
+            }}
+          >
+            {FATORES_NR1.map((f) => {
+              const empScore = empresaEscopo.fatores.find((fs) => fs.fator === f.id)?.score ?? 0;
+              const scoreClass = classForScore(empScore);
+              return (
+                <div
+                  key={f.id}
+                  style={{
+                    background: '#F9FAFB',
+                    border: '1px solid #E5E7EB',
+                    borderLeft: `3px solid ${SCORE_COLORS[scoreClass]}`,
+                    borderRadius: 8,
+                    padding: '12px 14px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 6,
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 700,
+                          color: '#111827',
+                        }}
+                      >
+                        {f.id}. {f.nome}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 10,
+                          color: '#6B7280',
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        Fator de {f.tipo}
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: SCORE_COLORS[scoreClass],
+                      }}
+                    >
+                      {Math.round(empScore)}
+                    </span>
                   </div>
                   <div
                     style={{
@@ -1345,9 +1554,19 @@ export function Nr1Client({
                       fator: f.fator,
                       score: Number(f.score),
                     }))}
-                    color="#14B8A6"
+                    labels={LABELS_FATORES}
                   />
+                  {renderLegendaFaixas()}
                   {renderRadarLegend(empresaEscopo)}
+                  <button
+                    style={{
+                      ...STYLES.btnOutline,
+                      marginTop: 14,
+                    }}
+                    onClick={() => setShowEmpresaDetailModal(true)}
+                  >
+                    Ver detalhes fator a fator →
+                  </button>
                 </div>
               )}
             </div>
@@ -1396,48 +1615,12 @@ export function Nr1Client({
                       fator: f.fator,
                       score: Number(f.score),
                     }))}
-                    color="#1E40AF"
-                    comparisonColor="#14B8A6"
+                    labels={LABELS_FATORES}
                   />
-                  {/* ME-080a — legenda identitária empresa/departamento. */}
-                  {/* Cores identitárias (teal=empresa, azul=depto) — NÃO */}
-                  {/* semafóricas. As cores semafóricas ficam apenas nos */}
-                  {/* dots da legenda de scores em `renderRadarLegend`. */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      gap: 20,
-                      marginTop: 10,
-                      fontSize: 12,
-                      color: '#374151',
-                    }}
-                  >
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          width: 12,
-                          height: 12,
-                          background: '#14B8A6',
-                          borderRadius: 2,
-                        }}
-                      />
-                      Empresa
-                    </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          width: 12,
-                          height: 12,
-                          background: '#1E40AF',
-                          borderRadius: 2,
-                        }}
-                      />
-                      Departamento
-                    </span>
-                  </div>
+                  {/* ME-1.18 — legenda das linhas: Departamento = linha */}
+                  {/* cheia cinza (escopo principal); Empresa = linha */}
+                  {/* tracejada azul-escuro. Idêntica ao PDF. */}
+                  {renderLegendaLinhas()}
                   <button
                     style={{
                       ...STYLES.btnOutline,
@@ -1909,6 +2092,7 @@ export function Nr1Client({
       {renderConfigModal()}
       {renderEditModal()}
       {renderDetailModal()}
+      {renderEmpresaDetailModal()}
 
       {/* Toast */}
       {toast.length > 0 && (

@@ -391,7 +391,7 @@ export async function buildNr1TemplateInput(
     // podem enriquecer. O template renderiza o texto como paragrafo.
     resumoExecutivo:
       alertas.length > 0
-        ? `Ciclo com ${alertas.length} alerta(s) informativo(s) — ` +
+        ? `Ciclo com ${alertas.length} alertas informativos — ` +
           'atenção aos fatores com score abaixo de 50.'
         : 'Ciclo sem fatores em alerta.',
     radarEmpresa,

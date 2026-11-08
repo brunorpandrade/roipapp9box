@@ -505,6 +505,19 @@ export const LAYOUT_BASE_CSS = `
     padding: 0.5mm 1.5mm;
     border-radius: 2pt;
   }
+  /* ME-1.18 — rastreabilidade com um dado por linha e respiro maior
+     (há folga de sobra na página). */
+  .trace-card-linhas {
+    font-size: 10pt;
+    line-height: 1.9;
+    padding: 6mm 7mm;
+  }
+  .trace-card-linhas > div {
+    padding: 1.2mm 0;
+  }
+  .trace-card-linhas > div + div {
+    border-top: 1px solid #EEF0F2;
+  }
   .edit-note {
     background: #FEFCE8;
     border-left: 3px solid #FBBF24;
@@ -700,10 +713,13 @@ export const LAYOUT_BASE_CSS = `
     letter-spacing: 0.02em;
     text-align: center;
   }
+  /* ME-1.18 — gap maior entre as 2 colunas + respiro à direita do
+     score, para o número da coluna esquerda não encostar na bolinha
+     da coluna direita. */
   .radar-legend-horizontal {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 2mm 6mm;
+    gap: 2mm 14mm;
     width: 100%;
     font-size: 9.5pt;
   }
@@ -711,7 +727,7 @@ export const LAYOUT_BASE_CSS = `
     display: flex;
     align-items: center;
     gap: 2mm;
-    padding: 1mm 0;
+    padding: 1mm 3mm 1mm 0;
     border-bottom: 1px solid #F3F4F6;
   }
   .radar-legend-horizontal .leg-item:nth-last-child(-n+2) {
@@ -741,24 +757,70 @@ export const LAYOUT_BASE_CSS = `
   }
   .radar-legend-biparticao .leg-swatch-line {
     display: inline-block;
-    width: 8mm;
-    height: 2pt;
+    width: 9mm;
+    height: 2.5pt;
     border-radius: 1pt;
   }
+  .radar-legend-biparticao .leg-swatch-line.solid {
+    background: currentColor;
+  }
   .radar-legend-biparticao .leg-swatch-line.dashed {
-    border-top: 2pt dashed #14B8A6;
-    height: 0;
-    background: transparent;
+    /* ME-1.18 — swatch tracejado (empresa). A cor vem do style inline
+       (background-color: navy); o gradiente desenha traços visíveis de
+       tamanho controlado, ao contrário de border-dashed de 2pt, que no
+       Chrome fica quase sólido. */
+    border-radius: 0;
+    background-image: linear-gradient(
+      to right,
+      currentColor 0,
+      currentColor 2.2mm,
+      transparent 2.2mm,
+      transparent 3.4mm
+    );
+    background-repeat: repeat-x;
+    background-size: 3.4mm 100%;
+    background-color: transparent !important;
   }
 
-  /* Tabela 3 colunas comparativa dept x empresa (sem delta/setinhas). */
-  table.data-table-3col {
+  /* ME-1.18 — legenda das 3 faixas do semáforo, sob o gráfico. Cada
+     trecho colorido na própria palavra via style inline; sem a palavra
+     "Legenda" e sem o nome da cor. */
+  .radar-legend-faixas {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0 3mm;
+    margin: 1mm 0 3mm;
+    font-size: 9.5pt;
+    font-weight: 700;
+  }
+  .radar-legend-faixas .faixa-sep {
+    color: #9CA3AF;
+    font-weight: 400;
+  }
+
+  /* ME-1.18 — linha da escala de respostas ao fim do instrumento. */
+  .instrumento-escala {
+    margin-top: 5mm;
+    padding-top: 3mm;
+    border-top: 1px solid #E5E7EB;
+    font-size: 9.5pt;
+    color: #374151;
+    font-weight: 600;
+  }
+
+  /* ME-1.18 — tabela 4 colunas comparativa dept x empresa, com a coluna
+     Diferença. Colunas numéricas centralizadas, com cada valor alinhado
+     exatamente sob o título. */
+  table.data-table-4col {
     width: 100%;
     border-collapse: collapse;
     font-size: 10pt;
     margin-top: 4mm;
+    table-layout: fixed;
   }
-  table.data-table-3col thead th {
+  table.data-table-4col thead th {
     text-align: left;
     padding: 2.5mm 3mm;
     background: #F9FAFB;
@@ -769,20 +831,23 @@ export const LAYOUT_BASE_CSS = `
     letter-spacing: 0.04em;
     border-bottom: 1px solid #E5E7EB;
   }
-  table.data-table-3col thead th.right {
-    text-align: right;
+  table.data-table-4col thead th:first-child {
+    width: 40%;
   }
-  table.data-table-3col tbody td {
+  table.data-table-4col thead th.center {
+    text-align: center;
+  }
+  table.data-table-4col tbody td {
     padding: 2.5mm 3mm;
     border-bottom: 1px solid #F3F4F6;
     color: #111827;
     font-size: 9.5pt;
   }
-  table.data-table-3col tbody tr:last-child td {
+  table.data-table-4col tbody tr:last-child td {
     border-bottom: none;
   }
-  table.data-table-3col tbody td.right {
-    text-align: right;
+  table.data-table-4col tbody td.center {
+    text-align: center;
     font-weight: 700;
   }
 
@@ -931,15 +996,15 @@ export const LAYOUT_BASE_CSS = `
     gap: 2.5mm;
     margin-top: 1mm;
   }
-  .dept-page table.data-table-3col {
-    margin-top: 2mm;
+  .dept-page table.data-table-4col {
+    margin-top: 6mm;
     font-size: 9pt;
   }
-  .dept-page table.data-table-3col tbody td {
+  .dept-page table.data-table-4col tbody td {
     padding: 1.5mm 3mm;
     font-size: 9pt;
   }
-  .dept-page table.data-table-3col thead th {
+  .dept-page table.data-table-4col thead th {
     padding: 1.5mm 3mm;
     font-size: 8pt;
   }
@@ -951,41 +1016,47 @@ export const LAYOUT_BASE_CSS = `
   }
 
   /* ============================================================
-     ME-1.3c CC079-v7 — página "Instrumento aplicado — os 32 itens".
-     Grid de 8 blocos (um por fator) em 2 colunas; 4 itens numerados
-     por bloco. Sem a escala — ela aparece apenas na rastreabilidade.
+     ME-1.18 — página "Instrumento aplicado". Seções horizontais em
+     largura total: um fator por bloco, com nome + explicação + as 4
+     afirmações. 4 fatores por página, em 2 páginas.
      ============================================================ */
   .instrumento-page {
-    page-break-inside: avoid;
+    page-break-inside: auto;
   }
-  .instrumento-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 3mm 5mm;
-    margin-top: 3mm;
+  .instrumento-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 5mm;
+    margin-top: 4mm;
   }
   .instrumento-fator {
     page-break-inside: avoid;
   }
   .instrumento-fator-header {
-    font-size: 9pt;
+    font-size: 10.5pt;
     font-weight: 700;
     color: #0F766E;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    padding-bottom: 1mm;
-    margin-bottom: 1.5mm;
+    padding-bottom: 1.5mm;
+    margin-bottom: 2mm;
     border-bottom: 1px solid #99F6E4;
   }
+  .instrumento-fator-desc {
+    font-size: 9.5pt;
+    color: #4B5563;
+    line-height: 1.5;
+    margin-bottom: 2.5mm;
+  }
   .instrumento-item-list {
-    padding-left: 5mm;
+    padding-left: 6mm;
     margin: 0;
-    font-size: 8.5pt;
+    font-size: 9.5pt;
     color: #374151;
-    line-height: 1.4;
+    line-height: 1.5;
   }
   .instrumento-item {
-    margin-bottom: 1.3mm;
+    margin-bottom: 1.8mm;
   }
   .instrumento-item:last-child {
     margin-bottom: 0;
